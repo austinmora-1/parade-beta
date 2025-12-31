@@ -24,7 +24,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
   const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const inviteLink = 'https://planly.app/invite/abc123';
+  const inviteLink = 'https://parade.app/invite/abc123';
 
   const handleSendInvite = () => {
     if (!email.trim()) return;
