@@ -1,0 +1,80 @@
+import { NavLink, useLocation } from 'react-router-dom';
+import { 
+  Calendar, 
+  LayoutDashboard, 
+  Users, 
+  MessageCircle, 
+  Clock, 
+  Settings,
+  Sparkles
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/plans', icon: Calendar, label: 'Plans' },
+  { path: '/availability', icon: Clock, label: 'Availability' },
+  { path: '/friends', icon: Users, label: 'Friends' },
+  { path: '/chat', icon: MessageCircle, label: 'Chat with Elly' },
+];
+
+export function Sidebar() {
+  const location = useLocation();
+
+  return (
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-sidebar">
+      <div className="flex h-full flex-col">
+        {/* Logo */}
+        <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-soft">
+            <Sparkles className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="font-display text-xl font-bold text-foreground">Planly</span>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 space-y-1 p-4">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-soft"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
+                {item.path === '/chat' && (
+                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary-foreground/20 text-xs">
+                    ✨
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Settings */}
+        <div className="border-t border-sidebar-border p-4">
+          <NavLink
+            to="/settings"
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
+              location.pathname === '/settings'
+                ? "bg-primary text-primary-foreground shadow-soft"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <Settings className="h-5 w-5" />
+            Settings
+          </NavLink>
+        </div>
+      </div>
+    </aside>
+  );
+}
