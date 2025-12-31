@@ -5,10 +5,10 @@ import {
   Users, 
   MessageCircle, 
   Clock, 
-  Settings,
-  Sparkles
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import paradeLogo from '@/assets/parade-logo.png';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,10 +26,8 @@ export function Sidebar() {
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-soft">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="font-display text-xl font-bold text-foreground">Planly</span>
+          <img src={paradeLogo} alt="Parade" className="h-10 w-10 rounded-xl" />
+          <span className="font-display text-xl font-bold text-foreground">Parade</span>
         </div>
 
         {/* Navigation */}
