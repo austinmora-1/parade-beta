@@ -1,1 +1,4 @@
 project_id = "womtzaraskisayzskafe"
+
+[functions.chat-with-elly]
+verify_jwt = false
