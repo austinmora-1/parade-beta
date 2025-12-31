@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, MapPin, Users, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -37,16 +37,38 @@ interface CreatePlanDialogProps {
 export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDialogProps) {
   const { addPlan, updatePlan, friends } = usePlannerStore();
   
-  const [title, setTitle] = useState(editPlan?.title || '');
-  const [activity, setActivity] = useState<ActivityType>(editPlan?.activity || 'misc');
-  const [date, setDate] = useState<Date>(editPlan?.date || new Date());
-  const [timeSlot, setTimeSlot] = useState<TimeSlot>(editPlan?.timeSlot || 'late-morning');
-  const [duration, setDuration] = useState(editPlan?.duration?.toString() || '60');
-  const [locationName, setLocationName] = useState(editPlan?.location?.name || '');
-  const [selectedFriends, setSelectedFriends] = useState<string[]>(
-    editPlan?.participants.map((p) => p.id) || []
-  );
-  const [notes, setNotes] = useState(editPlan?.notes || '');
+  const [title, setTitle] = useState('');
+  const [activity, setActivity] = useState<ActivityType>('misc');
+  const [date, setDate] = useState<Date>(new Date());
+  const [timeSlot, setTimeSlot] = useState<TimeSlot>('late-morning');
+  const [duration, setDuration] = useState('60');
+  const [locationName, setLocationName] = useState('');
+  const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
+  const [notes, setNotes] = useState('');
+
+  // Sync form state when editPlan changes or dialog opens
+  useEffect(() => {
+    if (open && editPlan) {
+      setTitle(editPlan.title);
+      setActivity(editPlan.activity);
+      setDate(editPlan.date);
+      setTimeSlot(editPlan.timeSlot);
+      setDuration(editPlan.duration?.toString() || '60');
+      setLocationName(editPlan.location?.name || '');
+      setSelectedFriends(editPlan.participants.map((p) => p.id));
+      setNotes(editPlan.notes || '');
+    } else if (open && !editPlan) {
+      // Reset for new plan
+      setTitle('');
+      setActivity('misc');
+      setDate(new Date());
+      setTimeSlot('late-morning');
+      setDuration('60');
+      setLocationName('');
+      setSelectedFriends([]);
+      setNotes('');
+    }
+  }, [open, editPlan]);
 
   const handleSubmit = () => {
     const planData = {
