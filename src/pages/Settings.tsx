@@ -1,11 +1,26 @@
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { User, Bell, MapPin, Share2 } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export default function Settings() {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Logged out successfully');
+      navigate('/landing');
+    }
+  };
   return (
     <div className="animate-fade-in space-y-8">
       {/* Header */}
@@ -146,6 +161,26 @@ export default function Settings() {
             </div>
             <Switch defaultChecked />
           </div>
+        </div>
+      </div>
+
+      {/* Logout */}
+      <div className="rounded-2xl border border-destructive/20 bg-card p-6 shadow-soft">
+        <div className="mb-6 flex items-center gap-3">
+          <LogOut className="h-5 w-5 text-destructive" />
+          <h2 className="font-display text-lg font-semibold">Account</h2>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">Sign Out</p>
+            <p className="text-sm text-muted-foreground">
+              Log out of your Parade account
+            </p>
+          </div>
+          <Button variant="destructive" onClick={handleLogout}>
+            Sign Out
+          </Button>
         </div>
       </div>
     </div>
