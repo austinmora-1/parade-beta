@@ -30,8 +30,8 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
     if (!email.trim()) return;
 
     addFriend({
-      id: crypto.randomUUID(),
       name: email.split('@')[0],
+      email: email,
       status: 'invited',
     });
 

@@ -86,9 +86,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
       updatePlan(editPlan.id, planData);
     } else {
       addPlan({
-        id: crypto.randomUUID(),
         ...planData,
-        createdAt: new Date(),
       });
     }
 

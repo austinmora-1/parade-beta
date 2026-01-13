@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      availability: {
+        Row: {
+          created_at: string
+          date: string
+          early_afternoon: boolean | null
+          early_morning: boolean | null
+          evening: boolean | null
+          id: string
+          late_afternoon: boolean | null
+          late_morning: boolean | null
+          late_night: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          early_afternoon?: boolean | null
+          early_morning?: boolean | null
+          evening?: boolean | null
+          id?: string
+          late_afternoon?: boolean | null
+          late_morning?: boolean | null
+          late_night?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          early_afternoon?: boolean | null
+          early_morning?: boolean | null
+          evening?: boolean | null
+          id?: string
+          late_afternoon?: boolean | null
+          late_morning?: boolean | null
+          late_night?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_connections: {
         Row: {
           access_token: string | null
@@ -50,16 +92,125 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: {
+          created_at: string
+          friend_email: string | null
+          friend_name: string
+          friend_user_id: string | null
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_email?: string | null
+          friend_name: string
+          friend_user_id?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_email?: string | null
+          friend_name?: string
+          friend_user_id?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      plan_participants: {
+        Row: {
+          created_at: string
+          friend_id: string
+          id: string
+          plan_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          friend_id: string
+          id?: string
+          plan_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          friend_id?: string
+          id?: string
+          plan_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_participants_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          activity: string
+          created_at: string
+          date: string
+          duration: number
+          id: string
+          location: string | null
+          notes: string | null
+          time_slot: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity: string
+          created_at?: string
+          date: string
+          duration?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          time_slot: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          created_at?: string
+          date?: string
+          duration?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          time_slot?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          current_vibe: string | null
           discoverable: boolean | null
           display_name: string | null
           friend_requests_notifications: boolean | null
           home_address: string | null
           id: string
+          location_status: string | null
           plan_invitations_notifications: boolean | null
           plan_reminders: boolean | null
           show_availability: boolean | null
@@ -71,11 +222,13 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          current_vibe?: string | null
           discoverable?: boolean | null
           display_name?: string | null
           friend_requests_notifications?: boolean | null
           home_address?: string | null
           id?: string
+          location_status?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
           show_availability?: boolean | null
@@ -87,11 +240,13 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          current_vibe?: string | null
           discoverable?: boolean | null
           display_name?: string | null
           friend_requests_notifications?: boolean | null
           home_address?: string | null
           id?: string
+          location_status?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
           show_availability?: boolean | null
