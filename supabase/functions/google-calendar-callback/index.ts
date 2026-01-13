@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Store tokens in database
+    // Store encrypted tokens in database using service role
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -63,16 +63,34 @@ Deno.serve(async (req) => {
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
 
-    const { error: upsertError } = await supabase
-      .from('calendar_connections')
-      .upsert({
-        user_id: userId,
-        provider: 'google',
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_at: expiresAt,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,provider' })
+    // Get the encryption key ID
+    const { data: keyData, error: keyError } = await supabase
+      .rpc('get_calendar_encryption_key_id')
+
+    if (keyError) {
+      console.error('Key error:', keyError)
+      // Fallback: query the key directly
+      const { data: keyRecord } = await supabase
+        .from('pgsodium.valid_key')
+        .select('id')
+        .eq('name', 'calendar_tokens_key')
+        .single()
+      
+      if (!keyRecord) {
+        return new Response(getErrorHtml('Encryption key not found'), {
+          headers: { 'Content-Type': 'text/html' },
+        })
+      }
+    }
+
+    // Use the encrypt function to store tokens
+    const { error: upsertError } = await supabase.rpc('upsert_calendar_connection', {
+      p_user_id: userId,
+      p_provider: 'google',
+      p_access_token: tokens.access_token,
+      p_refresh_token: tokens.refresh_token || null,
+      p_expires_at: expiresAt,
+    })
 
     if (upsertError) {
       console.error('Database error:', upsertError)
