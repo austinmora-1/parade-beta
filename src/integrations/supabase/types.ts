@@ -55,8 +55,15 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          discoverable: boolean | null
           display_name: string | null
+          friend_requests_notifications: boolean | null
+          home_address: string | null
           id: string
+          plan_invitations_notifications: boolean | null
+          plan_reminders: boolean | null
+          show_availability: boolean | null
+          show_vibe_status: boolean | null
           updated_at: string
           user_id: string
         }
@@ -64,8 +71,15 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          discoverable?: boolean | null
           display_name?: string | null
+          friend_requests_notifications?: boolean | null
+          home_address?: string | null
           id?: string
+          plan_invitations_notifications?: boolean | null
+          plan_reminders?: boolean | null
+          show_availability?: boolean | null
+          show_vibe_status?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -73,8 +87,15 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          discoverable?: boolean | null
           display_name?: string | null
+          friend_requests_notifications?: boolean | null
+          home_address?: string | null
           id?: string
+          plan_invitations_notifications?: boolean | null
+          plan_reminders?: boolean | null
+          show_availability?: boolean | null
+          show_vibe_status?: boolean | null
           updated_at?: string
           user_id?: string
         }

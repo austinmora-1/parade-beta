@@ -1,25 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { User, Bell, MapPin, Share2, LogOut, Save } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
-  const { signOut } = useAuth();
+  const { signOut, session } = useAuth();
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
 
   // Profile state
-  const [displayName, setDisplayName] = useState('Alex Johnson');
-  const [email, setEmail] = useState('alex@example.com');
-  const [homeAddress, setHomeAddress] = useState('123 Main St, San Francisco, CA');
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [homeAddress, setHomeAddress] = useState('');
 
   // Notification settings
   const [planReminders, setPlanReminders] = useState(true);
@@ -31,18 +33,80 @@ export default function Settings() {
   const [showVibeStatus, setShowVibeStatus] = useState(true);
   const [discoverable, setDiscoverable] = useState(true);
 
+  // Load profile data on mount
+  useEffect(() => {
+    async function loadProfile() {
+      if (!session?.user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setEmail(session.user.email || '');
+
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading profile:', error);
+          toast.error('Failed to load profile');
+        }
+
+        if (profile) {
+          setDisplayName(profile.display_name || '');
+          setHomeAddress(profile.home_address || '');
+          setPlanReminders(profile.plan_reminders ?? true);
+          setFriendRequests(profile.friend_requests_notifications ?? true);
+          setPlanInvitations(profile.plan_invitations_notifications ?? true);
+          setShowAvailability(profile.show_availability ?? true);
+          setShowVibeStatus(profile.show_vibe_status ?? true);
+          setDiscoverable(profile.discoverable ?? true);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, [session?.user]);
+
   const handleChange = () => {
     setHasChanges(true);
   };
 
   const handleSaveChanges = async () => {
+    if (!session?.user) {
+      toast.error('You must be logged in to save settings');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Simulate API call - replace with actual Supabase update
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: displayName,
+          home_address: homeAddress,
+          plan_reminders: planReminders,
+          friend_requests_notifications: friendRequests,
+          plan_invitations_notifications: planInvitations,
+          show_availability: showAvailability,
+          show_vibe_status: showVibeStatus,
+          discoverable: discoverable,
+        })
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
       toast.success('Settings saved successfully');
       setHasChanges(false);
     } catch (error) {
+      console.error('Error saving settings:', error);
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
@@ -58,6 +122,15 @@ export default function Settings() {
       navigate('/landing');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in space-y-8">
       {/* Header with Save Button */}
@@ -99,7 +172,8 @@ export default function Settings() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); handleChange(); }}
+                disabled
+                className="bg-muted"
               />
             </div>
           </div>
