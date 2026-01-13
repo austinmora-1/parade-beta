@@ -17,6 +17,7 @@ export interface Location {
 export interface Friend {
   id: string;
   name: string;
+  email?: string;
   avatar?: string;
   status: 'connected' | 'pending' | 'invited';
 }

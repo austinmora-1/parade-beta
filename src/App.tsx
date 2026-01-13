@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { usePlannerStore } from "@/stores/plannerStore";
 import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
 import Availability from "./pages/Availability";
@@ -18,6 +20,16 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { setUserId, loadAllData, userId } = usePlannerStore();
+
+  useEffect(() => {
+    if (user && user.id !== userId) {
+      setUserId(user.id);
+      loadAllData();
+    } else if (!user && userId) {
+      setUserId(null);
+    }
+  }, [user, userId, setUserId, loadAllData]);
 
   if (loading) {
     return (
