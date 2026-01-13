@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { User, Bell, MapPin, Share2, LogOut, Save } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
 
 export default function Settings() {
   const { signOut } = useAuth();
@@ -181,6 +182,8 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Calendar Integration */}
+      <CalendarIntegration />
 
       {/* Sharing */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">

@@ -1,0 +1,156 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token)
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    const userId = claimsData.claims.sub
+
+    // Get stored tokens
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+
+    const { data: connection, error: connError } = await adminClient
+      .from('calendar_connections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('provider', 'google')
+      .single()
+
+    if (connError || !connection) {
+      return new Response(JSON.stringify({ error: 'Google Calendar not connected', connected: false }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Check if token needs refresh
+    let accessToken = connection.access_token
+    if (new Date(connection.expires_at) < new Date()) {
+      const refreshedToken = await refreshAccessToken(connection.refresh_token, adminClient, userId)
+      if (!refreshedToken) {
+        return new Response(JSON.stringify({ error: 'Failed to refresh token', connected: false }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      accessToken = refreshedToken
+    }
+
+    // Fetch calendar events
+    const url = new URL(req.url)
+    const timeMin = url.searchParams.get('timeMin') || new Date().toISOString()
+    const timeMax = url.searchParams.get('timeMax') || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    const maxResults = url.searchParams.get('maxResults') || '50'
+
+    const calendarUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+    calendarUrl.searchParams.set('timeMin', timeMin)
+    calendarUrl.searchParams.set('timeMax', timeMax)
+    calendarUrl.searchParams.set('maxResults', maxResults)
+    calendarUrl.searchParams.set('singleEvents', 'true')
+    calendarUrl.searchParams.set('orderBy', 'startTime')
+
+    const calendarResponse = await fetch(calendarUrl.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+
+    if (!calendarResponse.ok) {
+      const error = await calendarResponse.text()
+      console.error('Calendar API error:', error)
+      return new Response(JSON.stringify({ error: 'Failed to fetch events', connected: true }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const calendarData = await calendarResponse.json()
+
+    return new Response(JSON.stringify({ 
+      connected: true,
+      events: calendarData.items || [] 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (error: unknown) {
+    console.error('Error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+})
+
+async function refreshAccessToken(refreshToken: string, supabase: any, userId: string): Promise<string | null> {
+  try {
+    const clientId = Deno.env.get('GOOGLE_CLIENT_ID')!
+    const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')!
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    })
+
+    const tokens = await response.json()
+
+    if (tokens.error) {
+      console.error('Token refresh error:', tokens)
+      return null
+    }
+
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+
+    await supabase
+      .from('calendar_connections')
+      .update({
+        access_token: tokens.access_token,
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .eq('provider', 'google')
+
+    return tokens.access_token
+  } catch (error) {
+    console.error('Refresh token error:', error)
+    return null
+  }
+}
