@@ -36,30 +36,31 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub
 
-    // Get stored tokens
+    // Use service role to decrypt tokens
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { data: connection, error: connError } = await adminClient
-      .from('calendar_connections')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('provider', 'google')
-      .single()
+    // Get decrypted tokens using the secure function
+    const { data: connection, error: connError } = await adminClient.rpc('get_calendar_tokens', {
+      p_user_id: userId,
+      p_provider: 'google'
+    })
 
-    if (connError || !connection) {
+    if (connError || !connection || connection.length === 0) {
       return new Response(JSON.stringify({ error: 'Google Calendar not connected', connected: false }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
+    const tokenData = connection[0]
+
     // Check if token needs refresh
-    let accessToken = connection.access_token
-    if (new Date(connection.expires_at) < new Date()) {
-      const refreshedToken = await refreshAccessToken(connection.refresh_token, adminClient, userId)
+    let accessToken = tokenData.access_token
+    if (new Date(tokenData.expires_at) < new Date()) {
+      const refreshedToken = await refreshAccessToken(tokenData.refresh_token, adminClient, userId)
       if (!refreshedToken) {
         return new Response(JSON.stringify({ error: 'Failed to refresh token', connected: false }), {
           status: 200,
@@ -138,15 +139,13 @@ async function refreshAccessToken(refreshToken: string, supabase: any, userId: s
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
 
-    await supabase
-      .from('calendar_connections')
-      .update({
-        access_token: tokens.access_token,
-        expires_at: expiresAt,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', userId)
-      .eq('provider', 'google')
+    // Update encrypted token using the RPC function
+    await supabase.rpc('update_calendar_access_token', {
+      p_user_id: userId,
+      p_provider: 'google',
+      p_access_token: tokens.access_token,
+      p_expires_at: expiresAt,
+    })
 
     return tokens.access_token
   } catch (error) {

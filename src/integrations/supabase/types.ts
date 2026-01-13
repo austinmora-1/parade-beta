@@ -16,30 +16,33 @@ export type Database = {
     Tables: {
       calendar_connections: {
         Row: {
-          access_token: string
+          access_token: string | null
           created_at: string
           expires_at: string
           id: string
+          key_id: string | null
           provider: string
           refresh_token: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          access_token: string
+          access_token?: string | null
           created_at?: string
           expires_at: string
           id?: string
+          key_id?: string | null
           provider: string
           refresh_token?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          access_token?: string
+          access_token?: string | null
           created_at?: string
           expires_at?: string
           id?: string
+          key_id?: string | null
           provider?: string
           refresh_token?: string | null
           updated_at?: string
@@ -82,7 +85,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrypt_calendar_token: {
+        Args: { encrypted_token: string; p_key_id: string }
+        Returns: string
+      }
+      encrypt_calendar_token: {
+        Args: { p_key_id: string; token: string }
+        Returns: string
+      }
+      get_calendar_tokens: {
+        Args: { p_provider: string; p_user_id: string }
+        Returns: {
+          access_token: string
+          expires_at: string
+          refresh_token: string
+        }[]
+      }
+      update_calendar_access_token: {
+        Args: {
+          p_access_token: string
+          p_expires_at: string
+          p_provider: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      upsert_calendar_connection: {
+        Args: {
+          p_access_token: string
+          p_expires_at: string
+          p_provider: string
+          p_refresh_token: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
