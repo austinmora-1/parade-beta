@@ -117,7 +117,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!res.ok) {
       const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to send email");
+      const errorMessage = errorData.message || "Failed to send email";
+      
+      // Check for domain verification error
+      if (errorMessage.includes("verify a domain") || errorMessage.includes("testing emails")) {
+        throw new Error("To send invites to friends, please verify your domain at resend.com/domains. For now, you can only send test emails to your own email address.");
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const emailResponse = await res.json();
