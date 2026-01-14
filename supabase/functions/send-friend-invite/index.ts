@@ -40,24 +40,33 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "Parade <onboarding@resend.dev>",
+        reply_to: "hello@parade.lovable.app",
         to: [email],
-        subject: `${inviterName} invited you to join Parade! 🎉`,
+        subject: `${inviterName} wants to make plans with you`,
+        headers: {
+          "X-Entity-Ref-ID": crypto.randomUUID(),
+          "List-Unsubscribe": "<https://parade.lovable.app/unsubscribe>",
+        },
         html: `
           <!DOCTYPE html>
-          <html>
+          <html lang="en">
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="color-scheme" content="light">
+            <meta name="supported-color-schemes" content="light">
+            <title>Join ${inviterName} on Parade</title>
           </head>
-          <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+          <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; -webkit-font-smoothing: antialiased;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
               <tr>
                 <td align="center">
-                  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                    <!-- Header -->
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
+                    <!-- Header with Logo -->
                     <tr>
-                      <td style="background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%); padding: 40px 30px; text-align: center;">
-                        <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700;">🎉 You're Invited!</h1>
+                      <td style="background-color: #8b5cf6; padding: 32px 30px; text-align: center;">
+                        <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Parade</h1>
+                        <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Make plans, not excuses</p>
                       </td>
                     </tr>
                     
@@ -65,43 +74,65 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td style="padding: 40px 30px;">
                         <p style="margin: 0 0 20px; font-size: 18px; color: #18181b; line-height: 1.6;">
-                          Hey there! 👋
+                          Hi there,
                         </p>
                         <p style="margin: 0 0 20px; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                          <strong style="color: #8b5cf6;">${inviterName}</strong> thinks you'd be a great addition to <strong>Parade</strong> — the easiest way to coordinate plans with friends!
+                          <strong style="color: #8b5cf6;">${inviterName}</strong> invited you to join them on Parade — the easiest way to coordinate plans with friends.
                         </p>
-                        <p style="margin: 0 0 30px; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                          With Parade, you can:
+                        <p style="margin: 0 0 24px; font-size: 16px; color: #3f3f46; line-height: 1.6;">
+                          Here's what you can do together:
                         </p>
-                        <ul style="margin: 0 0 30px; padding-left: 20px; color: #3f3f46; font-size: 16px; line-height: 1.8;">
-                          <li>📅 Share your availability effortlessly</li>
-                          <li>🤝 See when friends are free to hang out</li>
-                          <li>✨ Plan meetups without the endless back-and-forth</li>
-                          <li>🎯 Never miss a chance to connect</li>
-                        </ul>
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 30px;">
+                          <tr>
+                            <td style="padding: 12px 16px; background-color: #faf5ff; border-radius: 8px; margin-bottom: 8px;">
+                              <p style="margin: 0; font-size: 15px; color: #3f3f46;">Share when you're free to hang out</p>
+                            </td>
+                          </tr>
+                          <tr><td style="height: 8px;"></td></tr>
+                          <tr>
+                            <td style="padding: 12px 16px; background-color: #faf5ff; border-radius: 8px;">
+                              <p style="margin: 0; font-size: 15px; color: #3f3f46;">See when friends are available</p>
+                            </td>
+                          </tr>
+                          <tr><td style="height: 8px;"></td></tr>
+                          <tr>
+                            <td style="padding: 12px 16px; background-color: #faf5ff; border-radius: 8px;">
+                              <p style="margin: 0; font-size: 15px; color: #3f3f46;">Plan meetups without the back-and-forth</p>
+                            </td>
+                          </tr>
+                        </table>
                         
                         <!-- CTA Button -->
-                        <table width="100%" cellpadding="0" cellspacing="0">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                           <tr>
                             <td align="center" style="padding: 10px 0 30px;">
-                              <a href="https://parade.lovable.app" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 40px; border-radius: 50px; box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);">
-                                Join the Party 🎊
+                              <a href="https://parade.lovable.app/invite?ref=${encodeURIComponent(inviterName)}" style="display: inline-block; background-color: #8b5cf6; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px; mso-padding-alt: 0;">
+                                <!--[if mso]>
+                                <i style="mso-font-width:200%;mso-text-raise:24pt">&nbsp;</i>
+                                <![endif]-->
+                                <span style="mso-text-raise:12pt;">Accept Invitation</span>
+                                <!--[if mso]>
+                                <i style="mso-font-width:200%;">&nbsp;</i>
+                                <![endif]-->
                               </a>
                             </td>
                           </tr>
                         </table>
                         
                         <p style="margin: 0; font-size: 14px; color: #71717a; line-height: 1.6; text-align: center;">
-                          We can't wait to see you there!
+                          Or copy this link: <a href="https://parade.lovable.app" style="color: #8b5cf6; text-decoration: underline;">parade.lovable.app</a>
                         </p>
                       </td>
                     </tr>
                     
                     <!-- Footer -->
                     <tr>
-                      <td style="background-color: #fafafa; padding: 25px 30px; text-align: center; border-top: 1px solid #e4e4e7;">
-                        <p style="margin: 0; font-size: 13px; color: #a1a1aa;">
-                          Sent with 💜 from the Parade team
+                      <td style="background-color: #fafafa; padding: 24px 30px; text-align: center; border-top: 1px solid #e4e4e7;">
+                        <p style="margin: 0 0 8px; font-size: 13px; color: #71717a;">
+                          This email was sent by Parade
+                        </p>
+                        <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
+                          <a href="https://parade.lovable.app" style="color: #a1a1aa; text-decoration: none;">parade.lovable.app</a>
                         </p>
                       </td>
                     </tr>
@@ -112,6 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
           </body>
           </html>
         `,
+        text: `${inviterName} invited you to join them on Parade - the easiest way to coordinate plans with friends.\n\nWith Parade you can:\n- Share when you're free to hang out\n- See when friends are available\n- Plan meetups without the back-and-forth\n\nAccept the invitation: https://parade.lovable.app/invite?ref=${encodeURIComponent(inviterName)}\n\nOr visit: parade.lovable.app`,
       }),
     });
 
