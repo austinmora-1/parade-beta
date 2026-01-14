@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Copy, Check } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Mail, Copy, Check, Loader2 } from 'lucide-react';
 
 interface InviteFriendDialogProps {
   open: boolean;
@@ -23,25 +24,47 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
-  const inviteLink = 'https://parade.app/invite/abc123';
+  const inviteLink = 'https://parade.lovable.app/invite/abc123';
 
-  const handleSendInvite = () => {
+  const handleSendInvite = async () => {
     if (!email.trim()) return;
 
-    addFriend({
-      name: email.split('@')[0],
-      email: email,
-      status: 'invited',
-    });
+    setIsSending(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
 
-    toast({
-      title: 'Invitation sent!',
-      description: `We've sent an invite to ${email}`,
-    });
+      const { error } = await supabase.functions.invoke('send-friend-invite', {
+        body: { email: email.trim(), inviterName },
+      });
 
-    setEmail('');
-    onOpenChange(false);
+      if (error) throw error;
+
+      addFriend({
+        name: email.split('@')[0],
+        email: email,
+        status: 'invited',
+      });
+
+      toast({
+        title: 'Invitation sent! 🎉',
+        description: `We've sent an invite email to ${email}`,
+      });
+
+      setEmail('');
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error('Error sending invite:', error);
+      toast({
+        title: 'Failed to send invite',
+        description: error.message || 'Please try again later',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -80,8 +103,8 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendInvite()}
               />
-              <Button onClick={handleSendInvite} disabled={!email.trim()}>
-                Send
+              <Button onClick={handleSendInvite} disabled={!email.trim() || isSending}>
+                {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
               </Button>
             </div>
           </div>
