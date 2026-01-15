@@ -49,6 +49,22 @@ export function AvailabilityGrid() {
     return 'available';
   };
 
+  // Calculate day availability percentage (0-1)
+  const getDayAvailability = (date: Date): number => {
+    const slots = Object.keys(TIME_SLOT_LABELS) as TimeSlot[];
+    const availableCount = slots.filter(slot => getSlotStatus(date, slot) === 'available').length;
+    return availableCount / slots.length;
+  };
+
+  // Get background color based on availability
+  const getDayBgColor = (availability: number, isSelected: boolean): string => {
+    if (isSelected) return 'bg-primary';
+    if (availability === 0) return 'bg-muted/60';
+    if (availability <= 0.33) return 'bg-availability-available/20';
+    if (availability <= 0.66) return 'bg-availability-available/40';
+    return 'bg-availability-available/60';
+  };
+
   const toggleSlot = (date: Date, slot: TimeSlot) => {
     const currentStatus = getSlotStatus(date, slot);
     if (currentStatus === 'busy') return;
@@ -73,17 +89,17 @@ export function AvailabilityGrid() {
         {mobileDays.map((day, index) => {
           const isTodayDate = isToday(day);
           const isSelected = index === selectedDayIndex;
+          const dayAvail = getDayAvailability(day);
           return (
             <button
               key={day.toISOString()}
               onClick={() => setSelectedDayIndex(index)}
               className={cn(
                 "flex-1 flex flex-col items-center py-1.5 rounded-md transition-all min-w-0",
-                isSelected
-                  ? "bg-primary text-primary-foreground"
-                  : isTodayDate
-                  ? "bg-primary/10"
-                  : "hover:bg-muted/50"
+                getDayBgColor(dayAvail, isSelected),
+                isSelected && "text-primary-foreground",
+                !isSelected && dayAvail === 0 && "text-muted-foreground",
+                !isSelected && dayAvail > 0 && "text-foreground"
               )}
             >
               <span className="text-[10px] font-medium uppercase leading-none">
@@ -91,7 +107,7 @@ export function AvailabilityGrid() {
               </span>
               <span className={cn(
                 "text-sm font-semibold leading-tight",
-                isTodayDate && !isSelected && "text-primary"
+                isTodayDate && !isSelected && "underline decoration-2 underline-offset-2"
               )}>
                 {format(day, 'd')}
               </span>
