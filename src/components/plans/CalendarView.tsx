@@ -12,7 +12,7 @@ import {
   subMonths,
   isToday as isDateToday,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -23,9 +23,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface CalendarViewProps {
   onEditPlan?: (plan: Plan) => void;
   onDeletePlan?: (id: string) => void;
+  onCreatePlan?: (date: Date) => void;
 }
 
-export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
+export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: CalendarViewProps) {
   const { plans } = usePlannerStore();
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -150,9 +151,23 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
       {/* Selected Day Details - Compact on mobile */}
       {selectedDate && (
         <div className="space-y-2 md:space-y-4">
-          <h3 className="font-display text-sm font-semibold md:text-lg">
-            {format(selectedDate, isMobile ? 'EEE, MMM d' : 'EEEE, MMMM d')}
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-sm font-semibold md:text-lg">
+              {format(selectedDate, isMobile ? 'EEE, MMM d' : 'EEEE, MMMM d')}
+            </h3>
+            {onCreatePlan && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="gap-1.5"
+                onClick={() => onCreatePlan(selectedDate)}
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Plan</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            )}
+          </div>
           {selectedDayPlans.length > 0 ? (
             <div className="space-y-2 md:space-y-3">
               {selectedDayPlans.map((plan) => (
