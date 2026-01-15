@@ -122,7 +122,7 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
                 key={day.toISOString()}
                 onClick={() => setSelectedDate(day)}
                 className={cn(
-                  "aspect-square flex flex-col items-center justify-center rounded-lg transition-all text-xs md:text-sm",
+                  "aspect-square relative flex items-center justify-center rounded-lg transition-all text-xs md:text-sm",
                   !isCurrentMonth && "opacity-30",
                   getDayBgColor(dayPlans.length, !!isSelected, isToday),
                   !isSelected && !isToday && "hover:bg-muted"
@@ -131,8 +131,12 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
                 <span className="font-medium">{format(day, 'd')}</span>
                 {dayPlans.length > 0 && (
                   <span className={cn(
-                    "text-[8px] md:text-[10px] leading-none mt-0.5",
-                    isSelected || isToday ? "opacity-80" : "text-muted-foreground"
+                    "absolute top-0.5 right-0.5 md:top-1 md:right-1 min-w-[14px] md:min-w-[16px] h-[14px] md:h-[16px] flex items-center justify-center rounded-full text-[9px] md:text-[10px] font-medium",
+                    isSelected 
+                      ? "bg-primary-foreground text-primary" 
+                      : isToday 
+                        ? "bg-white/90 text-availability-today" 
+                        : "bg-primary text-primary-foreground"
                   )}>
                     {dayPlans.length}
                   </span>
