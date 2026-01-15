@@ -98,14 +98,20 @@ Deno.serve(async (req) => {
     }
 
     console.log('Calendar connection saved successfully')
-    return new Response(getSuccessHtml(), {
-      headers: { 'Content-Type': 'text/html' },
+    
+    // Redirect back to the app settings page
+    const appUrl = Deno.env.get('APP_URL') || 'https://helloparade.app'
+    return new Response(null, {
+      status: 302,
+      headers: { 'Location': `${appUrl}/settings?calendar=connected` },
     })
   } catch (error: unknown) {
     console.error('Unhandled error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(getErrorHtml(message), {
-      headers: { 'Content-Type': 'text/html' },
+    const appUrl = Deno.env.get('APP_URL') || 'https://helloparade.app'
+    return new Response(null, {
+      status: 302,
+      headers: { 'Location': `${appUrl}/settings?calendar=error&message=${encodeURIComponent(message)}` },
     })
   }
 })
