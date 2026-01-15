@@ -37,7 +37,7 @@ export function UpcomingPlans() {
       
       <div className="space-y-3">
         {upcomingPlans.map((plan) => {
-          const activityConfig = ACTIVITY_CONFIG[plan.activity];
+          const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
           const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
           
           return (

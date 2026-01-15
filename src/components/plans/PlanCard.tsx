@@ -18,7 +18,7 @@ interface PlanCardProps {
 }
 
 export function PlanCard({ plan, onEdit, onDelete, compact = false }: PlanCardProps) {
-  const activityConfig = ACTIVITY_CONFIG[plan.activity];
+  const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
   if (compact) {
