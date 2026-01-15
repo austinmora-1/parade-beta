@@ -10,6 +10,7 @@ import {
   isSameDay,
   addMonths,
   subMonths,
+  isToday as isDateToday,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,16 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
 
   const getPlansForDay = (date: Date) => {
     return plans.filter((p) => isSameDay(p.date, date));
+  };
+
+  // Get background color based on plan count (0 = green/available, more plans = grayer)
+  const getDayBgColor = (planCount: number, isSelected: boolean, isToday: boolean): string => {
+    if (isSelected) return 'bg-primary/10 ring-2 ring-primary ring-offset-2';
+    if (isToday) return 'bg-availability-today';
+    if (planCount === 0) return 'bg-availability-available/40 hover:bg-availability-available/50';
+    if (planCount === 1) return 'bg-availability-available/20 hover:bg-availability-available/30';
+    if (planCount === 2) return 'bg-muted/40 hover:bg-muted/60';
+    return 'bg-muted/70 hover:bg-muted/80';
   };
 
   const selectedDayPlans = selectedDate ? getPlansForDay(selectedDate) : [];
@@ -93,7 +104,7 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
               {calendarDays.map((day) => {
                 const dayPlans = getPlansForDay(day);
                 const isCurrentMonth = isSameMonth(day, currentMonth);
-                const isToday = isSameDay(day, new Date());
+                const isToday = isDateToday(day);
                 const isSelected = selectedDate && isSameDay(day, selectedDate);
 
                 return (
@@ -101,29 +112,28 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
                     key={day.toISOString()}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "min-h-[80px] rounded-xl p-2 text-left transition-all duration-200",
+                      "min-h-[60px] rounded-xl p-2 text-left transition-all duration-200",
                       !isCurrentMonth && "opacity-40",
-                      isSelected && "ring-2 ring-primary ring-offset-2",
-                      isToday && !isSelected && "bg-primary/10",
-                      !isSelected && !isToday && "hover:bg-muted/50"
+                      getDayBgColor(dayPlans.length, !!isSelected, isToday)
                     )}
                   >
-                    <span
-                      className={cn(
-                        "inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
-                        isToday && "bg-primary text-primary-foreground"
-                      )}
-                    >
-                      {format(day, 'd')}
-                    </span>
-                    <div className="mt-1 space-y-1">
-                      {dayPlans.slice(0, 2).map((plan) => (
-                        <PlanCard key={plan.id} plan={plan} compact />
-                      ))}
-                      {dayPlans.length > 2 && (
-                        <p className="text-xs text-muted-foreground">
-                          +{dayPlans.length - 2} more
-                        </p>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={cn(
+                          "inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
+                          isToday && "text-white",
+                          isSelected && "bg-primary text-primary-foreground"
+                        )}
+                      >
+                        {format(day, 'd')}
+                      </span>
+                      {dayPlans.length > 0 && (
+                        <span className={cn(
+                          "text-xs font-medium rounded-full px-1.5 py-0.5",
+                          dayPlans.length >= 3 ? "bg-muted-foreground/20 text-muted-foreground" : "text-muted-foreground"
+                        )}>
+                          {dayPlans.length}
+                        </span>
                       )}
                     </div>
                   </button>
