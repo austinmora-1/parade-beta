@@ -141,7 +141,7 @@ export function AvailabilityGrid() {
               onClick={() => toggleSlot(selectedDay, slot)}
               disabled={status === 'busy'}
               className={cn(
-                "flex flex-col items-center justify-center rounded-lg py-2 px-1 transition-all",
+                "flex flex-col items-center justify-center rounded-lg py-2.5 px-1 transition-all",
                 status === 'available' &&
                   "bg-availability-available-light hover:bg-availability-available/30 active:scale-95",
                 status === 'unavailable' &&
@@ -158,8 +158,8 @@ export function AvailabilityGrid() {
               )}>
                 {TIME_SLOT_LABELS[slot].label.split(' ')[0]}
               </span>
-              <span className="text-[10px] text-muted-foreground leading-tight">
-                {TIME_SLOT_LABELS[slot].time.split('-')[0]}
+              <span className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                {TIME_SLOT_LABELS[slot].time}
               </span>
             </button>
           );
