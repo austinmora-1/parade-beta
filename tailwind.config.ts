@@ -78,6 +78,7 @@ export default {
           "partial-light": "hsl(var(--partial-light))",
           busy: "hsl(var(--busy))",
           "busy-light": "hsl(var(--busy-light))",
+          today: "hsl(var(--today))",
         },
         vibe: {
           social: "hsl(var(--vibe-social))",
