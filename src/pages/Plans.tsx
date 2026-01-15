@@ -13,6 +13,7 @@ export default function Plans() {
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [defaultDate, setDefaultDate] = useState<Date | undefined>(undefined);
 
   const handleEdit = (plan: Plan) => {
     setEditingPlan(plan);
@@ -25,7 +26,15 @@ export default function Plans() {
 
   const handleDialogClose = (open: boolean) => {
     setDialogOpen(open);
-    if (!open) setEditingPlan(null);
+    if (!open) {
+      setEditingPlan(null);
+      setDefaultDate(undefined);
+    }
+  };
+
+  const handleCreatePlan = (date: Date) => {
+    setDefaultDate(date);
+    setDialogOpen(true);
   };
 
   const sortedPlans = [...plans].sort(
@@ -104,13 +113,14 @@ export default function Plans() {
           )}
         </div>
       ) : (
-        <CalendarView onEditPlan={handleEdit} onDeletePlan={handleDelete} />
+        <CalendarView onEditPlan={handleEdit} onDeletePlan={handleDelete} onCreatePlan={handleCreatePlan} />
       )}
 
       <CreatePlanDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         editPlan={editingPlan}
+        defaultDate={defaultDate}
       />
     </div>
   );

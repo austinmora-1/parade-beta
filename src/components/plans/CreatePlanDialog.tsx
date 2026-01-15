@@ -45,9 +45,10 @@ interface CreatePlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editPlan?: Plan | null;
+  defaultDate?: Date;
 }
 
-export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDialogProps) {
+export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: CreatePlanDialogProps) {
   const { addPlan, updatePlan, friends } = usePlannerStore();
   
   const [title, setTitle] = useState('');
@@ -124,14 +125,14 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
       // Reset for new plan
       setTitle('');
       setActivity('misc');
-      setDate(new Date());
+      setDate(defaultDate || new Date());
       setTimeSlot('late-morning');
       setDuration('60');
       setLocationName('');
       setSelectedFriends([]);
       setNotes('');
     }
-  }, [open, editPlan]);
+  }, [open, editPlan, defaultDate]);
 
   const handleSubmit = () => {
     const planData = {
