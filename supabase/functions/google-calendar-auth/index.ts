@@ -45,8 +45,8 @@ Deno.serve(async (req) => {
     }
 
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-calendar-callback`
-    // Use read-only scopes to avoid Google blocking unverified apps for sensitive write scopes
-    const scope = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly'
+    // Minimal scope to reduce Google policy blocks (read events only)
+    const scope = 'https://www.googleapis.com/auth/calendar.readonly'
     
     const state = btoa(JSON.stringify({ userId }))
     
@@ -56,8 +56,8 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('response_type', 'code')
     authUrl.searchParams.set('scope', scope)
     authUrl.searchParams.set('access_type', 'offline')
-    authUrl.searchParams.set('prompt', 'consent')
-    authUrl.searchParams.set('state', state)
+    authUrl.searchParams.set('prompt', 'consent select_account')
+    authUrl.searchParams.set('include_granted_scopes', 'true')
 
     return new Response(JSON.stringify({ authUrl: authUrl.toString() }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
