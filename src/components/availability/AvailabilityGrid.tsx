@@ -56,9 +56,10 @@ export function AvailabilityGrid() {
     return availableCount / slots.length;
   };
 
-  // Get background color based on availability
-  const getDayBgColor = (availability: number, isSelected: boolean): string => {
+  // Get background color based on availability and today status
+  const getDayBgColor = (availability: number, isSelected: boolean, isTodayDate: boolean): string => {
     if (isSelected) return 'bg-primary';
+    if (isTodayDate) return 'bg-availability-today';
     if (availability === 0) return 'bg-muted/60';
     if (availability <= 0.33) return 'bg-availability-available/20';
     if (availability <= 0.66) return 'bg-availability-available/40';
@@ -96,19 +97,17 @@ export function AvailabilityGrid() {
               onClick={() => setSelectedDayIndex(index)}
               className={cn(
                 "flex-1 flex flex-col items-center py-1.5 rounded-md transition-all min-w-0",
-                getDayBgColor(dayAvail, isSelected),
+                getDayBgColor(dayAvail, isSelected, isTodayDate),
                 isSelected && "text-primary-foreground",
-                !isSelected && dayAvail === 0 && "text-muted-foreground",
-                !isSelected && dayAvail > 0 && "text-foreground"
+                isTodayDate && !isSelected && "text-white",
+                !isSelected && !isTodayDate && dayAvail === 0 && "text-muted-foreground",
+                !isSelected && !isTodayDate && dayAvail > 0 && "text-foreground"
               )}
             >
               <span className="text-[10px] font-medium uppercase leading-none">
                 {format(day, 'EEE').charAt(0)}
               </span>
-              <span className={cn(
-                "text-sm font-semibold leading-tight",
-                isTodayDate && !isSelected && "underline decoration-2 underline-offset-2"
-              )}>
+              <span className="text-sm font-semibold leading-tight">
                 {format(day, 'd')}
               </span>
             </button>
