@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Use an existing, public route to avoid deep-link 404s if frontend isn't updated/published yet.
-    const inviteUrl = `https://parade.lovable.app/landing?invite=1&ref=${encodeURIComponent(inviterName)}`;
+    const inviteUrl = `https://parade.lovable.app/invite?ref=${encodeURIComponent(inviterName)}`;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
