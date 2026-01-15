@@ -61,18 +61,28 @@ export function WeekOverview() {
                 {format(day, 'EEE')}
               </span>
               
-              {/* Date circle with arc of dots hugging the top */}
+              {/* Date circle with arc of dots below */}
               <div className="relative">
-                {/* Arc of dots conforming to circle shape */}
+                {/* Date circle */}
+                <span className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                  score >= 0.7 && "bg-availability-available-light text-availability-available",
+                  score >= 0.3 && score < 0.7 && "bg-availability-partial-light text-availability-partial",
+                  score < 0.3 && "bg-availability-busy-light text-availability-busy"
+                )}>
+                  {format(day, 'd')}
+                </span>
+                
+                {/* Arc of dots below the circle */}
                 <div className="absolute inset-0">
                   {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot, index) => {
                     const status = getSlotStatus(day, slot);
                     const totalDots = 6;
-                    // Arc from ~150° to ~30° (top portion of circle)
-                    const startAngle = (150 * Math.PI) / 180;
-                    const endAngle = (30 * Math.PI) / 180;
-                    const angleRange = startAngle - endAngle;
-                    const angle = startAngle - (angleRange * index) / (totalDots - 1);
+                    // Arc from ~210° to ~330° (bottom portion of circle)
+                    const startAngle = (210 * Math.PI) / 180;
+                    const endAngle = (330 * Math.PI) / 180;
+                    const angleRange = endAngle - startAngle;
+                    const angle = startAngle + (angleRange * index) / (totalDots - 1);
                     const radius = 18; // Slightly larger than circle radius (16px) to hug it
                     const centerX = 16; // Center of 32px circle
                     const centerY = 16;
@@ -96,16 +106,6 @@ export function WeekOverview() {
                     );
                   })}
                 </div>
-                
-                {/* Date circle */}
-                <span className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
-                  score >= 0.7 && "bg-availability-available-light text-availability-available",
-                  score >= 0.3 && score < 0.7 && "bg-availability-partial-light text-availability-partial",
-                  score < 0.3 && "bg-availability-busy-light text-availability-busy"
-                )}>
-                  {format(day, 'd')}
-                </span>
               </div>
             </div>
           );
