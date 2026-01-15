@@ -48,6 +48,8 @@ export function WeekOverview() {
         {weekDays.map((day) => {
           const score = getDayAvailabilityScore(day);
           const isToday = isSameDay(day, new Date());
+          const dayPlans = plans.filter((p) => isSameDay(p.date, day));
+          const planCount = dayPlans.length;
           
           return (
             <div
@@ -61,7 +63,7 @@ export function WeekOverview() {
                 {format(day, 'EEE')}
               </span>
               
-              {/* Date circle with arc of dots below */}
+              {/* Date circle with plan count bubble */}
               <div className="relative">
                 {/* Date circle */}
                 <span className={cn(
@@ -73,39 +75,12 @@ export function WeekOverview() {
                   {format(day, 'd')}
                 </span>
                 
-                {/* Arc of dots below the circle */}
-                <div className="absolute inset-0">
-                  {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot, index) => {
-                    const status = getSlotStatus(day, slot);
-                    const totalDots = 6;
-                    // Arc from ~225° to ~315° (balanced bottom arc)
-                    const startAngle = (225 * Math.PI) / 180;
-                    const endAngle = (315 * Math.PI) / 180;
-                    const angleRange = endAngle - startAngle;
-                    const angle = startAngle + (angleRange * index) / (totalDots - 1);
-                    const radius = 20; // Spacing from circle
-                    const centerX = 16; // Center of 32px circle
-                    const centerY = 16;
-                    const x = centerX + Math.cos(angle) * radius;
-                    const y = centerY - Math.sin(angle) * radius;
-                    
-                    return (
-                      <div
-                        key={slot}
-                        className={cn(
-                          "absolute h-1 w-1 rounded-full",
-                          status === 'available' && "bg-availability-available",
-                          status === 'busy' && "bg-availability-busy"
-                        )}
-                        style={{
-                          left: `${x}px`,
-                          top: `${y}px`,
-                          transform: 'translate(-50%, -50%)'
-                        }}
-                      />
-                    );
-                  })}
-                </div>
+                {/* Plan count bubble */}
+                {planCount > 0 && (
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                    {planCount}
+                  </span>
+                )}
               </div>
             </div>
           );
