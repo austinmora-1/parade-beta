@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/plans', icon: Calendar, label: 'Plans' },
-  { path: '/availability', icon: Clock, label: 'Calendar' },
+  { path: '/availability', icon: Clock, label: 'Availability' },
   { path: '/friends', icon: Users, label: 'Friends' },
   { path: '/chat', icon: MessageCircle, label: 'Elly' },
 ];
