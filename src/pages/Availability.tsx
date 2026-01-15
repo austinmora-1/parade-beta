@@ -31,14 +31,14 @@ export default function Availability() {
         </Button>
       </div>
 
-      {/* Status Cards - tighter on mobile */}
+      {/* Availability Grid - now first */}
+      <AvailabilityGrid />
+
+      {/* Status Cards */}
       <div className="grid gap-3 sm:grid-cols-2 md:gap-6">
         <LocationToggle />
         <VibeSelector />
       </div>
-
-      {/* Availability Grid */}
-      <AvailabilityGrid />
     </div>
   );
 }
