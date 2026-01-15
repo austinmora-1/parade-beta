@@ -53,10 +53,10 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
   const getDayBgColor = (planCount: number, isSelected: boolean, isToday: boolean): string => {
     if (isSelected) return 'bg-primary text-primary-foreground';
     if (isToday) return 'bg-availability-today/80 text-white';
-    if (planCount === 0) return 'bg-availability-available/20';
-    if (planCount === 1) return 'bg-availability-available/10';
-    if (planCount === 2) return 'bg-muted/30';
-    return 'bg-muted/40';
+    if (planCount === 0) return 'bg-availability-available/30';
+    if (planCount === 1) return 'bg-muted/40';
+    if (planCount === 2) return 'bg-muted/55';
+    return 'bg-muted/65';
   };
 
   const selectedDayPlans = selectedDate ? getPlansForDay(selectedDate) : [];
