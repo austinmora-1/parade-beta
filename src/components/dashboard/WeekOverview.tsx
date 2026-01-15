@@ -78,12 +78,12 @@ export function WeekOverview() {
                   {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot, index) => {
                     const status = getSlotStatus(day, slot);
                     const totalDots = 6;
-                    // Arc from ~210° to ~330° (bottom portion of circle)
-                    const startAngle = (210 * Math.PI) / 180;
-                    const endAngle = (330 * Math.PI) / 180;
+                    // Arc from ~240° to ~300° (narrower bottom portion)
+                    const startAngle = (240 * Math.PI) / 180;
+                    const endAngle = (300 * Math.PI) / 180;
                     const angleRange = endAngle - startAngle;
                     const angle = startAngle + (angleRange * index) / (totalDots - 1);
-                    const radius = 22; // Increased spacing from circle
+                    const radius = 20; // Spacing from circle
                     const centerX = 16; // Center of 32px circle
                     const centerY = 16;
                     const x = centerX + Math.cos(angle) * radius;
