@@ -24,23 +24,23 @@ export default function Friends() {
   };
 
   return (
-    <div className="animate-fade-in space-y-8">
+    <div className="animate-fade-in space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold">Friends</h1>
-          <p className="mt-1 text-muted-foreground">
+          <h1 className="font-display text-2xl font-bold md:text-3xl">Friends</h1>
+          <p className="mt-1 text-sm text-muted-foreground md:text-base">
             Connect with friends and share your plans
           </p>
         </div>
-        <Button onClick={() => setInviteDialogOpen(true)} className="gap-2">
+        <Button onClick={() => setInviteDialogOpen(true)} size="sm" className="gap-2 self-start sm:self-auto md:size-default">
           <UserPlus className="h-4 w-4" />
           Invite Friends
         </Button>
       </div>
 
       {/* Search */}
-      <div className="relative max-w-md">
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search friends..."
@@ -51,17 +51,17 @@ export default function Friends() {
       </div>
 
       {/* Friends Lists */}
-      <div className="space-y-8">
+      <div className="space-y-6 md:space-y-8">
         {/* Pending Requests */}
         {pendingFriends.length > 0 && (
           <div>
-            <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-semibold">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-availability-partial-light text-xs font-bold text-availability-partial">
+            <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-availability-partial-light text-[10px] font-bold text-availability-partial md:h-6 md:w-6 md:text-xs">
                 {pendingFriends.length}
               </span>
               Pending Requests
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               {pendingFriends.map((friend) => (
                 <FriendCard
                   key={friend.id}
@@ -76,12 +76,12 @@ export default function Friends() {
 
         {/* Connected Friends */}
         <div>
-          <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-semibold">
-            <Users className="h-5 w-5 text-availability-available" />
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <Users className="h-4 w-4 text-availability-available md:h-5 md:w-5" />
             Connected ({connectedFriends.length})
           </h2>
           {connectedFriends.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               {connectedFriends.map((friend) => (
                 <FriendCard
                   key={friend.id}
@@ -91,15 +91,16 @@ export default function Friends() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-soft">
-              <div className="mx-auto mb-4 text-5xl">👥</div>
-              <h3 className="font-display text-lg font-semibold">No friends yet</h3>
-              <p className="mt-2 text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
+              <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">👥</div>
+              <h3 className="font-display text-base font-semibold md:text-lg">No friends yet</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
                 Invite friends to connect and start planning together!
               </p>
               <Button
                 onClick={() => setInviteDialogOpen(true)}
-                className="mt-4 gap-2"
+                size="sm"
+                className="mt-4 gap-2 md:size-default"
               >
                 <UserPlus className="h-4 w-4" />
                 Invite Friends
@@ -111,10 +112,10 @@ export default function Friends() {
         {/* Invited */}
         {invitedFriends.length > 0 && (
           <div>
-            <h2 className="mb-4 font-display text-lg font-semibold text-muted-foreground">
+            <h2 className="mb-3 font-display text-base font-semibold text-muted-foreground md:mb-4 md:text-lg">
               Invited ({invitedFriends.length})
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               {invitedFriends.map((friend) => (
                 <FriendCard
                   key={friend.id}
