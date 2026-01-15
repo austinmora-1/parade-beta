@@ -56,7 +56,7 @@ export function WeekOverview() {
               key={day.toISOString()}
               className={cn(
                 "flex flex-col items-center rounded-xl p-2 transition-all duration-200",
-                isToday && "ring-2 ring-primary ring-offset-2"
+                isToday && "ring-2 ring-primary ring-offset-4"
               )}
             >
               <span className="text-xs font-medium text-muted-foreground mb-1">
