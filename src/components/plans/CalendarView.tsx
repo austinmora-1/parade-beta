@@ -131,7 +131,7 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
                 <span className="font-medium">{format(day, 'd')}</span>
                 {dayPlans.length > 0 && (
                   <span className={cn(
-                    "absolute top-0.5 right-0.5 md:top-1 md:right-1 min-w-[14px] md:min-w-[16px] h-[14px] md:h-[16px] flex items-center justify-center rounded-full text-[9px] md:text-[10px] font-medium",
+                    "absolute top-1 right-1 md:top-1.5 md:right-1.5 min-w-[14px] md:min-w-[16px] h-[14px] md:h-[16px] flex items-center justify-center rounded-full text-[9px] md:text-[10px] font-medium",
                     isSelected 
                       ? "bg-primary-foreground text-primary" 
                       : isToday 
