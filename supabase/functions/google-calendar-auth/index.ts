@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
     }
 
     const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-calendar-callback`
-    const scope = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events'
+    // Use read-only scopes to avoid Google blocking unverified apps for sensitive write scopes
+    const scope = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events.readonly'
     
     const state = btoa(JSON.stringify({ userId }))
     
