@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Home, Plane } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Switch } from '@/components/ui/switch';
 
 export function LocationToggle() {
   const { locationStatus, setLocationStatus } = usePlannerStore();
@@ -11,32 +12,29 @@ export function LocationToggle() {
     return (
       <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground">Location</span>
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setLocationStatus('home')}
-              className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-all",
-                locationStatus === 'home'
-                  ? "bg-availability-available text-primary-foreground"
-                  : "bg-muted/50 text-muted-foreground"
-              )}
-            >
-              <Home className="h-3.5 w-3.5" />
-              Home
-            </button>
-            <button
-              onClick={() => setLocationStatus('away')}
-              className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-all",
-                locationStatus === 'away'
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/50 text-muted-foreground"
-              )}
-            >
-              <Plane className="h-3.5 w-3.5" />
-              Away
-            </button>
+          <div className="flex items-center gap-2">
+            {locationStatus === 'home' ? (
+              <Home className="h-4 w-4 text-availability-available" />
+            ) : (
+              <Plane className="h-4 w-4 text-primary" />
+            )}
+            <span className="text-sm font-medium">
+              {locationStatus === 'home' ? 'Home' : 'Away'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-xs",
+              locationStatus === 'home' ? "text-muted-foreground" : "text-foreground font-medium"
+            )}>Away</span>
+            <Switch
+              checked={locationStatus === 'home'}
+              onCheckedChange={(checked) => setLocationStatus(checked ? 'home' : 'away')}
+            />
+            <span className={cn(
+              "text-xs",
+              locationStatus === 'home' ? "text-foreground font-medium" : "text-muted-foreground"
+            )}>Home</span>
           </div>
         </div>
       </div>
