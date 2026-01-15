@@ -133,10 +133,10 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
                   <span className={cn(
                     "absolute top-1 right-1 md:top-1.5 md:right-1.5 min-w-[14px] md:min-w-[16px] h-[14px] md:h-[16px] flex items-center justify-center rounded-full text-[9px] md:text-[10px] font-medium",
                     isSelected 
-                      ? "bg-primary-foreground text-primary" 
+                      ? "bg-primary-foreground/80 text-primary" 
                       : isToday 
-                        ? "bg-white/90 text-availability-today" 
-                        : "bg-primary text-primary-foreground"
+                        ? "bg-white/70 text-availability-today" 
+                        : "bg-primary/70 text-primary-foreground"
                   )}>
                     {dayPlans.length}
                   </span>
