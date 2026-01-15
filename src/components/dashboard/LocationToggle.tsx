@@ -22,20 +22,10 @@ export function LocationToggle() {
               {locationStatus === 'home' ? 'Home' : 'Away'}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-xs",
-              locationStatus === 'home' ? "text-muted-foreground" : "text-foreground font-medium"
-            )}>Away</span>
-            <Switch
-              checked={locationStatus === 'home'}
-              onCheckedChange={(checked) => setLocationStatus(checked ? 'home' : 'away')}
-            />
-            <span className={cn(
-              "text-xs",
-              locationStatus === 'home' ? "text-foreground font-medium" : "text-muted-foreground"
-            )}>Home</span>
-          </div>
+          <Switch
+            checked={locationStatus === 'home'}
+            onCheckedChange={(checked) => setLocationStatus(checked ? 'home' : 'away')}
+          />
         </div>
       </div>
     );
