@@ -53,13 +53,45 @@ export function WeekOverview() {
             <div
               key={day.toISOString()}
               className={cn(
-                "flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200",
+                "flex flex-col items-center gap-1 rounded-xl p-3 transition-all duration-200",
                 isToday && "ring-2 ring-primary ring-offset-2"
               )}
             >
               <span className="text-xs font-medium text-muted-foreground">
                 {format(day, 'EEE')}
               </span>
+              
+              {/* Arc of dots above the date circle */}
+              <div className="relative h-3 w-12">
+                {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot, index) => {
+                  const status = getSlotStatus(day, slot);
+                  const totalDots = 6;
+                  // Calculate arc position - spread dots in a semicircle
+                  const angle = Math.PI * (index / (totalDots - 1)); // 0 to PI (180 degrees)
+                  const radius = 20; // radius of the arc
+                  const centerX = 24; // center X of the arc
+                  const centerY = 12; // center Y (bottom of the arc area)
+                  const x = centerX - Math.cos(angle) * radius;
+                  const y = centerY - Math.sin(angle) * radius;
+                  
+                  return (
+                    <div
+                      key={slot}
+                      className={cn(
+                        "absolute h-1.5 w-1.5 rounded-full",
+                        status === 'available' && "bg-availability-available",
+                        status === 'busy' && "bg-availability-busy"
+                      )}
+                      style={{
+                        left: `${x}px`,
+                        top: `${y}px`,
+                        transform: 'translate(-50%, -50%)'
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              
               <span className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors",
                 score >= 0.7 && "bg-availability-available-light text-availability-available",
@@ -68,21 +100,6 @@ export function WeekOverview() {
               )}>
                 {format(day, 'd')}
               </span>
-              <div className="flex gap-0.5">
-                {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => {
-                  const status = getSlotStatus(day, slot);
-                  return (
-                    <div
-                      key={slot}
-                      className={cn(
-                        "h-1.5 w-1.5 rounded-full",
-                        status === 'available' && "bg-availability-available",
-                        status === 'busy' && "bg-availability-busy"
-                      )}
-                    />
-                  );
-                })}
-              </div>
             </div>
           );
         })}
