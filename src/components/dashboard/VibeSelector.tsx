@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { Sparkles } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function VibeSelector() {
   const { currentVibe, setVibe } = usePlannerStore();
   const [customText, setCustomText] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleVibeSelect = (type: VibeType) => {
     if (type === 'custom') {
@@ -27,10 +28,55 @@ export function VibeSelector() {
     }
   };
 
+  if (isMobile) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-muted-foreground shrink-0">Vibe</span>
+          <div className="flex gap-1 overflow-x-auto">
+            {(Object.keys(VIBE_CONFIG) as VibeType[]).map((type) => {
+              const config = VIBE_CONFIG[type];
+              const isSelected = currentVibe?.type === type;
+              
+              return (
+                <button
+                  key={type}
+                  onClick={() => handleVibeSelect(type)}
+                  className={cn(
+                    "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm whitespace-nowrap transition-all",
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/50 text-muted-foreground"
+                  )}
+                >
+                  <span className="text-sm">{config.icon}</span>
+                  <span className="text-xs">{config.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {showCustomInput && (
+          <div className="mt-2 flex gap-2 animate-fade-in">
+            <Input
+              placeholder="What's your vibe?"
+              value={customText}
+              onChange={(e) => setCustomText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCustomSubmit()}
+              className="flex-1 h-8 text-sm"
+            />
+            <Button onClick={handleCustomSubmit} size="sm" className="h-8 px-3">
+              Set
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
       <div className="mb-4 flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-primary" />
         <h3 className="font-display text-lg font-semibold">Current Vibe</h3>
       </div>
 
