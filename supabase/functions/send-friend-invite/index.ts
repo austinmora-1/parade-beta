@@ -32,6 +32,9 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
+    // Use an existing, public route to avoid deep-link 404s if frontend isn't updated/published yet.
+    const inviteUrl = `https://parade.lovable.app/landing?invite=1&ref=${encodeURIComponent(inviterName)}`;
+
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -106,7 +109,7 @@ const handler = async (req: Request): Promise<Response> => {
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                           <tr>
                             <td align="center" style="padding: 10px 0 30px;">
-                              <a href="https://parade.lovable.app/invite?ref=${encodeURIComponent(inviterName)}" style="display: inline-block; background-color: #8b5cf6; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px; mso-padding-alt: 0;">
+                              <a href="${inviteUrl}" style="display: inline-block; background-color: #8b5cf6; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px; mso-padding-alt: 0;">
                                 <!--[if mso]>
                                 <i style="mso-font-width:200%;mso-text-raise:24pt">&nbsp;</i>
                                 <![endif]-->
@@ -120,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
                         </table>
                         
                         <p style="margin: 0; font-size: 14px; color: #71717a; line-height: 1.6; text-align: center;">
-                          Or copy this link: <a href="https://parade.lovable.app" style="color: #8b5cf6; text-decoration: underline;">parade.lovable.app</a>
+                          Or copy this link: <a href="${inviteUrl}" style="color: #8b5cf6; text-decoration: underline;">${inviteUrl}</a>
                         </p>
                       </td>
                     </tr>
@@ -143,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
           </body>
           </html>
         `,
-        text: `${inviterName} invited you to join them on Parade - the easiest way to coordinate plans with friends.\n\nWith Parade you can:\n- Share when you're free to hang out\n- See when friends are available\n- Plan meetups without the back-and-forth\n\nAccept the invitation: https://parade.lovable.app/invite?ref=${encodeURIComponent(inviterName)}\n\nOr visit: parade.lovable.app`,
+        text: `${inviterName} invited you to join them on Parade - the easiest way to coordinate plans with friends.\n\nWith Parade you can:\n- Share when you're free to hang out\n- See when friends are available\n- Plan meetups without the back-and-forth\n\nAccept the invitation: ${inviteUrl}\n\nOr visit: parade.lovable.app`,
       }),
     });
 
