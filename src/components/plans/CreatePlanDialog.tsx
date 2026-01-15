@@ -27,26 +27,18 @@ import {
 } from '@/components/ui/select';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, ActivityType, TimeSlot, Plan } from '@/types/planner';
+import { supabase } from '@/integrations/supabase/client';
 
-interface PhotonFeature {
-  properties: {
-    name?: string;
-    street?: string;
-    housenumber?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    osm_value?: string;
-  };
-  geometry: {
-    coordinates: [number, number];
-  };
+interface PlaceSuggestion {
+  place_id: string;
+  display_name: string;
+  main_text: string;
+  secondary_text: string;
 }
 
 interface LocationSuggestion {
   display_name: string;
-  lat: string;
-  lon: string;
+  place_id?: string;
 }
 
 interface CreatePlanDialogProps {
@@ -71,52 +63,31 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Format Photon result into display name
-  const formatPhotonResult = (feature: PhotonFeature): string => {
-    const props = feature.properties;
-    const parts: string[] = [];
-    
-    if (props.name) parts.push(props.name);
-    if (props.street) {
-      parts.push(props.housenumber ? `${props.housenumber} ${props.street}` : props.street);
-    }
-    if (props.city) parts.push(props.city);
-    if (props.state) parts.push(props.state);
-    if (props.country) parts.push(props.country);
-    
-    return parts.join(', ');
-  };
-
-  // Search for locations using Photon API (powered by Komoot, uses OSM data)
+  // Search for locations using Google Places API via edge function
   const searchLocation = async (query: string) => {
-    if (query.length < 3) {
+    if (query.length < 2) {
       setLocationSuggestions([]);
       return;
     }
 
     setIsSearchingLocation(true);
     try {
-      const response = await fetch(
-        `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          },
-        }
-      );
-      const data = await response.json();
-      
-      // Transform Photon results to our format
-      const suggestions: LocationSuggestion[] = data.features?.map((feature: PhotonFeature) => ({
-        display_name: formatPhotonResult(feature),
-        lat: feature.geometry.coordinates[1].toString(),
-        lon: feature.geometry.coordinates[0].toString(),
-      })) || [];
-      
+      const { data, error } = await supabase.functions.invoke('google-places-search', {
+        body: { query },
+      });
+
+      if (error) throw error;
+
+      const suggestions: LocationSuggestion[] = (data.suggestions || []).map((s: PlaceSuggestion) => ({
+        display_name: s.display_name,
+        place_id: s.place_id,
+      }));
+
       setLocationSuggestions(suggestions);
       setShowSuggestions(true);
     } catch (error) {
       console.error('Error searching location:', error);
+      setLocationSuggestions([]);
     } finally {
       setIsSearchingLocation(false);
     }
