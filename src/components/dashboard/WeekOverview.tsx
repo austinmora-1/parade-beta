@@ -83,7 +83,7 @@ export function WeekOverview() {
                     const endAngle = (330 * Math.PI) / 180;
                     const angleRange = endAngle - startAngle;
                     const angle = startAngle + (angleRange * index) / (totalDots - 1);
-                    const radius = 18; // Slightly larger than circle radius (16px) to hug it
+                    const radius = 22; // Increased spacing from circle
                     const centerX = 16; // Center of 32px circle
                     const centerY = 16;
                     const x = centerX + Math.cos(angle) * radius;
