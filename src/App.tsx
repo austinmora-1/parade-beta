@@ -15,6 +15,7 @@ import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import Invite from "./pages/Invite";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <Routes>
+    <Route path="/invite" element={<Invite />} />
     <Route
       path="/landing"
       element={
