@@ -31,9 +31,9 @@ export function VibeSelector() {
   if (isMobile) {
     return (
       <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-muted-foreground shrink-0">Vibe</span>
-          <div className="flex gap-1 overflow-x-auto">
+          <div className="flex flex-1 gap-1">
             {(Object.keys(VIBE_CONFIG) as VibeType[]).map((type) => {
               const config = VIBE_CONFIG[type];
               const isSelected = currentVibe?.type === type;
@@ -43,14 +43,13 @@ export function VibeSelector() {
                   key={type}
                   onClick={() => handleVibeSelect(type)}
                   className={cn(
-                    "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm whitespace-nowrap transition-all",
+                    "flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-sm transition-all min-w-0",
                     isSelected
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted/50 text-muted-foreground"
                   )}
                 >
                   <span className="text-sm">{config.icon}</span>
-                  <span className="text-xs">{config.label}</span>
                 </button>
               );
             })}
