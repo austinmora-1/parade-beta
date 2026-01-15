@@ -52,17 +52,17 @@ export function QuickStats() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
       {statCards.map((stat) => (
         <div
           key={stat.label}
-          className="rounded-2xl border border-border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow"
+          className="rounded-xl border border-border bg-card p-4 shadow-soft transition-all duration-200 hover:shadow-glow md:rounded-2xl md:p-5"
         >
-          <div className={`mb-3 inline-flex rounded-xl p-2.5 ${stat.color}`}>
-            <stat.icon className="h-5 w-5" />
+          <div className={`mb-2 inline-flex rounded-lg p-2 md:mb-3 md:rounded-xl md:p-2.5 ${stat.color}`}>
+            <stat.icon className="h-4 w-4 md:h-5 md:w-5" />
           </div>
-          <p className="text-sm text-muted-foreground">{stat.label}</p>
-          <p className={`font-display text-2xl font-bold ${stat.isText ? 'capitalize text-lg' : ''}`}>
+          <p className="text-xs text-muted-foreground md:text-sm">{stat.label}</p>
+          <p className={`font-display text-xl font-bold md:text-2xl ${stat.isText ? 'text-base capitalize md:text-lg' : ''}`}>
             {stat.value}
           </p>
         </div>

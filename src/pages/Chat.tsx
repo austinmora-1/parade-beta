@@ -38,31 +38,31 @@ export default function Chat() {
   };
 
   return (
-    <div className="animate-fade-in flex h-[calc(100vh-8rem)] flex-col">
+    <div className="animate-fade-in flex h-[calc(100vh-7rem)] flex-col md:h-[calc(100vh-8rem)]">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-primary shadow-glow">
-            <Sparkles className="h-7 w-7 text-primary-foreground" />
+      <div className="mb-4 flex items-center justify-between md:mb-6">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-glow md:h-14 md:w-14 md:rounded-2xl">
+            <Sparkles className="h-5 w-5 text-primary-foreground md:h-7 md:w-7" />
           </div>
           <div>
-            <h1 className="font-display text-2xl font-bold">Chat with Elly</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="font-display text-xl font-bold md:text-2xl">Chat with Elly</h1>
+            <p className="text-xs text-muted-foreground md:text-sm">
               Your AI planning assistant
             </p>
           </div>
         </div>
         {messages.length > 0 && (
-          <Button variant="outline" size="sm" onClick={resetChat}>
-            <RotateCcw className="h-4 w-4 mr-2" />
-            New chat
+          <Button variant="outline" size="sm" onClick={resetChat} className="gap-1.5 md:gap-2">
+            <RotateCcw className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            <span className="hidden sm:inline">New chat</span>
           </Button>
         )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card/50 p-6">
-        <div className="space-y-6">
+      <div className="flex-1 overflow-y-auto rounded-xl border border-border bg-card/50 p-4 md:rounded-2xl md:p-6">
+        <div className="space-y-4 md:space-y-6">
           {messages.length === 0 && (
             <ChatMessage
               role="assistant"
@@ -86,15 +86,15 @@ What would you like to plan today?`}
           ))}
 
           {isLoading && messages[messages.length - 1]?.role === 'user' && (
-            <div className="flex gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl gradient-primary shadow-soft">
-                <Sparkles className="h-5 w-5 text-primary-foreground animate-pulse" />
+            <div className="flex gap-2 md:gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg gradient-primary shadow-soft md:h-10 md:w-10 md:rounded-xl">
+                <Sparkles className="h-4 w-4 text-primary-foreground animate-pulse md:h-5 md:w-5" />
               </div>
-              <div className="rounded-2xl bg-card shadow-soft border border-border px-4 py-3">
+              <div className="rounded-xl bg-card shadow-soft border border-border px-3 py-2 md:rounded-2xl md:px-4 md:py-3">
                 <div className="flex gap-1">
-                  <div className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="h-2 w-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce md:h-2 md:w-2" style={{ animationDelay: '0ms' }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce md:h-2 md:w-2" style={{ animationDelay: '150ms' }} />
+                  <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce md:h-2 md:w-2" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -106,14 +106,14 @@ What would you like to plan today?`}
 
       {/* Quick Actions */}
       {messages.length === 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2 md:mt-4">
           {QUICK_ACTIONS.map((action) => (
             <button
               key={action.label}
               onClick={() => handleSend(action.message)}
-              className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground"
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium transition-all hover:bg-accent hover:text-accent-foreground md:gap-2 md:rounded-xl md:px-4 md:py-2 md:text-sm"
             >
-              <action.icon className="h-4 w-4" />
+              <action.icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
               {action.label}
             </button>
           ))}
@@ -121,19 +121,20 @@ What would you like to plan today?`}
       )}
 
       {/* Input */}
-      <div className="mt-4 flex gap-3">
+      <div className="mt-3 flex gap-2 md:mt-4 md:gap-3">
         <Input
           placeholder="Type your message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          className="flex-1 rounded-xl"
+          className="flex-1 rounded-lg text-sm md:rounded-xl md:text-base"
           disabled={isLoading}
         />
         <Button
           onClick={() => handleSend()}
           disabled={!input.trim() || isLoading}
-          className="rounded-xl"
+          size="sm"
+          className="rounded-lg md:rounded-xl md:size-default"
         >
           <Send className="h-4 w-4" />
         </Button>

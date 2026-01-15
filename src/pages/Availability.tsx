@@ -16,23 +16,23 @@ export default function Availability() {
   };
 
   return (
-    <div className="animate-fade-in space-y-8">
+    <div className="animate-fade-in space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold">Your Availability</h1>
-          <p className="mt-1 text-muted-foreground">
+          <h1 className="font-display text-2xl font-bold md:text-3xl">Your Availability</h1>
+          <p className="mt-1 text-sm text-muted-foreground md:text-base">
             Set when you're free and share with friends
           </p>
         </div>
-        <Button onClick={handleShare} className="gap-2">
+        <Button onClick={handleShare} size="sm" className="gap-2 self-start sm:self-auto md:size-default">
           <Share2 className="h-4 w-4" />
           Share Availability
         </Button>
       </div>
 
       {/* Status Cards */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 md:gap-6">
         <LocationToggle />
         <VibeSelector />
       </div>
