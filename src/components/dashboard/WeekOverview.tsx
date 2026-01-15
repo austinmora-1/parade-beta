@@ -54,10 +54,7 @@ export function WeekOverview() {
           return (
             <div
               key={day.toISOString()}
-              className={cn(
-                "flex flex-col items-center rounded-xl p-2 transition-all duration-200",
-                isToday && "ring-2 ring-primary ring-offset-4"
-              )}
+              className="flex flex-col items-center rounded-xl p-2 transition-all duration-200"
             >
               <span className="text-xs font-medium text-muted-foreground mb-1">
                 {format(day, 'EEE')}
@@ -68,6 +65,7 @@ export function WeekOverview() {
                 {/* Date circle */}
                 <span className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                  isToday && "ring-2 ring-primary ring-offset-1",
                   score >= 0.7 && "bg-availability-available-light text-availability-available",
                   score >= 0.3 && score < 0.7 && "bg-availability-partial-light text-availability-partial",
                   score < 0.3 && "bg-availability-busy-light text-availability-busy"
