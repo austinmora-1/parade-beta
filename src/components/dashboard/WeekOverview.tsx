@@ -44,7 +44,7 @@ export function WeekOverview() {
         </span>
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-4">
         {weekDays.map((day) => {
           const score = getDayAvailabilityScore(day);
           const isToday = isSameDay(day, new Date());
@@ -53,7 +53,7 @@ export function WeekOverview() {
             <div
               key={day.toISOString()}
               className={cn(
-                "flex flex-col items-center rounded-xl p-3 transition-all duration-200",
+                "flex flex-col items-center rounded-xl p-2 transition-all duration-200",
                 isToday && "ring-2 ring-primary ring-offset-2"
               )}
             >
@@ -73,9 +73,9 @@ export function WeekOverview() {
                     const endAngle = (30 * Math.PI) / 180;
                     const angleRange = startAngle - endAngle;
                     const angle = startAngle - (angleRange * index) / (totalDots - 1);
-                    const radius = 23; // Slightly larger than circle radius (20px) to hug it
-                    const centerX = 20; // Center of 40px circle
-                    const centerY = 20;
+                    const radius = 18; // Slightly larger than circle radius (16px) to hug it
+                    const centerX = 16; // Center of 32px circle
+                    const centerY = 16;
                     const x = centerX + Math.cos(angle) * radius;
                     const y = centerY - Math.sin(angle) * radius;
                     
@@ -83,7 +83,7 @@ export function WeekOverview() {
                       <div
                         key={slot}
                         className={cn(
-                          "absolute h-1.5 w-1.5 rounded-full",
+                          "absolute h-1 w-1 rounded-full",
                           status === 'available' && "bg-availability-available",
                           status === 'busy' && "bg-availability-busy"
                         )}
@@ -99,7 +99,7 @@ export function WeekOverview() {
                 
                 {/* Date circle */}
                 <span className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition-colors",
+                  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
                   score >= 0.7 && "bg-availability-available-light text-availability-available",
                   score >= 0.3 && score < 0.7 && "bg-availability-partial-light text-availability-partial",
                   score < 0.3 && "bg-availability-busy-light text-availability-busy"
