@@ -58,16 +58,8 @@ export function useGoogleCalendar() {
       if (error) throw error;
 
       if (data.authUrl) {
-        // Open OAuth popup
-        const popup = window.open(data.authUrl, 'google-auth', 'width=500,height=600');
-        
-        // Poll for popup close and refresh connection status
-        const pollTimer = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(pollTimer);
-            checkConnection();
-          }
-        }, 500);
+        // Direct navigation instead of popup for better Safari compatibility
+        window.location.href = data.authUrl;
       }
     } catch (err) {
       console.error('Error connecting to Google Calendar:', err);
