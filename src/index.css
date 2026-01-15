@@ -41,10 +41,17 @@
     --activity-food: 35 90% 60%;
     --activity-coffee: 25 70% 45%;
     --activity-drinks: 280 60% 65%;
-    --activity-sports: 145 65% 45%;
-    --activity-music: 330 75% 60%;
-    --activity-nature: 85 55% 50%;
+    --activity-workout: 145 65% 45%;
     --activity-misc: 210 50% 60%;
+    --activity-me-time: 270 50% 60%;
+    --activity-chores: 30 50% 55%;
+    --activity-reading: 200 55% 50%;
+    --activity-watching: 330 70% 55%;
+    --activity-events: 350 75% 60%;
+    --activity-errands: 180 50% 45%;
+    --activity-movies: 260 60% 55%;
+    --activity-shopping: 320 65% 60%;
+    --activity-doctor: 0 60% 55%;
 
     /* Availability colors */
     --available: 145 65% 50%;
