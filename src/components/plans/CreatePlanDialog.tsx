@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Clock } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,12 @@ import {
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, ActivityType, TimeSlot, Plan } from '@/types/planner';
 
+interface LocationSuggestion {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
 interface CreatePlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -45,6 +51,53 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
   const [locationName, setLocationName] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Search for locations using OpenStreetMap Nominatim API
+  const searchLocation = async (query: string) => {
+    if (query.length < 3) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    setIsSearchingLocation(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
+        {
+          headers: {
+            'Accept': 'application/json',
+          },
+        }
+      );
+      const data = await response.json();
+      setLocationSuggestions(data);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Error searching location:', error);
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  };
+
+  const handleLocationChange = (value: string) => {
+    setLocationName(value);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      searchLocation(value);
+    }, 300);
+  };
+
+  const selectLocation = (suggestion: LocationSuggestion) => {
+    setLocationName(suggestion.display_name);
+    setShowSuggestions(false);
+    setLocationSuggestions([]);
+  };
 
   // Sync form state when editPlan changes or dialog opens
   useEffect(() => {
@@ -125,10 +178,10 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
         <div className="space-y-6 py-4">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Plan Title</Label>
+            <Label htmlFor="title">What are you planning?</Label>
             <Input
               id="title"
-              placeholder="What are you planning?"
+              placeholder="e.g., Dinner at that new place"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -145,14 +198,14 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
                     key={type}
                     onClick={() => setActivity(type)}
                     className={cn(
-                      "flex flex-col items-center gap-1 rounded-xl border-2 p-3 transition-all",
+                      "flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 transition-all",
                       activity === type
                         ? "border-primary bg-primary/5"
                         : "border-transparent bg-muted/50 hover:bg-muted"
                     )}
                   >
                     <span className="text-xl">{config.icon}</span>
-                    <span className="text-xs font-medium">{config.label}</span>
+                    <span className="text-[10px] font-medium leading-tight">{config.label}</span>
                   </button>
                 );
               })}
@@ -209,15 +262,15 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
           <div className="space-y-2">
             <Label htmlFor="duration" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Duration (minutes)
+              Duration
             </Label>
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="45">45 minutes</SelectItem>
+                <SelectItem value="30">30 min</SelectItem>
+                <SelectItem value="45">45 min</SelectItem>
                 <SelectItem value="60">1 hour</SelectItem>
                 <SelectItem value="90">1.5 hours</SelectItem>
                 <SelectItem value="120">2 hours</SelectItem>
@@ -233,12 +286,39 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan }: CreatePlanDia
               <MapPin className="h-4 w-4" />
               Location
             </Label>
-            <Input
-              id="location"
-              placeholder="Enter a location..."
-              value={locationName}
-              onChange={(e) => setLocationName(e.target.value)}
-            />
+            <div className="relative">
+              <div className="relative">
+                <Input
+                  id="location"
+                  placeholder="Search for a place..."
+                  value={locationName}
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  onFocus={() => locationSuggestions.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  className="pr-8"
+                />
+                {isSearchingLocation ? (
+                  <Loader2 className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                ) : (
+                  <Search className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                )}
+              </div>
+              {showSuggestions && locationSuggestions.length > 0 && (
+                <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                  {locationSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => selectLocation(suggestion)}
+                      className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-muted transition-colors"
+                    >
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="line-clamp-2">{suggestion.display_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Friends */}
