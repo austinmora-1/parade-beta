@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Plan } from '@/types/planner';
 import { PlanCard } from './PlanCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CalendarViewProps {
   onEditPlan?: (plan: Plan) => void;
@@ -26,6 +27,7 @@ interface CalendarViewProps {
 
 export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
   const { plans } = usePlannerStore();
+  const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -48,34 +50,44 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
 
   // Get background color based on plan count (0 = green/available, more plans = grayer)
   const getDayBgColor = (planCount: number, isSelected: boolean, isToday: boolean): string => {
-    if (isSelected) return 'bg-primary/10 ring-2 ring-primary ring-offset-2';
-    if (isToday) return 'bg-availability-today';
-    if (planCount === 0) return 'bg-availability-available/40 hover:bg-availability-available/50';
-    if (planCount === 1) return 'bg-availability-available/20 hover:bg-availability-available/30';
-    if (planCount === 2) return 'bg-muted/40 hover:bg-muted/60';
-    return 'bg-muted/70 hover:bg-muted/80';
+    if (isSelected) return 'bg-primary text-primary-foreground';
+    if (isToday) return 'bg-availability-today text-white';
+    if (planCount === 0) return 'bg-availability-available/40';
+    if (planCount === 1) return 'bg-availability-available/20';
+    if (planCount === 2) return 'bg-muted/50';
+    return 'bg-muted/70';
   };
 
   const selectedDayPlans = selectedDate ? getPlansForDay(selectedDate) : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl font-bold">
-          {format(currentMonth, 'MMMM yyyy')}
+        <h2 className="font-display text-lg font-bold md:text-2xl">
+          {format(currentMonth, isMobile ? 'MMM yyyy' : 'MMMM yyyy')}
         </h2>
-        <div className="flex gap-2">
+        <div className="flex gap-1 md:gap-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
+            className="h-8 w-8 md:h-9 md:w-9"
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-xs md:h-9 md:px-3 md:text-sm"
+            onClick={() => setCurrentMonth(new Date())}
+          >
+            Today
+          </Button>
+          <Button
+            variant="ghost"
             size="icon"
+            className="h-8 w-8 md:h-9 md:w-9"
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
           >
             <ChevronRight className="h-4 w-4" />
@@ -83,97 +95,79 @@ export function CalendarView({ onEditPlan, onDeletePlan }: CalendarViewProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Calendar Grid */}
-        <div className="lg:col-span-2">
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
-            {/* Day Headers */}
-            <div className="mb-2 grid grid-cols-7 gap-1">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                <div
-                  key={day}
-                  className="p-2 text-center text-sm font-medium text-muted-foreground"
-                >
-                  {day}
-                </div>
-              ))}
+      {/* Calendar Grid */}
+      <div className="rounded-xl border border-border bg-card p-2 shadow-soft md:rounded-2xl md:p-4">
+        {/* Day Headers */}
+        <div className="grid grid-cols-7 gap-0.5 md:gap-1 mb-1 md:mb-2">
+          {(isMobile ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']).map((day, i) => (
+            <div
+              key={i}
+              className="py-1 text-center text-[10px] font-medium text-muted-foreground md:text-sm md:py-2"
+            >
+              {day}
             </div>
-
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-1">
-              {calendarDays.map((day) => {
-                const dayPlans = getPlansForDay(day);
-                const isCurrentMonth = isSameMonth(day, currentMonth);
-                const isToday = isDateToday(day);
-                const isSelected = selectedDate && isSameDay(day, selectedDate);
-
-                return (
-                  <button
-                    key={day.toISOString()}
-                    onClick={() => setSelectedDate(day)}
-                    className={cn(
-                      "min-h-[60px] rounded-xl p-2 text-left transition-all duration-200",
-                      !isCurrentMonth && "opacity-40",
-                      getDayBgColor(dayPlans.length, !!isSelected, isToday)
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={cn(
-                          "inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
-                          isToday && "text-white",
-                          isSelected && "bg-primary text-primary-foreground"
-                        )}
-                      >
-                        {format(day, 'd')}
-                      </span>
-                      {dayPlans.length > 0 && (
-                        <span className={cn(
-                          "text-xs font-medium rounded-full px-1.5 py-0.5",
-                          dayPlans.length >= 3 ? "bg-muted-foreground/20 text-muted-foreground" : "text-muted-foreground"
-                        )}>
-                          {dayPlans.length}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Selected Day Details */}
-        <div className="space-y-4">
-          {selectedDate ? (
-            <>
-              <h3 className="font-display text-lg font-semibold">
-                {format(selectedDate, 'EEEE, MMMM d')}
-              </h3>
-              {selectedDayPlans.length > 0 ? (
-                <div className="space-y-3">
-                  {selectedDayPlans.map((plan) => (
-                    <PlanCard
-                      key={plan.id}
-                      plan={plan}
-                      onEdit={onEditPlan}
-                      onDelete={onDeletePlan}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
-                  <p className="text-muted-foreground">No plans for this day</p>
-                </div>
-              )}
-            </>
+        {/* Calendar Days */}
+        <div className="grid grid-cols-7 gap-0.5 md:gap-1">
+          {calendarDays.map((day) => {
+            const dayPlans = getPlansForDay(day);
+            const isCurrentMonth = isSameMonth(day, currentMonth);
+            const isToday = isDateToday(day);
+            const isSelected = selectedDate && isSameDay(day, selectedDate);
+
+            return (
+              <button
+                key={day.toISOString()}
+                onClick={() => setSelectedDate(day)}
+                className={cn(
+                  "aspect-square flex flex-col items-center justify-center rounded-lg transition-all text-xs md:text-sm",
+                  !isCurrentMonth && "opacity-30",
+                  getDayBgColor(dayPlans.length, !!isSelected, isToday),
+                  !isSelected && !isToday && "hover:bg-muted"
+                )}
+              >
+                <span className="font-medium">{format(day, 'd')}</span>
+                {dayPlans.length > 0 && (
+                  <span className={cn(
+                    "text-[8px] md:text-[10px] leading-none mt-0.5",
+                    isSelected || isToday ? "opacity-80" : "text-muted-foreground"
+                  )}>
+                    {dayPlans.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Selected Day Details - Compact on mobile */}
+      {selectedDate && (
+        <div className="space-y-2 md:space-y-4">
+          <h3 className="font-display text-sm font-semibold md:text-lg">
+            {format(selectedDate, isMobile ? 'EEE, MMM d' : 'EEEE, MMMM d')}
+          </h3>
+          {selectedDayPlans.length > 0 ? (
+            <div className="space-y-2 md:space-y-3">
+              {selectedDayPlans.map((plan) => (
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  onEdit={onEditPlan}
+                  onDelete={onDeletePlan}
+                  compact={isMobile}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
-              <p className="text-muted-foreground">Select a day to view plans</p>
+            <div className="rounded-xl border border-border bg-card p-4 text-center shadow-soft md:rounded-2xl md:p-6">
+              <p className="text-sm text-muted-foreground md:text-base">No plans for this day</p>
             </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

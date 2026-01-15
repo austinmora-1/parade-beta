@@ -33,50 +33,48 @@ export default function Plans() {
   );
 
   return (
-    <div className="animate-fade-in space-y-6 md:space-y-8">
+    <div className="animate-fade-in space-y-4 md:space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-bold md:text-3xl">Your Plans</h1>
-            <p className="mt-1 text-sm text-muted-foreground md:text-base">
-              Manage and organize your upcoming activities
-            </p>
-          </div>
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-2 md:size-default">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Plan</span>
-            <span className="sm:hidden">New</span>
-          </Button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="font-display text-xl font-bold md:text-3xl">Plans</h1>
+          <p className="hidden text-muted-foreground md:block">
+            Manage and organize your upcoming activities
+          </p>
         </div>
-        
-        {/* View Toggle */}
-        <div className="flex rounded-xl border border-border p-1 self-start">
-          <button
-            onClick={() => setView('list')}
-            className={cn(
-              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all md:gap-2 md:px-3 md:py-2",
-              view === 'list'
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <LayoutList className="h-4 w-4" />
-            List
-          </button>
-          <button
-            onClick={() => setView('calendar')}
-            className={cn(
-              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all md:gap-2 md:px-3 md:py-2",
-              view === 'calendar'
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <CalendarDays className="h-4 w-4" />
-            Calendar
-          </button>
-        </div>
+        <Button onClick={() => setDialogOpen(true)} size="sm" className="shrink-0 gap-2">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">New Plan</span>
+          <span className="sm:hidden">New</span>
+        </Button>
+      </div>
+      
+      {/* View Toggle */}
+      <div className="flex rounded-lg border border-border p-0.5 self-start">
+        <button
+          onClick={() => setView('list')}
+          className={cn(
+            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all md:gap-2 md:px-3 md:py-2 md:text-sm",
+            view === 'list'
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <LayoutList className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          List
+        </button>
+        <button
+          onClick={() => setView('calendar')}
+          className={cn(
+            "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all md:gap-2 md:px-3 md:py-2 md:text-sm",
+            view === 'calendar'
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          Calendar
+        </button>
       </div>
 
       {/* Content */}
