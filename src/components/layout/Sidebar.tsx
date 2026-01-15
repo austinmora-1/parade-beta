@@ -13,7 +13,7 @@ import paradeLogo from '@/assets/parade-logo.png';
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/plans', icon: Calendar, label: 'Plans' },
-  { path: '/availability', icon: Clock, label: 'Availability' },
+  { path: '/availability', icon: Clock, label: 'Calendar' },
   { path: '/friends', icon: Users, label: 'Friends' },
   { path: '/chat', icon: MessageCircle, label: 'Chat with Elly' },
 ];
