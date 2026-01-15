@@ -77,7 +77,7 @@ export function WeekOverview() {
                 
                 {/* Plan count bubble */}
                 {planCount > 0 && (
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                  <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
                     {planCount}
                   </span>
                 )}
