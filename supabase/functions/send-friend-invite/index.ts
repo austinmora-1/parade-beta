@@ -32,8 +32,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
-    // Use an existing, public route to avoid deep-link 404s if frontend isn't updated/published yet.
-    const inviteUrl = `https://parade.lovable.app/invite?ref=${encodeURIComponent(inviterName)}`;
+    const inviteUrl = `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -42,13 +41,13 @@ const handler = async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Parade <onboarding@resend.dev>",
-        reply_to: "hello@parade.lovable.app",
+        from: "Parade <hello@helloparade.app>",
+        reply_to: "hello@helloparade.app",
         to: [email],
         subject: `${inviterName} wants to make plans with you`,
         headers: {
           "X-Entity-Ref-ID": crypto.randomUUID(),
-          "List-Unsubscribe": "<https://parade.lovable.app/unsubscribe>",
+          "List-Unsubscribe": "<https://helloparade.app/unsubscribe>",
         },
         html: `
           <!DOCTYPE html>
@@ -135,7 +134,7 @@ const handler = async (req: Request): Promise<Response> => {
                           This email was sent by Parade
                         </p>
                         <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
-                          <a href="https://parade.lovable.app" style="color: #a1a1aa; text-decoration: none;">parade.lovable.app</a>
+                          <a href="https://helloparade.app" style="color: #a1a1aa; text-decoration: none;">helloparade.app</a>
                         </p>
                       </td>
                     </tr>
@@ -146,7 +145,7 @@ const handler = async (req: Request): Promise<Response> => {
           </body>
           </html>
         `,
-        text: `${inviterName} invited you to join them on Parade - the easiest way to coordinate plans with friends.\n\nWith Parade you can:\n- Share when you're free to hang out\n- See when friends are available\n- Plan meetups without the back-and-forth\n\nAccept the invitation: ${inviteUrl}\n\nOr visit: parade.lovable.app`,
+        text: `${inviterName} invited you to join them on Parade - the easiest way to coordinate plans with friends.\n\nWith Parade you can:\n- Share when you're free to hang out\n- See when friends are available\n- Plan meetups without the back-and-forth\n\nAccept the invitation: ${inviteUrl}\n\nOr visit: helloparade.app`,
       }),
     });
 
