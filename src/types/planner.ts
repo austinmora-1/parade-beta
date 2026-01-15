@@ -1,4 +1,24 @@
-export type ActivityType = 'food' | 'coffee' | 'drinks' | 'sports' | 'music' | 'nature' | 'misc';
+export type ActivityCategory = 'staying-in' | 'going-out';
+
+export type ActivityType = 
+  // Staying in
+  | 'me-time'
+  | 'chores'
+  | 'workout-in'
+  | 'making-food'
+  | 'reading'
+  | 'watching'
+  // Going out
+  | 'getting-food'
+  | 'drinks'
+  | 'events'
+  | 'other-events'
+  | 'errands'
+  | 'workout-out'
+  | 'coffee'
+  | 'movies'
+  | 'shopping'
+  | 'doctor';
 
 export type TimeSlot = 'early-morning' | 'late-morning' | 'early-afternoon' | 'late-afternoon' | 'evening' | 'late-night';
 
@@ -67,14 +87,43 @@ export const TIME_SLOT_LABELS: Record<TimeSlot, { label: string; time: string }>
   'late-night': { label: 'Late Night', time: '10pm-2am' },
 };
 
-export const ACTIVITY_CONFIG: Record<ActivityType, { label: string; icon: string; color: string }> = {
-  food: { label: 'Food', icon: '🍽️', color: 'activity-food' },
-  coffee: { label: 'Coffee', icon: '☕', color: 'activity-coffee' },
-  drinks: { label: 'Drinks', icon: '🍹', color: 'activity-drinks' },
-  sports: { label: 'Sports', icon: '⚽', color: 'activity-sports' },
-  music: { label: 'Music', icon: '🎵', color: 'activity-music' },
-  nature: { label: 'Nature & Parks', icon: '🌳', color: 'activity-nature' },
-  misc: { label: 'Miscellaneous', icon: '✨', color: 'activity-misc' },
+export interface ActivityConfig {
+  label: string;
+  icon: string;
+  color: string;
+  category: ActivityCategory;
+}
+
+export const ACTIVITY_CATEGORIES: Record<ActivityCategory, { label: string; icon: string }> = {
+  'staying-in': { label: 'Staying In', icon: '🏠' },
+  'going-out': { label: 'Going Out', icon: '🚀' },
+};
+
+export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
+  // Staying in
+  'me-time': { label: 'Me Time', icon: '🧘', color: 'activity-me-time', category: 'staying-in' },
+  'chores': { label: 'Chores', icon: '🧹', color: 'activity-chores', category: 'staying-in' },
+  'workout-in': { label: 'Doing a Workout', icon: '💪', color: 'activity-workout', category: 'staying-in' },
+  'making-food': { label: 'Making Food', icon: '👨‍🍳', color: 'activity-food', category: 'staying-in' },
+  'reading': { label: 'Reading', icon: '📚', color: 'activity-reading', category: 'staying-in' },
+  'watching': { label: 'Watching Something', icon: '📺', color: 'activity-watching', category: 'staying-in' },
+  // Going out
+  'getting-food': { label: 'Getting Food', icon: '🍽️', color: 'activity-food', category: 'going-out' },
+  'drinks': { label: 'The Met Gala', icon: '🍹', color: 'activity-drinks', category: 'going-out' },
+  'events': { label: 'Events', icon: '🎉', color: 'activity-events', category: 'going-out' },
+  'other-events': { label: 'Other Events', icon: '✨', color: 'activity-misc', category: 'going-out' },
+  'errands': { label: 'Running Errands', icon: '🏃', color: 'activity-errands', category: 'going-out' },
+  'workout-out': { label: 'Workout', icon: '🏋️', color: 'activity-workout', category: 'going-out' },
+  'coffee': { label: 'Coffee', icon: '☕', color: 'activity-coffee', category: 'going-out' },
+  'movies': { label: 'Going to the Movies', icon: '🎬', color: 'activity-movies', category: 'going-out' },
+  'shopping': { label: 'Shopping', icon: '🛍️', color: 'activity-shopping', category: 'going-out' },
+  'doctor': { label: 'Doctor Appointment', icon: '🏥', color: 'activity-doctor', category: 'going-out' },
+};
+
+export const getActivitiesByCategory = (category: ActivityCategory): ActivityType[] => {
+  return (Object.keys(ACTIVITY_CONFIG) as ActivityType[]).filter(
+    (type) => ACTIVITY_CONFIG[type].category === category
+  );
 };
 
 export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color: string }> = {

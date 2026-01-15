@@ -24,17 +24,30 @@ If they don't specify something, make reasonable assumptions or use defaults:
 When you determine a plan should be created, respond with a JSON block in this exact format embedded in your response:
 
 \`\`\`json
-{"action":"create_plan","plan":{"title":"Plan title","activityType":"food|coffee|drinks|sports|music|nature|misc","date":"YYYY-MM-DD","timeSlot":"early-morning|late-morning|early-afternoon|late-afternoon|evening|late-night","duration":"1h|2h|3h|4h|half-day|full-day","location":"Location name","friends":["friend1","friend2"],"notes":"Any additional notes"}}
+{"action":"create_plan","plan":{"title":"Plan title","activityType":"me-time|chores|workout-in|making-food|reading|watching|getting-food|drinks|events|other-events|errands|workout-out|coffee|movies|shopping|doctor","date":"YYYY-MM-DD","timeSlot":"early-morning|late-morning|early-afternoon|late-afternoon|evening|late-night","duration":"1h|2h|3h|4h|half-day|full-day","location":"Location name","friends":["friend1","friend2"],"notes":"Any additional notes"}}
 \`\`\`
 
-Activity types to use:
-- food: meals, restaurants, dining
-- coffee: coffee shops, cafes, tea
-- drinks: bars, pubs, nightlife
-- sports: exercise, games, fitness
-- music: concerts, shows, music events
-- nature: parks, hiking, outdoor activities
-- misc: everything else
+Activity types are organized into two categories:
+
+STAYING IN:
+- me-time: self-care, relaxation, meditation
+- chores: cleaning, organizing, household tasks
+- workout-in: home workouts, exercise at home
+- making-food: cooking, meal prep, ordering food
+- reading: books, articles, learning
+- watching: movies, TV shows, streaming at home
+
+GOING OUT:
+- getting-food: restaurants, dining out
+- drinks: The Met Gala, bars, nightlife, drinks with friends
+- events: concerts, shows, parties, gatherings
+- other-events: miscellaneous events
+- errands: shopping, appointments, tasks
+- workout-out: gym, outdoor exercise, sports
+- coffee: cafes, coffee shops
+- movies: going to the cinema
+- shopping: retail, mall trips
+- doctor: medical appointments, health visits
 
 Time slots:
 - early-morning: 6-9am

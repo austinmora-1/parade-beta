@@ -25,8 +25,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, ActivityType, TimeSlot, Plan } from '@/types/planner';
+import { 
+  ACTIVITY_CONFIG, 
+  ACTIVITY_CATEGORIES,
+  TIME_SLOT_LABELS, 
+  ActivityType, 
+  ActivityCategory,
+  TimeSlot, 
+  Plan,
+  getActivitiesByCategory 
+} from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PlaceSuggestion {
@@ -52,7 +62,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
   const { addPlan, updatePlan, friends } = usePlannerStore();
   
   const [title, setTitle] = useState('');
-  const [activity, setActivity] = useState<ActivityType>('misc');
+  const [activityCategory, setActivityCategory] = useState<ActivityCategory>('staying-in');
+  const [activity, setActivity] = useState<ActivityType>('me-time');
   const [date, setDate] = useState<Date>(new Date());
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('late-morning');
   const [duration, setDuration] = useState('60');
@@ -63,6 +74,9 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Get activities for selected category
+  const categoryActivities = getActivitiesByCategory(activityCategory);
 
   // Search for locations using Google Places API via edge function
   const searchLocation = async (query: string) => {
@@ -115,6 +129,11 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
     if (open && editPlan) {
       setTitle(editPlan.title);
       setActivity(editPlan.activity);
+      // Set category based on activity
+      const config = ACTIVITY_CONFIG[editPlan.activity];
+      if (config) {
+        setActivityCategory(config.category);
+      }
       setDate(editPlan.date);
       setTimeSlot(editPlan.timeSlot);
       setDuration(editPlan.duration?.toString() || '60');
@@ -124,7 +143,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
     } else if (open && !editPlan) {
       // Reset for new plan
       setTitle('');
-      setActivity('misc');
+      setActivityCategory('staying-in');
+      setActivity('me-time');
       setDate(defaultDate || new Date());
       setTimeSlot('late-morning');
       setDuration('60');
@@ -133,6 +153,14 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
       setNotes('');
     }
   }, [open, editPlan, defaultDate]);
+
+  // When category changes, select first activity in that category
+  useEffect(() => {
+    const activitiesInCategory = getActivitiesByCategory(activityCategory);
+    if (activitiesInCategory.length > 0 && !activitiesInCategory.includes(activity)) {
+      setActivity(activitiesInCategory[0]);
+    }
+  }, [activityCategory, activity]);
 
   const handleSubmit = () => {
     const planData = {
@@ -160,7 +188,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
 
   const resetForm = () => {
     setTitle('');
-    setActivity('misc');
+    setActivityCategory('staying-in');
+    setActivity('me-time');
     setDate(new Date());
     setTimeSlot('late-morning');
     setDuration('60');
@@ -198,25 +227,43 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
             />
           </div>
 
-          {/* Activity Type */}
-          <div className="space-y-2">
+          {/* Activity Type with Categories */}
+          <div className="space-y-3">
             <Label>Activity Type</Label>
-            <div className="grid grid-cols-4 gap-2">
-              {(Object.keys(ACTIVITY_CONFIG) as ActivityType[]).map((type) => {
+            
+            {/* Category Tabs */}
+            <Tabs 
+              value={activityCategory} 
+              onValueChange={(v) => setActivityCategory(v as ActivityCategory)}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                {(Object.keys(ACTIVITY_CATEGORIES) as ActivityCategory[]).map((cat) => (
+                  <TabsTrigger key={cat} value={cat} className="gap-2">
+                    <span>{ACTIVITY_CATEGORIES[cat].icon}</span>
+                    <span className="hidden sm:inline">{ACTIVITY_CATEGORIES[cat].label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {/* Activity Grid */}
+            <div className="grid grid-cols-3 gap-2">
+              {categoryActivities.map((type) => {
                 const config = ACTIVITY_CONFIG[type];
                 return (
                   <button
                     key={type}
                     onClick={() => setActivity(type)}
                     className={cn(
-                      "flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 transition-all",
+                      "flex flex-col items-center justify-center gap-1 rounded-xl border-2 p-3 transition-all",
                       activity === type
                         ? "border-primary bg-primary/5"
                         : "border-transparent bg-muted/50 hover:bg-muted"
                     )}
                   >
                     <span className="text-xl">{config.icon}</span>
-                    <span className="text-[10px] font-medium leading-tight">{config.label}</span>
+                    <span className="text-[10px] font-medium leading-tight text-center line-clamp-2">{config.label}</span>
                   </button>
                 );
               })}
