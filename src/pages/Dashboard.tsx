@@ -4,8 +4,9 @@ import { WeekOverview } from '@/components/dashboard/WeekOverview';
 import { UpcomingPlans } from '@/components/dashboard/UpcomingPlans';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { LocationToggle } from '@/components/dashboard/LocationToggle';
+import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Share2, Loader2 } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -28,11 +29,7 @@ export default function Dashboard() {
           <p className="mt-1 text-sm text-muted-foreground md:text-base">Here's what's happening this week</p>
         </div>
         <div className="flex gap-2 md:gap-3">
-          <Button variant="outline" size="sm" className="flex-1 gap-2 sm:flex-none md:size-default">
-            <Share2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Share Availability</span>
-            <span className="sm:hidden">Share</span>
-          </Button>
+          <ShareDialog />
           <Link to="/plans">
             <Button size="sm" className="gap-2 md:size-default">
               <Plus className="h-4 w-4" />
