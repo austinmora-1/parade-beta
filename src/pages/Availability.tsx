@@ -1,20 +1,11 @@
 import { AvailabilityGrid } from '@/components/availability/AvailabilityGrid';
 import { LocationToggle } from '@/components/dashboard/LocationToggle';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
+import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { Button } from '@/components/ui/button';
 import { Share2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 export default function Availability() {
-  const { toast } = useToast();
-
-  const handleShare = () => {
-    toast({
-      title: 'Share link copied!',
-      description: 'Your availability snapshot has been copied to clipboard.',
-    });
-  };
-
   return (
     <div className="animate-fade-in space-y-4 md:space-y-8">
       {/* Header - condensed on mobile */}
@@ -25,10 +16,14 @@ export default function Availability() {
             Set when you're free and share with friends
           </p>
         </div>
-        <Button onClick={handleShare} size="sm" className="shrink-0 gap-2">
-          <Share2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Share</span>
-        </Button>
+        <ShareDialog
+          trigger={
+            <Button size="sm" className="shrink-0 gap-2">
+              <Share2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Share</span>
+            </Button>
+          }
+        />
       </div>
 
       {/* Availability Grid - now first */}
