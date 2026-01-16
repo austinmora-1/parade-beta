@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { MessageSquare, Image, Copy, Check, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ShareDialogProps {
   trigger?: React.ReactNode;
@@ -19,8 +20,12 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  // Share URL now points to the public share page with user ID
+  const shareUrl = typeof window !== 'undefined' && user 
+    ? `${window.location.origin}/share/${user.id}` 
+    : '';
 
   const handleCopyLink = async () => {
     try {
