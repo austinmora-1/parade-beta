@@ -338,8 +338,9 @@ export default function Share() {
 
           {/* Day tabs with time slot buttons */}
           <div className="space-y-3">
-            {weekDays.map((day) => {
-              const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
+            {weekDays
+              .filter((day) => day >= new Date(new Date().setHours(0, 0, 0, 0)))
+              .map((day) => {
               const isTodayDay = isToday(day);
               const dayPlans = getPlansForDay(day);
               
@@ -347,9 +348,8 @@ export default function Share() {
                 <div 
                   key={day.toISOString()} 
                   className={cn(
-                    "rounded-xl border p-3 transition-all",
-                    isPast ? "opacity-50 bg-muted/20 border-border/50" : "bg-card border-border",
-                    isTodayDay && !isPast && "ring-2 ring-primary/30 border-primary/50"
+                    "rounded-xl border p-3 transition-all bg-card border-border",
+                    isTodayDay && "ring-2 ring-primary/30 border-primary/50"
                   )}
                 >
                   {/* Day header */}
@@ -396,11 +396,11 @@ export default function Share() {
                       return (
                         <button
                           key={slot}
-                          disabled={isPast || !isAvailable}
+                          disabled={!isAvailable}
                           className={cn(
                             "flex flex-col items-center justify-center rounded-lg px-2 py-2 text-center transition-all",
                             "border",
-                            isAvailable && !isPast
+                            isAvailable
                               ? "bg-availability-available/10 border-availability-available/30 text-availability-available hover:bg-availability-available/20 hover:border-availability-available/50 cursor-pointer"
                               : "bg-muted/30 border-transparent text-muted-foreground/50 cursor-not-allowed"
                           )}
@@ -410,7 +410,7 @@ export default function Share() {
                           </span>
                           <span className={cn(
                             "text-[9px] leading-tight",
-                            isAvailable && !isPast ? "text-availability-available/70" : "text-muted-foreground/40"
+                            isAvailable ? "text-availability-available/70" : "text-muted-foreground/40"
                           )}>
                             {slotInfo.time}
                           </span>
