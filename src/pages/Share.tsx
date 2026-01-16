@@ -32,8 +32,9 @@ const LOCATION_CONFIG = {
 };
 
 export default function Share() {
-  const { userId } = useParams<{ userId: string }>();
+  const { shareCode } = useParams<{ shareCode: string }>();
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,27 +47,28 @@ export default function Share() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!userId) {
-        setError('No user specified');
+      if (!shareCode) {
+        setError('No share code specified');
         setLoading(false);
         return;
       }
 
       try {
-        // Fetch profile
+        // Fetch profile by share_code
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('display_name, avatar_url, current_vibe, custom_vibe_tags, location_status')
-          .eq('user_id', userId)
+          .select('user_id, display_name, avatar_url, current_vibe, custom_vibe_tags, location_status')
+          .eq('share_code', shareCode)
           .single();
 
-        if (profileError) {
-          setError('This user has not enabled sharing');
+        if (profileError || !profileData) {
+          setError('This share link is not valid');
           setLoading(false);
           return;
         }
 
         setProfile(profileData);
+        setUserId(profileData.user_id);
 
         // Fetch availability for the week
         const startDate = format(weekDays[0], 'yyyy-MM-dd');
@@ -75,7 +77,7 @@ export default function Share() {
         const { data: availData } = await supabase
           .from('availability')
           .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
-          .eq('user_id', userId)
+          .eq('user_id', profileData.user_id)
           .gte('date', startDate)
           .lte('date', endDate);
 
@@ -89,7 +91,7 @@ export default function Share() {
     };
 
     fetchData();
-  }, [userId, weekDays]);
+  }, [shareCode, weekDays]);
 
   const getSlotAvailable = (date: Date, slot: TimeSlot): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd');
