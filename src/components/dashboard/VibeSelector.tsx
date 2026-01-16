@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 
 export function VibeSelector() {
   const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
@@ -71,9 +71,9 @@ export function VibeSelector() {
             </Button>
           </div>
         )}
-        {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && !showCustomInput && (
+        {!showCustomInput && (
           <div className="mt-2 flex flex-wrap gap-1.5 animate-fade-in">
-            {currentVibe.customTags.map((tag) => (
+            {currentVibe?.type === 'custom' && currentVibe.customTags?.map((tag) => (
               <span
                 key={tag}
                 className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
@@ -87,6 +87,13 @@ export function VibeSelector() {
                 </button>
               </span>
             ))}
+            <button
+              onClick={() => setShowCustomInput(true)}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-primary/40 px-2.5 py-0.5 text-xs font-medium text-primary/70 hover:bg-primary/5 hover:border-primary transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              Add
+            </button>
           </div>
         )}
       </div>
@@ -139,9 +146,9 @@ export function VibeSelector() {
         </div>
       )}
 
-      {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && (
+      {!showCustomInput && (
         <div className="mt-4 flex flex-wrap gap-2 animate-fade-in">
-          {currentVibe.customTags.map((tag) => (
+          {currentVibe?.type === 'custom' && currentVibe.customTags?.map((tag) => (
             <span
               key={tag}
               className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
@@ -155,6 +162,13 @@ export function VibeSelector() {
               </button>
             </span>
           ))}
+          <button
+            onClick={() => setShowCustomInput(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/40 px-3 py-1 text-sm font-medium text-primary/70 hover:bg-primary/5 hover:border-primary transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add vibe
+          </button>
         </div>
       )}
     </div>
