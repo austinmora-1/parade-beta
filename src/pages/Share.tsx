@@ -311,7 +311,7 @@ export default function Share() {
             </div>
             <div>
               <h1 className="font-display text-2xl font-bold">
-                {profile.display_name || 'User'}'s Week
+                {(profile.display_name?.split(' ')[0]) || 'User'}'s Week
               </h1>
               <p className="text-muted-foreground">See what I'm up to!</p>
             </div>
