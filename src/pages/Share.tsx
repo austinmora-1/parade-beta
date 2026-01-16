@@ -1,11 +1,22 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns';
-import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin } from 'lucide-react';
+import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType, ACTIVITY_CONFIG } from '@/types/planner';
 import paradeLogo from '@/assets/parade-logo.png';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 interface ProfileData {
   display_name: string | null;
@@ -35,6 +46,13 @@ interface PlanData {
   location: string | null;
 }
 
+interface SelectedSlot {
+  day: Date;
+  dayLabel: string;
+  slot: TimeSlot;
+  slotLabel: string;
+}
+
 const LOCATION_CONFIG = {
   home: { label: 'At Home', icon: Home, color: 'text-blue-500' },
   office: { label: 'At Office', icon: Building2, color: 'text-purple-500' },
@@ -48,6 +66,14 @@ export default function Share() {
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Hang request state
+  const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [requesterName, setRequesterName] = useState('');
+  const [requesterEmail, setRequesterEmail] = useState('');
+  const [requestMessage, setRequestMessage] = useState('');
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   // Get current week (Monday to Sunday)
   const weekDays = useMemo(() => {
@@ -145,6 +171,59 @@ export default function Share() {
       (slot) => getSlotStatus(date, slot) === 'available'
     ).length;
     return availableSlots / slots.length;
+  };
+
+  const handleSlotClick = (day: Date, slot: TimeSlot) => {
+    setSelectedSlot({
+      day,
+      dayLabel: format(day, 'EEEE, MMM d'),
+      slot,
+      slotLabel: TIME_SLOT_LABELS[slot].label,
+    });
+    setRequestDialogOpen(true);
+  };
+
+  const handleSendRequest = async () => {
+    if (!requesterName.trim() || !selectedSlot || !shareCode) {
+      toast.error('Please enter your name');
+      return;
+    }
+
+    setSendingRequest(true);
+
+    try {
+      const response = await supabase.functions.invoke('send-hang-request', {
+        body: {
+          shareCode,
+          requesterName: requesterName.trim(),
+          requesterEmail: requesterEmail.trim() || undefined,
+          message: requestMessage.trim() || undefined,
+          selectedDay: selectedSlot.dayLabel,
+          selectedSlot: selectedSlot.slotLabel,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to send request');
+      }
+
+      toast.success(`Request sent to ${profile?.display_name || 'user'}!`, {
+        description: "They'll get an email with your request.",
+      });
+      
+      setRequestDialogOpen(false);
+      setRequesterName('');
+      setRequesterEmail('');
+      setRequestMessage('');
+      setSelectedSlot(null);
+    } catch (err) {
+      console.error('Error sending hang request:', err);
+      toast.error('Failed to send request', {
+        description: 'Please try again later.',
+      });
+    } finally {
+      setSendingRequest(false);
+    }
   };
 
   const getPlansForDay = (date: Date): PlanData[] => {
@@ -397,11 +476,12 @@ export default function Share() {
                         <button
                           key={slot}
                           disabled={!isAvailable}
+                          onClick={() => isAvailable && handleSlotClick(day, slot)}
                           className={cn(
                             "flex flex-col items-center justify-center rounded-lg px-2 py-2 text-center transition-all",
                             "border",
                             isAvailable
-                              ? "bg-availability-available/10 border-availability-available/30 text-availability-available hover:bg-availability-available/20 hover:border-availability-available/50 cursor-pointer"
+                              ? "bg-availability-available/10 border-availability-available/30 text-availability-available hover:bg-availability-available/20 hover:border-availability-available/50 hover:scale-105 cursor-pointer"
                               : "bg-muted/30 border-transparent text-muted-foreground/50 cursor-not-allowed"
                           )}
                         >
@@ -451,6 +531,83 @@ export default function Share() {
           </Link>
         </div>
       </main>
+
+      {/* Hang Request Dialog */}
+      <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Request to Hang 🎉</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Selected time display */}
+            {selectedSlot && (
+              <div className="flex items-center gap-3 rounded-lg bg-primary/10 p-3">
+                <Calendar className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">{selectedSlot.dayLabel}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSlot.slotLabel}</p>
+                </div>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="requester-name">Your Name *</Label>
+              <Input
+                id="requester-name"
+                placeholder="What's your name?"
+                value={requesterName}
+                onChange={(e) => setRequesterName(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="requester-email">Your Email (optional)</Label>
+              <Input
+                id="requester-email"
+                type="email"
+                placeholder="So they can reply to you"
+                value={requesterEmail}
+                onChange={(e) => setRequesterEmail(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="request-message">Message (optional)</Label>
+              <Textarea
+                id="request-message"
+                placeholder="What do you want to do?"
+                value={requestMessage}
+                onChange={(e) => setRequestMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            <Button 
+              onClick={handleSendRequest} 
+              disabled={!requesterName.trim() || sendingRequest}
+              className="w-full gap-2"
+            >
+              {sendingRequest ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Send Request to {profile?.display_name || 'User'}
+                </>
+              )}
+            </Button>
+            
+            <p className="text-xs text-center text-muted-foreground">
+              They'll receive an email with your request
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
