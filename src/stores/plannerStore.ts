@@ -133,15 +133,23 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       // Load vibe and location from profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('current_vibe, location_status')
+        .select('current_vibe, location_status, custom_vibe_tags')
         .eq('user_id', userId)
         .single();
+      
+      const customTags = profile?.custom_vibe_tags || [];
+      const currentVibe = profile?.current_vibe 
+        ? { 
+            type: profile.current_vibe as VibeType,
+            customTags: profile.current_vibe === 'custom' ? customTags : undefined
+          } 
+        : null;
       
       set({
         plans,
         friends,
         availability,
-        currentVibe: profile?.current_vibe ? { type: profile.current_vibe as VibeType } : null,
+        currentVibe,
         locationStatus: (profile?.location_status as LocationStatus) || 'home',
         isLoading: false,
       });
@@ -385,7 +393,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     const { error } = await supabase
       .from('profiles')
-      .update({ current_vibe: 'custom' })
+      .update({ 
+        current_vibe: 'custom',
+        custom_vibe_tags: newTags
+      })
       .eq('user_id', userId);
     
     if (error) {
@@ -406,7 +417,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (newTags.length === 0) {
       const { error } = await supabase
         .from('profiles')
-        .update({ current_vibe: null })
+        .update({ 
+          current_vibe: null,
+          custom_vibe_tags: []
+        })
         .eq('user_id', userId);
       
       if (error) {
@@ -416,6 +430,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       set({ currentVibe: null });
     } else {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ custom_vibe_tags: newTags })
+        .eq('user_id', userId);
+      
+      if (error) {
+        console.error('Error removing custom vibe:', error);
+        return;
+      }
+      
       const newVibe: Vibe = { type: 'custom', customTags: newTags };
       set({ currentVibe: newVibe });
     }
