@@ -189,9 +189,9 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 sm:h-12 sm:w-12">
               <MessageSquare className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
             </div>
-            <div className="min-w-0">
-              <h3 className="font-medium text-sm sm:text-base">Share via Text</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">Send a link to friends</p>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-medium text-sm sm:text-base truncate">Share via Text</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Send a link to friends</p>
             </div>
           </button>
           
@@ -204,11 +204,11 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 sm:h-12 sm:w-12">
               <Image className="h-5 w-5 text-secondary sm:h-6 sm:w-6" />
             </div>
-            <div className="min-w-0">
-              <h3 className="font-medium text-sm sm:text-base">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-medium text-sm sm:text-base truncate">
                 {isCapturing ? 'Capturing...' : 'Share Screenshot'}
               </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground">Capture and share an image</p>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Capture and share an image</p>
             </div>
           </button>
           
