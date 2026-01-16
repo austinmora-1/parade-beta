@@ -370,7 +370,7 @@ export default function Share() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <h3 className="font-display text-base font-semibold">
-                {isCurrentWeek ? 'This Week' : format(weekDays[0], 'MMM d') + ' - ' + format(weekDays[6], 'MMM d')}
+                {weekOffset === 0 ? 'This Week' : weekOffset === 1 ? 'Next Week' : format(weekDays[0], 'MMM d') + ' - ' + format(weekDays[6], 'MMM d')}
               </h3>
               <Button
                 variant="ghost"
