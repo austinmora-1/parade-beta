@@ -28,10 +28,10 @@ export default function Dashboard() {
           <h1 className="font-display text-2xl font-bold md:text-3xl">Welcome back! 👋</h1>
           <p className="mt-1 text-sm text-muted-foreground md:text-base">Here's what's happening this week</p>
         </div>
-        <div className="flex gap-2 md:gap-3">
+        <div className="flex gap-2">
           <ShareDialog />
           <Link to="/plans">
-            <Button size="sm" className="gap-2 md:size-default">
+            <Button size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">New Plan</span>
               <span className="sm:hidden">New</span>
