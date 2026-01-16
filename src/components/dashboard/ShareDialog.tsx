@@ -43,9 +43,9 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
     fetchShareCode();
   }, [user]);
 
-  // Share URL now uses the short share code
-  const shareUrl = typeof window !== 'undefined' && shareCode 
-    ? `${window.location.origin}/share/${shareCode}` 
+  // Share URL uses the primary domain
+  const shareUrl = shareCode 
+    ? `https://helloparade.app/share/${shareCode}` 
     : '';
 
   const handleCopyLink = async () => {
