@@ -292,11 +292,11 @@ export default function Share() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
+      <main className="mx-auto max-w-2xl px-4 py-4 space-y-4">
         {/* Profile Card */}
-        <div className="rounded-2xl bg-card p-6 shadow-soft">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 overflow-hidden rounded-full bg-primary/10">
+        <div className="rounded-2xl bg-card p-4 shadow-soft">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 overflow-hidden rounded-full bg-primary/10">
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -304,56 +304,58 @@ export default function Share() {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-primary">
+                <div className="flex h-full w-full items-center justify-center text-xl font-bold text-primary">
                   {(profile.display_name || 'U')[0].toUpperCase()}
                 </div>
               )}
             </div>
             <div>
-              <h1 className="font-display text-2xl font-bold">
+              <h1 className="font-display text-xl font-bold">
                 {(profile.display_name?.split(' ')[0]) || 'User'}'s Week
               </h1>
-              <p className="text-muted-foreground">See what I'm up to!</p>
+              <p className="text-sm text-muted-foreground">See what I'm up to!</p>
             </div>
           </div>
 
           {/* Status Row */}
-          <div className="mt-4 flex flex-wrap gap-3">
-            {/* Location Status */}
-            {locationConfig && LocationIcon && (
-              <div className="flex items-center gap-2 rounded-full bg-muted/50 px-3 py-1.5">
-                <LocationIcon className={cn('h-4 w-4', locationConfig.color)} />
-                <span className="text-sm font-medium">{locationConfig.label}</span>
-              </div>
-            )}
-
-            {/* Vibe Status */}
-            {vibeConfig && (
-              <div className="flex items-center gap-2 rounded-full bg-muted/50 px-3 py-1.5">
-                <span>{vibeConfig.icon}</span>
-                <span className="text-sm font-medium">{vibeConfig.label}</span>
-              </div>
-            )}
-
-            {/* Custom Vibe Tags */}
-            {profile.current_vibe === 'custom' &&
-              profile.custom_vibe_tags?.map((tag) => (
-                <div
-                  key={tag}
-                  className="flex items-center gap-1 rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 px-3 py-1.5"
-                >
-                  <Sparkles className="h-3 w-3 text-primary" />
-                  <span className="text-sm font-medium">#{tag}</span>
+          {(locationConfig || vibeConfig || (profile.current_vibe === 'custom' && profile.custom_vibe_tags?.length)) && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {/* Location Status */}
+              {locationConfig && LocationIcon && (
+                <div className="flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1">
+                  <LocationIcon className={cn('h-3.5 w-3.5', locationConfig.color)} />
+                  <span className="text-xs font-medium">{locationConfig.label}</span>
                 </div>
-              ))}
-          </div>
+              )}
+
+              {/* Vibe Status */}
+              {vibeConfig && (
+                <div className="flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1">
+                  <span className="text-sm">{vibeConfig.icon}</span>
+                  <span className="text-xs font-medium">{vibeConfig.label}</span>
+                </div>
+              )}
+
+              {/* Custom Vibe Tags */}
+              {profile.current_vibe === 'custom' &&
+                profile.custom_vibe_tags?.map((tag) => (
+                  <div
+                    key={tag}
+                    className="flex items-center gap-1 rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 px-2.5 py-1"
+                  >
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    <span className="text-xs font-medium">#{tag}</span>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
 
         {/* Week Overview - Similar to Dashboard */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold">This Week</h3>
-            <span className="text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="font-display text-base font-semibold">This Week</h3>
+            <span className="text-xs text-muted-foreground">
               {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d')}
             </span>
           </div>
