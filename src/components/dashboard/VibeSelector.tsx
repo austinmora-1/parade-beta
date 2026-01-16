@@ -89,10 +89,9 @@ export function VibeSelector() {
             ))}
             <button
               onClick={() => setShowCustomInput(true)}
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-primary/40 px-2.5 py-0.5 text-xs font-medium text-primary/70 hover:bg-primary/5 hover:border-primary transition-colors"
+              className="inline-flex items-center justify-center rounded-full bg-muted h-5 w-5 text-muted-foreground hover:bg-muted/80 transition-colors"
             >
               <Plus className="h-3 w-3" />
-              Add
             </button>
           </div>
         )}
@@ -164,10 +163,9 @@ export function VibeSelector() {
           ))}
           <button
             onClick={() => setShowCustomInput(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/40 px-3 py-1 text-sm font-medium text-primary/70 hover:bg-primary/5 hover:border-primary transition-colors"
+            className="inline-flex items-center justify-center rounded-full bg-muted h-7 w-7 text-muted-foreground hover:bg-muted/80 transition-colors"
           >
-            <Plus className="h-3.5 w-3.5" />
-            Add vibe
+            <Plus className="h-4 w-4" />
           </button>
         </div>
       )}
