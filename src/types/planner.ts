@@ -58,6 +58,7 @@ export interface Plan {
 export interface Vibe {
   type: VibeType;
   customText?: string;
+  customTags?: string[];
 }
 
 export interface DayAvailability {
