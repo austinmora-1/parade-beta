@@ -43,13 +43,13 @@ export function VibeSelector() {
                   key={type}
                   onClick={() => handleVibeSelect(type)}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-sm transition-all min-w-0",
+                    "flex-1 flex items-center justify-center rounded-lg py-1.5 px-2 text-xs font-medium transition-all min-w-0",
                     isSelected
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted/50 text-muted-foreground"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  <span className="text-sm">{config.icon}</span>
+                  <span className="truncate">{config.label}</span>
                 </button>
               );
             })}
