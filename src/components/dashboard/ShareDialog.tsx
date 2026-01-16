@@ -67,14 +67,21 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
   };
 
   const handleShareViaText = async () => {
+    const shareMessage = `Check out my availability on Parade! ${shareUrl}`;
     const shareData = {
       title: 'Check out my availability on Parade!',
       text: 'See when I\'m free and let\'s make plans!',
       url: shareUrl,
     };
 
-    // Check if Web Share API is available
-    if (navigator.share) {
+    // Check if Web Share API is fully supported and can share this data
+    const canUseWebShare = 
+      typeof navigator !== 'undefined' && 
+      navigator.share && 
+      navigator.canShare && 
+      navigator.canShare(shareData);
+
+    if (canUseWebShare) {
       try {
         await navigator.share(shareData);
         toast({
@@ -82,25 +89,30 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           description: 'Your availability has been shared.',
         });
         setOpen(false);
+        return;
       } catch (err) {
-        // User cancelled or share failed
-        if ((err as Error).name !== 'AbortError') {
-          toast({
-            title: 'Share failed',
-            description: 'Could not share. Try copying the link instead.',
-            variant: 'destructive',
-          });
+        // User cancelled - don't show error
+        if ((err as Error).name === 'AbortError') {
+          return;
         }
+        // Fall through to SMS fallback
+        console.log('Web Share failed, falling back to SMS:', err);
       }
-    } else {
-      // Fallback for browsers without Web Share API - open SMS with prefilled text
-      const smsBody = encodeURIComponent(`Check out my availability on Parade! ${shareUrl}`);
-      window.open(`sms:?body=${smsBody}`, '_blank');
-      toast({
-        title: 'Opening messages',
-        description: 'Compose your message to share.',
-      });
     }
+
+    // Fallback: open SMS with prefilled text (works on mobile)
+    // Try different SMS URL formats for better compatibility
+    const smsBody = encodeURIComponent(shareMessage);
+    
+    // Check if on iOS (uses &body=) vs Android/other (uses ?body=)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const smsUrl = isIOS ? `sms:&body=${smsBody}` : `sms:?body=${smsBody}`;
+    
+    window.location.href = smsUrl;
+    toast({
+      title: 'Opening messages',
+      description: 'Compose your message to share.',
+    });
   };
 
   const handleShareScreenshot = async () => {
