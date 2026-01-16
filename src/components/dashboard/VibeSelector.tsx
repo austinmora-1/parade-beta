@@ -57,44 +57,49 @@ export function VibeSelector() {
             })}
           </div>
         </div>
-        {showCustomInput && (
-          <div className="mt-2 flex gap-2 animate-fade-in">
-            <Input
-              placeholder="What's your vibe?"
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {currentVibe?.type === 'custom' && currentVibe.customTags?.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
+            >
+              #{tag}
+              <button
+                onClick={() => removeCustomVibe(tag)}
+                className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          {showCustomInput ? (
+            <input
+              autoFocus
+              placeholder="vibe"
               value={customText}
               onChange={(e) => setCustomText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCustomSubmit()}
-              className="flex-1 h-8 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCustomSubmit();
+                if (e.key === 'Escape') {
+                  setShowCustomInput(false);
+                  setCustomText('');
+                }
+              }}
+              onBlur={() => {
+                if (customText.trim()) handleCustomSubmit();
+                else setShowCustomInput(false);
+              }}
+              className="h-5 w-20 rounded-full bg-muted px-2 text-xs outline-none focus:ring-1 focus:ring-primary/50"
             />
-            <Button onClick={handleCustomSubmit} size="sm" className="h-8 px-3">
-              Set
-            </Button>
-          </div>
-        )}
-        {!showCustomInput && (
-          <div className="mt-2 flex flex-wrap gap-1.5 animate-fade-in">
-            {currentVibe?.type === 'custom' && currentVibe.customTags?.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
-              >
-                #{tag}
-                <button
-                  onClick={() => removeCustomVibe(tag)}
-                  className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
+          ) : (
             <button
               onClick={() => setShowCustomInput(true)}
               className="inline-flex items-center justify-center rounded-full bg-muted h-5 w-5 text-muted-foreground hover:bg-muted/80 transition-colors"
             >
               <Plus className="h-3 w-3" />
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
@@ -130,45 +135,49 @@ export function VibeSelector() {
         })}
       </div>
 
-      {showCustomInput && (
-        <div className="mt-4 flex gap-2 animate-fade-in">
-          <Input
-            placeholder="What's your vibe today?"
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {currentVibe?.type === 'custom' && currentVibe.customTags?.map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
+          >
+            #{tag}
+            <button
+              onClick={() => removeCustomVibe(tag)}
+              className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </span>
+        ))}
+        {showCustomInput ? (
+          <input
+            autoFocus
+            placeholder="vibe"
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCustomSubmit()}
-            className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCustomSubmit();
+              if (e.key === 'Escape') {
+                setShowCustomInput(false);
+                setCustomText('');
+              }
+            }}
+            onBlur={() => {
+              if (customText.trim()) handleCustomSubmit();
+              else setShowCustomInput(false);
+            }}
+            className="h-7 w-24 rounded-full bg-muted px-3 text-sm outline-none focus:ring-1 focus:ring-primary/50"
           />
-          <Button onClick={handleCustomSubmit} size="sm">
-            Add
-          </Button>
-        </div>
-      )}
-
-      {!showCustomInput && (
-        <div className="mt-4 flex flex-wrap gap-2 animate-fade-in">
-          {currentVibe?.type === 'custom' && currentVibe.customTags?.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
-            >
-              #{tag}
-              <button
-                onClick={() => removeCustomVibe(tag)}
-                className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </span>
-          ))}
+        ) : (
           <button
             onClick={() => setShowCustomInput(true)}
             className="inline-flex items-center justify-center rounded-full bg-muted h-7 w-7 text-muted-foreground hover:bg-muted/80 transition-colors"
           >
             <Plus className="h-4 w-4" />
           </button>
-        </div>
-      )}
+        )}
+    </div>
     </div>
   );
 }
