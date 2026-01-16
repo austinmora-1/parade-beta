@@ -434,17 +434,17 @@ export default function Share() {
                   {/* Day header */}
                   <div className="flex items-center gap-3 mb-3">
                     <div className={cn(
-                      "flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg",
+                      "flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg leading-none",
                       isTodayDay ? "bg-primary text-primary-foreground" : "bg-muted"
                     )}>
                       <span className={cn(
-                        "text-[10px] font-medium uppercase",
+                        "text-[10px] font-medium uppercase leading-none",
                         isTodayDay ? "text-primary-foreground/80" : "text-muted-foreground"
                       )}>
                         {format(day, 'EEE')}
                       </span>
                       <span className={cn(
-                        "text-sm font-bold",
+                        "text-sm font-bold leading-none -mt-0.5",
                         isTodayDay ? "text-primary-foreground" : "text-foreground"
                       )}>
                         {format(day, 'd')}
