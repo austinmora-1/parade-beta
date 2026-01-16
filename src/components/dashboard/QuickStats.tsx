@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { addDays, isAfter, isBefore } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Calendar, Users, Clock, Sparkles } from 'lucide-react';
+import { Calendar, Clock, Sparkles, CalendarCheck } from 'lucide-react';
 
 export function QuickStats() {
-  const { plans, friends, currentVibe } = usePlannerStore();
+  const { plans, availability, currentVibe } = usePlannerStore();
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -14,14 +14,18 @@ export function QuickStats() {
       (p) => isAfter(p.date, now) && isBefore(p.date, weekFromNow)
     );
     
-    const connectedFriends = friends.filter((f) => f.status === 'connected');
+    // Calculate available slots for the week
+    const availableSlots = availability.reduce((total, day) => {
+      const daySlots = Object.values(day.slots).filter(Boolean).length;
+      return total + daySlots;
+    }, 0);
     
     return {
       plansThisWeek: upcomingPlans.length,
       totalHours: Math.round(upcomingPlans.reduce((sum, p) => sum + p.duration, 0) / 60),
-      connectedFriends: connectedFriends.length,
+      availableSlots,
     };
-  }, [plans, friends]);
+  }, [plans, availability]);
 
   const statCards = [
     {
@@ -37,10 +41,10 @@ export function QuickStats() {
       color: 'bg-activity-sports/10 text-activity-sports',
     },
     {
-      icon: Users,
-      label: 'Friends',
-      value: stats.connectedFriends,
-      color: 'bg-activity-drinks/10 text-activity-drinks',
+      icon: CalendarCheck,
+      label: 'Available slots',
+      value: stats.availableSlots,
+      color: 'bg-availability-available/10 text-availability-available',
     },
     {
       icon: Sparkles,
