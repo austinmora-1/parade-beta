@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Image, Copy, Check, Share2 } from 'lucide-react';
+import { MessageSquare, Image, Copy, Check, Share2, Eye, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 interface ShareDialogProps {
   trigger?: React.ReactNode;
@@ -213,6 +214,34 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           <p className="text-sm text-muted-foreground">
             Choose how you'd like to share with friends.
           </p>
+          
+          {/* Preview Profile */}
+          {shareCode && (
+            <Link
+              to={`/share/${shareCode}`}
+              onClick={() => setOpen(false)}
+              className="flex w-full max-w-full overflow-hidden items-center gap-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-3 text-left transition-all hover:bg-primary/10 hover:border-primary/50 sm:gap-4 sm:p-4"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 sm:h-12 sm:w-12">
+                <Eye className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-medium text-sm sm:text-base truncate">Preview Your Profile</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">See what friends will see</p>
+              </div>
+              <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+            </Link>
+          )}
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Share options</span>
+            </div>
+          </div>
           
           {/* Share via Text Message */}
           <button
