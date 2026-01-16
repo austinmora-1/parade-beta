@@ -171,7 +171,7 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-auto">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] p-4 sm:max-w-md sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-display text-lg sm:text-xl">Share Your Availability</DialogTitle>
         </DialogHeader>
