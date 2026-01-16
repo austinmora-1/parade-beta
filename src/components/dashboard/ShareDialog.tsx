@@ -43,10 +43,13 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
     fetchShareCode();
   }, [user]);
 
-  // Share URL uses the primary domain
-  const shareUrl = shareCode 
-    ? `https://helloparade.app/share/${shareCode}` 
+  // Share URL - use custom domain in production, current origin in dev/preview
+  const baseUrl = typeof window !== 'undefined' 
+    ? (window.location.hostname === 'helloparade.app' || window.location.hostname === 'www.helloparade.app'
+        ? 'https://helloparade.app'
+        : window.location.origin)
     : '';
+  const shareUrl = shareCode ? `${baseUrl}/share/${shareCode}` : '';
 
   const handleCopyLink = async () => {
     try {
