@@ -329,6 +329,100 @@ export default function Share() {
           </div>
         </div>
 
+        {/* Busy Times & Open Slots */}
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <div className="mb-4">
+            <h3 className="font-display text-lg font-semibold">When to Reach Out</h3>
+            <p className="text-sm text-muted-foreground mt-1">Here's when I'm free vs. busy this week</p>
+          </div>
+
+          {/* Busy slots summary */}
+          {(() => {
+            const busySlots: { day: string; date: Date; slots: string[] }[] = [];
+            const openSlots: { day: string; date: Date; slots: string[] }[] = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            weekDays.forEach((day) => {
+              if (day < today) return; // Skip past days
+              
+              const dayBusy: string[] = [];
+              const dayOpen: string[] = [];
+              
+              (Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).forEach((slot) => {
+                const status = getSlotStatus(day, slot);
+                const slotLabel = TIME_SLOT_LABELS[slot].label;
+                if (status === 'plan' || status === 'busy') {
+                  dayBusy.push(slotLabel);
+                } else {
+                  dayOpen.push(slotLabel);
+                }
+              });
+              
+              if (dayBusy.length > 0) {
+                busySlots.push({ day: format(day, 'EEE'), date: day, slots: dayBusy });
+              }
+              if (dayOpen.length > 0) {
+                openSlots.push({ day: format(day, 'EEE'), date: day, slots: dayOpen });
+              }
+            });
+
+            return (
+              <div className="space-y-4">
+                {/* Open slots - highlighted */}
+                {openSlots.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-availability-available" />
+                      <span className="text-sm font-medium text-availability-available">Good times to plan something</span>
+                    </div>
+                    <div className="space-y-2">
+                      {openSlots.slice(0, 4).map(({ day, date, slots }) => (
+                        <div key={day} className="flex items-start gap-3 rounded-lg bg-availability-available/10 p-3">
+                          <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-availability-available/20">
+                            <span className="text-[10px] font-medium text-availability-available uppercase">{day}</span>
+                            <span className="text-sm font-bold text-availability-available">{format(date, 'd')}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground">
+                              Free {slots.length === 6 ? 'all day' : slots.slice(0, 3).join(', ')}{slots.length > 3 && ` +${slots.length - 3} more`}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Busy slots */}
+                {busySlots.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
+                      <span className="text-sm font-medium text-muted-foreground">Already have plans</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {busySlots.map(({ day, date, slots }) => (
+                        <div key={day} className="flex items-center gap-2 rounded-full bg-muted/50 px-3 py-1.5">
+                          <span className="text-xs font-medium">{day} {format(date, 'd')}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {slots.length === 6 ? 'All day' : `${slots.length} slot${slots.length > 1 ? 's' : ''}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {openSlots.length === 0 && busySlots.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No availability info for upcoming days
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+        </div>
 
         {/* Legend */}
         <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
