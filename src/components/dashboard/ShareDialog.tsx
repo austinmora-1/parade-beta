@@ -171,27 +171,27 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md mx-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">Share Your Availability</DialogTitle>
+          <DialogTitle className="font-display text-lg sm:text-xl">Share Your Availability</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-3 py-3 sm:space-y-4 sm:py-4">
           <p className="text-sm text-muted-foreground">
-            Choose how you'd like to share your availability with friends.
+            Choose how you'd like to share with friends.
           </p>
           
           {/* Share via Text Message */}
           <button
             onClick={handleShareViaText}
-            className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-all hover:bg-muted/50"
+            className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:bg-muted/50 sm:gap-4 sm:p-4"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <MessageSquare className="h-6 w-6 text-primary" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 sm:h-12 sm:w-12">
+              <MessageSquare className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <h3 className="font-medium">Share via Text Message</h3>
-              <p className="text-sm text-muted-foreground">Send a link to your friends</p>
+            <div className="min-w-0">
+              <h3 className="font-medium text-sm sm:text-base">Share via Text</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Send a link to friends</p>
             </div>
           </button>
           
@@ -199,16 +199,16 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           <button
             onClick={handleShareScreenshot}
             disabled={isCapturing}
-            className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-all hover:bg-muted/50 disabled:opacity-50"
+            className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:bg-muted/50 disabled:opacity-50 sm:gap-4 sm:p-4"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10">
-              <Image className="h-6 w-6 text-secondary" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 sm:h-12 sm:w-12">
+              <Image className="h-5 w-5 text-secondary sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <h3 className="font-medium">
-                {isCapturing ? 'Capturing...' : 'Share as Screenshot'}
+            <div className="min-w-0">
+              <h3 className="font-medium text-sm sm:text-base">
+                {isCapturing ? 'Capturing...' : 'Share Screenshot'}
               </h3>
-              <p className="text-sm text-muted-foreground">Capture and share an image</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Capture and share an image</p>
             </div>
           </button>
           
@@ -223,14 +223,14 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           </div>
           
           <div className="flex gap-2">
-            <div className="flex-1 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground truncate">
+            <div className="flex-1 min-w-0 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs sm:text-sm text-muted-foreground truncate">
               {shareUrl}
             </div>
             <Button
               variant="outline"
               size="icon"
               onClick={handleCopyLink}
-              className="shrink-0"
+              className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
             >
               {copied ? (
                 <Check className="h-4 w-4 text-availability-available" />
