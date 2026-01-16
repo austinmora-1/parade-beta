@@ -171,7 +171,7 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] p-4 sm:max-w-md sm:p-6">
+      <DialogContent className="left-4 right-4 w-auto max-w-none -translate-x-0 p-4 sm:left-[50%] sm:right-auto sm:w-full sm:max-w-md sm:translate-x-[-50%] sm:p-6 overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="font-display text-lg sm:text-xl">Share Your Availability</DialogTitle>
         </DialogHeader>
@@ -184,7 +184,7 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           {/* Share via Text Message */}
           <button
             onClick={handleShareViaText}
-            className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:bg-muted/50 sm:gap-4 sm:p-4"
+            className="flex w-full max-w-full overflow-hidden items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:bg-muted/50 sm:gap-4 sm:p-4"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 sm:h-12 sm:w-12">
               <MessageSquare className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
@@ -199,7 +199,7 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           <button
             onClick={handleShareScreenshot}
             disabled={isCapturing}
-            className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:bg-muted/50 disabled:opacity-50 sm:gap-4 sm:p-4"
+            className="flex w-full max-w-full overflow-hidden items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:bg-muted/50 disabled:opacity-50 sm:gap-4 sm:p-4"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 sm:h-12 sm:w-12">
               <Image className="h-5 w-5 text-secondary sm:h-6 sm:w-6" />
