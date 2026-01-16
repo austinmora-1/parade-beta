@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { format, addDays, startOfWeek, isSameDay, isToday, isWeekend } from 'date-fns';
-import { MapPin, Sparkles, Calendar, Home, Building2, Car, Loader2 } from 'lucide-react';
+import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns';
+import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType } from '@/types/planner';
+import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType, ACTIVITY_CONFIG } from '@/types/planner';
 import paradeLogo from '@/assets/parade-logo.png';
 
 interface ProfileData {
@@ -25,6 +25,16 @@ interface AvailabilityData {
   late_night: boolean | null;
 }
 
+interface PlanData {
+  id: string;
+  title: string;
+  activity: string;
+  date: string;
+  time_slot: string;
+  duration: number;
+  location: string | null;
+}
+
 const LOCATION_CONFIG = {
   home: { label: 'At Home', icon: Home, color: 'text-blue-500' },
   office: { label: 'At Office', icon: Building2, color: 'text-purple-500' },
@@ -34,12 +44,12 @@ const LOCATION_CONFIG = {
 export default function Share() {
   const { shareCode } = useParams<{ shareCode: string }>();
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
+  const [plans, setPlans] = useState<PlanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get weekend-focused week (show current week, highlighting Fri-Sun)
+  // Get current week (Monday to Sunday)
   const weekDays = useMemo(() => {
     const start = startOfWeek(new Date(), { weekStartsOn: 1 });
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
@@ -68,7 +78,6 @@ export default function Share() {
         }
 
         setProfile(profileData);
-        setUserId(profileData.user_id);
 
         // Fetch availability for the week
         const startDate = format(weekDays[0], 'yyyy-MM-dd');
@@ -82,6 +91,17 @@ export default function Share() {
           .lte('date', endDate);
 
         setAvailability(availData || []);
+
+        // Fetch plans for the week
+        const { data: plansData } = await supabase
+          .from('plans')
+          .select('id, title, activity, date, time_slot, duration, location')
+          .eq('user_id', profileData.user_id)
+          .gte('date', weekDays[0].toISOString())
+          .lte('date', weekDays[6].toISOString())
+          .order('date', { ascending: true });
+
+        setPlans(plansData || []);
       } catch (err) {
         console.error('Error fetching share data:', err);
         setError('Failed to load availability');
@@ -93,12 +113,20 @@ export default function Share() {
     fetchData();
   }, [shareCode, weekDays]);
 
-  const getSlotAvailable = (date: Date, slot: TimeSlot): boolean => {
+  const getSlotStatus = (date: Date, slot: TimeSlot): 'available' | 'busy' | 'plan' => {
+    // Check if there's a plan during this slot
+    const hasPlan = plans.some(
+      (p) => isSameDay(new Date(p.date), date) && p.time_slot === slot
+    );
+    
+    if (hasPlan) return 'plan';
+    
+    // Check availability setting
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayAvail = availability.find((a) => a.date === dateStr);
-    if (!dayAvail) return true; // Default to available
-
-    // Map TimeSlot (with hyphens) to database columns (with underscores)
+    
+    if (!dayAvail) return 'available'; // Default to available
+    
     const slotMap: Record<TimeSlot, keyof AvailabilityData> = {
       'early-morning': 'early_morning',
       'late-morning': 'late_morning',
@@ -107,16 +135,30 @@ export default function Share() {
       'evening': 'evening',
       'late-night': 'late_night',
     };
-
-    return dayAvail[slotMap[slot]] !== false;
+    
+    return dayAvail[slotMap[slot]] === false ? 'busy' : 'available';
   };
 
-  // Calculate day availability percentage
-  const getDayAvailability = (date: Date): number => {
+  const getDayAvailabilityScore = (date: Date): number => {
     const slots = Object.keys(TIME_SLOT_LABELS) as TimeSlot[];
-    const availableCount = slots.filter((slot) => getSlotAvailable(date, slot)).length;
-    return availableCount / slots.length;
+    const availableSlots = slots.filter(
+      (slot) => getSlotStatus(date, slot) === 'available'
+    ).length;
+    return availableSlots / slots.length;
   };
+
+  const getPlansForDay = (date: Date): PlanData[] => {
+    return plans.filter((p) => isSameDay(new Date(p.date), date));
+  };
+
+  // Get upcoming plans (today and future)
+  const upcomingPlans = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return plans
+      .filter((p) => new Date(p.date) >= today)
+      .slice(0, 5);
+  }, [plans]);
 
   if (loading) {
     return (
@@ -171,9 +213,9 @@ export default function Share() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
         {/* Profile Card */}
-        <div className="mb-6 rounded-2xl bg-card p-6 shadow-soft">
+        <div className="rounded-2xl bg-card p-6 shadow-soft">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 overflow-hidden rounded-full bg-primary/10">
               {profile.avatar_url ? (
@@ -190,9 +232,9 @@ export default function Share() {
             </div>
             <div>
               <h1 className="font-display text-2xl font-bold">
-                {profile.display_name || 'User'}'s Availability
+                {profile.display_name || 'User'}'s Week
               </h1>
-              <p className="text-muted-foreground">See when I'm free this week!</p>
+              <p className="text-muted-foreground">See what I'm up to!</p>
             </div>
           </div>
 
@@ -228,98 +270,131 @@ export default function Share() {
           </div>
         </div>
 
-        {/* Availability Grid - Weekend Focused */}
-        <div className="rounded-2xl bg-card p-6 shadow-soft">
-          <div className="mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <h2 className="font-display text-lg font-semibold">This Week</h2>
+        {/* Week Overview - Similar to Dashboard */}
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-display text-lg font-semibold">This Week</h3>
+            <span className="text-sm text-muted-foreground">
+              {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d')}
+            </span>
           </div>
 
-          {/* Day Headers */}
-          <div className="mb-3 grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-2 sm:gap-4">
             {weekDays.map((day) => {
-              const isWeekendDay = isWeekend(day);
-              const dayAvail = getDayAvailability(day);
+              const score = getDayAvailabilityScore(day);
+              const isTodayDay = isToday(day);
+              const dayPlans = getPlansForDay(day);
+              const planCount = dayPlans.length;
+              
               return (
                 <div
                   key={day.toISOString()}
-                  className={cn(
-                    'flex flex-col items-center rounded-lg p-2 text-center',
-                    isWeekendDay && 'bg-primary/5 ring-1 ring-primary/20',
-                    isToday(day) && 'bg-primary text-primary-foreground'
-                  )}
+                  className="flex flex-col items-center rounded-xl p-2 transition-all duration-200"
                 >
-                  <span
-                    className={cn(
-                      'text-xs font-medium uppercase',
-                      isToday(day) ? 'text-primary-foreground' : 'text-muted-foreground'
-                    )}
-                  >
+                  <span className="text-xs font-medium text-muted-foreground mb-1">
                     {format(day, 'EEE')}
                   </span>
-                  <span className={cn('text-lg font-bold', isToday(day) && 'text-primary-foreground')}>
-                    {format(day, 'd')}
-                  </span>
-                  {/* Availability indicator */}
-                  <div
-                    className={cn(
-                      'mt-1 h-1.5 w-8 rounded-full',
-                      dayAvail > 0.5 && 'bg-availability-available',
-                      dayAvail > 0 && dayAvail <= 0.5 && 'bg-yellow-400',
-                      dayAvail === 0 && 'bg-muted'
+                  
+                  {/* Date circle with plan count bubble */}
+                  <div className="relative">
+                    {/* Date circle */}
+                    <span className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                      isTodayDay 
+                        ? "bg-availability-today text-white"
+                        : score >= 0.7 
+                          ? "bg-availability-available-light text-availability-available"
+                          : score >= 0.3 && score < 0.7 
+                            ? "bg-availability-partial-light text-availability-partial"
+                            : "bg-availability-busy-light text-availability-busy"
+                    )}>
+                      {format(day, 'd')}
+                    </span>
+                    
+                    {/* Plan count bubble */}
+                    {planCount > 0 && (
+                      <span className={cn(
+                        "absolute -bottom-3 left-1/2 -translate-x-1/2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium",
+                        score >= 0.7 && "bg-availability-available text-white",
+                        score >= 0.3 && score < 0.7 && "bg-availability-partial text-white",
+                        score < 0.3 && "bg-availability-busy text-white"
+                      )}>
+                        {planCount}
+                      </span>
                     )}
-                  />
+                  </div>
                 </div>
               );
             })}
           </div>
+        </div>
 
-          {/* Time Slots Grid */}
-          <div className="space-y-1">
-            {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => (
-              <div key={slot} className="grid grid-cols-7 gap-1">
-                {weekDays.map((day) => {
-                  const available = getSlotAvailable(day, slot);
-                  const isWeekendDay = isWeekend(day);
-                  return (
-                    <div
-                      key={`${day.toISOString()}-${slot}`}
-                      className={cn(
-                        'h-6 rounded transition-colors',
-                        available ? 'bg-availability-available/30' : 'bg-muted/40',
-                        isWeekendDay && available && 'bg-availability-available/50'
-                      )}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-
-          {/* Time Labels */}
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => (
-              <span key={slot}>
-                {TIME_SLOT_LABELS[slot].label}: {TIME_SLOT_LABELS[slot].time}
-              </span>
-            ))}
-          </div>
-
-          {/* Legend */}
-          <div className="mt-4 flex items-center gap-4 border-t border-border/50 pt-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-availability-available/40" />
-              <span className="text-muted-foreground">Available</span>
+        {/* Upcoming Plans */}
+        {upcomingPlans.length > 0 && (
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+            <div className="mb-4 flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <h3 className="font-display text-lg font-semibold">Upcoming Plans</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-muted/40" />
-              <span className="text-muted-foreground">Busy</span>
+
+            <div className="space-y-3">
+            {upcomingPlans.map((plan) => {
+                const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
+                const activityIcon = activityConfig?.icon || '📅';
+                const timeLabel = TIME_SLOT_LABELS[plan.time_slot as TimeSlot]?.label || plan.time_slot;
+                
+                return (
+                  <div
+                    key={plan.id}
+                    className="flex items-start gap-3 rounded-xl bg-muted/30 p-3"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg">
+                      {activityIcon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{plan.title}</h4>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(plan.date), 'EEE, MMM d')}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {timeLabel}
+                        </span>
+                        {plan.location && (
+                          <span className="flex items-center gap-1 truncate">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{plan.location.split(',')[0]}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          </div>
+        )}
+
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-availability-available" />
+            <span>Mostly Free</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-availability-partial" />
+            <span>Partially Free</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-availability-busy" />
+            <span>Busy</span>
           </div>
         </div>
 
         {/* CTA */}
-        <div className="mt-6 text-center">
+        <div className="text-center pt-2">
           <p className="mb-3 text-sm text-muted-foreground">
             Want to share your own availability with friends?
           </p>
