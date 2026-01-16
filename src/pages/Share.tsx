@@ -444,7 +444,7 @@ export default function Share() {
                         {format(day, 'EEE')}
                       </span>
                       <span className={cn(
-                        "text-sm font-bold leading-none -mt-0.5",
+                        "text-sm font-bold leading-none mt-0.5",
                         isTodayDay ? "text-primary-foreground" : "text-foreground"
                       )}>
                         {format(day, 'd')}
