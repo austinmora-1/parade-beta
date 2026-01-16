@@ -159,7 +159,7 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="outline" size="sm" className="flex-1 gap-2 sm:flex-none md:size-default">
+          <Button variant="outline" size="sm" className="gap-2">
             <Share2 className="h-4 w-4" />
             <span className="hidden sm:inline">Share Availability</span>
             <span className="sm:hidden">Share</span>
