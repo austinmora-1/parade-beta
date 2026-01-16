@@ -26,6 +26,8 @@ interface PlannerState {
   setAvailability: (date: Date, slot: TimeSlot, available: boolean) => Promise<void>;
   setLocationStatus: (status: LocationStatus) => Promise<void>;
   setVibe: (vibe: Vibe | null) => Promise<void>;
+  addCustomVibe: (tag: string) => Promise<void>;
+  removeCustomVibe: (tag: string) => Promise<void>;
   
   initializeWeekAvailability: () => Promise<void>;
 }
@@ -369,6 +371,54 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     }
     
     set({ currentVibe: vibe });
+  },
+  
+  addCustomVibe: async (tag) => {
+    const { userId, currentVibe } = get();
+    if (!userId) return;
+    
+    const existingTags = currentVibe?.customTags || [];
+    if (existingTags.includes(tag)) return;
+    
+    const newTags = [...existingTags, tag];
+    const newVibe: Vibe = { type: 'custom', customTags: newTags };
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ current_vibe: 'custom' })
+      .eq('user_id', userId);
+    
+    if (error) {
+      console.error('Error adding custom vibe:', error);
+      return;
+    }
+    
+    set({ currentVibe: newVibe });
+  },
+  
+  removeCustomVibe: async (tag) => {
+    const { userId, currentVibe } = get();
+    if (!userId) return;
+    
+    const existingTags = currentVibe?.customTags || [];
+    const newTags = existingTags.filter(t => t !== tag);
+    
+    if (newTags.length === 0) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ current_vibe: null })
+        .eq('user_id', userId);
+      
+      if (error) {
+        console.error('Error removing custom vibe:', error);
+        return;
+      }
+      
+      set({ currentVibe: null });
+    } else {
+      const newVibe: Vibe = { type: 'custom', customTags: newTags };
+      set({ currentVibe: newVibe });
+    }
   },
   
   initializeWeekAvailability: async () => {

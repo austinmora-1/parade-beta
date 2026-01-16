@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { X } from 'lucide-react';
 
 export function VibeSelector() {
-  const { currentVibe, setVibe } = usePlannerStore();
+  const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
   const [customText, setCustomText] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const isMobile = useIsMobile();
@@ -23,7 +24,8 @@ export function VibeSelector() {
 
   const handleCustomSubmit = () => {
     if (customText.trim()) {
-      setVibe({ type: 'custom', customText: customText.trim() });
+      addCustomVibe(customText.trim().replace(/\s+/g, ''));
+      setCustomText('');
       setShowCustomInput(false);
     }
   };
@@ -69,11 +71,22 @@ export function VibeSelector() {
             </Button>
           </div>
         )}
-        {currentVibe?.type === 'custom' && currentVibe.customText && !showCustomInput && (
-          <div className="mt-2 animate-fade-in">
-            <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-              #{currentVibe.customText.replace(/\s+/g, '')}
-            </span>
+        {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && !showCustomInput && (
+          <div className="mt-2 flex flex-wrap gap-1.5 animate-fade-in">
+            {currentVibe.customTags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
+              >
+                #{tag}
+                <button
+                  onClick={() => removeCustomVibe(tag)}
+                  className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
           </div>
         )}
       </div>
@@ -105,11 +118,6 @@ export function VibeSelector() {
               <span className="text-2xl">{config.icon}</span>
               <div className="text-left">
                 <p className="font-medium">{config.label}</p>
-                {type === 'custom' && currentVibe?.type === 'custom' && currentVibe.customText && (
-                  <p className="text-xs text-muted-foreground truncate max-w-[100px]">
-                    {currentVibe.customText}
-                  </p>
-                )}
               </div>
             </button>
           );
@@ -126,8 +134,27 @@ export function VibeSelector() {
             className="flex-1"
           />
           <Button onClick={handleCustomSubmit} size="sm">
-            Set
+            Add
           </Button>
+        </div>
+      )}
+
+      {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2 animate-fade-in">
+          {currentVibe.customTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
+            >
+              #{tag}
+              <button
+                onClick={() => removeCustomVibe(tag)}
+                className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ))}
         </div>
       )}
     </div>
