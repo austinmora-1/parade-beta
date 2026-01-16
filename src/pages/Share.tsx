@@ -329,53 +329,6 @@ export default function Share() {
           </div>
         </div>
 
-        {/* Upcoming Plans */}
-        {upcomingPlans.length > 0 && (
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-            <div className="mb-4 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              <h3 className="font-display text-lg font-semibold">Upcoming Plans</h3>
-            </div>
-
-            <div className="space-y-3">
-            {upcomingPlans.map((plan) => {
-                const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
-                const activityIcon = activityConfig?.icon || '📅';
-                const timeLabel = TIME_SLOT_LABELS[plan.time_slot as TimeSlot]?.label || plan.time_slot;
-                
-                return (
-                  <div
-                    key={plan.id}
-                    className="flex items-start gap-3 rounded-xl bg-muted/30 p-3"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg">
-                      {activityIcon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{plan.title}</h4>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(plan.date), 'EEE, MMM d')}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {timeLabel}
-                        </span>
-                        {plan.location && (
-                          <span className="flex items-center gap-1 truncate">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{plan.location.split(',')[0]}</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Legend */}
         <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
