@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquare, Image, Copy, Check, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ShareDialogProps {
   trigger?: React.ReactNode;
@@ -19,12 +20,32 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [shareCode, setShareCode] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Share URL now points to the public share page with user ID
-  const shareUrl = typeof window !== 'undefined' && user 
-    ? `${window.location.origin}/share/${user.id}` 
+  // Fetch the user's share code
+  useEffect(() => {
+    const fetchShareCode = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('share_code')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data?.share_code) {
+        setShareCode(data.share_code);
+      }
+    };
+
+    fetchShareCode();
+  }, [user]);
+
+  // Share URL now uses the short share code
+  const shareUrl = typeof window !== 'undefined' && shareCode 
+    ? `${window.location.origin}/share/${shareCode}` 
     : '';
 
   const handleCopyLink = async () => {

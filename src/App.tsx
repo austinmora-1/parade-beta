@@ -68,7 +68,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <Routes>
-    <Route path="/share/:userId" element={<Share />} />
+    <Route path="/share/:shareCode" element={<Share />} />
     <Route path="/invite" element={<Invite />} />
     <Route
       path="/landing"

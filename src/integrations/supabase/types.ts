@@ -214,6 +214,7 @@ export type Database = {
           location_status: string | null
           plan_invitations_notifications: boolean | null
           plan_reminders: boolean | null
+          share_code: string
           show_availability: boolean | null
           show_vibe_status: boolean | null
           updated_at: string
@@ -233,6 +234,7 @@ export type Database = {
           location_status?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
+          share_code?: string
           show_availability?: boolean | null
           show_vibe_status?: boolean | null
           updated_at?: string
@@ -252,6 +254,7 @@ export type Database = {
           location_status?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
+          share_code?: string
           show_availability?: boolean | null
           show_vibe_status?: boolean | null
           updated_at?: string
@@ -301,6 +304,7 @@ export type Database = {
         Args: { p_key_id: string; token: string }
         Returns: string
       }
+      generate_share_code: { Args: { length?: number }; Returns: string }
       get_calendar_tokens: {
         Args: { p_provider: string; p_user_id: string }
         Returns: {
