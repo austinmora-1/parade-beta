@@ -43,17 +43,17 @@ export default function Dashboard() {
       {/* Week Overview */}
       <WeekOverview />
 
+      {/* Vibe & Location Status */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <VibeSelector />
+        <LocationToggle />
+      </div>
+
       {/* Quick Stats */}
       <QuickStats />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <UpcomingPlans />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:gap-6">
-          <VibeSelector />
-          <LocationToggle />
-        </div>
-      </div>
+
+      {/* Upcoming Plans */}
+      <UpcomingPlans />
     </div>
   );
 }
