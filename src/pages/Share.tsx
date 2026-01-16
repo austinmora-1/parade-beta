@@ -329,116 +329,113 @@ export default function Share() {
           </div>
         </div>
 
-        {/* Busy Times & Open Slots */}
+        {/* When to Reach Out - Interactive Slots */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
           <div className="mb-4">
             <h3 className="font-display text-lg font-semibold">When to Reach Out</h3>
-            <p className="text-sm text-muted-foreground mt-1">Here's when I'm free vs. busy this week</p>
+            <p className="text-sm text-muted-foreground mt-1">Tap a time slot to see when I'm free</p>
           </div>
 
-          {/* Busy slots summary */}
-          {(() => {
-            const busySlots: { day: string; date: Date; slots: string[] }[] = [];
-            const openSlots: { day: string; date: Date; slots: string[] }[] = [];
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            weekDays.forEach((day) => {
-              if (day < today) return; // Skip past days
+          {/* Day tabs with time slot buttons */}
+          <div className="space-y-3">
+            {weekDays.map((day) => {
+              const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
+              const isTodayDay = isToday(day);
+              const dayPlans = getPlansForDay(day);
               
-              const dayBusy: string[] = [];
-              const dayOpen: string[] = [];
-              
-              (Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).forEach((slot) => {
-                const status = getSlotStatus(day, slot);
-                const slotLabel = TIME_SLOT_LABELS[slot].label;
-                if (status === 'plan' || status === 'busy') {
-                  dayBusy.push(slotLabel);
-                } else {
-                  dayOpen.push(slotLabel);
-                }
-              });
-              
-              if (dayBusy.length > 0) {
-                busySlots.push({ day: format(day, 'EEE'), date: day, slots: dayBusy });
-              }
-              if (dayOpen.length > 0) {
-                openSlots.push({ day: format(day, 'EEE'), date: day, slots: dayOpen });
-              }
-            });
-
-            return (
-              <div className="space-y-4">
-                {/* Open slots - highlighted */}
-                {openSlots.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-2 w-2 rounded-full bg-availability-available" />
-                      <span className="text-sm font-medium text-availability-available">Good times to plan something</span>
+              return (
+                <div 
+                  key={day.toISOString()} 
+                  className={cn(
+                    "rounded-xl border p-3 transition-all",
+                    isPast ? "opacity-50 bg-muted/20 border-border/50" : "bg-card border-border",
+                    isTodayDay && !isPast && "ring-2 ring-primary/30 border-primary/50"
+                  )}
+                >
+                  {/* Day header */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={cn(
+                      "flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg",
+                      isTodayDay ? "bg-primary text-primary-foreground" : "bg-muted"
+                    )}>
+                      <span className={cn(
+                        "text-[10px] font-medium uppercase",
+                        isTodayDay ? "text-primary-foreground/80" : "text-muted-foreground"
+                      )}>
+                        {format(day, 'EEE')}
+                      </span>
+                      <span className={cn(
+                        "text-sm font-bold",
+                        isTodayDay ? "text-primary-foreground" : "text-foreground"
+                      )}>
+                        {format(day, 'd')}
+                      </span>
                     </div>
-                    <div className="space-y-2">
-                      {openSlots.slice(0, 4).map(({ day, date, slots }) => (
-                        <div key={day} className="flex items-start gap-3 rounded-lg bg-availability-available/10 p-3">
-                          <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-availability-available/20">
-                            <span className="text-[10px] font-medium text-availability-available uppercase">{day}</span>
-                            <span className="text-sm font-bold text-availability-available">{format(date, 'd')}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground">
-                              Free {slots.length === 6 ? 'all day' : slots.slice(0, 3).join(', ')}{slots.length > 3 && ` +${slots.length - 3} more`}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex-1">
+                      <span className={cn(
+                        "text-sm font-medium",
+                        isTodayDay && "text-primary"
+                      )}>
+                        {isTodayDay ? 'Today' : format(day, 'EEEE')}
+                      </span>
+                      {dayPlans.length > 0 && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {dayPlans.length} plan{dayPlans.length > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
-                )}
-
-                {/* Busy slots */}
-                {busySlots.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-2 w-2 rounded-full bg-muted-foreground/50" />
-                      <span className="text-sm font-medium text-muted-foreground">Already have plans</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {busySlots.map(({ day, date, slots }) => (
-                        <div key={day} className="flex items-center gap-2 rounded-full bg-muted/50 px-3 py-1.5">
-                          <span className="text-xs font-medium">{day} {format(date, 'd')}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {slots.length === 6 ? 'All day' : `${slots.length} slot${slots.length > 1 ? 's' : ''}`}
+                  
+                  {/* Time slot buttons */}
+                  <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+                    {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => {
+                      const status = getSlotStatus(day, slot);
+                      const isAvailable = status === 'available';
+                      const slotInfo = TIME_SLOT_LABELS[slot];
+                      
+                      return (
+                        <button
+                          key={slot}
+                          disabled={isPast || !isAvailable}
+                          className={cn(
+                            "flex flex-col items-center justify-center rounded-lg px-2 py-2 text-center transition-all",
+                            "border",
+                            isAvailable && !isPast
+                              ? "bg-availability-available/10 border-availability-available/30 text-availability-available hover:bg-availability-available/20 hover:border-availability-available/50 cursor-pointer"
+                              : "bg-muted/30 border-transparent text-muted-foreground/50 cursor-not-allowed"
+                          )}
+                        >
+                          <span className="text-[10px] font-medium leading-tight">
+                            {slotInfo.label.split(' ')[0]}
                           </span>
-                        </div>
-                      ))}
-                    </div>
+                          <span className={cn(
+                            "text-[9px] leading-tight",
+                            isAvailable && !isPast ? "text-availability-available/70" : "text-muted-foreground/40"
+                          )}>
+                            {slotInfo.time}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
+              );
+            })}
+          </div>
 
-                {openSlots.length === 0 && busySlots.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No availability info for upcoming days
-                  </p>
-                )}
-              </div>
-            );
-          })()}
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-border/50 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-6 rounded bg-availability-available/20 border border-availability-available/30" />
+              <span className="text-muted-foreground">Available</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-6 rounded bg-muted/30" />
+              <span className="text-muted-foreground">Busy</span>
+            </div>
+          </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-availability-available" />
-            <span>Mostly Free</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-availability-partial" />
-            <span>Partially Free</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-availability-busy" />
-            <span>Busy</span>
-          </div>
-        </div>
 
         {/* CTA */}
         <div className="text-center pt-2">
