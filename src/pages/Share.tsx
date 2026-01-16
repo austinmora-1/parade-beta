@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns';
-import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send, X } from 'lucide-react';
+import { format, addDays, addWeeks, startOfWeek, isSameDay, isToday, isSameWeek } from 'date-fns';
+import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType, ACTIVITY_CONFIG } from '@/types/planner';
@@ -74,12 +74,17 @@ export default function Share() {
   const [requesterEmail, setRequesterEmail] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
+  
+  // Week navigation state
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  // Get current week (Monday to Sunday)
+  // Get week days based on offset (Monday to Sunday)
   const weekDays = useMemo(() => {
-    const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const start = startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 });
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  }, []);
+  }, [weekOffset]);
+  
+  const isCurrentWeek = isSameWeek(weekDays[0], new Date(), { weekStartsOn: 1 });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -354,10 +359,43 @@ export default function Share() {
         {/* Week Overview - Similar to Dashboard */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-display text-base font-semibold">This Week</h3>
-            <span className="text-xs text-muted-foreground">
-              {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d')}
-            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setWeekOffset(prev => prev - 1)}
+                disabled={weekOffset <= 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <h3 className="font-display text-base font-semibold">
+                {isCurrentWeek ? 'This Week' : format(weekDays[0], 'MMM d') + ' - ' + format(weekDays[6], 'MMM d')}
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setWeekOffset(prev => prev + 1)}
+                disabled={weekOffset >= 4}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            {isCurrentWeek ? (
+              <span className="text-xs text-muted-foreground">
+                {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d')}
+              </span>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setWeekOffset(0)}
+              >
+                Back to this week
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-7 gap-2 sm:gap-4">
