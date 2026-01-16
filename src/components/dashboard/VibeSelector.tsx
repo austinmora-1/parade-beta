@@ -69,6 +69,13 @@ export function VibeSelector() {
             </Button>
           </div>
         )}
+        {currentVibe?.type === 'custom' && currentVibe.customText && !showCustomInput && (
+          <div className="mt-2 animate-fade-in">
+            <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+              #{currentVibe.customText.replace(/\s+/g, '')}
+            </span>
+          </div>
+        )}
       </div>
     );
   }
