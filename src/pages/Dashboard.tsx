@@ -22,6 +22,9 @@ export default function Dashboard() {
 
   return (
     <div className="animate-fade-in space-y-6 md:space-y-8">
+      {/* Week Overview - Top */}
+      <WeekOverview />
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -46,7 +49,6 @@ export default function Dashboard() {
       {/* Main Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <WeekOverview />
           <UpcomingPlans />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:gap-6">
