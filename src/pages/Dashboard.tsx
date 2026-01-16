@@ -5,6 +5,7 @@ import { UpcomingPlans } from '@/components/dashboard/UpcomingPlans';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { LocationToggle } from '@/components/dashboard/LocationToggle';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
+import { HangRequests } from '@/components/dashboard/HangRequests';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -48,6 +49,9 @@ export default function Dashboard() {
         <VibeSelector />
         <LocationToggle />
       </div>
+
+      {/* Hang Requests */}
+      <HangRequests />
 
       {/* Quick Stats */}
       <QuickStats />

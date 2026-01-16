@@ -125,6 +125,48 @@ export type Database = {
         }
         Relationships: []
       }
+      hang_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          requester_email: string | null
+          requester_name: string
+          selected_day: string
+          selected_slot: string
+          share_code: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          requester_email?: string | null
+          requester_name: string
+          selected_day: string
+          selected_slot: string
+          share_code: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          requester_email?: string | null
+          requester_name?: string
+          selected_day?: string
+          selected_slot?: string
+          share_code?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plan_participants: {
         Row: {
           created_at: string

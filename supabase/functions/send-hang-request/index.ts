@@ -72,6 +72,25 @@ const handler = async (req: Request): Promise<Response> => {
     const userEmail = userData.user.email;
     const userName = profile.display_name || "there";
 
+    // Save the hang request to the database
+    const { error: insertError } = await supabase
+      .from("hang_requests")
+      .insert({
+        user_id: profile.user_id,
+        share_code: shareCode,
+        requester_name: requesterName,
+        requester_email: requesterEmail || null,
+        message: message || null,
+        selected_day: selectedDay,
+        selected_slot: selectedSlot,
+        status: 'pending'
+      });
+
+    if (insertError) {
+      console.error("Error saving hang request:", insertError);
+      // Continue to send email even if save fails
+    }
+
     // Send notification email via Resend
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
