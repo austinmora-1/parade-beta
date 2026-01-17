@@ -208,28 +208,29 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">
-            {editPlan ? 'Edit Plan' : 'Create New Plan'}
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md p-4">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="font-display text-lg">
+            {editPlan ? 'Edit Plan' : 'New Plan'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-3">
           {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">What are you planning?</Label>
+          <div className="space-y-1">
+            <Label htmlFor="title" className="text-xs">What are you planning?</Label>
             <Input
               id="title"
               placeholder="e.g., Dinner at that new place"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className="h-9"
             />
           </div>
 
           {/* Activity Type with Categories */}
-          <div className="space-y-3">
-            <Label>Activity Type</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Activity</Label>
             
             {/* Category Tabs */}
             <Tabs 
@@ -237,18 +238,18 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
               onValueChange={(v) => setActivityCategory(v as ActivityCategory)}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-2 h-8">
                 {(Object.keys(ACTIVITY_CATEGORIES) as ActivityCategory[]).map((cat) => (
-                  <TabsTrigger key={cat} value={cat} className="gap-2">
+                  <TabsTrigger key={cat} value={cat} className="gap-1.5 text-xs py-1">
                     <span>{ACTIVITY_CATEGORIES[cat].icon}</span>
-                    <span className="hidden sm:inline">{ACTIVITY_CATEGORIES[cat].label}</span>
+                    <span>{ACTIVITY_CATEGORIES[cat].label}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
 
-            {/* Activity Grid */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Activity Grid - more compact */}
+            <div className="grid grid-cols-4 gap-1">
               {categoryActivities.map((type) => {
                 const config = ACTIVITY_CONFIG[type];
                 return (
@@ -256,35 +257,36 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
                     key={type}
                     onClick={() => setActivity(type)}
                     className={cn(
-                      "flex flex-col items-center justify-center gap-1 rounded-xl border-2 p-3 transition-all",
+                      "flex flex-col items-center justify-center gap-0.5 rounded-lg border p-1.5 transition-all",
                       activity === type
-                        ? "border-primary bg-primary/5"
+                        ? "border-primary bg-primary/10"
                         : "border-transparent bg-muted/50 hover:bg-muted"
                     )}
                   >
-                    <span className="text-xl">{config.icon}</span>
-                    <span className="text-[10px] font-medium leading-tight text-center line-clamp-2">{config.label}</span>
+                    <span className="text-base">{config.icon}</span>
+                    <span className="text-[8px] font-medium leading-tight text-center line-clamp-1">{config.label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Date & Time */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Date</Label>
+          {/* Date, Time & Duration - all in one row */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    size="sm"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal h-9 text-xs px-2",
                       !date && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, 'PPP') : 'Pick a date'}
+                    <CalendarIcon className="mr-1 h-3 w-3" />
+                    {date ? format(date, 'MMM d') : 'Date'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -299,79 +301,71 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
               </Popover>
             </div>
 
-            <div className="space-y-2">
-              <Label>Time Slot</Label>
+            <div className="space-y-1">
+              <Label className="text-xs">Time</Label>
               <Select value={timeSlot} onValueChange={(v) => setTimeSlot(v as TimeSlot)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 text-xs px-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => (
-                    <SelectItem key={slot} value={slot}>
-                      {TIME_SLOT_LABELS[slot].label} ({TIME_SLOT_LABELS[slot].time})
+                    <SelectItem key={slot} value={slot} className="text-xs">
+                      {TIME_SLOT_LABELS[slot].label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          {/* Duration */}
-          <div className="space-y-2">
-            <Label htmlFor="duration" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Duration
-            </Label>
-            <Select value={duration} onValueChange={setDuration}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">30 min</SelectItem>
-                <SelectItem value="45">45 min</SelectItem>
-                <SelectItem value="60">1 hour</SelectItem>
-                <SelectItem value="90">1.5 hours</SelectItem>
-                <SelectItem value="120">2 hours</SelectItem>
-                <SelectItem value="180">3 hours</SelectItem>
-                <SelectItem value="240">4 hours</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-1">
+              <Label className="text-xs">Duration</Label>
+              <Select value={duration} onValueChange={setDuration}>
+                <SelectTrigger className="h-9 text-xs px-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30" className="text-xs">30m</SelectItem>
+                  <SelectItem value="60" className="text-xs">1h</SelectItem>
+                  <SelectItem value="90" className="text-xs">1.5h</SelectItem>
+                  <SelectItem value="120" className="text-xs">2h</SelectItem>
+                  <SelectItem value="180" className="text-xs">3h</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Location */}
-          <div className="space-y-2">
-            <Label htmlFor="location" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
+          <div className="space-y-1">
+            <Label htmlFor="location" className="text-xs flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
               Location
             </Label>
             <div className="relative">
-              <div className="relative">
-                <Input
-                  id="location"
-                  placeholder="Search for a place..."
-                  value={locationName}
-                  onChange={(e) => handleLocationChange(e.target.value)}
-                  onFocus={() => locationSuggestions.length > 0 && setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  className="pr-8"
-                />
-                {isSearchingLocation ? (
-                  <Loader2 className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-                ) : (
-                  <Search className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                )}
-              </div>
+              <Input
+                id="location"
+                placeholder="Search for a place..."
+                value={locationName}
+                onChange={(e) => handleLocationChange(e.target.value)}
+                onFocus={() => locationSuggestions.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                className="h-9 pr-8 text-sm"
+              />
+              {isSearchingLocation ? (
+                <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+              ) : (
+                <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              )}
               {showSuggestions && locationSuggestions.length > 0 && (
-                <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                <div className="absolute z-50 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
                   {locationSuggestions.map((suggestion, index) => (
                     <button
                       key={index}
                       type="button"
                       onClick={() => selectLocation(suggestion)}
-                      className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-muted transition-colors"
+                      className="flex w-full items-start gap-2 px-2 py-1.5 text-left text-xs hover:bg-muted transition-colors"
                     >
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="line-clamp-2">{suggestion.display_name}</span>
+                      <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span className="line-clamp-1">{suggestion.display_name}</span>
                     </button>
                   ))}
                 </div>
@@ -379,51 +373,54 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
             </div>
           </div>
 
-          {/* Friends */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Invite Friends
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {friends
-                .filter((f) => f.status === 'connected')
-                .map((friend) => (
-                  <button
-                    key={friend.id}
-                    onClick={() => toggleFriend(friend.id)}
-                    className={cn(
-                      "rounded-full px-4 py-2 text-sm font-medium transition-all",
-                      selectedFriends.includes(friend.id)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    )}
-                  >
-                    {friend.name}
-                  </button>
-                ))}
+          {/* Friends - compact */}
+          {friends.filter((f) => f.status === 'connected').length > 0 && (
+            <div className="space-y-1">
+              <Label className="text-xs flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                Invite Friends
+              </Label>
+              <div className="flex flex-wrap gap-1">
+                {friends
+                  .filter((f) => f.status === 'connected')
+                  .map((friend) => (
+                    <button
+                      key={friend.id}
+                      onClick={() => toggleFriend(friend.id)}
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-xs font-medium transition-all",
+                        selectedFriends.includes(friend.id)
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}
+                    >
+                      {friend.name}
+                    </button>
+                  ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
+          {/* Notes - smaller */}
+          <div className="space-y-1">
+            <Label htmlFor="notes" className="text-xs">Notes (optional)</Label>
             <Textarea
               id="notes"
-              placeholder="Add any additional details..."
+              placeholder="Add any details..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={3}
+              rows={2}
+              className="text-sm resize-none"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={handleSubmit} disabled={!title}>
-              {editPlan ? 'Save Changes' : 'Create Plan'}
+            <Button size="sm" className="flex-1" onClick={handleSubmit} disabled={!title}>
+              {editPlan ? 'Save' : 'Create'}
             </Button>
           </div>
         </div>
