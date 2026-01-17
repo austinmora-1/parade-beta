@@ -379,31 +379,21 @@ export function AvailabilityGrid() {
           {viewMode === 'week' ? (
             <>
               <MobileWeekStrip />
-              <MobileCompactView day={mobileDays[selectedDayIndex]} />
-              {isDaySummaryOpen && (
-                <div className="mt-3">
-                  <DaySummaryDropdown 
-                    selectedDate={mobileDays[selectedDayIndex]} 
-                    isOpen={isDaySummaryOpen}
-                    onOpenChange={setIsDaySummaryOpen}
-                  />
-                </div>
-              )}
+              <DaySummaryDropdown 
+                selectedDate={mobileDays[selectedDayIndex]} 
+                isOpen={true}
+                onOpenChange={() => {}}
+              />
             </>
           ) : (
             <>
               <MobileMonthView />
               {selectedDate && (
                 <div className="mt-3">
-                  <MobileCompactView day={selectedDate} />
-                </div>
-              )}
-              {isDaySummaryOpen && selectedDate && (
-                <div className="mt-3">
                   <DaySummaryDropdown 
                     selectedDate={selectedDate} 
-                    isOpen={isDaySummaryOpen}
-                    onOpenChange={setIsDaySummaryOpen}
+                    isOpen={true}
+                    onOpenChange={() => setSelectedDate(null)}
                   />
                 </div>
               )}
