@@ -41,8 +41,23 @@ export function WeekOverview() {
     return availableSlots / slots.length;
   };
 
+  const TIME_SLOT_ORDER: TimeSlot[] = [
+    'early-morning',
+    'late-morning', 
+    'early-afternoon',
+    'late-afternoon',
+    'evening',
+    'late-night'
+  ];
+
   const getDayPlans = (date: Date) => {
-    return plans.filter((p) => isSameDay(p.date, date));
+    return plans
+      .filter((p) => isSameDay(p.date, date))
+      .sort((a, b) => {
+        const aIndex = TIME_SLOT_ORDER.indexOf(a.timeSlot as TimeSlot);
+        const bIndex = TIME_SLOT_ORDER.indexOf(b.timeSlot as TimeSlot);
+        return aIndex - bIndex;
+      });
   };
 
   const getWeekLabel = () => {
