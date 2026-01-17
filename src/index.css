@@ -54,8 +54,8 @@
     --activity-doctor: 0 60% 55%;
 
     /* Availability colors */
-    --available: 152 55% 45%;
-    --available-light: 152 50% 88%;
+    --available: 150 65% 45%;
+    --available-light: 150 60% 88%;
     --partial: 45 90% 55%;
     --partial-light: 45 85% 90%;
     --busy: 0 70% 60%;
