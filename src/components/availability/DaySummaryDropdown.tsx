@@ -1,14 +1,9 @@
 import { useMemo } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { ChevronDown, Home, Plane, Calendar } from 'lucide-react';
+import { X, Home, Plane, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { Switch } from '@/components/ui/switch';
 
 interface DaySummaryDropdownProps {
@@ -34,35 +29,19 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
 
   const vibeOptions = Object.entries(VIBE_CONFIG).filter(([key]) => key !== 'custom');
 
+  if (!isOpen) return null;
+
   return (
-    <Collapsible open={isOpen} onOpenChange={onOpenChange}>
-      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">Day Details</span>
-          <div className="flex items-center gap-1.5">
-            {locationStatus === 'home' ? (
-              <Home className="h-3.5 w-3.5 text-availability-available" />
-            ) : (
-              <Plane className="h-3.5 w-3.5 text-primary" />
-            )}
-            {currentVibe && (
-              <span className="text-xs">{VIBE_CONFIG[currentVibe.type].icon}</span>
-            )}
-            {dayPlans.length > 0 && (
-              <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                {dayPlans.length}
-              </span>
-            )}
-          </div>
-        </div>
-        <ChevronDown className={cn(
-          "h-4 w-4 text-muted-foreground transition-transform duration-200",
-          isOpen && "rotate-180"
-        )} />
-      </CollapsibleTrigger>
-      
-      <CollapsibleContent className="mt-2 space-y-3">
+    <div className="rounded-xl border border-border bg-card p-3 shadow-soft animate-fade-in">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-medium">{format(selectedDate, 'EEEE, MMM d')}</span>
+        <button 
+          onClick={() => onOpenChange(false)}
+          className="p-1 rounded-md hover:bg-muted transition-colors"
+        >
+          <X className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
         {/* Location Status */}
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="flex items-center justify-between">
@@ -108,33 +87,32 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
           </div>
         </div>
 
-        {/* Plans for the Day */}
-        <div className="rounded-lg border border-border bg-card p-3">
-          <span className="text-xs font-medium text-muted-foreground mb-2 block">Plans</span>
-          {dayPlans.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">No plans for this day</p>
-          ) : (
-            <div className="space-y-1.5">
-              {dayPlans.map((plan) => {
-                const activityConfig = ACTIVITY_CONFIG[plan.activity];
-                const slotLabel = TIME_SLOT_LABELS[plan.timeSlot as TimeSlot];
-                return (
-                  <div
-                    key={plan.id}
-                    className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5"
-                  >
-                    <span className="text-sm">{activityConfig?.icon || '📅'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{plan.title}</p>
-                      <p className="text-[10px] text-muted-foreground">{slotLabel?.time}</p>
-                    </div>
+      {/* Plans for the Day */}
+      <div className="rounded-lg border border-border bg-background p-3">
+        <span className="text-xs font-medium text-muted-foreground mb-2 block">Plans</span>
+        {dayPlans.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic">No plans for this day</p>
+        ) : (
+          <div className="space-y-1.5">
+            {dayPlans.map((plan) => {
+              const activityConfig = ACTIVITY_CONFIG[plan.activity];
+              const slotLabel = TIME_SLOT_LABELS[plan.timeSlot as TimeSlot];
+              return (
+                <div
+                  key={plan.id}
+                  className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5"
+                >
+                  <span className="text-sm">{activityConfig?.icon || '📅'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{plan.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{slotLabel?.time}</p>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

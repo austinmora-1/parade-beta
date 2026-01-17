@@ -1,6 +1,4 @@
 import { AvailabilityGrid } from '@/components/availability/AvailabilityGrid';
-import { LocationToggle } from '@/components/dashboard/LocationToggle';
-import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { Button } from '@/components/ui/button';
 import { Share2 } from 'lucide-react';
@@ -26,14 +24,8 @@ export default function Availability() {
         />
       </div>
 
-      {/* Availability Grid - now first */}
+      {/* Availability Grid */}
       <AvailabilityGrid />
-
-      {/* Status Cards */}
-      <div className="grid gap-3 sm:grid-cols-2 md:gap-6">
-        <LocationToggle />
-        <VibeSelector />
-      </div>
     </div>
   );
 }
