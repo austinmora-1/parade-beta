@@ -80,12 +80,12 @@ export interface UserProfile {
 }
 
 export const TIME_SLOT_LABELS: Record<TimeSlot, { label: string; time: string }> = {
-  'early-morning': { label: 'Early Morning', time: '6-9am' },
-  'late-morning': { label: 'Late Morning', time: '9am-12pm' },
-  'early-afternoon': { label: 'Early Afternoon', time: '12-3pm' },
-  'late-afternoon': { label: 'Late Afternoon', time: '3-6pm' },
+  'early-morning': { label: 'Morning', time: '6-9am' },
+  'late-morning': { label: 'Midday', time: '9am-12pm' },
+  'early-afternoon': { label: 'Afternoon', time: '12-3pm' },
+  'late-afternoon': { label: 'Pre-Evening', time: '3-6pm' },
   'evening': { label: 'Evening', time: '6-10pm' },
-  'late-night': { label: 'Late Night', time: '10pm-2am' },
+  'late-night': { label: 'Night', time: '10pm-2am' },
 };
 
 export interface ActivityConfig {
