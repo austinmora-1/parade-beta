@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { DaySummaryDropdown } from './DaySummaryDropdown';
 
 export function AvailabilityGrid() {
   const { plans, availability, setAvailability } = usePlannerStore();
@@ -26,6 +27,7 @@ export function AvailabilityGrid() {
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [isDaySummaryOpen, setIsDaySummaryOpen] = useState(false);
 
   // Mobile uses 7 days forward from start date
   const mobileDays = useMemo(() => {
@@ -202,6 +204,13 @@ export function AvailabilityGrid() {
         <>
           <MobileWeekStrip />
           <MobileCompactView />
+          <div className="mt-3">
+            <DaySummaryDropdown 
+              selectedDate={mobileDays[selectedDayIndex]} 
+              isOpen={isDaySummaryOpen}
+              onOpenChange={setIsDaySummaryOpen}
+            />
+          </div>
         </>
       ) : (
         /* Desktop Grid */
