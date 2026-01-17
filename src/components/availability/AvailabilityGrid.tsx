@@ -244,20 +244,21 @@ export function AvailabilityGrid() {
           </Button>
         </div>
         
-        {/* Week day headers */}
-        <div className="grid grid-cols-7 gap-0.5 mb-1">
-          {weekDayLabels.map((label, i) => (
-            <div key={i} className="text-center text-[10px] font-medium text-muted-foreground py-1">
-              {label}
-            </div>
-          ))}
-        </div>
-        
         {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-0.5">
+          {/* Week day headers */}
+          {weekDayLabels.map((label, i) => (
+            <div key={`header-${i}`} className="flex flex-col items-center justify-center py-1">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                {label}
+              </span>
+            </div>
+          ))}
+          
+          {/* Day cells */}
           {monthDays.map((day, index) => {
             if (!day) {
-              return <div key={`empty-${index}`} className="aspect-square" />;
+              return <div key={`empty-${index}`} className="py-1.5" />;
             }
             
             const isTodayDate = isToday(day);
@@ -277,7 +278,7 @@ export function AvailabilityGrid() {
                   }
                 }}
                 className={cn(
-                  "aspect-square flex flex-col items-center justify-center rounded-md transition-all text-xs relative",
+                  "flex flex-col items-center py-1.5 rounded-md transition-all relative",
                   getDayBgColor(dayAvail, isSelected || false, isTodayDate),
                   isSelected && "text-primary-foreground",
                   isTodayDate && !isSelected && "text-white",
@@ -285,7 +286,12 @@ export function AvailabilityGrid() {
                   !isSelected && !isTodayDate && dayAvail > 0 && "text-foreground"
                 )}
               >
-                <span className="font-medium">{format(day, 'd')}</span>
+                <span className="text-[10px] font-medium uppercase leading-none">
+                  {format(day, 'EEE').charAt(0)}
+                </span>
+                <span className="text-sm font-semibold leading-tight">
+                  {format(day, 'd')}
+                </span>
                 {hasPlan && (
                   <div className={cn(
                     "absolute bottom-0.5 w-1 h-1 rounded-full",
