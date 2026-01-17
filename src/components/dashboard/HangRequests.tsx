@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
-import { Check, X, Mail, MessageSquare, Calendar, Clock, Loader2, Inbox } from 'lucide-react';
+import { Check, X, Mail, MessageSquare, Calendar, Clock, Loader2, Inbox, Plus, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { ShareDialog } from './ShareDialog';
 
 interface HangRequest {
   id: string;
@@ -103,9 +105,19 @@ export function HangRequests() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Inbox className="h-5 w-5" />
-            Hang Requests
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-lg">
+              <Inbox className="h-5 w-5" />
+              Hang Requests
+            </span>
+            <ShareDialog
+              trigger={
+                <Button size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  New
+                </Button>
+              }
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -126,14 +138,24 @@ export function HangRequests() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Inbox className="h-5 w-5" />
-          Hang Requests
-          {pendingRequests.length > 0 && (
-            <Badge variant="default" className="ml-2">
-              {pendingRequests.length} new
-            </Badge>
-          )}
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2 text-lg">
+            <Inbox className="h-5 w-5" />
+            Hang Requests
+            {pendingRequests.length > 0 && (
+              <Badge variant="default" className="ml-2">
+                {pendingRequests.length} new
+              </Badge>
+            )}
+          </span>
+          <ShareDialog
+            trigger={
+              <Button size="sm" className="gap-1">
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
+            }
+          />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
