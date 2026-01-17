@@ -41,6 +41,7 @@ export interface Friend {
   avatar?: string;
   friendUserId?: string; // The user_id of the friend if they're an app user
   status: 'connected' | 'pending' | 'invited';
+  isIncoming?: boolean; // True if this is an incoming request (someone sent to me)
 }
 
 export interface Plan {

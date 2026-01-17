@@ -87,19 +87,61 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         createdAt: new Date(p.created_at),
       }));
       
-      // Load friends
-      const { data: friendsData } = await supabase
+      // Load outgoing friendships (requests I sent)
+      const { data: outgoingData } = await supabase
         .from('friendships')
         .select('*')
         .eq('user_id', userId);
       
-      const friends: Friend[] = (friendsData || []).map((f) => ({
+      // Load incoming friendships (requests sent to me)
+      const { data: incomingData } = await supabase
+        .from('friendships')
+        .select('*')
+        .eq('friend_user_id', userId);
+      
+      const outgoingFriends: Friend[] = (outgoingData || []).map((f) => ({
         id: f.id,
         name: f.friend_name,
         email: f.friend_email || undefined,
         friendUserId: f.friend_user_id || undefined,
         status: f.status as 'connected' | 'pending' | 'invited',
+        isIncoming: false,
       }));
+      
+      // For incoming requests, we need to get the requester's profile info
+      const incomingFriends: Friend[] = await Promise.all(
+        (incomingData || []).map(async (f) => {
+          // Get the requester's profile
+          const { data: profile } = await supabase
+            .from('public_profiles')
+            .select('display_name, avatar_url')
+            .eq('user_id', f.user_id)
+            .single();
+          
+          return {
+            id: f.id,
+            name: profile?.display_name || f.friend_name || 'User',
+            avatar: profile?.avatar_url || undefined,
+            friendUserId: f.user_id, // The person who sent the request
+            status: f.status as 'connected' | 'pending' | 'invited',
+            isIncoming: true,
+          };
+        })
+      );
+      
+      // Combine and dedupe (connected friends might appear in both)
+      const allFriends = [...outgoingFriends];
+      for (const incoming of incomingFriends) {
+        // Only add if not already connected via outgoing
+        const existingOutgoing = outgoingFriends.find(
+          (o) => o.friendUserId === incoming.friendUserId && o.status === 'connected'
+        );
+        if (!existingOutgoing) {
+          allFriends.push(incoming);
+        }
+      }
+      
+      const friends = allFriends;
       
       // Load availability for this week
       const start = startOfWeek(new Date(), { weekStartsOn: 1 });

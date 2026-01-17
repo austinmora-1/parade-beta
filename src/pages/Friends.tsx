@@ -104,7 +104,8 @@ export default function Friends() {
   );
 
   const connectedFriends = filteredFriends.filter((f) => f.status === 'connected');
-  const pendingFriends = filteredFriends.filter((f) => f.status === 'pending');
+  const incomingRequests = filteredFriends.filter((f) => f.status === 'pending' && f.isIncoming);
+  const outgoingRequests = filteredFriends.filter((f) => f.status === 'pending' && !f.isIncoming);
   const invitedFriends = filteredFriends.filter((f) => f.status === 'invited');
 
   const handleConnect = (id: string) => {
@@ -224,21 +225,42 @@ export default function Friends() {
 
       {/* Friends Lists */}
       <div className="space-y-6 md:space-y-8">
-        {/* Pending Requests */}
-        {pendingFriends.length > 0 && (
+      {/* Incoming Friend Requests */}
+        {incomingRequests.length > 0 && (
           <div>
             <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-availability-partial-light text-[10px] font-bold text-availability-partial md:h-6 md:w-6 md:text-xs">
-                {pendingFriends.length}
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-availability-available-light text-[10px] font-bold text-availability-available md:h-6 md:w-6 md:text-xs">
+                {incomingRequests.length}
               </span>
-              Pending Requests
+              Incoming Requests
             </h2>
             <div className="space-y-2 md:space-y-3">
-              {pendingFriends.map((friend) => (
+              {incomingRequests.map((friend) => (
                 <FriendCard
                   key={friend.id}
                   friend={friend}
                   onConnect={handleConnect}
+                  onRemove={removeFriend}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Outgoing Requests (Sent by you) */}
+        {outgoingRequests.length > 0 && (
+          <div>
+            <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-availability-partial-light text-[10px] font-bold text-availability-partial md:h-6 md:w-6 md:text-xs">
+                {outgoingRequests.length}
+              </span>
+              Sent Requests
+            </h2>
+            <div className="space-y-2 md:space-y-3">
+              {outgoingRequests.map((friend) => (
+                <FriendCard
+                  key={friend.id}
+                  friend={friend}
                   onRemove={removeFriend}
                 />
               ))}

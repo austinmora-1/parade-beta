@@ -119,7 +119,7 @@ export function FriendCard({ friend, onConnect, onMessage, onRemove }: FriendCar
           </Button>
         )}
 
-        {friend.status === 'pending' && (
+        {friend.status === 'pending' && friend.isIncoming && (
           <Button size="sm" onClick={() => onConnect?.(friend.id)}>
             Accept
           </Button>
