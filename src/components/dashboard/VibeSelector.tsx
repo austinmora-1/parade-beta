@@ -36,9 +36,33 @@ export function VibeSelector() {
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-muted-foreground shrink-0">Vibe</span>
           <div className="flex flex-1 gap-1">
-            {(Object.keys(VIBE_CONFIG) as VibeType[]).map((type) => {
+          {(Object.keys(VIBE_CONFIG) as VibeType[]).map((type) => {
               const config = VIBE_CONFIG[type];
               const isSelected = currentVibe?.type === type;
+              
+              if (type === 'custom' && showCustomInput) {
+                return (
+                  <input
+                    key={type}
+                    autoFocus
+                    placeholder="vibe"
+                    value={customText}
+                    onChange={(e) => setCustomText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCustomSubmit();
+                      if (e.key === 'Escape') {
+                        setShowCustomInput(false);
+                        setCustomText('');
+                      }
+                    }}
+                    onBlur={() => {
+                      if (customText.trim()) handleCustomSubmit();
+                      else setShowCustomInput(false);
+                    }}
+                    className="flex-1 rounded-lg py-1.5 px-2 text-xs font-medium bg-primary/10 text-primary outline-none focus:ring-1 focus:ring-primary/50 min-w-0"
+                  />
+                );
+              }
               
               return (
                 <button
@@ -57,49 +81,30 @@ export function VibeSelector() {
             })}
           </div>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          {currentVibe?.type === 'custom' && currentVibe.customTags?.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
-            >
-              #{tag}
-              <button
-                onClick={() => removeCustomVibe(tag)}
-                className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+        {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {currentVibe.customTags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
               >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-          {showCustomInput ? (
-            <input
-              autoFocus
-              placeholder="vibe"
-              value={customText}
-              onChange={(e) => setCustomText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCustomSubmit();
-                if (e.key === 'Escape') {
-                  setShowCustomInput(false);
-                  setCustomText('');
-                }
-              }}
-              onBlur={() => {
-                if (customText.trim()) handleCustomSubmit();
-                else setShowCustomInput(false);
-              }}
-              className="h-5 w-20 rounded-full bg-muted px-2 text-xs outline-none focus:ring-1 focus:ring-primary/50"
-            />
-          ) : (
+                #{tag}
+                <button
+                  onClick={() => removeCustomVibe(tag)}
+                  className="ml-0.5 rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
             <button
               onClick={() => setShowCustomInput(true)}
               className="inline-flex items-center justify-center rounded-full bg-muted h-5 w-5 text-muted-foreground hover:bg-muted/80 transition-colors"
             >
               <Plus className="h-3 w-3" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -114,6 +119,35 @@ export function VibeSelector() {
         {(Object.keys(VIBE_CONFIG) as VibeType[]).map((type) => {
           const config = VIBE_CONFIG[type];
           const isSelected = currentVibe?.type === type;
+          
+          if (type === 'custom' && showCustomInput) {
+            return (
+              <div
+                key={type}
+                className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4"
+              >
+                <span className="text-2xl">{config.icon}</span>
+                <input
+                  autoFocus
+                  placeholder="type your vibe..."
+                  value={customText}
+                  onChange={(e) => setCustomText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCustomSubmit();
+                    if (e.key === 'Escape') {
+                      setShowCustomInput(false);
+                      setCustomText('');
+                    }
+                  }}
+                  onBlur={() => {
+                    if (customText.trim()) handleCustomSubmit();
+                    else setShowCustomInput(false);
+                  }}
+                  className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            );
+          }
           
           return (
             <button
@@ -135,49 +169,30 @@ export function VibeSelector() {
         })}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {currentVibe?.type === 'custom' && currentVibe.customTags?.map((tag) => (
-          <span
-            key={tag}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
-          >
-            #{tag}
-            <button
-              onClick={() => removeCustomVibe(tag)}
-              className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+      {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {currentVibe.customTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary"
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </span>
-        ))}
-        {showCustomInput ? (
-          <input
-            autoFocus
-            placeholder="vibe"
-            value={customText}
-            onChange={(e) => setCustomText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCustomSubmit();
-              if (e.key === 'Escape') {
-                setShowCustomInput(false);
-                setCustomText('');
-              }
-            }}
-            onBlur={() => {
-              if (customText.trim()) handleCustomSubmit();
-              else setShowCustomInput(false);
-            }}
-            className="h-7 w-24 rounded-full bg-muted px-3 text-sm outline-none focus:ring-1 focus:ring-primary/50"
-          />
-        ) : (
+              #{tag}
+              <button
+                onClick={() => removeCustomVibe(tag)}
+                className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ))}
           <button
             onClick={() => setShowCustomInput(true)}
             className="inline-flex items-center justify-center rounded-full bg-muted h-7 w-7 text-muted-foreground hover:bg-muted/80 transition-colors"
           >
             <Plus className="h-4 w-4" />
           </button>
-        )}
-    </div>
+        </div>
+      )}
     </div>
   );
 }
