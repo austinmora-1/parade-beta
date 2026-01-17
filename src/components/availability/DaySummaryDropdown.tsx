@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { X, Home, Plane } from 'lucide-react';
+import { X, Home, Plane, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 
 interface DaySummaryDropdownProps {
   selectedDate: Date;
@@ -22,6 +24,8 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
     setAvailability,
     setVibe 
   } = usePlannerStore();
+
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
 
   const locationStatus = getLocationStatusForDate(selectedDate);
   
@@ -152,9 +156,22 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
       </div>
 
       {/* Plans for the Day */}
-      {dayPlans.length > 0 && (
-        <div className="rounded-lg border border-border bg-background p-2">
-          <span className="text-[10px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wide">Plans</span>
+      <div className="rounded-lg border border-border bg-background p-2">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Plans</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-6 px-2 text-xs gap-1"
+            onClick={() => setCreatePlanOpen(true)}
+          >
+            <Plus className="h-3 w-3" />
+            Add
+          </Button>
+        </div>
+        {dayPlans.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic py-1">No plans yet</p>
+        ) : (
           <div className="space-y-1">
             {dayPlans.map((plan) => {
               const activityConfig = ACTIVITY_CONFIG[plan.activity];
@@ -173,8 +190,15 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Create Plan Dialog */}
+      <CreatePlanDialog 
+        open={createPlanOpen} 
+        onOpenChange={setCreatePlanOpen}
+        defaultDate={selectedDate}
+      />
     </div>
   );
 }
