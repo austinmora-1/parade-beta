@@ -100,10 +100,15 @@ export function AvailabilityGrid() {
   const getDayBgColor = (availability: number, isSelected: boolean, isTodayDate: boolean): string => {
     if (isSelected) return 'bg-primary';
     if (isTodayDate) return 'bg-availability-today';
-    if (availability === 0) return 'bg-muted/60';
-    if (availability <= 0.33) return 'bg-availability-available/20';
-    if (availability <= 0.66) return 'bg-availability-available/40';
-    return 'bg-availability-available/60';
+    
+    // Gray to green gradient based on availability
+    if (availability === 0) return 'bg-muted';
+    if (availability <= 0.17) return 'bg-availability-available/15';
+    if (availability <= 0.33) return 'bg-availability-available/25';
+    if (availability <= 0.5) return 'bg-availability-available/40';
+    if (availability <= 0.67) return 'bg-availability-available/55';
+    if (availability <= 0.83) return 'bg-availability-available/70';
+    return 'bg-availability-available/85';
   };
 
   const toggleSlot = (date: Date, slot: TimeSlot) => {
