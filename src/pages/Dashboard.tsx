@@ -6,8 +6,9 @@ import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { LocationToggle } from '@/components/dashboard/LocationToggle';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { HangRequests } from '@/components/dashboard/HangRequests';
+import { AvailableFriends } from '@/components/dashboard/AvailableFriends';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Calendar, Users, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -41,6 +42,34 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Quick Navigation */}
+      <div className="grid grid-cols-3 gap-3">
+        <Link to="/plans" className="group">
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-soft">
+            <div className="rounded-lg bg-primary/10 p-2 transition-colors group-hover:bg-primary/20">
+              <Calendar className="h-5 w-5 text-primary" />
+            </div>
+            <span className="text-sm font-medium">Plans</span>
+          </div>
+        </Link>
+        <Link to="/availability" className="group">
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-soft">
+            <div className="rounded-lg bg-availability-available/10 p-2 transition-colors group-hover:bg-availability-available/20">
+              <Clock className="h-5 w-5 text-availability-available" />
+            </div>
+            <span className="text-sm font-medium">Availability</span>
+          </div>
+        </Link>
+        <Link to="/friends" className="group">
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-soft">
+            <div className="rounded-lg bg-activity-drinks/10 p-2 transition-colors group-hover:bg-activity-drinks/20">
+              <Users className="h-5 w-5 text-activity-drinks" />
+            </div>
+            <span className="text-sm font-medium">Friends</span>
+          </div>
+        </Link>
+      </div>
+
       {/* Week Overview */}
       <WeekOverview />
 
@@ -50,8 +79,11 @@ export default function Dashboard() {
         <LocationToggle />
       </div>
 
-      {/* Hang Requests */}
-      <HangRequests />
+      {/* Available Friends & Hang Requests */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AvailableFriends />
+        <HangRequests />
+      </div>
 
       {/* Quick Stats */}
       <QuickStats />
