@@ -2,8 +2,12 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { MobileHeader } from './MobileHeader';
+import { useFriendRequestNotifications } from '@/hooks/useFriendRequestNotifications';
 
 export function AppLayout() {
+  // Listen for real-time friend request notifications
+  useFriendRequestNotifications();
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
