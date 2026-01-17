@@ -11,6 +11,8 @@ export function VibeSelector() {
   const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
   const [customText, setCustomText] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [showAddMoreInput, setShowAddMoreInput] = useState(false);
+  const [addMoreText, setAddMoreText] = useState('');
   const isMobile = useIsMobile();
 
   const handleVibeSelect = (type: VibeType) => {
@@ -27,6 +29,14 @@ export function VibeSelector() {
       addCustomVibe(customText.trim().replace(/\s+/g, ''));
       setCustomText('');
       setShowCustomInput(false);
+    }
+  };
+
+  const handleAddMoreSubmit = () => {
+    if (addMoreText.trim()) {
+      addCustomVibe(addMoreText.trim().replace(/\s+/g, ''));
+      setAddMoreText('');
+      setShowAddMoreInput(false);
     }
   };
 
@@ -97,12 +107,33 @@ export function VibeSelector() {
                 </button>
               </span>
             ))}
-            <button
-              onClick={() => setShowCustomInput(true)}
-              className="inline-flex items-center justify-center rounded-full bg-muted h-5 w-5 text-muted-foreground hover:bg-muted/80 transition-colors"
-            >
-              <Plus className="h-3 w-3" />
-            </button>
+            {showAddMoreInput ? (
+              <input
+                autoFocus
+                placeholder="vibe"
+                value={addMoreText}
+                onChange={(e) => setAddMoreText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddMoreSubmit();
+                  if (e.key === 'Escape') {
+                    setShowAddMoreInput(false);
+                    setAddMoreText('');
+                  }
+                }}
+                onBlur={() => {
+                  if (addMoreText.trim()) handleAddMoreSubmit();
+                  else setShowAddMoreInput(false);
+                }}
+                className="h-5 w-20 rounded-full bg-muted px-2 text-xs outline-none focus:ring-1 focus:ring-primary/50"
+              />
+            ) : (
+              <button
+                onClick={() => setShowAddMoreInput(true)}
+                className="inline-flex items-center justify-center rounded-full bg-muted h-5 w-5 text-muted-foreground hover:bg-muted/80 transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -185,12 +216,33 @@ export function VibeSelector() {
               </button>
             </span>
           ))}
-          <button
-            onClick={() => setShowCustomInput(true)}
-            className="inline-flex items-center justify-center rounded-full bg-muted h-7 w-7 text-muted-foreground hover:bg-muted/80 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+          {showAddMoreInput ? (
+            <input
+              autoFocus
+              placeholder="vibe"
+              value={addMoreText}
+              onChange={(e) => setAddMoreText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddMoreSubmit();
+                if (e.key === 'Escape') {
+                  setShowAddMoreInput(false);
+                  setAddMoreText('');
+                }
+              }}
+              onBlur={() => {
+                if (addMoreText.trim()) handleAddMoreSubmit();
+                else setShowAddMoreInput(false);
+              }}
+              className="h-7 w-24 rounded-full bg-muted px-3 text-sm outline-none focus:ring-1 focus:ring-primary/50"
+            />
+          ) : (
+            <button
+              onClick={() => setShowAddMoreInput(true)}
+              className="inline-flex items-center justify-center rounded-full bg-muted h-7 w-7 text-muted-foreground hover:bg-muted/80 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
         </div>
       )}
     </div>
