@@ -18,7 +18,7 @@ interface PublicProfile {
 }
 
 export default function Friends() {
-  const { friends, updateFriend, removeFriend, addFriend } = usePlannerStore();
+  const { friends, updateFriend, removeFriend, addFriend, acceptFriendRequest } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
@@ -108,8 +108,17 @@ export default function Friends() {
   const outgoingRequests = filteredFriends.filter((f) => f.status === 'pending' && !f.isIncoming);
   const invitedFriends = filteredFriends.filter((f) => f.status === 'invited');
 
-  const handleConnect = (id: string) => {
-    updateFriend(id, { status: 'connected' });
+  const handleConnect = async (id: string) => {
+    const friend = friends.find(f => f.id === id);
+    if (friend?.isIncoming && friend.friendUserId) {
+      await acceptFriendRequest(id, friend.friendUserId);
+      toast({
+        title: 'Friend request accepted! 🎉',
+        description: `You and ${friend.name} are now connected`,
+      });
+    } else {
+      updateFriend(id, { status: 'connected' });
+    }
   };
 
   const getInitials = (name: string) => {
