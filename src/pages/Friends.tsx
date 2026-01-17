@@ -121,6 +121,15 @@ export default function Friends() {
     }
   };
 
+  const handleDecline = async (id: string) => {
+    const friend = friends.find(f => f.id === id);
+    await removeFriend(id);
+    toast({
+      title: 'Request declined',
+      description: friend ? `Declined request from ${friend.name}` : 'Friend request declined',
+    });
+  };
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
@@ -249,6 +258,7 @@ export default function Friends() {
                   key={friend.id}
                   friend={friend}
                   onConnect={handleConnect}
+                  onDecline={handleDecline}
                   onRemove={removeFriend}
                 />
               ))}

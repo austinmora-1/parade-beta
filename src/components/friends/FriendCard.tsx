@@ -1,7 +1,7 @@
 import { Friend } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, UserPlus, MessageCircle, MoreVertical, UserMinus } from 'lucide-react';
+import { Check, Clock, UserPlus, MessageCircle, MoreVertical, UserMinus, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,11 +12,12 @@ import {
 interface FriendCardProps {
   friend: Friend;
   onConnect?: (id: string) => void;
+  onDecline?: (id: string) => void;
   onMessage?: (id: string) => void;
   onRemove?: (id: string) => void;
 }
 
-export function FriendCard({ friend, onConnect, onMessage, onRemove }: FriendCardProps) {
+export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }: FriendCardProps) {
   const getStatusConfig = () => {
     switch (friend.status) {
       case 'connected':
@@ -120,9 +121,21 @@ export function FriendCard({ friend, onConnect, onMessage, onRemove }: FriendCar
         )}
 
         {friend.status === 'pending' && friend.isIncoming && (
-          <Button size="sm" onClick={() => onConnect?.(friend.id)}>
-            Accept
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => onDecline?.(friend.id)}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Decline
+            </Button>
+            <Button size="sm" onClick={() => onConnect?.(friend.id)}>
+              <Check className="h-3.5 w-3.5 mr-1" />
+              Accept
+            </Button>
+          </div>
         )}
 
         <DropdownMenu>
