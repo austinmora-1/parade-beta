@@ -298,7 +298,7 @@ export function AvailabilityGrid() {
                 </span>
                 {hasPlan && (
                   <div className={cn(
-                    "absolute top-1 right-1 w-1.5 h-1.5 rounded-full",
+                    "absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full",
                     isSelected ? "bg-primary-foreground" : "bg-primary"
                   )} />
                 )}
