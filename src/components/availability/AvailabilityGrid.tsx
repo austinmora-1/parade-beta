@@ -96,7 +96,15 @@ export function AvailabilityGrid() {
           return (
             <button
               key={day.toISOString()}
-              onClick={() => setSelectedDayIndex(index)}
+              onClick={() => {
+                if (index === selectedDayIndex) {
+                  // Toggle dropdown if clicking the already selected day
+                  setIsDaySummaryOpen(!isDaySummaryOpen);
+                } else {
+                  setSelectedDayIndex(index);
+                  setIsDaySummaryOpen(true);
+                }
+              }}
               className={cn(
                 "flex-1 flex flex-col items-center py-1.5 rounded-md transition-all min-w-0",
                 getDayBgColor(dayAvail, isSelected, isTodayDate),
@@ -204,13 +212,15 @@ export function AvailabilityGrid() {
         <>
           <MobileWeekStrip />
           <MobileCompactView />
-          <div className="mt-3">
-            <DaySummaryDropdown 
-              selectedDate={mobileDays[selectedDayIndex]} 
-              isOpen={isDaySummaryOpen}
-              onOpenChange={setIsDaySummaryOpen}
-            />
-          </div>
+          {isDaySummaryOpen && (
+            <div className="mt-3">
+              <DaySummaryDropdown 
+                selectedDate={mobileDays[selectedDayIndex]} 
+                isOpen={isDaySummaryOpen}
+                onOpenChange={setIsDaySummaryOpen}
+              />
+            </div>
+          )}
         </>
       ) : (
         /* Desktop Grid */
