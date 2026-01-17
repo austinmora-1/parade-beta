@@ -3,12 +3,18 @@ import {
   format,
   addDays,
   startOfWeek,
+  startOfMonth,
+  endOfMonth,
   addWeeks,
   subWeeks,
+  addMonths,
+  subMonths,
   isSameDay,
+  isSameMonth,
   isToday,
+  getDay,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -16,9 +22,14 @@ import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DaySummaryDropdown } from './DaySummaryDropdown';
 
+type ViewMode = 'week' | 'month';
+
 export function AvailabilityGrid() {
   const { plans, availability, setAvailability } = usePlannerStore();
   const isMobile = useIsMobile();
+  
+  // View mode toggle
+  const [viewMode, setViewMode] = useState<ViewMode>('week');
   
   // For mobile: 7 days forward from today
   // For desktop: week view starting Monday
@@ -26,7 +37,9 @@ export function AvailabilityGrid() {
   const [currentWeekStart, setCurrentWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDaySummaryOpen, setIsDaySummaryOpen] = useState(false);
 
   // Mobile uses 7 days forward from start date
@@ -38,6 +51,31 @@ export function AvailabilityGrid() {
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   }, [currentWeekStart]);
+
+  // Month calendar days
+  const monthDays = useMemo(() => {
+    const start = startOfMonth(currentMonth);
+    const end = endOfMonth(currentMonth);
+    const startDay = getDay(start);
+    // Adjust for Monday start (0 = Monday, 6 = Sunday)
+    const adjustedStartDay = startDay === 0 ? 6 : startDay - 1;
+    
+    const days: (Date | null)[] = [];
+    
+    // Add empty slots for days before the month starts
+    for (let i = 0; i < adjustedStartDay; i++) {
+      days.push(null);
+    }
+    
+    // Add all days of the month
+    let current = start;
+    while (current <= end) {
+      days.push(current);
+      current = addDays(current, 1);
+    }
+    
+    return days;
+  }, [currentMonth]);
 
   const getSlotStatus = (date: Date, slot: TimeSlot) => {
     const hasPlan = plans.some(
@@ -177,49 +215,184 @@ export function AvailabilityGrid() {
     );
   };
 
+  // Month calendar grid for mobile
+  const MobileMonthView = () => {
+    const weekDayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    
+    return (
+      <div className="space-y-2">
+        {/* Month navigation */}
+        <div className="flex items-center justify-between mb-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium">
+            {format(currentMonth, 'MMMM yyyy')}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {/* Week day headers */}
+        <div className="grid grid-cols-7 gap-0.5 mb-1">
+          {weekDayLabels.map((label, i) => (
+            <div key={i} className="text-center text-[10px] font-medium text-muted-foreground py-1">
+              {label}
+            </div>
+          ))}
+        </div>
+        
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 gap-0.5">
+          {monthDays.map((day, index) => {
+            if (!day) {
+              return <div key={`empty-${index}`} className="aspect-square" />;
+            }
+            
+            const isTodayDate = isToday(day);
+            const isSelected = selectedDate && isSameDay(day, selectedDate);
+            const dayAvail = getDayAvailability(day);
+            const hasPlan = plans.some(p => isSameDay(p.date, day));
+            
+            return (
+              <button
+                key={day.toISOString()}
+                onClick={() => {
+                  if (selectedDate && isSameDay(day, selectedDate)) {
+                    setIsDaySummaryOpen(!isDaySummaryOpen);
+                  } else {
+                    setSelectedDate(day);
+                    setIsDaySummaryOpen(true);
+                  }
+                }}
+                className={cn(
+                  "aspect-square flex flex-col items-center justify-center rounded-md transition-all text-xs relative",
+                  getDayBgColor(dayAvail, isSelected || false, isTodayDate),
+                  isSelected && "text-primary-foreground",
+                  isTodayDate && !isSelected && "text-white",
+                  !isSelected && !isTodayDate && dayAvail === 0 && "text-muted-foreground",
+                  !isSelected && !isTodayDate && dayAvail > 0 && "text-foreground"
+                )}
+              >
+                <span className="font-medium">{format(day, 'd')}</span>
+                {hasPlan && (
+                  <div className={cn(
+                    "absolute bottom-0.5 w-1 h-1 rounded-full",
+                    isSelected ? "bg-primary-foreground" : "bg-primary"
+                  )} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft md:rounded-2xl md:p-6">
       {/* Header */}
       <div className="mb-2 flex items-center justify-between md:mb-6">
         {isMobile ? (
-          <span className="text-sm font-medium">
-            {format(mobileDays[selectedDayIndex], 'EEEE, MMM d')}
-          </span>
+          <div className="flex items-center gap-2">
+            {viewMode === 'week' ? (
+              <span className="text-sm font-medium">
+                {format(mobileDays[selectedDayIndex], 'EEEE, MMM d')}
+              </span>
+            ) : (
+              <span className="text-sm font-medium">
+                {selectedDate ? format(selectedDate, 'EEEE, MMM d') : format(currentMonth, 'MMMM yyyy')}
+              </span>
+            )}
+          </div>
         ) : (
           <h3 className="font-display text-lg font-semibold">
             Week of {format(currentWeekStart, 'MMM d, yyyy')}
           </h3>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs text-primary"
-          onClick={() => {
-            if (isMobile) {
-              setMobileStartDate(new Date());
-              setSelectedDayIndex(0);
-            } else {
-              setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
-            }
-          }}
-        >
-          Today
-        </Button>
+        <div className="flex items-center gap-1">
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => {
+                setViewMode(viewMode === 'week' ? 'month' : 'week');
+                setIsDaySummaryOpen(false);
+                setSelectedDate(null);
+              }}
+            >
+              {viewMode === 'week' ? (
+                <Calendar className="h-4 w-4" />
+              ) : (
+                <List className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-primary"
+            onClick={() => {
+              if (isMobile) {
+                if (viewMode === 'week') {
+                  setMobileStartDate(new Date());
+                  setSelectedDayIndex(0);
+                } else {
+                  setCurrentMonth(new Date());
+                  setSelectedDate(new Date());
+                }
+              } else {
+                setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+              }
+            }}
+          >
+            Today
+          </Button>
+        </div>
       </div>
 
       {/* Mobile View */}
       {isMobile ? (
         <>
-          <MobileWeekStrip />
-          <MobileCompactView />
-          {isDaySummaryOpen && (
-            <div className="mt-3">
-              <DaySummaryDropdown 
-                selectedDate={mobileDays[selectedDayIndex]} 
-                isOpen={isDaySummaryOpen}
-                onOpenChange={setIsDaySummaryOpen}
-              />
-            </div>
+          {viewMode === 'week' ? (
+            <>
+              <MobileWeekStrip />
+              <MobileCompactView />
+              {isDaySummaryOpen && (
+                <div className="mt-3">
+                  <DaySummaryDropdown 
+                    selectedDate={mobileDays[selectedDayIndex]} 
+                    isOpen={isDaySummaryOpen}
+                    onOpenChange={setIsDaySummaryOpen}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <MobileMonthView />
+              {isDaySummaryOpen && selectedDate && (
+                <div className="mt-3">
+                  <DaySummaryDropdown 
+                    selectedDate={selectedDate} 
+                    isOpen={isDaySummaryOpen}
+                    onOpenChange={setIsDaySummaryOpen}
+                  />
+                </div>
+              )}
+            </>
           )}
         </>
       ) : (
