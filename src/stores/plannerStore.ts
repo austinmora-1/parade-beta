@@ -24,7 +24,8 @@ interface PlannerState {
   removeFriend: (id: string) => Promise<void>;
   
   setAvailability: (date: Date, slot: TimeSlot, available: boolean) => Promise<void>;
-  setLocationStatus: (status: LocationStatus) => Promise<void>;
+  setLocationStatus: (status: LocationStatus, date?: Date) => Promise<void>;
+  getLocationStatusForDate: (date: Date) => LocationStatus;
   setVibe: (vibe: Vibe | null) => Promise<void>;
   addCustomVibe: (tag: string) => Promise<void>;
   removeCustomVibe: (tag: string) => Promise<void>;
@@ -124,11 +125,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
               'evening': existing.evening ?? true,
               'late-night': existing.late_night ?? true,
             },
-            locationStatus: 'home' as LocationStatus,
+            locationStatus: (existing.location_status as LocationStatus) || 'home',
           };
         }
         return createDefaultAvailability(date);
       });
+      
+      // Get today's location status from availability
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const todayAvail = availability.find(a => format(a.date, 'yyyy-MM-dd') === todayStr);
+      const todayLocationStatus = todayAvail?.locationStatus || 'home';
       
       // Load vibe and location from profile
       const { data: profile } = await supabase
@@ -150,7 +156,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         friends,
         availability,
         currentVibe,
-        locationStatus: (profile?.location_status as LocationStatus) || 'home',
+        locationStatus: todayLocationStatus,
         isLoading: false,
       });
     } catch (error) {
@@ -347,21 +353,56 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     }
   },
   
-  setLocationStatus: async (status) => {
-    const { userId } = get();
+  setLocationStatus: async (status, date) => {
+    const { userId, availability } = get();
     if (!userId) return;
     
+    const targetDate = date || new Date();
+    const dateStr = format(targetDate, 'yyyy-MM-dd');
+    
     const { error } = await supabase
-      .from('profiles')
-      .update({ location_status: status })
-      .eq('user_id', userId);
+      .from('availability')
+      .upsert({
+        user_id: userId,
+        date: dateStr,
+        location_status: status,
+      }, { onConflict: 'user_id,date' });
     
     if (error) {
       console.error('Error setting location:', error);
       return;
     }
     
-    set({ locationStatus: status });
+    // Update availability array
+    const existingIndex = availability.findIndex(
+      (a) => format(a.date, 'yyyy-MM-dd') === dateStr
+    );
+    
+    if (existingIndex >= 0) {
+      const updated = [...availability];
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        locationStatus: status,
+      };
+      set({ availability: updated });
+    } else {
+      const newAvailability = createDefaultAvailability(targetDate);
+      newAvailability.locationStatus = status;
+      set({ availability: [...availability, newAvailability] });
+    }
+    
+    // If updating today, also update the global locationStatus for UI
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    if (dateStr === todayStr) {
+      set({ locationStatus: status });
+    }
+  },
+  
+  getLocationStatusForDate: (date) => {
+    const { availability } = get();
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayAvail = availability.find(a => format(a.date, 'yyyy-MM-dd') === dateStr);
+    return dayAvail?.locationStatus || 'home';
   },
   
   setVibe: async (vibe) => {
