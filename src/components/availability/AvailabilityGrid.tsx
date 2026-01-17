@@ -174,18 +174,17 @@ export function AvailabilityGrid() {
   );
 
   // Ultra-compact time slot grid for mobile
-  const MobileCompactView = () => {
-    const selectedDay = mobileDays[selectedDayIndex];
+  const MobileCompactView = ({ day }: { day: Date }) => {
     const slots = Object.keys(TIME_SLOT_LABELS) as TimeSlot[];
     
     return (
       <div className="grid grid-cols-3 gap-1">
         {slots.map((slot) => {
-          const status = getSlotStatus(selectedDay, slot);
+          const status = getSlotStatus(day, slot);
           return (
             <button
               key={slot}
-              onClick={() => toggleSlot(selectedDay, slot)}
+              onClick={() => toggleSlot(day, slot)}
               disabled={status === 'busy'}
               className={cn(
                 "flex flex-col items-center justify-center rounded-md py-1.5 px-1 transition-all",
@@ -375,7 +374,7 @@ export function AvailabilityGrid() {
           {viewMode === 'week' ? (
             <>
               <MobileWeekStrip />
-              <MobileCompactView />
+              <MobileCompactView day={mobileDays[selectedDayIndex]} />
               {isDaySummaryOpen && (
                 <div className="mt-3">
                   <DaySummaryDropdown 
@@ -389,6 +388,11 @@ export function AvailabilityGrid() {
           ) : (
             <>
               <MobileMonthView />
+              {selectedDate && (
+                <div className="mt-3">
+                  <MobileCompactView day={selectedDate} />
+                </div>
+              )}
               {isDaySummaryOpen && selectedDate && (
                 <div className="mt-3">
                   <DaySummaryDropdown 
