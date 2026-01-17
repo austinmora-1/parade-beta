@@ -1,12 +1,22 @@
 import { useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { X, Home, Plane, Plus } from 'lucide-react';
+import { X, Home, Plane, Plus, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { VIBE_CONFIG, ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
+import { VIBE_CONFIG, ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '@/types/planner';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface DaySummaryDropdownProps {
   selectedDate: Date;
@@ -22,10 +32,13 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
     getLocationStatusForDate, 
     setLocationStatus,
     setAvailability,
-    setVibe 
+    setVibe,
+    deletePlan
   } = usePlannerStore();
 
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
 
   const locationStatus = getLocationStatusForDate(selectedDate);
   
@@ -179,12 +192,26 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
               return (
                 <div
                   key={plan.id}
-                  className="flex items-center gap-2 rounded bg-muted/50 px-2 py-1"
+                  className="flex items-center gap-2 rounded bg-muted/50 px-2 py-1 group"
                 >
                   <span className="text-sm">{activityConfig?.icon || '📅'}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{plan.title}</p>
                     <p className="text-[10px] text-muted-foreground">{slotLabel?.time}</p>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      onClick={() => setEditingPlan(plan)}
+                      className="p-1 rounded hover:bg-muted transition-colors"
+                    >
+                      <Pencil className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                    <button
+                      onClick={() => setDeletingPlan(plan)}
+                      className="p-1 rounded hover:bg-destructive/10 transition-colors"
+                    >
+                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                    </button>
                   </div>
                 </div>
               );
@@ -193,12 +220,44 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
         )}
       </div>
 
-      {/* Create Plan Dialog */}
+      {/* Create/Edit Plan Dialog */}
       <CreatePlanDialog 
-        open={createPlanOpen} 
-        onOpenChange={setCreatePlanOpen}
+        open={createPlanOpen || !!editingPlan} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreatePlanOpen(false);
+            setEditingPlan(null);
+          }
+        }}
+        editPlan={editingPlan}
         defaultDate={selectedDate}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingPlan} onOpenChange={(open) => !open && setDeletingPlan(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Plan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingPlan?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingPlan) {
+                  deletePlan(deletingPlan.id);
+                  setDeletingPlan(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
