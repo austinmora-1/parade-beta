@@ -97,6 +97,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         id: f.id,
         name: f.friend_name,
         email: f.friend_email || undefined,
+        friendUserId: f.friend_user_id || undefined,
         status: f.status as 'connected' | 'pending' | 'invited',
       }));
       
@@ -258,6 +259,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         user_id: userId,
         friend_name: friend.name,
         friend_email: friend.email || null,
+        friend_user_id: friend.friendUserId || null,
         status: friend.status,
       })
       .select()
@@ -272,6 +274,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       id: data.id,
       name: data.friend_name,
       email: data.friend_email || undefined,
+      friendUserId: data.friend_user_id || undefined,
       status: data.status as 'connected' | 'pending' | 'invited',
     };
     

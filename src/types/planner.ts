@@ -39,6 +39,7 @@ export interface Friend {
   name: string;
   email?: string;
   avatar?: string;
+  friendUserId?: string; // The user_id of the friend if they're an app user
   status: 'connected' | 'pending' | 'invited';
 }
 
