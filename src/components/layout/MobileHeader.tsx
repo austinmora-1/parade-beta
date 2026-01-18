@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Settings, Bell } from 'lucide-react';
+import { Settings, Bell, User } from 'lucide-react';
 import paradeLogo from '@/assets/parade-logo.png';
 import { useNotifications } from '@/hooks/useNotifications';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,12 @@ export function MobileHeader() {
               {totalNotifications}
             </span>
           )}
+        </Link>
+        <Link
+          to="/profile"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <User className="h-5 w-5" />
         </Link>
         <Link
           to="/settings"
