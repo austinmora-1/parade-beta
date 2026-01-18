@@ -31,6 +31,21 @@ const formatTime = (decimalHour: number) => {
   return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
 };
 
+const formatHourLabel = (hour: number) => {
+  if (hour === 0) return '12a';
+  if (hour === 12) return '12p';
+  if (hour < 12) return `${hour}a`;
+  return `${hour - 12}p`;
+};
+
+const generateHourTicks = (min: number, max: number) => {
+  const ticks = [];
+  for (let hour = min; hour <= max; hour++) {
+    ticks.push(hour);
+  }
+  return ticks;
+};
+
 export function AvailabilityStep({ data, updateData }: AvailabilityStepProps) {
   const toggleDay = (dayId: string) => {
     const newDays = data.workDays.includes(dayId)
@@ -78,7 +93,7 @@ export function AvailabilityStep({ data, updateData }: AvailabilityStepProps) {
       </div>
 
       {/* Work Hours */}
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-medium">Start time</label>
@@ -92,6 +107,14 @@ export function AvailabilityStep({ data, updateData }: AvailabilityStepProps) {
             step={0.25}
             className="w-full"
           />
+          <div className="flex justify-between mt-2 px-1">
+            {generateHourTicks(5, 12).map((hour) => (
+              <div key={hour} className="flex flex-col items-center">
+                <div className="h-1.5 w-px bg-muted-foreground/30" />
+                <span className="text-[10px] text-muted-foreground mt-1">{formatHourLabel(hour)}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div>
@@ -107,6 +130,14 @@ export function AvailabilityStep({ data, updateData }: AvailabilityStepProps) {
             step={0.25}
             className="w-full"
           />
+          <div className="flex justify-between mt-2 px-1">
+            {generateHourTicks(14, 22).map((hour) => (
+              <div key={hour} className="flex flex-col items-center">
+                <div className="h-1.5 w-px bg-muted-foreground/30" />
+                <span className="text-[10px] text-muted-foreground mt-1">{formatHourLabel(hour)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
