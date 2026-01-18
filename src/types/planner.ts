@@ -1,28 +1,30 @@
-export type ActivityCategory = 'staying-in' | 'going-out';
+export type VibeType = 'social' | 'chill' | 'athletic' | 'productive' | 'custom';
 
 export type ActivityType = 
-  // Staying in
+  // Social activities
+  | 'drinks'
+  | 'getting-food'
+  | 'coffee'
+  | 'events'
+  | 'movies'
+  | 'other-events'
+  // Chill activities
   | 'me-time'
-  | 'chores'
-  | 'workout-in'
-  | 'making-food'
   | 'reading'
   | 'watching'
-  // Going out
-  | 'getting-food'
-  | 'drinks'
-  | 'events'
-  | 'other-events'
-  | 'errands'
+  | 'making-food'
+  // Athletic activities
+  | 'workout-in'
   | 'workout-out'
-  | 'coffee'
-  | 'movies'
+  // Productive activities
+  | 'chores'
+  | 'errands'
   | 'shopping'
-  | 'doctor';
+  | 'doctor'
+  // Custom (placeholder for user-defined)
+  | 'custom';
 
 export type TimeSlot = 'early-morning' | 'late-morning' | 'early-afternoon' | 'late-afternoon' | 'evening' | 'late-night';
-
-export type VibeType = 'social' | 'chill' | 'athletic' | 'productive' | 'custom';
 
 export type LocationStatus = 'home' | 'away';
 
@@ -39,19 +41,19 @@ export interface Friend {
   name: string;
   email?: string;
   avatar?: string;
-  friendUserId?: string; // The user_id of the friend if they're an app user
+  friendUserId?: string;
   status: 'connected' | 'pending' | 'invited';
-  isIncoming?: boolean; // True if this is an incoming request (someone sent to me)
+  isIncoming?: boolean;
 }
 
 export interface Plan {
   id: string;
   title: string;
-  activity: ActivityType;
+  activity: ActivityType | string; // Allow custom activity IDs
   location?: Location;
   date: Date;
   timeSlot: TimeSlot;
-  duration: number; // in minutes
+  duration: number;
   participants: Friend[];
   notes?: string;
   createdAt: Date;
@@ -94,45 +96,91 @@ export interface ActivityConfig {
   label: string;
   icon: string;
   color: string;
-  category: ActivityCategory;
+  vibeType: VibeType;
 }
 
+export interface CustomActivity {
+  id: string;
+  label: string;
+  icon: string;
+  vibeType: VibeType;
+}
+
+export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color: string; description: string }> = {
+  social: { label: 'Social', icon: '🎉', color: 'vibe-social', description: 'Hanging out with friends' },
+  chill: { label: 'Chill', icon: '😌', color: 'vibe-chill', description: 'Relaxing and unwinding' },
+  athletic: { label: 'Athletic', icon: '💪', color: 'vibe-athletic', description: 'Getting active' },
+  productive: { label: 'Productive', icon: '🎯', color: 'vibe-productive', description: 'Getting things done' },
+  custom: { label: 'Custom', icon: '✨', color: 'primary', description: 'Your own vibe' },
+};
+
+export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
+  // Social activities
+  'drinks': { label: 'Drinks', icon: '🍹', color: 'activity-drinks', vibeType: 'social' },
+  'getting-food': { label: 'Getting Food', icon: '🍽️', color: 'activity-food', vibeType: 'social' },
+  'coffee': { label: 'Coffee', icon: '☕', color: 'activity-coffee', vibeType: 'social' },
+  'events': { label: 'Events', icon: '🎉', color: 'activity-events', vibeType: 'social' },
+  'movies': { label: 'Movies', icon: '🎬', color: 'activity-movies', vibeType: 'social' },
+  'other-events': { label: 'Other Events', icon: '✨', color: 'activity-misc', vibeType: 'social' },
+  // Chill activities
+  'me-time': { label: 'Me Time', icon: '🧘', color: 'activity-me-time', vibeType: 'chill' },
+  'reading': { label: 'Reading', icon: '📚', color: 'activity-reading', vibeType: 'chill' },
+  'watching': { label: 'Watching', icon: '📺', color: 'activity-watching', vibeType: 'chill' },
+  'making-food': { label: 'Cooking', icon: '👨‍🍳', color: 'activity-food', vibeType: 'chill' },
+  // Athletic activities
+  'workout-in': { label: 'Home Workout', icon: '🏠💪', color: 'activity-workout', vibeType: 'athletic' },
+  'workout-out': { label: 'Gym/Outdoor', icon: '🏋️', color: 'activity-workout', vibeType: 'athletic' },
+  // Productive activities
+  'chores': { label: 'Chores', icon: '🧹', color: 'activity-chores', vibeType: 'productive' },
+  'errands': { label: 'Errands', icon: '🏃', color: 'activity-errands', vibeType: 'productive' },
+  'shopping': { label: 'Shopping', icon: '🛍️', color: 'activity-shopping', vibeType: 'productive' },
+  'doctor': { label: 'Appointment', icon: '🏥', color: 'activity-doctor', vibeType: 'productive' },
+  // Custom placeholder (not used directly, for type safety)
+  'custom': { label: 'Custom', icon: '✨', color: 'primary', vibeType: 'social' },
+};
+
+export const getActivitiesByVibe = (vibeType: VibeType): ActivityType[] => {
+  return (Object.keys(ACTIVITY_CONFIG) as ActivityType[]).filter(
+    (type) => type !== 'custom' && ACTIVITY_CONFIG[type].vibeType === vibeType
+  );
+};
+
+export const getAllVibes = (): VibeType[] => {
+  return ['social', 'chill', 'athletic', 'productive'];
+};
+
+// Helper to get activity config, including custom activities
+export const getActivityConfig = (
+  activityId: string, 
+  customActivities: CustomActivity[] = []
+): ActivityConfig | undefined => {
+  // Check default activities first
+  if (activityId in ACTIVITY_CONFIG) {
+    return ACTIVITY_CONFIG[activityId as ActivityType];
+  }
+  // Check custom activities
+  const customActivity = customActivities.find(a => a.id === activityId);
+  if (customActivity) {
+    return {
+      label: customActivity.label,
+      icon: customActivity.icon,
+      color: `vibe-${customActivity.vibeType}`,
+      vibeType: customActivity.vibeType,
+    };
+  }
+  return undefined;
+};
+
+// Legacy support - map old category concept to new structure
+export type ActivityCategory = 'staying-in' | 'going-out';
 export const ACTIVITY_CATEGORIES: Record<ActivityCategory, { label: string; icon: string }> = {
   'staying-in': { label: 'Staying In', icon: '🏠' },
   'going-out': { label: 'Going Out', icon: '🚀' },
 };
-
-export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
-  // Staying in
-  'me-time': { label: 'Me Time', icon: '🧘', color: 'activity-me-time', category: 'staying-in' },
-  'chores': { label: 'Chores', icon: '🧹', color: 'activity-chores', category: 'staying-in' },
-  'workout-in': { label: 'Doing a Workout', icon: '💪', color: 'activity-workout', category: 'staying-in' },
-  'making-food': { label: 'Making Food', icon: '👨‍🍳', color: 'activity-food', category: 'staying-in' },
-  'reading': { label: 'Reading', icon: '📚', color: 'activity-reading', category: 'staying-in' },
-  'watching': { label: 'Watching Something', icon: '📺', color: 'activity-watching', category: 'staying-in' },
-  // Going out
-  'getting-food': { label: 'Getting Food', icon: '🍽️', color: 'activity-food', category: 'going-out' },
-  'drinks': { label: 'The Met Gala', icon: '🍹', color: 'activity-drinks', category: 'going-out' },
-  'events': { label: 'Events', icon: '🎉', color: 'activity-events', category: 'going-out' },
-  'other-events': { label: 'Other Events', icon: '✨', color: 'activity-misc', category: 'going-out' },
-  'errands': { label: 'Running Errands', icon: '🏃', color: 'activity-errands', category: 'going-out' },
-  'workout-out': { label: 'Workout', icon: '🏋️', color: 'activity-workout', category: 'going-out' },
-  'coffee': { label: 'Coffee', icon: '☕', color: 'activity-coffee', category: 'going-out' },
-  'movies': { label: 'Going to the Movies', icon: '🎬', color: 'activity-movies', category: 'going-out' },
-  'shopping': { label: 'Shopping', icon: '🛍️', color: 'activity-shopping', category: 'going-out' },
-  'doctor': { label: 'Doctor Appointment', icon: '🏥', color: 'activity-doctor', category: 'going-out' },
-};
-
 export const getActivitiesByCategory = (category: ActivityCategory): ActivityType[] => {
-  return (Object.keys(ACTIVITY_CONFIG) as ActivityType[]).filter(
-    (type) => ACTIVITY_CONFIG[type].category === category
-  );
-};
-
-export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color: string }> = {
-  social: { label: 'Social', icon: '🎉', color: 'vibe-social' },
-  chill: { label: 'Chill', icon: '😌', color: 'vibe-chill' },
-  athletic: { label: 'Athletic', icon: '💪', color: 'vibe-athletic' },
-  productive: { label: 'Productive', icon: '🎯', color: 'vibe-productive' },
-  custom: { label: 'Custom', icon: '✨', color: 'primary' },
+  // Map old categories to vibes for backward compatibility
+  if (category === 'staying-in') {
+    return [...getActivitiesByVibe('chill'), 'workout-in', 'chores'];
+  }
+  return [...getActivitiesByVibe('social'), 'workout-out', 'errands', 'shopping', 'doctor'];
 };

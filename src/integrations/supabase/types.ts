@@ -252,6 +252,7 @@ export type Database = {
           bio: string | null
           created_at: string
           current_vibe: string | null
+          custom_activities: Json | null
           custom_vibe_tags: string[] | null
           discoverable: boolean | null
           display_name: string | null
@@ -275,6 +276,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           current_vibe?: string | null
+          custom_activities?: Json | null
           custom_vibe_tags?: string[] | null
           discoverable?: boolean | null
           display_name?: string | null
@@ -298,6 +300,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           current_vibe?: string | null
+          custom_activities?: Json | null
           custom_vibe_tags?: string[] | null
           discoverable?: boolean | null
           display_name?: string | null
