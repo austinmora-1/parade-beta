@@ -6,7 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { User, Bell, MapPin, Share2, LogOut, Save, Loader2 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { User, Bell, MapPin, Share2, LogOut, Save, Loader2, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
@@ -173,7 +179,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="animate-fade-in space-y-8">
+    <div className="animate-fade-in space-y-6">
       {/* Header with Save Button */}
       <div className="flex items-center justify-between">
         <div>
@@ -190,264 +196,293 @@ export default function Settings() {
         )}
       </div>
 
-      {/* Profile Section */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <div className="mb-6 flex items-center gap-3">
-          <User className="h-5 w-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold">Profile</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name">Display Name</Label>
-              <Input
-                id="name"
-                value={displayName}
-                onChange={(e) => { setDisplayName(e.target.value); handleChange(); }}
-              />
+      <Accordion type="multiple" defaultValue={['profile']} className="space-y-4">
+        {/* Profile Section */}
+        <AccordionItem value="profile" className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-primary" />
+              <span className="font-display text-lg font-semibold">Profile</span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                disabled
-                className="bg-muted"
-              />
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="space-y-4 pt-2">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Display Name</Label>
+                  <Input
+                    id="name"
+                    value={displayName}
+                    onChange={(e) => { setDisplayName(e.target.value); handleChange(); }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </AccordionContent>
+        </AccordionItem>
 
-      {/* Default Location */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <div className="mb-6 flex items-center gap-3">
-          <MapPin className="h-5 w-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold">Default Location</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="location">Home Address</Label>
-            <Input
-              id="location"
-              placeholder="Enter your default location..."
-              value={homeAddress}
-              onChange={(e) => { setHomeAddress(e.target.value); handleChange(); }}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            This will be used as your default location when you set your status to "Home"
-          </p>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <div className="mb-6 flex items-center gap-3">
-          <Bell className="h-5 w-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold">Notifications</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Plan Reminders</p>
+        {/* Default Location */}
+        <AccordionItem value="location" className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <MapPin className="h-5 w-5 text-primary" />
+              <span className="font-display text-lg font-semibold">Default Location</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="location">Home Address</Label>
+                <Input
+                  id="location"
+                  placeholder="Enter your default location..."
+                  value={homeAddress}
+                  onChange={(e) => { setHomeAddress(e.target.value); handleChange(); }}
+                />
+              </div>
               <p className="text-sm text-muted-foreground">
-                Get notified before your plans
+                This will be used as your default location when you set your status to "Home"
               </p>
             </div>
-            <Switch
-              checked={planReminders}
-              onCheckedChange={(checked) => { setPlanReminders(checked); handleChange(); }}
-            />
-          </div>
+          </AccordionContent>
+        </AccordionItem>
 
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Friend Requests</p>
-              <p className="text-sm text-muted-foreground">
-                Notify when someone wants to connect
-              </p>
+        {/* Notifications */}
+        <AccordionItem value="notifications" className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <Bell className="h-5 w-5 text-primary" />
+              <span className="font-display text-lg font-semibold">Notifications</span>
             </div>
-            <Switch
-              checked={friendRequests}
-              onCheckedChange={(checked) => { setFriendRequests(checked); handleChange(); }}
-            />
-          </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Plan Reminders</p>
+                  <p className="text-sm text-muted-foreground">
+                    Get notified before your plans
+                  </p>
+                </div>
+                <Switch
+                  checked={planReminders}
+                  onCheckedChange={(checked) => { setPlanReminders(checked); handleChange(); }}
+                />
+              </div>
 
-          <Separator />
+              <Separator />
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Plan Invitations</p>
-              <p className="text-sm text-muted-foreground">
-                Notify when you're invited to a plan
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Friend Requests</p>
+                  <p className="text-sm text-muted-foreground">
+                    Notify when someone wants to connect
+                  </p>
+                </div>
+                <Switch
+                  checked={friendRequests}
+                  onCheckedChange={(checked) => { setFriendRequests(checked); handleChange(); }}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Plan Invitations</p>
+                  <p className="text-sm text-muted-foreground">
+                    Notify when you're invited to a plan
+                  </p>
+                </div>
+                <Switch
+                  checked={planInvitations}
+                  onCheckedChange={(checked) => { setPlanInvitations(checked); handleChange(); }}
+                />
+              </div>
             </div>
-            <Switch
-              checked={planInvitations}
-              onCheckedChange={(checked) => { setPlanInvitations(checked); handleChange(); }}
-            />
-          </div>
-        </div>
-      </div>
+          </AccordionContent>
+        </AccordionItem>
 
-      {/* Calendar Integration */}
-      <CalendarIntegration />
-
-      {/* Sharing */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <div className="mb-6 flex items-center gap-3">
-          <Share2 className="h-5 w-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold">Sharing & Privacy</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Show Availability to Friends</p>
-              <p className="text-sm text-muted-foreground">
-                Let connected friends see your availability
-              </p>
+        {/* Calendar Integration */}
+        <AccordionItem value="calendar" className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-primary" />
+              <span className="font-display text-lg font-semibold">Calendar Integration</span>
             </div>
-            <Switch
-              checked={showAvailability}
-              onCheckedChange={(checked) => { setShowAvailability(checked); handleChange(); }}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Show Location Status</p>
-              <p className="text-sm text-muted-foreground">
-                Let friends know if you're home or away
-              </p>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="pt-2">
+              <CalendarIntegration isEmbedded />
             </div>
-            <Switch
-              checked={showLocation}
-              onCheckedChange={(checked) => { setShowLocation(checked); handleChange(); }}
-            />
-          </div>
+          </AccordionContent>
+        </AccordionItem>
 
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Show Vibe Status</p>
-              <p className="text-sm text-muted-foreground">
-                Display your current vibe to friends
-              </p>
+        {/* Sharing & Privacy */}
+        <AccordionItem value="privacy" className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <Share2 className="h-5 w-5 text-primary" />
+              <span className="font-display text-lg font-semibold">Sharing & Privacy</span>
             </div>
-            <Switch
-              checked={showVibeStatus}
-              onCheckedChange={(checked) => { setShowVibeStatus(checked); handleChange(); }}
-            />
-          </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Show Availability to Friends</p>
+                  <p className="text-sm text-muted-foreground">
+                    Let connected friends see your availability
+                  </p>
+                </div>
+                <Switch
+                  checked={showAvailability}
+                  onCheckedChange={(checked) => { setShowAvailability(checked); handleChange(); }}
+                />
+              </div>
 
-          <Separator />
+              <Separator />
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Discoverable</p>
-              <p className="text-sm text-muted-foreground">
-                Let others find you by email or name
-              </p>
-            </div>
-            <Switch
-              checked={discoverable}
-              onCheckedChange={(checked) => { setDiscoverable(checked); handleChange(); }}
-            />
-          </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Show Location Status</p>
+                  <p className="text-sm text-muted-foreground">
+                    Let friends know if you're home or away
+                  </p>
+                </div>
+                <Switch
+                  checked={showLocation}
+                  onCheckedChange={(checked) => { setShowLocation(checked); handleChange(); }}
+                />
+              </div>
 
-          <Separator />
+              <Separator />
 
-          <div>
-            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Show Vibe Status</p>
+                  <p className="text-sm text-muted-foreground">
+                    Display your current vibe to friends
+                  </p>
+                </div>
+                <Switch
+                  checked={showVibeStatus}
+                  onCheckedChange={(checked) => { setShowVibeStatus(checked); handleChange(); }}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Discoverable</p>
+                  <p className="text-sm text-muted-foreground">
+                    Let others find you by email or name
+                  </p>
+                </div>
+                <Switch
+                  checked={discoverable}
+                  onCheckedChange={(checked) => { setDiscoverable(checked); handleChange(); }}
+                />
+              </div>
+
+              <Separator />
+
               <div>
-                <p className="font-medium">Allow Hangout Requests</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Allow Hangout Requests</p>
+                    <p className="text-sm text-muted-foreground">
+                      {allowAllHangRequests 
+                        ? 'All friends will be able to send you a hangout request'
+                        : 'Only selected friends can send you hangout requests'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={allowAllHangRequests}
+                    onCheckedChange={(checked) => { setAllowAllHangRequests(checked); handleChange(); }}
+                  />
+                </div>
+
+                <AnimatePresence>
+                  {!allowAllHangRequests && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <p className="text-sm font-medium mb-3">Select friends who can send you requests:</p>
+                        {friends.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            You don't have any connected friends yet. Add friends to manage who can send you hangout requests.
+                          </p>
+                        ) : (
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {friends.map((friend) => (
+                              <div
+                                key={friend.id}
+                                className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                              >
+                                <Checkbox
+                                  id={`friend-${friend.id}`}
+                                  checked={allowedFriendIds.includes(friend.id)}
+                                  onCheckedChange={() => toggleFriendAllowed(friend.id)}
+                                />
+                                <Label
+                                  htmlFor={`friend-${friend.id}`}
+                                  className="flex-1 cursor-pointer font-normal"
+                                >
+                                  {friend.friend_name}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Account / Logout */}
+        <AccordionItem value="account" className="rounded-2xl border border-destructive/20 bg-card shadow-soft overflow-hidden">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+            <div className="flex items-center gap-3">
+              <LogOut className="h-5 w-5 text-destructive" />
+              <span className="font-display text-lg font-semibold">Account</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <p className="font-medium">Sign Out</p>
                 <p className="text-sm text-muted-foreground">
-                  {allowAllHangRequests 
-                    ? 'All friends will be able to send you a hangout request'
-                    : 'Only selected friends can send you hangout requests'}
+                  Log out of your Parade account
                 </p>
               </div>
-              <Switch
-                checked={allowAllHangRequests}
-                onCheckedChange={(checked) => { setAllowAllHangRequests(checked); handleChange(); }}
-              />
+              <Button variant="destructive" onClick={handleLogout}>
+                Sign Out
+              </Button>
             </div>
-
-            <AnimatePresence>
-              {!allowAllHangRequests && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-sm font-medium mb-3">Select friends who can send you requests:</p>
-                    {friends.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        You don't have any connected friends yet. Add friends to manage who can send you hangout requests.
-                      </p>
-                    ) : (
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {friends.map((friend) => (
-                          <div
-                            key={friend.id}
-                            className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
-                          >
-                            <Checkbox
-                              id={`friend-${friend.id}`}
-                              checked={allowedFriendIds.includes(friend.id)}
-                              onCheckedChange={() => toggleFriendAllowed(friend.id)}
-                            />
-                            <Label
-                              htmlFor={`friend-${friend.id}`}
-                              className="flex-1 cursor-pointer font-normal"
-                            >
-                              {friend.friend_name}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-
-      {/* Logout */}
-      <div className="rounded-2xl border border-destructive/20 bg-card p-6 shadow-soft">
-        <div className="mb-6 flex items-center gap-3">
-          <LogOut className="h-5 w-5 text-destructive" />
-          <h2 className="font-display text-lg font-semibold">Account</h2>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-medium">Sign Out</p>
-            <p className="text-sm text-muted-foreground">
-              Log out of your Parade account
-            </p>
-          </div>
-          <Button variant="destructive" onClick={handleLogout}>
-            Sign Out
-          </Button>
-        </div>
-      </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
