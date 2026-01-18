@@ -22,7 +22,7 @@ export type ActivityType =
 
 export type TimeSlot = 'early-morning' | 'late-morning' | 'early-afternoon' | 'late-afternoon' | 'evening' | 'late-night';
 
-export type VibeType = 'social' | 'chill' | 'athletic' | 'custom';
+export type VibeType = 'social' | 'chill' | 'athletic' | 'productive' | 'custom';
 
 export type LocationStatus = 'home' | 'away';
 
@@ -133,5 +133,6 @@ export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color:
   social: { label: 'Social', icon: '🎉', color: 'vibe-social' },
   chill: { label: 'Chill', icon: '😌', color: 'vibe-chill' },
   athletic: { label: 'Athletic', icon: '💪', color: 'vibe-athletic' },
+  productive: { label: 'Productive', icon: '🎯', color: 'vibe-productive' },
   custom: { label: 'Custom', icon: '✨', color: 'primary' },
 };

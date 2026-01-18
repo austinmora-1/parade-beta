@@ -66,6 +66,7 @@
     --vibe-social: 150 35% 45%;
     --vibe-chill: 200 40% 50%;
     --vibe-athletic: 145 65% 50%;
+    --vibe-productive: 35 85% 55%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(150 35% 40%), hsl(150 45% 50%));
