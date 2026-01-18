@@ -138,7 +138,7 @@ export function LocationTimeline() {
             className="gap-1.5"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Trip</span>
+            Add trip
           </Button>
           <Link to="/availability">
             <span className="text-sm text-primary hover:underline cursor-pointer">Edit</span>
