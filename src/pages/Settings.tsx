@@ -5,11 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { User, Bell, MapPin, Share2, LogOut, Save, Loader2, MessageCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { User, Bell, MapPin, Share2, LogOut, Save, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
 import { supabase } from '@/integrations/supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface Friend {
+  id: string;
+  friend_name: string;
+  friend_user_id: string | null;
+}
 
 export default function Settings() {
   const { signOut, session } = useAuth();
@@ -34,6 +42,10 @@ export default function Settings() {
   const [showVibeStatus, setShowVibeStatus] = useState(true);
   const [discoverable, setDiscoverable] = useState(true);
   const [allowAllHangRequests, setAllowAllHangRequests] = useState(true);
+  const [allowedFriendIds, setAllowedFriendIds] = useState<string[]>([]);
+
+  // Friends list
+  const [friends, setFriends] = useState<Friend[]>([]);
 
   // Load profile data on mount
   useEffect(() => {
@@ -68,6 +80,18 @@ export default function Settings() {
           setShowVibeStatus(profile.show_vibe_status ?? true);
           setDiscoverable(profile.discoverable ?? true);
           setAllowAllHangRequests(profile.allow_all_hang_requests ?? true);
+          setAllowedFriendIds(profile.allowed_hang_request_friend_ids || []);
+        }
+
+        // Load friends
+        const { data: friendsData } = await supabase
+          .from('friendships')
+          .select('id, friend_name, friend_user_id')
+          .eq('user_id', session.user.id)
+          .eq('status', 'accepted');
+
+        if (friendsData) {
+          setFriends(friendsData);
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -81,6 +105,16 @@ export default function Settings() {
 
   const handleChange = () => {
     setHasChanges(true);
+  };
+
+  const toggleFriendAllowed = (friendId: string) => {
+    setAllowedFriendIds(prev => {
+      if (prev.includes(friendId)) {
+        return prev.filter(id => id !== friendId);
+      }
+      return [...prev, friendId];
+    });
+    handleChange();
   };
 
   const handleSaveChanges = async () => {
@@ -104,6 +138,7 @@ export default function Settings() {
           show_vibe_status: showVibeStatus,
           discoverable: discoverable,
           allow_all_hang_requests: allowAllHangRequests,
+          allowed_hang_request_friend_ids: allowedFriendIds,
         })
         .eq('user_id', session.user.id);
 
@@ -333,17 +368,63 @@ export default function Settings() {
 
           <Separator />
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Allow Hangout Requests</p>
-              <p className="text-sm text-muted-foreground">
-                All friends will be able to send you a hangout request
-              </p>
+          <div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Allow Hangout Requests</p>
+                <p className="text-sm text-muted-foreground">
+                  {allowAllHangRequests 
+                    ? 'All friends will be able to send you a hangout request'
+                    : 'Only selected friends can send you hangout requests'}
+                </p>
+              </div>
+              <Switch
+                checked={allowAllHangRequests}
+                onCheckedChange={(checked) => { setAllowAllHangRequests(checked); handleChange(); }}
+              />
             </div>
-            <Switch
-              checked={allowAllHangRequests}
-              onCheckedChange={(checked) => { setAllowAllHangRequests(checked); handleChange(); }}
-            />
+
+            <AnimatePresence>
+              {!allowAllHangRequests && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <p className="text-sm font-medium mb-3">Select friends who can send you requests:</p>
+                    {friends.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        You don't have any connected friends yet. Add friends to manage who can send you hangout requests.
+                      </p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {friends.map((friend) => (
+                          <div
+                            key={friend.id}
+                            className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+                          >
+                            <Checkbox
+                              id={`friend-${friend.id}`}
+                              checked={allowedFriendIds.includes(friend.id)}
+                              onCheckedChange={() => toggleFriendAllowed(friend.id)}
+                            />
+                            <Label
+                              htmlFor={`friend-${friend.id}`}
+                              className="flex-1 cursor-pointer font-normal"
+                            >
+                              {friend.friend_name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

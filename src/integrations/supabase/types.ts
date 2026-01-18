@@ -247,6 +247,7 @@ export type Database = {
       profiles: {
         Row: {
           allow_all_hang_requests: boolean | null
+          allowed_hang_request_friend_ids: string[] | null
           avatar_url: string | null
           bio: string | null
           created_at: string
@@ -269,6 +270,7 @@ export type Database = {
         }
         Insert: {
           allow_all_hang_requests?: boolean | null
+          allowed_hang_request_friend_ids?: string[] | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -291,6 +293,7 @@ export type Database = {
         }
         Update: {
           allow_all_hang_requests?: boolean | null
+          allowed_hang_request_friend_ids?: string[] | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
