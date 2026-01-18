@@ -13,6 +13,7 @@ interface HangRequestPayload {
   shareCode: string;
   requesterName: string;
   requesterEmail?: string;
+  requesterUserId?: string;
   message?: string;
   selectedDay: string;
   selectedSlot: string;
@@ -26,7 +27,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const payload: HangRequestPayload = await req.json();
-    const { shareCode, requesterName, requesterEmail, message, selectedDay, selectedSlot } = payload;
+    const { shareCode, requesterName, requesterEmail, requesterUserId, message, selectedDay, selectedSlot } = payload;
 
     if (!shareCode || !requesterName || !selectedDay || !selectedSlot) {
       return new Response(
@@ -44,10 +45,10 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Look up the user by share code
+    // Look up the user by share code and get their privacy settings
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("user_id, display_name")
+      .select("user_id, display_name, allow_all_hang_requests, allowed_hang_request_friend_ids")
       .eq("share_code", shareCode)
       .single();
 
@@ -56,6 +57,54 @@ const handler = async (req: Request): Promise<Response> => {
         JSON.stringify({ error: "Invalid share code" }),
         { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
+    }
+
+    // Check hangout request permissions
+    const allowAll = profile.allow_all_hang_requests ?? true;
+    const allowedFriendIds: string[] = profile.allowed_hang_request_friend_ids || [];
+
+    if (!allowAll) {
+      // If not allowing all, check if requester is in the allowed list
+      if (!requesterUserId) {
+        // Anonymous requesters are not allowed when restricted
+        return new Response(
+          JSON.stringify({ 
+            error: "This user only accepts hangout requests from specific friends",
+            code: "RESTRICTED"
+          }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Check if requester is a friend first
+      const { data: friendship } = await supabase
+        .from("friendships")
+        .select("id")
+        .eq("user_id", profile.user_id)
+        .eq("friend_user_id", requesterUserId)
+        .eq("status", "accepted")
+        .maybeSingle();
+
+      if (!friendship) {
+        return new Response(
+          JSON.stringify({ 
+            error: "You must be friends with this user to send a hangout request",
+            code: "NOT_FRIENDS"
+          }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      // Check if friend is in the allowed list
+      if (!allowedFriendIds.includes(friendship.id)) {
+        return new Response(
+          JSON.stringify({ 
+            error: "This user has not enabled hangout requests from you",
+            code: "NOT_ALLOWED"
+          }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
     }
 
     // Get the user's email from auth.users
