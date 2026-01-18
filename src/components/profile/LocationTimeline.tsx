@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { format, addDays, isToday, isSameDay } from 'date-fns';
+import { format, addDays, isToday, differenceInDays } from 'date-fns';
 import { Home, Plane, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -8,14 +8,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { LocationStatus } from '@/types/planner';
 import { Link } from 'react-router-dom';
 
-interface DayLocationData {
-  date: Date;
-  status: LocationStatus;
+interface Trip {
+  startDate: Date;
+  endDate: Date;
+  startIndex: number;
+  endIndex: number;
 }
 
 export function LocationTimeline() {
   const { session } = useAuth();
-  const { getLocationStatusForDate, availability } = usePlannerStore();
+  const { getLocationStatusForDate } = usePlannerStore();
   const [extendedAvailability, setExtendedAvailability] = useState<Map<string, LocationStatus>>(new Map());
 
   // Get 21 days (3 weeks) starting from today
@@ -58,11 +60,65 @@ export function LocationTimeline() {
     return getLocationStatusForDate(date);
   };
 
-  // Group consecutive days by status for visual grouping
+  // Detect consecutive away days as trips
+  const trips = useMemo(() => {
+    const tripsList: Trip[] = [];
+    let tripStart: number | null = null;
+
+    days.forEach((day, index) => {
+      const status = getDayLocation(day);
+      
+      if (status === 'away') {
+        if (tripStart === null) {
+          tripStart = index;
+        }
+      } else {
+        if (tripStart !== null) {
+          // End of a trip - only count if 2+ days
+          const tripLength = index - tripStart;
+          if (tripLength >= 2) {
+            tripsList.push({
+              startDate: days[tripStart],
+              endDate: days[index - 1],
+              startIndex: tripStart,
+              endIndex: index - 1,
+            });
+          }
+          tripStart = null;
+        }
+      }
+    });
+
+    // Check if trip extends to end
+    if (tripStart !== null) {
+      const tripLength = days.length - tripStart;
+      if (tripLength >= 2) {
+        tripsList.push({
+          startDate: days[tripStart],
+          endDate: days[days.length - 1],
+          startIndex: tripStart,
+          endIndex: days.length - 1,
+        });
+      }
+    }
+
+    return tripsList;
+  }, [days, extendedAvailability]);
+
+  // Check if a day is part of a trip
+  const getTripForDay = (index: number): Trip | undefined => {
+    return trips.find(trip => index >= trip.startIndex && index <= trip.endIndex);
+  };
+
   const getWeekLabel = (weekIndex: number) => {
     if (weekIndex === 0) return 'This Week';
     if (weekIndex === 1) return 'Next Week';
     return 'Week 3';
+  };
+
+  const formatTripDuration = (trip: Trip) => {
+    const nights = differenceInDays(trip.endDate, trip.startDate);
+    return `${nights} night${nights > 1 ? 's' : ''}`;
   };
 
   return (
@@ -77,6 +133,26 @@ export function LocationTimeline() {
         </Link>
       </div>
 
+      {/* Trip summaries */}
+      {trips.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {trips.map((trip, idx) => (
+            <div
+              key={idx}
+              className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1.5 text-sm"
+            >
+              <Plane className="h-3.5 w-3.5 text-orange-600" />
+              <span className="font-medium text-orange-700">
+                {format(trip.startDate, 'MMM d')} – {format(trip.endDate, 'MMM d')}
+              </span>
+              <span className="text-orange-600/70">
+                ({formatTripDuration(trip)})
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Scrollable timeline */}
       <div className="overflow-x-auto -mx-4 px-4 md:-mx-6 md:px-6 pb-2">
         <div className="flex gap-1 min-w-max">
@@ -85,9 +161,12 @@ export function LocationTimeline() {
             const isCurrentDay = isToday(day);
             const weekIndex = Math.floor(index / 7);
             const isFirstOfWeek = index % 7 === 0;
+            const trip = getTripForDay(index);
+            const isFirstOfTrip = trip && trip.startIndex === index;
+            const isLastOfTrip = trip && trip.endIndex === index;
 
             return (
-              <div key={day.toISOString()} className="flex flex-col items-center">
+              <div key={day.toISOString()} className="flex flex-col items-center relative">
                 {/* Week label */}
                 {isFirstOfWeek && (
                   <div className="text-[10px] text-muted-foreground font-medium mb-1 w-full text-center">
@@ -98,14 +177,27 @@ export function LocationTimeline() {
                 {!isFirstOfWeek && index >= 7 && index < 14 && <div className="h-[14px] mb-1" />}
                 {!isFirstOfWeek && index >= 14 && <div className="h-[14px] mb-1" />}
 
+                {/* Trip connector bar */}
+                {trip && (
+                  <div 
+                    className={cn(
+                      "absolute top-[18px] h-1 bg-orange-400/50",
+                      isFirstOfTrip ? "left-1/2 right-0 rounded-l-full" : "left-0",
+                      isLastOfTrip ? "right-1/2 left-0 rounded-r-full" : "right-0",
+                      !isFirstOfTrip && !isLastOfTrip && "left-0 right-0"
+                    )}
+                  />
+                )}
+
                 {/* Day box */}
                 <div
                   className={cn(
-                    "flex flex-col items-center justify-center w-10 h-14 rounded-lg transition-all",
+                    "flex flex-col items-center justify-center w-10 h-14 rounded-lg transition-all relative z-10",
                     isCurrentDay && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                     status === 'home' 
                       ? "bg-primary/10 text-primary" 
-                      : "bg-orange-500/10 text-orange-600"
+                      : "bg-orange-500/10 text-orange-600",
+                    trip && "bg-orange-500/20"
                   )}
                 >
                   <span className="text-[10px] font-medium uppercase">
@@ -140,6 +232,12 @@ export function LocationTimeline() {
           </div>
           <span>Away</span>
         </div>
+        {trips.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="h-1 w-5 rounded-full bg-orange-400/50" />
+            <span>Trip</span>
+          </div>
+        )}
       </div>
     </div>
   );
