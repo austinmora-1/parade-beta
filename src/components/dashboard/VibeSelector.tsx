@@ -146,58 +146,74 @@ export function VibeSelector() {
         <h3 className="font-display text-lg font-semibold">Current Vibe</h3>
       </div>
 
+      {/* Standard vibes - first row */}
       <div className="grid grid-cols-2 gap-3">
-        {(Object.keys(VIBE_CONFIG) as VibeType[]).map((type) => {
-          const config = VIBE_CONFIG[type];
-          const isSelected = currentVibe?.type === type;
-          
-          if (type === 'custom' && showCustomInput) {
+        {(Object.keys(VIBE_CONFIG) as VibeType[])
+          .filter(type => type !== 'custom')
+          .map((type) => {
+            const config = VIBE_CONFIG[type];
+            const isSelected = currentVibe?.type === type;
+            
             return (
-              <div
+              <button
                 key={type}
-                className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4"
+                onClick={() => handleVibeSelect(type)}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl border-2 p-4 transition-all duration-200",
+                  isSelected
+                    ? "border-primary bg-primary/5"
+                    : "border-transparent bg-muted/50 hover:bg-muted"
+                )}
               >
                 <span className="text-2xl">{config.icon}</span>
-                <input
-                  autoFocus
-                  placeholder="type your vibe..."
-                  value={customText}
-                  onChange={(e) => setCustomText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCustomSubmit();
-                    if (e.key === 'Escape') {
-                      setShowCustomInput(false);
-                      setCustomText('');
-                    }
-                  }}
-                  onBlur={() => {
-                    if (customText.trim()) handleCustomSubmit();
-                    else setShowCustomInput(false);
-                  }}
-                  className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground"
-                />
-              </div>
+                <div className="text-left">
+                  <p className="font-medium">{config.label}</p>
+                </div>
+              </button>
             );
-          }
-          
-          return (
-            <button
-              key={type}
-              onClick={() => handleVibeSelect(type)}
-              className={cn(
-                "flex items-center gap-3 rounded-xl border-2 p-4 transition-all duration-200",
-                isSelected
-                  ? "border-primary bg-primary/5"
-                  : "border-transparent bg-muted/50 hover:bg-muted"
-              )}
-            >
-              <span className="text-2xl">{config.icon}</span>
-              <div className="text-left">
-                <p className="font-medium">{config.label}</p>
-              </div>
-            </button>
-          );
-        })}
+          })}
+      </div>
+
+      {/* Custom vibe - second row */}
+      <div className="mt-3">
+        {showCustomInput ? (
+          <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4">
+            <span className="text-2xl">{VIBE_CONFIG.custom.icon}</span>
+            <input
+              autoFocus
+              placeholder="type your vibe..."
+              value={customText}
+              onChange={(e) => setCustomText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCustomSubmit();
+                if (e.key === 'Escape') {
+                  setShowCustomInput(false);
+                  setCustomText('');
+                }
+              }}
+              onBlur={() => {
+                if (customText.trim()) handleCustomSubmit();
+                else setShowCustomInput(false);
+              }}
+              className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => handleVibeSelect('custom')}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-xl border-2 p-4 transition-all duration-200",
+              currentVibe?.type === 'custom'
+                ? "border-primary bg-primary/5"
+                : "border-transparent bg-muted/50 hover:bg-muted"
+            )}
+          >
+            <span className="text-2xl">{VIBE_CONFIG.custom.icon}</span>
+            <div className="text-left">
+              <p className="font-medium">{VIBE_CONFIG.custom.label}</p>
+            </div>
+          </button>
+        )}
       </div>
 
       {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && (
