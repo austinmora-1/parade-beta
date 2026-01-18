@@ -100,27 +100,17 @@ export function WeekOverview() {
       <div className="mb-4 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setWeekOffset(prev => prev - 1)}
-              disabled={weekOffset <= 0}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="font-display text-base font-semibold min-w-[100px] text-center h-7 px-2 gap-1"
+                  size="icon"
+                  className="h-7 w-7"
                 >
-                  {getWeekLabel()}
-                  <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+                  <CalendarIcon className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card border border-border shadow-lg z-50" align="center">
+              <PopoverContent className="w-auto p-0 bg-card border border-border shadow-lg z-50" align="start">
                 <Calendar
                   mode="single"
                   selected={weekDays[0]}
@@ -135,6 +125,18 @@ export function WeekOverview() {
                 />
               </PopoverContent>
             </Popover>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setWeekOffset(prev => prev - 1)}
+              disabled={weekOffset <= 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h3 className="font-display text-base font-semibold min-w-[100px] text-center">
+              {getWeekLabel()}
+            </h3>
             <Button
               variant="ghost"
               size="icon"
