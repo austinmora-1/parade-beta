@@ -184,7 +184,7 @@ export default function Settings() {
     <div className="animate-fade-in space-y-6">
       <div className="flex items-start justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-3xl font-bold">Settings</h1>
+          <h1 className="font-display text-lg font-bold md:text-2xl">Settings</h1>
           <p className="mt-1 text-muted-foreground">
             Manage your account and preferences
           </p>
