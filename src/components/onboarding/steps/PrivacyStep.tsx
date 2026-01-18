@@ -45,8 +45,8 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
     {
       id: 'allowAllHangRequests',
       icon: MessageCircle,
-      title: 'Accept requests from all friends',
-      description: 'Allow any friend to send you hangout requests',
+      title: 'Allow hangout requests',
+      description: 'All friends will be able to send you a hangout request',
       checked: data.allowAllHangRequests,
       onChange: (checked: boolean) => updateData({ allowAllHangRequests: checked }),
     },
