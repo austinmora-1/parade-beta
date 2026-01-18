@@ -1,12 +1,14 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { format, addDays, isToday, differenceInDays, getMonth } from 'date-fns';
-import { Home, Plane, MapPin } from 'lucide-react';
+import { Home, Plane, MapPin, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LocationStatus } from '@/types/planner';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { AddTripDialog } from './AddTripDialog';
 
 interface Trip {
   startDate: Date;
@@ -19,6 +21,8 @@ export function LocationTimeline() {
   const { session } = useAuth();
   const { getLocationStatusForDate } = usePlannerStore();
   const [extendedAvailability, setExtendedAvailability] = useState<Map<string, LocationStatus>>(new Map());
+  const [addTripDialogOpen, setAddTripDialogOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Get 31 days (next month) starting from today
   const days = useMemo(() => {
@@ -26,29 +30,33 @@ export function LocationTimeline() {
   }, []);
 
   // Fetch extended availability data for days beyond what's loaded in the store
-  useEffect(() => {
-    async function fetchExtendedAvailability() {
-      if (!session?.user) return;
+  const fetchExtendedAvailability = useCallback(async () => {
+    if (!session?.user) return;
 
-      const dates = days.map(d => format(d, 'yyyy-MM-dd'));
-      
-      const { data } = await supabase
-        .from('availability')
-        .select('date, location_status')
-        .eq('user_id', session.user.id)
-        .in('date', dates);
+    const dates = days.map(d => format(d, 'yyyy-MM-dd'));
+    
+    const { data } = await supabase
+      .from('availability')
+      .select('date, location_status')
+      .eq('user_id', session.user.id)
+      .in('date', dates);
 
-      if (data) {
-        const map = new Map<string, LocationStatus>();
-        data.forEach(item => {
-          map.set(item.date, (item.location_status as LocationStatus) || 'home');
-        });
-        setExtendedAvailability(map);
-      }
+    if (data) {
+      const map = new Map<string, LocationStatus>();
+      data.forEach(item => {
+        map.set(item.date, (item.location_status as LocationStatus) || 'home');
+      });
+      setExtendedAvailability(map);
     }
-
-    fetchExtendedAvailability();
   }, [session?.user, days]);
+
+  useEffect(() => {
+    fetchExtendedAvailability();
+  }, [fetchExtendedAvailability, refreshKey]);
+
+  const handleTripAdded = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   const getDayLocation = (date: Date): LocationStatus => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -110,12 +118,6 @@ export function LocationTimeline() {
     return trips.find(trip => index >= trip.startIndex && index <= trip.endIndex);
   };
 
-  const getWeekLabel = (weekIndex: number) => {
-    if (weekIndex === 0) return 'This Week';
-    if (weekIndex === 1) return 'Next Week';
-    return `Week ${weekIndex + 1}`;
-  };
-
   const formatTripDuration = (trip: Trip) => {
     const nights = differenceInDays(trip.endDate, trip.startDate);
     return `${nights} night${nights > 1 ? 's' : ''}`;
@@ -128,9 +130,20 @@ export function LocationTimeline() {
           <MapPin className="h-5 w-5 text-primary" />
           <h2 className="font-display text-lg font-semibold">Location Status</h2>
         </div>
-        <Link to="/availability">
-          <span className="text-sm text-primary hover:underline cursor-pointer">Edit</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setAddTripDialogOpen(true)}
+            className="gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Trip</span>
+          </Button>
+          <Link to="/availability">
+            <span className="text-sm text-primary hover:underline cursor-pointer">Edit</span>
+          </Link>
+        </div>
       </div>
 
       {/* Trip summaries */}
@@ -239,6 +252,12 @@ export function LocationTimeline() {
           </div>
         )}
       </div>
+
+      <AddTripDialog 
+        open={addTripDialogOpen} 
+        onOpenChange={setAddTripDialogOpen}
+        onTripAdded={handleTripAdded}
+      />
     </div>
   );
 }
