@@ -89,8 +89,10 @@ export function OnboardingWizard() {
         .update({
           display_name: data.displayName || null,
           show_availability: data.showAvailability,
+          show_location: data.showLocation,
           show_vibe_status: data.showVibeStatus,
           discoverable: data.discoverable,
+          allow_all_hang_requests: data.allowAllHangRequests,
           home_address: data.homeAddress || null,
         })
         .eq('user_id', session.user.id);
