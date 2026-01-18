@@ -6,7 +6,8 @@ import {
   MessageCircle, 
   Clock, 
   Settings,
-  Bell
+  Bell,
+  User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import paradeLogo from '@/assets/parade-logo.png';
@@ -83,6 +84,18 @@ export function Sidebar() {
                 {totalNotifications}
               </span>
             )}
+          </NavLink>
+          <NavLink
+            to="/profile"
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
+              location.pathname === '/profile'
+                ? "bg-primary text-primary-foreground shadow-soft"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <User className="h-5 w-5" />
+            Profile
           </NavLink>
           <NavLink
             to="/settings"
