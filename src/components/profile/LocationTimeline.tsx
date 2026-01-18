@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { format, addDays, isToday, differenceInDays, getMonth } from 'date-fns';
-import { Home, Plane, MapPin, Plus } from 'lucide-react';
+import { Home, Plane, MapPin, Plus, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -130,8 +130,8 @@ export function LocationTimeline() {
           <MapPin className="h-5 w-5 text-primary" />
           <h2 className="font-display text-lg font-semibold">Status</h2>
         </div>
-        <Link to="/availability">
-          <span className="text-sm text-primary hover:underline cursor-pointer">Edit</span>
+        <Link to="/availability" className="text-muted-foreground hover:text-primary transition-colors">
+          <Pencil className="h-4 w-4" />
         </Link>
       </div>
 
