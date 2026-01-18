@@ -40,9 +40,14 @@ export default function Profile() {
   const [bioValue, setBioValue] = useState('');
   const [isSavingBio, setIsSavingBio] = useState(false);
   const [bioSaveStatus, setBioSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameSaveStatus, setNameSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const nameSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedBioRef = useRef<string>('');
+  const lastSavedNameRef = useRef<string>('');
 
   useEffect(() => {
     async function loadProfile() {
@@ -220,11 +225,83 @@ export default function Profile() {
     setIsEditingBio(false);
   };
 
-  // Cleanup timeout on unmount
+  // Name editing handlers
+  const handleEditName = () => {
+    const currentName = profile?.display_name || '';
+    setNameValue(currentName);
+    lastSavedNameRef.current = currentName;
+    setNameSaveStatus('idle');
+    setIsEditingName(true);
+  };
+
+  const saveName = useCallback(async (value: string) => {
+    if (!session?.user) return;
+
+    const trimmedName = value.trim();
+    if (trimmedName === lastSavedNameRef.current) return;
+    if (!trimmedName) return; // Don't save empty names
+
+    setNameSaveStatus('saving');
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ display_name: trimmedName })
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
+      lastSavedNameRef.current = trimmedName;
+      setProfile(prev => prev ? { ...prev, display_name: trimmedName } : null);
+      setNameSaveStatus('saved');
+      
+      setTimeout(() => setNameSaveStatus('idle'), 1500);
+    } catch (error) {
+      console.error('Error updating name:', error);
+      toast.error('Failed to save name');
+      setNameSaveStatus('idle');
+    }
+  }, [session?.user]);
+
+  const handleNameChange = (value: string) => {
+    if (value.length > 100) return;
+    
+    setNameValue(value);
+    setNameSaveStatus('idle');
+
+    if (nameSaveTimeoutRef.current) {
+      clearTimeout(nameSaveTimeoutRef.current);
+    }
+
+    nameSaveTimeoutRef.current = setTimeout(() => {
+      saveName(value);
+    }, 1500);
+  };
+
+  const handleNameBlur = () => {
+    if (nameSaveTimeoutRef.current) {
+      clearTimeout(nameSaveTimeoutRef.current);
+    }
+    saveName(nameValue);
+  };
+
+  const handleCloseNameEditor = () => {
+    if (nameSaveTimeoutRef.current) {
+      clearTimeout(nameSaveTimeoutRef.current);
+    }
+    if (nameValue.trim() !== lastSavedNameRef.current && nameValue.trim()) {
+      saveName(nameValue);
+    }
+    setIsEditingName(false);
+  };
+
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+      }
+      if (nameSaveTimeoutRef.current) {
+        clearTimeout(nameSaveTimeoutRef.current);
       }
     };
   }, []);
@@ -334,9 +411,52 @@ export default function Profile() {
           {/* Name & Bio */}
           <div className="space-y-3">
             <div>
-              <h1 className="font-display text-2xl font-bold md:text-3xl">
-                {profile?.display_name || 'Your Name'}
-              </h1>
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={nameValue}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    onBlur={handleNameBlur}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCloseNameEditor();
+                      } else if (e.key === 'Escape') {
+                        setIsEditingName(false);
+                      }
+                    }}
+                    placeholder="Your name"
+                    className="font-display text-2xl font-bold md:text-3xl bg-transparent border-b-2 border-primary outline-none w-full max-w-xs"
+                    maxLength={100}
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2">
+                    {nameSaveStatus === 'saving' && (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                    {nameSaveStatus === 'saved' && (
+                      <Check className="h-4 w-4 text-primary" />
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCloseNameEditor}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleEditName}
+                  className="group flex items-center gap-2 text-left"
+                >
+                  <h1 className="font-display text-2xl font-bold md:text-3xl group-hover:text-primary transition-colors">
+                    {profile?.display_name || 'Your Name'}
+                  </h1>
+                  <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              )}
               {getCity(profile?.home_address) && (
                 <div className="mt-1 flex items-center gap-1.5 text-muted-foreground">
                   <MapPin className="h-4 w-4" />
