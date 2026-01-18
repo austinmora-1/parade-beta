@@ -20,9 +20,9 @@ export function LocationTimeline() {
   const { getLocationStatusForDate } = usePlannerStore();
   const [extendedAvailability, setExtendedAvailability] = useState<Map<string, LocationStatus>>(new Map());
 
-  // Get 21 days (3 weeks) starting from today
+  // Get 31 days (next month) starting from today
   const days = useMemo(() => {
-    return Array.from({ length: 21 }, (_, i) => addDays(new Date(), i));
+    return Array.from({ length: 31 }, (_, i) => addDays(new Date(), i));
   }, []);
 
   // Fetch extended availability data for days beyond what's loaded in the store
@@ -113,7 +113,7 @@ export function LocationTimeline() {
   const getWeekLabel = (weekIndex: number) => {
     if (weekIndex === 0) return 'This Week';
     if (weekIndex === 1) return 'Next Week';
-    return 'Week 3';
+    return `Week ${weekIndex + 1}`;
   };
 
   const formatTripDuration = (trip: Trip) => {
