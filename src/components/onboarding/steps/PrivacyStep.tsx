@@ -22,7 +22,7 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
       id: 'showLocation',
       icon: MapPin,
       title: 'Share my location status',
-      description: 'Let friends know if you\'re home, traveling, or away',
+      description: 'Let friends know if you\'re home or away',
       checked: data.showLocation,
       onChange: (checked: boolean) => updateData({ showLocation: checked }),
     },
