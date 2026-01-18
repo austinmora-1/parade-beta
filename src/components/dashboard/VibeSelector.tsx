@@ -43,41 +43,40 @@ export function VibeSelector() {
   if (isMobile) {
     return (
       <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
-        {/* Standard vibes - first row */}
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground shrink-0">Vibe</span>
-          <div className="flex flex-1 gap-1">
-            {(Object.keys(VIBE_CONFIG) as VibeType[])
-              .filter(type => type !== 'custom')
-              .map((type) => {
-                const config = VIBE_CONFIG[type];
-                const isSelected = currentVibe?.type === type;
-                
-                return (
-                  <button
-                    key={type}
-                    onClick={() => handleVibeSelect(type)}
-                    className={cn(
-                      "flex-1 flex items-center justify-center rounded-lg py-1.5 px-2 text-xs font-medium transition-all min-w-0",
-                      isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <span className="truncate">{config.label}</span>
-                  </button>
-                );
-              })}
-          </div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm font-medium text-muted-foreground">Vibe</span>
         </div>
-
-        {/* Custom vibe - second row */}
-        <div className="mt-2 flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground shrink-0 invisible">Vibe</span>
+        
+        {/* All vibes in a 3-column grid */}
+        <div className="grid grid-cols-3 gap-1.5">
+          {(Object.keys(VIBE_CONFIG) as VibeType[])
+            .filter(type => type !== 'custom')
+            .map((type) => {
+              const config = VIBE_CONFIG[type];
+              const isSelected = currentVibe?.type === type;
+              
+              return (
+                <button
+                  key={type}
+                  onClick={() => handleVibeSelect(type)}
+                  className={cn(
+                    "flex items-center justify-center gap-1 rounded-lg py-2 px-2 text-xs font-medium transition-all",
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <span>{config.icon}</span>
+                  <span>{config.label}</span>
+                </button>
+              );
+            })}
+          
+          {/* Custom button */}
           {showCustomInput ? (
             <input
               autoFocus
-              placeholder="type your vibe..."
+              placeholder="vibe..."
               value={customText}
               onChange={(e) => setCustomText(e.target.value)}
               onKeyDown={(e) => {
@@ -91,19 +90,20 @@ export function VibeSelector() {
                 if (customText.trim()) handleCustomSubmit();
                 else setShowCustomInput(false);
               }}
-              className="flex-1 rounded-lg py-1.5 px-2 text-xs font-medium bg-primary/10 text-primary outline-none focus:ring-1 focus:ring-primary/50"
+              className="col-span-2 rounded-lg py-2 px-2 text-xs font-medium bg-primary/10 text-primary outline-none focus:ring-1 focus:ring-primary/50"
             />
           ) : (
             <button
               onClick={() => handleVibeSelect('custom')}
               className={cn(
-                "flex-1 flex items-center justify-center rounded-lg py-1.5 px-2 text-xs font-medium transition-all",
+                "col-span-2 flex items-center justify-center gap-1 rounded-lg py-2 px-2 text-xs font-medium transition-all",
                 currentVibe?.type === 'custom'
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               )}
             >
-              <span>{VIBE_CONFIG.custom.icon} {VIBE_CONFIG.custom.label}</span>
+              <span>{VIBE_CONFIG.custom.icon}</span>
+              <span>{VIBE_CONFIG.custom.label}</span>
             </button>
           )}
         </div>
