@@ -66,6 +66,20 @@ export function WeekOverview() {
     return `${format(weekDays[0], 'MMM d')} - ${format(weekDays[6], 'MMM d')}`;
   };
 
+  // Get background color based on availability - matches AvailabilityGrid
+  const getDayBgColor = (availability: number, isToday: boolean): string => {
+    if (isToday) return 'bg-availability-today text-white';
+    
+    // Gray to green gradient based on availability
+    if (availability === 0) return 'bg-muted text-muted-foreground';
+    if (availability <= 0.17) return 'bg-availability-available/15 text-foreground';
+    if (availability <= 0.33) return 'bg-availability-available/25 text-foreground';
+    if (availability <= 0.5) return 'bg-availability-available/40 text-foreground';
+    if (availability <= 0.67) return 'bg-availability-available/55 text-foreground';
+    if (availability <= 0.83) return 'bg-availability-available/70 text-white';
+    return 'bg-availability-available/85 text-white';
+  };
+
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
       <div className="mb-4 flex items-center justify-between">
@@ -130,24 +144,13 @@ export function WeekOverview() {
                   <div className="relative">
                     <span className={cn(
                       "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
-                      isToday 
-                        ? "bg-availability-today text-white"
-                        : score >= 0.7 
-                          ? "bg-availability-available-light text-availability-available"
-                          : score >= 0.3 && score < 0.7 
-                            ? "bg-availability-partial-light text-availability-partial"
-                            : "bg-availability-busy-light text-availability-busy"
+                      getDayBgColor(score, isToday)
                     )}>
                       {format(day, 'd')}
                     </span>
                     
                     {planCount > 0 && (
-                      <span className={cn(
-                        "absolute -bottom-3 left-1/2 -translate-x-1/2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium",
-                        score >= 0.7 && "bg-availability-available text-white",
-                        score >= 0.3 && score < 0.7 && "bg-availability-partial text-white",
-                        score < 0.3 && "bg-availability-busy text-white"
-                      )}>
+                      <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium bg-primary text-primary-foreground">
                         {planCount}
                       </span>
                     )}
