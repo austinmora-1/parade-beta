@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { User, Bell, MapPin, Share2, LogOut, Save, Loader2 } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Save, Loader2, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
@@ -30,8 +30,10 @@ export default function Settings() {
 
   // Privacy settings
   const [showAvailability, setShowAvailability] = useState(true);
+  const [showLocation, setShowLocation] = useState(true);
   const [showVibeStatus, setShowVibeStatus] = useState(true);
   const [discoverable, setDiscoverable] = useState(true);
+  const [allowAllHangRequests, setAllowAllHangRequests] = useState(true);
 
   // Load profile data on mount
   useEffect(() => {
@@ -62,8 +64,10 @@ export default function Settings() {
           setFriendRequests(profile.friend_requests_notifications ?? true);
           setPlanInvitations(profile.plan_invitations_notifications ?? true);
           setShowAvailability(profile.show_availability ?? true);
+          setShowLocation(profile.show_location ?? true);
           setShowVibeStatus(profile.show_vibe_status ?? true);
           setDiscoverable(profile.discoverable ?? true);
+          setAllowAllHangRequests(profile.allow_all_hang_requests ?? true);
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -96,8 +100,10 @@ export default function Settings() {
           friend_requests_notifications: friendRequests,
           plan_invitations_notifications: planInvitations,
           show_availability: showAvailability,
+          show_location: showLocation,
           show_vibe_status: showVibeStatus,
           discoverable: discoverable,
+          allow_all_hang_requests: allowAllHangRequests,
         })
         .eq('user_id', session.user.id);
 
@@ -284,6 +290,21 @@ export default function Settings() {
 
           <div className="flex items-center justify-between">
             <div>
+              <p className="font-medium">Show Location Status</p>
+              <p className="text-sm text-muted-foreground">
+                Let friends know if you're home or away
+              </p>
+            </div>
+            <Switch
+              checked={showLocation}
+              onCheckedChange={(checked) => { setShowLocation(checked); handleChange(); }}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div>
               <p className="font-medium">Show Vibe Status</p>
               <p className="text-sm text-muted-foreground">
                 Display your current vibe to friends
@@ -307,6 +328,21 @@ export default function Settings() {
             <Switch
               checked={discoverable}
               onCheckedChange={(checked) => { setDiscoverable(checked); handleChange(); }}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Accept Requests from All Friends</p>
+              <p className="text-sm text-muted-foreground">
+                Allow any friend to send you hangout requests
+              </p>
+            </div>
+            <Switch
+              checked={allowAllHangRequests}
+              onCheckedChange={(checked) => { setAllowAllHangRequests(checked); handleChange(); }}
             />
           </div>
         </div>
