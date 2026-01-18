@@ -81,50 +81,52 @@ export function WeekOverview() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setWeekOffset(prev => prev - 1)}
-            disabled={weekOffset <= 0}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h3 className="font-display text-lg font-semibold min-w-[120px] text-center">
-            {getWeekLabel()}
-          </h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setWeekOffset(prev => prev + 1)}
-            disabled={weekOffset >= 4}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          {!isCurrentWeek && (
+    <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-soft">
+      <div className="mb-4 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
-              size="sm"
-              className="ml-2 text-xs text-primary"
-              onClick={() => setWeekOffset(0)}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setWeekOffset(prev => prev - 1)}
+              disabled={weekOffset <= 0}
             >
-              Back to this week
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-          )}
+            <h3 className="font-display text-base font-semibold min-w-[100px] text-center">
+              {getWeekLabel()}
+            </h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setWeekOffset(prev => prev + 1)}
+              disabled={weekOffset >= 4}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Link to="/availability">
+            <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
+              Edit
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
         </div>
-        <Link to="/availability">
-          <Button variant="ghost" size="sm" className="gap-1 text-xs">
-            Edit
-            <ArrowRight className="h-3 w-3" />
+        {!isCurrentWeek && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start text-xs text-primary h-6 px-2"
+            onClick={() => setWeekOffset(0)}
+          >
+            ← Back to this week
           </Button>
-        </Link>
+        )}
       </div>
 
-      <div className="grid grid-cols-7 gap-4">
+      <div className="grid grid-cols-7 gap-2 md:gap-4">
         {weekDays.map((day) => {
           const score = getDayAvailabilityScore(day);
           const isToday = isSameDay(day, new Date());
