@@ -335,9 +335,9 @@ export default function Settings() {
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Accept Requests from All Friends</p>
+              <p className="font-medium">Allow Hangout Requests</p>
               <p className="text-sm text-muted-foreground">
-                Allow any friend to send you hangout requests
+                All friends will be able to send you a hangout request
               </p>
             </div>
             <Switch
