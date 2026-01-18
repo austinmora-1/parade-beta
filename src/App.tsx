@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import Invite from "./pages/Invite";
 import Share from "./pages/Share";
 import ResetPassword from "./pages/ResetPassword";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +81,14 @@ const AppRoutes = () => (
         <PublicRoute>
           <Landing />
         </PublicRoute>
+      }
+    />
+    <Route
+      path="/onboarding"
+      element={
+        <ProtectedRoute>
+          <Onboarding />
+        </ProtectedRoute>
       }
     />
     <Route
