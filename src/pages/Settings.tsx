@@ -12,6 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { User, Bell, MapPin, Share2, LogOut, Save, Loader2, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -242,16 +243,15 @@ export default function Settings() {
           <AccordionContent className="px-6 pb-6">
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label htmlFor="location">Home Address</Label>
-                <Input
-                  id="location"
-                  placeholder="Enter your default location..."
+                <Label>Home Base</Label>
+                <CityAutocomplete
                   value={homeAddress}
-                  onChange={(e) => { setHomeAddress(e.target.value); handleChange(); }}
+                  onChange={(value) => { setHomeAddress(value); handleChange(); }}
+                  placeholder="Search for your city..."
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                This will be used as your default location when you set your status to "Home"
+                Your home base city will be shown when you set your status to "Home"
               </p>
             </div>
           </AccordionContent>
