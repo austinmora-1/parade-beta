@@ -90,13 +90,13 @@ export function VibeSelector() {
                 if (customText.trim()) handleCustomSubmit();
                 else setShowCustomInput(false);
               }}
-              className="col-span-2 rounded-lg py-2 px-2 text-xs font-medium bg-primary/10 text-primary outline-none focus:ring-1 focus:ring-primary/50"
+              className="rounded-lg py-2 px-2 text-xs font-medium bg-primary/10 text-primary outline-none focus:ring-1 focus:ring-primary/50"
             />
           ) : (
             <button
               onClick={() => handleVibeSelect('custom')}
               className={cn(
-                "col-span-2 flex items-center justify-center gap-1 rounded-lg py-2 px-2 text-xs font-medium transition-all",
+                "flex items-center justify-center gap-1 rounded-lg py-2 px-2 text-xs font-medium transition-all",
                 currentVibe?.type === 'custom'
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
