@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
-import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Check } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
@@ -31,9 +31,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSaved, setShowSaved] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const initialLoadRef = useRef(true);
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Profile state
   const [displayName, setDisplayName] = useState('');
@@ -112,8 +110,11 @@ export default function Settings() {
     loadProfile();
   }, [session?.user]);
 
-  const saveChanges = useCallback(async () => {
-    if (!session?.user || initialLoadRef.current) return;
+  const handleSaveChanges = async () => {
+    if (!session?.user) {
+      toast.error('You must be logged in to save settings');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -136,48 +137,18 @@ export default function Settings() {
 
       if (error) throw error;
 
-      setShowSaved(true);
-      setTimeout(() => setShowSaved(false), 2000);
+      toast.success('Settings saved');
+      setHasChanges(false);
     } catch (error) {
       console.error('Error saving settings:', error);
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
     }
-  }, [session?.user, displayName, homeAddress, planReminders, friendRequests, planInvitations, showAvailability, showLocation, showVibeStatus, discoverable, allowAllHangRequests, allowedFriendIds]);
-
-  // Auto-save effect
-  useEffect(() => {
-    if (initialLoadRef.current) return;
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveChanges();
-    }, 1000);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [displayName, homeAddress, planReminders, friendRequests, planInvitations, showAvailability, showLocation, showVibeStatus, discoverable, allowAllHangRequests, allowedFriendIds, saveChanges]);
-
-  // Mark initial load as complete after data is loaded
-  useEffect(() => {
-    if (!isLoading) {
-      // Small delay to ensure state is settled
-      const timer = setTimeout(() => {
-        initialLoadRef.current = false;
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading]);
+  };
 
   const handleChange = () => {
-    // No longer needed for tracking, but keeping for compatibility
+    setHasChanges(true);
   };
 
   const toggleFriendAllowed = (friendId: string) => {
@@ -211,36 +182,28 @@ export default function Settings() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Header with Save Button */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start justify-between">
         <div className="min-w-0">
           <h1 className="font-display text-3xl font-bold">Settings</h1>
           <p className="mt-1 text-muted-foreground">
             Manage your account and preferences
           </p>
         </div>
-        <AnimatePresence>
-          {(isSaving || showSaved) && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="h-3 w-3 text-green-500" />
-                  <span>Saved</span>
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {hasChanges && (
+          <Button 
+            onClick={handleSaveChanges} 
+            disabled={isSaving} 
+            size="sm" 
+            className="gap-1.5 h-7 px-2.5 text-xs shrink-0"
+          >
+            {isSaving ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Save className="h-3 w-3" />
+            )}
+            {isSaving ? 'Saving' : 'Save'}
+          </Button>
+        )}
       </div>
 
       <Accordion type="multiple" defaultValue={['profile']} className="space-y-4">
