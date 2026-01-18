@@ -37,8 +37,7 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-sidebar md:block">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-          <img src={paradeLogo} alt="Parade" className="h-10 w-10 rounded-xl" />
+        <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
           <ParadeWordmark size="md" />
         </div>
 

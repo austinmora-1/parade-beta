@@ -124,9 +124,8 @@ export default function Landing() {
         {/* Logo and branding */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src={paradeLogo} alt="Parade" className="h-20 w-20 rounded-2xl shadow-lg" />
+            <ParadeWordmark size="xl" />
           </div>
-          <ParadeWordmark size="xl" />
           <p className="text-muted-foreground">Plan hangouts. Stay connected. Live more.</p>
         </div>
 

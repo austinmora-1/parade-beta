@@ -17,8 +17,7 @@ export function MobileHeader() {
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-lg md:hidden">
-      <Link to="/" className="flex items-center gap-2">
-        <img src={paradeLogo} alt="Parade" className="h-8 w-8 rounded-lg" />
+      <Link to="/" className="flex items-center justify-center">
         <ParadeWordmark size="sm" />
       </Link>
       <div className="flex items-center gap-1">
