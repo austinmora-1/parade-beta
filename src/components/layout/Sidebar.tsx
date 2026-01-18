@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import paradeLogo from '@/assets/parade-logo.png';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -38,7 +39,7 @@ export function Sidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
           <img src={paradeLogo} alt="Parade" className="h-10 w-10 rounded-xl" />
-          <span className="font-display text-xl font-bold text-foreground">Parade</span>
+          <ParadeWordmark size="md" />
         </div>
 
         {/* Navigation */}
