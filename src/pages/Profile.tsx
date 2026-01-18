@@ -330,11 +330,11 @@ export default function Profile() {
     };
   }, []);
 
-  // Get past plans (hangout history) - only "going out" activities
+  // Get past plans (hangout history) - social activities (vibes: social)
   const pastPlans = plans
     .filter(plan => {
       const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
-      return isPast(plan.date) && !isSameDay(plan.date, new Date()) && activityConfig?.category === 'going-out';
+      return isPast(plan.date) && !isSameDay(plan.date, new Date()) && activityConfig?.vibeType === 'social';
     })
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .slice(0, 10); // Show last 10 hangouts

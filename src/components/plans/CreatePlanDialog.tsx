@@ -29,13 +29,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { 
   ACTIVITY_CONFIG, 
-  ACTIVITY_CATEGORIES,
+  VIBE_CONFIG,
   TIME_SLOT_LABELS, 
   ActivityType, 
-  ActivityCategory,
+  VibeType,
   TimeSlot, 
   Plan,
-  getActivitiesByCategory 
+  getActivitiesByVibe,
+  getAllVibes
 } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -62,8 +63,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
   const { addPlan, updatePlan, friends } = usePlannerStore();
   
   const [title, setTitle] = useState('');
-  const [activityCategory, setActivityCategory] = useState<ActivityCategory>('staying-in');
-  const [activity, setActivity] = useState<ActivityType>('me-time');
+  const [selectedVibe, setSelectedVibe] = useState<VibeType>('social');
+  const [activity, setActivity] = useState<ActivityType | string>('drinks');
   const [date, setDate] = useState<Date>(new Date());
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('late-morning');
   const [duration, setDuration] = useState('60');
@@ -75,8 +76,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Get activities for selected category
-  const categoryActivities = getActivitiesByCategory(activityCategory);
+  // Get activities for selected vibe
+  const vibeActivities = getActivitiesByVibe(selectedVibe);
 
   // Search for locations using Google Places API via edge function
   const searchLocation = async (query: string) => {
@@ -129,10 +130,10 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
     if (open && editPlan) {
       setTitle(editPlan.title);
       setActivity(editPlan.activity);
-      // Set category based on activity
-      const config = ACTIVITY_CONFIG[editPlan.activity];
+      // Set vibe based on activity
+      const config = ACTIVITY_CONFIG[editPlan.activity as ActivityType];
       if (config) {
-        setActivityCategory(config.category);
+        setSelectedVibe(config.vibeType);
       }
       setDate(editPlan.date);
       setTimeSlot(editPlan.timeSlot);
@@ -143,8 +144,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
     } else if (open && !editPlan) {
       // Reset for new plan
       setTitle('');
-      setActivityCategory('staying-in');
-      setActivity('me-time');
+      setSelectedVibe('social');
+      setActivity('drinks');
       setDate(defaultDate || new Date());
       setTimeSlot('late-morning');
       setDuration('60');
@@ -154,13 +155,13 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
     }
   }, [open, editPlan, defaultDate]);
 
-  // When category changes, select first activity in that category
+  // When vibe changes, select first activity in that vibe
   useEffect(() => {
-    const activitiesInCategory = getActivitiesByCategory(activityCategory);
-    if (activitiesInCategory.length > 0 && !activitiesInCategory.includes(activity)) {
-      setActivity(activitiesInCategory[0]);
+    const activitiesInVibe = getActivitiesByVibe(selectedVibe);
+    if (activitiesInVibe.length > 0 && !activitiesInVibe.includes(activity as ActivityType)) {
+      setActivity(activitiesInVibe[0]);
     }
-  }, [activityCategory, activity]);
+  }, [selectedVibe, activity]);
 
   const handleSubmit = () => {
     const planData = {
@@ -188,8 +189,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
 
   const resetForm = () => {
     setTitle('');
-    setActivityCategory('staying-in');
-    setActivity('me-time');
+    setSelectedVibe('social');
+    setActivity('drinks');
     setDate(new Date());
     setTimeSlot('late-morning');
     setDuration('60');
@@ -228,29 +229,29 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
             />
           </div>
 
-          {/* Activity Type with Categories */}
+          {/* Activity Type with Vibes */}
           <div className="space-y-1.5">
             <Label className="text-xs">Activity</Label>
             
-            {/* Category Tabs */}
+            {/* Vibe Tabs */}
             <Tabs 
-              value={activityCategory} 
-              onValueChange={(v) => setActivityCategory(v as ActivityCategory)}
+              value={selectedVibe} 
+              onValueChange={(v) => setSelectedVibe(v as VibeType)}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 h-8">
-                {(Object.keys(ACTIVITY_CATEGORIES) as ActivityCategory[]).map((cat) => (
-                  <TabsTrigger key={cat} value={cat} className="gap-1.5 text-xs py-1">
-                    <span>{ACTIVITY_CATEGORIES[cat].icon}</span>
-                    <span>{ACTIVITY_CATEGORIES[cat].label}</span>
+              <TabsList className="grid w-full grid-cols-4 h-8">
+                {getAllVibes().map((vibe) => (
+                  <TabsTrigger key={vibe} value={vibe} className="gap-1 text-xs py-1 px-1">
+                    <span>{VIBE_CONFIG[vibe].icon}</span>
+                    <span className="hidden sm:inline">{VIBE_CONFIG[vibe].label}</span>
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
 
-            {/* Activity Grid - more compact */}
-            <div className="grid grid-cols-4 gap-1">
-              {categoryActivities.map((type) => {
+            {/* Activity Grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+              {vibeActivities.map((type) => {
                 const config = ACTIVITY_CONFIG[type];
                 return (
                   <button
