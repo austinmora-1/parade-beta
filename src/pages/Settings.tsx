@@ -182,15 +182,15 @@ export default function Settings() {
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header with Save Button */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="font-display text-3xl font-bold">Settings</h1>
           <p className="mt-1 text-muted-foreground">
             Manage your account and preferences
           </p>
         </div>
         {hasChanges && (
-          <Button onClick={handleSaveChanges} disabled={isSaving} className="gap-2">
+          <Button onClick={handleSaveChanges} disabled={isSaving} className="gap-2 shrink-0 w-full sm:w-auto">
             <Save className="h-4 w-4" />
             {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
