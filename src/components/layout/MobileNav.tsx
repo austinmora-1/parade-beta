@@ -1,17 +1,17 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
-  Calendar, 
   LayoutDashboard, 
   Users, 
   MessageCircle, 
-  Clock
+  Clock,
+  User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
-  { path: '/plans', icon: Calendar, label: 'Plans' },
   { path: '/availability', icon: Clock, label: 'Availability' },
+  { path: '/profile', icon: User, label: 'Profile' },
   { path: '/friends', icon: Users, label: 'Friends' },
   { path: '/chat', icon: MessageCircle, label: 'Elly' },
 ];
