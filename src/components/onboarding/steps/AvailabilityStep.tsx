@@ -18,11 +18,17 @@ const DAYS = [
   { id: 'sunday', label: 'Sun' },
 ];
 
-const formatHour = (hour: number) => {
-  if (hour === 0) return '12am';
-  if (hour === 12) return '12pm';
-  if (hour < 12) return `${hour}am`;
-  return `${hour - 12}pm`;
+const formatTime = (decimalHour: number) => {
+  const hours = Math.floor(decimalHour);
+  const minutes = Math.round((decimalHour - hours) * 60);
+  
+  const period = hours >= 12 ? 'pm' : 'am';
+  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  
+  if (minutes === 0) {
+    return `${displayHours}${period}`;
+  }
+  return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
 };
 
 export function AvailabilityStep({ data, updateData }: AvailabilityStepProps) {
@@ -76,14 +82,14 @@ export function AvailabilityStep({ data, updateData }: AvailabilityStepProps) {
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-medium">Start time</label>
-            <span className="text-sm font-bold text-primary">{formatHour(data.workStartHour)}</span>
+            <span className="text-sm font-bold text-primary">{formatTime(data.workStartHour)}</span>
           </div>
           <Slider
             value={[data.workStartHour]}
             onValueChange={([value]) => updateData({ workStartHour: value })}
             min={5}
             max={12}
-            step={1}
+            step={0.25}
             className="w-full"
           />
         </div>
@@ -91,14 +97,14 @@ export function AvailabilityStep({ data, updateData }: AvailabilityStepProps) {
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-sm font-medium">End time</label>
-            <span className="text-sm font-bold text-primary">{formatHour(data.workEndHour)}</span>
+            <span className="text-sm font-bold text-primary">{formatTime(data.workEndHour)}</span>
           </div>
           <Slider
             value={[data.workEndHour]}
             onValueChange={([value]) => updateData({ workEndHour: value })}
             min={14}
             max={22}
-            step={1}
+            step={0.25}
             className="w-full"
           />
         </div>
