@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { 
   Calendar, 
   LayoutDashboard, 
@@ -6,12 +7,14 @@ import {
   MessageCircle, 
   Clock, 
   Settings,
-  Bell,
-  User
+  Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import paradeLogo from '@/assets/parade-logo.png';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -24,6 +27,28 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const { totalNotifications } = useNotifications();
+  const { session } = useAuth();
+  const [profile, setProfile] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (!session?.user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name, avatar_url')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      setProfile(data);
+    }
+    loadProfile();
+  }, [session?.user]);
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-sidebar md:block">
@@ -94,7 +119,12 @@ export function Sidebar() {
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )}
           >
-            <User className="h-5 w-5" />
+            <Avatar className="h-5 w-5">
+              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
+              <AvatarFallback className="bg-primary/20 text-[10px] text-primary">
+                {getInitials(profile?.display_name)}
+              </AvatarFallback>
+            </Avatar>
             Profile
           </NavLink>
           <NavLink

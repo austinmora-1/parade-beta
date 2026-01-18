@@ -1,11 +1,36 @@
 import { Link } from 'react-router-dom';
-import { Settings, Bell, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Bell } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import paradeLogo from '@/assets/parade-logo.png';
 import { useNotifications } from '@/hooks/useNotifications';
-import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 export function MobileHeader() {
   const { totalNotifications } = useNotifications();
+  const { session } = useAuth();
+  const [profile, setProfile] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (!session?.user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name, avatar_url')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      setProfile(data);
+    }
+    loadProfile();
+  }, [session?.user]);
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-lg md:hidden">
@@ -27,9 +52,14 @@ export function MobileHeader() {
         </Link>
         <Link
           to="/profile"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-muted"
         >
-          <User className="h-5 w-5" />
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
+            <AvatarFallback className="bg-primary/20 text-[10px] text-primary">
+              {getInitials(profile?.display_name)}
+            </AvatarFallback>
+          </Avatar>
         </Link>
         <Link
           to="/settings"
