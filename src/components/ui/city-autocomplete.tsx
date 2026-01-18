@@ -92,12 +92,13 @@ export function CityAutocomplete({
   };
 
   const handleBlur = () => {
-    // Delay to allow click on suggestion
+    // Small delay to allow mousedown on suggestion to fire first
     setTimeout(() => {
+      setShowSuggestions(false);
       if (query !== value) {
         onChange(query);
       }
-    }, 200);
+    }, 150);
   };
 
   return (
@@ -118,12 +119,15 @@ export function CityAutocomplete({
       </div>
 
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-border bg-popover shadow-lg">
-          <ul className="max-h-60 overflow-auto py-1">
+        <div className="absolute z-[100] mt-1 w-full rounded-lg border border-border bg-popover shadow-lg">
+          <ul className="max-h-60 overflow-y-auto py-1">
             {suggestions.map((suggestion) => (
               <li
                 key={suggestion.place_id}
-                onClick={() => handleSelectSuggestion(suggestion)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelectSuggestion(suggestion);
+                }}
                 className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-muted transition-colors"
               >
                 <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />

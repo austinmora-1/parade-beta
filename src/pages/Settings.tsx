@@ -233,14 +233,14 @@ export default function Settings() {
         </AccordionItem>
 
         {/* Default Location */}
-        <AccordionItem value="location" className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
+        <AccordionItem value="location" className="rounded-2xl border border-border bg-card shadow-soft overflow-visible">
           <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
             <div className="flex items-center gap-3">
               <MapPin className="h-5 w-5 text-primary" />
               <span className="font-display text-lg font-semibold">Default Location</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-6 pb-6">
+          <AccordionContent className="px-6 pb-6 overflow-visible">
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
                 <Label>Home Base</Label>
