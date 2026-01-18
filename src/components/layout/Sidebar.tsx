@@ -1,5 +1,4 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import { 
   Calendar, 
   LayoutDashboard, 
@@ -13,8 +12,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import paradeLogo from '@/assets/parade-logo.png';
 import { useNotifications } from '@/hooks/useNotifications';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -27,23 +25,7 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const { totalNotifications } = useNotifications();
-  const { session } = useAuth();
-  const [profile, setProfile] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
-
-  useEffect(() => {
-    async function loadProfile() {
-      if (!session?.user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('display_name, avatar_url')
-        .eq('user_id', session.user.id)
-        .single();
-      
-      setProfile(data);
-    }
-    loadProfile();
-  }, [session?.user]);
+  const { profile } = useCurrentUserProfile();
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
