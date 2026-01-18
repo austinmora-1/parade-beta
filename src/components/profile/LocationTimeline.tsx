@@ -130,20 +130,9 @@ export function LocationTimeline() {
           <MapPin className="h-5 w-5 text-primary" />
           <h2 className="font-display text-lg font-semibold">Status</h2>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setAddTripDialogOpen(true)}
-            className="gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            Add trip
-          </Button>
-          <Link to="/availability">
-            <span className="text-sm text-primary hover:underline cursor-pointer">Edit</span>
-          </Link>
-        </div>
+        <Link to="/availability">
+          <span className="text-sm text-primary hover:underline cursor-pointer">Edit</span>
+        </Link>
       </div>
 
       {/* Trip summaries */}
@@ -231,26 +220,37 @@ export function LocationTimeline() {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
-            <Home className="h-3 w-3 text-primary" />
-          </div>
-          <span>Home</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-5 w-5 items-center justify-center rounded bg-orange-500/10">
-            <Plane className="h-3 w-3 text-orange-600" />
-          </div>
-          <span>Away</span>
-        </div>
-        {trips.length > 0 && (
+      {/* Legend and Add Trip button */}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="h-1 w-5 rounded-full bg-orange-400/50" />
-            <span>Trip</span>
+            <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
+              <Home className="h-3 w-3 text-primary" />
+            </div>
+            <span>Home</span>
           </div>
-        )}
+          <div className="flex items-center gap-1.5">
+            <div className="flex h-5 w-5 items-center justify-center rounded bg-orange-500/10">
+              <Plane className="h-3 w-3 text-orange-600" />
+            </div>
+            <span>Away</span>
+          </div>
+          {trips.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div className="h-1 w-5 rounded-full bg-orange-400/50" />
+              <span>Trip</span>
+            </div>
+          )}
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setAddTripDialogOpen(true)}
+          className="gap-1 h-7 px-2.5 text-xs"
+        >
+          <Plus className="h-3 w-3" />
+          Add trip
+        </Button>
       </div>
 
       <AddTripDialog 
