@@ -1,23 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { format, isPast, isSameDay } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { 
-  User, 
   MapPin, 
   Calendar, 
   Settings, 
   Loader2,
   Users,
-  Sparkles
+  Sparkles,
+  Camera,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
-import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, ActivityType } from '@/types/planner';
+import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
+import { toast } from 'sonner';
 
 interface ProfileData {
   display_name: string | null;
@@ -31,6 +32,8 @@ export default function Profile() {
   const { plans, friends } = usePlannerStore();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -60,6 +63,72 @@ export default function Profile() {
 
     loadProfile();
   }, [session?.user]);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !session?.user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const userId = session.user.id;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Add cache-busting query param
+      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('user_id', userId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null);
+      toast.success('Profile picture updated!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to upload profile picture');
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   // Get past plans (hangout history)
   const pastPlans = plans
@@ -102,6 +171,15 @@ export default function Profile() {
 
   return (
     <div className="animate-fade-in space-y-6 md:space-y-8">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* Profile Header */}
       <Card className="overflow-hidden">
         {/* Banner */}
@@ -109,14 +187,43 @@ export default function Profile() {
         
         {/* Profile Info */}
         <div className="relative px-6 pb-6">
-          {/* Avatar */}
+          {/* Avatar with upload button */}
           <div className="-mt-12 mb-4 flex items-end justify-between md:-mt-16">
-            <Avatar className="h-24 w-24 border-4 border-background shadow-lg md:h-32 md:w-32">
-              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'User'} />
-              <AvatarFallback className="bg-primary text-2xl text-primary-foreground md:text-3xl">
-                {getInitials(profile?.display_name)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative group">
+              <Avatar className="h-24 w-24 border-4 border-background shadow-lg md:h-32 md:w-32">
+                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'User'} />
+                <AvatarFallback className="bg-primary text-2xl text-primary-foreground md:text-3xl">
+                  {getInitials(profile?.display_name)}
+                </AvatarFallback>
+              </Avatar>
+              
+              {/* Upload overlay */}
+              <button
+                onClick={handleAvatarClick}
+                disabled={isUploading}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-white" />
+                ) : (
+                  <Camera className="h-6 w-6 text-white" />
+                )}
+              </button>
+              
+              {/* Mobile-friendly upload button */}
+              <button
+                onClick={handleAvatarClick}
+                disabled={isUploading}
+                className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110 md:hidden disabled:cursor-not-allowed"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            
             <Link to="/settings">
               <Button variant="outline" size="sm" className="gap-2">
                 <Settings className="h-4 w-4" />
