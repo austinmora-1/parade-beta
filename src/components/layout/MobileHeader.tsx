@@ -51,6 +51,12 @@ export function MobileHeader() {
           )}
         </Link>
         <Link
+          to="/settings"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Settings className="h-5 w-5" />
+        </Link>
+        <Link
           to="/profile"
           className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-muted"
         >
@@ -60,12 +66,6 @@ export function MobileHeader() {
               {getInitials(profile?.display_name)}
             </AvatarFallback>
           </Avatar>
-        </Link>
-        <Link
-          to="/settings"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Settings className="h-5 w-5" />
         </Link>
       </div>
     </header>
