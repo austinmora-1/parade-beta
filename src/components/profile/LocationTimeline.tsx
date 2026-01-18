@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { format, addDays, isToday, differenceInDays } from 'date-fns';
+import { format, addDays, isToday, differenceInDays, getMonth } from 'date-fns';
 import { Home, Plane, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -159,23 +159,23 @@ export function LocationTimeline() {
           {days.map((day, index) => {
             const status = getDayLocation(day);
             const isCurrentDay = isToday(day);
-            const weekIndex = Math.floor(index / 7);
-            const isFirstOfWeek = index % 7 === 0;
             const trip = getTripForDay(index);
             const isFirstOfTrip = trip && trip.startIndex === index;
             const isLastOfTrip = trip && trip.endIndex === index;
+            
+            // Check if this is the first day of a new month
+            const isFirstOfMonth = index === 0 || getMonth(day) !== getMonth(days[index - 1]);
 
             return (
               <div key={day.toISOString()} className="flex flex-col items-center relative">
-                {/* Week label */}
-                {isFirstOfWeek && (
-                  <div className="text-[10px] text-muted-foreground font-medium mb-1 w-full text-center">
-                    {getWeekLabel(weekIndex)}
+                {/* Month label */}
+                {isFirstOfMonth ? (
+                  <div className="text-[10px] text-primary font-semibold mb-1 w-full text-center">
+                    {format(day, 'MMM')}
                   </div>
+                ) : (
+                  <div className="h-[14px] mb-1" />
                 )}
-                {!isFirstOfWeek && index < 7 && <div className="h-[14px] mb-1" />}
-                {!isFirstOfWeek && index >= 7 && index < 14 && <div className="h-[14px] mb-1" />}
-                {!isFirstOfWeek && index >= 14 && <div className="h-[14px] mb-1" />}
 
                 {/* Trip connector bar */}
                 {trip && (
