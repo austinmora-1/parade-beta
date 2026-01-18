@@ -9,10 +9,7 @@ import {
   Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import paradeLogo from '@/assets/parade-logo.png';
 import { useNotifications } from '@/hooks/useNotifications';
-import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 
 const navItems = [
@@ -26,19 +23,43 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const { totalNotifications } = useNotifications();
-  const { profile } = useCurrentUserProfile();
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-sidebar md:block">
       <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-16 items-center justify-center border-b border-sidebar-border px-6">
+        {/* Top Bar: Wordmark centered with icons on right */}
+        <div className="flex h-16 items-center border-b border-sidebar-border px-4">
+          <div className="flex-1" />
           <ParadeWordmark size="md" />
+          <div className="flex-1 flex justify-end gap-1">
+            <NavLink
+              to="/notifications"
+              className={cn(
+                "relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+                location.pathname === '/notifications'
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Bell className="h-5 w-5" />
+              {totalNotifications > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                  {totalNotifications}
+                </span>
+              )}
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+                location.pathname === '/settings'
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Settings className="h-5 w-5" />
+            </NavLink>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -67,61 +88,6 @@ export function Sidebar() {
             );
           })}
         </nav>
-
-        {/* Bottom Section: Notifications & Settings */}
-        <div className="border-t border-sidebar-border p-4 space-y-1">
-          <NavLink
-            to="/notifications"
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 relative",
-              location.pathname === '/notifications'
-                ? "bg-primary text-primary-foreground shadow-soft"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <Bell className="h-5 w-5" />
-            Notifications
-            {totalNotifications > 0 && (
-              <span className={cn(
-                "ml-auto flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold",
-                location.pathname === '/notifications'
-                  ? "bg-primary-foreground/20 text-primary-foreground"
-                  : "bg-primary text-primary-foreground"
-              )}>
-                {totalNotifications}
-              </span>
-            )}
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-              location.pathname === '/settings'
-                ? "bg-primary text-primary-foreground shadow-soft"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <Settings className="h-5 w-5" />
-            Settings
-          </NavLink>
-          <NavLink
-            to="/profile"
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-              location.pathname === '/profile'
-                ? "bg-primary text-primary-foreground shadow-soft"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <Avatar className="h-5 w-5">
-              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
-              <AvatarFallback className="bg-primary/20 text-[10px] text-primary">
-                {getInitials(profile?.display_name)}
-              </AvatarFallback>
-            </Avatar>
-            Profile
-          </NavLink>
-        </div>
       </div>
     </aside>
   );
