@@ -4,6 +4,7 @@ import { format, isPast, isSameDay } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   MapPin, 
   Calendar, 
@@ -12,7 +13,9 @@ import {
   Users,
   Sparkles,
   Camera,
-  Upload
+  Pencil,
+  Check,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -33,6 +36,9 @@ export default function Profile() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bioValue, setBioValue] = useState('');
+  const [isSavingBio, setIsSavingBio] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -127,6 +133,45 @@ export default function Profile() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleEditBio = () => {
+    setBioValue(profile?.bio || '');
+    setIsEditingBio(true);
+  };
+
+  const handleCancelBio = () => {
+    setIsEditingBio(false);
+    setBioValue('');
+  };
+
+  const handleSaveBio = async () => {
+    if (!session?.user) return;
+
+    const trimmedBio = bioValue.trim();
+    if (trimmedBio.length > 500) {
+      toast.error('Bio must be less than 500 characters');
+      return;
+    }
+
+    setIsSavingBio(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ bio: trimmedBio || null })
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
+      setProfile(prev => prev ? { ...prev, bio: trimmedBio || null } : null);
+      setIsEditingBio(false);
+      toast.success('Bio updated!');
+    } catch (error) {
+      console.error('Error updating bio:', error);
+      toast.error('Failed to update bio');
+    } finally {
+      setIsSavingBio(false);
     }
   };
 
@@ -246,12 +291,62 @@ export default function Profile() {
               )}
             </div>
 
-            {profile?.bio ? (
-              <p className="text-muted-foreground">{profile.bio}</p>
+            {isEditingBio ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={bioValue}
+                  onChange={(e) => setBioValue(e.target.value)}
+                  placeholder="Tell us a little about yourself..."
+                  className="min-h-[80px] resize-none"
+                  maxLength={500}
+                  autoFocus
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    {bioValue.length}/500 characters
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelBio}
+                      disabled={isSavingBio}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveBio}
+                      disabled={isSavingBio}
+                    >
+                      {isSavingBio ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-1" />
+                      )}
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : profile?.bio ? (
+              <div className="group flex items-start gap-2">
+                <p className="text-muted-foreground flex-1">{profile.bio}</p>
+                <button
+                  onClick={handleEditBio}
+                  className="shrink-0 p-1 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground transition-all"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </div>
             ) : (
-              <p className="text-muted-foreground italic">
-                No bio yet. <Link to="/settings" className="text-primary hover:underline">Add one in settings</Link>
-              </p>
+              <button
+                onClick={handleEditBio}
+                className="text-muted-foreground italic hover:text-primary transition-colors text-left"
+              >
+                No bio yet. Click to add one
+              </button>
             )}
 
             {/* Quick Stats */}
