@@ -1,7 +1,9 @@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { OnboardingData } from '../OnboardingWizard';
 import { Eye, Sparkles, Users, MapPin, MessageCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface PrivacyStepProps {
   data: OnboardingData;
@@ -41,14 +43,6 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
       description: 'Friends can find you by searching your name or email',
       checked: data.discoverable,
       onChange: (checked: boolean) => updateData({ discoverable: checked }),
-    },
-    {
-      id: 'allowAllHangRequests',
-      icon: MessageCircle,
-      title: 'Allow hangout requests',
-      description: 'All friends will be able to send you a hangout request',
-      checked: data.allowAllHangRequests,
-      onChange: (checked: boolean) => updateData({ allowAllHangRequests: checked }),
     },
   ];
 
@@ -93,6 +87,54 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
             />
           </div>
         ))}
+
+        {/* Hangout requests toggle with conditional friend selector */}
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <MessageCircle className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="min-w-0">
+                <Label htmlFor="allowAllHangRequests" className="text-base font-medium cursor-pointer">
+                  Allow hangout requests
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  {data.allowAllHangRequests 
+                    ? 'All friends will be able to send you a hangout request'
+                    : 'Only selected friends can send you hangout requests'}
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="allowAllHangRequests"
+              checked={data.allowAllHangRequests}
+              onCheckedChange={(checked) => updateData({ allowAllHangRequests: checked })}
+              className="ml-3 shrink-0"
+            />
+          </div>
+
+          <AnimatePresence>
+            {!data.allowAllHangRequests && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-sm font-medium mb-3">
+                    You can select specific friends after you've added them in the next step.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    By default, no one will be able to send you hangout requests until you allow specific friends.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       <div className="mt-6 rounded-xl bg-primary/5 border border-primary/20 p-4">
