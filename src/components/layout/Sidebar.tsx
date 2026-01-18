@@ -30,7 +30,7 @@ export function Sidebar() {
         {/* Top Bar: Wordmark centered with icons on right */}
         <div className="flex h-16 items-center border-b border-sidebar-border px-4">
           <div className="flex-1" />
-          <ParadeWordmark size="md" />
+          <ParadeWordmark size="lg" />
           <div className="flex-1 flex justify-end gap-1">
             <NavLink
               to="/notifications"
