@@ -190,8 +190,8 @@ export default function Settings() {
           </p>
         </div>
         {hasChanges && (
-          <Button onClick={handleSaveChanges} disabled={isSaving} size="sm" className="gap-2 shrink-0">
-            <Save className="h-3.5 w-3.5" />
+          <Button onClick={handleSaveChanges} disabled={isSaving} size="sm" className="gap-1.5 shrink-0 h-8 px-3 text-xs">
+            <Save className="h-3 w-3" />
             {isSaving ? 'Saving...' : 'Save'}
           </Button>
         )}
