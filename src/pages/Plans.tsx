@@ -46,7 +46,7 @@ export default function Plans() {
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="font-display text-xl font-bold md:text-3xl">Plans</h1>
+          <h1 className="font-display text-lg font-bold md:text-2xl">Plans</h1>
           <p className="hidden text-muted-foreground md:block">
             Manage and organize your upcoming activities
           </p>

@@ -492,7 +492,7 @@ export default function Profile() {
                   onClick={handleEditName}
                   className="group flex items-center gap-2 text-left"
                 >
-                  <h1 className="font-display text-xl font-bold md:text-2xl group-hover:text-primary transition-colors">
+                  <h1 className="font-display text-lg font-bold md:text-xl group-hover:text-primary transition-colors">
                     {profile?.display_name || 'Your Name'}
                   </h1>
                   <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

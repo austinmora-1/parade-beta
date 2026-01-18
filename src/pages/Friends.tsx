@@ -150,7 +150,7 @@ export default function Friends() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold md:text-3xl">Friends</h1>
+          <h1 className="font-display text-lg font-bold md:text-2xl">Friends</h1>
           <p className="mt-1 text-sm text-muted-foreground md:text-base">
             Connect with friends and share your plans
           </p>

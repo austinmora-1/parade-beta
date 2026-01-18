@@ -46,7 +46,7 @@ export default function Chat() {
             <Sparkles className="h-5 w-5 text-primary-foreground md:h-7 md:w-7" />
           </div>
           <div>
-            <h1 className="font-display text-xl font-bold md:text-2xl">Chat with Elly</h1>
+            <h1 className="font-display text-lg font-bold md:text-xl">Chat with Elly</h1>
             <p className="text-xs text-muted-foreground md:text-sm">
               Your AI planning assistant
             </p>
