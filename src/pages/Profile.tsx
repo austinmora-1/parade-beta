@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
@@ -34,6 +35,7 @@ interface ProfileData {
 
 export default function Profile() {
   const { session } = useAuth();
+  const { updateProfile: updateGlobalProfile } = useCurrentUserProfile();
   const { plans, friends } = usePlannerStore();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -149,8 +151,9 @@ export default function Profile() {
 
       if (updateError) throw updateError;
 
-      // Update local state
+      // Update local state and global profile for navbar
       setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null);
+      updateGlobalProfile({ avatar_url: avatarUrl });
       toast.success('Profile picture updated!');
     } catch (error) {
       console.error('Error uploading avatar:', error);

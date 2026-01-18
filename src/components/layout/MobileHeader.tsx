@@ -1,31 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import { Settings, Bell } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import paradeLogo from '@/assets/parade-logo.png';
 import { useNotifications } from '@/hooks/useNotifications';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 export function MobileHeader() {
   const { totalNotifications } = useNotifications();
-  const { session } = useAuth();
-  const [profile, setProfile] = useState<{ display_name: string | null; avatar_url: string | null } | null>(null);
-
-  useEffect(() => {
-    async function loadProfile() {
-      if (!session?.user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('display_name, avatar_url')
-        .eq('user_id', session.user.id)
-        .single();
-      
-      setProfile(data);
-    }
-    loadProfile();
-  }, [session?.user]);
+  const { profile } = useCurrentUserProfile();
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
