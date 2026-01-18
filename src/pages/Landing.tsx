@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
 import paradeLogo from '@/assets/parade-logo.png';
+import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 
 type AuthView = 'auth' | 'forgot-password' | 'reset-password';
 
@@ -125,7 +126,7 @@ export default function Landing() {
           <div className="flex justify-center mb-4">
             <img src={paradeLogo} alt="Parade" className="h-20 w-20 rounded-2xl shadow-lg" />
           </div>
-          <h1 className="font-display text-4xl font-bold text-foreground mb-2">Parade</h1>
+          <ParadeWordmark size="xl" />
           <p className="text-muted-foreground">Plan hangouts. Stay connected. Live more.</p>
         </div>
 
