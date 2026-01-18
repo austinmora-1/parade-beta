@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
-import { format, addDays, startOfWeek, addWeeks, isSameDay, isSameWeek } from 'date-fns';
+import { format, addDays, startOfWeek, addWeeks, isSameDay, isSameWeek, differenceInWeeks } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ChevronLeft, ChevronRight, ArrowRight, CalendarPlus, Sparkles } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { ChevronLeft, ChevronRight, ArrowRight, CalendarPlus, Sparkles, CalendarIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function WeekOverview() {
   const { plans, availability } = usePlannerStore();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   
   const weekDays = useMemo(() => {
     const start = startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 });
@@ -66,6 +68,19 @@ export function WeekOverview() {
     return `${format(weekDays[0], 'MMM d')} - ${format(weekDays[6], 'MMM d')}`;
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    const today = new Date();
+    const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const selectedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
+    const weeksDiff = differenceInWeeks(selectedWeekStart, todayWeekStart);
+    
+    // Clamp to allowed range (0-4 weeks)
+    const newOffset = Math.max(0, Math.min(4, weeksDiff));
+    setWeekOffset(newOffset);
+    setCalendarOpen(false);
+  };
+
   // Get background color based on availability - matches AvailabilityGrid
   const getDayBgColor = (availability: number, isToday: boolean): string => {
     if (isToday) return 'bg-availability-today text-white';
@@ -94,9 +109,32 @@ export function WeekOverview() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h3 className="font-display text-base font-semibold min-w-[100px] text-center">
-              {getWeekLabel()}
-            </h3>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="font-display text-base font-semibold min-w-[100px] text-center h-7 px-2 gap-1"
+                >
+                  {getWeekLabel()}
+                  <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card border border-border shadow-lg z-50" align="center">
+                <Calendar
+                  mode="single"
+                  selected={weekDays[0]}
+                  onSelect={handleDateSelect}
+                  disabled={(date) => {
+                    const today = new Date();
+                    const maxDate = addWeeks(today, 4);
+                    return date < startOfWeek(today, { weekStartsOn: 1 }) || date > maxDate;
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
             <Button
               variant="ghost"
               size="icon"
