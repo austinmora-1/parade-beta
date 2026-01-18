@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +29,8 @@ export function CityAutocomplete({
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
   // Sync external value changes
@@ -36,16 +38,51 @@ export function CityAutocomplete({
     setQuery(value);
   }, [value]);
 
+  // Update dropdown position when showing suggestions
+  useEffect(() => {
+    if (showSuggestions && inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [showSuggestions, suggestions]);
+
   // Close suggestions when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const dropdown = document.getElementById('city-autocomplete-dropdown');
+      if (
+        inputRef.current && 
+        !inputRef.current.contains(target) &&
+        dropdown && 
+        !dropdown.contains(target)
+      ) {
         setShowSuggestions(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close on scroll
+  useEffect(() => {
+    function handleScroll() {
+      if (showSuggestions && inputRef.current) {
+        const rect = inputRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    }
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [showSuggestions]);
 
   const searchPlaces = async (searchQuery: string) => {
     if (searchQuery.length < 2) {
@@ -91,24 +128,75 @@ export function CityAutocomplete({
     setSuggestions([]);
   };
 
+  const handleFocus = () => {
+    if (query.length >= 2) {
+      setShowSuggestions(true);
+    }
+  };
+
   const handleBlur = () => {
-    // Small delay to allow mousedown on suggestion to fire first
+    // Delay to allow click/touch on suggestion
     setTimeout(() => {
-      setShowSuggestions(false);
       if (query !== value) {
         onChange(query);
       }
-    }, 150);
+    }, 200);
   };
 
+  const dropdown = showSuggestions && suggestions.length > 0 && createPortal(
+    <div
+      id="city-autocomplete-dropdown"
+      style={{
+        position: 'absolute',
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+        zIndex: 9999,
+      }}
+      className="rounded-lg border border-border bg-popover shadow-lg"
+    >
+      <ul className="max-h-60 overflow-y-auto py-1 overscroll-contain">
+        {suggestions.map((suggestion) => (
+          <li
+            key={suggestion.place_id}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSelectSuggestion(suggestion);
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSelectSuggestion(suggestion);
+            }}
+            className="flex cursor-pointer items-center gap-3 px-3 py-3 hover:bg-muted active:bg-muted transition-colors"
+          >
+            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0">
+              <p className="font-medium truncate">{suggestion.main_text}</p>
+              {suggestion.secondary_text && (
+                <p className="text-sm text-muted-foreground truncate">{suggestion.secondary_text}</p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>,
+    document.body
+  );
+
   return (
-    <div ref={wrapperRef} className={cn("relative", className)}>
+    <div className={cn("relative", className)}>
       <div className="relative">
         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
+          ref={inputRef}
           value={query}
           onChange={handleInputChange}
-          onFocus={() => query.length >= 2 && setShowSuggestions(true)}
+          onFocus={handleFocus}
           onBlur={handleBlur}
           placeholder={placeholder}
           className="pl-10 pr-10"
@@ -117,31 +205,7 @@ export function CityAutocomplete({
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
         )}
       </div>
-
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-[100] mt-1 w-full rounded-lg border border-border bg-popover shadow-lg">
-          <ul className="max-h-60 overflow-y-auto py-1">
-            {suggestions.map((suggestion) => (
-              <li
-                key={suggestion.place_id}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  handleSelectSuggestion(suggestion);
-                }}
-                className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-muted transition-colors"
-              >
-                <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{suggestion.main_text}</p>
-                  {suggestion.secondary_text && (
-                    <p className="text-sm text-muted-foreground truncate">{suggestion.secondary_text}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {dropdown}
     </div>
   );
 }
