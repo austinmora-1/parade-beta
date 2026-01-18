@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { format, isPast, isSameDay } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,7 +39,10 @@ export default function Profile() {
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioValue, setBioValue] = useState('');
   const [isSavingBio, setIsSavingBio] = useState(false);
+  const [bioSaveStatus, setBioSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedBioRef = useRef<string>('');
 
   useEffect(() => {
     async function loadProfile() {
@@ -137,25 +140,29 @@ export default function Profile() {
   };
 
   const handleEditBio = () => {
-    setBioValue(profile?.bio || '');
+    const currentBio = profile?.bio || '';
+    setBioValue(currentBio);
+    lastSavedBioRef.current = currentBio;
+    setBioSaveStatus('idle');
     setIsEditingBio(true);
   };
 
   const handleCancelBio = () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
     setIsEditingBio(false);
     setBioValue('');
+    setBioSaveStatus('idle');
   };
 
-  const handleSaveBio = async () => {
+  const saveBio = useCallback(async (value: string) => {
     if (!session?.user) return;
 
-    const trimmedBio = bioValue.trim();
-    if (trimmedBio.length > 500) {
-      toast.error('Bio must be less than 500 characters');
-      return;
-    }
+    const trimmedBio = value.trim();
+    if (trimmedBio === lastSavedBioRef.current) return; // No changes
 
-    setIsSavingBio(true);
+    setBioSaveStatus('saving');
     try {
       const { error } = await supabase
         .from('profiles')
@@ -164,16 +171,63 @@ export default function Profile() {
 
       if (error) throw error;
 
+      lastSavedBioRef.current = trimmedBio;
       setProfile(prev => prev ? { ...prev, bio: trimmedBio || null } : null);
-      setIsEditingBio(false);
-      toast.success('Bio updated!');
+      setBioSaveStatus('saved');
+      
+      // Reset to idle after showing "Saved" briefly
+      setTimeout(() => setBioSaveStatus('idle'), 1500);
     } catch (error) {
       console.error('Error updating bio:', error);
-      toast.error('Failed to update bio');
-    } finally {
-      setIsSavingBio(false);
+      toast.error('Failed to save bio');
+      setBioSaveStatus('idle');
     }
+  }, [session?.user]);
+
+  const handleBioChange = (value: string) => {
+    if (value.length > 500) return; // Enforce max length
+    
+    setBioValue(value);
+    setBioSaveStatus('idle');
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new debounced save (1.5 seconds after user stops typing)
+    saveTimeoutRef.current = setTimeout(() => {
+      saveBio(value);
+    }, 1500);
   };
+
+  const handleBioBlur = () => {
+    // Save immediately on blur if there are unsaved changes
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveBio(bioValue);
+  };
+
+  const handleCloseBioEditor = () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    // Save any pending changes before closing
+    if (bioValue.trim() !== lastSavedBioRef.current) {
+      saveBio(bioValue);
+    }
+    setIsEditingBio(false);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Get past plans (hangout history)
   const pastPlans = plans
@@ -295,39 +349,38 @@ export default function Profile() {
               <div className="space-y-2">
                 <Textarea
                   value={bioValue}
-                  onChange={(e) => setBioValue(e.target.value)}
+                  onChange={(e) => handleBioChange(e.target.value)}
+                  onBlur={handleBioBlur}
                   placeholder="Tell us a little about yourself..."
                   className="min-h-[80px] resize-none"
                   maxLength={500}
                   autoFocus
                 />
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    {bioValue.length}/500 characters
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancelBio}
-                      disabled={isSavingBio}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleSaveBio}
-                      disabled={isSavingBio}
-                    >
-                      {isSavingBio ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      ) : (
-                        <Check className="h-4 w-4 mr-1" />
-                      )}
-                      Save
-                    </Button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {bioValue.length}/500
+                    </span>
+                    {bioSaveStatus === 'saving' && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Saving...
+                      </span>
+                    )}
+                    {bioSaveStatus === 'saved' && (
+                      <span className="flex items-center gap-1 text-xs text-primary">
+                        <Check className="h-3 w-3" />
+                        Saved
+                      </span>
+                    )}
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCloseBioEditor}
+                  >
+                    Done
+                  </Button>
                 </div>
               </div>
             ) : profile?.bio ? (
