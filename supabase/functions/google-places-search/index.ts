@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { query, types } = await req.json();
     
     if (!query || query.length < 2) {
       return new Response(
@@ -29,7 +29,8 @@ serve(async (req) => {
     const url = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json');
     url.searchParams.set('input', query);
     url.searchParams.set('key', apiKey);
-    url.searchParams.set('types', 'establishment|geocode');
+    // Default to cities if types not specified, otherwise use provided types
+    url.searchParams.set('types', types || '(cities)');
 
     const response = await fetch(url.toString());
     const data = await response.json();

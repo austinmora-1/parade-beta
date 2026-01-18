@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { OnboardingData } from '../OnboardingWizard';
 import { MapPin, Navigation, Loader2 } from 'lucide-react';
+import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 
 interface LocationStepProps {
   data: OnboardingData;
@@ -21,13 +21,21 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          // Use reverse geocoding to get address
+          // Use reverse geocoding to get city
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json`
+            `https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json&zoom=10`
           );
-          const data = await response.json();
-          if (data.display_name) {
-            updateData({ homeAddress: data.display_name });
+          const result = await response.json();
+          if (result.address) {
+            // Extract city-level info
+            const city = result.address.city || result.address.town || result.address.village || result.address.municipality;
+            const state = result.address.state;
+            const country = result.address.country;
+            
+            const parts = [city, state, country].filter(Boolean);
+            if (parts.length > 0) {
+              updateData({ homeAddress: parts.join(', ') });
+            }
           }
         } catch (error) {
           console.error('Error getting location:', error);
@@ -49,7 +57,7 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
           <MapPin className="h-8 w-8 text-primary" />
         </div>
         <h1 className="font-display text-2xl font-bold mb-2">
-          Where's Home?
+          Where's Home Base?
         </h1>
         <p className="text-muted-foreground">
           Help friends know when you're nearby for spontaneous hangouts.
@@ -57,14 +65,12 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
       </div>
 
       <div className="space-y-4">
-        <div>
-          <Input
-            placeholder="Enter your city or neighborhood"
-            value={data.homeAddress}
-            onChange={(e) => updateData({ homeAddress: e.target.value })}
-            className="h-12 text-lg"
-          />
-        </div>
+        <CityAutocomplete
+          value={data.homeAddress}
+          onChange={(value) => updateData({ homeAddress: value })}
+          placeholder="Search for your city..."
+          className="[&_input]:h-12 [&_input]:text-lg"
+        />
 
         <div className="text-center">
           <span className="text-sm text-muted-foreground">or</span>
@@ -92,7 +98,7 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
 
       <div className="mt-8 rounded-xl bg-primary/5 border border-primary/20 p-4">
         <p className="text-sm text-primary">
-          📍 We only share your general area (city/neighborhood), never your exact address.
+          📍 We only share your city, never your exact address.
         </p>
       </div>
     </div>
