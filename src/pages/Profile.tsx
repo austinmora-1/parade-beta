@@ -22,6 +22,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { toast } from 'sonner';
+import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
 
 interface ProfileData {
   display_name: string | null;
@@ -48,6 +49,8 @@ export default function Profile() {
   const nameSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedBioRef = useRef<string>('');
   const lastSavedNameRef = useRef<string>('');
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string>('');
 
   useEffect(() => {
     async function loadProfile() {
@@ -82,7 +85,7 @@ export default function Profile() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !session?.user) return;
 
@@ -98,18 +101,34 @@ export default function Profile() {
       return;
     }
 
+    // Create object URL for cropping
+    const imageUrl = URL.createObjectURL(file);
+    setImageToCrop(imageUrl);
+    setCropDialogOpen(true);
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!session?.user) return;
+
     setIsUploading(true);
 
     try {
       const userId = session.user.id;
-      const fileExt = file.name.split('.').pop();
-      const fileName = `avatar.${fileExt}`;
+      const fileName = `avatar.jpg`;
       const filePath = `${userId}/${fileName}`;
 
-      // Upload to storage
+      // Upload cropped image to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, croppedBlob, { 
+          upsert: true,
+          contentType: 'image/jpeg'
+        });
 
       if (uploadError) throw uploadError;
 
@@ -137,9 +156,10 @@ export default function Profile() {
       toast.error('Failed to upload profile picture');
     } finally {
       setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      // Clean up object URL
+      if (imageToCrop) {
+        URL.revokeObjectURL(imageToCrop);
+        setImageToCrop('');
       }
     }
   };
@@ -354,6 +374,20 @@ export default function Profile() {
         accept="image/*"
         onChange={handleFileChange}
         className="hidden"
+      />
+
+      {/* Image Crop Dialog */}
+      <ImageCropDialog
+        open={cropDialogOpen}
+        onOpenChange={(open) => {
+          setCropDialogOpen(open);
+          if (!open && imageToCrop) {
+            URL.revokeObjectURL(imageToCrop);
+            setImageToCrop('');
+          }
+        }}
+        imageSrc={imageToCrop}
+        onCropComplete={handleCropComplete}
       />
 
       {/* Profile Header */}
