@@ -373,7 +373,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="animate-fade-in space-y-6 md:space-y-8">
+    <div className="animate-fade-in space-y-4 md:space-y-5">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -400,16 +400,16 @@ export default function Profile() {
       {/* Profile Header */}
       <Card className="overflow-hidden">
         {/* Banner */}
-        <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 md:h-32" />
+        <div className="h-20 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 md:h-24" />
         
         {/* Profile Info */}
-        <div className="relative px-6 pb-6">
+        <div className="relative px-4 pb-4 md:px-6 md:pb-5">
           {/* Avatar with upload button */}
-          <div className="-mt-12 mb-4 flex items-end justify-between md:-mt-16">
+          <div className="-mt-10 mb-3 flex items-end justify-between md:-mt-12">
             <div className="relative group">
-              <Avatar className="h-24 w-24 border-4 border-background shadow-lg md:h-32 md:w-32">
+              <Avatar className="h-20 w-20 border-4 border-background shadow-lg md:h-24 md:w-24">
                 <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'User'} />
-                <AvatarFallback className="bg-primary text-2xl text-primary-foreground md:text-3xl">
+                <AvatarFallback className="bg-primary text-xl text-primary-foreground md:text-2xl">
                   {getInitials(profile?.display_name)}
                 </AvatarFallback>
               </Avatar>
@@ -450,7 +450,7 @@ export default function Profile() {
           </div>
 
           {/* Name & Bio */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div>
               {isEditingName ? (
                 <div className="flex items-center gap-2">
@@ -467,7 +467,7 @@ export default function Profile() {
                       }
                     }}
                     placeholder="Your name"
-                    className="font-display text-2xl font-bold md:text-3xl bg-transparent border-b-2 border-primary outline-none w-full max-w-xs"
+                    className="font-display text-xl font-bold md:text-2xl bg-transparent border-b-2 border-primary outline-none w-full max-w-xs"
                     maxLength={100}
                     autoFocus
                   />
@@ -492,7 +492,7 @@ export default function Profile() {
                   onClick={handleEditName}
                   className="group flex items-center gap-2 text-left"
                 >
-                  <h1 className="font-display text-2xl font-bold md:text-3xl group-hover:text-primary transition-colors">
+                  <h1 className="font-display text-xl font-bold md:text-2xl group-hover:text-primary transition-colors">
                     {profile?.display_name || 'Your Name'}
                   </h1>
                   <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -564,18 +564,18 @@ export default function Profile() {
             )}
 
             {/* Quick Stats */}
-            <div className="flex gap-6 pt-2">
+            <div className="flex gap-5 pt-1">
               <div className="text-center">
-                <p className="font-display text-xl font-bold">{connectedFriendsCount}</p>
-                <p className="text-sm text-muted-foreground">Friends</p>
+                <p className="font-display text-lg font-bold">{connectedFriendsCount}</p>
+                <p className="text-xs text-muted-foreground">Friends</p>
               </div>
               <div className="text-center">
-                <p className="font-display text-xl font-bold">{pastPlans.length}</p>
-                <p className="text-sm text-muted-foreground">Hangouts</p>
+                <p className="font-display text-lg font-bold">{pastPlans.length}</p>
+                <p className="text-xs text-muted-foreground">Hangouts</p>
               </div>
               <div className="text-center">
-                <p className="font-display text-xl font-bold">{plans.filter(p => !isPast(p.date) || isSameDay(p.date, new Date())).length}</p>
-                <p className="text-sm text-muted-foreground">Upcoming</p>
+                <p className="font-display text-lg font-bold">{plans.filter(p => !isPast(p.date) || isSameDay(p.date, new Date())).length}</p>
+                <p className="text-xs text-muted-foreground">Upcoming</p>
               </div>
             </div>
           </div>
@@ -586,9 +586,9 @@ export default function Profile() {
       <LocationTimeline />
 
       {/* Hangout History */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
             <h2 className="font-display text-lg font-semibold">Hangout History</h2>
           </div>
@@ -598,16 +598,16 @@ export default function Profile() {
         </div>
 
         {pastPlans.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {pastPlans.map((plan) => {
               const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
               return (
                 <div
                   key={plan.id}
-                  className="flex items-center gap-4 rounded-xl bg-muted/50 p-4 transition-colors hover:bg-muted"
+                  className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
                 >
                   <div 
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"
                     style={{ backgroundColor: activityConfig ? `hsl(var(--${activityConfig.color}) / 0.2)` : 'hsl(var(--muted))' }}
                   >
                     {activityConfig?.icon || '📅'}
@@ -637,16 +637,16 @@ export default function Profile() {
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Sparkles className="h-8 w-8 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="rounded-full bg-muted p-3 mb-3">
+              <Sparkles className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="font-medium text-lg mb-1">No hangouts yet</h3>
-            <p className="text-muted-foreground mb-4">
+            <h3 className="font-medium mb-1">No hangouts yet</h3>
+            <p className="text-sm text-muted-foreground mb-3">
               Your past hangouts will appear here
             </p>
             <Link to="/plans">
-              <Button>Create Your First Plan</Button>
+              <Button size="sm">Create Your First Plan</Button>
             </Link>
           </div>
         )}

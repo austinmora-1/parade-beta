@@ -124,9 +124,9 @@ export function LocationTimeline() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-soft">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <MapPin className="h-5 w-5 text-primary" />
           <h2 className="font-display text-lg font-semibold">Status</h2>
         </div>
@@ -137,11 +137,11 @@ export function LocationTimeline() {
 
       {/* Trip summaries */}
       {trips.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-wrap gap-1.5">
           {trips.map((trip, idx) => (
             <div
               key={idx}
-              className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1.5 text-sm"
+              className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs"
             >
               <Plane className="h-3.5 w-3.5 text-orange-600" />
               <span className="font-medium text-orange-700">
@@ -156,7 +156,7 @@ export function LocationTimeline() {
       )}
 
       {/* Scrollable timeline */}
-      <div className="overflow-x-auto -mx-4 px-4 md:-mx-6 md:px-6 pb-2">
+      <div className="overflow-x-auto -mx-4 px-4 md:-mx-5 md:px-5 pb-1">
         <div className="flex gap-1 min-w-max">
           {days.map((day, index) => {
             const status = getDayLocation(day);
@@ -221,8 +221,8 @@ export function LocationTimeline() {
       </div>
 
       {/* Legend and Add Trip button */}
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="mt-3 flex items-center justify-between">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <div className="flex h-5 w-5 items-center justify-center rounded bg-primary/10">
               <Home className="h-3 w-3 text-primary" />
