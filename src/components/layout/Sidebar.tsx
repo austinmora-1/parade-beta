@@ -111,6 +111,18 @@ export function Sidebar() {
             )}
           </NavLink>
           <NavLink
+            to="/settings"
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
+              location.pathname === '/settings'
+                ? "bg-primary text-primary-foreground shadow-soft"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <Settings className="h-5 w-5" />
+            Settings
+          </NavLink>
+          <NavLink
             to="/profile"
             className={cn(
               "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
@@ -126,18 +138,6 @@ export function Sidebar() {
               </AvatarFallback>
             </Avatar>
             Profile
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-              location.pathname === '/settings'
-                ? "bg-primary text-primary-foreground shadow-soft"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-            )}
-          >
-            <Settings className="h-5 w-5" />
-            Settings
           </NavLink>
         </div>
       </div>
