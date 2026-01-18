@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { toast } from 'sonner';
 import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
+import { LocationTimeline } from '@/components/profile/LocationTimeline';
 
 interface ProfileData {
   display_name: string | null;
@@ -574,6 +575,9 @@ export default function Profile() {
           </div>
         </div>
       </Card>
+
+      {/* Location Timeline */}
+      <LocationTimeline />
 
       {/* Hangout History */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
