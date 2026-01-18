@@ -17,8 +17,10 @@ import { toast } from 'sonner';
 export interface OnboardingData {
   displayName: string;
   showAvailability: boolean;
+  showLocation: boolean;
   showVibeStatus: boolean;
   discoverable: boolean;
+  allowAllHangRequests: boolean;
   workDays: string[];
   workStartHour: number;
   workEndHour: number;
@@ -44,8 +46,10 @@ export function OnboardingWizard() {
   const [data, setData] = useState<OnboardingData>({
     displayName: '',
     showAvailability: true,
+    showLocation: true,
     showVibeStatus: true,
     discoverable: true,
+    allowAllHangRequests: true,
     workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
     workStartHour: 9,
     workEndHour: 17,

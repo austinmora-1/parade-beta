@@ -1,7 +1,7 @@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { OnboardingData } from '../OnboardingWizard';
-import { Eye, Sparkles, Users } from 'lucide-react';
+import { Eye, Sparkles, Users, MapPin, MessageCircle } from 'lucide-react';
 
 interface PrivacyStepProps {
   data: OnboardingData;
@@ -19,9 +19,17 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
       onChange: (checked: boolean) => updateData({ showAvailability: checked }),
     },
     {
+      id: 'showLocation',
+      icon: MapPin,
+      title: 'Share my location status',
+      description: 'Let friends know if you\'re home, traveling, or away',
+      checked: data.showLocation,
+      onChange: (checked: boolean) => updateData({ showLocation: checked }),
+    },
+    {
       id: 'showVibeStatus',
       icon: Sparkles,
-      title: 'Show my vibe',
+      title: 'Share my vibe',
       description: 'Let friends see your current mood or energy level',
       checked: data.showVibeStatus,
       onChange: (checked: boolean) => updateData({ showVibeStatus: checked }),
@@ -33,6 +41,14 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
       description: 'Friends can find you by searching your name or email',
       checked: data.discoverable,
       onChange: (checked: boolean) => updateData({ discoverable: checked }),
+    },
+    {
+      id: 'allowAllHangRequests',
+      icon: MessageCircle,
+      title: 'Accept requests from all friends',
+      description: 'Allow any friend to send you hangout requests',
+      checked: data.allowAllHangRequests,
+      onChange: (checked: boolean) => updateData({ allowAllHangRequests: checked }),
     },
   ];
 
@@ -50,17 +66,17 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {settings.map((setting) => (
           <div
             key={setting.id}
             className="flex items-center justify-between rounded-xl border border-border bg-card p-4"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
                 <setting.icon className="h-5 w-5 text-muted-foreground" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <Label htmlFor={setting.id} className="text-base font-medium cursor-pointer">
                   {setting.title}
                 </Label>
@@ -73,6 +89,7 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
               id={setting.id}
               checked={setting.checked}
               onCheckedChange={setting.onChange}
+              className="ml-3 shrink-0"
             />
           </div>
         ))}
