@@ -246,6 +246,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allow_all_hang_requests: boolean | null
           avatar_url: string | null
           bio: string | null
           created_at: string
@@ -261,11 +262,13 @@ export type Database = {
           plan_reminders: boolean | null
           share_code: string
           show_availability: boolean | null
+          show_location: boolean | null
           show_vibe_status: boolean | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          allow_all_hang_requests?: boolean | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -281,11 +284,13 @@ export type Database = {
           plan_reminders?: boolean | null
           share_code?: string
           show_availability?: boolean | null
+          show_location?: boolean | null
           show_vibe_status?: boolean | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          allow_all_hang_requests?: boolean | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -301,6 +306,7 @@ export type Database = {
           plan_reminders?: boolean | null
           share_code?: string
           show_availability?: boolean | null
+          show_location?: boolean | null
           show_vibe_status?: boolean | null
           updated_at?: string
           user_id?: string
