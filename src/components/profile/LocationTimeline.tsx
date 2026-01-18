@@ -128,7 +128,7 @@ export function LocationTimeline() {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <MapPin className="h-5 w-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold">Location Status</h2>
+          <h2 className="font-display text-lg font-semibold">Status</h2>
         </div>
         <div className="flex items-center gap-2">
           <Button 
