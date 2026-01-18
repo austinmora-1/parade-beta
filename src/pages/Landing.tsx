@@ -67,8 +67,8 @@ export default function Landing() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Account created! Welcome to Parade!');
-      navigate('/');
+      toast.success('Account created! Let\'s get you set up.');
+      navigate('/onboarding');
     }
 
     setIsLoading(false);
