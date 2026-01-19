@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { format, addDays, isToday, differenceInDays, getMonth } from 'date-fns';
-import { Home, Plane, MapPin, Plus } from 'lucide-react';
+import { Home, Plane, MapPin, Plus, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,12 @@ import { LocationStatus } from '@/types/planner';
 import { Button } from '@/components/ui/button';
 import { AddTripDialog } from './AddTripDialog';
 import { toast } from 'sonner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Trip {
   startDate: Date;
@@ -208,12 +214,21 @@ export function LocationTimeline() {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center gap-2">
         <div className="flex items-center gap-2">
           <MapPin className="h-5 w-5 text-primary" />
           <h2 className="font-display text-lg font-semibold">Status</h2>
         </div>
-        <span className="text-xs text-muted-foreground">Tap to toggle</span>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>View and update your status for the next month</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Trip summaries */}
