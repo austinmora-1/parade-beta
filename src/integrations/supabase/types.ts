@@ -26,6 +26,7 @@ export type Database = {
           late_morning: boolean | null
           late_night: boolean | null
           location_status: string | null
+          trip_location: string | null
           updated_at: string
           user_id: string
         }
@@ -40,6 +41,7 @@ export type Database = {
           late_morning?: boolean | null
           late_night?: boolean | null
           location_status?: string | null
+          trip_location?: string | null
           updated_at?: string
           user_id: string
         }
@@ -54,6 +56,7 @@ export type Database = {
           late_morning?: boolean | null
           late_night?: boolean | null
           location_status?: string | null
+          trip_location?: string | null
           updated_at?: string
           user_id?: string
         }

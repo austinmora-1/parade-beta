@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format, eachDayOfInterval, isAfter, isBefore, startOfDay } from 'date-fns';
-import { CalendarIcon, Plane } from 'lucide-react';
+import { CalendarIcon, Plane, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -16,6 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +32,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded }: AddTripDialog
   const { session } = useAuth();
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const today = startOfDay(new Date());
@@ -49,11 +51,12 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded }: AddTripDialog
       // Get all days in the range
       const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-      // Upsert availability for each day
+      // Upsert availability for each day with location
       const upsertData = days.map(day => ({
         user_id: session.user.id,
         date: format(day, 'yyyy-MM-dd'),
         location_status: 'away',
+        trip_location: location.trim() || null,
       }));
 
       const { error } = await supabase
@@ -65,11 +68,13 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded }: AddTripDialog
 
       if (error) throw error;
 
-      toast.success(`Trip added: ${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`);
+      const locationText = location.trim() ? ` to ${location.trim()}` : '';
+      toast.success(`Trip${locationText} added: ${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`);
       onTripAdded();
       onOpenChange(false);
       setStartDate(undefined);
       setEndDate(undefined);
+      setLocation('');
     } catch (error) {
       console.error('Error adding trip:', error);
       toast.error('Failed to add trip');
@@ -95,11 +100,25 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded }: AddTripDialog
             Add Trip
           </DialogTitle>
           <DialogDescription>
-            Set your away dates. All days in this range will be marked as "Away".
+            Set your away dates and destination. All days in this range will be marked as "Away".
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
+          {/* Location */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" />
+              Destination (optional)
+            </label>
+            <Input
+              placeholder="e.g. Paris, Tokyo, New York..."
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full"
+            />
+          </div>
+
           {/* Start Date */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Start Date</label>
@@ -163,6 +182,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded }: AddTripDialog
           {startDate && endDate && (
             <div className="rounded-lg bg-orange-500/10 p-3 text-sm">
               <p className="font-medium text-orange-700">
+                {location.trim() && <span>{location.trim()} · </span>}
                 {format(startDate, 'MMM d')} – {format(endDate, 'MMM d, yyyy')}
               </p>
               <p className="text-orange-600/70">

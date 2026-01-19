@@ -15,12 +15,13 @@ interface Trip {
   endDate: Date;
   startIndex: number;
   endIndex: number;
+  location?: string;
 }
 
 export function LocationTimeline() {
   const { session } = useAuth();
   const { getLocationStatusForDate } = usePlannerStore();
-  const [extendedAvailability, setExtendedAvailability] = useState<Map<string, LocationStatus>>(new Map());
+  const [extendedAvailability, setExtendedAvailability] = useState<Map<string, { status: LocationStatus; location?: string }>>(new Map());
   const [addTripDialogOpen, setAddTripDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [updatingDate, setUpdatingDate] = useState<string | null>(null);
@@ -38,14 +39,17 @@ export function LocationTimeline() {
     
     const { data } = await supabase
       .from('availability')
-      .select('date, location_status')
+      .select('date, location_status, trip_location')
       .eq('user_id', session.user.id)
       .in('date', dates);
 
     if (data) {
-      const map = new Map<string, LocationStatus>();
+      const map = new Map<string, { status: LocationStatus; location?: string }>();
       data.forEach(item => {
-        map.set(item.date, (item.location_status as LocationStatus) || 'home');
+        map.set(item.date, {
+          status: (item.location_status as LocationStatus) || 'home',
+          location: item.trip_location || undefined,
+        });
       });
       setExtendedAvailability(map);
     }
@@ -63,10 +67,18 @@ export function LocationTimeline() {
     const dateStr = format(date, 'yyyy-MM-dd');
     // First check extended availability (freshly fetched)
     if (extendedAvailability.has(dateStr)) {
-      return extendedAvailability.get(dateStr)!;
+      return extendedAvailability.get(dateStr)!.status;
     }
     // Fallback to store data
     return getLocationStatusForDate(date);
+  };
+
+  const getDayTripLocation = (date: Date): string | undefined => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    if (extendedAvailability.has(dateStr)) {
+      return extendedAvailability.get(dateStr)!.location;
+    }
+    return undefined;
   };
 
   // Toggle location status for a specific day
@@ -80,9 +92,13 @@ export function LocationTimeline() {
     setUpdatingDate(dateStr);
     
     // Optimistically update UI
+    const existingData = extendedAvailability.get(dateStr);
     setExtendedAvailability(prev => {
       const newMap = new Map(prev);
-      newMap.set(dateStr, newStatus);
+      newMap.set(dateStr, { 
+        status: newStatus, 
+        location: newStatus === 'home' ? undefined : existingData?.location 
+      });
       return newMap;
     });
 
@@ -93,6 +109,7 @@ export function LocationTimeline() {
           user_id: session.user.id,
           date: dateStr,
           location_status: newStatus,
+          trip_location: newStatus === 'home' ? null : (existingData?.location || null),
         }, {
           onConflict: 'user_id,date'
         });
@@ -104,7 +121,7 @@ export function LocationTimeline() {
       // Revert on error
       setExtendedAvailability(prev => {
         const newMap = new Map(prev);
-        newMap.set(dateStr, currentStatus);
+        newMap.set(dateStr, { status: currentStatus, location: existingData?.location });
         return newMap;
       });
       toast.error('Failed to update status');
@@ -113,17 +130,35 @@ export function LocationTimeline() {
     }
   };
 
-  // Detect consecutive away days as trips
+  // Detect consecutive away days as trips (with same location)
   const trips = useMemo(() => {
     const tripsList: Trip[] = [];
     let tripStart: number | null = null;
+    let currentTripLocation: string | undefined = undefined;
 
     days.forEach((day, index) => {
       const status = getDayLocation(day);
+      const location = getDayTripLocation(day);
       
       if (status === 'away') {
+        // Check if this is a new trip or continuation of existing
         if (tripStart === null) {
           tripStart = index;
+          currentTripLocation = location;
+        } else if (location !== currentTripLocation) {
+          // Different location means end current trip and start new one
+          const tripLength = index - tripStart;
+          if (tripLength >= 2) {
+            tripsList.push({
+              startDate: days[tripStart],
+              endDate: days[index - 1],
+              startIndex: tripStart,
+              endIndex: index - 1,
+              location: currentTripLocation,
+            });
+          }
+          tripStart = index;
+          currentTripLocation = location;
         }
       } else {
         if (tripStart !== null) {
@@ -135,9 +170,11 @@ export function LocationTimeline() {
               endDate: days[index - 1],
               startIndex: tripStart,
               endIndex: index - 1,
+              location: currentTripLocation,
             });
           }
           tripStart = null;
+          currentTripLocation = undefined;
         }
       }
     });
@@ -151,6 +188,7 @@ export function LocationTimeline() {
           endDate: days[days.length - 1],
           startIndex: tripStart,
           endIndex: days.length - 1,
+          location: currentTripLocation,
         });
       }
     }
@@ -187,7 +225,10 @@ export function LocationTimeline() {
               className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs"
             >
               <Plane className="h-3.5 w-3.5 text-orange-600" />
-              <span className="font-medium text-orange-700">
+              {trip.location && (
+                <span className="font-semibold text-orange-700">{trip.location}</span>
+              )}
+              <span className={cn("font-medium", trip.location ? "text-orange-600" : "text-orange-700")}>
                 {format(trip.startDate, 'MMM d')} – {format(trip.endDate, 'MMM d')}
               </span>
               <span className="text-orange-600/70">
