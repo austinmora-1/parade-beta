@@ -1,14 +1,14 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { format, addDays, isToday, differenceInDays, getMonth } from 'date-fns';
-import { Home, Plane, MapPin, Plus, Pencil } from 'lucide-react';
+import { Home, Plane, MapPin, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LocationStatus } from '@/types/planner';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AddTripDialog } from './AddTripDialog';
+import { toast } from 'sonner';
 
 interface Trip {
   startDate: Date;
@@ -23,6 +23,7 @@ export function LocationTimeline() {
   const [extendedAvailability, setExtendedAvailability] = useState<Map<string, LocationStatus>>(new Map());
   const [addTripDialogOpen, setAddTripDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [updatingDate, setUpdatingDate] = useState<string | null>(null);
 
   // Get 31 days (next month) starting from today
   const days = useMemo(() => {
@@ -66,6 +67,50 @@ export function LocationTimeline() {
     }
     // Fallback to store data
     return getLocationStatusForDate(date);
+  };
+
+  // Toggle location status for a specific day
+  const toggleDayStatus = async (date: Date) => {
+    if (!session?.user) return;
+    
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const currentStatus = getDayLocation(date);
+    const newStatus: LocationStatus = currentStatus === 'home' ? 'away' : 'home';
+    
+    setUpdatingDate(dateStr);
+    
+    // Optimistically update UI
+    setExtendedAvailability(prev => {
+      const newMap = new Map(prev);
+      newMap.set(dateStr, newStatus);
+      return newMap;
+    });
+
+    try {
+      const { error } = await supabase
+        .from('availability')
+        .upsert({
+          user_id: session.user.id,
+          date: dateStr,
+          location_status: newStatus,
+        }, {
+          onConflict: 'user_id,date'
+        });
+
+      if (error) throw error;
+      
+      toast.success(`${format(date, 'MMM d')}: ${newStatus === 'home' ? 'Home' : 'Away'}`);
+    } catch (error) {
+      // Revert on error
+      setExtendedAvailability(prev => {
+        const newMap = new Map(prev);
+        newMap.set(dateStr, currentStatus);
+        return newMap;
+      });
+      toast.error('Failed to update status');
+    } finally {
+      setUpdatingDate(null);
+    }
   };
 
   // Detect consecutive away days as trips
@@ -130,9 +175,7 @@ export function LocationTimeline() {
           <MapPin className="h-5 w-5 text-primary" />
           <h2 className="font-display text-lg font-semibold">Status</h2>
         </div>
-        <Link to="/availability" className="text-muted-foreground hover:text-primary transition-colors">
-          <Pencil className="h-4 w-4" />
-        </Link>
+        <span className="text-xs text-muted-foreground">Tap to toggle</span>
       </div>
 
       {/* Trip summaries */}
@@ -164,6 +207,8 @@ export function LocationTimeline() {
             const trip = getTripForDay(index);
             const isFirstOfTrip = trip && trip.startIndex === index;
             const isLastOfTrip = trip && trip.endIndex === index;
+            const dateStr = format(day, 'yyyy-MM-dd');
+            const isUpdating = updatingDate === dateStr;
             
             // Check if this is the first day of a new month
             const isFirstOfMonth = index === 0 || getMonth(day) !== getMonth(days[index - 1]);
@@ -191,15 +236,20 @@ export function LocationTimeline() {
                   />
                 )}
 
-                {/* Day box */}
-                <div
+                {/* Day box - now clickable */}
+                <button
+                  onClick={() => toggleDayStatus(day)}
+                  disabled={isUpdating}
                   className={cn(
                     "flex flex-col items-center justify-center w-10 h-14 rounded-lg transition-all relative z-10",
+                    "cursor-pointer hover:scale-105 hover:shadow-md active:scale-95",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     isCurrentDay && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                     status === 'home' 
-                      ? "bg-primary/10 text-primary" 
-                      : "bg-orange-500/10 text-orange-600",
-                    trip && "bg-orange-500/20"
+                      ? "bg-primary/10 text-primary hover:bg-primary/20" 
+                      : "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20",
+                    trip && "bg-orange-500/20 hover:bg-orange-500/30",
+                    isUpdating && "opacity-50 cursor-wait"
                   )}
                 >
                   <span className="text-[10px] font-medium uppercase">
@@ -213,7 +263,7 @@ export function LocationTimeline() {
                   ) : (
                     <Plane className="h-3 w-3 mt-0.5" />
                   )}
-                </div>
+                </button>
               </div>
             );
           })}
