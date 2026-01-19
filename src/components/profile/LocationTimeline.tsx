@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LocationStatus } from '@/types/planner';
 import { Button } from '@/components/ui/button';
-import { AddTripDialog } from './AddTripDialog';
+import { AddTripDialog, TripData } from './AddTripDialog';
 import { toast } from 'sonner';
 import {
   Popover,
@@ -28,6 +28,7 @@ export function LocationTimeline() {
   const { getLocationStatusForDate } = usePlannerStore();
   const [extendedAvailability, setExtendedAvailability] = useState<Map<string, { status: LocationStatus; location?: string }>>(new Map());
   const [addTripDialogOpen, setAddTripDialogOpen] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<TripData | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [updatingDate, setUpdatingDate] = useState<string | null>(null);
 
@@ -66,6 +67,21 @@ export function LocationTimeline() {
 
   const handleTripAdded = () => {
     setRefreshKey(prev => prev + 1);
+    setEditingTrip(null);
+  };
+
+  const handleEditTrip = (trip: Trip) => {
+    setEditingTrip({
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      location: trip.location,
+    });
+    setAddTripDialogOpen(true);
+  };
+
+  const handleOpenAddTrip = () => {
+    setEditingTrip(null);
+    setAddTripDialogOpen(true);
   };
 
   const getDayLocation = (date: Date): LocationStatus => {
@@ -230,13 +246,14 @@ export function LocationTimeline() {
         </Popover>
       </div>
 
-      {/* Trip summaries */}
+      {/* Trip summaries - clickable to edit */}
       {trips.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-1.5">
           {trips.map((trip, idx) => (
-            <div
+            <button
               key={idx}
-              className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs"
+              onClick={() => handleEditTrip(trip)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs hover:bg-orange-500/20 transition-colors cursor-pointer"
             >
               <Plane className="h-3.5 w-3.5 text-orange-600" />
               {trip.location && (
@@ -248,7 +265,7 @@ export function LocationTimeline() {
               <span className="text-orange-600/70">
                 ({formatTripDuration(trip)})
               </span>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -350,7 +367,7 @@ export function LocationTimeline() {
         <Button 
           variant="outline" 
           size="sm"
-          onClick={() => setAddTripDialogOpen(true)}
+          onClick={handleOpenAddTrip}
           className="gap-1 h-7 px-2.5 text-xs"
         >
           <Plus className="h-3 w-3" />
@@ -362,6 +379,7 @@ export function LocationTimeline() {
         open={addTripDialogOpen} 
         onOpenChange={setAddTripDialogOpen}
         onTripAdded={handleTripAdded}
+        editingTrip={editingTrip}
       />
     </div>
   );
