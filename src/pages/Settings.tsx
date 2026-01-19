@@ -13,12 +13,29 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
-import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Slider } from '@/components/ui/slider';
+import { VIBE_CONFIG, VibeType } from '@/types/planner';
+import { cn } from '@/lib/utils';
+
+// Helper function for formatting time
+const formatTime = (decimalHour: number) => {
+  const hours = Math.floor(decimalHour);
+  const minutes = Math.round((decimalHour - hours) * 60);
+  
+  const period = hours >= 12 ? 'pm' : 'am';
+  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  
+  if (minutes === 0) {
+    return `${displayHours}${period}`;
+  }
+  return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
+};
 
 interface Friend {
   id: string;
@@ -50,6 +67,13 @@ export default function Settings() {
   const [discoverable, setDiscoverable] = useState(true);
   const [allowAllHangRequests, setAllowAllHangRequests] = useState(true);
   const [allowedFriendIds, setAllowedFriendIds] = useState<string[]>([]);
+
+  // Default Availability settings
+  const [workDays, setWorkDays] = useState<string[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+  const [workStartHour, setWorkStartHour] = useState(9);
+  const [workEndHour, setWorkEndHour] = useState(17);
+  const [defaultAvailability, setDefaultAvailability] = useState<'free' | 'unavailable'>('free');
+  const [defaultVibes, setDefaultVibes] = useState<VibeType[]>([]);
 
   // Friends list
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -241,27 +265,187 @@ export default function Settings() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Default Location */}
-        <AccordionItem value="location" className="rounded-2xl border border-border bg-card shadow-soft overflow-visible">
+        {/* Default Availability */}
+        <AccordionItem value="availability" className="rounded-2xl border border-border bg-card shadow-soft overflow-visible">
           <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
             <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-primary" />
-              <span className="font-display text-lg font-semibold">Default Location</span>
+              <Clock className="h-5 w-5 text-primary" />
+              <span className="font-display text-lg font-semibold">Default Availability</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6 overflow-visible">
-            <div className="space-y-4 pt-2">
+            <div className="space-y-6 pt-2">
+              {/* Home Base */}
               <div className="space-y-2">
-                <Label>Home Base</Label>
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  Home Base
+                </Label>
                 <CityAutocomplete
                   value={homeAddress}
                   onChange={(value) => { setHomeAddress(value); handleChange(); }}
                   placeholder="Search for your city..."
                 />
+                <p className="text-xs text-muted-foreground">
+                  Your home base city shown when status is "Home"
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Your home base city will be shown when you set your status to "Home"
-              </p>
+
+              <Separator />
+
+              {/* Standard Work Hours */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Standard Work Hours</Label>
+                <p className="text-xs text-muted-foreground -mt-2">
+                  We'll mark you as busy during these times by default
+                </p>
+                
+                {/* Work Days */}
+                <div className="space-y-2">
+                  <span className="text-xs text-muted-foreground">Work days</span>
+                  <div className="flex gap-1.5">
+                    {[
+                      { id: 'monday', label: 'M' },
+                      { id: 'tuesday', label: 'T' },
+                      { id: 'wednesday', label: 'W' },
+                      { id: 'thursday', label: 'T' },
+                      { id: 'friday', label: 'F' },
+                      { id: 'saturday', label: 'S' },
+                      { id: 'sunday', label: 'S' },
+                    ].map((day) => {
+                      const isSelected = workDays.includes(day.id);
+                      return (
+                        <button
+                          key={day.id}
+                          onClick={() => {
+                            setWorkDays(prev => 
+                              prev.includes(day.id) 
+                                ? prev.filter(d => d !== day.id)
+                                : [...prev, day.id]
+                            );
+                            handleChange();
+                          }}
+                          className={cn(
+                            "flex-1 py-2 rounded-lg text-xs font-medium transition-all",
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Start Time */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Start time</span>
+                    <span className="text-xs font-bold text-primary">{formatTime(workStartHour)}</span>
+                  </div>
+                  <Slider
+                    value={[workStartHour]}
+                    onValueChange={([value]) => { setWorkStartHour(value); handleChange(); }}
+                    min={5}
+                    max={12}
+                    step={0.25}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* End Time */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">End time</span>
+                    <span className="text-xs font-bold text-primary">{formatTime(workEndHour)}</span>
+                  </div>
+                  <Slider
+                    value={[workEndHour]}
+                    onValueChange={([value]) => { setWorkEndHour(value); handleChange(); }}
+                    min={14}
+                    max={22}
+                    step={0.25}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Default Availability Status */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Default Status</Label>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Your default availability outside of work hours
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setDefaultAvailability('free'); handleChange(); }}
+                    className={cn(
+                      "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all",
+                      defaultAvailability === 'free'
+                        ? "bg-primary/20 text-primary ring-2 ring-primary/30"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    ✓ Free
+                  </button>
+                  <button
+                    onClick={() => { setDefaultAvailability('unavailable'); handleChange(); }}
+                    className={cn(
+                      "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all",
+                      defaultAvailability === 'unavailable'
+                        ? "bg-destructive/20 text-destructive ring-2 ring-destructive/30"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    ✗ Unavailable
+                  </button>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Default Vibes (Optional) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Default Vibes</Label>
+                  <span className="text-xs text-muted-foreground">Optional</span>
+                </div>
+                <p className="text-xs text-muted-foreground -mt-1">
+                  Pre-select vibes you're usually open to
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['social', 'chill', 'athletic', 'productive'] as VibeType[]).map((vibe) => {
+                    const config = VIBE_CONFIG[vibe];
+                    const isSelected = defaultVibes.includes(vibe);
+                    return (
+                      <button
+                        key={vibe}
+                        onClick={() => {
+                          setDefaultVibes(prev => 
+                            prev.includes(vibe) 
+                              ? prev.filter(v => v !== vibe)
+                              : [...prev, vibe]
+                          );
+                          handleChange();
+                        }}
+                        className={cn(
+                          "flex items-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
+                          isSelected
+                            ? "bg-primary/10 text-primary ring-2 ring-primary/30"
+                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        <span>{config.icon}</span>
+                        <span>{config.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
