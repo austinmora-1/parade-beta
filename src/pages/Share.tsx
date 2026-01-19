@@ -5,7 +5,7 @@ import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send,
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType, ACTIVITY_CONFIG } from '@/types/planner';
-import paradeLogo from '@/assets/parade-logo.png';
+import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -287,7 +287,7 @@ export default function Share() {
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <img src={paradeLogo} alt="Parade" className="h-8" />
+          <ParadeWordmark size="md" />
           <Link
             to="/landing"
             className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"

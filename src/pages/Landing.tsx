@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
-import paradeLogo from '@/assets/parade-logo.png';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 
 type AuthView = 'auth' | 'forgot-password' | 'reset-password';
