@@ -370,6 +370,7 @@ export type Database = {
           refresh_token: string
         }[]
       }
+      owns_share_code: { Args: { p_share_code: string }; Returns: boolean }
       update_calendar_access_token: {
         Args: {
           p_access_token: string
