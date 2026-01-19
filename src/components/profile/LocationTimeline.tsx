@@ -10,11 +10,10 @@ import { Button } from '@/components/ui/button';
 import { AddTripDialog } from './AddTripDialog';
 import { toast } from 'sonner';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface Trip {
   startDate: Date;
@@ -219,16 +218,16 @@ export function LocationTimeline() {
           <MapPin className="h-5 w-5 text-primary" />
           <h2 className="font-display text-lg font-semibold">Status</h2>
         </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>View and update your status for the next month</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="p-1 -m-1 rounded-full hover:bg-muted/50 transition-colors">
+              <Info className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent side="bottom" align="start" className="w-auto text-sm p-2">
+            View and update your status for the next month
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Trip summaries */}
