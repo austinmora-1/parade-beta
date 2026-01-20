@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Settings, Bell, MessageSquarePlus } from 'lucide-react';
+import { Bell, MessageSquarePlus } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
@@ -31,12 +31,6 @@ export function MobileHeader() {
               {totalNotifications}
             </span>
           )}
-        </Link>
-        <Link
-          to="/settings"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Settings className="h-5 w-5" />
         </Link>
       </div>
     </header>
