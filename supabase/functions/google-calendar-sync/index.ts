@@ -18,7 +18,7 @@ function getTimeSlot(hour: number): string {
 // Get all time slots that an event spans
 function getEventTimeSlots(startTime: Date, endTime: Date): string[] {
   const slots = new Set<string>()
-  
+
   // Iterate through each hour the event covers
   const current = new Date(startTime)
   while (current < endTime) {
@@ -26,7 +26,7 @@ function getEventTimeSlots(startTime: Date, endTime: Date): string[] {
     slots.add(getTimeSlot(hour))
     current.setHours(current.getHours() + 1)
   }
-  
+
   return Array.from(slots)
 }
 
@@ -40,15 +40,15 @@ function getEventDates(startTime: Date, endTime: Date): string[] {
   const dates: string[] = []
   const current = new Date(startTime)
   current.setHours(0, 0, 0, 0)
-  
+
   const endDate = new Date(endTime)
   endDate.setHours(0, 0, 0, 0)
-  
+
   while (current <= endDate) {
     dates.push(getDateString(current))
     current.setDate(current.getDate() + 1)
   }
-  
+
   return dates
 }
 
@@ -59,9 +59,83 @@ interface CalendarEvent {
   end: { dateTime?: string; date?: string }
 }
 
-interface AvailabilityUpdate {
-  date: string
-  slots: string[]
+async function handleEventsSync(params: {
+  adminClient: any
+  userId: string
+  events: CalendarEvent[]
+}) {
+  const { adminClient, userId, events } = params
+
+  // Build a map of date -> slots to mark as busy
+  const busySlotsByDate: Map<string, Set<string>> = new Map()
+
+  for (const event of events) {
+    // All-day events (they don't have dateTime)
+    if (!event.start.dateTime || !event.end.dateTime) {
+      if (event.start.date && event.end.date) {
+        const startDate = new Date(event.start.date)
+        const endDate = new Date(event.end.date)
+        endDate.setDate(endDate.getDate() - 1) // All-day end is exclusive
+
+        const dates = getEventDates(startDate, endDate)
+        for (const date of dates) {
+          if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
+          ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(
+            (slot) => busySlotsByDate.get(date)!.add(slot)
+          )
+        }
+      }
+      continue
+    }
+
+    const startTime = new Date(event.start.dateTime)
+    const endTime = new Date(event.end.dateTime)
+
+    const dates = getEventDates(startTime, endTime)
+
+    for (const date of dates) {
+      if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
+
+      const dayStart = new Date(date)
+      const dayEnd = new Date(date)
+      dayEnd.setDate(dayEnd.getDate() + 1)
+
+      const effectiveStart = startTime < dayStart ? dayStart : startTime
+      const effectiveEnd = endTime > dayEnd ? dayEnd : endTime
+
+      const slots = getEventTimeSlots(effectiveStart, effectiveEnd)
+      slots.forEach((slot) => busySlotsByDate.get(date)!.add(slot))
+    }
+  }
+
+  // Update availability table for each date with busy slots
+  let updatedCount = 0
+  for (const [date, slots] of busySlotsByDate) {
+    const slotUpdates: Record<string, boolean> = {}
+    for (const slot of slots) slotUpdates[slot] = false
+
+    const { error: upsertError } = await adminClient
+      .from('availability')
+      .upsert(
+        {
+          user_id: userId,
+          date,
+          ...slotUpdates,
+        },
+        {
+          onConflict: 'user_id,date',
+          ignoreDuplicates: false,
+        }
+      )
+
+    if (upsertError) {
+      console.error('Error upserting availability for', date, ':', upsertError)
+    } else {
+      updatedCount++
+    }
+  }
+
+  return { updatedCount }
 }
 
 Deno.serve(async (req) => {
@@ -72,68 +146,61 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-        status: 401, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    )
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } },
+    })
 
-    // Use getUser() instead of getClaims() (supabase-js v2)
+    // Validate user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       console.error('Auth error:', userError)
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-        status: 401, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     const userId = user.id
 
-    // Use service role to decrypt tokens
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    // Service role client to decrypt tokens + update availability
+    const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
-    // Get decrypted tokens
     const { data: connection, error: connError } = await adminClient.rpc('get_calendar_tokens', {
       p_user_id: userId,
-      p_provider: 'google'
+      p_provider: 'google',
     })
 
     if (connError || !connection || connection.length === 0) {
-      return new Response(JSON.stringify({ 
-        error: 'Google Calendar not connected', 
-        connected: false,
-        synced: false 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ error: 'Google Calendar not connected', connected: false, synced: false }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     const tokenData = connection[0]
 
-    // Check if token needs refresh
     let accessToken = tokenData.access_token
+
+    // Refresh if expired
     if (new Date(tokenData.expires_at) < new Date()) {
       const refreshedToken = await refreshAccessToken(tokenData.refresh_token, adminClient, userId)
       if (!refreshedToken) {
-        return new Response(JSON.stringify({ 
-          error: 'Failed to refresh token', 
-          connected: false,
-          synced: false 
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return new Response(
+          JSON.stringify({ error: 'Failed to refresh token', connected: false, synced: false }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
       }
       accessToken = refreshedToken
     }
@@ -155,13 +222,26 @@ Deno.serve(async (req) => {
     })
 
     if (!calendarResponse.ok) {
-      const error = await calendarResponse.text()
-      console.error('Calendar API error:', error)
-      return new Response(JSON.stringify({ 
-        error: 'Failed to fetch events', 
-        connected: true,
-        synced: false 
-      }), {
+      const errorText = await calendarResponse.text()
+      console.error('Calendar API error:', calendarResponse.status, errorText)
+
+      // Most common user-facing failure: 403 from Google (API disabled or permission revoked)
+      if (calendarResponse.status === 401 || calendarResponse.status === 403) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'Google denied access (403). Please disconnect + reconnect Google Calendar. If this persists, ensure the Google Calendar API is enabled for the OAuth client used by Parade.',
+            connected: true,
+            synced: false,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
+      return new Response(JSON.stringify({ error: 'Failed to fetch events', connected: true, synced: false }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -170,92 +250,20 @@ Deno.serve(async (req) => {
     const calendarData = await calendarResponse.json()
     const events: CalendarEvent[] = calendarData.items || []
 
-    // Build a map of date -> slots to mark as busy
-    const busySlotsByDate: Map<string, Set<string>> = new Map()
+    const { updatedCount } = await handleEventsSync({ adminClient, userId, events })
 
-    for (const event of events) {
-      // Skip all-day events for now (they don't have dateTime)
-      if (!event.start.dateTime || !event.end.dateTime) {
-        // For all-day events, mark all slots as busy
-        if (event.start.date && event.end.date) {
-          const startDate = new Date(event.start.date)
-          const endDate = new Date(event.end.date)
-          endDate.setDate(endDate.getDate() - 1) // All-day end is exclusive
-          
-          const dates = getEventDates(startDate, endDate)
-          for (const date of dates) {
-            if (!busySlotsByDate.has(date)) {
-              busySlotsByDate.set(date, new Set())
-            }
-            // Mark all slots as busy for all-day events
-            ['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(
-              slot => busySlotsByDate.get(date)!.add(slot)
-            )
-          }
-        }
-        continue
+    return new Response(
+      JSON.stringify({
+        connected: true,
+        synced: true,
+        eventsProcessed: events.length,
+        datesUpdated: updatedCount,
+        message: `Synced ${events.length} events, updated ${updatedCount} days`,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-
-      const startTime = new Date(event.start.dateTime)
-      const endTime = new Date(event.end.dateTime)
-      
-      // Get all dates and slots this event covers
-      const dates = getEventDates(startTime, endTime)
-      
-      for (const date of dates) {
-        if (!busySlotsByDate.has(date)) {
-          busySlotsByDate.set(date, new Set())
-        }
-        
-        // For each date, determine which slots are busy
-        const dayStart = new Date(date)
-        const dayEnd = new Date(date)
-        dayEnd.setDate(dayEnd.getDate() + 1)
-        
-        // Clamp event times to this specific day
-        const effectiveStart = startTime < dayStart ? dayStart : startTime
-        const effectiveEnd = endTime > dayEnd ? dayEnd : endTime
-        
-        const slots = getEventTimeSlots(effectiveStart, effectiveEnd)
-        slots.forEach(slot => busySlotsByDate.get(date)!.add(slot))
-      }
-    }
-
-    // Update availability table for each date with busy slots
-    let updatedCount = 0
-    for (const [date, slots] of busySlotsByDate) {
-      const slotUpdates: Record<string, boolean> = {}
-      for (const slot of slots) {
-        slotUpdates[slot] = false // Mark as NOT available
-      }
-
-      const { error: upsertError } = await adminClient
-        .from('availability')
-        .upsert({
-          user_id: userId,
-          date: date,
-          ...slotUpdates,
-        }, { 
-          onConflict: 'user_id,date',
-          ignoreDuplicates: false 
-        })
-
-      if (upsertError) {
-        console.error('Error upserting availability for', date, ':', upsertError)
-      } else {
-        updatedCount++
-      }
-    }
-
-    return new Response(JSON.stringify({ 
-      connected: true,
-      synced: true,
-      eventsProcessed: events.length,
-      datesUpdated: updatedCount,
-      message: `Synced ${events.length} events, updated ${updatedCount} days`
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    )
   } catch (error: unknown) {
     console.error('Error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
