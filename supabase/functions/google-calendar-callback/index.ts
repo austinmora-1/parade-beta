@@ -24,10 +24,12 @@ Deno.serve(async (req) => {
     }
 
     let userId: string
+    let origin: string = ''
     try {
       const stateData = JSON.parse(atob(state))
       userId = stateData.userId
-      console.log('Parsed userId:', userId)
+      origin = stateData.origin || ''
+      console.log('Parsed userId:', userId, 'origin:', origin)
     } catch (e) {
       console.error('Failed to parse state:', e)
       return new Response(getErrorHtml('Invalid state parameter'), {
@@ -99,8 +101,23 @@ Deno.serve(async (req) => {
 
     console.log('Calendar connection saved successfully')
     
-    // Redirect back to the app settings page
-    const appUrl = Deno.env.get('APP_URL') || 'https://helloparade.app'
+    // Determine the redirect URL - use origin from state, or fallback to published URL
+    let appUrl = origin
+    if (!appUrl || appUrl === 'null') {
+      // Fallback to known app URLs
+      appUrl = 'https://parade.lovable.app'
+    }
+    
+    // Clean up the URL - extract just the origin part
+    try {
+      const parsedUrl = new URL(appUrl)
+      appUrl = parsedUrl.origin
+    } catch {
+      appUrl = 'https://parade.lovable.app'
+    }
+    
+    console.log('Redirecting to:', appUrl)
+    
     return new Response(null, {
       status: 302,
       headers: { 'Location': `${appUrl}/settings?calendar=connected` },
@@ -108,10 +125,9 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     console.error('Unhandled error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
-    const appUrl = Deno.env.get('APP_URL') || 'https://helloparade.app'
     return new Response(null, {
       status: 302,
-      headers: { 'Location': `${appUrl}/settings?calendar=error&message=${encodeURIComponent(message)}` },
+      headers: { 'Location': `https://parade.lovable.app/settings?calendar=error&message=${encodeURIComponent(message)}` },
     })
   }
 })

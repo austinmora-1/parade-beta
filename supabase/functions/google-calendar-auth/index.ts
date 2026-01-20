@@ -25,16 +25,17 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    const token = authHeader.replace('Bearer ', '')
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token)
-    if (claimsError || !claimsData?.claims) {
+    // Use getUser() instead of getClaims() which doesn't exist in Supabase JS v2
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      console.error('Auth error:', userError)
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         status: 401, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       })
     }
 
-    const userId = claimsData.claims.sub
+    const userId = user.id
 
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
     if (!clientId) {
@@ -48,7 +49,9 @@ Deno.serve(async (req) => {
     // Minimal scope to reduce Google policy blocks (read events only)
     const scope = 'https://www.googleapis.com/auth/calendar.readonly'
     
-    const state = btoa(JSON.stringify({ userId }))
+    // Include the origin so we can redirect back to the correct app
+    const origin = req.headers.get('origin') || req.headers.get('referer') || ''
+    const state = btoa(JSON.stringify({ userId, origin }))
     
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
     authUrl.searchParams.set('client_id', clientId)
@@ -57,7 +60,9 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('scope', scope)
     authUrl.searchParams.set('access_type', 'offline')
     authUrl.searchParams.set('prompt', 'consent select_account')
-    authUrl.searchParams.set('include_granted_scopes', 'true')
+    authUrl.searchParams.set('state', state)
+
+    console.log('Generated auth URL for user:', userId, 'redirect:', redirectUri)
 
     return new Response(JSON.stringify({ authUrl: authUrl.toString() }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
