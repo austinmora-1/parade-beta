@@ -123,7 +123,18 @@ export function CityAutocomplete({
   };
 
   const handleSelectSuggestion = (suggestion: LocationSuggestion) => {
-    const displayValue = suggestion.main_text + (suggestion.secondary_text ? `, ${suggestion.secondary_text}` : '');
+    // Remove country from secondary_text (keep only state/region if present)
+    let displayValue = suggestion.main_text;
+    if (suggestion.secondary_text) {
+      const parts = suggestion.secondary_text.split(', ');
+      // Take only the first part (usually state/region), skip the country
+      if (parts.length > 1) {
+        displayValue += `, ${parts[0]}`;
+      } else if (parts.length === 1 && parts[0].length <= 3) {
+        // If it's a short abbreviation like "CA" or "NY", include it
+        displayValue += `, ${parts[0]}`;
+      }
+    }
     setQuery(displayValue);
     onChange(displayValue);
     setShowSuggestions(false);
