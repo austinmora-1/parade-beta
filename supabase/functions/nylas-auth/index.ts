@@ -63,13 +63,15 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://parade.lovable.app";
     const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/nylas-callback`;
 
-    // Build Nylas OAuth URL (minimal, safest set of params)
+    // Build Nylas OAuth URL with read-only calendar scope
     const state = JSON.stringify({ userId: user.id, origin });
     const params = new URLSearchParams({
       client_id: nylasClientId,
       redirect_uri: redirectUri,
       response_type: "code",
       state,
+      // Request only read access to calendar events and free/busy info
+      scope: "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.freebusy",
     });
 
     const authUrl = `${nylasApiOrigin}/v3/connect/auth?${params.toString()}`;
