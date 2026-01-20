@@ -23,7 +23,8 @@ serve(async (req) => {
       });
     }
 
-    const state = JSON.parse(decodeURIComponent(stateParam));
+    // URLSearchParams already decoded the state, just parse JSON
+    const state = JSON.parse(stateParam);
     const { userId, origin } = state;
 
     const nylasClientId = Deno.env.get("NYLAS_CLIENT_ID");
