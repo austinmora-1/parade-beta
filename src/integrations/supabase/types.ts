@@ -67,6 +67,7 @@ export type Database = {
           access_token: string | null
           created_at: string
           expires_at: string
+          grant_id: string | null
           id: string
           key_id: string | null
           provider: string
@@ -78,6 +79,7 @@ export type Database = {
           access_token?: string | null
           created_at?: string
           expires_at: string
+          grant_id?: string | null
           id?: string
           key_id?: string | null
           provider: string
@@ -89,6 +91,7 @@ export type Database = {
           access_token?: string | null
           created_at?: string
           expires_at?: string
+          grant_id?: string | null
           id?: string
           key_id?: string | null
           provider?: string
@@ -385,6 +388,7 @@ export type Database = {
         Returns: {
           access_token: string
           expires_at: string
+          grant_id: string
           refresh_token: string
         }[]
       }
@@ -402,6 +406,7 @@ export type Database = {
         Args: {
           p_access_token: string
           p_expires_at: string
+          p_grant_id?: string
           p_provider: string
           p_refresh_token: string
           p_user_id: string
