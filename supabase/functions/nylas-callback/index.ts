@@ -29,7 +29,16 @@ serve(async (req) => {
 
     const nylasClientId = Deno.env.get("NYLAS_CLIENT_ID");
     const nylasApiKey = Deno.env.get("NYLAS_API_KEY");
-    const nylasApiUri = Deno.env.get("NYLAS_API_URI") || "https://api.us.nylas.com";
+    const rawApiUri = Deno.env.get("NYLAS_API_URI");
+
+    const nylasApiUri = (() => {
+      try {
+        return rawApiUri ? new URL(rawApiUri).origin : "https://api.us.nylas.com";
+      } catch {
+        return "https://api.us.nylas.com";
+      }
+    })();
+
     const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/nylas-callback`;
 
     if (!nylasClientId || !nylasApiKey) {
