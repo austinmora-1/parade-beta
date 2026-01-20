@@ -125,6 +125,42 @@ async function handleEventsSync({
   return { updatedCount };
 }
 
+// Refresh access token using Nylas API
+async function refreshAccessToken(
+  grantId: string,
+  nylasClientId: string,
+  nylasApiKey: string,
+  nylasApiUri: string
+): Promise<{ access_token: string; expires_in: number } | null> {
+  try {
+    const response = await fetch(`${nylasApiUri}/v3/connect/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Basic ${btoa(`${nylasClientId}:${nylasApiKey}`)}`,
+      },
+      body: JSON.stringify({
+        grant_type: "refresh_token",
+        refresh_token: grantId,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Token refresh failed:", await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    return {
+      access_token: data.access_token,
+      expires_in: data.expires_in || 3600,
+    };
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -170,8 +206,21 @@ serve(async (req) => {
       });
     }
 
-    const { access_token, refresh_token: grantId } = tokens[0];
+    let { access_token, grant_id } = tokens[0];
     const nylasApiUri = Deno.env.get("NYLAS_API_URI") || "https://api.us.nylas.com";
+    const nylasClientId = Deno.env.get("NYLAS_CLIENT_ID") || "";
+    const nylasApiKey = Deno.env.get("NYLAS_API_KEY") || "";
+
+    // Fallback: if grant_id is not in dedicated column, check refresh_token
+    if (!grant_id) {
+      grant_id = tokens[0].refresh_token;
+    }
+
+    if (!grant_id) {
+      return new Response(JSON.stringify({ synced: false, message: "Missing grant ID" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Fetch events
     const now = new Date();
@@ -183,8 +232,8 @@ serve(async (req) => {
       limit: "200",
     });
 
-    const eventsResponse = await fetch(
-      `${nylasApiUri}/v3/grants/${grantId}/events?${params.toString()}`,
+    let eventsResponse = await fetch(
+      `${nylasApiUri}/v3/grants/${grant_id}/events?${params.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${access_token}`,
@@ -192,6 +241,47 @@ serve(async (req) => {
         },
       }
     );
+
+    // Handle 401/403 - try to refresh token
+    if (eventsResponse.status === 401 || eventsResponse.status === 403) {
+      console.log("Token expired during sync, attempting refresh...");
+      
+      const refreshResult = await refreshAccessToken(
+        grant_id,
+        nylasClientId,
+        nylasApiKey,
+        nylasApiUri
+      );
+
+      if (refreshResult) {
+        // Update token in database
+        const expiresAt = new Date(Date.now() + refreshResult.expires_in * 1000).toISOString();
+        await supabaseAdmin.rpc("update_calendar_access_token", {
+          p_user_id: user.id,
+          p_provider: "nylas",
+          p_access_token: refreshResult.access_token,
+          p_expires_at: expiresAt,
+        });
+
+        // Retry with new token
+        eventsResponse = await fetch(
+          `${nylasApiUri}/v3/grants/${grant_id}/events?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${refreshResult.access_token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      } else {
+        return new Response(JSON.stringify({ 
+          synced: false, 
+          message: "Session expired. Please reconnect your calendar." 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     if (!eventsResponse.ok) {
       const errorText = await eventsResponse.text();

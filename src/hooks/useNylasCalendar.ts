@@ -27,6 +27,7 @@ export function useNylasCalendar() {
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Lightweight status check - doesn't fetch events
   const checkConnection = useCallback(async () => {
     if (!session?.access_token) {
       setIsLoading(false);
@@ -34,19 +35,18 @@ export function useNylasCalendar() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('nylas-events', {
+      const { data, error } = await supabase.functions.invoke('nylas-status', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (error) throw error;
       
       setIsConnected(data.connected);
-      if (data.events) {
-        setEvents(data.events);
-      }
+      setError(data.error || null);
     } catch (err) {
       console.error('Error checking Nylas connection:', err);
       setError(err instanceof Error ? err.message : 'Failed to check connection');
+      setIsConnected(false);
     } finally {
       setIsLoading(false);
     }
@@ -88,6 +88,7 @@ export function useNylasCalendar() {
       setIsConnected(false);
       setEvents([]);
       setLastSyncResult(null);
+      setError(null);
     } catch (err) {
       console.error('Error disconnecting from Nylas:', err);
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
@@ -109,6 +110,13 @@ export function useNylasCalendar() {
 
       if (error) throw error;
       
+      // Check if we need to reconnect
+      if (!data.synced && data.message?.includes('reconnect')) {
+        setIsConnected(false);
+        setError(data.message);
+        return { synced: false, message: data.message };
+      }
+
       const result: SyncResult = {
         synced: data.synced,
         eventsProcessed: data.eventsProcessed,
@@ -138,6 +146,13 @@ export function useNylasCalendar() {
 
       if (error) throw error;
       
+      // Check if connection was lost
+      if (!data.connected) {
+        setIsConnected(false);
+        setError(data.error || 'Connection lost');
+        return;
+      }
+
       if (data.events) {
         setEvents(data.events);
       }
@@ -158,5 +173,6 @@ export function useNylasCalendar() {
     disconnect,
     syncCalendar,
     refreshEvents,
+    recheckConnection: checkConnection,
   };
 }
