@@ -63,15 +63,12 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://parade.lovable.app";
     const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/nylas-callback`;
 
-    // Build Nylas OAuth URL - don't double-encode state
+    // Build Nylas OAuth URL (minimal, safest set of params)
     const state = JSON.stringify({ userId: user.id, origin });
     const params = new URLSearchParams({
       client_id: nylasClientId,
       redirect_uri: redirectUri,
       response_type: "code",
-      access_type: "offline",
-      provider: "google",
-      prompt: "select_provider",
       state,
     });
 
