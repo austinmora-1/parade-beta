@@ -43,16 +43,31 @@ export function HangRequests() {
   }, [user]);
 
   const fetchRequests = async () => {
-    const { data, error } = await supabase
+    // Fetch hang requests
+    const { data: hangRequests, error } = await supabase
       .from('hang_requests')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching hang requests:', error);
-    } else {
-      setRequests(data || []);
+      setLoading(false);
+      return;
     }
+
+    // Fetch emails from the protected table (only visible to recipients)
+    const { data: emails } = await supabase
+      .from('hang_request_emails')
+      .select('hang_request_id, requester_email');
+
+    // Merge emails into requests
+    const emailMap = new Map(emails?.map(e => [e.hang_request_id, e.requester_email]) || []);
+    const requestsWithEmails: HangRequest[] = (hangRequests || []).map(r => ({
+      ...r,
+      requester_email: emailMap.get(r.id) || null
+    }));
+
+    setRequests(requestsWithEmails);
     setLoading(false);
   };
 

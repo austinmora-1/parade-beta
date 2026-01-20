@@ -134,12 +134,40 @@ export type Database = {
         }
         Relationships: []
       }
+      hang_request_emails: {
+        Row: {
+          created_at: string
+          hang_request_id: string
+          id: string
+          requester_email: string | null
+        }
+        Insert: {
+          created_at?: string
+          hang_request_id: string
+          id?: string
+          requester_email?: string | null
+        }
+        Update: {
+          created_at?: string
+          hang_request_id?: string
+          id?: string
+          requester_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hang_request_emails_hang_request_id_fkey"
+            columns: ["hang_request_id"]
+            isOneToOne: true
+            referencedRelation: "hang_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hang_requests: {
         Row: {
           created_at: string
           id: string
           message: string | null
-          requester_email: string | null
           requester_name: string
           selected_day: string
           selected_slot: string
@@ -152,7 +180,6 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string | null
-          requester_email?: string | null
           requester_name: string
           selected_day: string
           selected_slot: string
@@ -165,7 +192,6 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string | null
-          requester_email?: string | null
           requester_name?: string
           selected_day?: string
           selected_slot?: string
