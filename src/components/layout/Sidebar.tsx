@@ -5,7 +5,6 @@ import {
   Users, 
   MessageCircle, 
   Clock, 
-  Settings,
   Bell,
   MessageSquarePlus
 } from 'lucide-react';
@@ -56,17 +55,6 @@ export function Sidebar() {
                   {totalNotifications}
                 </span>
               )}
-            </NavLink>
-            <NavLink
-              to="/settings"
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-                location.pathname === '/settings'
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Settings className="h-5 w-5" />
             </NavLink>
           </div>
         </div>
