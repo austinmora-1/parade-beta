@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { MobileHeader } from './MobileHeader';
+import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 import { useFriendRequestNotifications } from '@/hooks/useFriendRequestNotifications';
 
 export function AppLayout() {
@@ -18,6 +19,7 @@ export function AppLayout() {
         </div>
       </main>
       <MobileNav />
+      <FeedbackButton />
     </div>
   );
 }
