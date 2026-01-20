@@ -74,6 +74,13 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const { access_token, refresh_token, grant_id, expires_in } = tokenData;
 
+    console.log("Nylas token exchange success", {
+      hasAccessToken: !!access_token,
+      hasRefreshToken: !!refresh_token,
+      hasGrantId: !!grant_id,
+      expiresIn: expires_in,
+    });
+
     // Calculate expiry
     const expiresAt = new Date(Date.now() + (expires_in || 3600) * 1000).toISOString();
 
@@ -83,13 +90,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Store grant_id and tokens
+    // Store grant_id properly in the grant_id column
     const { error: dbError } = await supabaseAdmin.rpc("upsert_calendar_connection", {
       p_user_id: userId,
       p_provider: "nylas",
       p_access_token: access_token,
-      p_refresh_token: refresh_token || grant_id, // Store grant_id as refresh if no refresh token
+      p_refresh_token: refresh_token || "", // Store actual refresh token if exists
       p_expires_at: expiresAt,
+      p_grant_id: grant_id, // Store grant_id in dedicated column
     });
 
     if (dbError) {
