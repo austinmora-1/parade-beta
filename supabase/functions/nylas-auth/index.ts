@@ -48,7 +48,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://parade.lovable.app";
     const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/nylas-callback`;
     
-    // Build Nylas OAuth URL
+    // Build Nylas OAuth URL - don't double-encode state
     const state = JSON.stringify({ userId: user.id, origin });
     const params = new URLSearchParams({
       client_id: nylasClientId,
@@ -56,7 +56,8 @@ serve(async (req) => {
       response_type: "code",
       access_type: "offline",
       provider: "google",
-      state: encodeURIComponent(state),
+      prompt: "select_provider",
+      state: state, // URLSearchParams will encode this
     });
 
     const authUrl = `${nylasApiUri}/v3/connect/auth?${params.toString()}`;
