@@ -11,11 +11,20 @@ interface CalendarEvent {
   location?: string;
 }
 
+interface SyncResult {
+  synced: boolean;
+  eventsProcessed?: number;
+  datesUpdated?: number;
+  message?: string;
+}
+
 export function useGoogleCalendar() {
   const { session } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const checkConnection = useCallback(async () => {
@@ -79,9 +88,44 @@ export function useGoogleCalendar() {
       
       setIsConnected(false);
       setEvents([]);
+      setLastSyncResult(null);
     } catch (err) {
       console.error('Error disconnecting from Google Calendar:', err);
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
+    }
+  };
+
+  const syncCalendar = async (): Promise<SyncResult> => {
+    if (!session?.access_token || !isConnected) {
+      return { synced: false, message: 'Not connected' };
+    }
+
+    setIsSyncing(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error) throw error;
+      
+      const result: SyncResult = {
+        synced: data.synced,
+        eventsProcessed: data.eventsProcessed,
+        datesUpdated: data.datesUpdated,
+        message: data.message,
+      };
+      
+      setLastSyncResult(result);
+      return result;
+    } catch (err) {
+      console.error('Error syncing calendar:', err);
+      const message = err instanceof Error ? err.message : 'Failed to sync';
+      setError(message);
+      return { synced: false, message };
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -111,10 +155,13 @@ export function useGoogleCalendar() {
   return {
     isConnected,
     isLoading,
+    isSyncing,
     events,
     error,
+    lastSyncResult,
     connect,
     disconnect,
+    syncCalendar,
     refreshEvents,
   };
 }
