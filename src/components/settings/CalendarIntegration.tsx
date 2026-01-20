@@ -1,6 +1,6 @@
 import { Calendar, Check, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
+import { useNylasCalendar } from '@/hooks/useNylasCalendar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -10,7 +10,7 @@ interface CalendarIntegrationProps {
 
 export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationProps) {
   const { session } = useAuth();
-  const { isConnected, isLoading, isSyncing, lastSyncResult, connect, disconnect, syncCalendar } = useGoogleCalendar();
+  const { isConnected, isLoading, isSyncing, lastSyncResult, connect, disconnect, syncCalendar } = useNylasCalendar();
 
   const handleSync = async () => {
     const result = await syncCalendar();
@@ -69,7 +69,7 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
           </Button>
         ) : isConnected ? (
           <div className="flex items-center gap-1.5">
-            <span className="flex items-center gap-1 text-[10px] text-green-600">
+            <span className="flex items-center gap-1 text-[10px] text-primary">
               <Check className="h-3 w-3" />
             </span>
             <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={disconnect}>
