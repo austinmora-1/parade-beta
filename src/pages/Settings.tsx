@@ -20,8 +20,10 @@ import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Slider } from '@/components/ui/slider';
-import { VIBE_CONFIG, VibeType } from '@/types/planner';
+import { VIBE_CONFIG, VibeType, TimeSlot } from '@/types/planner';
 import { cn } from '@/lib/utils';
+import { format, addDays, startOfWeek } from 'date-fns';
+import { usePlannerStore } from '@/stores/plannerStore';
 
 // Helper function for formatting time
 const formatTime = (decimalHour: number) => {
@@ -148,6 +150,7 @@ export default function Settings() {
 
     setIsSaving(true);
     try {
+      // Save profile settings
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -173,6 +176,13 @@ export default function Settings() {
 
       if (error) throw error;
 
+      // Apply work hours to availability for the next 30 days
+      await applyWorkHoursToAvailability(session.user.id, workDays, workStartHour, workEndHour);
+
+      // Reload the planner store to reflect changes
+      const { loadAllData } = usePlannerStore.getState();
+      await loadAllData();
+
       toast.success('Settings saved');
       setHasChanges(false);
     } catch (error) {
@@ -180,6 +190,62 @@ export default function Settings() {
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Apply work hours to availability records
+  const applyWorkHoursToAvailability = async (
+    userId: string, 
+    workDaysConfig: string[], 
+    startHour: number, 
+    endHour: number
+  ) => {
+    // Time slot hour ranges
+    const TIME_SLOT_HOURS: Record<TimeSlot, { start: number; end: number }> = {
+      'early-morning': { start: 6, end: 9 },
+      'late-morning': { start: 9, end: 12 },
+      'early-afternoon': { start: 12, end: 15 },
+      'late-afternoon': { start: 15, end: 18 },
+      'evening': { start: 18, end: 22 },
+      'late-night': { start: 22, end: 26 },
+    };
+
+    // Generate dates for next 30 days
+    const today = new Date();
+    const dates: { date: string; dayOfWeek: string }[] = [];
+    
+    for (let i = 0; i < 30; i++) {
+      const date = addDays(today, i);
+      const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+      dates.push({ date: format(date, 'yyyy-MM-dd'), dayOfWeek });
+    }
+
+    // For each work day, upsert availability with work hours marked as unavailable
+    const workDayDates = dates.filter(d => workDaysConfig.includes(d.dayOfWeek));
+    
+    for (const { date } of workDayDates) {
+      // Calculate which slots should be unavailable based on work hours
+      const updates: Record<string, boolean> = {};
+      
+      for (const [slot, hours] of Object.entries(TIME_SLOT_HOURS)) {
+        const slotColumn = slot.replace('-', '_');
+        // Check if this slot overlaps with work hours
+        const slotOverlapsWork = hours.start < endHour && hours.end > startHour;
+        if (slotOverlapsWork) {
+          updates[slotColumn] = false;
+        }
+      }
+
+      // Only update if there are slots to mark as unavailable
+      if (Object.keys(updates).length > 0) {
+        await supabase
+          .from('availability')
+          .upsert({
+            user_id: userId,
+            date: date,
+            ...updates,
+          }, { onConflict: 'user_id,date' });
+      }
     }
   };
 
