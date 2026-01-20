@@ -26,8 +26,44 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify authentication - hang requests require a logged-in user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Please sign in to send hang requests' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Create authenticated Supabase client to verify user
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid session' }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const authenticatedUserId = claimsData.claims.sub;
+    console.log('Authenticated user sending hang request:', authenticatedUserId);
+
     const payload: HangRequestPayload = await req.json();
     const { shareCode, requesterName, requesterEmail, requesterUserId, message, selectedDay, selectedSlot } = payload;
+
+    // Ensure the requesterUserId matches the authenticated user if provided
+    if (requesterUserId && requesterUserId !== authenticatedUserId) {
+      return new Response(
+        JSON.stringify({ error: 'User ID mismatch' }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     if (!shareCode || !requesterName || !selectedDay || !selectedSlot) {
       return new Response(
@@ -40,7 +76,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
-    // Create Supabase client
+    // Create Supabase client with service role for admin operations
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
