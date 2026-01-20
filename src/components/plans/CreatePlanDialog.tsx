@@ -89,13 +89,16 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
     setIsSearchingLocation(true);
     try {
       const { data, error } = await supabase.functions.invoke('google-places-search', {
-        body: { query },
+        body: { 
+          query, 
+          types: 'establishment' // Search for businesses, restaurants, etc.
+        },
       });
 
       if (error) throw error;
 
       const suggestions: LocationSuggestion[] = (data.suggestions || []).map((s: PlaceSuggestion) => ({
-        display_name: s.display_name,
+        display_name: `${s.main_text}${s.secondary_text ? ` · ${s.secondary_text}` : ''}`,
         place_id: s.place_id,
       }));
 
