@@ -3,7 +3,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { ActivityType, TimeSlot, Friend } from '@/types/planner';
 import { parse, addDays, nextMonday, nextTuesday, nextWednesday, nextThursday, nextFriday, nextSaturday, nextSunday } from 'date-fns';
 import { toast } from 'sonner';
-
+import { supabase } from '@/integrations/supabase/client';
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -131,6 +131,12 @@ export function useEllyChat() {
     };
 
     try {
+      // Get user session for authenticated requests
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Please sign in to use the chat assistant');
+      }
+
       const allMessages = [...messages, userMsg].map(m => ({
         role: m.role,
         content: m.content,
@@ -140,7 +146,7 @@ export function useEllyChat() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ messages: allMessages }),
       });
