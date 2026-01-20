@@ -35,8 +35,11 @@ serve(async (req) => {
     }
 
     const nylasClientId = Deno.env.get("NYLAS_CLIENT_ID");
-    const nylasApiUri = Deno.env.get("NYLAS_API_URI") || "https://api.us.nylas.com";
-    
+    const rawApiUri = Deno.env.get("NYLAS_API_URI");
+
+    // Guard against misconfigured NYLAS_API_URI (we saw it accidentally set to the app URL)
+    const nylasApiUri = rawApiUri && rawApiUri.startsWith("https://api.") ? rawApiUri : "https://api.us.nylas.com";
+
     if (!nylasClientId) {
       return new Response(JSON.stringify({ error: "Nylas not configured" }), {
         status: 500,
@@ -47,7 +50,7 @@ serve(async (req) => {
     // Get the origin for redirect
     const origin = req.headers.get("origin") || "https://parade.lovable.app";
     const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/nylas-callback`;
-    
+
     // Build Nylas OAuth URL - don't double-encode state
     const state = JSON.stringify({ userId: user.id, origin });
     const params = new URLSearchParams({
@@ -57,10 +60,16 @@ serve(async (req) => {
       access_type: "offline",
       provider: "google",
       prompt: "select_provider",
-      state: state, // URLSearchParams will encode this
+      state,
     });
 
     const authUrl = `${nylasApiUri}/v3/connect/auth?${params.toString()}`;
+
+    console.log("nylas-auth build", {
+      apiUri: nylasApiUri,
+      redirectUri,
+      clientIdPrefix: nylasClientId.slice(0, 8),
+    });
 
     return new Response(JSON.stringify({ authUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
