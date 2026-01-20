@@ -3,6 +3,14 @@ import { Plan, Friend, DayAvailability, Vibe, TimeSlot, LocationStatus, Activity
 import { addDays, startOfWeek, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
+interface DefaultAvailabilitySettings {
+  workDays: string[];
+  workStartHour: number;
+  workEndHour: number;
+  defaultStatus: 'free' | 'unavailable';
+  defaultVibes: string[];
+}
+
 interface PlannerState {
   plans: Plan[];
   friends: Friend[];
@@ -11,6 +19,7 @@ interface PlannerState {
   locationStatus: LocationStatus;
   isLoading: boolean;
   userId: string | null;
+  defaultSettings: DefaultAvailabilitySettings | null;
   
   setUserId: (userId: string | null) => void;
   loadAllData: () => Promise<void>;
@@ -34,18 +43,54 @@ interface PlannerState {
   initializeWeekAvailability: () => Promise<void>;
 }
 
-const createDefaultAvailability = (date: Date): DayAvailability => ({
-  date,
-  slots: {
-    'early-morning': true,
-    'late-morning': true,
-    'early-afternoon': true,
-    'late-afternoon': true,
-    'evening': true,
-    'late-night': true,
-  },
-  locationStatus: 'home',
-});
+// Map time slots to hour ranges
+const TIME_SLOT_HOURS: Record<TimeSlot, { start: number; end: number }> = {
+  'early-morning': { start: 6, end: 9 },
+  'late-morning': { start: 9, end: 12 },
+  'early-afternoon': { start: 12, end: 15 },
+  'late-afternoon': { start: 15, end: 18 },
+  'evening': { start: 18, end: 22 },
+  'late-night': { start: 22, end: 26 }, // 26 = 2am next day
+};
+
+const createDefaultAvailability = (date: Date, settings?: DefaultAvailabilitySettings | null): DayAvailability => {
+  // Determine which day of week this date is
+  const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+  const isWorkDay = settings?.workDays?.includes(dayOfWeek) ?? false;
+  
+  // Default all slots based on user preference
+  const defaultFree = settings?.defaultStatus !== 'unavailable';
+  
+  // Calculate which slots overlap with work hours
+  const slots: Record<TimeSlot, boolean> = {
+    'early-morning': defaultFree,
+    'late-morning': defaultFree,
+    'early-afternoon': defaultFree,
+    'late-afternoon': defaultFree,
+    'evening': defaultFree,
+    'late-night': defaultFree,
+  };
+  
+  // If it's a work day, mark work hour slots as unavailable
+  if (isWorkDay && settings) {
+    const workStart = settings.workStartHour;
+    const workEnd = settings.workEndHour;
+    
+    for (const [slot, hours] of Object.entries(TIME_SLOT_HOURS)) {
+      // Check if this slot overlaps with work hours
+      const slotOverlapsWork = hours.start < workEnd && hours.end > workStart;
+      if (slotOverlapsWork) {
+        slots[slot as TimeSlot] = false;
+      }
+    }
+  }
+  
+  return {
+    date,
+    slots,
+    locationStatus: 'home',
+  };
+};
 
 export const usePlannerStore = create<PlannerState>((set, get) => ({
   plans: [],
@@ -55,6 +100,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   locationStatus: 'home',
   isLoading: true,
   userId: null,
+  defaultSettings: null,
   
   setUserId: (userId) => set({ userId }),
   
@@ -180,27 +226,59 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       const todayAvail = availability.find(a => format(a.date, 'yyyy-MM-dd') === todayStr);
       const todayLocationStatus = todayAvail?.locationStatus || 'home';
       
-      // Load vibe and location from profile
+      // Load vibe, location, and default availability settings from profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('current_vibe, location_status, custom_vibe_tags')
+        .select('current_vibe, location_status, custom_vibe_tags, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes')
         .eq('user_id', userId)
         .single();
       
-      const customTags = profile?.custom_vibe_tags || [];
-      const currentVibe = profile?.current_vibe 
+      const customTags = (profile as any)?.custom_vibe_tags || [];
+      const currentVibe = (profile as any)?.current_vibe 
         ? { 
-            type: profile.current_vibe as VibeType,
-            customTags: profile.current_vibe === 'custom' ? customTags : undefined
+            type: (profile as any).current_vibe as VibeType,
+            customTags: (profile as any).current_vibe === 'custom' ? customTags : undefined
           } 
         : null;
+      
+      // Build default settings from profile
+      const defaultSettings: DefaultAvailabilitySettings = {
+        workDays: (profile as any)?.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        workStartHour: (profile as any)?.default_work_start_hour ?? 9,
+        workEndHour: (profile as any)?.default_work_end_hour ?? 17,
+        defaultStatus: (profile as any)?.default_availability_status || 'free',
+        defaultVibes: (profile as any)?.default_vibes || [],
+      };
+      
+      // Re-process availability with default settings for days without saved data
+      const availabilityWithDefaults: DayAvailability[] = dates.map((dateStr, i) => {
+        const existing = (availData || []).find((a) => a.date === dateStr);
+        const date = addDays(start, i);
+        
+        if (existing) {
+          return {
+            date,
+            slots: {
+              'early-morning': existing.early_morning ?? true,
+              'late-morning': existing.late_morning ?? true,
+              'early-afternoon': existing.early_afternoon ?? true,
+              'late-afternoon': existing.late_afternoon ?? true,
+              'evening': existing.evening ?? true,
+              'late-night': existing.late_night ?? true,
+            },
+            locationStatus: (existing.location_status as LocationStatus) || 'home',
+          };
+        }
+        return createDefaultAvailability(date, defaultSettings);
+      });
       
       set({
         plans,
         friends,
-        availability,
+        availability: availabilityWithDefaults,
         currentVibe,
         locationStatus: todayLocationStatus,
+        defaultSettings,
         isLoading: false,
       });
     } catch (error) {
@@ -407,7 +485,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   },
   
   setAvailability: async (date, slot, available) => {
-    const { userId, availability } = get();
+    const { userId, availability, defaultSettings } = get();
     if (!userId) return;
     
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -438,14 +516,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       };
       set({ availability: updated });
     } else {
-      const newAvailability = createDefaultAvailability(date);
+      const newAvailability = createDefaultAvailability(date, defaultSettings);
       newAvailability.slots[slot] = available;
       set({ availability: [...availability, newAvailability] });
     }
   },
   
   setLocationStatus: async (status, date) => {
-    const { userId, availability } = get();
+    const { userId, availability, defaultSettings } = get();
     if (!userId) return;
     
     const targetDate = date || new Date();
@@ -477,7 +555,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       };
       set({ availability: updated });
     } else {
-      const newAvailability = createDefaultAvailability(targetDate);
+      const newAvailability = createDefaultAvailability(targetDate, defaultSettings);
       newAvailability.locationStatus = status;
       set({ availability: [...availability, newAvailability] });
     }
@@ -578,12 +656,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   },
   
   initializeWeekAvailability: async () => {
-    const { userId } = get();
+    const { userId, defaultSettings } = get();
     if (!userId) {
       const start = startOfWeek(new Date(), { weekStartsOn: 1 });
       const week: DayAvailability[] = [];
       for (let i = 0; i < 7; i++) {
-        week.push(createDefaultAvailability(addDays(start, i)));
+        week.push(createDefaultAvailability(addDays(start, i), defaultSettings));
       }
       set({ availability: week });
       return;

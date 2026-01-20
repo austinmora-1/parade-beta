@@ -257,6 +257,11 @@ export type Database = {
           current_vibe: string | null
           custom_activities: Json | null
           custom_vibe_tags: string[] | null
+          default_availability_status: string | null
+          default_vibes: string[] | null
+          default_work_days: string[] | null
+          default_work_end_hour: number | null
+          default_work_start_hour: number | null
           discoverable: boolean | null
           display_name: string | null
           friend_requests_notifications: boolean | null
@@ -281,6 +286,11 @@ export type Database = {
           current_vibe?: string | null
           custom_activities?: Json | null
           custom_vibe_tags?: string[] | null
+          default_availability_status?: string | null
+          default_vibes?: string[] | null
+          default_work_days?: string[] | null
+          default_work_end_hour?: number | null
+          default_work_start_hour?: number | null
           discoverable?: boolean | null
           display_name?: string | null
           friend_requests_notifications?: boolean | null
@@ -305,6 +315,11 @@ export type Database = {
           current_vibe?: string | null
           custom_activities?: Json | null
           custom_vibe_tags?: string[] | null
+          default_availability_status?: string | null
+          default_vibes?: string[] | null
+          default_work_days?: string[] | null
+          default_work_end_hour?: number | null
+          default_work_start_hour?: number | null
           discoverable?: boolean | null
           display_name?: string | null
           friend_requests_notifications?: boolean | null

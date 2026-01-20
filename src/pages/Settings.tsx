@@ -112,6 +112,12 @@ export default function Settings() {
           setDiscoverable(profile.discoverable ?? true);
           setAllowAllHangRequests(profile.allow_all_hang_requests ?? true);
           setAllowedFriendIds(profile.allowed_hang_request_friend_ids || []);
+          // Load default availability settings
+          setWorkDays((profile as any).default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+          setWorkStartHour((profile as any).default_work_start_hour ?? 9);
+          setWorkEndHour((profile as any).default_work_end_hour ?? 17);
+          setDefaultAvailability((profile as any).default_availability_status || 'free');
+          setDefaultVibes((profile as any).default_vibes || []);
         }
 
         // Load friends
@@ -156,7 +162,13 @@ export default function Settings() {
           discoverable: discoverable,
           allow_all_hang_requests: allowAllHangRequests,
           allowed_hang_request_friend_ids: allowedFriendIds,
-        })
+          // Save default availability settings
+          default_work_days: workDays,
+          default_work_start_hour: workStartHour,
+          default_work_end_hour: workEndHour,
+          default_availability_status: defaultAvailability,
+          default_vibes: defaultVibes,
+        } as any)
         .eq('user_id', session.user.id);
 
       if (error) throw error;
