@@ -50,7 +50,7 @@ export function FeedbackButton() {
     <>
       {/* Floating button */}
       <motion.div
-        className="fixed bottom-6 right-6 z-50"
+        className="fixed top-4 right-4 z-50 md:top-6 md:right-6"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 1, type: "spring", stiffness: 260, damping: 20 }}
@@ -98,10 +98,10 @@ export function FeedbackButton() {
 
             {/* Panel */}
             <motion.div
-              className="fixed bottom-6 right-6 z-50 w-[360px] overflow-hidden rounded-2xl bg-card shadow-2xl"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed top-16 right-4 z-50 w-[360px] overflow-hidden rounded-2xl bg-card shadow-2xl md:top-20 md:right-6"
+              initial={{ opacity: 0, scale: 0.9, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              exit={{ opacity: 0, scale: 0.9, y: -20 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
             >
               {/* Header */}
