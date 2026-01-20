@@ -95,9 +95,10 @@ serve(async (req) => {
       p_user_id: userId,
       p_provider: "nylas",
       p_access_token: access_token,
-      p_refresh_token: refresh_token || "", // Store actual refresh token if exists
+      // IMPORTANT: store NULL when missing (don't store empty string)
+      p_refresh_token: refresh_token ?? null,
       p_expires_at: expiresAt,
-      p_grant_id: grant_id, // Store grant_id in dedicated column
+      p_grant_id: grant_id ?? null,
     });
 
     if (dbError) {

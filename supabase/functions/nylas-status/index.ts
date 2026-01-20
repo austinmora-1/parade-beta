@@ -49,12 +49,14 @@ serve(async (req) => {
       });
     }
 
-    const { grant_id, expires_at } = tokens[0];
+    const { grant_id, refresh_token, expires_at } = tokens[0];
+    // Back-compat: older rows stored grant_id in refresh_token
+    const effectiveGrantId = grant_id || refresh_token;
     const isExpired = expires_at ? new Date(expires_at) < new Date() : false;
 
-    return new Response(JSON.stringify({ 
-      connected: true, 
-      hasGrant: !!grant_id,
+    return new Response(JSON.stringify({
+      connected: !!effectiveGrantId,
+      hasGrant: !!effectiveGrantId,
       isExpired,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
