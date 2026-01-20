@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.send-hang-request]
 verify_jwt = false
+
+[functions.google-calendar-sync]
+verify_jwt = false
