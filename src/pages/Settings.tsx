@@ -296,6 +296,7 @@ export default function Settings() {
                   value={homeAddress}
                   onChange={(value) => { setHomeAddress(value); handleChange(); }}
                   placeholder="Search for your city..."
+                  compact
                 />
               </div>
 
