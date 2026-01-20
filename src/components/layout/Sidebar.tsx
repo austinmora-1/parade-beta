@@ -6,11 +6,13 @@ import {
   MessageCircle, 
   Clock, 
   Settings,
-  Bell
+  Bell,
+  MessageSquarePlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
+import { useFeedback } from '@/components/feedback/FeedbackContext';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -23,6 +25,7 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const { totalNotifications } = useNotifications();
+  const { openFeedback } = useFeedback();
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-sidebar md:block">
@@ -32,6 +35,12 @@ export function Sidebar() {
           <div className="flex-1" />
           <ParadeWordmark size="lg" />
           <div className="flex-1 flex justify-end gap-1">
+            <button
+              onClick={openFeedback}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <MessageSquarePlus className="h-5 w-5" />
+            </button>
             <NavLink
               to="/notifications"
               className={cn(
