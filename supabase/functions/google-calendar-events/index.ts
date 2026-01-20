@@ -89,8 +89,24 @@ Deno.serve(async (req) => {
     })
 
     if (!calendarResponse.ok) {
-      const error = await calendarResponse.text()
-      console.error('Calendar API error:', error)
+      const errorText = await calendarResponse.text()
+      console.error('Calendar API error:', calendarResponse.status, errorText)
+
+      // Return a helpful message for the common 403 case.
+      if (calendarResponse.status === 401 || calendarResponse.status === 403) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'Google denied access (403). Please disconnect and reconnect Google Calendar (and ensure Calendar API is enabled for the Google OAuth client).',
+            connected: true,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
       return new Response(JSON.stringify({ error: 'Failed to fetch events', connected: true }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -99,12 +115,15 @@ Deno.serve(async (req) => {
 
     const calendarData = await calendarResponse.json()
 
-    return new Response(JSON.stringify({ 
-      connected: true,
-      events: calendarData.items || [] 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({
+        connected: true,
+        events: calendarData.items || [],
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error: unknown) {
     console.error('Error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
