@@ -37,8 +37,20 @@ serve(async (req) => {
     const nylasClientId = Deno.env.get("NYLAS_CLIENT_ID");
     const rawApiUri = Deno.env.get("NYLAS_API_URI");
 
+    // Normalize to Nylas API *origin* only (avoid accidentally storing full paths like /v3/connect/auth)
+    const normalizeNylasOrigin = (value: string | undefined) => {
+      if (!value) return "https://api.us.nylas.com";
+      try {
+        const u = new URL(value);
+        return u.origin;
+      } catch {
+        return value.startsWith("https://") ? value : `https://${value}`;
+      }
+    };
+
+    const nylasOrigin = normalizeNylasOrigin(rawApiUri);
     // Guard against misconfigured NYLAS_API_URI (we saw it accidentally set to the app URL)
-    const nylasApiUri = rawApiUri && rawApiUri.startsWith("https://api.") ? rawApiUri : "https://api.us.nylas.com";
+    const nylasApiOrigin = nylasOrigin.startsWith("https://api.") ? nylasOrigin : "https://api.us.nylas.com";
 
     if (!nylasClientId) {
       return new Response(JSON.stringify({ error: "Nylas not configured" }), {
@@ -63,10 +75,10 @@ serve(async (req) => {
       state,
     });
 
-    const authUrl = `${nylasApiUri}/v3/connect/auth?${params.toString()}`;
+    const authUrl = `${nylasApiOrigin}/v3/connect/auth?${params.toString()}`;
 
     console.log("nylas-auth build", {
-      apiUri: nylasApiUri,
+      apiOrigin: nylasApiOrigin,
       redirectUri,
       clientIdPrefix: nylasClientId.slice(0, 8),
     });
