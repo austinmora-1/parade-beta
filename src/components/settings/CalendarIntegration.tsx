@@ -1,6 +1,6 @@
 import { Calendar, Check, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNylasCalendar } from '@/hooks/useNylasCalendar';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -10,7 +10,7 @@ interface CalendarIntegrationProps {
 
 export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationProps) {
   const { session } = useAuth();
-  const { isConnected, isLoading, isSyncing, lastSyncResult, connect, disconnect, syncCalendar } = useNylasCalendar();
+  const { isConnected, isLoading, isSyncing, lastSyncResult, connect, disconnect, syncCalendar } = useGoogleCalendar();
 
   const handleSync = async () => {
     const result = await syncCalendar();
