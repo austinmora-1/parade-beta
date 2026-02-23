@@ -41,15 +41,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Get the decrypted access token to revoke it
-    const { data: connection } = await adminClient.rpc('get_calendar_tokens', {
-      p_user_id: userId,
-      p_provider: 'google'
-    })
+    // Get the access token to revoke it
+    const { data: connRows } = await adminClient
+      .from('calendar_connections')
+      .select('access_token')
+      .eq('user_id', userId)
+      .eq('provider', 'google')
 
-    if (connection && connection.length > 0 && connection[0].access_token) {
+    if (connRows && connRows.length > 0 && connRows[0].access_token) {
       // Revoke the token with Google
-      await fetch(`https://oauth2.googleapis.com/revoke?token=${connection[0].access_token}`, {
+      await fetch(`https://oauth2.googleapis.com/revoke?token=${connRows[0].access_token}`, {
         method: 'POST',
       })
     }
