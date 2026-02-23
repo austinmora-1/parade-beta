@@ -16,39 +16,51 @@ function getTimeSlot(hour: number): string {
 }
 
 // Get all time slots that an event spans
-function getEventTimeSlots(startTime: Date, endTime: Date): string[] {
+function getEventTimeSlots(startTime: Date, endTime: Date, timezone?: string): string[] {
   const slots = new Set<string>()
 
   // Iterate through each hour the event covers
   const current = new Date(startTime)
   while (current < endTime) {
-    const hour = current.getHours()
+    const hour = getHourInTimezone(current, timezone)
     slots.add(getTimeSlot(hour))
-    current.setHours(current.getHours() + 1)
+    current.setTime(current.getTime() + 60 * 60 * 1000)
   }
 
   return Array.from(slots)
 }
 
-// Get date string in YYYY-MM-DD format
-function getDateString(date: Date): string {
+// Get date string in YYYY-MM-DD format in a given timezone
+function getDateString(date: Date, timezone?: string): string {
+  if (timezone) {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+    return parts // en-CA gives YYYY-MM-DD
+  }
   return date.toISOString().split('T')[0]
 }
 
-// Get all dates that an event spans
-function getEventDates(startTime: Date, endTime: Date): string[] {
-  const dates: string[] = []
-  const current = new Date(startTime)
-  current.setHours(0, 0, 0, 0)
-
-  const endDate = new Date(endTime)
-  endDate.setHours(0, 0, 0, 0)
-
-  while (current <= endDate) {
-    dates.push(getDateString(current))
-    current.setDate(current.getDate() + 1)
+// Get the hour in a given timezone
+function getHourInTimezone(date: Date, timezone?: string): number {
+  if (timezone) {
+    return parseInt(new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', hour12: false }).format(date), 10)
   }
+  return date.getHours()
+}
 
+// Get all dates that an event spans
+function getEventDates(startTime: Date, endTime: Date, timezone?: string): string[] {
+  const dates: string[] = []
+  // Use timezone-aware date strings to iterate
+  const seen = new Set<string>()
+  const current = new Date(startTime)
+  while (current <= endTime) {
+    const d = getDateString(current, timezone)
+    if (!seen.has(d)) {
+      seen.add(d)
+      dates.push(d)
+    }
+    current.setTime(current.getTime() + 60 * 60 * 1000) // step by 1 hour
+  }
   return dates
 }
 
@@ -63,8 +75,9 @@ async function handleEventsSync(params: {
   adminClient: any
   userId: string
   events: CalendarEvent[]
+  timezone?: string
 }) {
-  const { adminClient, userId, events } = params
+  const { adminClient, userId, events, timezone } = params
 
   // Build a map of date -> slots to mark as busy
   const busySlotsByDate: Map<string, Set<string>> = new Map()
@@ -77,7 +90,7 @@ async function handleEventsSync(params: {
         const endDate = new Date(event.end.date)
         endDate.setDate(endDate.getDate() - 1) // All-day end is exclusive
 
-        const dates = getEventDates(startDate, endDate)
+        const dates = getEventDates(startDate, endDate, timezone)
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
           ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(
@@ -91,19 +104,14 @@ async function handleEventsSync(params: {
     const startTime = new Date(event.start.dateTime)
     const endTime = new Date(event.end.dateTime)
 
-    const dates = getEventDates(startTime, endTime)
+    const dates = getEventDates(startTime, endTime, timezone)
 
     for (const date of dates) {
       if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
 
-      const dayStart = new Date(date)
-      const dayEnd = new Date(date)
-      dayEnd.setDate(dayEnd.getDate() + 1)
-
-      const effectiveStart = startTime < dayStart ? dayStart : startTime
-      const effectiveEnd = endTime > dayEnd ? dayEnd : endTime
-
-      const slots = getEventTimeSlots(effectiveStart, effectiveEnd)
+      // For timezone-aware slot calculation, we need to check each hour
+      const slots = getEventTimeSlots(startTime, endTime, timezone)
+      slots.forEach((slot) => busySlotsByDate.get(date)!.add(slot))
       slots.forEach((slot) => busySlotsByDate.get(date)!.add(slot))
     }
   }
@@ -153,8 +161,8 @@ async function handleEventsSync(params: {
         : null
     if (!startDate) continue
 
-    const dateStr = getDateString(startDate)
-    const hour = event.start.dateTime ? startDate.getHours() : 8
+    const dateStr = getDateString(startDate, timezone)
+    const hour = event.start.dateTime ? getHourInTimezone(startDate, timezone) : 8
     const timeSlot = getTimeSlot(hour)
     // Map underscore-based slot names to hyphenated Plan TimeSlot format
     const timeSlotHyphen = timeSlot.replace('_', '-')
@@ -213,6 +221,13 @@ Deno.serve(async (req) => {
     }
 
     const userId = user.id
+
+    // Parse timezone from request body
+    let timezone: string | undefined
+    try {
+      const body = await req.json()
+      timezone = body?.timezone
+    } catch { /* no body or invalid JSON */ }
 
     // Service role client to read tokens + update availability
     const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
@@ -297,7 +312,7 @@ Deno.serve(async (req) => {
     const calendarData = await calendarResponse.json()
     const events: CalendarEvent[] = calendarData.items || []
 
-    const { updatedCount } = await handleEventsSync({ adminClient, userId, events })
+    const { updatedCount } = await handleEventsSync({ adminClient, userId, events, timezone })
 
     return new Response(
       JSON.stringify({

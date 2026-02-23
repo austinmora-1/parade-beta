@@ -106,6 +106,7 @@ export function useGoogleCalendar() {
     try {
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
         headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
       });
 
       if (error) throw error;
