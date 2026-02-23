@@ -161,17 +161,22 @@ async function handleEventsSync(params: {
         : null
     if (!startDate) continue
 
-    const dateStr = getDateString(startDate, timezone)
     const hour = event.start.dateTime ? getHourInTimezone(startDate, timezone) : 8
     const timeSlot = getTimeSlot(hour)
     // Map underscore-based slot names to hyphenated Plan TimeSlot format
     const timeSlotHyphen = timeSlot.replace('_', '-')
 
+    // Use the original dateTime ISO string to preserve timezone info for timestamptz column.
+    // For all-day events, build a noon timestamp in the user's timezone to avoid date shifting.
+    const planDate = event.start.dateTime
+      ? event.start.dateTime
+      : `${event.start.date}T12:00:00`
+
     planRows.push({
       user_id: userId,
       title: event.summary || 'Gcal imported event',
       activity: 'events',
-      date: dateStr,
+      date: planDate,
       time_slot: timeSlotHyphen,
       duration: 1,
       source: 'gcal',
