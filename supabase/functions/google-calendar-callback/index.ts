@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Store encrypted tokens in database using service role
+    // Store tokens in database using service role
     const supabase = createClient(
       supabaseUrl!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -83,14 +83,16 @@ Deno.serve(async (req) => {
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
     console.log('Saving connection for user:', userId, 'expires:', expiresAt)
 
-    // Use the encrypt function to store tokens
-    const { error: upsertError } = await supabase.rpc('upsert_calendar_connection', {
-      p_user_id: userId,
-      p_provider: 'google',
-      p_access_token: tokens.access_token,
-      p_refresh_token: tokens.refresh_token || null,
-      p_expires_at: expiresAt,
-    })
+    // Upsert directly into calendar_connections table (service role bypasses RLS)
+    const { error: upsertError } = await supabase
+      .from('calendar_connections')
+      .upsert({
+        user_id: userId,
+        provider: 'google',
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token || null,
+        expires_at: expiresAt,
+      }, { onConflict: 'user_id,provider' })
 
     if (upsertError) {
       console.error('Database upsert error:', upsertError)
