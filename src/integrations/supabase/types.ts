@@ -243,6 +243,8 @@ export type Database = {
           id: string
           location: string | null
           notes: string | null
+          source: string | null
+          source_event_id: string | null
           time_slot: string
           title: string
           updated_at: string
@@ -256,6 +258,8 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          source?: string | null
+          source_event_id?: string | null
           time_slot: string
           title: string
           updated_at?: string
@@ -269,6 +273,8 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          source?: string | null
+          source_event_id?: string | null
           time_slot?: string
           title?: string
           updated_at?: string

@@ -135,6 +135,52 @@ async function handleEventsSync(params: {
     }
   }
 
+  // Create plans for each imported event
+  // First, delete old gcal-imported plans so we don't duplicate
+  await adminClient
+    .from('plans')
+    .delete()
+    .eq('user_id', userId)
+    .eq('source', 'gcal')
+
+  // Map each calendar event to a plan row
+  const planRows = []
+  for (const event of events) {
+    const startDate = event.start.dateTime
+      ? new Date(event.start.dateTime)
+      : event.start.date
+        ? new Date(event.start.date)
+        : null
+    if (!startDate) continue
+
+    const dateStr = getDateString(startDate)
+    const hour = event.start.dateTime ? startDate.getHours() : 8
+    const timeSlot = getTimeSlot(hour)
+    // Map underscore-based slot names to hyphenated Plan TimeSlot format
+    const timeSlotHyphen = timeSlot.replace('_', '-')
+
+    planRows.push({
+      user_id: userId,
+      title: event.summary || 'Gcal imported event',
+      activity: 'events',
+      date: dateStr,
+      time_slot: timeSlotHyphen,
+      duration: 1,
+      source: 'gcal',
+      source_event_id: event.id,
+    })
+  }
+
+  if (planRows.length > 0) {
+    const { error: plansError } = await adminClient
+      .from('plans')
+      .insert(planRows)
+
+    if (plansError) {
+      console.error('Error inserting gcal plans:', plansError)
+    }
+  }
+
   return { updatedCount }
 }
 
