@@ -2,6 +2,7 @@ import { Calendar, Check, Loader2, ExternalLink, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 
 interface CalendarIntegrationProps {
@@ -11,11 +12,14 @@ interface CalendarIntegrationProps {
 export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationProps) {
   const { session } = useAuth();
   const { isConnected, isLoading, isSyncing, lastSyncResult, connect, disconnect, syncCalendar } = useGoogleCalendar();
+  const loadAllData = usePlannerStore((s) => s.loadAllData);
 
   const handleSync = async () => {
     const result = await syncCalendar();
     if (result.synced) {
       toast.success(result.message || 'Calendar synced successfully');
+      // Reload availability data so the UI reflects the synced busy slots
+      await loadAllData();
     } else {
       toast.error(result.message || 'Failed to sync calendar');
     }

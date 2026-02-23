@@ -190,15 +190,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       const friends = allFriends;
       
-      // Load availability for this week
+      // Load availability for the next 5 weeks (35 days) so navigating weeks works
       const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const dates = Array.from({ length: 7 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
+      const dates = Array.from({ length: 35 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
       
       const { data: availData } = await supabase
         .from('availability')
         .select('*')
         .eq('user_id', userId)
-        .in('date', dates);
+        .gte('date', dates[0])
+        .lte('date', dates[dates.length - 1]);
       
       const availability: DayAvailability[] = dates.map((dateStr, i) => {
         const existing = (availData || []).find((a) => a.date === dateStr);
