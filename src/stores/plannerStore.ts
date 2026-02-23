@@ -140,9 +140,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         .select('*')
         .eq('user_id', userId);
       
-      // Load incoming friendships (requests sent to me)
+      // Load incoming friendships (requests sent to me) - uses view that excludes friend_email
       const { data: incomingData } = await supabase
-        .from('friendships')
+        .from('friendships_incoming' as any)
         .select('*')
         .eq('friend_user_id', userId);
       
@@ -157,7 +157,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       // For incoming requests, we need to get the requester's profile info
       const incomingFriends: Friend[] = await Promise.all(
-        (incomingData || []).map(async (f) => {
+        (incomingData || []).map(async (f: any) => {
           // Get the requester's profile
           const { data: profile } = await supabase
             .from('public_profiles')

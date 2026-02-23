@@ -368,6 +368,36 @@ export type Database = {
       }
     }
     Views: {
+      friendships_incoming: {
+        Row: {
+          created_at: string | null
+          friend_name: string | null
+          friend_user_id: string | null
+          id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          friend_name?: string | null
+          friend_user_id?: string | null
+          id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          friend_name?: string | null
+          friend_user_id?: string | null
+          id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
