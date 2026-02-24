@@ -22,13 +22,13 @@ interface HangRequest {
   created_at: string;
 }
 
-const TIME_SLOT_LABELS: Record<string, string> = {
-  early_morning: 'Early Morning (6-9am)',
-  late_morning: 'Late Morning (9am-12pm)',
-  early_afternoon: 'Early Afternoon (12-3pm)',
-  late_afternoon: 'Late Afternoon (3-6pm)',
-  evening: 'Evening (6-9pm)',
-  late_night: 'Late Night (9pm+)',
+const TIME_SLOT_SHORT: Record<string, string> = {
+  early_morning: '6-9am',
+  late_morning: '9am-12pm',
+  early_afternoon: '12-3pm',
+  late_afternoon: '3-6pm',
+  evening: '6-9pm',
+  late_night: '9pm+',
 };
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -130,100 +130,87 @@ export function HangRequests() {
     return (
       <div
         key={request.id}
-        className={`rounded-xl border p-4 space-y-3 ${
+        className={`rounded-lg border p-2.5 space-y-1.5 ${
           isPending && !outgoing
             ? 'border-primary/20 bg-primary/5'
             : 'border-border bg-card'
         }`}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              {outgoing ? (
-                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              ) : (
-                <ArrowDownLeft className="h-3.5 w-3.5 shrink-0 text-primary" />
-              )}
-              <p className="font-semibold text-foreground truncate text-sm">
-                {outgoing ? `To: ${request.requester_name}` : request.requester_name}
-              </p>
-            </div>
-            {!outgoing && request.requester_email && (
-              <p className="text-sm text-muted-foreground flex items-center gap-1 truncate ml-5">
-                <Mail className="h-3 w-3 shrink-0" />
-                {request.requester_email}
-              </p>
+        {/* Row 1: Name + date/time + status */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {outgoing ? (
+              <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+            ) : (
+              <ArrowDownLeft className="h-3 w-3 shrink-0 text-primary" />
             )}
+            <span className="font-medium text-xs text-foreground truncate">
+              {outgoing ? request.requester_name : request.requester_name}
+            </span>
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              {format(parseISO(request.selected_day), 'MMM d')} · {TIME_SLOT_SHORT[request.selected_slot] || request.selected_slot}
+            </span>
           </div>
-          <Badge variant={statusConf.variant} className="shrink-0 text-xs">
-            {statusConf.label}
-          </Badge>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Badge variant={statusConf.variant} className="text-[10px] px-1.5 py-0">
+              {statusConf.label}
+            </Badge>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 text-sm">
-          <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            {format(parseISO(request.selected_day), 'EEE, MMM d')}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            {TIME_SLOT_LABELS[request.selected_slot] || request.selected_slot}
-          </span>
-        </div>
-
+        {/* Row 2: Message (if any) */}
         {request.message && (
-          <div className="flex items-start gap-2 rounded-lg bg-background p-3">
-            <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-            <p className="text-sm text-foreground">{request.message}</p>
-          </div>
+          <p className="text-xs text-muted-foreground truncate pl-4.5">
+            💬 {request.message}
+          </p>
         )}
 
-        {/* Actions: only incoming pending gets accept/decline, all get delete */}
-        <div className="flex gap-2 pt-1">
-          {!outgoing && isPending && (
-            <>
-              <Button
-                size="sm"
-                onClick={() => updateStatus(request.id, 'accepted')}
-                disabled={updating === request.id}
-                className="flex-1 gap-1"
-              >
-                {updating === request.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
-                Accept
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => updateStatus(request.id, 'declined')}
-                disabled={updating === request.id}
-                className="flex-1 gap-1"
-              >
-                <X className="h-4 w-4" />
-                Decline
-              </Button>
-            </>
-          )}
-          {(outgoing || !isPending) && (
+        {/* Row 3: Actions (compact) */}
+        {!outgoing && isPending && (
+          <div className="flex gap-1.5 pl-4.5">
+            <Button
+              size="sm"
+              onClick={() => updateStatus(request.id, 'accepted')}
+              disabled={updating === request.id}
+              className="h-6 px-2.5 text-xs gap-1"
+            >
+              {updating === request.id ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Check className="h-3 w-3" />
+              )}
+              Accept
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => updateStatus(request.id, 'declined')}
+              disabled={updating === request.id}
+              className="h-6 px-2.5 text-xs gap-1"
+            >
+              <X className="h-3 w-3" />
+              Decline
+            </Button>
+          </div>
+        )}
+        {(outgoing || !isPending) && (
+          <div className="pl-4.5">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => deleteRequest(request.id)}
               disabled={updating === request.id}
-              className="gap-1 text-muted-foreground"
+              className="h-6 px-2 text-xs gap-1 text-muted-foreground"
             >
               {updating === request.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3" />
               )}
               Remove
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -231,16 +218,16 @@ export function HangRequests() {
   if (requests.length === 0) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-lg">
-              <Inbox className="h-5 w-5" />
+            <span className="flex items-center gap-2 text-sm">
+              <Inbox className="h-4 w-4" />
               Hang Requests
             </span>
             <ShareDialog
               trigger={
-                <Button size="sm" className="gap-1">
-                  <Plus className="h-4 w-4" />
+                <Button size="sm" className="h-6 px-2 text-xs gap-1">
+                  <Plus className="h-3 w-3" />
                   New
                 </Button>
               }
@@ -248,14 +235,9 @@ export function HangRequests() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <Inbox className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground">No hang requests yet</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">
-              Share your profile to start receiving requests
-            </p>
+          <div className="flex flex-col items-center justify-center py-4 text-center">
+            <Inbox className="h-6 w-6 text-muted-foreground mb-2" />
+            <p className="text-xs text-muted-foreground">No hang requests yet</p>
           </div>
         </CardContent>
       </Card>
@@ -264,33 +246,33 @@ export function HangRequests() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-lg">
-            <Inbox className="h-5 w-5" />
+          <span className="flex items-center gap-2 text-sm">
+            <Inbox className="h-4 w-4" />
             Hang Requests
             {incomingPending.length > 0 && (
-              <Badge variant="default" className="ml-2">
-                {incomingPending.length} new
+              <Badge variant="default" className="text-[10px] px-1.5 py-0">
+                {incomingPending.length}
               </Badge>
             )}
           </span>
           <ShareDialog
             trigger={
-              <Button size="sm" className="gap-1">
-                <Plus className="h-4 w-4" />
+              <Button size="sm" className="h-6 px-2 text-xs gap-1">
+                <Plus className="h-3 w-3" />
                 New
               </Button>
             }
           />
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2.5">
         {/* Incoming pending */}
         {incomingPending.length > 0 && (
-          <div className="space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              <ArrowDownLeft className="h-3 w-3" /> Incoming
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+              <ArrowDownLeft className="h-2.5 w-2.5" /> Incoming
             </p>
             {incomingPending.map(r => renderRequestCard(r, false))}
           </div>
@@ -298,9 +280,9 @@ export function HangRequests() {
 
         {/* Outgoing pending */}
         {outgoingPending.length > 0 && (
-          <div className="space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              <ArrowUpRight className="h-3 w-3" /> Sent
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+              <ArrowUpRight className="h-2.5 w-2.5" /> Sent
             </p>
             {outgoingPending.map(r => renderRequestCard(r, true))}
           </div>
@@ -308,8 +290,8 @@ export function HangRequests() {
 
         {/* Resolved */}
         {resolved.length > 0 && (
-          <div className="space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-2">
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
               Past
             </p>
             {resolved.slice(0, 5).map(r => renderRequestCard(r, isOutgoing(r)))}
