@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export interface Conversation {
   id: string;
@@ -162,13 +163,23 @@ export function useConversations() {
       .select()
       .single();
 
-    if (error || !convo) return null;
+    if (error || !convo) {
+      console.error('Failed to create DM conversation:', error);
+      toast.error('Could not start chat. Please try again.');
+      return null;
+    }
 
     // Add both participants
-    await supabase.from('conversation_participants').insert([
+    const { error: participantsError } = await supabase.from('conversation_participants').insert([
       { conversation_id: convo.id, user_id: user.id },
       { conversation_id: convo.id, user_id: friendUserId },
     ]);
+
+    if (participantsError) {
+      console.error('Failed to add DM participants:', participantsError);
+      toast.error('Could not start chat. Please try again.');
+      return null;
+    }
 
     await fetchConversations();
     return convo.id;
@@ -183,14 +194,24 @@ export function useConversations() {
       .select()
       .single();
 
-    if (error || !convo) return null;
+    if (error || !convo) {
+      console.error('Failed to create group conversation:', error);
+      toast.error('Could not create group chat. Please try again.');
+      return null;
+    }
 
     const participants = [user.id, ...memberUserIds].map(uid => ({
       conversation_id: convo.id,
       user_id: uid,
     }));
 
-    await supabase.from('conversation_participants').insert(participants);
+    const { error: participantsError } = await supabase.from('conversation_participants').insert(participants);
+    if (participantsError) {
+      console.error('Failed to add group participants:', participantsError);
+      toast.error('Could not create group chat. Please try again.');
+      return null;
+    }
+
     await fetchConversations();
     return convo.id;
   }, [user, fetchConversations]);

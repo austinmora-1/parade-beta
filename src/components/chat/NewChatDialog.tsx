@@ -31,8 +31,10 @@ export function NewChatDialog({ onCreateDM, onCreateGroup }: NewChatDialogProps)
 
   const handleDM = async (friendUserId: string) => {
     setCreating(true);
-    await onCreateDM(friendUserId);
-    setOpen(false);
+    const conversationId = await onCreateDM(friendUserId);
+    if (conversationId) {
+      setOpen(false);
+    }
     setCreating(false);
   };
 
@@ -45,12 +47,14 @@ export function NewChatDialog({ onCreateDM, onCreateGroup }: NewChatDialogProps)
   const handleCreateGroup = async () => {
     if (selectedIds.length < 2 || !groupTitle.trim()) return;
     setCreating(true);
-    await onCreateGroup(groupTitle.trim(), selectedIds);
-    setOpen(false);
+    const conversationId = await onCreateGroup(groupTitle.trim(), selectedIds);
+    if (conversationId) {
+      setOpen(false);
+      setMode('pick');
+      setSelectedIds([]);
+      setGroupTitle('');
+    }
     setCreating(false);
-    setMode('pick');
-    setSelectedIds([]);
-    setGroupTitle('');
   };
 
   const reset = () => {
