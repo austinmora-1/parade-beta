@@ -25,7 +25,7 @@ import { DaySummaryDropdown } from './DaySummaryDropdown';
 type ViewMode = 'week' | 'month';
 
 export function AvailabilityGrid() {
-  const { plans, availability, setAvailability } = usePlannerStore();
+  const { plans, availability, setAvailability, homeAddress } = usePlannerStore();
   const isMobile = useIsMobile();
   
   // View mode toggle
@@ -95,7 +95,7 @@ export function AvailabilityGrid() {
     if (dayAvail?.tripLocation) {
       return dayAvail.tripLocation;
     }
-    return undefined;
+    return homeAddress || undefined;
   };
 
   // Calculate day availability percentage (0-1)

@@ -20,6 +20,7 @@ interface PlannerState {
   isLoading: boolean;
   userId: string | null;
   defaultSettings: DefaultAvailabilitySettings | null;
+  homeAddress: string | null;
   
   setUserId: (userId: string | null) => void;
   loadAllData: () => Promise<void>;
@@ -101,6 +102,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   isLoading: true,
   userId: null,
   defaultSettings: null,
+  homeAddress: null,
   
   setUserId: (userId) => set({ userId }),
   
@@ -231,7 +233,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       // Load vibe, location, and default availability settings from profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('current_vibe, location_status, custom_vibe_tags, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes')
+        .select('current_vibe, location_status, custom_vibe_tags, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address')
         .eq('user_id', userId)
         .single();
       
@@ -282,6 +284,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         currentVibe,
         locationStatus: todayLocationStatus,
         defaultSettings,
+        homeAddress: (profile as any)?.home_address || null,
         isLoading: false,
       });
     } catch (error) {
