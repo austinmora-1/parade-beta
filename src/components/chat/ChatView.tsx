@@ -163,7 +163,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       </div>
 
       {/* Input */}
-      <div className="mt-3 flex gap-2 pt-3 border-t border-border">
+      <div className="mt-3 flex gap-2 pt-3 border-t border-border shrink-0">
         <Input
           placeholder="Type a message..."
           value={input}
