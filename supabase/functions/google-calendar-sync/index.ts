@@ -131,6 +131,63 @@ interface CalendarEvent {
   start: { dateTime?: string; date?: string }
   end: { dateTime?: string; date?: string }
 }
+// Classify a calendar event into a Parade activity type based on its title
+function classifyActivity(summary?: string): string {
+  if (!summary) return 'events'
+  const s = summary.toLowerCase()
+
+  // Athletic
+  if (/\b(workout|gym|fitness|yoga|pilates|crossfit|run|running|jog|swim|cycling|bike|hike|hiking|basketball|soccer|football|tennis|climbing|boxing|martial arts|session workout|training|exercise|spin|peloton|lift|weights|stretch|barre)\b/.test(s)) {
+    return 'workout-out'
+  }
+
+  // Food & Drinks
+  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|food|taco|sushi|pizza|bbq|barbecue|cookout|potluck)\b/.test(s)) {
+    return 'getting-food'
+  }
+  if (/\b(drinks|happy hour|bar|cocktail|beer|wine|pub|brewery)\b/.test(s)) {
+    return 'drinks'
+  }
+  if (/\b(coffee|cafe|café|tea|latte|espresso)\b/.test(s)) {
+    return 'coffee'
+  }
+  if (/\b(cook|cooking|bake|baking|recipe|meal prep)\b/.test(s)) {
+    return 'making-food'
+  }
+
+  // Movies & Entertainment
+  if (/\b(movie|cinema|film|screening|theater|theatre|concert|show|gig|performance|comedy)\b/.test(s)) {
+    return 'movies'
+  }
+
+  // Chill / Me-time
+  if (/\b(meditation|spa|massage|self[- ]care|relax|nap|rest day|me time|journal)\b/.test(s)) {
+    return 'me-time'
+  }
+  if (/\b(read|book club|reading|library)\b/.test(s)) {
+    return 'reading'
+  }
+  if (/\b(watch|stream|netflix|hulu|disney|hbo|tv|series|binge)\b/.test(s)) {
+    return 'watching'
+  }
+
+  // Productive
+  if (/\b(doctor|dentist|appointment|checkup|check-up|therapy|therapist|physio|physiotherapy|optometrist|dermatologist|medical|health visit|vet)\b/.test(s)) {
+    return 'doctor'
+  }
+  if (/\b(errand|post office|bank|dmv|pickup|drop off|dry clean|laundromat)\b/.test(s)) {
+    return 'errands'
+  }
+  if (/\b(shop|shopping|mall|store|market|grocery|groceries|costco|target|walmart|ikea)\b/.test(s)) {
+    return 'shopping'
+  }
+  if (/\b(clean|cleaning|chore|chores|laundry|organize|declutter|tidy)\b/.test(s)) {
+    return 'chores'
+  }
+
+  // Default to general events
+  return 'events'
+}
 
 async function handleEventsSync(params: {
   adminClient: any
@@ -262,11 +319,8 @@ async function handleEventsSync(params: {
 
     const hour = event.start.dateTime ? getHourInTimezone(startDate, timezone) : 8
     const timeSlot = getTimeSlot(hour)
-    // Map underscore-based slot names to hyphenated Plan TimeSlot format
     const timeSlotHyphen = timeSlot.replace('_', '-')
 
-    // Use the original dateTime ISO string to preserve timezone info for timestamptz column.
-    // For all-day events, build a noon timestamp in the user's timezone to avoid date shifting.
     const planDate = event.start.dateTime
       ? event.start.dateTime
       : `${event.start.date}T12:00:00`
@@ -274,7 +328,7 @@ async function handleEventsSync(params: {
     planRows.push({
       user_id: userId,
       title: event.summary || 'Gcal imported event',
-      activity: 'events',
+      activity: classifyActivity(event.summary),
       date: planDate,
       time_slot: timeSlotHyphen,
       duration: 1,
