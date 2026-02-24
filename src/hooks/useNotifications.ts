@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,17 +8,33 @@ export function useNotifications() {
   const { user } = useAuth();
   const [pendingHangRequestsCount, setPendingHangRequestsCount] = useState(0);
 
+  const fetchPendingHangs = useCallback(async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from('hang_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    setPendingHangRequestsCount(count ?? 0);
+  }, [user]);
+
+  useEffect(() => {
+    fetchPendingHangs();
+  }, [fetchPendingHangs]);
+
+  // Subscribe to hang_requests changes so the badge updates in real-time
   useEffect(() => {
     if (!user) return;
-    const fetchPendingHangs = async () => {
-      const { count } = await supabase
-        .from('hang_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      setPendingHangRequestsCount(count ?? 0);
-    };
-    fetchPendingHangs();
-  }, [user]);
+    const channel = supabase
+      .channel('hang-requests-notifications')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'hang_requests' },
+        () => { fetchPendingHangs(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchPendingHangs]);
 
   const incomingRequestsCount = useMemo(() => {
     return friends.filter(f => f.status === 'pending' && f.isIncoming).length;
@@ -30,5 +46,6 @@ export function useNotifications() {
     incomingRequestsCount,
     pendingHangRequestsCount,
     totalNotifications,
+    refetchHangRequests: fetchPendingHangs,
   };
 }
