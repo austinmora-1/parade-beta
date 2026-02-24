@@ -272,10 +272,14 @@ Deno.serve(async (req) => {
       accessToken = refreshedToken
     }
 
-    // Fetch calendar events for the next 30 days
+    // Fetch calendar events for the past 3 months and next 3 months
     const now = new Date()
-    const timeMin = now.toISOString()
-    const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    const threeMonthsAgo = new Date(now)
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    const threeMonthsAhead = new Date(now)
+    threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3)
+    const timeMin = threeMonthsAgo.toISOString()
+    const timeMax = threeMonthsAhead.toISOString()
 
     const calendarUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
     calendarUrl.searchParams.set('timeMin', timeMin)
