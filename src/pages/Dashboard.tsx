@@ -7,7 +7,6 @@ import { LocationToggle } from '@/components/dashboard/LocationToggle';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { HangRequests } from '@/components/dashboard/HangRequests';
 import { AvailableFriends } from '@/components/dashboard/AvailableFriends';
-import { WeekendAvailability } from '@/components/dashboard/WeekendAvailability';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -46,8 +45,8 @@ export default function Dashboard() {
       {/* Week Overview */}
       <WeekOverview />
 
-      {/* Weekend Availability */}
-      <WeekendAvailability />
+
+
 
       {/* Vibe & Location Status */}
       <div className="grid gap-4 sm:grid-cols-2">
