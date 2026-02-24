@@ -22,7 +22,7 @@ export function UpcomingPlans() {
   if (upcomingPlans.length === 0) {
     return (
       <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <h3 className="mb-4 font-display text-lg font-semibold">Upcoming Plans</h3>
+        <h3 className="mb-4 font-display text-sm font-semibold">Upcoming Plans</h3>
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <div className="mb-3 text-4xl">📅</div>
           <p className="text-muted-foreground">No upcoming plans this week</p>
@@ -34,7 +34,7 @@ export function UpcomingPlans() {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-      <h3 className="mb-4 font-display text-lg font-semibold">Upcoming Plans</h3>
+      <h3 className="mb-4 font-display text-sm font-semibold">Upcoming Plans</h3>
       
       <div className="space-y-3">
         {upcomingPlans.map((plan) => {

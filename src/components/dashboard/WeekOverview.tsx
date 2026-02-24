@@ -117,7 +117,7 @@ export function WeekOverview() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h3 className="font-display text-base font-semibold min-w-[100px] text-center">
+            <h3 className="font-display text-sm font-semibold min-w-[100px] text-center">
               {getWeekLabel()}
             </h3>
             <Button

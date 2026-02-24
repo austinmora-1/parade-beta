@@ -161,7 +161,7 @@ export function VibeSelector() {
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
       <div className="mb-4 flex items-center gap-2">
-        <h3 className="font-display text-lg font-semibold">Current Vibe</h3>
+        <h3 className="font-display text-sm font-semibold">Current Vibe</h3>
       </div>
 
       {/* Standard vibes - first row */}
