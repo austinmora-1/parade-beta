@@ -217,6 +217,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
               'late-night': existing.late_night ?? true,
             },
             locationStatus: (existing.location_status as LocationStatus) || 'home',
+            tripLocation: existing.trip_location || undefined,
           };
         }
         return createDefaultAvailability(date);
@@ -268,6 +269,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
               'late-night': existing.late_night ?? true,
             },
             locationStatus: (existing.location_status as LocationStatus) || 'home',
+            tripLocation: existing.trip_location || undefined,
           };
         }
         return createDefaultAvailability(date, defaultSettings);

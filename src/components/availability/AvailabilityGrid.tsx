@@ -89,6 +89,15 @@ export function AvailabilityGrid() {
     return 'available';
   };
 
+  // Get trip location for a date if away
+  const getTripLocation = (date: Date): string | undefined => {
+    const dayAvail = availability.find((a) => isSameDay(a.date, date));
+    if (dayAvail?.locationStatus === 'away' && dayAvail?.tripLocation) {
+      return dayAvail.tripLocation;
+    }
+    return undefined;
+  };
+
   // Calculate day availability percentage (0-1)
   const getDayAvailability = (date: Date): number => {
     const slots = Object.keys(TIME_SLOT_LABELS) as TimeSlot[];
@@ -315,16 +324,25 @@ export function AvailabilityGrid() {
       {/* Header */}
       <div className="mb-2 flex items-center justify-between md:mb-6">
         {isMobile ? (
-          <div className="flex items-center gap-2">
-            {viewMode === 'week' ? (
-              <span className="text-sm font-medium">
-                {format(mobileDays[selectedDayIndex], 'EEEE, MMM d')}
-              </span>
-            ) : (
-              <span className="text-sm font-medium">
-                {selectedDate ? format(selectedDate, 'EEEE, MMM d') : format(currentMonth, 'MMMM yyyy')}
-              </span>
-            )}
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              {viewMode === 'week' ? (
+                <span className="text-sm font-medium">
+                  {format(mobileDays[selectedDayIndex], 'EEEE, MMM d')}
+                </span>
+              ) : (
+                <span className="text-sm font-medium">
+                  {selectedDate ? format(selectedDate, 'EEEE, MMM d') : format(currentMonth, 'MMMM yyyy')}
+                </span>
+              )}
+            </div>
+            {(() => {
+              const activeDate = viewMode === 'week' ? mobileDays[selectedDayIndex] : selectedDate;
+              const loc = activeDate ? getTripLocation(activeDate) : undefined;
+              return loc ? (
+                <span className="text-[11px] font-medium text-primary/80">📍 {loc}</span>
+              ) : null;
+            })()}
           </div>
         ) : (
           <h3 className="font-display text-lg font-semibold">
@@ -445,6 +463,11 @@ export function AvailabilityGrid() {
                       >
                         {format(day, 'd')}
                       </div>
+                      {getTripLocation(day) && (
+                        <div className="mt-0.5 text-[10px] font-medium text-primary/80 truncate max-w-[90px]">
+                          📍 {getTripLocation(day)}
+                        </div>
+                      )}
                     </th>
                   ))}
                 </tr>
