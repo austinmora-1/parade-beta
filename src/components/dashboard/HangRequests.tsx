@@ -130,13 +130,13 @@ export function HangRequests() {
     return (
       <div
         key={request.id}
-        className={`rounded-lg border p-2.5 space-y-1.5 ${
+        className={`group rounded-lg border p-2.5 space-y-1.5 ${
           isPending && !outgoing
             ? 'border-primary/20 bg-primary/5'
             : 'border-border bg-card'
         }`}
       >
-        {/* Row 1: Name + date/time + status */}
+        {/* Row 1: Name + date/time + status + dismiss */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             {outgoing ? (
@@ -151,10 +151,21 @@ export function HangRequests() {
               {format(parseISO(request.selected_day), 'MMM d')} · {TIME_SLOT_SHORT[request.selected_slot] || request.selected_slot}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <Badge variant={statusConf.variant} className="text-[10px] px-1.5 py-0">
               {statusConf.label}
             </Badge>
+            <button
+              onClick={() => deleteRequest(request.id)}
+              disabled={updating === request.id}
+              className="opacity-0 group-hover:opacity-100 transition-opacity h-4 w-4 rounded flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground"
+            >
+              {updating === request.id ? (
+                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              ) : (
+                <X className="h-2.5 w-2.5" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -165,7 +176,7 @@ export function HangRequests() {
           </p>
         )}
 
-        {/* Row 3: Actions (compact) */}
+        {/* Row 3: Accept/Decline for incoming pending only */}
         {!outgoing && isPending && (
           <div className="flex gap-1.5 pl-4.5">
             <Button
@@ -190,24 +201,6 @@ export function HangRequests() {
             >
               <X className="h-3 w-3" />
               Decline
-            </Button>
-          </div>
-        )}
-        {(outgoing || !isPending) && (
-          <div className="pl-4.5">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => deleteRequest(request.id)}
-              disabled={updating === request.id}
-              className="h-6 px-2 text-xs gap-1 text-muted-foreground"
-            >
-              {updating === request.id ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <X className="h-3 w-3" />
-              )}
-              Remove
             </Button>
           </div>
         )}
