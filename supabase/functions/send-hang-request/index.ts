@@ -164,6 +164,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from("hang_requests")
       .insert({
         user_id: profile.user_id,
+        sender_id: authenticatedUserId,
         share_code: shareCode,
         requester_name: requesterName,
         message: message || null,

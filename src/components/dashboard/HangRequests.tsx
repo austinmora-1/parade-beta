@@ -12,6 +12,7 @@ import { ShareDialog } from './ShareDialog';
 interface HangRequest {
   id: string;
   user_id: string;
+  sender_id: string | null;
   requester_name: string;
   requester_email: string | null;
   message: string | null;
@@ -74,7 +75,7 @@ export function HangRequests() {
     setLoading(false);
   };
 
-  const isOutgoing = (request: HangRequest) => request.user_id === user?.id;
+  const isOutgoing = (request: HangRequest) => request.sender_id === user?.id;
 
   const updateStatus = async (id: string, status: 'accepted' | 'declined') => {
     setUpdating(id);
