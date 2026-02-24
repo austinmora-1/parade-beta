@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { WeekOverview } from '@/components/dashboard/WeekOverview';
@@ -7,12 +8,14 @@ import { LocationToggle } from '@/components/dashboard/LocationToggle';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { HangRequests } from '@/components/dashboard/HangRequests';
 import { AvailableFriends } from '@/components/dashboard/AvailableFriends';
+import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -32,14 +35,14 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           <ShareDialog />
-          <Link to="/plans">
-            <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2" onClick={() => setCreatePlanOpen(true)}>
               <Plus className="h-4 w-4" />
               New Plan
             </Button>
-          </Link>
         </div>
       </div>
+
+      <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
 
       {/* Week Overview */}
       <WeekOverview />
