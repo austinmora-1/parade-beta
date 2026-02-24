@@ -340,7 +340,7 @@ export function AvailabilityGrid() {
               const activeDate = viewMode === 'week' ? mobileDays[selectedDayIndex] : selectedDate;
               const loc = activeDate ? getTripLocation(activeDate) : undefined;
               return loc ? (
-                <span className="text-[11px] font-medium text-primary/80">📍 {loc}</span>
+                <span className="text-[11px] font-medium text-muted-foreground">{loc}</span>
               ) : null;
             })()}
           </div>
@@ -464,8 +464,8 @@ export function AvailabilityGrid() {
                         {format(day, 'd')}
                       </div>
                       {getTripLocation(day) && (
-                        <div className="mt-0.5 text-[10px] font-medium text-primary/80 truncate max-w-[90px]">
-                          📍 {getTripLocation(day)}
+                        <div className="mt-0.5 text-[10px] font-medium text-muted-foreground truncate max-w-[90px]">
+                          {getTripLocation(day)}
                         </div>
                       )}
                     </th>
