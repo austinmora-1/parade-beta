@@ -23,6 +23,8 @@ export type ActivityType =
   | 'errands'
   | 'shopping'
   | 'doctor'
+  // Travel
+  | 'flight'
   // Custom (placeholder for user-defined)
   | 'custom';
 
@@ -118,7 +120,7 @@ export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color:
   custom: { label: 'Custom', icon: '✨', color: 'primary', description: 'Your own vibe' },
 };
 
-import { Wine, Utensils, Coffee, PartyPopper, Clapperboard, Sparkles, Flower2, BookOpen, Tv, ChefHat, Home, Dumbbell, Brush, Footprints, ShoppingBag, Stethoscope } from 'lucide-react';
+import { Wine, Utensils, Coffee, PartyPopper, Clapperboard, Sparkles, Flower2, BookOpen, Tv, ChefHat, Home, Dumbbell, Brush, Footprints, ShoppingBag, Stethoscope, Plane } from 'lucide-react';
 
 export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   // Social activities
@@ -141,6 +143,8 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   'errands': { label: 'Errands', icon: '🏃', lucideIcon: Footprints, color: 'activity-errands', vibeType: 'productive' },
   'shopping': { label: 'Shopping', icon: '🛍️', lucideIcon: ShoppingBag, color: 'activity-shopping', vibeType: 'productive' },
   'doctor': { label: 'Appointment', icon: '🏥', lucideIcon: Stethoscope, color: 'activity-doctor', vibeType: 'productive' },
+  // Travel
+  'flight': { label: 'Flight', icon: '✈️', lucideIcon: Plane, color: 'activity-events', vibeType: 'social' },
   // Custom placeholder (not used directly, for type safety)
   'custom': { label: 'Custom', icon: '✨', lucideIcon: Sparkles, color: 'primary', vibeType: 'social' },
 };
