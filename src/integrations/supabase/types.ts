@@ -171,6 +171,7 @@ export type Database = {
           requester_name: string
           selected_day: string
           selected_slot: string
+          sender_id: string | null
           share_code: string
           status: string
           updated_at: string
@@ -183,6 +184,7 @@ export type Database = {
           requester_name: string
           selected_day: string
           selected_slot: string
+          sender_id?: string | null
           share_code: string
           status?: string
           updated_at?: string
@@ -195,6 +197,7 @@ export type Database = {
           requester_name?: string
           selected_day?: string
           selected_slot?: string
+          sender_id?: string | null
           share_code?: string
           status?: string
           updated_at?: string
