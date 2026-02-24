@@ -106,9 +106,10 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
             <p className="mt-1 text-xs text-muted-foreground/70">Say hello! 👋</p>
           </div>
         ) : (
-          messages.map(msg => {
+          messages.map((msg, idx) => {
             const isMe = msg.sender_id === user?.id;
             const sender = participantMap.get(msg.sender_id);
+            const isLastMessage = idx === messages.length - 1;
 
             return (
               <div
@@ -139,21 +140,23 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                   >
                     {msg.content}
                   </div>
-                  <div className={cn(
-                    "mt-0.5 flex items-center gap-1",
-                    isMe ? "justify-end mr-1" : "ml-1"
-                  )}>
-                    <span className="text-[10px] text-muted-foreground/60">
-                      {formatMsgTime(msg.created_at)}
-                    </span>
-                    {isMe && (
-                      lastSeenMsgId === msg.id ? (
-                        <CheckCheck className="h-3 w-3 text-primary" />
-                      ) : (
-                        <Check className="h-3 w-3 text-muted-foreground/40" />
-                      )
-                    )}
-                  </div>
+                  {isLastMessage && (
+                    <div className={cn(
+                      "mt-0.5 flex items-center gap-1",
+                      isMe ? "justify-end mr-1" : "ml-1"
+                    )}>
+                      <span className="text-[10px] text-muted-foreground/60">
+                        {formatMsgTime(msg.created_at)}
+                      </span>
+                      {isMe && (
+                        lastSeenMsgId === msg.id ? (
+                          <CheckCheck className="h-3 w-3 text-primary" />
+                        ) : (
+                          <Check className="h-3 w-3 text-muted-foreground/40" />
+                        )
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
