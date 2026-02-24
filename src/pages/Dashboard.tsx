@@ -46,6 +46,9 @@ export default function Dashboard() {
       {/* Week Overview */}
       <WeekOverview />
 
+      {/* Weekend Availability */}
+      <WeekendAvailability />
+
       {/* Vibe & Location Status */}
       <div className="grid gap-4 sm:grid-cols-2">
         <VibeSelector />
@@ -57,9 +60,6 @@ export default function Dashboard() {
         <AvailableFriends />
         <HangRequests />
       </div>
-
-      {/* Weekend Availability */}
-      <WeekendAvailability />
 
       {/* Quick Stats */}
       <QuickStats />

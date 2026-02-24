@@ -5,7 +5,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Home, Plane } from 'lucide-react';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning',
@@ -17,7 +17,7 @@ const TIME_SLOT_ORDER: TimeSlot[] = [
 ];
 
 export function WeekendAvailability() {
-  const { plans, availability } = usePlannerStore();
+  const { plans, availability, homeAddress } = usePlannerStore();
 
   const weekendDays = useMemo(() => {
     const start = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -40,6 +40,10 @@ export function WeekendAvailability() {
     return plans.filter((p) => isSameDay(p.date, date) && p.timeSlot === slot);
   };
 
+  const getDayAvailability = (date: Date) => {
+    return availability.find((a) => isSameDay(a.date, date));
+  };
+
   return (
     <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-soft">
       <div className="flex items-center justify-between mb-4">
@@ -55,8 +59,13 @@ export function WeekendAvailability() {
       <div className="grid grid-cols-2 gap-3 md:gap-4">
         {weekendDays.map((day) => {
           const isToday = isSameDay(day, new Date());
+          const dayAvail = getDayAvailability(day);
+          const isAway = dayAvail?.locationStatus === 'away';
+          const locationLabel = dayAvail?.tripLocation || homeAddress || undefined;
+
           return (
             <div key={day.toISOString()} className="space-y-2">
+              {/* Day header */}
               <div className="flex items-center gap-2">
                 <span className={cn(
                   "text-sm font-semibold",
@@ -74,6 +83,19 @@ export function WeekendAvailability() {
                 )}
               </div>
 
+              {/* Location status */}
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                {isAway ? (
+                  <Plane className="h-3 w-3 shrink-0" />
+                ) : (
+                  <Home className="h-3 w-3 shrink-0" />
+                )}
+                <span className="truncate">
+                  {isAway ? (locationLabel || 'Away') : (locationLabel || 'Home')}
+                </span>
+              </div>
+
+              {/* Time slots */}
               <div className="space-y-1">
                 {TIME_SLOT_ORDER.map((slot) => {
                   const status = getSlotStatus(day, slot);
