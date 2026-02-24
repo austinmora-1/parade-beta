@@ -21,7 +21,6 @@ export function useNotifications() {
     fetchPendingHangs();
   }, [fetchPendingHangs]);
 
-  // Subscribe to hang_requests changes so the badge updates in real-time
   useEffect(() => {
     if (!user) return;
     const channel = supabase
