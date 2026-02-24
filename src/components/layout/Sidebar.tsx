@@ -18,7 +18,7 @@ const navItems = [
   { path: '/plans', icon: Calendar, label: 'Plans' },
   { path: '/availability', icon: Clock, label: 'Availability' },
   { path: '/friends', icon: Users, label: 'Friends' },
-  { path: '/chat', icon: MessageCircle, label: 'Chat with Elly' },
+  { path: '/chat', icon: MessageCircle, label: 'Messages' },
 ];
 
 export function Sidebar() {
@@ -76,11 +76,6 @@ export function Sidebar() {
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
-                {item.path === '/chat' && (
-                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary-foreground/20 text-xs">
-                    ✨
-                  </span>
-                )}
               </NavLink>
             );
           })}
