@@ -72,6 +72,7 @@ export interface DayAvailability {
   };
   locationStatus: LocationStatus;
   customLocation?: Location;
+  tripLocation?: string;
 }
 
 export interface UserProfile {
