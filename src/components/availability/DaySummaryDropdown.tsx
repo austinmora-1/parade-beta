@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { X, Home, Plane, Plus, Pencil, Trash2 } from 'lucide-react';
+import { X, Home, Plane, Plus, Pencil, Trash2, CalendarDays } from 'lucide-react';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '@/types/planner';
@@ -194,7 +195,11 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                   key={plan.id}
                   className="flex items-center gap-2 rounded bg-muted/50 px-2 py-1 group"
                 >
-                  <span className="text-sm">{activityConfig?.icon || '📅'}</span>
+                  {activityConfig ? (
+                    <ActivityIcon config={activityConfig} size={14} />
+                  ) : (
+                    <CalendarDays className="h-3.5 w-3.5" />
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{plan.title}</p>
                     <p className="text-[10px] text-muted-foreground">{slotLabel?.time}</p>
