@@ -166,7 +166,7 @@ export function WeekOverview() {
         )}
       </div>
 
-      <div className="grid grid-cols-7 gap-2 md:gap-4">
+      <div className="grid grid-cols-7 gap-1.5 md:gap-2">
         {weekDays.map((day) => {
           const score = getDayAvailabilityScore(day);
           const isToday = isSameDay(day, new Date());
