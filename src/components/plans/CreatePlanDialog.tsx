@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, MapPin, Users, Clock, Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -267,7 +268,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
                         : "border-transparent bg-muted/50 hover:bg-muted"
                     )}
                   >
-                    <span className="text-base">{config.icon}</span>
+                    <ActivityIcon config={config} size={18} />
                     <span className="text-[8px] font-medium leading-tight text-center line-clamp-1">{config.label}</span>
                   </button>
                 );

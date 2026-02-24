@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, MoreVertical, Trash2, Edit } from 'lucide-react';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +29,7 @@ export function PlanCard({ plan, onEdit, onDelete, compact = false }: PlanCardPr
         style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
       >
         <div className="flex items-center gap-1">
-          <span>{activityConfig.icon}</span>
+          <ActivityIcon config={activityConfig} size={14} />
           <span className="truncate font-medium">{plan.title}</span>
         </div>
       </div>
@@ -47,7 +48,7 @@ export function PlanCard({ plan, onEdit, onDelete, compact = false }: PlanCardPr
             className="flex h-14 w-14 items-center justify-center rounded-xl text-3xl"
             style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
           >
-            {activityConfig.icon}
+            <ActivityIcon config={activityConfig} size={28} />
           </div>
           <div>
             <h3 className="font-display text-lg font-semibold">{plan.title}</h3>

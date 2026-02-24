@@ -4,6 +4,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock } from 'lucide-react';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
 
 export function UpcomingPlans() {
   const { plans } = usePlannerStore();
@@ -51,7 +52,7 @@ export function UpcomingPlans() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex gap-3">
-                  <span className="text-2xl">{activityConfig.icon}</span>
+                  <ActivityIcon config={activityConfig} size={24} />
                   <div>
                     <h4 className="font-medium">{plan.title}</h4>
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
