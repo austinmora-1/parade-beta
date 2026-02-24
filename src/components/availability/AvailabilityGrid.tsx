@@ -89,10 +89,10 @@ export function AvailabilityGrid() {
     return 'available';
   };
 
-  // Get trip location for a date if away
-  const getTripLocation = (date: Date): string | undefined => {
+  // Get location text for a date
+  const getLocationText = (date: Date): string | undefined => {
     const dayAvail = availability.find((a) => isSameDay(a.date, date));
-    if (dayAvail?.locationStatus === 'away' && dayAvail?.tripLocation) {
+    if (dayAvail?.tripLocation) {
       return dayAvail.tripLocation;
     }
     return undefined;
@@ -338,7 +338,7 @@ export function AvailabilityGrid() {
             </div>
             {(() => {
               const activeDate = viewMode === 'week' ? mobileDays[selectedDayIndex] : selectedDate;
-              const loc = activeDate ? getTripLocation(activeDate) : undefined;
+              const loc = activeDate ? getLocationText(activeDate) : undefined;
               return loc ? (
                 <span className="text-[11px] font-medium text-muted-foreground">{loc}</span>
               ) : null;
@@ -463,9 +463,9 @@ export function AvailabilityGrid() {
                       >
                         {format(day, 'd')}
                       </div>
-                      {getTripLocation(day) && (
+                      {getLocationText(day) && (
                         <div className="mt-0.5 text-[10px] font-medium text-muted-foreground truncate max-w-[90px]">
-                          {getTripLocation(day)}
+                          {getLocationText(day)}
                         </div>
                       )}
                     </th>
