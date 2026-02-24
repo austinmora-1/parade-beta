@@ -177,26 +177,22 @@ export function WeekOverview() {
             <Popover key={day.toISOString()}>
               <PopoverTrigger asChild>
                 <button
-                  className="flex flex-col items-center rounded-xl p-2 transition-all duration-200 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className={cn(
+                    "relative flex flex-col items-center justify-center aspect-square rounded-xl p-2 transition-all duration-200 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    getDayBgColor(score, isToday)
+                  )}
                 >
-                  <span className="text-xs font-medium text-muted-foreground mb-1">
+                  {planCount > 0 && (
+                    <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium bg-primary text-primary-foreground">
+                      {planCount}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-medium opacity-70">
                     {format(day, 'EEE')}
                   </span>
-                  
-                  <div className="relative">
-                    <span className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
-                      getDayBgColor(score, isToday)
-                    )}>
-                      {format(day, 'd')}
-                    </span>
-                    
-                    {planCount > 0 && (
-                      <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium bg-primary text-primary-foreground">
-                        {planCount}
-                      </span>
-                    )}
-                  </div>
+                  <span className="text-sm font-semibold">
+                    {format(day, 'd')}
+                  </span>
                 </button>
               </PopoverTrigger>
               <PopoverContent 
