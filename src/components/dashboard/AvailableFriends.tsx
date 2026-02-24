@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { isSameDay, format, addDays, startOfWeek } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -19,6 +19,21 @@ const TIME_SLOT_ORDER: TimeSlot[] = [
   'late-afternoon', 'evening', 'late-night',
 ];
 
+// DB columns use underscores, app uses hyphens
+const SLOT_TO_DB_COL: Record<TimeSlot, string> = {
+  'early-morning': 'early_morning',
+  'late-morning': 'late_morning',
+  'early-afternoon': 'early_afternoon',
+  'late-afternoon': 'late_afternoon',
+  'evening': 'evening',
+  'late-night': 'late_night',
+};
+
+interface FriendAvailDay {
+  date: string;
+  slots: Record<TimeSlot, boolean>;
+}
+
 export function AvailableFriends() {
   const { friends, availability } = usePlannerStore();
   const { user } = useAuth();
@@ -27,12 +42,48 @@ export function AvailableFriends() {
   const [selectedSlot, setSelectedSlot] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [friendAvail, setFriendAvail] = useState<FriendAvailDay[]>([]);
+  const [loadingAvail, setLoadingAvail] = useState(false);
 
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected');
   }, [friends]);
 
   const availableFriends = connectedFriends.slice(0, 4);
+
+  // Fetch friend's availability when dialog opens
+  useEffect(() => {
+    if (!selectedFriend?.friendUserId) {
+      setFriendAvail([]);
+      return;
+    }
+
+    const fetchAvail = async () => {
+      setLoadingAvail(true);
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const weekOut = format(addDays(new Date(), 7), 'yyyy-MM-dd');
+
+      const { data, error } = await supabase
+        .from('availability')
+        .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+        .eq('user_id', selectedFriend.friendUserId!)
+        .gte('date', today)
+        .lte('date', weekOut);
+
+      if (!error && data) {
+        const mapped: FriendAvailDay[] = data.map((row: any) => ({
+          date: row.date,
+          slots: Object.fromEntries(
+            TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot]] !== false])
+          ) as Record<TimeSlot, boolean>,
+        }));
+        setFriendAvail(mapped);
+      }
+      setLoadingAvail(false);
+    };
+
+    fetchAvail();
+  }, [selectedFriend]);
 
   // Generate next 7 days for day picker
   const nextDays = useMemo(() => {
@@ -48,6 +99,30 @@ export function AvailableFriends() {
     }
     return days;
   }, []);
+
+  // Filter days to only those with at least one available slot
+  const availableDays = useMemo(() => {
+    return nextDays.filter(d => {
+      const avail = friendAvail.find(a => a.date === d.value);
+      if (!avail) return true;
+      return TIME_SLOT_ORDER.some(slot => avail.slots[slot]);
+    });
+  }, [nextDays, friendAvail]);
+
+  // Filter slots for selected day
+  const availableSlots = useMemo(() => {
+    if (!selectedDay) return TIME_SLOT_ORDER;
+    const avail = friendAvail.find(a => a.date === selectedDay);
+    if (!avail) return TIME_SLOT_ORDER;
+    return TIME_SLOT_ORDER.filter(slot => avail.slots[slot]);
+  }, [selectedDay, friendAvail]);
+
+  // Reset slot when day changes and slot is no longer available
+  useEffect(() => {
+    if (selectedSlot && !availableSlots.includes(selectedSlot as TimeSlot)) {
+      setSelectedSlot('');
+    }
+  }, [availableSlots, selectedSlot]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -229,56 +304,68 @@ export function AvailableFriends() {
           </DialogHeader>
 
           <div className="space-y-3 pt-1">
-            <Select value={selectedDay} onValueChange={setSelectedDay}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Pick a day" />
-              </SelectTrigger>
-              <SelectContent>
-                {nextDays.map((d) => (
-                  <SelectItem key={d.value} value={d.value} className="text-sm">
-                    {d.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {loadingAvail ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : availableDays.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                {selectedFriend?.name} has no availability this week
+              </p>
+            ) : (
+              <>
+                <Select value={selectedDay} onValueChange={setSelectedDay}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Pick a day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableDays.map((d) => (
+                      <SelectItem key={d.value} value={d.value} className="text-sm">
+                        {d.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select value={selectedSlot} onValueChange={setSelectedSlot}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Pick a time" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_SLOT_ORDER.map((slot) => {
-                  const info = TIME_SLOT_LABELS[slot];
-                  return (
-                    <SelectItem key={slot} value={slot} className="text-sm">
-                      {info.label} ({info.time})
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+                <Select value={selectedSlot} onValueChange={setSelectedSlot} disabled={!selectedDay}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder={selectedDay ? "Pick a time" : "Select a day first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSlots.map((slot) => {
+                      const info = TIME_SLOT_LABELS[slot];
+                      return (
+                        <SelectItem key={slot} value={slot} className="text-sm">
+                          {info.label} ({info.time})
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
 
-            <Textarea
-              placeholder="Add a message (optional)"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="resize-none text-sm min-h-[60px]"
-              rows={2}
-            />
+                <Textarea
+                  placeholder="Add a message (optional)"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="resize-none text-sm min-h-[60px]"
+                  rows={2}
+                />
 
-            <Button
-              onClick={handleSendHangRequest}
-              disabled={!selectedDay || !selectedSlot || sending}
-              className="w-full gap-2"
-              size="sm"
-            >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              Send Hang Request
-            </Button>
+                <Button
+                  onClick={handleSendHangRequest}
+                  disabled={!selectedDay || !selectedSlot || sending}
+                  className="w-full gap-2"
+                  size="sm"
+                >
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Send Hang Request
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
