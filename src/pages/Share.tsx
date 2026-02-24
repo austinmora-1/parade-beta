@@ -203,8 +203,10 @@ export default function Share() {
           requesterName: requesterName.trim(),
           requesterEmail: requesterEmail.trim() || undefined,
           message: requestMessage.trim() || undefined,
-          selectedDay: selectedSlot.dayLabel,
-          selectedSlot: selectedSlot.slotLabel,
+          selectedDay: format(selectedSlot.day, 'yyyy-MM-dd'),
+          selectedDayLabel: selectedSlot.dayLabel,
+          selectedSlot: selectedSlot.slot,
+          selectedSlotLabel: selectedSlot.slotLabel,
         },
       });
 

@@ -15,8 +15,10 @@ interface HangRequestPayload {
   requesterEmail?: string;
   requesterUserId?: string;
   message?: string;
-  selectedDay: string;
-  selectedSlot: string;
+  selectedDay: string;        // yyyy-MM-dd for DB
+  selectedDayLabel?: string;  // human-readable for email
+  selectedSlot: string;       // slot key for DB
+  selectedSlotLabel?: string; // human-readable for email
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -55,7 +57,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Authenticated user sending hang request:', authenticatedUserId);
 
     const payload: HangRequestPayload = await req.json();
-    const { shareCode, requesterName, requesterEmail, requesterUserId, message, selectedDay, selectedSlot } = payload;
+    const { shareCode, requesterName, requesterEmail, requesterUserId, message, selectedDay, selectedDayLabel, selectedSlot, selectedSlotLabel } = payload;
 
     // Ensure the requesterUserId matches the authenticated user if provided
     if (requesterUserId && requesterUserId !== authenticatedUserId) {
@@ -237,7 +239,7 @@ const handler = async (req: Request): Promise<Response> => {
                             <td style="font-size: 20px; padding-right: 12px; vertical-align: top;">📅</td>
                             <td>
                               <div style="font-size: 14px; color: #999; margin-bottom: 2px;">When</div>
-                              <div style="font-size: 16px; font-weight: 500; color: #1a1a1a;">${selectedDay} - ${selectedSlot}</div>
+                              <div style="font-size: 16px; font-weight: 500; color: #1a1a1a;">${selectedDayLabel || selectedDay} - ${selectedSlotLabel || selectedSlot}</div>
                             </td>
                           </tr>
                         </table>
@@ -281,7 +283,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
                 
                 ${requesterEmail ? `
-                <a href="mailto:${requesterEmail}?subject=Let's hang out!&body=Hey ${requesterName}! I got your request to hang out on ${selectedDay}. Let's make it happen!" 
+                <a href="mailto:${requesterEmail}?subject=Let's hang out!&body=Hey ${requesterName}! I got your request to hang out on ${selectedDayLabel || selectedDay}. Let's make it happen!" 
                    style="display: block; width: 100%; padding: 16px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; text-align: center; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; box-sizing: border-box;">
                   Reply to ${requesterName}
                 </a>
@@ -299,7 +301,7 @@ const handler = async (req: Request): Promise<Response> => {
           </body>
           </html>
         `,
-        text: `Hey ${userName}! ${requesterName} saw your availability and wants to make plans!\n\nWhen: ${selectedDay} - ${selectedSlot}\n${requesterEmail ? `Reply to: ${requesterEmail}\n` : ''}${message ? `Message: ${message}\n` : ''}\n\nSent from Parade - helloparade.app`,
+        text: `Hey ${userName}! ${requesterName} saw your availability and wants to make plans!\n\nWhen: ${selectedDayLabel || selectedDay} - ${selectedSlotLabel || selectedSlot}\n${requesterEmail ? `Reply to: ${requesterEmail}\n` : ''}${message ? `Message: ${message}\n` : ''}\n\nSent from Parade - helloparade.app`,
       }),
     });
 
