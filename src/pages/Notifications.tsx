@@ -3,6 +3,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,7 @@ export default function Notifications() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { refetchHangRequests } = useNotifications();
 
   // Hang requests state
   const [hangRequests, setHangRequests] = useState<HangRequest[]>([]);
@@ -53,6 +55,7 @@ export default function Notifications() {
       .from('hang_requests')
       .select('*')
       .eq('status', 'pending')
+      .eq('user_id', user?.id)
       .order('created_at', { ascending: false });
 
     const { data: emails } = await supabase
@@ -72,6 +75,7 @@ export default function Notifications() {
     } else {
       sonnerToast.success(status === 'accepted' ? 'Request accepted!' : 'Request declined');
       setHangRequests(prev => prev.filter(r => r.id !== id));
+      await refetchHangRequests();
     }
     setUpdating(null);
   };

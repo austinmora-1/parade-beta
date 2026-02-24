@@ -13,7 +13,8 @@ export function useNotifications() {
     const { count } = await supabase
       .from('hang_requests')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .eq('user_id', user.id);
     setPendingHangRequestsCount(count ?? 0);
   }, [user]);
 
@@ -27,7 +28,7 @@ export function useNotifications() {
       .channel('hang-requests-notifications')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'hang_requests' },
+        { event: '*', schema: 'public', table: 'hang_requests', filter: `user_id=eq.${user.id}` },
         () => { fetchPendingHangs(); }
       )
       .subscribe();
