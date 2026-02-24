@@ -132,9 +132,13 @@ interface CalendarEvent {
   end: { dateTime?: string; date?: string }
 }
 // Classify a calendar event into a Parade activity type based on its title
-function classifyActivity(summary?: string): string {
+function classifyActivity(summary?: string, isFlight = false): string {
+  if (isFlight) return 'flight'
   if (!summary) return 'events'
   const s = summary.toLowerCase()
+
+  // Flights
+  if (/\bflight\b/.test(s)) return 'flight'
 
   // Athletic
   if (/\b(workout|gym|fitness|yoga|pilates|crossfit|run|running|jog|swim|cycling|bike|hike|hiking|basketball|soccer|football|tennis|climbing|boxing|martial arts|session workout|training|exercise|spin|peloton|lift|weights|stretch|barre)\b/.test(s)) {
@@ -328,7 +332,7 @@ async function handleEventsSync(params: {
     planRows.push({
       user_id: userId,
       title: event.summary || 'Gcal imported event',
-      activity: classifyActivity(event.summary),
+      activity: classifyActivity(event.summary, isFlightEvent(event)),
       date: planDate,
       time_slot: timeSlotHyphen,
       duration: 1,
