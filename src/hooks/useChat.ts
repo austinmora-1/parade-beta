@@ -219,14 +219,21 @@ export function useConversations() {
   return { conversations, loading, fetchConversations, createDM, createGroup };
 }
 
+export interface ReadReceipt {
+  user_id: string;
+  last_read_at: string;
+}
+
 export function useChatMessages(conversationId: string | null) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [readReceipts, setReadReceipts] = useState<ReadReceipt[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!conversationId) {
       setMessages([]);
+      setReadReceipts([]);
       setLoading(false);
       return;
     }
@@ -251,10 +258,21 @@ export function useChatMessages(conversationId: string | null) {
       }
     };
 
-    fetchMessages();
+    const fetchReadReceipts = async () => {
+      const { data } = await supabase
+        .from('conversation_participants')
+        .select('user_id, last_read_at')
+        .eq('conversation_id', conversationId);
+      if (data) {
+        setReadReceipts(data.filter(r => r.user_id !== user?.id));
+      }
+    };
 
-    // Real-time subscription
-    const channel = supabase
+    fetchMessages();
+    fetchReadReceipts();
+
+    // Real-time subscription for new messages
+    const msgChannel = supabase
       .channel(`chat:${conversationId}`)
       .on(
         'postgres_changes',
@@ -281,8 +299,32 @@ export function useChatMessages(conversationId: string | null) {
       )
       .subscribe();
 
+    // Real-time subscription for read receipt updates
+    const receiptChannel = supabase
+      .channel(`receipts:${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversation_participants',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as { user_id: string; last_read_at: string };
+          if (updated.user_id !== user?.id) {
+            setReadReceipts(prev => {
+              const existing = prev.filter(r => r.user_id !== updated.user_id);
+              return [...existing, { user_id: updated.user_id, last_read_at: updated.last_read_at }];
+            });
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(msgChannel);
+      supabase.removeChannel(receiptChannel);
     };
   }, [conversationId, user]);
 
@@ -296,5 +338,5 @@ export function useChatMessages(conversationId: string | null) {
     });
   }, [conversationId, user]);
 
-  return { messages, loading, sendMessage };
+  return { messages, loading, sendMessage, readReceipts };
 }

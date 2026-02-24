@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, ArrowLeft, Users } from 'lucide-react';
+import { Send, ArrowLeft, Users, Check, CheckCheck } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -15,7 +15,7 @@ interface ChatViewProps {
 
 export function ChatView({ conversation, onBack }: ChatViewProps) {
   const { user } = useAuth();
-  const { messages, loading, sendMessage } = useChatMessages(conversation.id);
+  const { messages, loading, sendMessage, readReceipts } = useChatMessages(conversation.id);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +52,22 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     if (isYesterday(d)) return 'Yesterday ' + format(d, 'h:mm a');
     return format(d, 'MMM d, h:mm a');
   };
+
+  // Determine if a sent message has been seen by other participants
+  const isSeenByOthers = (msgCreatedAt: string) => {
+    return readReceipts.some(r => new Date(r.last_read_at) >= new Date(msgCreatedAt));
+  };
+
+  // Find the last message sent by current user to show the read receipt on
+  const myMessages = messages.filter(m => m.sender_id === user?.id);
+  const lastSeenMsgId = (() => {
+    for (let i = myMessages.length - 1; i >= 0; i--) {
+      if (isSeenByOthers(myMessages[i].created_at)) {
+        return myMessages[i].id;
+      }
+    }
+    return null;
+  })();
 
   return (
     <div className="flex h-full flex-col">
@@ -123,12 +139,21 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                   >
                     {msg.content}
                   </div>
-                  <p className={cn(
-                    "mt-0.5 text-[10px] text-muted-foreground/60",
-                    isMe ? "text-right mr-1" : "ml-1"
+                  <div className={cn(
+                    "mt-0.5 flex items-center gap-1",
+                    isMe ? "justify-end mr-1" : "ml-1"
                   )}>
-                    {formatMsgTime(msg.created_at)}
-                  </p>
+                    <span className="text-[10px] text-muted-foreground/60">
+                      {formatMsgTime(msg.created_at)}
+                    </span>
+                    {isMe && (
+                      lastSeenMsgId === msg.id ? (
+                        <CheckCheck className="h-3 w-3 text-primary" />
+                      ) : (
+                        <Check className="h-3 w-3 text-muted-foreground/40" />
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
             );
