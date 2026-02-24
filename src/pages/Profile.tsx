@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { format, isPast, isSameDay } from 'date-fns';
+import { format, isPast, isSameDay, isAfter } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   MapPin, 
   Calendar, 
@@ -15,7 +16,9 @@ import {
   Camera,
   Pencil,
   Check,
-  X
+  X,
+  ChevronDown,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
@@ -25,6 +28,7 @@ import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { toast } from 'sonner';
 import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
 import { LocationTimeline } from '@/components/profile/LocationTimeline';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
 
 interface ProfileData {
   display_name: string | null;
@@ -337,7 +341,16 @@ export default function Profile() {
       return isPast(plan.date) && !isSameDay(plan.date, new Date()) && activityConfig?.vibeType === 'social';
     })
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .slice(0, 10); // Show last 10 hangouts
+    .slice(0, 10);
+
+  // Get upcoming plans
+  const upcomingPlans = plans
+    .filter(plan => isAfter(plan.date, new Date()) || isSameDay(plan.date, new Date()))
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(0, 5);
+
+  const [hangoutsOpen, setHangoutsOpen] = useState(true);
+  const [upcomingOpen, setUpcomingOpen] = useState(true);
 
   // Get connected friends count
   const connectedFriendsCount = friends.filter(f => f.status === 'connected').length;
@@ -585,72 +598,149 @@ export default function Profile() {
       {/* Location Timeline */}
       <LocationTimeline />
 
-      {/* Hangout History */}
-      <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <h2 className="font-display text-lg font-semibold">Hangout History</h2>
-          </div>
-          <Link to="/plans">
-            <Button variant="ghost" size="sm">View All</Button>
-          </Link>
-        </div>
-
-        {pastPlans.length > 0 ? (
-          <div className="space-y-2">
-            {pastPlans.map((plan) => {
-              const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
-              return (
-                <div
-                  key={plan.id}
-                  className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
-                >
-                  <div 
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"
-                    style={{ backgroundColor: activityConfig ? `hsl(var(--${activityConfig.color}) / 0.2)` : 'hsl(var(--muted))' }}
-                  >
-                    {activityConfig?.icon || '📅'}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{plan.title}</p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                      <span>{format(plan.date, 'MMM d, yyyy')}</span>
-                      <span>•</span>
-                      <span>{TIME_SLOT_LABELS[plan.timeSlot as TimeSlot]?.label || plan.timeSlot}</span>
-                      {plan.location && (
-                        <>
+      {/* Upcoming Plans */}
+      <Collapsible open={upcomingOpen} onOpenChange={setUpcomingOpen}>
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
+          <CollapsibleTrigger asChild>
+            <button className="mb-0 data-[state=open]:mb-4 flex w-full items-center justify-between group [&[data-state=open]]:mb-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                <h2 className="font-display text-lg font-semibold">Upcoming Plans</h2>
+                {upcomingPlans.length > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    {upcomingPlans.length}
+                  </span>
+                )}
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            {upcomingPlans.length > 0 ? (
+              <div className="space-y-2">
+                {upcomingPlans.map((plan) => {
+                  const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
+                  return (
+                    <div
+                      key={plan.id}
+                      className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
+                    >
+                      <div 
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"
+                        style={{ backgroundColor: activityConfig ? `hsl(var(--${activityConfig.color}) / 0.2)` : 'hsl(var(--muted))' }}
+                      >
+                        {activityConfig ? <ActivityIcon config={activityConfig} size={20} /> : '📅'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{plan.title}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                          <span>{format(plan.date, 'EEE, MMM d')}</span>
                           <span>•</span>
-                          <span className="truncate">{plan.location.name}</span>
-                        </>
+                          <span>{TIME_SLOT_LABELS[plan.timeSlot as TimeSlot]?.time || plan.timeSlot}</span>
+                          {plan.location && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">{plan.location.name}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      {plan.participants && plan.participants.length > 0 && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          <span>{plan.participants.length}</span>
+                        </div>
                       )}
                     </div>
-                  </div>
-                  {plan.participants && plan.participants.length > 0 && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span>{plan.participants.length}</span>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <p className="text-sm text-muted-foreground mb-3">No upcoming plans</p>
+                <Link to="/plans">
+                  <Button size="sm">Create a Plan</Button>
+                </Link>
+              </div>
+            )}
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+
+      {/* Hangout History */}
+      <Collapsible open={hangoutsOpen} onOpenChange={setHangoutsOpen}>
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
+          <CollapsibleTrigger asChild>
+            <button className="mb-0 data-[state=open]:mb-4 flex w-full items-center justify-between group [&[data-state=open]]:mb-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                <h2 className="font-display text-lg font-semibold">Hangout History</h2>
+                {pastPlans.length > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    {pastPlans.length}
+                  </span>
+                )}
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            {pastPlans.length > 0 ? (
+              <div className="space-y-2">
+                {pastPlans.map((plan) => {
+                  const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
+                  return (
+                    <div
+                      key={plan.id}
+                      className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
+                    >
+                      <div 
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"
+                        style={{ backgroundColor: activityConfig ? `hsl(var(--${activityConfig.color}) / 0.2)` : 'hsl(var(--muted))' }}
+                      >
+                        {activityConfig?.icon || '📅'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{plan.title}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                          <span>{format(plan.date, 'MMM d, yyyy')}</span>
+                          <span>•</span>
+                          <span>{TIME_SLOT_LABELS[plan.timeSlot as TimeSlot]?.label || plan.timeSlot}</span>
+                          {plan.location && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">{plan.location.name}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      {plan.participants && plan.participants.length > 0 && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          <span>{plan.participants.length}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="rounded-full bg-muted p-3 mb-3">
+                  <Sparkles className="h-6 w-6 text-muted-foreground" />
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="rounded-full bg-muted p-3 mb-3">
-              <Sparkles className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="font-medium mb-1">No hangouts yet</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Your past hangouts will appear here
-            </p>
-            <Link to="/plans">
-              <Button size="sm">Create Your First Plan</Button>
-            </Link>
-          </div>
-        )}
-      </div>
+                <h3 className="font-medium mb-1">No hangouts yet</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Your past hangouts will appear here
+                </p>
+                <Link to="/plans">
+                  <Button size="sm">Create Your First Plan</Button>
+                </Link>
+              </div>
+            )}
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
     </div>
   );
 }
