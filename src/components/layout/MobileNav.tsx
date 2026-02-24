@@ -13,7 +13,7 @@ const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/availability', icon: Clock, label: 'Availability' },
   { path: '/friends', icon: Users, label: 'Friends' },
-  { path: '/chat', icon: MessageCircle, label: 'Elly' },
+  { path: '/chat', icon: MessageCircle, label: 'Chat' },
 ];
 
 export function MobileNav() {
@@ -50,11 +50,6 @@ export function MobileNav() {
                 <item.icon className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-medium">{item.label}</span>
-              {item.path === '/chat' && !isActive && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] text-primary-foreground">
-                  ✨
-                </span>
-              )}
             </NavLink>
           );
         })}
