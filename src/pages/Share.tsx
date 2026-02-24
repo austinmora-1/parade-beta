@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { format, addDays, addWeeks, startOfWeek, isSameDay, isToday, isSameWeek } from 'date-fns';
 import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -61,6 +61,7 @@ const LOCATION_CONFIG = {
 
 export default function Share() {
   const { shareCode } = useParams<{ shareCode: string }>();
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
   const [plans, setPlans] = useState<PlanData[]>([]);
@@ -75,7 +76,9 @@ export default function Share() {
   const [requestMessage, setRequestMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
   
-  // Week navigation state
+  // Week navigation state — max offset depends on view param
+  const viewParam = searchParams.get('view') || '1w';
+  const maxWeekOffset = viewParam === '3m' ? 12 : viewParam === '1m' ? 4 : 0;
   const [weekOffset, setWeekOffset] = useState(0);
 
   // Get week days based on offset (Monday to Sunday)
@@ -379,7 +382,7 @@ export default function Share() {
                 size="icon"
                 className="h-7 w-7"
                 onClick={() => setWeekOffset(prev => prev + 1)}
-                disabled={weekOffset >= 4}
+                disabled={weekOffset >= maxWeekOffset}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

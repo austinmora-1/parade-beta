@@ -12,16 +12,26 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 interface ShareDialogProps {
   trigger?: React.ReactNode;
 }
+
+type ViewDuration = '1w' | '1m' | '3m';
+
+const VIEW_DURATION_OPTIONS: { value: ViewDuration; label: string }[] = [
+  { value: '1w', label: '1 Week' },
+  { value: '1m', label: '1 Month' },
+  { value: '3m', label: '3 Months' },
+];
 
 export function ShareDialog({ trigger }: ShareDialogProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [shareCode, setShareCode] = useState<string | null>(null);
+  const [viewDuration, setViewDuration] = useState<ViewDuration>('1w');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -45,9 +55,8 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
   }, [user]);
 
   // Share URL - always use the primary domain for a clean, user-friendly link
-  // (The /share/:shareCode route is public, so it should resolve on the primary domain.)
   const PRIMARY_DOMAIN = 'https://helloparade.app';
-  const shareUrl = shareCode ? `${PRIMARY_DOMAIN}/share/${shareCode}` : '';
+  const shareUrl = shareCode ? `${PRIMARY_DOMAIN}/share/${shareCode}?view=${viewDuration}` : '';
 
   const handleCopyLink = async () => {
     try {
@@ -75,7 +84,6 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
       url: shareUrl,
     };
 
-    // Check if Web Share API is fully supported and can share this data
     const canUseWebShare = 
       typeof navigator !== 'undefined' && 
       navigator.share && 
@@ -92,20 +100,14 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
         setOpen(false);
         return;
       } catch (err) {
-        // User cancelled - don't show error
         if ((err as Error).name === 'AbortError') {
           return;
         }
-        // Fall through to SMS fallback
         console.log('Web Share failed, falling back to SMS:', err);
       }
     }
 
-    // Fallback: open SMS with prefilled text (works on mobile)
-    // Try different SMS URL formats for better compatibility
     const smsBody = encodeURIComponent(shareMessage);
-    
-    // Check if on iOS (uses &body=) vs Android/other (uses ?body=)
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const smsUrl = isIOS ? `sms:&body=${smsBody}` : `sms:?body=${smsBody}`;
     
@@ -118,15 +120,12 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
 
   const handleShareScreenshot = async () => {
     setIsCapturing(true);
-    // Close the dialog first so it doesn't appear in the screenshot
     setOpen(false);
-    // Allow the dialog to fully unmount
     await new Promise((r) => setTimeout(r, 400));
     
     try {
       const html2canvas = (await import('html2canvas')).default;
       
-      // Capture the main page content (dialog is now closed)
       const target = document.querySelector('main');
       if (!target) {
         throw new Error('Could not find content to capture');
@@ -139,7 +138,6 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
         useCORS: true,
       });
 
-      // Convert to blob
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) resolve(blob);
@@ -147,7 +145,6 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
         }, 'image/png');
       });
 
-      // Copy screenshot to clipboard
       try {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob }),
@@ -208,13 +205,31 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
         
         <div className="space-y-3 py-3 sm:space-y-4 sm:py-4">
           <p className="text-sm text-muted-foreground">
-            Choose how you'd like to share with friends.
+            Choose how much of your schedule to share.
           </p>
+
+          {/* View Duration Picker */}
+          <div className="flex gap-1 rounded-lg border border-border bg-muted/30 p-1">
+            {VIEW_DURATION_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setViewDuration(option.value)}
+                className={cn(
+                  "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all",
+                  viewDuration === option.value
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           
           {/* Preview Profile */}
           {shareCode && (
             <Link
-              to={`/share/${shareCode}`}
+              to={`/share/${shareCode}?view=${viewDuration}`}
               onClick={() => setOpen(false)}
               className="flex w-full max-w-full overflow-hidden items-center gap-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-3 text-left transition-all hover:bg-primary/10 hover:border-primary/50 sm:gap-4 sm:p-4"
             >
