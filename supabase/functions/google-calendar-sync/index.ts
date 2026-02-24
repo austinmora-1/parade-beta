@@ -64,6 +64,67 @@ function getEventDates(startTime: Date, endTime: Date, timezone?: string): strin
   return dates
 }
 
+// Common airport codes → city names
+const AIRPORT_CITY_MAP: Record<string, string> = {
+  // US
+  ATL: 'Atlanta', BOS: 'Boston', BWI: 'Baltimore', CLT: 'Charlotte', DCA: 'Washington DC',
+  DEN: 'Denver', DFW: 'Dallas', DTW: 'Detroit', EWR: 'New York City', FLL: 'Fort Lauderdale',
+  HNL: 'Honolulu', IAD: 'Washington DC', IAH: 'Houston', JFK: 'New York City', LAS: 'Las Vegas',
+  LAX: 'Los Angeles', LGA: 'New York City', MCI: 'Kansas City', MCO: 'Orlando', MDW: 'Chicago',
+  MIA: 'Miami', MSP: 'Minneapolis', MSY: 'New Orleans', OAK: 'Oakland', ORD: 'Chicago',
+  PDX: 'Portland', PHL: 'Philadelphia', PHX: 'Phoenix', PIT: 'Pittsburgh', RDU: 'Raleigh',
+  SAN: 'San Diego', SAT: 'San Antonio', SEA: 'Seattle', SFO: 'San Francisco', SJC: 'San Jose',
+  SLC: 'Salt Lake City', SMF: 'Sacramento', STL: 'St. Louis', TPA: 'Tampa',
+  AUS: 'Austin', BNA: 'Nashville', IND: 'Indianapolis', JAX: 'Jacksonville', MKE: 'Milwaukee',
+  OMA: 'Omaha', RNO: 'Reno', BUR: 'Burbank', SNA: 'Orange County', ONT: 'Ontario',
+  // Canada
+  YYZ: 'Toronto', YVR: 'Vancouver', YUL: 'Montreal', YOW: 'Ottawa', YYC: 'Calgary',
+  // International
+  LHR: 'London', LGW: 'London', CDG: 'Paris', ORY: 'Paris', FCO: 'Rome', AMS: 'Amsterdam',
+  FRA: 'Frankfurt', MUC: 'Munich', MAD: 'Madrid', BCN: 'Barcelona', LIS: 'Lisbon',
+  DUB: 'Dublin', ZRH: 'Zurich', CPH: 'Copenhagen', ARN: 'Stockholm', OSL: 'Oslo',
+  HEL: 'Helsinki', VIE: 'Vienna', BRU: 'Brussels', ATH: 'Athens', IST: 'Istanbul',
+  NRT: 'Tokyo', HND: 'Tokyo', ICN: 'Seoul', PEK: 'Beijing', PVG: 'Shanghai',
+  HKG: 'Hong Kong', SIN: 'Singapore', BKK: 'Bangkok', SYD: 'Sydney', MEL: 'Melbourne',
+  AKL: 'Auckland', DEL: 'Delhi', BOM: 'Mumbai', DXB: 'Dubai', DOH: 'Doha',
+  GRU: 'São Paulo', EZE: 'Buenos Aires', MEX: 'Mexico City', CUN: 'Cancún',
+  BOG: 'Bogotá', LIM: 'Lima', SCL: 'Santiago', JNB: 'Johannesburg', CAI: 'Cairo',
+  NBO: 'Nairobi', CPT: 'Cape Town',
+}
+
+// Extract destination city from a flight event
+function extractFlightDestination(summary?: string): string | null {
+  if (!summary) return null
+  const upper = summary.toUpperCase()
+
+  // Look for 3-letter airport codes - try to find the LAST one (destination)
+  const codes = upper.match(/\b([A-Z]{3})\b/g)
+  if (codes) {
+    // Filter to only known airport codes
+    const airports = codes.filter(c => c in AIRPORT_CITY_MAP)
+    if (airports.length > 0) {
+      // Last matched airport code is likely the destination
+      return AIRPORT_CITY_MAP[airports[airports.length - 1]]
+    }
+  }
+  return null
+}
+
+// Detect if an event is a flight
+function isFlightEvent(event: CalendarEvent): boolean {
+  const s = (event.summary || '').toLowerCase()
+  // Common patterns: "Flight to ...", airline names, flight numbers
+  if (/\bflight\b/.test(s)) return true
+  if (/\b(united|delta|american|southwest|jetblue|alaska|spirit|frontier|british airways|lufthansa|air france|emirates|qatar)\b/.test(s)) return true
+  // Pattern like "AA 123", "UA1234", "DL 456"
+  if (/\b[A-Z]{2}\s?\d{1,4}\b/i.test(event.summary || '')) {
+    // Verify it also has airport codes
+    const codes = (event.summary || '').toUpperCase().match(/\b([A-Z]{3})\b/g)
+    if (codes?.some(c => c in AIRPORT_CITY_MAP)) return true
+  }
+  return false
+}
+
 interface CalendarEvent {
   id: string
   summary?: string
@@ -116,11 +177,35 @@ async function handleEventsSync(params: {
     }
   }
 
+  // Detect flight events and map dates → destination city
+  const flightLocationByDate: Map<string, string> = new Map()
+  for (const event of events) {
+    if (!isFlightEvent(event)) continue
+    const city = extractFlightDestination(event.summary)
+    if (!city) continue
+
+    const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
+    const endDate = event.end.dateTime ? new Date(event.end.dateTime) : event.end.date ? new Date(event.end.date) : null
+    if (!startDate) continue
+
+    const dates = endDate ? getEventDates(startDate, endDate, timezone) : [getDateString(startDate, timezone)]
+    for (const date of dates) {
+      flightLocationByDate.set(date, city)
+    }
+  }
+
   // Update availability table for each date with busy slots
   let updatedCount = 0
   for (const [date, slots] of busySlotsByDate) {
     const slotUpdates: Record<string, boolean> = {}
     for (const slot of slots) slotUpdates[slot] = false
+
+    const flightCity = flightLocationByDate.get(date)
+    const locationFields: Record<string, string> = {}
+    if (flightCity) {
+      locationFields.location_status = 'away'
+      locationFields.trip_location = flightCity
+    }
 
     const { error: upsertError } = await adminClient
       .from('availability')
@@ -129,6 +214,7 @@ async function handleEventsSync(params: {
           user_id: userId,
           date,
           ...slotUpdates,
+          ...locationFields,
         },
         {
           onConflict: 'user_id,date',
@@ -141,6 +227,19 @@ async function handleEventsSync(params: {
     } else {
       updatedCount++
     }
+  }
+
+  // Also update location for flight dates that might not have busy slots
+  for (const [date, city] of flightLocationByDate) {
+    if (busySlotsByDate.has(date)) continue // already handled above
+    const { error } = await adminClient
+      .from('availability')
+      .upsert(
+        { user_id: userId, date, location_status: 'away', trip_location: city },
+        { onConflict: 'user_id,date', ignoreDuplicates: false }
+      )
+    if (error) console.error('Error upserting flight location for', date, ':', error)
+    else updatedCount++
   }
 
   // Create plans for each imported event
