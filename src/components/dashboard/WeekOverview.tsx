@@ -178,7 +178,7 @@ export function WeekOverview() {
               <PopoverTrigger asChild>
                 <button
                   className={cn(
-                    "relative flex flex-col items-center justify-center aspect-square rounded-xl p-2 transition-all duration-200 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    "relative flex flex-col items-center justify-center aspect-square rounded-lg p-1.5 transition-all duration-200 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
                     getDayBgColor(score, isToday)
                   )}
                 >
