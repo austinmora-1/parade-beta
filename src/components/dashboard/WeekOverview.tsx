@@ -149,7 +149,7 @@ export function WeekOverview() {
         )}
       </div>
 
-      <div className="space-y-1">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
         {weekDays.map((day) => {
           const key = day.toISOString();
           const isToday = isSameDay(day, new Date());
@@ -162,46 +162,45 @@ export function WeekOverview() {
 
           return (
             <div key={key}>
-              {/* Clickable summary header */}
               <button
                 onClick={() => toggleDay(key)}
                 className={cn(
-                  "w-full text-left rounded-xl p-2.5 transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
+                  "w-full text-left rounded-lg p-2 transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
                   isToday && "bg-primary/5"
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <span className={cn(
-                      "text-sm font-semibold",
+                      "text-xs font-semibold",
                       isToday && "text-primary"
                     )}>
                       {format(day, 'EEE')}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {format(day, 'MMM d')}
+                    <span className="text-[11px] text-muted-foreground">
+                      {format(day, 'd')}
                     </span>
                     {isToday && (
-                      <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                      <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-full font-medium">
                         Today
                       </span>
                     )}
                   </div>
                   <ChevronDown className={cn(
-                    "h-3.5 w-3.5 text-muted-foreground transition-transform shrink-0",
+                    "h-3 w-3 text-muted-foreground transition-transform shrink-0",
                     isExpanded && "rotate-180"
                   )} />
                 </div>
 
                 {/* Availability bar */}
-                <div className="mt-2 flex gap-0.5">
+                <div className="mt-1.5 flex gap-0.5">
                   {TIME_SLOT_ORDER.map((slot) => {
                     const status = getSlotStatus(day, slot);
                     return (
                       <div
                         key={slot}
                         className={cn(
-                          "h-1.5 flex-1 rounded-full",
+                          "h-1 flex-1 rounded-full",
                           status === 'available' && "bg-availability-available/60",
                           status === 'busy' && "bg-primary/60",
                           status === 'unavailable' && "bg-muted-foreground/20"
@@ -211,32 +210,28 @@ export function WeekOverview() {
                   })}
                 </div>
 
-                {/* Summary line */}
-                <div className="mt-1.5 flex items-center justify-between">
+                {/* Summary + location */}
+                <div className="mt-1 flex items-center justify-between">
                   <span className={cn(
-                    "text-[11px] font-medium",
+                    "text-[10px] font-medium",
                     score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                   )}>
-                    {summary.available} of {summary.total} free
-                    {summary.busy > 0 && ` · ${summary.busy} plan${summary.busy > 1 ? 's' : ''}`}
+                    {summary.available}/{summary.total} free
+                    {summary.busy > 0 && ` · ${summary.busy}p`}
                   </span>
-                  {/* Location */}
-                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                     {isAway ? (
-                      <Plane className="h-3 w-3 shrink-0" />
+                      <Plane className="h-2.5 w-2.5 shrink-0" />
                     ) : (
-                      <Home className="h-3 w-3 shrink-0" />
+                      <Home className="h-2.5 w-2.5 shrink-0" />
                     )}
-                    <span className="truncate max-w-[80px]">
-                      {isAway ? (locationLabel || 'Away') : (locationLabel || 'Home')}
-                    </span>
                   </div>
                 </div>
               </button>
 
               {/* Expanded slot details */}
               {isExpanded && (
-                <div className="space-y-1 animate-fade-in px-1 pb-1">
+                <div className="space-y-0.5 animate-fade-in px-0.5 pb-1">
                   {TIME_SLOT_ORDER.map((slot) => {
                     const status = getSlotStatus(day, slot);
                     const slotPlans = getPlansForSlot(day, slot);
@@ -246,7 +241,7 @@ export function WeekOverview() {
                       <div
                         key={slot}
                         className={cn(
-                          "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors",
+                          "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors",
                           status === 'available' && "bg-availability-available/20 text-foreground",
                           status === 'busy' && "bg-muted/60 text-foreground",
                           status === 'unavailable' && "bg-muted/30 text-muted-foreground"
@@ -261,11 +256,11 @@ export function WeekOverview() {
                         <span className="font-medium truncate">
                           {slotInfo.label}
                         </span>
-                        <span className="text-muted-foreground ml-auto text-[10px] shrink-0">
+                        <span className="text-muted-foreground ml-auto text-[9px] shrink-0">
                           {slotInfo.time}
                         </span>
                         {slotPlans.length > 0 && (
-                          <span className="shrink-0 text-[10px]">
+                          <span className="shrink-0 text-[9px]">
                             {(() => {
                               const cfg = ACTIVITY_CONFIG[slotPlans[0].activity as keyof typeof ACTIVITY_CONFIG];
                               return cfg?.icon || '📅';
