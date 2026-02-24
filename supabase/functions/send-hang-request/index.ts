@@ -305,16 +305,18 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
 
+    let emailSent = false;
     if (!res.ok) {
       const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to send email");
+      console.warn("Email send failed (non-fatal):", errorData.message || "Unknown error");
+    } else {
+      const emailResponse = await res.json();
+      console.log("Hang request email sent:", emailResponse);
+      emailSent = true;
     }
 
-    const emailResponse = await res.json();
-    console.log("Hang request email sent:", emailResponse);
-
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, emailSent }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
