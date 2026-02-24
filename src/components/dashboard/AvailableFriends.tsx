@@ -1,30 +1,56 @@
-import { useMemo } from 'react';
-import { isSameDay } from 'date-fns';
+import { useMemo, useState } from 'react';
+import { isSameDay, format, addDays, startOfWeek } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
+import { Friend } from '@/types/planner';
 import { Button } from '@/components/ui/button';
-import { Users, MessageCircle, ArrowRight } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Users, Send, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+
+const TIME_SLOT_ORDER: TimeSlot[] = [
+  'early-morning', 'late-morning', 'early-afternoon',
+  'late-afternoon', 'evening', 'late-night',
+];
 
 export function AvailableFriends() {
   const { friends, availability } = usePlannerStore();
-  const today = new Date();
+  const { user } = useAuth();
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  const [selectedDay, setSelectedDay] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
 
-  // Get connected friends (in a real app, we'd check their availability too)
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected');
   }, [friends]);
 
-  // For now, show connected friends as "available" - in a real app we'd check their actual availability
   const availableFriends = connectedFriends.slice(0, 4);
 
+  // Generate next 7 days for day picker
+  const nextDays = useMemo(() => {
+    const days: { value: string; label: string; date: Date }[] = [];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(today, i);
+      days.push({
+        value: format(d, 'yyyy-MM-dd'),
+        label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : format(d, 'EEE, MMM d'),
+        date: d,
+      });
+    }
+    return days;
+  }, []);
+
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const getAvatarColor = (name: string) => {
@@ -37,6 +63,62 @@ export function AvailableFriends() {
     ];
     const index = name.charCodeAt(0) % colors.length;
     return colors[index];
+  };
+
+  const handleSendHangRequest = async () => {
+    if (!selectedFriend || !selectedDay || !selectedSlot || !user) return;
+
+    setSending(true);
+    try {
+      // Look up friend's share code
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('share_code')
+        .eq('user_id', selectedFriend.friendUserId!)
+        .single();
+
+      if (!profile?.share_code) {
+        toast.error('Could not find friend\'s profile');
+        setSending(false);
+        return;
+      }
+
+      // Get current user's profile for name
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const dayObj = nextDays.find(d => d.value === selectedDay);
+
+      const { error } = await supabase.functions.invoke('send-hang-request', {
+        body: {
+          shareCode: profile.share_code,
+          requesterName: myProfile?.display_name || user.email,
+          requesterEmail: user.email,
+          requesterUserId: user.id,
+          message: message || undefined,
+          selectedDay,
+          selectedDayLabel: dayObj?.label || selectedDay,
+          selectedSlot,
+          selectedSlotLabel: TIME_SLOT_LABELS[selectedSlot as TimeSlot]?.label || selectedSlot,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Hang request sent to ${selectedFriend.name}!`);
+      setSelectedFriend(null);
+      setSelectedDay('');
+      setSelectedSlot('');
+      setMessage('');
+    } catch (err: any) {
+      console.error('Error sending hang request:', err);
+      toast.error(err.message || 'Failed to send hang request');
+    } finally {
+      setSending(false);
+    }
   };
 
   if (connectedFriends.length === 0) {
@@ -70,75 +152,136 @@ export function AvailableFriends() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 font-display text-sm font-semibold">
-          <Users className="h-5 w-5 text-availability-available" />
-          Available Today
-          {availableFriends.length > 0 && (
-            <span className="rounded-full bg-availability-available/10 px-2 py-0.5 text-xs font-medium text-availability-available">
-              {availableFriends.length}
-            </span>
-          )}
-        </h3>
-        <Link to="/friends">
-          <Button variant="ghost" size="sm" className="gap-1 text-xs">
-            View All
-            <ArrowRight className="h-3 w-3" />
-          </Button>
-        </Link>
+    <>
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 font-display text-sm font-semibold">
+            <Users className="h-5 w-5 text-availability-available" />
+            Available Today
+            {availableFriends.length > 0 && (
+              <span className="rounded-full bg-availability-available/10 px-2 py-0.5 text-xs font-medium text-availability-available">
+                {availableFriends.length}
+              </span>
+            )}
+          </h3>
+          <Link to="/friends">
+            <Button variant="ghost" size="sm" className="gap-1 text-xs">
+              View All
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {availableFriends.map((friend) => (
+            <button
+              key={friend.id}
+              onClick={() => setSelectedFriend(friend)}
+              className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-all hover:border-primary/20 hover:shadow-soft text-left w-full"
+            >
+              {/* Avatar */}
+              <div
+                className={cn(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold",
+                  getAvatarColor(friend.name)
+                )}
+              >
+                {friend.avatar ? (
+                  <img
+                    src={friend.avatar}
+                    alt={friend.name}
+                    className="h-full w-full rounded-full object-cover"
+                  />
+                ) : (
+                  getInitials(friend.name)
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{friend.name}</p>
+                <p className="text-xs text-availability-available">Free today</p>
+              </div>
+
+              {/* Action hint */}
+              <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            </button>
+          ))}
+        </div>
+
+        {connectedFriends.length > 4 && (
+          <Link to="/friends" className="mt-3 block">
+            <Button variant="outline" size="sm" className="w-full gap-1 text-xs">
+              See {connectedFriends.length - 4} more friends
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </Link>
+        )}
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        {availableFriends.map((friend) => (
-          <div
-            key={friend.id}
-            className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-all hover:border-primary/20 hover:shadow-soft"
-          >
-            {/* Avatar */}
-            <div
-              className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold",
-                getAvatarColor(friend.name)
-              )}
-            >
-              {friend.avatar ? (
-                <img
-                  src={friend.avatar}
-                  alt={friend.name}
-                  className="h-full w-full rounded-full object-cover"
-                />
-              ) : (
-                getInitials(friend.name)
-              )}
-            </div>
+      {/* Quick Hang Request Dialog */}
+      <Dialog open={!!selectedFriend} onOpenChange={(open) => !open && setSelectedFriend(null)}>
+        <DialogContent className="sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              Hang with {selectedFriend?.name}
+            </DialogTitle>
+          </DialogHeader>
 
-            {/* Info */}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{friend.name}</p>
-              <p className="text-xs text-availability-available">Free today</p>
-            </div>
+          <div className="space-y-3 pt-1">
+            <Select value={selectedDay} onValueChange={setSelectedDay}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Pick a day" />
+              </SelectTrigger>
+              <SelectContent>
+                {nextDays.map((d) => (
+                  <SelectItem key={d.value} value={d.value} className="text-sm">
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            {/* Action */}
+            <Select value={selectedSlot} onValueChange={setSelectedSlot}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Pick a time" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_SLOT_ORDER.map((slot) => {
+                  const info = TIME_SLOT_LABELS[slot];
+                  return (
+                    <SelectItem key={slot} value={slot} className="text-sm">
+                      {info.label} ({info.time})
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+
+            <Textarea
+              placeholder="Add a message (optional)"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="resize-none text-sm min-h-[60px]"
+              rows={2}
+            />
+
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              onClick={handleSendHangRequest}
+              disabled={!selectedDay || !selectedSlot || sending}
+              className="w-full gap-2"
+              size="sm"
             >
-              <MessageCircle className="h-4 w-4" />
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Send Hang Request
             </Button>
           </div>
-        ))}
-      </div>
-
-      {connectedFriends.length > 4 && (
-        <Link to="/friends" className="mt-3 block">
-          <Button variant="outline" size="sm" className="w-full gap-1 text-xs">
-            See {connectedFriends.length - 4} more friends
-            <ArrowRight className="h-3 w-3" />
-          </Button>
-        </Link>
-      )}
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
