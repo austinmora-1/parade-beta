@@ -26,7 +26,7 @@ export default function Chat() {
   // Active conversation view (full screen on mobile)
   if (activeConvo) {
     return (
-      <div className="animate-fade-in h-[calc(100vh-7rem)] md:h-[calc(100vh-8rem)]">
+      <div className="animate-fade-in h-[calc(100dvh-7rem)] md:h-[calc(100dvh-8rem)]">
         <ChatView conversation={activeConvo} onBack={() => setActiveId(null)} />
       </div>
     );
