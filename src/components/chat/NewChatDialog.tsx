@@ -26,19 +26,19 @@ export function NewChatDialog({ onCreateDM, onCreateGroup }: NewChatDialogProps)
   const [groupTitle, setGroupTitle] = useState('');
   const [creating, setCreating] = useState(false);
 
-  // Only friends with a user_id (registered on the app)
-  const registeredFriends = friends.filter(f => f.id);
+  // Only friends with a friendUserId (registered on the app) and connected
+  const registeredFriends = friends.filter(f => f.friendUserId && f.status === 'connected');
 
-  const handleDM = async (friendId: string) => {
+  const handleDM = async (friendUserId: string) => {
     setCreating(true);
-    await onCreateDM(friendId);
+    await onCreateDM(friendUserId);
     setOpen(false);
     setCreating(false);
   };
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (friendUserId: string) => {
     setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      prev.includes(friendUserId) ? prev.filter(x => x !== friendUserId) : [...prev, friendUserId]
     );
   };
 
@@ -95,8 +95,8 @@ export function NewChatDialog({ onCreateDM, onCreateGroup }: NewChatDialogProps)
                 <div className="max-h-60 overflow-y-auto space-y-1">
                   {registeredFriends.map(friend => (
                     <button
-                      key={friend.id}
-                      onClick={() => handleDM(friend.id)}
+                      key={friend.friendUserId}
+                      onClick={() => handleDM(friend.friendUserId!)}
                       disabled={creating}
                       className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-accent transition-colors"
                     >
@@ -125,11 +125,11 @@ export function NewChatDialog({ onCreateDM, onCreateGroup }: NewChatDialogProps)
             <p className="text-xs font-medium text-muted-foreground">Select members (2+)</p>
             <div className="max-h-48 overflow-y-auto space-y-1">
               {registeredFriends.map(friend => {
-                const selected = selectedIds.includes(friend.id);
+                const selected = selectedIds.includes(friend.friendUserId!);
                 return (
                   <button
-                    key={friend.id}
-                    onClick={() => toggleSelect(friend.id)}
+                    key={friend.friendUserId}
+                    onClick={() => toggleSelect(friend.friendUserId!)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors",
                       selected ? "bg-primary/10" : "hover:bg-accent"
