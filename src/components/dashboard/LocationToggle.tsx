@@ -33,7 +33,7 @@ export function LocationToggle() {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-      <h3 className="mb-4 font-display text-lg font-semibold">Location Status</h3>
+      <h3 className="mb-4 font-display text-sm font-semibold">Location Status</h3>
       
       <div className="flex gap-3">
         <button

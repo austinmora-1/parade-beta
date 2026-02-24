@@ -43,7 +43,7 @@ export function AvailableFriends() {
     return (
       <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 font-display text-lg font-semibold">
+          <h3 className="flex items-center gap-2 font-display text-sm font-semibold">
             <Users className="h-5 w-5 text-primary" />
             Available Today
           </h3>
@@ -72,7 +72,7 @@ export function AvailableFriends() {
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 font-display text-lg font-semibold">
+        <h3 className="flex items-center gap-2 font-display text-sm font-semibold">
           <Users className="h-5 w-5 text-availability-available" />
           Available Today
           {availableFriends.length > 0 && (
