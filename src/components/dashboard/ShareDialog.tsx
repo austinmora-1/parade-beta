@@ -118,18 +118,21 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
 
   const handleShareScreenshot = async () => {
     setIsCapturing(true);
+    // Close the dialog first so it doesn't appear in the screenshot
+    setOpen(false);
+    // Allow the dialog to fully unmount
+    await new Promise((r) => setTimeout(r, 400));
     
     try {
-      // Dynamically import html2canvas
       const html2canvas = (await import('html2canvas')).default;
       
-      // Find the main content area to capture
-      const mainContent = document.querySelector('main');
-      if (!mainContent) {
+      // Capture the main page content (dialog is now closed)
+      const target = document.querySelector('main');
+      if (!target) {
         throw new Error('Could not find content to capture');
       }
 
-      const canvas = await html2canvas(mainContent as HTMLElement, {
+      const canvas = await html2canvas(target as HTMLElement, {
         backgroundColor: '#ffffff',
         scale: 2,
         logging: false,
