@@ -144,24 +144,17 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
         }, 'image/png');
       });
 
-      // Try to share the image
-      if (navigator.share && navigator.canShare) {
-        const file = new File([blob], 'my-availability.png', { type: 'image/png' });
-        const shareData = { files: [file] };
-        
-        if (navigator.canShare(shareData)) {
-          await navigator.share(shareData);
-          toast({
-            title: 'Screenshot shared!',
-            description: 'Your availability screenshot has been shared.',
-          });
-          setOpen(false);
-        } else {
-          // Fallback: download the image
-          downloadImage(blob);
-        }
-      } else {
-        // Fallback: download the image
+      // Copy screenshot to clipboard
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob }),
+        ]);
+        toast({
+          title: 'Screenshot copied! 📋',
+          description: 'Paste it into your messaging app to share.',
+        });
+      } catch (clipErr) {
+        console.warn('Clipboard write failed, falling back to download:', clipErr);
         downloadImage(blob);
       }
     } catch (err) {
