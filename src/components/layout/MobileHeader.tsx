@@ -11,18 +11,19 @@ export function MobileHeader() {
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur-lg md:hidden">
-      <div className="flex-1" />
-      <Link to="/" className="flex items-center justify-center">
-        <ParadeWordmark size="md" />
-      </Link>
-      <div className="flex-1 flex justify-end gap-1">
-        <ThemeToggle />
+      <div className="flex-1 flex justify-start">
         <button
           onClick={openFeedback}
           className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <MessageSquarePlus className="h-5 w-5" />
         </button>
+      </div>
+      <Link to="/" className="flex items-center justify-center">
+        <ParadeWordmark size="md" />
+      </Link>
+      <div className="flex-1 flex justify-end gap-1">
+        <ThemeToggle />
         <Link
           to="/notifications"
           className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
