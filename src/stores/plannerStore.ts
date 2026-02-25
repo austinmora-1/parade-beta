@@ -341,13 +341,17 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     const locationStr = plan.location ? plan.location.name : null;
     
+    // Cast date to noon UTC to prevent timezone day-shift issues
+    const dateStr = format(plan.date, 'yyyy-MM-dd');
+    const noonUtcDate = `${dateStr}T12:00:00+00:00`;
+    
     const { data, error } = await supabase
       .from('plans')
       .insert({
         user_id: userId,
         title: plan.title,
         activity: plan.activity,
-        date: plan.date.toISOString(),
+        date: noonUtcDate,
         time_slot: plan.timeSlot,
         duration: plan.duration,
         location: locationStr,
@@ -375,13 +379,44 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     };
     
     set((state) => ({ plans: [...state.plans, newPlan] }));
+    
+    // Auto-block the availability slot for this plan
+    const slotColumn = plan.timeSlot.replace('-', '_');
+    await supabase
+      .from('availability')
+      .upsert({
+        user_id: userId,
+        date: dateStr,
+        [slotColumn]: false,
+      }, { onConflict: 'user_id,date' });
+    
+    // Update local availability state
+    const { availability, defaultSettings } = get();
+    const existingIndex = availability.findIndex(
+      (a) => format(a.date, 'yyyy-MM-dd') === dateStr
+    );
+    if (existingIndex >= 0) {
+      const updated = [...availability];
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        slots: { ...updated[existingIndex].slots, [plan.timeSlot]: false },
+      };
+      set({ availability: updated });
+    } else {
+      const newAvailability = createDefaultAvailability(plan.date, defaultSettings);
+      newAvailability.slots[plan.timeSlot] = false;
+      set({ availability: [...availability, newAvailability] });
+    }
   },
   
   updatePlan: async (id, updates) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.title) dbUpdates.title = updates.title;
     if (updates.activity) dbUpdates.activity = updates.activity;
-    if (updates.date) dbUpdates.date = updates.date.toISOString();
+    if (updates.date) {
+      const dateStr = format(updates.date, 'yyyy-MM-dd');
+      dbUpdates.date = `${dateStr}T12:00:00+00:00`;
+    }
     if (updates.timeSlot) dbUpdates.time_slot = updates.timeSlot;
     if (updates.duration) dbUpdates.duration = updates.duration;
     if (updates.location !== undefined) dbUpdates.location = updates.location?.name || null;
@@ -403,6 +438,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   },
   
   deletePlan: async (id) => {
+    const { userId, plans: currentPlans, availability, defaultSettings } = get();
+    const planToDelete = currentPlans.find(p => p.id === id);
+    
     const { error } = await supabase
       .from('plans')
       .delete()
@@ -416,6 +454,39 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set((state) => ({
       plans: state.plans.filter((p) => p.id !== id),
     }));
+    
+    // Restore availability slot if no other plans occupy it
+    if (planToDelete && userId) {
+      const dateStr = format(planToDelete.date, 'yyyy-MM-dd');
+      const remainingPlans = currentPlans.filter(
+        p => p.id !== id && 
+        format(p.date, 'yyyy-MM-dd') === dateStr && 
+        p.timeSlot === planToDelete.timeSlot
+      );
+      
+      if (remainingPlans.length === 0) {
+        const slotColumn = planToDelete.timeSlot.replace('-', '_');
+        await supabase
+          .from('availability')
+          .upsert({
+            user_id: userId,
+            date: dateStr,
+            [slotColumn]: true,
+          }, { onConflict: 'user_id,date' });
+        
+        const existingIndex = availability.findIndex(
+          (a) => format(a.date, 'yyyy-MM-dd') === dateStr
+        );
+        if (existingIndex >= 0) {
+          const updated = [...get().availability];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            slots: { ...updated[existingIndex].slots, [planToDelete.timeSlot]: true },
+          };
+          set({ availability: updated });
+        }
+      }
+    }
   },
   
   addFriend: async (friend) => {

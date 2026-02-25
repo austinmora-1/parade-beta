@@ -76,37 +76,54 @@ export function AvailableFriends() {
       setLoadingTodayAvail(true);
       const today = format(new Date(), 'yyyy-MM-dd');
 
-      const { data, error } = await supabase
-        .from('availability')
-        .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
-        .in('user_id', friendUserIds)
-        .eq('date', today);
+      // Fetch availability AND plans for today in parallel
+      const [availResult, plansResult] = await Promise.all([
+        supabase
+          .from('availability')
+          .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+          .in('user_id', friendUserIds)
+          .eq('date', today),
+        supabase
+          .from('plans')
+          .select('user_id, time_slot')
+          .in('user_id', friendUserIds)
+          .gte('date', `${today}T00:00:00`)
+          .lte('date', `${today}T23:59:59`),
+      ]);
 
-      if (error) {
-        console.error('Error fetching friend availability:', error);
-        // On error, show all friends as fallback
+      if (availResult.error) {
+        console.error('Error fetching friend availability:', availResult.error);
         setTodayAvailableFriendIds(new Set(friendUserIds));
         setLoadingTodayAvail(false);
         return;
       }
 
+      // Build a map of friend -> busy time slots from plans
+      const friendBusySlots = new Map<string, Set<string>>();
+      for (const plan of (plansResult.data || [])) {
+        if (!friendBusySlots.has(plan.user_id)) {
+          friendBusySlots.set(plan.user_id, new Set());
+        }
+        // Normalize underscored DB format to hyphenated app format
+        friendBusySlots.get(plan.user_id)!.add(plan.time_slot.replace('_', '-'));
+      }
+
       const availableIds = new Set<string>();
 
-      // Check each friend
       for (const friendUserId of friendUserIds) {
-        const row = data?.find(r => r.user_id === friendUserId);
-        if (!row) {
-          // No availability record = default available
+        const row = availResult.data?.find(r => r.user_id === friendUserId);
+        const busySlots = friendBusySlots.get(friendUserId) || new Set();
+        
+        // Check if at least one slot is free (not unavailable AND not busy with a plan)
+        const hasAnyFree = TIME_SLOT_ORDER.some(slot => {
+          if (busySlots.has(slot)) return false;
+          if (!row) return true; // No availability record = default available
+          const col = SLOT_TO_DB_COL[slot];
+          return (row as any)[col] !== false;
+        });
+        
+        if (hasAnyFree) {
           availableIds.add(friendUserId);
-        } else {
-          // Check if at least one slot is free
-          const hasAnyFree = TIME_SLOT_ORDER.some(slot => {
-            const col = SLOT_TO_DB_COL[slot];
-            return (row as any)[col] !== false;
-          });
-          if (hasAnyFree) {
-            availableIds.add(friendUserId);
-          }
         }
       }
 
@@ -123,10 +140,14 @@ export function AvailableFriends() {
       .slice(0, 4);
   }, [connectedFriends, todayAvailableFriendIds]);
 
-  // Fetch friend's availability when dialog opens
+  // Track friend's plans for the week
+  const [friendPlans, setFriendPlans] = useState<{ date: string; time_slot: string }[]>([]);
+
+  // Fetch friend's availability AND plans when dialog opens
   useEffect(() => {
     if (!selectedFriend?.friendUserId) {
       setFriendAvail([]);
+      setFriendPlans([]);
       return;
     }
 
@@ -135,15 +156,23 @@ export function AvailableFriends() {
       const today = format(new Date(), 'yyyy-MM-dd');
       const weekOut = format(addDays(new Date(), 7), 'yyyy-MM-dd');
 
-      const { data, error } = await supabase
-        .from('availability')
-        .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
-        .eq('user_id', selectedFriend.friendUserId!)
-        .gte('date', today)
-        .lte('date', weekOut);
+      const [availResult, plansResult] = await Promise.all([
+        supabase
+          .from('availability')
+          .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+          .eq('user_id', selectedFriend.friendUserId!)
+          .gte('date', today)
+          .lte('date', weekOut),
+        supabase
+          .from('plans')
+          .select('date, time_slot')
+          .eq('user_id', selectedFriend.friendUserId!)
+          .gte('date', `${today}T00:00:00`)
+          .lte('date', `${weekOut}T23:59:59`),
+      ]);
 
-      if (!error && data) {
-        const mapped: FriendAvailDay[] = data.map((row: any) => ({
+      if (!availResult.error && availResult.data) {
+        const mapped: FriendAvailDay[] = availResult.data.map((row: any) => ({
           date: row.date,
           slots: Object.fromEntries(
             TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot]] !== false])
@@ -151,6 +180,14 @@ export function AvailableFriends() {
         }));
         setFriendAvail(mapped);
       }
+      
+      if (!plansResult.error && plansResult.data) {
+        setFriendPlans(plansResult.data.map((p: any) => ({
+          date: format(new Date(p.date), 'yyyy-MM-dd'),
+          time_slot: p.time_slot.replace('_', '-'),
+        })));
+      }
+      
       setLoadingAvail(false);
     };
 
@@ -176,18 +213,28 @@ export function AvailableFriends() {
   const availableDays = useMemo(() => {
     return nextDays.filter(d => {
       const avail = friendAvail.find(a => a.date === d.value);
-      if (!avail) return true;
-      return TIME_SLOT_ORDER.some(slot => avail.slots[slot]);
+      return TIME_SLOT_ORDER.some(slot => {
+        const hasPlan = friendPlans.some(p => p.date === d.value && p.time_slot === slot);
+        if (hasPlan) return false;
+        if (!avail) return true;
+        return avail.slots[slot];
+      });
     });
-  }, [nextDays, friendAvail]);
+  }, [nextDays, friendAvail, friendPlans]);
 
   // Filter slots for selected day
   const availableSlots = useMemo(() => {
     if (!selectedDay) return TIME_SLOT_ORDER;
     const avail = friendAvail.find(a => a.date === selectedDay);
-    if (!avail) return TIME_SLOT_ORDER;
-    return TIME_SLOT_ORDER.filter(slot => avail.slots[slot]);
-  }, [selectedDay, friendAvail]);
+    return TIME_SLOT_ORDER.filter(slot => {
+      // Exclude slots where the friend has a plan
+      const hasPlan = friendPlans.some(p => p.date === selectedDay && p.time_slot === slot);
+      if (hasPlan) return false;
+      // Exclude slots marked as unavailable
+      if (!avail) return true;
+      return avail.slots[slot];
+    });
+  }, [selectedDay, friendAvail, friendPlans]);
 
   // Reset slot when day changes and slot is no longer available
   useEffect(() => {
