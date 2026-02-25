@@ -43,9 +43,15 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Normalize webcal:// to https://
+    let normalizedUrl = icalUrl
+    if (normalizedUrl.startsWith('webcal://')) {
+      normalizedUrl = normalizedUrl.replace('webcal://', 'https://')
+    }
+
     // Validate the URL looks like an iCal feed
     try {
-      new URL(icalUrl)
+      new URL(normalizedUrl)
     } catch {
       return new Response(JSON.stringify({ error: 'Invalid URL format' }), {
         status: 400,
@@ -54,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     // Verify we can actually fetch the URL
-    const testFetch = await fetch(icalUrl)
+    const testFetch = await fetch(normalizedUrl)
     if (!testFetch.ok) {
       await testFetch.text()
       return new Response(JSON.stringify({ error: 'Could not reach the iCal URL. Make sure it is a public subscription link.' }), {
@@ -83,7 +89,7 @@ Deno.serve(async (req) => {
         {
           user_id: user.id,
           provider: 'ical',
-          access_token: icalUrl,
+          access_token: normalizedUrl,
           refresh_token: null,
           expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
           grant_id: null,
