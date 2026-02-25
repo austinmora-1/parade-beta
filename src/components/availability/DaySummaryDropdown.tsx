@@ -90,13 +90,16 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
       <div className="grid grid-cols-3 gap-1">
         {slots.map((slot) => {
           const status = getSlotStatus(slot);
+          const slotPlan = status === 'busy' 
+            ? plans.find((p) => isSameDay(p.date, selectedDate) && p.timeSlot === slot)
+            : null;
           return (
             <button
               key={slot}
               onClick={() => toggleSlot(slot)}
               disabled={status === 'busy'}
               className={cn(
-                "flex flex-col items-center justify-center rounded-md py-1.5 px-1 transition-all",
+                "flex flex-col items-center justify-center rounded-md py-1.5 px-1 transition-all gap-0.5",
                 status === 'available' &&
                   "bg-availability-available-light hover:bg-availability-available/30 active:scale-95",
                 status === 'unavailable' &&
@@ -116,6 +119,23 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
               <span className="text-[9px] text-muted-foreground leading-tight">
                 {TIME_SLOT_LABELS[slot].time}
               </span>
+              {slotPlan && slotPlan.participants.length > 0 && (
+                <div className="flex items-center justify-center gap-0.5 mt-0.5 flex-wrap">
+                  {slotPlan.participants.slice(0, 3).map((p, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[8px] font-medium px-1.5 py-0.5 leading-none truncate max-w-[60px]"
+                    >
+                      {p.name.split(' ')[0]}
+                    </span>
+                  ))}
+                  {slotPlan.participants.length > 3 && (
+                    <span className="text-[8px] text-muted-foreground">
+                      +{slotPlan.participants.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
             </button>
           );
         })}
