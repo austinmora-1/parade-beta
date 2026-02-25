@@ -1,10 +1,8 @@
-@import './styles/arcade.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-
+/* Fonts loaded via index.html <link> tags for reliability */
 
 @layer base {
   :root {
