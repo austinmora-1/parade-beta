@@ -17,7 +17,7 @@ export function LocationToggle() {
       className={cn(
         "gap-1.5 transition-colors font-semibold",
         isHome
-          ? "border-availability-available bg-availability-available/15 text-availability-available hover:bg-availability-available/25"
+          ? "border-[hsl(150,65%,32%)] bg-availability-available/15 text-[hsl(150,65%,32%)] hover:bg-availability-available/25"
           : "border-muted-foreground/40 text-muted-foreground hover:bg-muted"
       )}
     >
