@@ -97,34 +97,60 @@ export default function Friends() {
 
       setIsSearching(true);
       try {
-        // Fetch a broader set of profiles and filter client-side for fuzzy matching
-        const { data, error } = await supabase
-          .from('public_profiles')
-          .select('user_id, display_name, avatar_url, bio')
-          .neq('user_id', user?.id || '')
-          .not('display_name', 'is', null)
-          .limit(100);
+        const query = searchQuery.trim();
 
-        if (error) throw error;
+        // Fetch profiles by display name (fuzzy) and by email prefix (exact) in parallel
+        const [nameResult, emailResult] = await Promise.all([
+          supabase
+            .from('public_profiles')
+            .select('user_id, display_name, avatar_url, bio')
+            .neq('user_id', user?.id || '')
+            .not('display_name', 'is', null)
+            .limit(100),
+          query.length >= 3
+            ? supabase.rpc('search_users_by_email_prefix', { p_query: query })
+            : Promise.resolve({ data: [], error: null }),
+        ]);
+
+        if (nameResult.error) throw nameResult.error;
 
         // Filter out users who are already friends
         const friendUserIds = friends
           .filter(f => f.friendUserId)
           .map(f => f.friendUserId);
 
-        const scored = (data || [])
+        // Score name-matched profiles
+        const nameScored = (nameResult.data || [])
           .filter((profile) => !friendUserIds.includes(profile.user_id))
           .map(profile => {
             const name = profile.display_name || '';
-            const result = fuzzyMatch(name, searchQuery.trim());
+            const result = fuzzyMatch(name, query);
             return { profile, ...result };
           })
-          .filter(r => r.match)
+          .filter(r => r.match);
+
+        // Add email-matched profiles with a good score
+        const emailProfiles = (emailResult.data || [])
+          .filter((p: any) => !friendUserIds.includes(p.user_id))
+          .map((p: any) => ({
+            profile: p as PublicProfile,
+            match: true,
+            score: 2.8, // High score but below exact name match
+          }));
+
+        // Merge and deduplicate by user_id
+        const seen = new Set<string>();
+        const merged = [...nameScored, ...emailProfiles]
           .sort((a, b) => b.score - a.score)
+          .filter(r => {
+            if (seen.has(r.profile.user_id!)) return false;
+            seen.add(r.profile.user_id!);
+            return true;
+          })
           .slice(0, 10)
           .map(r => r.profile);
 
-        setSearchResults(scored as PublicProfile[]);
+        setSearchResults(merged as PublicProfile[]);
       } catch (error) {
         console.error('Error searching users:', error);
       } finally {

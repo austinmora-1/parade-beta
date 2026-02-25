@@ -628,6 +628,15 @@ export type Database = {
         }[]
       }
       owns_share_code: { Args: { p_share_code: string }; Returns: boolean }
+      search_users_by_email_prefix: {
+        Args: { p_query: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          user_id: string
+        }[]
+      }
       update_calendar_access_token: {
         Args: {
           p_access_token: string
