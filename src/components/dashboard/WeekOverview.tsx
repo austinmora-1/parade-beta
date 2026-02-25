@@ -217,7 +217,7 @@ export function WeekOverview() {
                     score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                   )}>
                     {summary.available}/{summary.total} free
-                    {summary.busy > 0 && ` · ${summary.busy}p`}
+                    {summary.busy > 0 && ` · ${summary.busy} ${summary.busy === 1 ? 'plan' : 'plans'}`}
                   </span>
                   <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                     {isAway ? (
