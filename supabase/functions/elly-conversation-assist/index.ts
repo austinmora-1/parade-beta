@@ -277,7 +277,9 @@ Guidelines:
               id => id !== user.id && id !== ELLY_USER_ID
             );
 
-            const createdPlanIds: string[] = [requesterPlan.id];
+            // Track plan ownership: { planId -> ownerUserId }
+            const planOwners: Record<string, string> = {};
+            planOwners[requesterPlan.id] = user.id;
 
             for (const pid of otherParticipants) {
               const { data: otherPlan, error: otherErr } = await supabaseAdmin.from("plans").insert({
@@ -293,19 +295,17 @@ Guidelines:
               }).select("id").single();
 
               if (!otherErr && otherPlan) {
-                createdPlanIds.push(otherPlan.id);
+                planOwners[otherPlan.id] = pid;
               }
             }
 
-            // Cross-link all participants on each plan
+            // Cross-link: on each plan, add every non-owner as a participant
+            const allPlanIds = Object.keys(planOwners);
             const allPlanUsers = [user.id, ...otherParticipants];
-            for (const planId of createdPlanIds) {
-              // Find the owner of this plan
+            for (const planId of allPlanIds) {
+              const ownerId = planOwners[planId];
               for (const uid of allPlanUsers) {
-                // Add every OTHER user as a participant
-                const isOwner = (planId === requesterPlan.id && uid === user.id) ||
-                  (planId !== requesterPlan.id && uid !== user.id);
-                if (!isOwner) {
+                if (uid !== ownerId) {
                   await supabaseAdmin.from("plan_participants").insert({
                     plan_id: planId,
                     friend_id: uid,
