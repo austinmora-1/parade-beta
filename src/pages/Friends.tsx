@@ -17,6 +17,66 @@ interface PublicProfile {
   bio: string | null;
 }
 
+// Simple fuzzy match: checks if all characters of the query appear in order in the target
+function fuzzyMatch(target: string, query: string): { match: boolean; score: number } {
+  const t = target.toLowerCase();
+  const q = query.toLowerCase();
+
+  // Exact substring match gets highest score
+  if (t.includes(q)) return { match: true, score: 3 };
+
+  // Check if target starts with query
+  if (t.startsWith(q)) return { match: true, score: 4 };
+
+  // Check individual words start with query
+  const words = t.split(/\s+/);
+  if (words.some(w => w.startsWith(q))) return { match: true, score: 2.5 };
+
+  // Sequential character match (fuzzy)
+  let qi = 0;
+  let consecutiveBonus = 0;
+  let lastMatchIdx = -2;
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) {
+      if (ti === lastMatchIdx + 1) consecutiveBonus += 0.1;
+      lastMatchIdx = ti;
+      qi++;
+    }
+  }
+  if (qi === q.length) {
+    // All query chars found in order
+    const ratio = q.length / t.length;
+    return { match: true, score: 1 + ratio + consecutiveBonus };
+  }
+
+  // Levenshtein-based near match for short queries (typo tolerance)
+  if (q.length >= 3) {
+    for (const word of words) {
+      const dist = levenshtein(word.slice(0, q.length + 2), q);
+      if (dist <= Math.max(1, Math.floor(q.length / 3))) {
+        return { match: true, score: 0.5 - dist * 0.1 };
+      }
+    }
+  }
+
+  return { match: false, score: 0 };
+}
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
 export default function Friends() {
   const { friends, updateFriend, removeFriend, addFriend, acceptFriendRequest } = usePlannerStore();
   const { user } = useAuth();
@@ -37,12 +97,13 @@ export default function Friends() {
 
       setIsSearching(true);
       try {
+        // Fetch a broader set of profiles and filter client-side for fuzzy matching
         const { data, error } = await supabase
           .from('public_profiles')
           .select('user_id, display_name, avatar_url, bio')
-          .ilike('display_name', `%${searchQuery}%`)
           .neq('user_id', user?.id || '')
-          .limit(10);
+          .not('display_name', 'is', null)
+          .limit(100);
 
         if (error) throw error;
 
@@ -50,12 +111,20 @@ export default function Friends() {
         const friendUserIds = friends
           .filter(f => f.friendUserId)
           .map(f => f.friendUserId);
-        
-        const filtered = (data || []).filter(
-          (profile) => !friendUserIds.includes(profile.user_id)
-        );
 
-        setSearchResults(filtered as PublicProfile[]);
+        const scored = (data || [])
+          .filter((profile) => !friendUserIds.includes(profile.user_id))
+          .map(profile => {
+            const name = profile.display_name || '';
+            const result = fuzzyMatch(name, searchQuery.trim());
+            return { profile, ...result };
+          })
+          .filter(r => r.match)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 10)
+          .map(r => r.profile);
+
+        setSearchResults(scored as PublicProfile[]);
       } catch (error) {
         console.error('Error searching users:', error);
       } finally {
@@ -72,7 +141,6 @@ export default function Friends() {
     
     setSendingRequest(profile.user_id);
     try {
-      // Add to local friends list with pending status
       addFriend({
         name: profile.display_name || 'User',
         friendUserId: profile.user_id,
@@ -85,7 +153,6 @@ export default function Friends() {
         description: `Request sent to ${profile.display_name || 'user'}`,
       });
 
-      // Remove from search results
       setSearchResults(prev => prev.filter(p => p.user_id !== profile.user_id));
     } catch (error: any) {
       console.error('Error sending friend request:', error);
@@ -99,9 +166,14 @@ export default function Friends() {
     }
   };
 
-  const filteredFriends = friends.filter((f) =>
-    f.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Fuzzy filter existing friends
+  const filteredFriends = searchQuery.trim().length > 0
+    ? friends
+        .map(f => ({ friend: f, ...fuzzyMatch(f.name, searchQuery.trim()) }))
+        .filter(r => r.match)
+        .sort((a, b) => b.score - a.score)
+        .map(r => r.friend)
+    : friends;
 
   const connectedFriends = filteredFriends.filter((f) => f.status === 'connected');
   const incomingRequests = filteredFriends.filter((f) => f.status === 'pending' && f.isIncoming);
