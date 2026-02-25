@@ -7,6 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Plus, LayoutList, CalendarDays } from 'lucide-react';
 import { Plan } from '@/types/planner';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 export default function Plans() {
   const { plans, deletePlan } = usePlannerStore();
@@ -14,6 +25,9 @@ export default function Plans() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [defaultDate, setDefaultDate] = useState<Date | undefined>(undefined);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const planToDelete = deleteConfirmId ? plans.find(p => p.id === deleteConfirmId) : null;
 
   const handleEdit = (plan: Plan) => {
     setEditingPlan(plan);
@@ -21,7 +35,19 @@ export default function Plans() {
   };
 
   const handleDelete = (id: string) => {
-    deletePlan(id);
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId || !planToDelete) return;
+    const hadParticipants = planToDelete.participants.length > 0;
+    await deletePlan(deleteConfirmId);
+    setDeleteConfirmId(null);
+    if (hadParticipants) {
+      toast.success('Plan deleted. Participants have been notified.');
+    } else {
+      toast.success('Plan deleted.');
+    }
   };
 
   const handleDialogClose = (open: boolean) => {
@@ -128,6 +154,25 @@ export default function Plans() {
         editPlan={editingPlan}
         defaultDate={defaultDate}
       />
+
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {planToDelete?.participants && planToDelete.participants.length > 0
+                ? `This will permanently delete "${planToDelete.title}" and notify ${planToDelete.participants.map(p => p.name).join(', ')} that the plan has been cancelled.`
+                : `This will permanently delete "${planToDelete?.title}". This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
