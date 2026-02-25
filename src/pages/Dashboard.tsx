@@ -8,6 +8,7 @@ import { LocationToggle } from '@/components/dashboard/LocationToggle';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { HangRequests } from '@/components/dashboard/HangRequests';
 import { AvailableFriends } from '@/components/dashboard/AvailableFriends';
+import { EllyWidget } from '@/components/dashboard/EllyWidget';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
@@ -47,7 +48,8 @@ export default function Dashboard() {
       {/* Week Overview */}
       <WeekOverview />
 
-
+      {/* Elly AI Assistant */}
+      <EllyWidget />
 
 
       {/* Vibe & Location Status */}
