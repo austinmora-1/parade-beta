@@ -160,10 +160,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         }
       }
       
-      // Collect unique friend_ids to resolve names
+      // Collect unique friend_ids and plan owner ids to resolve names
       const participantUserIds = new Set<string>();
       for (const pps of Object.values(participantsMap)) {
         for (const pp of pps) participantUserIds.add(pp.friend_id);
+      }
+      // Add owners of participated plans so we can show their names
+      for (const p of (plansData || [])) {
+        if (p.user_id !== userId) participantUserIds.add(p.user_id);
       }
       
       let profilesMap: Record<string, string> = {};
@@ -179,7 +183,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       }
       
       const plans: Plan[] = (plansData || []).map((p) => {
-        const pps = participantsMap[p.id] || [];
+        // Filter out the current user from participants
+        const rawPps = (participantsMap[p.id] || []).filter(pp => pp.friend_id !== userId);
+        // For participated plans (not owned), include the plan owner as a participant
+        const pps = [...rawPps];
+        if (p.user_id !== userId && !pps.some(pp => pp.friend_id === p.user_id)) {
+          pps.push({ friend_id: p.user_id, status: 'accepted' });
+        }
         // Normalize plan date to local calendar day to prevent timezone day-shift.
         // Plans stored at midnight UTC (e.g. 2026-02-27T00:00:00+00) appear as
         // the previous day in western timezones. Extract the UTC date parts and
