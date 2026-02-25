@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.ical-sync]
 verify_jwt = false
+
+[functions.calendar-sync-all]
+verify_jwt = false
+
+[functions.calendar-sync-worker]
+verify_jwt = false

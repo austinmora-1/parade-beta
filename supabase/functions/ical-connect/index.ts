@@ -105,6 +105,26 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Trigger initial sync in the background
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+      const syncUrl = `${supabaseUrl}/functions/v1/calendar-sync-worker`
+      fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({ userId: user.id, provider: 'ical' }),
+      }).then(res => {
+        console.log('Initial iCal sync triggered, status:', res.status)
+      }).catch(err => {
+        console.error('Initial iCal sync failed:', err)
+      })
+    } catch (e) {
+      console.error('Failed to trigger initial sync:', e)
+    }
+
     return new Response(JSON.stringify({ success: true, connected: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
