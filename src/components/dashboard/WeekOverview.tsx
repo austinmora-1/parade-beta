@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { ChevronLeft, ChevronRight, ArrowRight, CalendarIcon, ChevronDown, Home, Plane } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CollapsibleWidget } from './CollapsibleWidget';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning',
@@ -82,72 +83,75 @@ export function WeekOverview() {
     });
   };
 
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-soft">
-      <div className="mb-4 flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <CalendarIcon className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card border border-border shadow-lg z-50" align="start">
-                <Calendar
-                  mode="single"
-                  selected={weekDays[0]}
-                  onSelect={handleDateSelect}
-                  disabled={(date) => {
-                    const today = new Date();
-                    const maxDate = addWeeks(today, 4);
-                    return date < startOfWeek(today, { weekStartsOn: 1 }) || date > maxDate;
-                  }}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setWeekOffset(prev => prev - 1)}
-              disabled={weekOffset <= 0}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h3 className="font-display text-sm font-semibold min-w-[100px] text-center">
-              {getWeekLabel()}
-            </h3>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setWeekOffset(prev => prev + 1)}
-              disabled={weekOffset >= 4}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <Link to="/availability">
-            <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
-              Edit
-              <ArrowRight className="h-3 w-3" />
-            </Button>
-          </Link>
-        </div>
-        {!isCurrentWeek && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="self-start text-xs text-primary h-6 px-2"
-            onClick={() => setWeekOffset(0)}
-          >
-            ← Back to this week
+  const weekNav = (
+    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-7 w-7">
+            <CalendarIcon className="h-4 w-4" />
           </Button>
-        )}
-      </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0 bg-card border border-border shadow-lg z-50" align="start">
+          <Calendar
+            mode="single"
+            selected={weekDays[0]}
+            onSelect={handleDateSelect}
+            disabled={(date) => {
+              const today = new Date();
+              const maxDate = addWeeks(today, 4);
+              return date < startOfWeek(today, { weekStartsOn: 1 }) || date > maxDate;
+            }}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+        </PopoverContent>
+      </Popover>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => setWeekOffset(prev => prev - 1)}
+        disabled={weekOffset <= 0}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <span className="text-xs font-medium min-w-[80px] text-center text-muted-foreground">
+        {getWeekLabel()}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => setWeekOffset(prev => prev + 1)}
+        disabled={weekOffset >= 4}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+      <Link to="/availability">
+        <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
+          Edit
+          <ArrowRight className="h-3 w-3" />
+        </Button>
+      </Link>
+    </div>
+  );
+
+  return (
+    <CollapsibleWidget
+      title="Week Overview"
+      icon={<CalendarIcon className="h-4 w-4 text-primary" />}
+      headerRight={weekNav}
+    >
+      {!isCurrentWeek && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-2 text-xs text-primary h-6 px-2"
+          onClick={() => setWeekOffset(0)}
+        >
+          ← Back to this week
+        </Button>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
         {weekDays.map((day) => {
@@ -155,7 +159,6 @@ export function WeekOverview() {
           const isToday = isSameDay(day, new Date());
           const dayAvail = getDayAvailability(day);
           const isAway = dayAvail?.locationStatus === 'away';
-          const locationLabel = dayAvail?.tripLocation || homeAddress || undefined;
           const summary = getDaySummary(day);
           const isExpanded = expandedDays.has(key);
           const score = summary.available / summary.total;
@@ -192,7 +195,6 @@ export function WeekOverview() {
                   )} />
                 </div>
 
-                {/* Availability bar */}
                 <div className="mt-1.5 flex gap-0.5">
                   {TIME_SLOT_ORDER.map((slot) => {
                     const status = getSlotStatus(day, slot);
@@ -210,7 +212,6 @@ export function WeekOverview() {
                   })}
                 </div>
 
-                {/* Summary + location */}
                 <div className="mt-1 flex items-center justify-between">
                   <span className={cn(
                     "text-[10px] font-medium",
@@ -229,7 +230,6 @@ export function WeekOverview() {
                 </div>
               </button>
 
-              {/* Expanded slot details */}
               {isExpanded && (
                 <div className="space-y-0.5 animate-fade-in px-0.5 pb-1">
                   {TIME_SLOT_ORDER.map((slot) => {
@@ -276,6 +276,6 @@ export function WeekOverview() {
           );
         })}
       </div>
-    </div>
+    </CollapsibleWidget>
   );
 }

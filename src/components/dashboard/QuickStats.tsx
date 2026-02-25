@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { addDays, isAfter, isBefore } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Calendar, Clock, Sparkles, CalendarCheck } from 'lucide-react';
+import { Calendar, Clock, Sparkles, CalendarCheck, BarChart3 } from 'lucide-react';
+import { CollapsibleWidget } from './CollapsibleWidget';
 
 export function QuickStats() {
   const { plans, availability, currentVibe } = usePlannerStore();
@@ -14,7 +15,6 @@ export function QuickStats() {
       (p) => isAfter(p.date, now) && isBefore(p.date, weekFromNow)
     );
     
-    // Calculate available slots for the week
     const availableSlots = availability.reduce((total, day) => {
       const daySlots = Object.values(day.slots).filter(Boolean).length;
       return total + daySlots;
@@ -56,21 +56,26 @@ export function QuickStats() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-      {statCards.map((stat) => (
-        <div
-          key={stat.label}
-          className="rounded-xl border border-border bg-card p-4 shadow-soft transition-all duration-200 hover:shadow-glow md:rounded-2xl md:p-5"
-        >
-          <div className={`mb-2 inline-flex rounded-lg p-2 md:mb-3 md:rounded-xl md:p-2.5 ${stat.color}`}>
-            <stat.icon className="h-4 w-4 md:h-5 md:w-5" />
+    <CollapsibleWidget
+      title="Quick Stats"
+      icon={<BarChart3 className="h-4 w-4 text-primary" />}
+    >
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {statCards.map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-xl border border-border bg-background p-3 md:p-4"
+          >
+            <div className={`mb-2 inline-flex rounded-lg p-2 ${stat.color}`}>
+              <stat.icon className="h-4 w-4" />
+            </div>
+            <p className="text-xs text-muted-foreground">{stat.label}</p>
+            <p className={`font-display text-xl font-bold ${stat.isText ? 'text-base capitalize' : ''}`}>
+              {stat.value}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground md:text-sm">{stat.label}</p>
-          <p className={`font-display text-xl font-bold md:text-2xl ${stat.isText ? 'text-base capitalize md:text-lg' : ''}`}>
-            {stat.value}
-          </p>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </CollapsibleWidget>
   );
 }

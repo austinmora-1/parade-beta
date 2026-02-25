@@ -4,6 +4,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { X, Plus, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CollapsibleWidget } from './CollapsibleWidget';
 
 export function VibeSelector() {
   const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
@@ -48,12 +49,10 @@ export function VibeSelector() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <h3 className="font-display text-sm font-semibold">What's your vibe today?</h3>
-      </div>
+    <CollapsibleWidget
+      title="What's your vibe today?"
+      icon={<Sparkles className="h-4 w-4 text-primary" />}
+    >
 
       {/* Vibe pills */}
       <div className="flex flex-wrap gap-2">
@@ -190,6 +189,6 @@ export function VibeSelector() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </CollapsibleWidget>
   );
 }

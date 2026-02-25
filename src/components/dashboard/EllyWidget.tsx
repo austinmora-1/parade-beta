@@ -3,8 +3,8 @@ import { useEllyChat } from '@/hooks/useEllyChat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sparkles, Send, ArrowRight, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { CollapsibleWidget } from './CollapsibleWidget';
 
 export function EllyWidget() {
   const { messages, isLoading, sendMessage } = useEllyChat();
@@ -26,25 +26,22 @@ export function EllyWidget() {
   ];
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-primary/30">
-            <Sparkles className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-display text-sm font-semibold">Ask Elly</h3>
-            <p className="text-[10px] text-muted-foreground">Your planning assistant</p>
-          </div>
+    <CollapsibleWidget
+      title="Ask Elly"
+      icon={
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-primary/10 to-primary/30">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
         </div>
-        <Link to="/chat?elly=true">
+      }
+      headerRight={
+        <Link to="/chat?elly=true" onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
             Open Chat
             <ArrowRight className="h-3 w-3" />
           </Button>
         </Link>
-      </div>
-
+      }
+    >
       {/* Last response preview */}
       {lastAssistantMsg && (
         <div className="mb-3 rounded-xl bg-muted/50 p-3">
@@ -91,6 +88,6 @@ export function EllyWidget() {
           )}
         </Button>
       </div>
-    </div>
+    </CollapsibleWidget>
   );
 }

@@ -1,8 +1,9 @@
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Home, Plane } from 'lucide-react';
+import { Home, Plane, MapPin } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Switch } from '@/components/ui/switch';
+import { CollapsibleWidget } from './CollapsibleWidget';
 
 export function LocationToggle() {
   const { locationStatus, setLocationStatus } = usePlannerStore();
@@ -10,7 +11,10 @@ export function LocationToggle() {
 
   if (isMobile) {
     return (
-      <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
+      <CollapsibleWidget
+        title="Location"
+        icon={<MapPin className="h-4 w-4 text-primary" />}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {locationStatus === 'home' ? (
@@ -27,14 +31,15 @@ export function LocationToggle() {
             onCheckedChange={(checked) => setLocationStatus(checked ? 'home' : 'away')}
           />
         </div>
-      </div>
+      </CollapsibleWidget>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-      <h3 className="mb-4 font-display text-sm font-semibold">Location Status</h3>
-      
+    <CollapsibleWidget
+      title="Location Status"
+      icon={<MapPin className="h-4 w-4 text-primary" />}
+    >
       <div className="flex gap-3">
         <button
           onClick={() => setLocationStatus('home')}
@@ -62,6 +67,6 @@ export function LocationToggle() {
           <span className="font-medium">Away</span>
         </button>
       </div>
-    </div>
+    </CollapsibleWidget>
   );
 }

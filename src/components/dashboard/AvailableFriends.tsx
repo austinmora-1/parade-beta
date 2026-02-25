@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Users, Send, ArrowRight, Loader2, User } from 'lucide-react';
+import { CollapsibleWidget } from './CollapsibleWidget';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -315,21 +316,22 @@ export function AvailableFriends() {
     }
   };
 
+  const viewAllLink = (
+    <Link to="/friends" onClick={(e) => e.stopPropagation()}>
+      <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
+        View All
+        <ArrowRight className="h-3 w-3" />
+      </Button>
+    </Link>
+  );
+
   if (connectedFriends.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 font-display text-sm font-semibold">
-            <Users className="h-5 w-5 text-primary" />
-            Available Today
-          </h3>
-          <Link to="/friends">
-            <Button variant="ghost" size="sm" className="gap-1 text-xs">
-              View All
-              <ArrowRight className="h-3 w-3" />
-            </Button>
-          </Link>
-        </div>
+      <CollapsibleWidget
+        title="Available Today"
+        icon={<Users className="h-4 w-4 text-primary" />}
+        headerRight={viewAllLink}
+      >
         <div className="flex flex-col items-center justify-center py-6 text-center">
           <div className="mb-3 rounded-full bg-muted p-3">
             <Users className="h-6 w-6 text-muted-foreground" />
@@ -341,104 +343,92 @@ export function AvailableFriends() {
             </Button>
           </Link>
         </div>
-      </div>
+      </CollapsibleWidget>
     );
   }
 
   return (
     <>
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 font-display text-sm font-semibold">
-            <Users className="h-5 w-5 text-availability-available" />
-            Available Today
-            {!loadingTodayAvail && availableFriends.length > 0 && (
-              <span className="rounded-full bg-availability-available/10 px-2 py-0.5 text-xs font-medium text-availability-available">
-                {availableFriends.length}
-              </span>
-            )}
-          </h3>
-          <Link to="/friends">
-            <Button variant="ghost" size="sm" className="gap-1 text-xs">
-              View All
+    <CollapsibleWidget
+      title="Available Today"
+      icon={<Users className="h-4 w-4 text-availability-available" />}
+      badge={
+        !loadingTodayAvail && availableFriends.length > 0 ? (
+          <span className="rounded-full bg-availability-available/10 px-2 py-0.5 text-xs font-medium text-availability-available">
+            {availableFriends.length}
+          </span>
+        ) : undefined
+      }
+      headerRight={viewAllLink}
+    >
+      {loadingTodayAvail ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : availableFriends.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <div className="mb-3 rounded-full bg-muted p-3">
+            <Users className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground">No friends available today</p>
+          <Link to="/friends" className="mt-2">
+            <Button size="sm" variant="outline" className="gap-1 text-xs">
+              View All Friends
               <ArrowRight className="h-3 w-3" />
             </Button>
           </Link>
         </div>
-
-        {loadingTodayAvail ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      ) : (
+        <>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {availableFriends.map((friend) => (
+              <button
+                key={friend.id}
+                onClick={() => setSelectedFriend(friend)}
+                className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-all hover:border-primary/20 hover:shadow-soft text-left w-full"
+              >
+                <div
+                  onClick={(e) => {
+                    if (friend.friendUserId) {
+                      e.stopPropagation();
+                      navigate(`/friend/${friend.friendUserId}`);
+                    }
+                  }}
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold",
+                    getAvatarColor(friend.name)
+                  )}
+                >
+                  {friend.avatar ? (
+                    <img
+                      src={friend.avatar}
+                      alt={friend.name}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    getInitials(friend.name)
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{friend.name}</p>
+                  <p className="text-xs text-availability-available">Free today</p>
+                </div>
+                <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+              </button>
+            ))}
           </div>
-        ) : availableFriends.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="mb-3 rounded-full bg-muted p-3">
-              <Users className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground">No friends available today</p>
-            <Link to="/friends" className="mt-2">
-              <Button size="sm" variant="outline" className="gap-1 text-xs">
-                View All Friends
+
+          {connectedFriends.filter(f => f.friendUserId && todayAvailableFriendIds.has(f.friendUserId)).length > 4 && (
+            <Link to="/friends" className="mt-3 block">
+              <Button variant="outline" size="sm" className="w-full gap-1 text-xs">
+                See {connectedFriends.filter(f => f.friendUserId && todayAvailableFriendIds.has(f.friendUserId)).length - 4} more available
                 <ArrowRight className="h-3 w-3" />
               </Button>
             </Link>
-          </div>
-        ) : (
-          <>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {availableFriends.map((friend) => (
-                <button
-                  key={friend.id}
-                  onClick={() => setSelectedFriend(friend)}
-                  className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-all hover:border-primary/20 hover:shadow-soft text-left w-full"
-                >
-                  {/* Avatar - clickable to profile */}
-                  <div
-                    onClick={(e) => {
-                      if (friend.friendUserId) {
-                        e.stopPropagation();
-                        navigate(`/friend/${friend.friendUserId}`);
-                      }
-                    }}
-                    className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold",
-                      getAvatarColor(friend.name)
-                    )}
-                  >
-                    {friend.avatar ? (
-                      <img
-                        src={friend.avatar}
-                        alt={friend.name}
-                        className="h-full w-full rounded-full object-cover"
-                      />
-                    ) : (
-                      getInitials(friend.name)
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{friend.name}</p>
-                    <p className="text-xs text-availability-available">Free today</p>
-                  </div>
-
-                  {/* Action hint */}
-                  <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                </button>
-              ))}
-            </div>
-
-            {connectedFriends.filter(f => f.friendUserId && todayAvailableFriendIds.has(f.friendUserId)).length > 4 && (
-              <Link to="/friends" className="mt-3 block">
-                <Button variant="outline" size="sm" className="w-full gap-1 text-xs">
-                  See {connectedFriends.filter(f => f.friendUserId && todayAvailableFriendIds.has(f.friendUserId)).length - 4} more available
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
-              </Link>
-            )}
-          </>
-        )}
-      </div>
+          )}
+        </>
+      )}
+    </CollapsibleWidget>
 
       {/* Quick Hang Request Dialog */}
       <Dialog open={!!selectedFriend} onOpenChange={(open) => !open && setSelectedFriend(null)}>
