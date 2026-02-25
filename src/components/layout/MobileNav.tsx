@@ -39,8 +39,8 @@ export function MobileNav() {
               className={cn(
                 "relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-1 transition-all duration-200",
                 isActive
-                  ? "text-[hsl(150_50%_50%)]"
-                  : "text-[hsl(150_50%_50%)]/60"
+                  ? "text-white"
+                  : "text-white/60"
               )}
             >
               <div className={cn(
