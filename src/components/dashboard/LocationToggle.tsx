@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Home, Plane } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export function LocationToggle() {
   const { locationStatus, setLocationStatus } = usePlannerStore();
@@ -9,21 +10,23 @@ export function LocationToggle() {
   const toggle = () => setLocationStatus(isHome ? 'away' : 'home');
 
   return (
-    <button
+    <Button
+      variant="outline"
+      size="sm"
       onClick={toggle}
       className={cn(
-        "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 border",
+        "gap-1.5 transition-colors",
         isHome
-          ? "border-availability-available/40 bg-availability-available/10 text-availability-available"
-          : "border-primary/40 bg-primary/10 text-primary"
+          ? "border-availability-available/40 text-availability-available hover:bg-availability-available/10"
+          : "border-primary/40 text-primary hover:bg-primary/10"
       )}
     >
       {isHome ? (
-        <Home className="h-3.5 w-3.5" />
+        <Home className="h-4 w-4" />
       ) : (
-        <Plane className="h-3.5 w-3.5" />
+        <Plane className="h-4 w-4" />
       )}
-      <span>{isHome ? 'Home' : 'Away'}</span>
-    </button>
+      {isHome ? 'Home' : 'Away'}
+    </Button>
   );
 }
