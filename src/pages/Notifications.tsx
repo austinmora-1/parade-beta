@@ -73,9 +73,13 @@ export default function Notifications() {
     if (error) {
       sonnerToast.error('Failed to update request');
     } else {
-      sonnerToast.success(status === 'accepted' ? 'Request accepted!' : 'Request declined');
+      sonnerToast.success(status === 'accepted' ? 'Request accepted! A plan has been created 🎉' : 'Request declined');
       setHangRequests(prev => prev.filter(r => r.id !== id));
       await refetchHangRequests();
+      if (status === 'accepted') {
+        const { loadAllData } = usePlannerStore.getState();
+        await loadAllData();
+      }
     }
     setUpdating(null);
   };
