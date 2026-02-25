@@ -7,10 +7,10 @@ interface ParadeWordmarkProps {
 
 export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) {
   const sizeClasses = {
-    sm: 'text-lg',
-    md: 'text-xl',
-    lg: 'text-2xl',
-    xl: 'text-4xl',
+    sm: 'text-xl',
+    md: 'text-2xl',
+    lg: 'text-3xl',
+    xl: 'text-5xl',
   };
 
   return (
