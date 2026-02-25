@@ -37,7 +37,7 @@ export function UpcomingPlans() {
     <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
       <h3 className="mb-4 font-display text-sm font-semibold">Upcoming Plans</h3>
       
-      <div className="space-y-3">
+      <div className="space-y-1.5">
         {upcomingPlans.map((plan) => {
           const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
           const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
@@ -46,47 +46,36 @@ export function UpcomingPlans() {
             <div
               key={plan.id}
               className={cn(
-                "rounded-xl border-l-4 bg-muted/30 p-4 transition-all duration-200 hover:bg-muted/50",
-                `border-l-${activityConfig.color}`
+                "rounded-lg border-l-[3px] bg-muted/30 px-3 py-2 transition-all duration-200 hover:bg-muted/50",
               )}
               style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex gap-3">
-                  <ActivityIcon config={activityConfig} size={24} />
-                  <div>
-                    <h4 className="font-medium">{plan.title}</h4>
-                    <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        {timeSlotConfig.time}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ActivityIcon config={activityConfig} size={18} />
+                  <span className="text-sm font-medium truncate">{plan.title}</span>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                    <span className="flex items-center gap-0.5">
+                      <Clock className="h-3 w-3" />
+                      {timeSlotConfig.time}
+                    </span>
+                    {plan.participants.length > 0 && (
+                      <span className="flex items-center gap-0.5">
+                        <Users className="h-3 w-3" />
+                        {plan.participants.length}
                       </span>
-                      {plan.participants.length > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3.5 w-3.5" />
-                          {plan.participants.map((p, i) => (
-                            <span key={p.id}>
-                              <FriendLink userId={p.friendUserId}>
-                                <span className="hover:underline">{p.name}</span>
-                              </FriendLink>
-                              {i < plan.participants.length - 1 ? ', ' : ''}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                      {plan.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5" />
-                          {plan.location.name}
-                        </span>
-                      )}
-                    </div>
+                    )}
+                    {plan.location && (
+                      <span className="flex items-center gap-0.5 truncate max-w-[80px]">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{plan.location.name}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">{format(plan.date, 'EEE')}</p>
-                  <p className="text-xs text-muted-foreground">{format(plan.date, 'MMM d')}</p>
-                </div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {format(plan.date, 'EEE, MMM d')}
+                </span>
               </div>
             </div>
           );
