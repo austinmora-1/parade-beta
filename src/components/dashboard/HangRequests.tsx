@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlannerStore } from '@/stores/plannerStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 };
 
 export function HangRequests() {
+  const { loadAllData } = usePlannerStore();
   const { user } = useAuth();
   const [requests, setRequests] = useState<HangRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,8 +104,12 @@ export function HangRequests() {
     if (error) {
       toast.error('Failed to update request');
     } else {
-      toast.success(status === 'accepted' ? 'Request accepted!' : 'Request declined');
+      toast.success(status === 'accepted' ? 'Request accepted! A plan has been created 🎉' : 'Request declined');
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      if (status === 'accepted') {
+        // Reload plans to show the newly created plan from the trigger
+        await loadAllData();
+      }
     }
     setUpdating(null);
   };
