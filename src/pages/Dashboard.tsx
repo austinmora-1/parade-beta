@@ -38,7 +38,8 @@ export default function Dashboard() {
           <h1 className="font-display text-lg font-bold md:text-2xl">Welcome back! 👋</h1>
           <p className="mt-1 text-sm text-muted-foreground md:text-base">Here's what's happening this week</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <LocationToggle />
           <ShareDialog />
           <Button size="sm" className="gap-2" onClick={() => setCreatePlanOpen(true)}>
               <Plus className="h-4 w-4" />
@@ -57,9 +58,6 @@ export default function Dashboard() {
 
       {/* Elly AI Assistant */}
       <EllyWidget />
-
-      {/* Location Status */}
-      <LocationToggle />
 
       {/* Available Friends & Hang Requests */}
       <div className="grid gap-4 lg:grid-cols-2">
