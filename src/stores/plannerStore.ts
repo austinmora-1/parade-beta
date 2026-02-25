@@ -123,18 +123,60 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         .eq('user_id', userId)
         .order('date', { ascending: true });
       
-      const plans: Plan[] = (plansData || []).map((p) => ({
-        id: p.id,
-        title: p.title,
-        activity: p.activity as ActivityType,
-        date: new Date(p.date),
-        timeSlot: p.time_slot as TimeSlot,
-        duration: p.duration,
-        location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
-        notes: p.notes || undefined,
-        participants: [],
-        createdAt: new Date(p.created_at),
-      }));
+      // Load plan participants
+      const planIds = (plansData || []).map(p => p.id);
+      let participantsMap: Record<string, { friend_id: string; status: string }[]> = {};
+      
+      if (planIds.length > 0) {
+        const { data: participantsData } = await supabase
+          .from('plan_participants')
+          .select('plan_id, friend_id, status')
+          .in('plan_id', planIds);
+        
+        for (const pp of (participantsData || [])) {
+          if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
+          participantsMap[pp.plan_id].push({ friend_id: pp.friend_id, status: pp.status });
+        }
+      }
+      
+      // Collect unique friend_ids to resolve names
+      const participantUserIds = new Set<string>();
+      for (const pps of Object.values(participantsMap)) {
+        for (const pp of pps) participantUserIds.add(pp.friend_id);
+      }
+      
+      let profilesMap: Record<string, string> = {};
+      if (participantUserIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('public_profiles')
+          .select('user_id, display_name')
+          .in('user_id', Array.from(participantUserIds));
+        
+        for (const p of (profiles || [])) {
+          if (p.user_id) profilesMap[p.user_id] = p.display_name || 'Friend';
+        }
+      }
+      
+      const plans: Plan[] = (plansData || []).map((p) => {
+        const pps = participantsMap[p.id] || [];
+        return {
+          id: p.id,
+          title: p.title,
+          activity: p.activity as ActivityType,
+          date: new Date(p.date),
+          timeSlot: p.time_slot as TimeSlot,
+          duration: p.duration,
+          location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
+          notes: p.notes || undefined,
+          participants: pps.map(pp => ({
+            id: pp.friend_id,
+            name: profilesMap[pp.friend_id] || 'Friend',
+            friendUserId: pp.friend_id,
+            status: 'connected' as const,
+          })),
+          createdAt: new Date(p.created_at),
+        };
+      });
       
       // Load outgoing friendships (requests I sent)
       const { data: outgoingData } = await supabase

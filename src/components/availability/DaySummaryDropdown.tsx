@@ -202,7 +202,14 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{plan.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{slotLabel?.time}</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-[10px] text-muted-foreground">{slotLabel?.time}</p>
+                      {plan.participants.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground truncate">
+                          · w/ {plan.participants.map(p => p.name).join(', ')}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-0.5">
                     <button
