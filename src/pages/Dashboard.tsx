@@ -49,18 +49,17 @@ export default function Dashboard() {
 
       <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
 
+      {/* Vibe */}
+      <VibeSelector />
+
       {/* Week Overview */}
       <WeekOverview />
 
       {/* Elly AI Assistant */}
       <EllyWidget />
 
-
-      {/* Vibe & Location Status */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <VibeSelector />
-        <LocationToggle />
-      </div>
+      {/* Location Status */}
+      <LocationToggle />
 
       {/* Available Friends & Hang Requests */}
       <div className="grid gap-4 lg:grid-cols-2">
