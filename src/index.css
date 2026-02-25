@@ -187,8 +187,8 @@
   .parade-wordmark {
     font-family: 'Monoton', sans-serif;
     font-weight: 400;
-    color: white;
-    -webkit-text-fill-color: white;
+    color: hsl(var(--primary));
+    -webkit-text-fill-color: hsl(var(--primary));
   }
 
   .shadow-soft {
