@@ -1,6 +1,5 @@
 import { initialize, svg2png } from "https://esm.sh/svg2png-wasm@0.6.1";
 
-// TTF version of Bungee Shade from Google Fonts (resvg needs TTF, not woff2)
 const FONT_URL = "https://raw.githubusercontent.com/google/fonts/main/ofl/bungeeshade/BungeeShade-Regular.ttf";
 
 let initialized = false;
@@ -15,10 +14,60 @@ async function init() {
   ]);
   
   fontData = new Uint8Array(await fontRes.arrayBuffer());
-  console.log("Font loaded, size:", fontData.length);
-  
   await initialize(wasmRes);
   initialized = true;
+}
+
+function generateConfetti(count: number, width: number, height: number): string {
+  const colors = [
+    "#FF6B6B", // red
+    "#FFB347", // orange
+    "#FFD700", // gold
+    "#55C78E", // brand green
+    "#4ECDC4", // teal
+    "#A78BFA", // purple
+    "#F472B6", // pink
+    "#60A5FA", // blue
+    "#FBBF24", // yellow
+    "#34D399", // emerald
+  ];
+
+  const shapes: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const rotation = Math.random() * 360;
+    const opacity = 0.5 + Math.random() * 0.5;
+    const shapeType = Math.floor(Math.random() * 3);
+
+    if (shapeType === 0) {
+      // Rectangle confetti
+      const w = 6 + Math.random() * 10;
+      const h = 3 + Math.random() * 6;
+      shapes.push(
+        `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${color}" opacity="${opacity}" transform="rotate(${rotation} ${x + w/2} ${y + h/2})" rx="1" />`
+      );
+    } else if (shapeType === 1) {
+      // Circle confetti
+      const r = 3 + Math.random() * 5;
+      shapes.push(
+        `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="${opacity}" />`
+      );
+    } else {
+      // Triangle confetti
+      const size = 6 + Math.random() * 8;
+      const x1 = x, y1 = y - size;
+      const x2 = x - size * 0.866, y2 = y + size * 0.5;
+      const x3 = x + size * 0.866, y3 = y + size * 0.5;
+      shapes.push(
+        `<polygon points="${x1},${y1} ${x2},${y2} ${x3},${y3}" fill="${color}" opacity="${opacity}" transform="rotate(${rotation} ${x} ${y})" />`
+      );
+    }
+  }
+
+  return shapes.join("\n    ");
 }
 
 Deno.serve(async (_req) => {
@@ -27,15 +76,16 @@ Deno.serve(async (_req) => {
 
     const width = 1200;
     const height = 630;
-    // Exact colors from the app's index.css
-    // Background: hsl(150, 22%, 18%) = rgb(36, 56, 45)  
-    // Text: hsl(150, 50%, 55%) = rgb(85, 199, 142)
     const bgColor = "#24382D";
     const textColor = "#55C78E";
+    const confetti = generateConfetti(80, width, height);
 
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <rect width="${width}" height="${height}" fill="${bgColor}" />
+  <g>
+    ${confetti}
+  </g>
   <text
     x="${width / 2}"
     y="${height / 2}"
@@ -48,13 +98,11 @@ Deno.serve(async (_req) => {
   >parade</text>
 </svg>`;
 
-    console.log("Rendering SVG to PNG...");
     const png = await svg2png(svg, {
       width,
       height,
       fonts: [fontData!],
     });
-    console.log("PNG generated, size:", png.length);
 
     return new Response(png, {
       headers: {
