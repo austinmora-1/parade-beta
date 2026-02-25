@@ -116,12 +116,33 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set({ isLoading: true });
     
     try {
-      // Load plans
-      const { data: plansData } = await supabase
+      // Load own plans
+      const { data: ownPlansData } = await supabase
         .from('plans')
         .select('*')
         .eq('user_id', userId)
         .order('date', { ascending: true });
+      
+      // Load plans where user is a participant (invited by others)
+      const { data: participatedPlanIds } = await supabase
+        .rpc('user_participated_plan_ids', { p_user_id: userId });
+      
+      let participatedPlansData: typeof ownPlansData = [];
+      if (participatedPlanIds && participatedPlanIds.length > 0) {
+        const { data } = await supabase
+          .from('plans')
+          .select('*')
+          .in('id', participatedPlanIds)
+          .order('date', { ascending: true });
+        participatedPlansData = data || [];
+      }
+      
+      // Merge and dedupe plans
+      const ownIds = new Set((ownPlansData || []).map(p => p.id));
+      const plansData = [
+        ...(ownPlansData || []),
+        ...(participatedPlansData || []).filter(p => !ownIds.has(p.id)),
+      ];
       
       // Load plan participants
       const planIds = (plansData || []).map(p => p.id);
