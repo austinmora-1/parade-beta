@@ -264,19 +264,6 @@ export default function Friends() {
         </div>
       )}
 
-      {/* Outgoing Requests */}
-      {outgoingRequests.length > 0 && (
-        <div>
-          <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-availability-partial-light text-[10px] font-bold text-availability-partial">
-              {outgoingRequests.length}
-            </span>
-            Sent Requests
-          </h2>
-          <FriendAvatarGrid friends={outgoingRequests} onRemove={removeFriend} />
-        </div>
-      )}
-
       {/* Connected Friends */}
       <div>
         <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
@@ -297,6 +284,19 @@ export default function Friends() {
           </div>
         )}
       </div>
+
+      {/* Outgoing Requests */}
+      {outgoingRequests.length > 0 && (
+        <div>
+          <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-availability-partial-light text-[10px] font-bold text-availability-partial">
+              {outgoingRequests.length}
+            </span>
+            Sent Requests
+          </h2>
+          <FriendAvatarGrid friends={outgoingRequests} onRemove={removeFriend} />
+        </div>
+      )}
 
       {/* Invited */}
       {invitedFriends.length > 0 && (
