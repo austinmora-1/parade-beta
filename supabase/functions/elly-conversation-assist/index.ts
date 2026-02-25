@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 // Fixed Elly virtual user ID
-const ELLY_USER_ID = "00000000-0000-0000-0000-e11ye11ye11y";
+const ELLY_USER_ID = "00000000-0000-0000-0000-e11ae11ae11a";
 
 const TOOLS = [
   {
