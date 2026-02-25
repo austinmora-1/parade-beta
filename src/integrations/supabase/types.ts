@@ -296,6 +296,85 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_change_requests: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          proposed_by: string
+          proposed_date: string | null
+          proposed_duration: number | null
+          proposed_time_slot: string | null
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          proposed_by: string
+          proposed_date?: string | null
+          proposed_duration?: number | null
+          proposed_time_slot?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          proposed_by?: string
+          proposed_date?: string | null
+          proposed_duration?: number | null
+          proposed_time_slot?: string | null
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_change_requests_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_change_responses: {
+        Row: {
+          change_request_id: string
+          created_at: string
+          id: string
+          participant_id: string
+          responded_at: string | null
+          response: string
+        }
+        Insert: {
+          change_request_id: string
+          created_at?: string
+          id?: string
+          participant_id: string
+          responded_at?: string | null
+          response?: string
+        }
+        Update: {
+          change_request_id?: string
+          created_at?: string
+          id?: string
+          participant_id?: string
+          responded_at?: string | null
+          response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_change_responses_change_request_id_fkey"
+            columns: ["change_request_id"]
+            isOneToOne: false
+            referencedRelation: "plan_change_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_participants: {
         Row: {
           created_at: string

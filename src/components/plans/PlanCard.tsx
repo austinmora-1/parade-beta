@@ -11,15 +11,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
+import { PlanChangeRequest } from '@/hooks/usePlanChangeRequests';
 
 interface PlanCardProps {
   plan: Plan;
   onEdit?: (plan: Plan) => void;
   onDelete?: (id: string) => void;
   compact?: boolean;
+  changeRequest?: PlanChangeRequest;
+  onAcceptChange?: (id: string) => void;
+  onDeclineChange?: (id: string) => void;
+  isRespondingToChange?: boolean;
 }
 
-export function PlanCard({ plan, onEdit, onDelete, compact = false }: PlanCardProps) {
+export function PlanCard({ 
+  plan, onEdit, onDelete, compact = false, 
+  changeRequest, onAcceptChange, onDeclineChange, isRespondingToChange 
+}: PlanCardProps) {
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
@@ -40,7 +49,8 @@ export function PlanCard({ plan, onEdit, onDelete, compact = false }: PlanCardPr
   return (
     <div
       className={cn(
-        "group rounded-2xl border border-border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow"
+        "group rounded-2xl border border-border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow",
+        changeRequest && "border-amber-500/30"
       )}
     >
       <div className="flex items-start justify-between">
@@ -135,6 +145,16 @@ export function PlanCard({ plan, onEdit, onDelete, compact = false }: PlanCardPr
             </div>
           )}
         </div>
+      )}
+
+      {/* Pending change request */}
+      {changeRequest && onAcceptChange && onDeclineChange && (
+        <PlanChangeRequestBadge
+          changeRequest={changeRequest}
+          onAccept={onAcceptChange}
+          onDecline={onDeclineChange}
+          isResponding={isRespondingToChange}
+        />
       )}
     </div>
   );

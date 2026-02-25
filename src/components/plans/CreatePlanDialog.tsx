@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Clock, Search, Loader2 } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, Search, Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
+import { AvailabilityWarning } from '@/components/plans/AvailabilityWarning';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +41,8 @@ import {
   getAllVibes
 } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
+import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
+import { toast } from 'sonner';
 
 interface PlaceSuggestion {
   place_id: string;
@@ -58,10 +61,12 @@ interface CreatePlanDialogProps {
   onOpenChange: (open: boolean) => void;
   editPlan?: Plan | null;
   defaultDate?: Date;
+  onChangeProposed?: () => void;
 }
 
-export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: CreatePlanDialogProps) {
-  const { addPlan, updatePlan, friends } = usePlannerStore();
+export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, onChangeProposed }: CreatePlanDialogProps) {
+  const { addPlan, updatePlan, friends, userId } = usePlannerStore();
+  const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
   
   const [title, setTitle] = useState('');
   const [selectedVibe, setSelectedVibe] = useState<VibeType>('social');
@@ -76,6 +81,11 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // Shared plan change request state
+  const [participantAvailability, setParticipantAvailability] = useState<{ userId: string; name: string; available: boolean }[]>([]);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [isProposing, setIsProposing] = useState(false);
 
   // Get activities for selected vibe
   const vibeActivities = getActivitiesByVibe(selectedVibe);
@@ -172,7 +182,81 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
     }
   }, [selectedVibe, activity]);
 
-  const handleSubmit = () => {
+  // Determine if this is a shared plan edit with time/date changes
+  const isSharedPlan = editPlan && editPlan.participants.length > 0;
+  const isOwner = editPlan && (!editPlan.userId || editPlan.userId === userId);
+  const hasTimeChanges = editPlan && (
+    format(date, 'yyyy-MM-dd') !== format(editPlan.date, 'yyyy-MM-dd') ||
+    timeSlot !== editPlan.timeSlot ||
+    parseInt(duration) !== editPlan.duration
+  );
+  const needsProposal = isSharedPlan && isOwner && hasTimeChanges;
+
+  // Check availability when time/date changes for shared plan edits
+  useEffect(() => {
+    if (!isSharedPlan || !isOwner || !hasTimeChanges) {
+      setParticipantAvailability([]);
+      return;
+    }
+
+    const participantUserIds = editPlan.participants
+      .map(p => p.friendUserId)
+      .filter((id): id is string => !!id);
+
+    if (participantUserIds.length === 0) return;
+
+    setIsCheckingAvailability(true);
+    checkParticipantAvailability(participantUserIds, date, timeSlot)
+      .then(setParticipantAvailability)
+      .finally(() => setIsCheckingAvailability(false));
+  }, [date, timeSlot, isSharedPlan, isOwner, hasTimeChanges]);
+
+  const handleSubmit = async () => {
+    if (needsProposal) {
+      // Propose the change instead of direct update
+      setIsProposing(true);
+      const participantUserIds = editPlan.participants
+        .map(p => p.friendUserId)
+        .filter((id): id is string => !!id);
+
+      const changes: { date?: Date; timeSlot?: TimeSlot; duration?: number } = {};
+      if (format(date, 'yyyy-MM-dd') !== format(editPlan.date, 'yyyy-MM-dd')) {
+        changes.date = date;
+      }
+      if (timeSlot !== editPlan.timeSlot) {
+        changes.timeSlot = timeSlot;
+      }
+      if (parseInt(duration) !== editPlan.duration) {
+        changes.duration = parseInt(duration);
+      }
+
+      // Apply non-time changes directly (title, activity, location, notes, participants)
+      const directUpdates: Partial<Plan> = {};
+      if (title !== editPlan.title) directUpdates.title = title;
+      if (activity !== editPlan.activity) directUpdates.activity = activity;
+      if ((locationName || '') !== (editPlan.location?.name || '')) {
+        directUpdates.location = locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined;
+      }
+      if (notes !== (editPlan.notes || '')) directUpdates.notes = notes;
+
+      if (Object.keys(directUpdates).length > 0) {
+        await updatePlan(editPlan.id, directUpdates);
+      }
+
+      const success = await proposeChange(editPlan.id, changes, participantUserIds);
+      setIsProposing(false);
+
+      if (success) {
+        toast.success('Time change proposed! Waiting for participants to accept.');
+        onChangeProposed?.();
+        onOpenChange(false);
+        resetForm();
+      } else {
+        toast.error('Failed to propose change. Please try again.');
+      }
+      return;
+    }
+
     const planData = {
       title,
       activity,
@@ -206,6 +290,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
     setLocationName('');
     setSelectedFriends([]);
     setNotes('');
+    setParticipantAvailability([]);
   };
 
   const toggleFriend = (friendId: string) => {
@@ -411,6 +496,17 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
             </div>
           )}
 
+          {/* Availability Warning for shared plan edits */}
+          {needsProposal && participantAvailability.length > 0 && (
+            <AvailabilityWarning availability={participantAvailability} />
+          )}
+          {isCheckingAvailability && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Checking participant availability...
+            </div>
+          )}
+
           {/* Notes - smaller */}
           <div className="space-y-1">
             <Label htmlFor="notes" className="text-xs">Notes (optional)</Label>
@@ -424,13 +520,36 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
             />
           </div>
 
+          {/* Propose change info */}
+          {needsProposal && (
+            <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+              <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                Time/date changes will be proposed to participants for approval.
+              </span>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex gap-2 pt-2">
             <Button variant="outline" size="sm" className="flex-1" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button size="sm" className="flex-1" onClick={handleSubmit} disabled={!title}>
-              {editPlan ? 'Save' : 'Create'}
+            <Button 
+              size="sm" 
+              className="flex-1" 
+              onClick={handleSubmit} 
+              disabled={!title || isProposing}
+            >
+              {isProposing ? (
+                <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Proposing...</>
+              ) : needsProposal ? (
+                'Propose Change'
+              ) : editPlan ? (
+                'Save'
+              ) : (
+                'Create'
+              )}
             </Button>
           </div>
         </div>

@@ -18,14 +18,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 
 export default function Plans() {
   const { plans, deletePlan, userId } = usePlannerStore();
+  const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [defaultDate, setDefaultDate] = useState<Date | undefined>(undefined);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isRespondingToChange, setIsRespondingToChange] = useState(false);
 
   const planToDelete = deleteConfirmId ? plans.find(p => p.id === deleteConfirmId) : null;
 
@@ -65,6 +68,24 @@ export default function Plans() {
   const handleCreatePlan = (date: Date) => {
     setDefaultDate(date);
     setDialogOpen(true);
+  };
+
+  const handleAcceptChange = async (changeRequestId: string) => {
+    setIsRespondingToChange(true);
+    const success = await respondToChange(changeRequestId, 'accepted');
+    setIsRespondingToChange(false);
+    if (success) {
+      toast.success('Change accepted!');
+    }
+  };
+
+  const handleDeclineChange = async (changeRequestId: string) => {
+    setIsRespondingToChange(true);
+    const success = await respondToChange(changeRequestId, 'declined');
+    setIsRespondingToChange(false);
+    if (success) {
+      toast.info('Change declined.');
+    }
   };
 
   const timeSlotOrder: Record<string, number> = {
@@ -132,6 +153,10 @@ export default function Plans() {
                 plan={plan}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                changeRequest={changeRequests.find(cr => cr.planId === plan.id)}
+                onAcceptChange={handleAcceptChange}
+                onDeclineChange={handleDeclineChange}
+                isRespondingToChange={isRespondingToChange}
               />
             ))
           ) : (
@@ -157,6 +182,7 @@ export default function Plans() {
         onOpenChange={handleDialogClose}
         editPlan={editingPlan}
         defaultDate={defaultDate}
+        onChangeProposed={refetchChangeRequests}
       />
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
