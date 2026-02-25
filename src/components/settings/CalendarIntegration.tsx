@@ -1,6 +1,9 @@
-import { Calendar, Check, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Check, Loader2, ExternalLink, RefreshCw, Apple, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
+import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
@@ -11,14 +14,48 @@ interface CalendarIntegrationProps {
 
 export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationProps) {
   const { session } = useAuth();
-  const { isConnected, isLoading, isSyncing, lastSyncResult, connect, disconnect, syncCalendar } = useGoogleCalendar();
+  const { isConnected: googleConnected, isLoading: googleLoading, isSyncing: googleSyncing, lastSyncResult: googleLastSync, connect: googleConnect, disconnect: googleDisconnect, syncCalendar: googleSync } = useGoogleCalendar();
+  const { isConnected: icalConnected, isLoading: icalLoading, isSyncing: icalSyncing, isConnecting: icalConnecting, lastSyncResult: icalLastSync, connect: icalConnect, disconnect: icalDisconnect, syncCalendar: icalSync, error: icalError } = useAppleCalendar();
   const loadAllData = usePlannerStore((s) => s.loadAllData);
 
-  const handleSync = async () => {
-    const result = await syncCalendar();
+  const [icalUrl, setIcalUrl] = useState('');
+  const [showIcalInput, setShowIcalInput] = useState(false);
+
+  const handleGoogleSync = async () => {
+    const result = await googleSync();
     if (result.synced) {
       toast.success(result.message || 'Calendar synced successfully');
-      // Reload availability data so the UI reflects the synced busy slots
+      await loadAllData();
+    } else {
+      toast.error(result.message || 'Failed to sync calendar');
+    }
+  };
+
+  const handleIcalConnect = async () => {
+    if (!icalUrl.trim()) {
+      toast.error('Please enter an iCal URL');
+      return;
+    }
+    const result = await icalConnect(icalUrl.trim());
+    if (result?.success) {
+      toast.success('Apple Calendar connected!');
+      setIcalUrl('');
+      setShowIcalInput(false);
+      // Auto-sync after connecting
+      const syncResult = await icalSync();
+      if (syncResult.synced) {
+        toast.success(syncResult.message || 'Calendar synced');
+        await loadAllData();
+      }
+    } else {
+      toast.error(result?.error || 'Failed to connect');
+    }
+  };
+
+  const handleIcalSync = async () => {
+    const result = await icalSync();
+    if (result.synced) {
+      toast.success(result.message || 'Calendar synced successfully');
       await loadAllData();
     } else {
       toast.error(result.message || 'Failed to sync calendar');
@@ -62,57 +99,153 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
           <div>
             <p className="text-sm font-medium">Google Calendar</p>
             <p className="text-[10px] text-muted-foreground">
-              {isConnected ? 'Connected' : 'Sync your events'}
+              {googleConnected ? 'Connected' : 'Sync your events'}
             </p>
           </div>
         </div>
         
-        {isLoading ? (
+        {googleLoading ? (
           <Button variant="outline" size="sm" disabled>
             <Loader2 className="h-3 w-3 animate-spin" />
           </Button>
-        ) : isConnected ? (
+        ) : googleConnected ? (
           <div className="flex items-center gap-1.5">
             <span className="flex items-center gap-1 text-[10px] text-primary">
               <Check className="h-3 w-3" />
             </span>
-            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={disconnect}>
+            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={googleDisconnect}>
               Disconnect
             </Button>
           </div>
         ) : (
-          <Button onClick={connect} size="sm" className="h-7 text-xs gap-1.5">
+          <Button onClick={googleConnect} size="sm" className="h-7 text-xs gap-1.5">
             <ExternalLink className="h-3 w-3" />
             Connect
           </Button>
         )}
       </div>
 
-      {/* Sync Button - only show when connected */}
-      {isConnected && (
+      {/* Google Sync Button */}
+      {googleConnected && (
         <div className="flex items-center justify-between rounded-lg border border-dashed border-border bg-muted/30 p-3">
           <div>
-            <p className="text-sm font-medium">Sync to Parade</p>
+            <p className="text-sm font-medium">Sync Google Calendar</p>
             <p className="text-[10px] text-muted-foreground">
-              {lastSyncResult?.synced 
-                ? `Last sync: ${lastSyncResult.eventsProcessed} events → ${lastSyncResult.datesUpdated} days`
+              {googleLastSync?.synced 
+                ? `Last sync: ${googleLastSync.eventsProcessed} events → ${googleLastSync.datesUpdated} days`
                 : 'Import calendar events to mark busy times'
               }
             </p>
           </div>
           <Button 
-            onClick={handleSync} 
-            disabled={isSyncing}
+            onClick={handleGoogleSync} 
+            disabled={googleSyncing}
             variant="outline"
             size="sm"
             className="h-7 text-xs gap-1.5"
           >
-            {isSyncing ? (
+            {googleSyncing ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
               <RefreshCw className="h-3 w-3" />
             )}
-            {isSyncing ? 'Syncing...' : 'Sync Now'}
+            {googleSyncing ? 'Syncing...' : 'Sync Now'}
+          </Button>
+        </div>
+      )}
+
+      {/* Apple Calendar (iCal) */}
+      <div className="flex items-center justify-between rounded-lg border border-border bg-background p-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-red-500 to-red-600 shadow-sm">
+            <Calendar className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">Apple Calendar</p>
+            <p className="text-[10px] text-muted-foreground">
+              {icalConnected ? 'Connected via iCal URL' : 'Import via subscription URL'}
+            </p>
+          </div>
+        </div>
+
+        {icalLoading ? (
+          <Button variant="outline" size="sm" disabled>
+            <Loader2 className="h-3 w-3 animate-spin" />
+          </Button>
+        ) : icalConnected ? (
+          <div className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1 text-[10px] text-primary">
+              <Check className="h-3 w-3" />
+            </span>
+            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={icalDisconnect}>
+              Disconnect
+            </Button>
+          </div>
+        ) : (
+          <Button onClick={() => setShowIcalInput(!showIcalInput)} size="sm" className="h-7 text-xs gap-1.5">
+            <Link className="h-3 w-3" />
+            Connect
+          </Button>
+        )}
+      </div>
+
+      {/* iCal URL Input */}
+      {showIcalInput && !icalConnected && (
+        <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 space-y-2">
+          <p className="text-[10px] text-muted-foreground">
+            Paste your iCal subscription URL from Apple Calendar. Find it in Calendar app → Settings → Accounts → your calendar → copy the subscription URL.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              value={icalUrl}
+              onChange={(e) => setIcalUrl(e.target.value)}
+              placeholder="https://p##-caldav.icloud.com/..."
+              className="h-8 text-xs flex-1"
+            />
+            <Button
+              onClick={handleIcalConnect}
+              disabled={icalConnecting || !icalUrl.trim()}
+              size="sm"
+              className="h-8 text-xs gap-1.5 shrink-0"
+            >
+              {icalConnecting ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                'Add'
+              )}
+            </Button>
+          </div>
+          {icalError && (
+            <p className="text-[10px] text-destructive">{icalError}</p>
+          )}
+        </div>
+      )}
+
+      {/* iCal Sync Button */}
+      {icalConnected && (
+        <div className="flex items-center justify-between rounded-lg border border-dashed border-border bg-muted/30 p-3">
+          <div>
+            <p className="text-sm font-medium">Sync Apple Calendar</p>
+            <p className="text-[10px] text-muted-foreground">
+              {icalLastSync?.synced
+                ? `Last sync: ${icalLastSync.eventsProcessed} events → ${icalLastSync.datesUpdated} days`
+                : 'Import iCal events to mark busy times'
+              }
+            </p>
+          </div>
+          <Button
+            onClick={handleIcalSync}
+            disabled={icalSyncing}
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5"
+          >
+            {icalSyncing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3" />
+            )}
+            {icalSyncing ? 'Syncing...' : 'Sync Now'}
           </Button>
         </div>
       )}
