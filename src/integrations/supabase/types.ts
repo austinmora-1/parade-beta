@@ -381,6 +381,7 @@ export type Database = {
           friend_id: string
           id: string
           plan_id: string
+          role: string
           status: string
         }
         Insert: {
@@ -388,6 +389,7 @@ export type Database = {
           friend_id: string
           id?: string
           plan_id: string
+          role?: string
           status?: string
         }
         Update: {
@@ -395,6 +397,7 @@ export type Database = {
           friend_id?: string
           id?: string
           plan_id?: string
+          role?: string
           status?: string
         }
         Relationships: [

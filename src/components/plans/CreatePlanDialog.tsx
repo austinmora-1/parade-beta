@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Clock, Search, Loader2, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, Search, Loader2, AlertTriangle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [duration, setDuration] = useState('60');
   const [locationName, setLocationName] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
+  const [subscriberFriends, setSubscriberFriends] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
@@ -154,11 +155,16 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setDuration(editPlan.duration?.toString() || '60');
       setLocationName(editPlan.location?.name || '');
       // Map participant user IDs to friendship record IDs for the friend chips
-      const participantUserIds = editPlan.participants.map(p => p.friendUserId || p.id);
+      const participantUserIds = editPlan.participants.filter(p => p.role !== 'subscriber').map(p => p.friendUserId || p.id);
+      const subscriberUserIds = editPlan.participants.filter(p => p.role === 'subscriber').map(p => p.friendUserId || p.id);
       const matchedFriendIds = friends
         .filter(f => f.status === 'connected' && participantUserIds.includes(f.friendUserId || ''))
         .map(f => f.id);
+      const matchedSubscriberIds = friends
+        .filter(f => f.status === 'connected' && subscriberUserIds.includes(f.friendUserId || ''))
+        .map(f => f.id);
       setSelectedFriends(matchedFriendIds);
+      setSubscriberFriends(matchedSubscriberIds);
       setNotes(editPlan.notes || '');
     } else if (open && !editPlan) {
       // Reset for new plan
@@ -170,6 +176,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setDuration('60');
       setLocationName('');
       setSelectedFriends([]);
+      setSubscriberFriends([]);
       setNotes('');
     }
   }, [open, editPlan, defaultDate]);
@@ -257,6 +264,11 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       return;
     }
 
+    const allParticipants = [
+      ...friends.filter((f) => selectedFriends.includes(f.id)).map(f => ({ ...f, role: 'participant' as const })),
+      ...friends.filter((f) => subscriberFriends.includes(f.id)).map(f => ({ ...f, role: 'subscriber' as const })),
+    ];
+
     const planData = {
       title,
       activity,
@@ -264,7 +276,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       timeSlot,
       duration: parseInt(duration) || 60,
       location: locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined,
-      participants: friends.filter((f) => selectedFriends.includes(f.id)),
+      participants: allParticipants,
       notes,
     };
 
@@ -289,16 +301,27 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     setDuration('60');
     setLocationName('');
     setSelectedFriends([]);
+    setSubscriberFriends([]);
     setNotes('');
     setParticipantAvailability([]);
   };
 
+  // Cycle: unselected -> participant -> subscriber -> unselected
   const toggleFriend = (friendId: string) => {
-    setSelectedFriends((prev) =>
-      prev.includes(friendId)
-        ? prev.filter((id) => id !== friendId)
-        : [...prev, friendId]
-    );
+    const isParticipant = selectedFriends.includes(friendId);
+    const isSubscriber = subscriberFriends.includes(friendId);
+    
+    if (!isParticipant && !isSubscriber) {
+      // Add as participant
+      setSelectedFriends(prev => [...prev, friendId]);
+    } else if (isParticipant) {
+      // Switch to subscriber
+      setSelectedFriends(prev => prev.filter(id => id !== friendId));
+      setSubscriberFriends(prev => [...prev, friendId]);
+    } else {
+      // Remove subscriber
+      setSubscriberFriends(prev => prev.filter(id => id !== friendId));
+    }
   };
 
   return (
@@ -470,29 +493,37 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
 
           {/* Friends - compact */}
           {friends.filter((f) => f.status === 'connected').length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1">
                 <Users className="h-3 w-3" />
-                Invite Friends
+                Friends
               </Label>
               <div className="flex flex-wrap gap-1">
                 {friends
                   .filter((f) => f.status === 'connected')
-                  .map((friend) => (
-                    <button
-                      key={friend.id}
-                      onClick={() => toggleFriend(friend.id)}
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-medium transition-all",
-                        selectedFriends.includes(friend.id)
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      )}
-                    >
-                      {friend.name}
-                    </button>
-                  ))}
+                  .map((friend) => {
+                    const isParticipant = selectedFriends.includes(friend.id);
+                    const isSubscriber = subscriberFriends.includes(friend.id);
+                    return (
+                      <button
+                        key={friend.id}
+                        onClick={() => toggleFriend(friend.id)}
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-xs font-medium transition-all flex items-center gap-1",
+                          isParticipant && "bg-primary text-primary-foreground",
+                          isSubscriber && "bg-accent text-accent-foreground border border-border",
+                          !isParticipant && !isSubscriber && "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
+                      >
+                        {isSubscriber && <Eye className="h-3 w-3" />}
+                        {friend.name}
+                      </button>
+                    );
+                  })}
               </div>
+              <p className="text-[10px] text-muted-foreground">
+                Click: invite · Click again: subscribe (view only) · Click again: remove
+              </p>
             </div>
           )}
 

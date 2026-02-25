@@ -87,8 +87,9 @@ export function AvailabilityGrid() {
   };
 
   const getSlotStatus = (date: Date, slot: TimeSlot) => {
+    // Exclude plans where the user is only a subscriber (view-only)
     const hasPlan = plans.some(
-      (p) => isSameDay(p.date, date) && p.timeSlot === slot
+      (p) => isSameDay(p.date, date) && p.timeSlot === slot && p.myRole !== 'subscriber'
     );
     if (hasPlan) return 'busy';
 
