@@ -91,6 +91,12 @@ export function useEllyChat() {
     setIsLoading(true);
 
     try {
+      // Ensure we have a fresh session before calling
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      if (!freshSession) {
+        throw new Error("Your session has expired. Please refresh the page and try again.");
+      }
+
       // Build API messages (last 20 for context window)
       const apiMessages = updated.slice(-20).map(m => ({
         role: m.role,
