@@ -38,3 +38,12 @@ verify_jwt = false
 
 [functions.elly-conversation-assist]
 verify_jwt = false
+
+[functions.ical-connect]
+verify_jwt = false
+
+[functions.ical-disconnect]
+verify_jwt = false
+
+[functions.ical-sync]
+verify_jwt = false
