@@ -20,7 +20,7 @@ import {
 import { toast } from 'sonner';
 
 export default function Plans() {
-  const { plans, deletePlan } = usePlannerStore();
+  const { plans, deletePlan, userId } = usePlannerStore();
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -38,12 +38,16 @@ export default function Plans() {
     setDeleteConfirmId(id);
   };
 
+  const isOwner = planToDelete && (!planToDelete.userId || planToDelete.userId === userId);
+
   const confirmDelete = async () => {
     if (!deleteConfirmId || !planToDelete) return;
     const hadParticipants = planToDelete.participants.length > 0;
     await deletePlan(deleteConfirmId);
     setDeleteConfirmId(null);
-    if (hadParticipants) {
+    if (!isOwner) {
+      toast.success('You have declined this plan.');
+    } else if (hadParticipants) {
       toast.success('Plan deleted. Participants have been notified.');
     } else {
       toast.success('Plan deleted.');
@@ -158,17 +162,19 @@ export default function Plans() {
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete plan?</AlertDialogTitle>
+            <AlertDialogTitle>{isOwner ? 'Delete plan?' : 'Decline this plan?'}</AlertDialogTitle>
             <AlertDialogDescription>
-              {planToDelete?.participants && planToDelete.participants.length > 0
-                ? `This will permanently delete "${planToDelete.title}" and notify ${planToDelete.participants.map(p => p.name).join(', ')} that the plan has been cancelled.`
-                : `This will permanently delete "${planToDelete?.title}". This action cannot be undone.`}
+              {!isOwner
+                ? `This will remove "${planToDelete?.title}" from your plans and show as a decline to the organiser.`
+                : planToDelete?.participants && planToDelete.participants.length > 0
+                  ? `This will permanently delete "${planToDelete.title}" and notify ${planToDelete.participants.map(p => p.name).join(', ')} that the plan has been cancelled.`
+                  : `This will permanently delete "${planToDelete?.title}". This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {isOwner ? 'Delete' : 'Decline'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

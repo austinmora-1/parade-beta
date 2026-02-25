@@ -52,6 +52,7 @@ export interface Friend {
 
 export interface Plan {
   id: string;
+  userId?: string; // owner of the plan
   title: string;
   activity: ActivityType | string; // Allow custom activity IDs
   location?: Location;

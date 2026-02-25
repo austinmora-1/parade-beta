@@ -203,6 +203,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         const normalizedPlanDate = new Date(planYear, planMonth, planDay);
         return {
           id: p.id,
+          userId: p.user_id,
           title: p.title,
           activity: p.activity as ActivityType,
           date: normalizedPlanDate,
@@ -484,20 +485,36 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const { userId, plans: currentPlans, availability, defaultSettings } = get();
     const planToDelete = currentPlans.find(p => p.id === id);
     
-    // Delete plan participants first (cascade doesn't exist, so do it manually)
-    await supabase
-      .from('plan_participants')
-      .delete()
-      .eq('plan_id', id);
+    const isOwner = !planToDelete?.userId || planToDelete.userId === userId;
     
-    const { error } = await supabase
-      .from('plans')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error deleting plan:', error);
-      return;
+    if (isOwner) {
+      // Owner: delete participants then the plan itself
+      await supabase
+        .from('plan_participants')
+        .delete()
+        .eq('plan_id', id);
+      
+      const { error } = await supabase
+        .from('plans')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting plan:', error);
+        return;
+      }
+    } else {
+      // Non-owner: update participation status to 'declined'
+      const { error } = await supabase
+        .from('plan_participants')
+        .update({ status: 'declined' })
+        .eq('plan_id', id)
+        .eq('friend_id', userId!);
+      
+      if (error) {
+        console.error('Error declining plan:', error);
+        return;
+      }
     }
     
     set((state) => ({
