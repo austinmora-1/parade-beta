@@ -14,7 +14,7 @@ export function MobileHeader() {
       <div className="flex-1 flex justify-start">
         <button
           onClick={openFeedback}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:text-primary-foreground"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-[hsl(150_50%_50%)] transition-colors hover:text-[hsl(150_50%_60%)]"
         >
           <MessageSquarePlus className="h-5 w-5" />
         </button>
@@ -23,12 +23,12 @@ export function MobileHeader() {
         <ParadeWordmark size="md" className="leading-none" />
       </Link>
       <div className="flex-1 flex justify-end gap-1">
-        <div className="[&_button]:text-primary-foreground/80 [&_button:hover]:text-primary-foreground [&_button:hover]:bg-white/10">
+        <div className="[&_button]:text-[hsl(150_50%_50%)] [&_button:hover]:text-[hsl(150_50%_60%)] [&_button:hover]:bg-white/10">
           <ThemeToggle />
         </div>
         <Link
           to="/notifications"
-          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:text-primary-foreground"
+          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[hsl(150_50%_50%)] transition-colors hover:text-[hsl(150_50%_60%)]"
         >
           <Bell className="h-5 w-5" />
           {totalNotifications > 0 && (
