@@ -187,10 +187,8 @@
   .parade-wordmark {
     font-family: 'Monoton', sans-serif;
     font-weight: 400;
-    background: var(--gradient-wordmark);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: white;
+    -webkit-text-fill-color: white;
   }
 
   .shadow-soft {
