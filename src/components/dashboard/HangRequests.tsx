@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -38,12 +38,43 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
   declined: { label: 'Declined', variant: 'destructive' },
 };
 
+const DISMISSED_KEY = 'hang_requests_dismissed';
+const SEEN_DECLINED_KEY = 'hang_requests_seen_declined';
+
+function getDismissedIds(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]'));
+  } catch { return new Set(); }
+}
+
+function addDismissedId(id: string) {
+  const ids = getDismissedIds();
+  ids.add(id);
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]));
+}
+
+function getSeenDeclinedIds(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_DECLINED_KEY) || '[]'));
+  } catch { return new Set(); }
+}
+
+function markDeclinedAsSeen(ids: string[]) {
+  if (ids.length === 0) return;
+  const seen = getSeenDeclinedIds();
+  ids.forEach(id => seen.add(id));
+  localStorage.setItem(SEEN_DECLINED_KEY, JSON.stringify([...seen]));
+}
+
 export function HangRequests() {
   const { loadAllData } = usePlannerStore();
   const { user } = useAuth();
   const [requests, setRequests] = useState<HangRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(getDismissedIds);
+  const [seenDeclinedIds, setSeenDeclinedIds] = useState<Set<string>>(getSeenDeclinedIds);
+  const seenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -94,6 +125,29 @@ export function HangRequests() {
 
   const isOutgoing = (request: HangRequest) => request.sender_id === user?.id;
 
+  // Mark declined requests as "seen" after they've been visible for 2 seconds
+  useEffect(() => {
+    const unseenDeclined = requests.filter(
+      r => r.status === 'declined' && !seenDeclinedIds.has(r.id) && !dismissedIds.has(r.id)
+    );
+
+    if (unseenDeclined.length > 0) {
+      seenTimerRef.current = setTimeout(() => {
+        const ids = unseenDeclined.map(r => r.id);
+        markDeclinedAsSeen(ids);
+        setSeenDeclinedIds(prev => {
+          const next = new Set(prev);
+          ids.forEach(id => next.add(id));
+          return next;
+        });
+      }, 2000);
+    }
+
+    return () => {
+      if (seenTimerRef.current) clearTimeout(seenTimerRef.current);
+    };
+  }, [requests, seenDeclinedIds, dismissedIds]);
+
   const updateStatus = async (id: string, status: 'accepted' | 'declined') => {
     setUpdating(id);
     const { error } = await supabase
@@ -107,32 +161,34 @@ export function HangRequests() {
       toast.success(status === 'accepted' ? 'Request accepted! A plan has been created 🎉' : 'Request declined');
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
       if (status === 'accepted') {
-        // Reload plans to show the newly created plan from the trigger
         await loadAllData();
       }
     }
     setUpdating(null);
   };
 
-  const deleteRequest = async (id: string) => {
-    setUpdating(id);
-    const { error } = await supabase
-      .from('hang_requests')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      toast.error('Failed to delete request');
-    } else {
-      toast.success('Request removed');
-      setRequests(prev => prev.filter(r => r.id !== id));
-    }
-    setUpdating(null);
+  const dismissRequest = (id: string) => {
+    addDismissedId(id);
+    setDismissedIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    toast.success('Request removed from list');
   };
 
-  const incomingPending = requests.filter(r => !isOutgoing(r) && r.status === 'pending');
-  const outgoingPending = requests.filter(r => isOutgoing(r) && r.status === 'pending');
-  const resolved = requests.filter(r => r.status !== 'pending');
+  // Filter logic:
+  // - Never show dismissed requests
+  // - Hide declined requests that have already been seen
+  const visibleRequests = requests.filter(r => {
+    if (dismissedIds.has(r.id)) return false;
+    if (r.status === 'declined' && seenDeclinedIds.has(r.id)) return false;
+    return true;
+  });
+
+  const incomingPending = visibleRequests.filter(r => !isOutgoing(r) && r.status === 'pending');
+  const outgoingPending = visibleRequests.filter(r => isOutgoing(r) && r.status === 'pending');
+  const resolved = visibleRequests.filter(r => r.status !== 'pending');
 
   if (loading) {
     return (
@@ -166,7 +222,7 @@ export function HangRequests() {
               <ArrowDownLeft className="h-3 w-3 shrink-0 text-primary" />
             )}
             <span className="font-medium text-xs text-foreground truncate">
-              {outgoing ? request.requester_name : request.requester_name}
+              {request.requester_name}
             </span>
             <span className="text-[10px] text-muted-foreground shrink-0">
               {format(parseISO(request.selected_day), 'MMM d')} · {TIME_SLOT_SHORT[request.selected_slot] || request.selected_slot}
@@ -177,15 +233,11 @@ export function HangRequests() {
               {statusConf.label}
             </Badge>
             <button
-              onClick={() => deleteRequest(request.id)}
+              onClick={() => dismissRequest(request.id)}
               disabled={updating === request.id}
               className="opacity-0 group-hover:opacity-100 transition-opacity h-4 w-4 rounded flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground"
             >
-              {updating === request.id ? (
-                <Loader2 className="h-2.5 w-2.5 animate-spin" />
-              ) : (
-                <X className="h-2.5 w-2.5" />
-              )}
+              <X className="h-2.5 w-2.5" />
             </button>
           </div>
         </div>
@@ -229,7 +281,7 @@ export function HangRequests() {
     );
   };
 
-  if (requests.length === 0) {
+  if (visibleRequests.length === 0) {
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -302,7 +354,7 @@ export function HangRequests() {
           </div>
         )}
 
-        {/* Resolved */}
+        {/* Resolved (accepted + unseen declined) */}
         {resolved.length > 0 && (
           <div className="space-y-1.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
