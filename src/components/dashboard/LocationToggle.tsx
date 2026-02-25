@@ -15,7 +15,7 @@ export function LocationToggle() {
       size="sm"
       onClick={toggle}
       className={cn(
-        "gap-1.5 transition-colors",
+        "gap-1.5 transition-colors font-semibold",
         isHome
           ? "border-availability-available bg-availability-available/15 text-availability-available hover:bg-availability-available/25"
           : "border-muted-foreground/40 text-muted-foreground hover:bg-muted"
