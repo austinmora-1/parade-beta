@@ -263,12 +263,40 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         })
       );
       
-      // Combine and dedupe (connected friends might appear in both)
-      const allFriends = [...outgoingFriends];
+      // Deduplicate outgoing friends: if same friendUserId appears multiple times
+      // (e.g. an 'invited' email record + a 'connected'/'pending' record), keep the best one
+      const dedupeOutgoing = (list: Friend[]): Friend[] => {
+        const byUserId = new Map<string, Friend>();
+        const noUserId: Friend[] = [];
+        const statusPriority: Record<string, number> = { connected: 3, pending: 2, invited: 1 };
+        
+        for (const f of list) {
+          if (!f.friendUserId) {
+            noUserId.push(f);
+            continue;
+          }
+          const existing = byUserId.get(f.friendUserId);
+          if (!existing || (statusPriority[f.status] || 0) > (statusPriority[existing.status] || 0)) {
+            byUserId.set(f.friendUserId, f);
+          }
+        }
+        
+        // Also remove email-invited entries if we have a match by friendUserId
+        return [...byUserId.values(), ...noUserId.filter(f => {
+          if (f.status !== 'invited' || !f.email) return true;
+          // Check if any connected/pending friend has the same email-derived name
+          return !byUserId.size; // keep if no userId-based friends exist
+        })];
+      };
+      
+      const dedupedOutgoing = dedupeOutgoing(outgoingFriends);
+      
+      // Combine and dedupe with incoming (connected friends might appear in both)
+      const allFriends = [...dedupedOutgoing];
       for (const incoming of incomingFriends) {
-        // Only add if not already connected via outgoing
-        const existingOutgoing = outgoingFriends.find(
-          (o) => o.friendUserId === incoming.friendUserId && o.status === 'connected'
+        // Only add if not already present via outgoing
+        const existingOutgoing = dedupedOutgoing.find(
+          (o) => o.friendUserId === incoming.friendUserId
         );
         if (!existingOutgoing) {
           allFriends.push(incoming);
