@@ -187,8 +187,8 @@
   .parade-wordmark {
     font-family: 'Cherry Bomb One', cursive;
     font-weight: 400;
-    color: white;
-    -webkit-text-fill-color: white;
+    color: hsl(150 15% 55%);
+    -webkit-text-fill-color: hsl(150 15% 55%);
   }
 
   .shadow-soft {
