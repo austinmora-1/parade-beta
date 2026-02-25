@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
-import { format, addDays, isToday, differenceInDays, getMonth } from 'date-fns';
+import { format, addDays, isToday as isDateToday, differenceInDays, getMonth } from 'date-fns';
 import { Home, Plane, MapPin, Plus, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -123,6 +123,11 @@ export function LocationTimeline() {
       return newMap;
     });
 
+    // If toggling today, also update the planner store's global locationStatus
+    if (isDateToday(date)) {
+      usePlannerStore.setState({ locationStatus: newStatus });
+    }
+
     try {
       const { error } = await supabase
         .from('availability')
@@ -145,6 +150,9 @@ export function LocationTimeline() {
         newMap.set(dateStr, { status: currentStatus, location: existingData?.location });
         return newMap;
       });
+      if (isDateToday(date)) {
+        usePlannerStore.setState({ locationStatus: currentStatus });
+      }
       toast.error('Failed to update status');
     } finally {
       setUpdatingDate(null);
@@ -275,7 +283,7 @@ export function LocationTimeline() {
         <div className="flex gap-1 min-w-max">
           {days.map((day, index) => {
             const status = getDayLocation(day);
-            const isCurrentDay = isToday(day);
+            const isCurrentDay = isDateToday(day);
             const trip = getTripForDay(index);
             const isFirstOfTrip = trip && trip.startIndex === index;
             const isLastOfTrip = trip && trip.endIndex === index;
