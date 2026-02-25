@@ -202,7 +202,8 @@ Guidelines:
 - Keep responses short since this is a chat thread
 - Don't prefix your messages with "[Elly]:" — just respond naturally
 - Reference participants by name when relevant
-- IMPORTANT: When you successfully create, update, or delete a plan using tools, always confirm what you did in your response. For example: "Done! I've created **Dinner at Mario's** for Saturday evening 🎉" or "Got it — I've updated the time to late afternoon ✅". Be specific about what changed.`;
+- IMPORTANT: When you create a plan, it will automatically be created for ALL participants in this conversation (not just the requester). Everyone gets the plan on their calendar. If the user specifically asks to exclude someone, mention that in the notes.
+- IMPORTANT: When you successfully create, update, or delete a plan using tools, always confirm what you did in your response and mention that it's been added to everyone's calendars. For example: "Done! I've created **Dinner at Mario's** for Saturday evening for both of you 🎉" or "Got it — I've updated the time to late afternoon ✅". Be specific about what changed.`;
 
     // AI call
     const aiMessages = [
@@ -257,7 +258,8 @@ Guidelines:
 
         try {
           if (tc.function.name === "create_plan") {
-            const { data, error } = await supabaseUser.from("plans").insert({
+            // Create plan for the requesting user
+            const { data: requesterPlan, error } = await supabaseUser.from("plans").insert({
               user_id: user.id,
               title: args.title,
               activity: args.activity,
@@ -269,7 +271,51 @@ Guidelines:
             }).select().single();
 
             if (error) throw error;
-            resultContent = JSON.stringify({ success: true, plan: data });
+
+            // Create plans for all OTHER real participants using admin client
+            const otherParticipants = participantIds.filter(
+              id => id !== user.id && id !== ELLY_USER_ID
+            );
+
+            const createdPlanIds: string[] = [requesterPlan.id];
+
+            for (const pid of otherParticipants) {
+              const { data: otherPlan, error: otherErr } = await supabaseAdmin.from("plans").insert({
+                user_id: pid,
+                title: args.title,
+                activity: args.activity,
+                date: new Date(args.date).toISOString(),
+                time_slot: args.time_slot,
+                duration: args.duration || 60,
+                location: args.location || null,
+                notes: args.notes || null,
+                source: "elly-conversation",
+              }).select("id").single();
+
+              if (!otherErr && otherPlan) {
+                createdPlanIds.push(otherPlan.id);
+              }
+            }
+
+            // Cross-link all participants on each plan
+            const allPlanUsers = [user.id, ...otherParticipants];
+            for (const planId of createdPlanIds) {
+              // Find the owner of this plan
+              for (const uid of allPlanUsers) {
+                // Add every OTHER user as a participant
+                const isOwner = (planId === requesterPlan.id && uid === user.id) ||
+                  (planId !== requesterPlan.id && uid !== user.id);
+                if (!isOwner) {
+                  await supabaseAdmin.from("plan_participants").insert({
+                    plan_id: planId,
+                    friend_id: uid,
+                    status: "accepted",
+                  });
+                }
+              }
+            }
+
+            resultContent = JSON.stringify({ success: true, plan: requesterPlan, created_for: allPlanUsers.length });
             actions.push({ type: "create_plan", args });
           } else if (tc.function.name === "update_plan") {
             const updates: any = {};
