@@ -99,13 +99,13 @@
 
   .dark {
     --background: 150 15% 8%;
-    --foreground: 120 10% 95%;
+    --foreground: 120 10% 90%;
 
     --card: 150 12% 12%;
-    --card-foreground: 120 10% 95%;
+    --card-foreground: 120 10% 90%;
 
-    --popover: 150 12% 12%;
-    --popover-foreground: 120 10% 95%;
+    --popover: 150 12% 14%;
+    --popover-foreground: 120 10% 90%;
 
     --primary: 150 40% 45%;
     --primary-foreground: 0 0% 100%;
@@ -115,27 +115,41 @@
     --secondary-foreground: 200 30% 90%;
 
     --muted: 150 12% 18%;
-    --muted-foreground: 120 8% 60%;
+    --muted-foreground: 120 8% 55%;
 
-    --accent: 200 30% 25%;
-    --accent-foreground: 200 35% 90%;
+    --accent: 200 25% 20%;
+    --accent-foreground: 200 35% 85%;
 
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 12% 20%;
-    --input: 150 12% 20%;
+    --border: 150 10% 18%;
+    --input: 150 10% 20%;
     --ring: 150 40% 45%;
 
+    /* Dark mode availability colors */
+    --available-light: 150 40% 18%;
+    --partial-light: 45 50% 18%;
+    --busy-light: 0 40% 18%;
+
+    /* Dark mode shadows */
+    --shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 8px 24px -8px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 16px 48px -12px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 40px hsl(150 40% 45% / 0.15);
+
+    --gradient-primary: linear-gradient(135deg, hsl(150 40% 40%), hsl(150 50% 48%));
+    --gradient-secondary: linear-gradient(135deg, hsl(200 35% 30%), hsl(200 45% 38%));
     --gradient-card: linear-gradient(145deg, hsl(150 12% 14%), hsl(150 10% 10%));
+    --gradient-hero: linear-gradient(160deg, hsl(150 40% 35%), hsl(170 35% 38%), hsl(200 35% 38%));
 
     --sidebar-background: 150 12% 10%;
-    --sidebar-foreground: 120 10% 95%;
+    --sidebar-foreground: 120 10% 90%;
     --sidebar-primary: 150 40% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 30% 22%;
+    --sidebar-accent: 200 25% 18%;
     --sidebar-accent-foreground: 200 35% 85%;
-    --sidebar-border: 150 12% 18%;
+    --sidebar-border: 150 10% 16%;
     --sidebar-ring: 150 40% 45%;
   }
 }

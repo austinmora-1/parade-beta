@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -34,6 +35,7 @@ export function Sidebar() {
           <div className="flex-1" />
           <ParadeWordmark size="lg" />
           <div className="flex-1 flex justify-end gap-1">
+            <ThemeToggle />
             <button
               onClick={openFeedback}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
