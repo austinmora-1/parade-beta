@@ -75,11 +75,13 @@
     --gradient-hero: linear-gradient(160deg, hsl(150 35% 40%), hsl(170 40% 45%), hsl(200 40% 45%));
     --gradient-wordmark: linear-gradient(
       135deg,
-      hsl(var(--vibe-social)) 0%,
-      hsl(var(--vibe-chill)) 25%,
-      hsl(var(--vibe-athletic)) 50%,
-      hsl(var(--vibe-productive)) 75%,
-      hsl(var(--vibe-social)) 100%
+      hsl(0 75% 55%) 0%,
+      hsl(30 85% 55%) 16%,
+      hsl(50 90% 50%) 33%,
+      hsl(145 65% 45%) 50%,
+      hsl(200 70% 50%) 66%,
+      hsl(270 60% 58%) 83%,
+      hsl(330 70% 55%) 100%
     );
     /* Shadows */
     --shadow-sm: 0 2px 8px -2px hsl(150 20% 15% / 0.08);
