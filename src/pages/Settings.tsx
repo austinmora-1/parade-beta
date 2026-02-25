@@ -13,7 +13,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
-import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
@@ -24,6 +24,7 @@ import { VIBE_CONFIG, VibeType, TimeSlot } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { useArcadeMode } from '@/hooks/useArcadeMode';
 
 // Helper function for formatting time
 const formatTime = (decimalHour: number) => {
@@ -48,6 +49,7 @@ interface Friend {
 export default function Settings() {
   const { signOut, session } = useAuth();
   const navigate = useNavigate();
+  const { isArcade, toggleArcade } = useArcadeMode();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
@@ -686,6 +688,30 @@ export default function Settings() {
                   )}
                 </AnimatePresence>
               </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Arcade Mode */}
+        <AccordionItem value="arcade" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
+          <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+              <Gamepad2 className="h-4 w-4 text-accent-foreground" />
+              <span className="font-display text-sm font-semibold">🕹️ Arcade Mode</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-3">
+            <div className="flex items-center justify-between pt-1">
+              <div>
+                <p className="text-sm font-medium">Enable Arcade Mode</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Switch to a radical 80s arcade theme with neon colors, scanlines, and retro vibes
+                </p>
+              </div>
+              <Switch
+                checked={isArcade}
+                onCheckedChange={toggleArcade}
+              />
             </div>
           </AccordionContent>
         </AccordionItem>
