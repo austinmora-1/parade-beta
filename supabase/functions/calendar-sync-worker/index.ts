@@ -1,0 +1,385 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// ── Shared helpers (mirrored from google-calendar-sync & ical-sync) ─────────
+
+function getTimeSlot(hour: number): string {
+  if (hour >= 6 && hour < 9) return 'early_morning'
+  if (hour >= 9 && hour < 12) return 'late_morning'
+  if (hour >= 12 && hour < 15) return 'early_afternoon'
+  if (hour >= 15 && hour < 18) return 'late_afternoon'
+  if (hour >= 18 && hour < 22) return 'evening'
+  return 'late_night'
+}
+
+function getHourInTimezone(date: Date, timezone?: string): number {
+  if (timezone) {
+    return parseInt(new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', hour12: false }).format(date), 10)
+  }
+  return date.getUTCHours()
+}
+
+function getDateString(date: Date, timezone?: string): string {
+  if (timezone) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+  }
+  return date.toISOString().split('T')[0]
+}
+
+function getEventTimeSlots(startTime: Date, endTime: Date, timezone?: string): string[] {
+  const slots = new Set<string>()
+  const current = new Date(startTime)
+  while (current < endTime) {
+    slots.add(getTimeSlot(getHourInTimezone(current, timezone)))
+    current.setTime(current.getTime() + 60 * 60 * 1000)
+  }
+  return Array.from(slots)
+}
+
+function getEventDates(startTime: Date, endTime: Date, timezone?: string): string[] {
+  const dates: string[] = []
+  const seen = new Set<string>()
+  const current = new Date(startTime)
+  while (current <= endTime) {
+    const d = getDateString(current, timezone)
+    if (!seen.has(d)) { seen.add(d); dates.push(d) }
+    current.setTime(current.getTime() + 60 * 60 * 1000)
+  }
+  return dates
+}
+
+function classifyActivity(summary?: string): string {
+  if (!summary) return 'events'
+  const s = summary.toLowerCase()
+  if (/\bflight\b/.test(s)) return 'flight'
+  if (/\b(workout|gym|fitness|yoga|run|running|swim|cycling|hike|basketball|soccer|tennis|training|exercise)\b/.test(s)) return 'workout-out'
+  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|food)\b/.test(s)) return 'getting-food'
+  if (/\b(drinks|happy hour|bar|cocktail|beer|wine)\b/.test(s)) return 'drinks'
+  if (/\b(coffee|cafe|café|tea)\b/.test(s)) return 'coffee'
+  if (/\b(movie|cinema|concert|show|theater|theatre)\b/.test(s)) return 'movies'
+  if (/\b(doctor|dentist|appointment|therapy)\b/.test(s)) return 'doctor'
+  if (/\b(errand|bank|pickup)\b/.test(s)) return 'errands'
+  if (/\b(shop|shopping|grocery)\b/.test(s)) return 'shopping'
+  return 'events'
+}
+
+// Airport codes for flight detection
+const AIRPORT_CITY_MAP: Record<string, string> = {
+  ATL: 'Atlanta', BOS: 'Boston', DEN: 'Denver', DFW: 'Dallas', EWR: 'New York City',
+  JFK: 'New York City', LAX: 'Los Angeles', LGA: 'New York City', MIA: 'Miami',
+  ORD: 'Chicago', SEA: 'Seattle', SFO: 'San Francisco', LHR: 'London', CDG: 'Paris',
+  NRT: 'Tokyo', HND: 'Tokyo', SIN: 'Singapore', HKG: 'Hong Kong', SYD: 'Sydney',
+  DXB: 'Dubai', AMS: 'Amsterdam', FRA: 'Frankfurt', ICN: 'Seoul',
+}
+
+function isFlightEvent(summary?: string): boolean {
+  if (!summary) return false
+  const s = summary.toLowerCase()
+  if (/\bflight\b/.test(s)) return true
+  if (/\b(united|delta|american|southwest|jetblue|alaska|spirit)\b/.test(s)) return true
+  return false
+}
+
+function extractFlightDestination(summary?: string): string | null {
+  if (!summary) return null
+  const codes = summary.toUpperCase().match(/\b([A-Z]{3})\b/g)
+  if (codes) {
+    const airports = codes.filter(c => c in AIRPORT_CITY_MAP)
+    if (airports.length > 0) return AIRPORT_CITY_MAP[airports[airports.length - 1]]
+  }
+  return null
+}
+
+// ── ICS Parser ──────────────────────────────────────────────────────────────
+
+interface ICalEvent {
+  uid: string
+  summary: string
+  dtstart: Date
+  dtend: Date
+  isAllDay: boolean
+  location?: string
+}
+
+function parseICS(icsText: string, rangeStart: Date, rangeEnd: Date): ICalEvent[] {
+  const events: ICalEvent[] = []
+  const lines = icsText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n[ \t]/g, '').split('\n')
+  let inEvent = false, uid = '', summary = '', dtstart: Date | null = null, dtend: Date | null = null, isAllDay = false, location = ''
+
+  for (const line of lines) {
+    if (line === 'BEGIN:VEVENT') { inEvent = true; uid = ''; summary = ''; dtstart = null; dtend = null; isAllDay = false; location = ''; continue }
+    if (line === 'END:VEVENT') {
+      inEvent = false
+      if (dtstart && dtend && dtend > rangeStart && dtstart < rangeEnd) {
+        events.push({ uid, summary, dtstart, dtend, isAllDay, location: location || undefined })
+      }
+      continue
+    }
+    if (!inEvent) continue
+    if (line.startsWith('UID:')) uid = line.slice(4)
+    else if (line.startsWith('SUMMARY:')) summary = line.slice(8).replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\')
+    else if (line.startsWith('LOCATION:')) location = line.slice(9).replace(/\\n/g, '\n').replace(/\\,/g, ',')
+    else if (line.startsWith('DTSTART')) { const p = parseICSDate(line); if (p) { dtstart = p.date; isAllDay = p.allDay } }
+    else if (line.startsWith('DTEND')) { const p = parseICSDate(line); if (p) dtend = p.date }
+  }
+  return events
+}
+
+function parseICSDate(line: string): { date: Date; allDay: boolean } | null {
+  const colonIdx = line.indexOf(':')
+  if (colonIdx === -1) return null
+  const params = line.slice(0, colonIdx)
+  const value = line.slice(colonIdx + 1).trim()
+  const allDay = params.includes('VALUE=DATE') && !params.includes('VALUE=DATE-TIME')
+  if (allDay) {
+    return { date: new Date(Date.UTC(parseInt(value.slice(0, 4)), parseInt(value.slice(4, 6)) - 1, parseInt(value.slice(6, 8)))), allDay: true }
+  }
+  const y = parseInt(value.slice(0, 4)), m = parseInt(value.slice(4, 6)) - 1, d = parseInt(value.slice(6, 8))
+  const h = parseInt(value.slice(9, 11)), min = parseInt(value.slice(11, 13)), s = parseInt(value.slice(13, 15)) || 0
+  if (value.endsWith('Z')) return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
+  return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
+}
+
+// ── Google Calendar Sync Logic ──────────────────────────────────────────────
+
+interface GCalEvent {
+  id: string
+  summary?: string
+  start: { dateTime?: string; date?: string }
+  end: { dateTime?: string; date?: string }
+}
+
+async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ eventsProcessed: number; datesUpdated: number }> {
+  const { data: connRows, error: connError } = await adminClient
+    .from('calendar_connections')
+    .select('access_token, refresh_token, expires_at')
+    .eq('user_id', userId)
+    .eq('provider', 'google')
+
+  if (connError || !connRows || connRows.length === 0) {
+    throw new Error('Google Calendar not connected')
+  }
+
+  let accessToken = connRows[0].access_token
+
+  // Refresh if expired
+  if (new Date(connRows[0].expires_at) < new Date()) {
+    const clientId = Deno.env.get('GOOGLE_CLIENT_ID')!
+    const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')!
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId, client_secret: clientSecret,
+        refresh_token: connRows[0].refresh_token, grant_type: 'refresh_token',
+      }),
+    })
+    const tokens = await response.json()
+    if (tokens.error) throw new Error('Failed to refresh Google token')
+    accessToken = tokens.access_token
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+    await adminClient.from('calendar_connections').update({ access_token: accessToken, expires_at: expiresAt, updated_at: new Date().toISOString() }).eq('user_id', userId).eq('provider', 'google')
+  }
+
+  const now = new Date()
+  const threeMonthsAgo = new Date(now); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+  const threeMonthsAhead = new Date(now); threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3)
+
+  const calendarUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+  calendarUrl.searchParams.set('timeMin', threeMonthsAgo.toISOString())
+  calendarUrl.searchParams.set('timeMax', threeMonthsAhead.toISOString())
+  calendarUrl.searchParams.set('maxResults', '250')
+  calendarUrl.searchParams.set('singleEvents', 'true')
+  calendarUrl.searchParams.set('orderBy', 'startTime')
+
+  const calendarResponse = await fetch(calendarUrl.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!calendarResponse.ok) {
+    throw new Error(`Google Calendar API error: ${calendarResponse.status}`)
+  }
+
+  const calendarData = await calendarResponse.json()
+  const events: GCalEvent[] = calendarData.items || []
+
+  // Process events into availability + plans
+  const busySlotsByDate: Map<string, Set<string>> = new Map()
+  const flightLocationByDate: Map<string, string> = new Map()
+
+  for (const event of events) {
+    if (!event.start.dateTime || !event.end.dateTime) {
+      if (event.start.date && event.end.date) {
+        const startDate = new Date(event.start.date)
+        const endDate = new Date(event.end.date); endDate.setDate(endDate.getDate() - 1)
+        const dates = getEventDates(startDate, endDate)
+        for (const date of dates) {
+          if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
+          ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(s => busySlotsByDate.get(date)!.add(s))
+        }
+      }
+      continue
+    }
+    const startTime = new Date(event.start.dateTime)
+    const endTime = new Date(event.end.dateTime)
+    const dates = getEventDates(startTime, endTime)
+    for (const date of dates) {
+      if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
+      getEventTimeSlots(startTime, endTime).forEach(s => busySlotsByDate.get(date)!.add(s))
+    }
+
+    if (isFlightEvent(event.summary)) {
+      const city = extractFlightDestination(event.summary)
+      if (city) {
+        for (const date of dates) flightLocationByDate.set(date, city)
+      }
+    }
+  }
+
+  let updatedCount = 0
+  for (const [date, slots] of busySlotsByDate) {
+    const slotUpdates: Record<string, boolean> = {}
+    for (const slot of slots) slotUpdates[slot] = false
+    const locationFields: Record<string, string> = {}
+    const flightCity = flightLocationByDate.get(date)
+    if (flightCity) { locationFields.location_status = 'away'; locationFields.trip_location = flightCity }
+    const { error } = await adminClient.from('availability').upsert({ user_id: userId, date, ...slotUpdates, ...locationFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+    if (!error) updatedCount++
+  }
+
+  // Create plans
+  await adminClient.from('plans').delete().eq('user_id', userId).eq('source', 'gcal')
+  const planRows = events.map(event => {
+    const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
+    if (!startDate) return null
+    const hour = event.start.dateTime ? startDate.getUTCHours() : 8
+    const localDateStr = getDateString(startDate)
+    return {
+      user_id: userId, title: event.summary || 'Gcal imported event',
+      activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
+      time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
+      source: 'gcal', source_event_id: event.id,
+    }
+  }).filter(Boolean)
+
+  if (planRows.length > 0) {
+    await adminClient.from('plans').insert(planRows)
+  }
+
+  return { eventsProcessed: events.length, datesUpdated: updatedCount }
+}
+
+// ── iCal Sync Logic ─────────────────────────────────────────────────────────
+
+async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eventsProcessed: number; datesUpdated: number }> {
+  const { data: connRows, error: connError } = await adminClient
+    .from('calendar_connections')
+    .select('access_token')
+    .eq('user_id', userId)
+    .eq('provider', 'ical')
+
+  if (connError || !connRows || connRows.length === 0) throw new Error('iCal not connected')
+
+  const icalUrl = connRows[0].access_token
+  if (!icalUrl) throw new Error('No iCal URL stored')
+
+  const icsResponse = await fetch(icalUrl)
+  if (!icsResponse.ok) throw new Error('Failed to fetch iCal feed')
+  const icsText = await icsResponse.text()
+  if (!icsText.includes('BEGIN:VCALENDAR')) throw new Error('Invalid iCal data')
+
+  const now = new Date()
+  const rangeStart = new Date(now); rangeStart.setMonth(rangeStart.getMonth() - 3)
+  const rangeEnd = new Date(now); rangeEnd.setMonth(rangeEnd.getMonth() + 3)
+  const events = parseICS(icsText, rangeStart, rangeEnd)
+
+  const busySlotsByDate: Map<string, Set<string>> = new Map()
+  for (const event of events) {
+    if (event.isAllDay) {
+      const endExclusive = new Date(event.dtend); endExclusive.setDate(endExclusive.getDate() - 1)
+      for (const date of getEventDates(event.dtstart, endExclusive)) {
+        if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
+        ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(s => busySlotsByDate.get(date)!.add(s))
+      }
+      continue
+    }
+    for (const date of getEventDates(event.dtstart, event.dtend)) {
+      if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
+      getEventTimeSlots(event.dtstart, event.dtend).forEach(s => busySlotsByDate.get(date)!.add(s))
+    }
+  }
+
+  let updatedCount = 0
+  for (const [date, slots] of busySlotsByDate) {
+    const slotUpdates: Record<string, boolean> = {}
+    for (const slot of slots) slotUpdates[slot] = false
+    const { error } = await adminClient.from('availability').upsert({ user_id: userId, date, ...slotUpdates }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+    if (!error) updatedCount++
+  }
+
+  await adminClient.from('plans').delete().eq('user_id', userId).eq('source', 'ical')
+  const planRows = events.map(event => {
+    const hour = event.isAllDay ? 8 : event.dtstart.getUTCHours()
+    const localDateStr = getDateString(event.dtstart)
+    return {
+      user_id: userId, title: event.summary || 'iCal imported event',
+      activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
+      time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
+      location: event.location || null, source: 'ical', source_event_id: event.uid,
+    }
+  })
+  if (planRows.length > 0) await adminClient.from('plans').insert(planRows)
+
+  return { eventsProcessed: events.length, datesUpdated: updatedCount }
+}
+
+// ── Main Handler ────────────────────────────────────────────────────────────
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const body = await req.json()
+    const { userId, provider } = body
+
+    if (!userId || !provider) {
+      return new Response(JSON.stringify({ error: 'Missing userId or provider' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    let result: { eventsProcessed: number; datesUpdated: number }
+
+    if (provider === 'google') {
+      result = await syncGoogleCalendar(adminClient, userId)
+    } else if (provider === 'ical') {
+      result = await syncICalCalendar(adminClient, userId)
+    } else {
+      return new Response(JSON.stringify({ error: `Unknown provider: ${provider}` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    return new Response(
+      JSON.stringify({ synced: true, ...result, message: `Synced ${result.eventsProcessed} events` }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  } catch (error: unknown) {
+    console.error('Worker sync error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return new Response(JSON.stringify({ error: message, synced: false }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+})

@@ -102,6 +102,25 @@ Deno.serve(async (req) => {
     }
 
     console.log('Calendar connection saved successfully')
+
+    // Trigger initial sync in the background
+    try {
+      const syncUrl = `${supabaseUrl}/functions/v1/calendar-sync-worker`
+      fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({ userId, provider: 'google' }),
+      }).then(res => {
+        console.log('Initial Google sync triggered, status:', res.status)
+      }).catch(err => {
+        console.error('Initial Google sync failed:', err)
+      })
+    } catch (e) {
+      console.error('Failed to trigger initial sync:', e)
+    }
     
     // Determine the redirect URL - use origin from state, or fallback to published URL
     let appUrl = origin
