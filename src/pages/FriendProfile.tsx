@@ -213,10 +213,11 @@ export default function FriendProfile() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <Button
           variant="outline"
-          className="gap-2 flex-1"
+          size="sm"
+          className="gap-1.5 flex-1 text-xs h-8"
           onClick={async () => {
             if (userId) {
               const id = await createDM(userId);
@@ -224,15 +225,16 @@ export default function FriendProfile() {
             }
           }}
         >
-          <MessageCircle className="h-4 w-4" />
+          <MessageCircle className="h-3.5 w-3.5" />
           Message
         </Button>
         <Button
           variant="default"
-          className="gap-2 flex-1"
+          size="sm"
+          className="gap-1.5 flex-1 text-xs h-8"
           onClick={() => navigate(`/share?hangTo=${userId}`)}
         >
-          <HandHeart className="h-4 w-4" />
+          <HandHeart className="h-3.5 w-3.5" />
           Hang Request
         </Button>
       </div>
