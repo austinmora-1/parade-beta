@@ -77,6 +77,12 @@ export function AvailabilityGrid() {
     return days;
   }, [currentMonth]);
 
+  // Check if a day has "away" location status
+  const isDayAway = (date: Date): boolean => {
+    const dayAvail = availability.find((a) => isSameDay(a.date, date));
+    return dayAvail?.locationStatus === 'away';
+  };
+
   const getSlotStatus = (date: Date, slot: TimeSlot) => {
     const hasPlan = plans.some(
       (p) => isSameDay(p.date, date) && p.timeSlot === slot
@@ -105,9 +111,10 @@ export function AvailabilityGrid() {
     return availableCount / slots.length;
   };
 
-  // Get background color based on availability and today status
-  const getDayBgColor = (availability: number, isSelected: boolean, isTodayDate: boolean): string => {
-    if (isSelected) return 'bg-primary';
+  // Get background color based on availability, today status, and away status
+  const getDayBgColor = (availability: number, isSelected: boolean, isTodayDate: boolean, isAway: boolean): string => {
+    if (isSelected) return isAway ? 'bg-orange-500' : 'bg-primary';
+    if (isAway) return 'bg-orange-500/20';
     if (isTodayDate) return 'bg-availability-today';
     
     // Gray to green gradient based on availability
@@ -142,15 +149,15 @@ export function AvailabilityGrid() {
       </Button>
       <div className="flex flex-1 gap-0.5">
         {mobileDays.map((day, index) => {
-          const isTodayDate = isToday(day);
-          const isSelected = index === selectedDayIndex;
-          const dayAvail = getDayAvailability(day);
-          return (
+           const isTodayDate = isToday(day);
+           const isSelected = index === selectedDayIndex;
+           const dayAvail = getDayAvailability(day);
+           const isAway = isDayAway(day);
+           return (
             <button
               key={day.toISOString()}
               onClick={() => {
                 if (index === selectedDayIndex) {
-                  // Toggle dropdown if clicking the already selected day
                   setIsDaySummaryOpen(!isDaySummaryOpen);
                 } else {
                   setSelectedDayIndex(index);
@@ -159,11 +166,12 @@ export function AvailabilityGrid() {
               }}
               className={cn(
                 "flex-1 flex flex-col items-center py-1.5 rounded-md transition-all min-w-0",
-                getDayBgColor(dayAvail, isSelected, isTodayDate),
+                getDayBgColor(dayAvail, isSelected, isTodayDate, isAway),
                 isSelected && "text-primary-foreground",
-                isTodayDate && !isSelected && "text-white",
-                !isSelected && !isTodayDate && dayAvail === 0 && "text-muted-foreground",
-                !isSelected && !isTodayDate && dayAvail > 0 && "text-foreground"
+                !isSelected && isAway && "text-orange-600",
+                isTodayDate && !isSelected && !isAway && "text-white",
+                !isSelected && !isTodayDate && !isAway && dayAvail === 0 && "text-muted-foreground",
+                !isSelected && !isTodayDate && !isAway && dayAvail > 0 && "text-foreground"
               )}
             >
               <span className="text-[10px] font-medium uppercase leading-none">
@@ -278,6 +286,7 @@ export function AvailabilityGrid() {
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const dayAvail = getDayAvailability(day);
             const hasPlan = plans.some(p => isSameDay(p.date, day));
+            const isAway = isDayAway(day);
             
             return (
               <button
@@ -292,11 +301,12 @@ export function AvailabilityGrid() {
                 }}
                 className={cn(
                   "flex flex-col items-center py-1.5 rounded-md transition-all relative",
-                  getDayBgColor(dayAvail, isSelected || false, isTodayDate),
+                  getDayBgColor(dayAvail, isSelected || false, isTodayDate, isAway),
                   isSelected && "text-primary-foreground",
-                  isTodayDate && !isSelected && "text-white",
-                  !isSelected && !isTodayDate && dayAvail === 0 && "text-muted-foreground",
-                  !isSelected && !isTodayDate && dayAvail > 0 && "text-foreground"
+                  !isSelected && isAway && "text-orange-600",
+                  isTodayDate && !isSelected && !isAway && "text-white",
+                  !isSelected && !isTodayDate && !isAway && dayAvail === 0 && "text-muted-foreground",
+                  !isSelected && !isTodayDate && !isAway && dayAvail > 0 && "text-foreground"
                 )}
               >
                 <span className="text-[10px] font-medium uppercase leading-none">
@@ -446,30 +456,38 @@ export function AvailabilityGrid() {
                   <th className="w-32 border-b border-border p-3 text-left text-sm font-medium text-muted-foreground">
                     Time Slot
                   </th>
-                  {weekDays.map((day) => (
+                  {weekDays.map((day) => {
+                    const isAway = isDayAway(day);
+                    return (
                     <th
                       key={day.toISOString()}
                       className={cn(
                         "min-w-[100px] border-b border-border p-3 text-center text-sm font-medium",
-                        isToday(day) && "bg-primary/5"
+                        isToday(day) && !isAway && "bg-primary/5",
+                        isAway && "bg-orange-500/10"
                       )}
                     >
-                      <div>{format(day, 'EEE')}</div>
+                      <div className={cn(isAway && "text-orange-600")}>{format(day, 'EEE')}</div>
                       <div
                         className={cn(
                           "mt-1 text-lg",
-                          isToday(day) && "text-primary font-bold"
+                          isAway && "text-orange-600 font-bold",
+                          isToday(day) && !isAway && "text-primary font-bold"
                         )}
                       >
                         {format(day, 'd')}
                       </div>
                       {getLocationText(day) && (
-                        <div className="mt-0.5 text-[10px] font-medium text-muted-foreground truncate max-w-[90px]">
+                        <div className={cn(
+                          "mt-0.5 text-[10px] font-medium truncate max-w-[90px]",
+                          isAway ? "text-orange-600" : "text-muted-foreground"
+                        )}>
                           {getLocationText(day)}
                         </div>
                       )}
                     </th>
-                  ))}
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -550,6 +568,10 @@ export function AvailabilityGrid() {
         <div className="flex items-center gap-2">
           <div className="h-4 w-4 rounded bg-availability-busy-light" />
           <span className="text-muted-foreground">Has plans</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 rounded bg-orange-500/20" />
+          <span className="text-muted-foreground">Away</span>
         </div>
       </div>
     </div>
