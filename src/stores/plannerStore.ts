@@ -376,11 +376,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       return;
     }
     
+    const newPlanDateRaw = new Date(data.date);
     const newPlan: Plan = {
       id: data.id,
       title: data.title,
       activity: data.activity as ActivityType,
-      date: new Date(data.date),
+      date: new Date(newPlanDateRaw.getUTCFullYear(), newPlanDateRaw.getUTCMonth(), newPlanDateRaw.getUTCDate()),
       timeSlot: data.time_slot as TimeSlot,
       duration: data.duration,
       location: data.location ? { id: data.id, name: data.location, address: '' } : undefined,
