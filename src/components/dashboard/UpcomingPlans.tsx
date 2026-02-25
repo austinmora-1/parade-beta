@@ -5,6 +5,7 @@ import { ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { FriendLink } from '@/components/ui/FriendLink';
 
 export function UpcomingPlans() {
   const { plans } = usePlannerStore();
@@ -63,7 +64,14 @@ export function UpcomingPlans() {
                       {plan.participants.length > 0 && (
                         <span className="flex items-center gap-1">
                           <Users className="h-3.5 w-3.5" />
-                          {plan.participants.map((p) => p.name).join(', ')}
+                          {plan.participants.map((p, i) => (
+                            <span key={p.id}>
+                              <FriendLink userId={p.friendUserId}>
+                                <span className="hover:underline">{p.name}</span>
+                              </FriendLink>
+                              {i < plan.participants.length - 1 ? ', ' : ''}
+                            </span>
+                          ))}
                         </span>
                       )}
                       {plan.location && (

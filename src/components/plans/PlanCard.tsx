@@ -3,6 +3,7 @@ import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, MoreVertical, Trash2, Edit } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { FriendLink } from '@/components/ui/FriendLink';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,7 +116,14 @@ export function PlanCard({ plan, onEdit, onDelete, compact = false }: PlanCardPr
             <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {plan.participants.map((p) => p.name).join(', ')}
+                {plan.participants.map((p, i) => (
+                  <span key={p.id}>
+                    <FriendLink userId={p.friendUserId}>
+                      <span className="hover:underline">{p.name}</span>
+                    </FriendLink>
+                    {i < plan.participants.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
               </span>
             </div>
           )}
