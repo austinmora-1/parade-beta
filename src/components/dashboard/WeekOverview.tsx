@@ -140,18 +140,20 @@ export function WeekOverview() {
     <CollapsibleWidget
       title="Week Overview"
       icon={<CalendarIcon className="h-4 w-4 text-primary" />}
-      headerRight={weekNav}
     >
-      {!isCurrentWeek && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-2 text-xs text-primary h-6 px-2"
-          onClick={() => setWeekOffset(0)}
-        >
-          ← Back to this week
-        </Button>
-      )}
+      <div className="flex items-center justify-between mb-3">
+        {weekNav}
+        {!isCurrentWeek && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-primary h-6 px-2"
+            onClick={() => setWeekOffset(0)}
+          >
+            ← Back to this week
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
         {weekDays.map((day) => {
