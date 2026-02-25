@@ -15,6 +15,7 @@ import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
+import FriendProfile from "./pages/FriendProfile";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import Invite from "./pages/Invite";
@@ -105,6 +106,7 @@ const AppRoutes = () => (
       <Route path="/chat" element={<Chat />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/friend/:userId" element={<FriendProfile />} />
       <Route path="/settings" element={<Settings />} />
     </Route>
     <Route path="*" element={<NotFound />} />
