@@ -55,6 +55,7 @@ export function useEllyChat() {
         duration: p.duration,
         location: p.location?.name,
         notes: p.notes,
+        participants: p.participants.map(pt => ({ name: pt.name, id: pt.friendUserId })),
       }));
 
     // Connected friends

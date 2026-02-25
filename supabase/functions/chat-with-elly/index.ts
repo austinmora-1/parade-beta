@@ -37,6 +37,11 @@ const TOOLS = [
           duration: { type: "number", description: "Duration in minutes (default 60)" },
           location: { type: "string", description: "Location name (optional)" },
           notes: { type: "string", description: "Additional notes (optional)" },
+          participant_friend_ids: {
+            type: "array",
+            items: { type: "string" },
+            description: "Array of friend user IDs to add as participants (optional)",
+          },
         },
         required: ["title", "activity", "date", "time_slot"],
         additionalProperties: false,
@@ -80,7 +85,125 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "add_participant",
+      description: "Add a friend as a participant to an existing plan. Use when the user wants to invite someone to a plan.",
+      parameters: {
+        type: "object",
+        properties: {
+          plan_id: { type: "string", description: "ID of the plan" },
+          friend_user_id: { type: "string", description: "The friend's user ID to add" },
+        },
+        required: ["plan_id", "friend_user_id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "remove_participant",
+      description: "Remove a friend/participant from a plan. Use when the user wants to uninvite someone.",
+      parameters: {
+        type: "object",
+        properties: {
+          plan_id: { type: "string", description: "ID of the plan" },
+          friend_user_id: { type: "string", description: "The friend's user ID to remove" },
+        },
+        required: ["plan_id", "friend_user_id"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
+
+async function executeTool(
+  tc: any,
+  supabase: any,
+  supabaseAdmin: any,
+  userId: string
+): Promise<string> {
+  const args = JSON.parse(tc.function.arguments);
+  const name = tc.function.name;
+
+  if (name === "create_plan") {
+    const { data, error } = await supabase.from("plans").insert({
+      user_id: userId,
+      title: args.title,
+      activity: args.activity,
+      date: new Date(args.date).toISOString(),
+      time_slot: args.time_slot,
+      duration: args.duration || 60,
+      location: args.location || null,
+      notes: args.notes || null,
+    }).select().single();
+
+    if (error) throw error;
+
+    // Add participants if provided
+    if (args.participant_friend_ids?.length && data) {
+      const rows = args.participant_friend_ids.map((fid: string) => ({
+        plan_id: data.id,
+        friend_id: fid,
+        status: "accepted",
+      }));
+      await supabaseAdmin.from("plan_participants").insert(rows);
+    }
+
+    return JSON.stringify({ success: true, plan: data });
+  }
+
+  if (name === "update_plan") {
+    const updates: any = {};
+    if (args.title) updates.title = args.title;
+    if (args.activity) updates.activity = args.activity;
+    if (args.date) updates.date = new Date(args.date).toISOString();
+    if (args.time_slot) updates.time_slot = args.time_slot;
+    if (args.duration) updates.duration = args.duration;
+    if (args.location !== undefined) updates.location = args.location;
+    if (args.notes !== undefined) updates.notes = args.notes;
+
+    const { error } = await supabase.from("plans").update(updates).eq("id", args.plan_id).eq("user_id", userId);
+    if (error) throw error;
+    return JSON.stringify({ success: true });
+  }
+
+  if (name === "delete_plan") {
+    const { error } = await supabase.from("plans").delete().eq("id", args.plan_id).eq("user_id", userId);
+    if (error) throw error;
+    return JSON.stringify({ success: true });
+  }
+
+  if (name === "add_participant") {
+    // Verify the user owns this plan first
+    const { data: plan } = await supabase.from("plans").select("id").eq("id", args.plan_id).eq("user_id", userId).single();
+    if (!plan) throw new Error("Plan not found or you don't own it");
+
+    const { error } = await supabaseAdmin.from("plan_participants").insert({
+      plan_id: args.plan_id,
+      friend_id: args.friend_user_id,
+      status: "accepted",
+    });
+    if (error) throw error;
+    return JSON.stringify({ success: true });
+  }
+
+  if (name === "remove_participant") {
+    // Verify the user owns this plan first
+    const { data: plan } = await supabase.from("plans").select("id").eq("id", args.plan_id).eq("user_id", userId).single();
+    if (!plan) throw new Error("Plan not found or you don't own it");
+
+    const { error } = await supabaseAdmin.from("plan_participants").delete()
+      .eq("plan_id", args.plan_id)
+      .eq("friend_id", args.friend_user_id);
+    if (error) throw error;
+    return JSON.stringify({ success: true });
+  }
+
+  return JSON.stringify({ error: "Unknown tool" });
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -96,12 +219,15 @@ serve(async (req) => {
       });
     }
 
-    // Verify user
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Invalid session" }), {
@@ -114,30 +240,43 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Build system prompt with user context
     const today = new Date().toISOString().split("T")[0];
+
+    // Include friend IDs in context so Elly can reference them for participant tools
+    const friendsList = context?.friends?.length
+      ? context.friends.map((f: any) => `- ${f.name} (id: ${f.id})`).join("\n")
+      : "No friends connected yet.";
+
+    // Include existing participants in plan context
+    const plansInfo = context?.plans?.length
+      ? `User's upcoming plans:\n${JSON.stringify(context.plans, null, 2)}`
+      : "User has no upcoming plans.";
+
     const systemPrompt = `You are Elly, a friendly and enthusiastic AI assistant for Parade — a social planning app. You help users manage their plans, check availability, and coordinate with friends.
 
 Current date: ${today}
 User's name: ${context?.userName || "there"}
 
-${context?.plans?.length ? `User's upcoming plans:\n${JSON.stringify(context.plans, null, 2)}` : "User has no upcoming plans."}
+${plansInfo}
 
-${context?.friends?.length ? `User's friends: ${context.friends.map((f: any) => f.name).join(", ")}` : "User has no friends connected yet."}
+User's friends:
+${friendsList}
 
 ${context?.availability?.length ? `User's availability this week:\n${JSON.stringify(context.availability, null, 2)}` : ""}
 
 Guidelines:
 - Be concise, warm, and use emoji sparingly ✨
-- When the user wants to create a plan, use the create_plan tool
+- When the user wants to create a plan, use the create_plan tool. You can include participant_friend_ids to add friends immediately.
 - When the user wants to change/reschedule a plan, use the update_plan tool  
 - When the user wants to cancel a plan, use the delete_plan tool
+- When the user wants to add a friend to a plan, use the add_participant tool with the friend's user ID from the list above
+- When the user wants to remove a friend from a plan, use the remove_participant tool
+- Match friend names mentioned by the user to the friends list above to get the correct user ID
 - For availability questions, reference the context provided
 - Suggest plans based on friend availability and user preferences
 - Always confirm actions with the user after executing them
 - Use casual, friendly language — you're their social planning buddy`;
 
-    // First AI call (may include tool calls)
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -177,42 +316,9 @@ Guidelines:
       const toolResults: any[] = [];
 
       for (const tc of toolCalls) {
-        const args = JSON.parse(tc.function.arguments);
         let resultContent = "";
-
         try {
-          if (tc.function.name === "create_plan") {
-            const { data, error } = await supabase.from("plans").insert({
-              user_id: user.id,
-              title: args.title,
-              activity: args.activity,
-              date: new Date(args.date).toISOString(),
-              time_slot: args.time_slot,
-              duration: args.duration || 60,
-              location: args.location || null,
-              notes: args.notes || null,
-            }).select().single();
-
-            if (error) throw error;
-            resultContent = JSON.stringify({ success: true, plan: data });
-          } else if (tc.function.name === "update_plan") {
-            const updates: any = {};
-            if (args.title) updates.title = args.title;
-            if (args.activity) updates.activity = args.activity;
-            if (args.date) updates.date = new Date(args.date).toISOString();
-            if (args.time_slot) updates.time_slot = args.time_slot;
-            if (args.duration) updates.duration = args.duration;
-            if (args.location !== undefined) updates.location = args.location;
-            if (args.notes !== undefined) updates.notes = args.notes;
-
-            const { error } = await supabase.from("plans").update(updates).eq("id", args.plan_id).eq("user_id", user.id);
-            if (error) throw error;
-            resultContent = JSON.stringify({ success: true });
-          } else if (tc.function.name === "delete_plan") {
-            const { error } = await supabase.from("plans").delete().eq("id", args.plan_id).eq("user_id", user.id);
-            if (error) throw error;
-            resultContent = JSON.stringify({ success: true });
-          }
+          resultContent = await executeTool(tc, supabase, supabaseAdmin, user.id);
         } catch (e: any) {
           resultContent = JSON.stringify({ error: e.message });
         }
@@ -224,7 +330,6 @@ Guidelines:
         });
       }
 
-      // Second AI call with tool results to get final message
       const followUp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -247,21 +352,16 @@ Guidelines:
       const followUpResult = await followUp.json();
       const finalMessage = followUpResult.choices?.[0]?.message?.content || "Done! ✅";
 
-      // Determine which tool actions were performed
       const actions = toolCalls.map((tc: any) => ({
         type: tc.function.name,
         args: JSON.parse(tc.function.arguments),
       }));
 
-      return new Response(JSON.stringify({ 
-        message: finalMessage, 
-        actions,
-      }), {
+      return new Response(JSON.stringify({ message: finalMessage, actions }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // No tool calls - just return the message
     return new Response(JSON.stringify({ 
       message: choice?.message?.content || "I'm not sure how to help with that. Could you rephrase?",
       actions: [],
