@@ -83,8 +83,19 @@ export function WeekOverview() {
     });
   };
 
+  const editButton = (
+    <div onClick={(e) => e.stopPropagation()}>
+      <Link to="/availability">
+        <Button variant="outline" size="sm" className="gap-1 text-xs h-7 px-3 border-primary/30 text-primary hover:bg-primary/10">
+          Edit
+          <ArrowRight className="h-3 w-3" />
+        </Button>
+      </Link>
+    </div>
+  );
+
   const weekNav = (
-    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+    <div className="flex items-center gap-1">
       <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -127,20 +138,7 @@ export function WeekOverview() {
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
-      <Link to="/availability">
-        <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
-          Edit
-          <ArrowRight className="h-3 w-3" />
-        </Button>
-      </Link>
-    </div>
-  );
-
-  return (
-    <CollapsibleWidget
-      title="Week Overview"
-      icon={<CalendarIcon className="h-4 w-4 text-primary" />}
-      headerRight={!isCurrentWeek ? (
+      {!isCurrentWeek && (
         <Button
           variant="ghost"
           size="sm"
@@ -149,7 +147,15 @@ export function WeekOverview() {
         >
           ← Back to this week
         </Button>
-      ) : undefined}
+      )}
+    </div>
+  );
+
+  return (
+    <CollapsibleWidget
+      title="Week Overview"
+      icon={<CalendarIcon className="h-4 w-4 text-primary" />}
+      headerRight={editButton}
     >
       <div className="flex items-center mb-3">
         {weekNav}
