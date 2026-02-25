@@ -24,12 +24,17 @@ interface HangRequest {
 }
 
 const TIME_SLOT_SHORT: Record<string, string> = {
-  early_morning: '6-9am',
-  late_morning: '9am-12pm',
-  early_afternoon: '12-3pm',
-  late_afternoon: '3-6pm',
-  evening: '6-9pm',
-  late_night: '9pm+',
+  'early-morning': '6-9am',
+  'early_morning': '6-9am',
+  'late-morning': '9am-12pm',
+  'late_morning': '9am-12pm',
+  'early-afternoon': '12-3pm',
+  'early_afternoon': '12-3pm',
+  'late-afternoon': '3-6pm',
+  'late_afternoon': '3-6pm',
+  'evening': '6-9pm',
+  'late-night': '9pm+',
+  'late_night': '9pm+',
 };
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
