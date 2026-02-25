@@ -28,7 +28,7 @@ export function CollapsibleWidget({
     <div className={cn("rounded-2xl border border-border bg-card shadow-soft", className)}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between px-4 py-3 md:px-5 md:py-3.5 text-left"
+        className="flex w-full items-center justify-between px-4 py-3 md:px-5 md:py-3.5 text-left min-h-[44px] md:min-h-[48px]"
       >
         <div className="flex items-center gap-2 min-w-0">
           {icon}
