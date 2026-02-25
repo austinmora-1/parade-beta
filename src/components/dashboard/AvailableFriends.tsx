@@ -46,11 +46,82 @@ export function AvailableFriends() {
   const [friendAvail, setFriendAvail] = useState<FriendAvailDay[]>([]);
   const [loadingAvail, setLoadingAvail] = useState(false);
 
+  // Track which friends are actually available today
+  const [todayAvailableFriendIds, setTodayAvailableFriendIds] = useState<Set<string>>(new Set());
+  const [loadingTodayAvail, setLoadingTodayAvail] = useState(true);
+
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected');
   }, [friends]);
 
-  const availableFriends = connectedFriends.slice(0, 4);
+  // Fetch today's availability for all connected friends
+  useEffect(() => {
+    if (connectedFriends.length === 0) {
+      setTodayAvailableFriendIds(new Set());
+      setLoadingTodayAvail(false);
+      return;
+    }
+
+    const friendUserIds = connectedFriends
+      .map(f => f.friendUserId)
+      .filter((id): id is string => !!id);
+
+    if (friendUserIds.length === 0) {
+      setTodayAvailableFriendIds(new Set());
+      setLoadingTodayAvail(false);
+      return;
+    }
+
+    const fetchTodayAvail = async () => {
+      setLoadingTodayAvail(true);
+      const today = format(new Date(), 'yyyy-MM-dd');
+
+      const { data, error } = await supabase
+        .from('availability')
+        .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+        .in('user_id', friendUserIds)
+        .eq('date', today);
+
+      if (error) {
+        console.error('Error fetching friend availability:', error);
+        // On error, show all friends as fallback
+        setTodayAvailableFriendIds(new Set(friendUserIds));
+        setLoadingTodayAvail(false);
+        return;
+      }
+
+      const availableIds = new Set<string>();
+
+      // Check each friend
+      for (const friendUserId of friendUserIds) {
+        const row = data?.find(r => r.user_id === friendUserId);
+        if (!row) {
+          // No availability record = default available
+          availableIds.add(friendUserId);
+        } else {
+          // Check if at least one slot is free
+          const hasAnyFree = TIME_SLOT_ORDER.some(slot => {
+            const col = SLOT_TO_DB_COL[slot];
+            return (row as any)[col] !== false;
+          });
+          if (hasAnyFree) {
+            availableIds.add(friendUserId);
+          }
+        }
+      }
+
+      setTodayAvailableFriendIds(availableIds);
+      setLoadingTodayAvail(false);
+    };
+
+    fetchTodayAvail();
+  }, [connectedFriends]);
+
+  const availableFriends = useMemo(() => {
+    return connectedFriends
+      .filter(f => f.friendUserId && todayAvailableFriendIds.has(f.friendUserId))
+      .slice(0, 4);
+  }, [connectedFriends, todayAvailableFriendIds]);
 
   // Fetch friend's availability when dialog opens
   useEffect(() => {
@@ -234,7 +305,7 @@ export function AvailableFriends() {
           <h3 className="flex items-center gap-2 font-display text-sm font-semibold">
             <Users className="h-5 w-5 text-availability-available" />
             Available Today
-            {availableFriends.length > 0 && (
+            {!loadingTodayAvail && availableFriends.length > 0 && (
               <span className="rounded-full bg-availability-available/10 px-2 py-0.5 text-xs font-medium text-availability-available">
                 {availableFriends.length}
               </span>
@@ -248,56 +319,77 @@ export function AvailableFriends() {
           </Link>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          {availableFriends.map((friend) => (
-            <button
-              key={friend.id}
-              onClick={() => setSelectedFriend(friend)}
-              className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-all hover:border-primary/20 hover:shadow-soft text-left w-full"
-            >
-              {/* Avatar - clickable to profile */}
-              <div
-                onClick={(e) => {
-                  if (friend.friendUserId) {
-                    e.stopPropagation();
-                    navigate(`/friend/${friend.friendUserId}`);
-                  }
-                }}
-                className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold",
-                  getAvatarColor(friend.name)
-                )}
-              >
-                {friend.avatar ? (
-                  <img
-                    src={friend.avatar}
-                    alt={friend.name}
-                    className="h-full w-full rounded-full object-cover"
-                  />
-                ) : (
-                  getInitials(friend.name)
-                )}
-              </div>
+        {loadingTodayAvail ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : availableFriends.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="mb-3 rounded-full bg-muted p-3">
+              <Users className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">No friends available today</p>
+            <Link to="/friends" className="mt-2">
+              <Button size="sm" variant="outline" className="gap-1 text-xs">
+                View All Friends
+                <ArrowRight className="h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {availableFriends.map((friend) => (
+                <button
+                  key={friend.id}
+                  onClick={() => setSelectedFriend(friend)}
+                  className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-all hover:border-primary/20 hover:shadow-soft text-left w-full"
+                >
+                  {/* Avatar - clickable to profile */}
+                  <div
+                    onClick={(e) => {
+                      if (friend.friendUserId) {
+                        e.stopPropagation();
+                        navigate(`/friend/${friend.friendUserId}`);
+                      }
+                    }}
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold",
+                      getAvatarColor(friend.name)
+                    )}
+                  >
+                    {friend.avatar ? (
+                      <img
+                        src={friend.avatar}
+                        alt={friend.name}
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      getInitials(friend.name)
+                    )}
+                  </div>
 
-              {/* Info */}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{friend.name}</p>
-                <p className="text-xs text-availability-available">Free today</p>
-              </div>
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{friend.name}</p>
+                    <p className="text-xs text-availability-available">Free today</p>
+                  </div>
 
-              {/* Action hint */}
-              <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-            </button>
-          ))}
-        </div>
+                  {/* Action hint */}
+                  <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </button>
+              ))}
+            </div>
 
-        {connectedFriends.length > 4 && (
-          <Link to="/friends" className="mt-3 block">
-            <Button variant="outline" size="sm" className="w-full gap-1 text-xs">
-              See {connectedFriends.length - 4} more friends
-              <ArrowRight className="h-3 w-3" />
-            </Button>
-          </Link>
+            {connectedFriends.filter(f => f.friendUserId && todayAvailableFriendIds.has(f.friendUserId)).length > 4 && (
+              <Link to="/friends" className="mt-3 block">
+                <Button variant="outline" size="sm" className="w-full gap-1 text-xs">
+                  See {connectedFriends.filter(f => f.friendUserId && todayAvailableFriendIds.has(f.friendUserId)).length - 4} more available
+                  <ArrowRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            )}
+          </>
         )}
       </div>
 
