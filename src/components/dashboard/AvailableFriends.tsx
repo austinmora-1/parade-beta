@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, Send, ArrowRight, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Users, Send, ArrowRight, Loader2, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -37,6 +37,7 @@ interface FriendAvailDay {
 export function AvailableFriends() {
   const { friends, availability } = usePlannerStore();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [selectedDay, setSelectedDay] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -254,8 +255,14 @@ export function AvailableFriends() {
               onClick={() => setSelectedFriend(friend)}
               className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-all hover:border-primary/20 hover:shadow-soft text-left w-full"
             >
-              {/* Avatar */}
+              {/* Avatar - clickable to profile */}
               <div
+                onClick={(e) => {
+                  if (friend.friendUserId) {
+                    e.stopPropagation();
+                    navigate(`/friend/${friend.friendUserId}`);
+                  }
+                }}
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold",
                   getAvatarColor(friend.name)

@@ -2,6 +2,7 @@ import { Friend } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Check, Clock, UserPlus, MessageCircle, MoreVertical, UserMinus, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ interface FriendCardProps {
 }
 
 export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }: FriendCardProps) {
+  const navigate = useNavigate();
   const getStatusConfig = () => {
     switch (friend.status) {
       case 'connected':
@@ -73,7 +75,17 @@ export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }
 
   return (
     <div className="group flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft transition-all duration-200 hover:shadow-glow">
-      <div className="flex items-center gap-4">
+      <div
+        className={cn(
+          "flex items-center gap-4",
+          friend.friendUserId && friend.status === 'connected' && "cursor-pointer"
+        )}
+        onClick={() => {
+          if (friend.friendUserId && friend.status === 'connected') {
+            navigate(`/friend/${friend.friendUserId}`);
+          }
+        }}
+      >
         {/* Avatar */}
         <div
           className={cn(
@@ -94,7 +106,10 @@ export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }
 
         {/* Info */}
         <div>
-          <h4 className="font-medium">{friend.name}</h4>
+          <h4 className={cn(
+            "font-medium",
+            friend.friendUserId && friend.status === 'connected' && "hover:text-primary transition-colors"
+          )}>{friend.name}</h4>
           <div
             className={cn(
               "mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
