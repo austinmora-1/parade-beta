@@ -6,7 +6,7 @@ import {
   MessageCircle, 
   Clock, 
   Bell,
-  MessageSquarePlus
+  MessageSquareMore
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -40,7 +40,7 @@ export function Sidebar() {
               onClick={openFeedback}
               className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              <MessageSquarePlus className="h-4 w-4" />
+              <MessageSquareMore className="h-4 w-4" />
             </button>
             <NavLink
               to="/notifications"

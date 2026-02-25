@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bell, MessageSquarePlus } from 'lucide-react';
+import { Bell, MessageSquareMore } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
@@ -16,7 +16,7 @@ export function MobileHeader() {
           onClick={openFeedback}
           className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 transition-colors hover:text-white"
         >
-          <MessageSquarePlus className="h-4 w-4" />
+          <MessageSquareMore className="h-4 w-4" />
         </button>
       </div>
       <Link to="/" className="flex items-center justify-center leading-none">
