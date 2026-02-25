@@ -570,6 +570,10 @@ export type Database = {
         Returns: undefined
       }
       user_conversation_ids: { Args: { p_user_id: string }; Returns: string[] }
+      user_participated_plan_ids: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
     }
     Enums: {
       [_ in never]: never
