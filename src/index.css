@@ -191,6 +191,7 @@
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 8px hsl(0 0% 100% / 0.7)) drop-shadow(0 0 20px hsl(0 0% 100% / 0.4));
   }
 
   .shadow-soft {
