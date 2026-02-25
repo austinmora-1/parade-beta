@@ -127,6 +127,7 @@ async function executeTool(
 ): Promise<string> {
   const args = JSON.parse(tc.function.arguments);
   const name = tc.function.name;
+  console.log(`Executing tool: ${name}`, JSON.stringify(args));
 
   if (name === "create_plan") {
     const { data, error } = await supabase.from("plans").insert({
@@ -178,14 +179,23 @@ async function executeTool(
 
   if (name === "add_participant") {
     // Verify the user owns this plan first
-    const { data: plan } = await supabase.from("plans").select("id").eq("id", args.plan_id).eq("user_id", userId).single();
+    const { data: plan, error: planErr } = await supabase.from("plans").select("id").eq("id", args.plan_id).eq("user_id", userId).single();
+    console.log("add_participant ownership check:", { plan, planErr, plan_id: args.plan_id, userId });
     if (!plan) throw new Error("Plan not found or you don't own it");
+
+    // Check if already a participant
+    const { data: existing } = await supabaseAdmin.from("plan_participants")
+      .select("id").eq("plan_id", args.plan_id).eq("friend_id", args.friend_user_id).maybeSingle();
+    if (existing) {
+      return JSON.stringify({ success: true, message: "Already a participant" });
+    }
 
     const { error } = await supabaseAdmin.from("plan_participants").insert({
       plan_id: args.plan_id,
       friend_id: args.friend_user_id,
       status: "accepted",
     });
+    console.log("add_participant insert result:", { error });
     if (error) throw error;
     return JSON.stringify({ success: true });
   }
