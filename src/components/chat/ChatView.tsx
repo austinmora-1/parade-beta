@@ -1,12 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { useChatMessages, Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlannerStore } from '@/stores/plannerStore';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, ArrowLeft, Users, Check, CheckCheck } from 'lucide-react';
+import { Send, ArrowLeft, Users, Check, CheckCheck, Sparkles, Loader2 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ELLY_USER_ID } from '@/lib/constants';
+import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -15,8 +20,10 @@ interface ChatViewProps {
 
 export function ChatView({ conversation, onBack }: ChatViewProps) {
   const { user } = useAuth();
+  const { loadAllData } = usePlannerStore();
   const { messages, loading, sendMessage, readReceipts } = useChatMessages(conversation.id);
   const [input, setInput] = useState('');
+  const [ellyLoading, setEllyLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -32,6 +39,39 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     if (!text) return;
     setInput('');
     await sendMessage(text);
+
+    // Check for @Elly mention
+    if (/@elly/i.test(text)) {
+      setEllyLoading(true);
+      try {
+        // Strip @Elly from the message for the AI
+        const cleanedMessage = text.replace(/@elly/gi, '').trim();
+        const { data, error } = await supabase.functions.invoke('elly-conversation-assist', {
+          body: { conversation_id: conversation.id, message: cleanedMessage },
+        });
+
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        // If Elly performed actions, reload plan data
+        if (data?.actions?.length > 0) {
+          await loadAllData();
+          toast.success('Elly updated your plans! 🎉');
+        }
+      } catch (e: any) {
+        console.error('Elly conversation error:', e);
+        toast.error(e.message || 'Elly couldn\'t process that right now');
+      } finally {
+        setEllyLoading(false);
+      }
+    }
+  };
+
+  const insertEllyMention = () => {
+    setInput(prev => {
+      const prefix = prev.endsWith(' ') || prev === '' ? '' : ' ';
+      return prev + prefix + '@Elly ';
+    });
   };
 
   const other = conversation.type === 'dm'
@@ -53,12 +93,10 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     return format(d, 'MMM d, h:mm a');
   };
 
-  // Determine if a sent message has been seen by other participants
   const isSeenByOthers = (msgCreatedAt: string) => {
     return readReceipts.some(r => new Date(r.last_read_at) >= new Date(msgCreatedAt));
   };
 
-  // Find the last message sent by current user to show the read receipt on
   const myMessages = messages.filter(m => m.sender_id === user?.id);
   const lastSeenMsgId = (() => {
     for (let i = myMessages.length - 1; i >= 0; i--) {
@@ -68,6 +106,8 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     }
     return null;
   })();
+
+  const isEllyMessage = (senderId: string) => senderId === ELLY_USER_ID;
 
   return (
     <div className="flex h-full flex-col">
@@ -108,6 +148,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
         ) : (
           messages.map((msg, idx) => {
             const isMe = msg.sender_id === user?.id;
+            const isElly = isEllyMessage(msg.sender_id);
             const sender = participantMap.get(msg.sender_id);
             const isLastMessage = idx === messages.length - 1;
 
@@ -118,16 +159,27 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
               >
                 {!isMe && (
                   <Avatar className="h-7 w-7 shrink-0 mt-0.5">
-                    {sender?.avatar_url ? <AvatarImage src={sender.avatar_url} /> : null}
-                    <AvatarFallback className="bg-muted text-[10px]">
-                      {(sender?.display_name || '?').slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
+                    {isElly ? (
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40 text-primary text-[10px]">
+                        <Sparkles className="h-3 w-3" />
+                      </AvatarFallback>
+                    ) : (
+                      <>
+                        {sender?.avatar_url ? <AvatarImage src={sender.avatar_url} /> : null}
+                        <AvatarFallback className="bg-muted text-[10px]">
+                          {(sender?.display_name || '?').slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </>
+                    )}
                   </Avatar>
                 )}
                 <div className={cn("max-w-[75%]", isMe ? "items-end" : "items-start")}>
-                  {conversation.type === 'group' && !isMe && (
-                    <p className="mb-0.5 text-[10px] font-medium text-muted-foreground ml-1">
-                      {sender?.display_name || 'Unknown'}
+                  {!isMe && (
+                    <p className={cn(
+                      "mb-0.5 text-[10px] font-medium ml-1",
+                      isElly ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      {isElly ? 'Elly ✨' : (sender?.display_name || 'Unknown')}
                     </p>
                   )}
                   <div
@@ -135,10 +187,18 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                       "rounded-2xl px-3 py-2 text-sm leading-relaxed",
                       isMe
                         ? "bg-primary text-primary-foreground"
-                        : "bg-card shadow-soft border border-border"
+                        : isElly
+                          ? "bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 shadow-soft"
+                          : "bg-card shadow-soft border border-border"
                     )}
                   >
-                    {msg.content}
+                    {isElly ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-1 [&>p:last-child]:mb-0">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                   {isLastMessage && (
                     <div className={cn(
@@ -162,13 +222,37 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
             );
           })
         )}
+
+        {ellyLoading && (
+          <div className="flex gap-2 justify-start">
+            <Avatar className="h-7 w-7 shrink-0 mt-0.5">
+              <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40 text-primary text-[10px]">
+                <Sparkles className="h-3 w-3" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 shadow-soft px-4 py-3">
+              <div className="flex items-center gap-1.5">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                <span className="text-xs text-muted-foreground">Elly is thinking...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
       <div className="mt-3 flex gap-2 pt-3 border-t border-border shrink-0">
+        <button
+          onClick={insertEllyMention}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary hover:bg-primary/10 transition-colors"
+          title="Mention Elly"
+        >
+          <Sparkles className="h-4 w-4" />
+        </button>
         <Input
-          placeholder="Type a message..."
+          placeholder="Type a message... (@Elly for AI help)"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}

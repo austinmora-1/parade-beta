@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.nylas-disconnect]
 verify_jwt = false
+
+[functions.elly-conversation-assist]
+verify_jwt = false
