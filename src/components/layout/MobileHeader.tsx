@@ -10,7 +10,7 @@ export function MobileHeader() {
   const { openFeedback } = useFeedback();
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center border-b border-primary/20 bg-[hsl(150_35%_30%)] px-4 md:hidden">
+    <header className="sticky top-0 z-40 flex h-14 items-center border-b border-primary/20 bg-[hsl(150_20%_15%)] px-4 md:hidden">
       <div className="flex-1 flex justify-start">
         <button
           onClick={openFeedback}
