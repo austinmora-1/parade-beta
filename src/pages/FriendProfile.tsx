@@ -6,10 +6,10 @@ import { useConversations } from '@/hooks/useChat';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart } from 'lucide-react';
+import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, addDays, isSameDay } from 'date-fns';
-import { TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
+import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date-fns';
+import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -40,6 +40,18 @@ interface AvailabilityDay {
   trip_location: string | null;
 }
 
+interface SharedPlan {
+  id: string;
+  title: string;
+  activity: string;
+  date: string;
+  time_slot: string;
+  location: string | null;
+  notes: string | null;
+  owner_name: string | null;
+  is_mine: boolean;
+}
+
 export default function FriendProfile() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -47,9 +59,12 @@ export default function FriendProfile() {
   const { createDM } = useConversations();
   const [profile, setProfile] = useState<FriendProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
+  const [sharedPlans, setSharedPlans] = useState<SharedPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [availabilityOpen, setAvailabilityOpen] = useState(true);
+  const [upcomingOpen, setUpcomingOpen] = useState(true);
+  const [previousOpen, setPreviousOpen] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -98,6 +113,53 @@ export default function FriendProfile() {
           trip_location: row.trip_location,
         }));
         setAvailability(mapped);
+      }
+
+      // Fetch shared plans between current user and this friend
+      if (user) {
+        // 1. My plans where friend is a participant
+        const { data: myPlansWithFriend } = await supabase
+          .from('plan_participants')
+          .select('plan_id, plans!inner(id, title, activity, date, time_slot, location, notes, user_id)')
+          .eq('friend_id', userId);
+
+        // 2. Friend's plans where I'm a participant
+        const { data: friendPlansWithMe } = await supabase
+          .from('plan_participants')
+          .select('plan_id, plans!inner(id, title, activity, date, time_slot, location, notes, user_id)')
+          .eq('friend_id', user.id);
+
+        const planMap = new Map<string, SharedPlan>();
+
+        // Process my plans where friend participates
+        myPlansWithFriend?.forEach((pp: any) => {
+          const p = pp.plans;
+          if (p && p.user_id === user.id) {
+            planMap.set(p.id, {
+              id: p.id, title: p.title, activity: p.activity,
+              date: p.date, time_slot: p.time_slot,
+              location: p.location, notes: p.notes,
+              owner_name: 'You', is_mine: true,
+            });
+          }
+        });
+
+        // Process friend's plans where I participate
+        friendPlansWithMe?.forEach((pp: any) => {
+          const p = pp.plans;
+          if (p && p.user_id === userId && !planMap.has(p.id)) {
+            planMap.set(p.id, {
+              id: p.id, title: p.title, activity: p.activity,
+              date: p.date, time_slot: p.time_slot,
+              location: p.location, notes: p.notes,
+              owner_name: profileData?.display_name || 'Friend', is_mine: false,
+            });
+          }
+        });
+
+        setSharedPlans(Array.from(planMap.values()).sort((a, b) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        ));
       }
 
       setLoading(false);
@@ -370,6 +432,115 @@ export default function FriendProfile() {
           </div>
         )}
       </div>
+
+      {/* Shared Plans Widgets */}
+      {(() => {
+        const now = new Date();
+        const upcoming = sharedPlans.filter(p => new Date(p.date) >= now);
+        const previous = sharedPlans.filter(p => new Date(p.date) < now);
+        const slotLabels: Record<string, string> = {
+          'early-morning': '6-9am', 'late-morning': '9am-12pm',
+          'early-afternoon': '12-3pm', 'late-afternoon': '3-6pm',
+          'evening': '6-9pm', 'late-night': '9pm+',
+        };
+
+        const renderPlan = (plan: SharedPlan) => {
+          const config = ACTIVITY_CONFIG[plan.activity as ActivityType];
+          return (
+            <div key={plan.id} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-muted/50 transition-colors">
+              <span className="text-base shrink-0">{config?.icon || '📅'}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium truncate">{plan.title}</p>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <Calendar className="h-2.5 w-2.5 shrink-0" />
+                  <span>{format(new Date(plan.date), 'MMM d')}</span>
+                  <span>·</span>
+                  <Clock className="h-2.5 w-2.5 shrink-0" />
+                  <span>{slotLabels[plan.time_slot] || plan.time_slot}</span>
+                  {plan.location && (
+                    <>
+                      <span>·</span>
+                      <MapPin className="h-2.5 w-2.5 shrink-0" />
+                      <span className="truncate">{plan.location}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <>
+            {/* Upcoming Plans */}
+            <div className="rounded-2xl border border-border bg-card shadow-soft">
+              <button
+                onClick={() => setUpcomingOpen(prev => !prev)}
+                className="flex w-full items-center justify-between p-4 md:p-6 text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display text-base font-semibold md:text-lg">
+                    Upcoming Plans
+                  </h2>
+                  {upcoming.length > 0 && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                      {upcoming.length}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+                  upcomingOpen && "rotate-180"
+                )} />
+              </button>
+              {upcomingOpen && (
+                <div className="px-4 pb-4 md:px-6 md:pb-6">
+                  {upcoming.length === 0 ? (
+                    <div className="py-6 text-center">
+                      <p className="text-2xl mb-1">🤝</p>
+                      <p className="text-xs text-muted-foreground">No upcoming shared plans yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {upcoming.map(renderPlan)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Previous Plans */}
+            {previous.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card shadow-soft">
+                <button
+                  onClick={() => setPreviousOpen(prev => !prev)}
+                  className="flex w-full items-center justify-between p-4 md:p-6 text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-display text-base font-semibold md:text-lg">
+                      Previous Plans
+                    </h2>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                      {previous.length}
+                    </span>
+                  </div>
+                  <ChevronDown className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+                    previousOpen && "rotate-180"
+                  )} />
+                </button>
+                {previousOpen && (
+                  <div className="px-4 pb-4 md:px-6 md:pb-6">
+                    <div className="space-y-0.5">
+                      {previous.map(renderPlan)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }
