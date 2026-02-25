@@ -510,34 +510,41 @@ export default function FriendProfile() {
             </div>
 
             {/* Previous Plans */}
-            {previous.length > 0 && (
-              <div className="rounded-2xl border border-border bg-card shadow-soft">
-                <button
-                  onClick={() => setPreviousOpen(prev => !prev)}
-                  className="flex w-full items-center justify-between p-4 md:p-6 text-left"
-                >
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-display text-base font-semibold md:text-lg">
-                      Previous Plans
-                    </h2>
+            <div className="rounded-2xl border border-border bg-card shadow-soft">
+              <button
+                onClick={() => setPreviousOpen(prev => !prev)}
+                className="flex w-full items-center justify-between p-4 md:p-6 text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display text-base font-semibold md:text-lg">
+                    Previous Plans
+                  </h2>
+                  {previous.length > 0 && (
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                       {previous.length}
                     </span>
-                  </div>
-                  <ChevronDown className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform shrink-0",
-                    previousOpen && "rotate-180"
-                  )} />
-                </button>
-                {previousOpen && (
-                  <div className="px-4 pb-4 md:px-6 md:pb-6">
+                  )}
+                </div>
+                <ChevronDown className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+                  previousOpen && "rotate-180"
+                )} />
+              </button>
+              {previousOpen && (
+                <div className="px-4 pb-4 md:px-6 md:pb-6">
+                  {previous.length === 0 ? (
+                    <div className="py-6 text-center">
+                      <p className="text-2xl mb-1">📖</p>
+                      <p className="text-xs text-muted-foreground">No past plans together yet</p>
+                    </div>
+                  ) : (
                     <div className="space-y-0.5">
                       {previous.map(renderPlan)}
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </>
         );
       })()}
