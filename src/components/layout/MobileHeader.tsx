@@ -14,9 +14,9 @@ export function MobileHeader() {
       <div className="flex-1 flex justify-start">
         <button
           onClick={openFeedback}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-white/80 transition-colors hover:text-white"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 transition-colors hover:text-white"
         >
-          <MessageSquarePlus className="h-5 w-5" />
+          <MessageSquarePlus className="h-4 w-4" />
         </button>
       </div>
       <Link to="/" className="flex items-center justify-center leading-none">
@@ -28,9 +28,9 @@ export function MobileHeader() {
         </div>
         <Link
           to="/notifications"
-          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-white/80 transition-colors hover:text-white"
+          className="relative flex h-7 w-7 items-center justify-center rounded-md text-white/80 transition-colors hover:text-white"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-4 w-4" />
           {totalNotifications > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
               {totalNotifications}
