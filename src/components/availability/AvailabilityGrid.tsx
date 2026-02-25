@@ -497,7 +497,7 @@ export function AvailabilityGrid() {
                             onClick={() => toggleSlot(day, slot)}
                             disabled={status === 'busy'}
                             className={cn(
-                              "h-12 w-full rounded-lg transition-all duration-200",
+                              "h-12 w-full rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5",
                               status === 'available' &&
                                 "bg-availability-available-light hover:bg-availability-available/30",
                               status === 'unavailable' &&
@@ -506,11 +506,25 @@ export function AvailabilityGrid() {
                                 "bg-availability-busy-light cursor-not-allowed"
                             )}
                           >
-                            {status === 'busy' && (
-                              <span className="text-xs font-medium text-availability-busy">
-                                Busy
-                              </span>
-                            )}
+                            {status === 'busy' && (() => {
+                              const slotPlan = plans.find(
+                                (p) => isSameDay(p.date, day) && p.timeSlot === slot
+                              );
+                              return slotPlan ? (
+                                <>
+                                  <span className="text-xs font-medium text-availability-busy truncate max-w-[90px]">
+                                    {slotPlan.title}
+                                  </span>
+                                  {slotPlan.participants.length > 0 && (
+                                    <span className="text-[10px] text-availability-busy/70 truncate max-w-[90px]">
+                                      w/ {slotPlan.participants.map(p => p.name).join(', ')}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-xs font-medium text-availability-busy">Busy</span>
+                              );
+                            })()}
                           </button>
                         </td>
                       );
