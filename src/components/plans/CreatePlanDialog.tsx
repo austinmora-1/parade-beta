@@ -143,7 +143,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate }: 
       setTimeSlot(editPlan.timeSlot);
       setDuration(editPlan.duration?.toString() || '60');
       setLocationName(editPlan.location?.name || '');
-      setSelectedFriends(editPlan.participants.map((p) => p.id));
+      // Map participant user IDs to friendship record IDs for the friend chips
+      const participantUserIds = editPlan.participants.map(p => p.friendUserId || p.id);
+      const matchedFriendIds = friends
+        .filter(f => f.status === 'connected' && participantUserIds.includes(f.friendUserId || ''))
+        .map(f => f.id);
+      setSelectedFriends(matchedFriendIds);
       setNotes(editPlan.notes || '');
     } else if (open && !editPlan) {
       // Reset for new plan
