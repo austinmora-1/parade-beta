@@ -5,7 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown } from 'lucide-react';
+import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart } from 'lucide-react';
+import { useConversations } from '@/hooks/useChat';
 import { cn } from '@/lib/utils';
 import { format, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
@@ -43,6 +44,7 @@ export default function FriendProfile() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { createDM } = useConversations();
   const [profile, setProfile] = useState<FriendProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,6 +212,31 @@ export default function FriendProfile() {
         </div>
       </div>
 
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        <Button
+          variant="outline"
+          className="gap-2 flex-1"
+          onClick={async () => {
+            if (userId) {
+              const id = await createDM(userId);
+              if (id) navigate('/chat');
+            }
+          }}
+        >
+          <MessageCircle className="h-4 w-4" />
+          Message
+        </Button>
+        <Button
+          variant="default"
+          className="gap-2 flex-1"
+          onClick={() => navigate(`/share?hangTo=${userId}`)}
+        >
+          <HandHeart className="h-4 w-4" />
+          Hang Request
+        </Button>
+      </div>
+
       {/* Availability - Collapsible Day Cards (matching dashboard style) */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
         <h2 className="mb-4 font-display text-base font-semibold md:text-lg">
@@ -347,18 +374,6 @@ export default function FriendProfile() {
             })}
           </div>
         )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-3">
-        <Button
-          variant="outline"
-          className="gap-2 flex-1"
-          onClick={() => navigate('/chat')}
-        >
-          <MessageCircle className="h-4 w-4" />
-          Message
-        </Button>
       </div>
     </div>
   );
