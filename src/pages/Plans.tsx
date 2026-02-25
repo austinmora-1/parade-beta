@@ -37,9 +37,15 @@ export default function Plans() {
     setDialogOpen(true);
   };
 
-  const sortedPlans = [...plans].sort(
-    (a, b) => a.date.getTime() - b.date.getTime()
-  );
+  const timeSlotOrder: Record<string, number> = {
+    'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
+    'late-afternoon': 3, 'evening': 4, 'late-night': 5,
+  };
+  const sortedPlans = [...plans].sort((a, b) => {
+    const dateDiff = a.date.getTime() - b.date.getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
+  });
 
   return (
     <div className="animate-fade-in space-y-4 md:space-y-8">
