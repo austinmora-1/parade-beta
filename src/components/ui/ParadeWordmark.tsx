@@ -16,7 +16,7 @@ export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) 
   return (
     <span
       className={cn(
-        'font-semibold parade-wordmark tracking-tight',
+        'parade-wordmark tracking-wide',
         sizeClasses[size],
         className
       )}
