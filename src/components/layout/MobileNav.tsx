@@ -28,7 +28,7 @@ export function MobileNav() {
   const isProfileActive = location.pathname === '/profile';
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-lg pb-safe md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary/20 bg-primary pb-safe md:hidden">
       <div className="flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -39,13 +39,13 @@ export function MobileNav() {
               className={cn(
                 "relative flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all duration-200",
                 isActive
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                  ? "text-white"
+                  : "text-primary-foreground/60"
               )}
             >
               <div className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
-                isActive && "bg-primary text-primary-foreground"
+                isActive && "bg-white/20"
               )}>
                 <item.icon className="h-5 w-5" />
               </div>
@@ -61,7 +61,7 @@ export function MobileNav() {
         >
           <Avatar className={cn(
             "h-8 w-8 transition-all",
-            isProfileActive && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+            isProfileActive && "ring-2 ring-white ring-offset-2 ring-offset-primary"
           )}>
             <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
             <AvatarFallback className="bg-primary/20 text-xs text-primary">

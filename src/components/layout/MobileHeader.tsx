@@ -10,11 +10,11 @@ export function MobileHeader() {
   const { openFeedback } = useFeedback();
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur-lg md:hidden">
+    <header className="sticky top-0 z-40 flex h-14 items-center border-b border-primary/20 bg-primary px-4 md:hidden">
       <div className="flex-1 flex justify-start">
         <button
           onClick={openFeedback}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:text-primary-foreground"
         >
           <MessageSquarePlus className="h-5 w-5" />
         </button>
@@ -23,10 +23,12 @@ export function MobileHeader() {
         <ParadeWordmark size="md" />
       </Link>
       <div className="flex-1 flex justify-end gap-1">
-        <ThemeToggle />
+        <div className="[&_button]:text-primary-foreground/80 [&_button:hover]:text-primary-foreground [&_button:hover]:bg-white/10">
+          <ThemeToggle />
+        </div>
         <Link
           to="/notifications"
-          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-primary-foreground/80 transition-colors hover:text-primary-foreground"
         >
           <Bell className="h-5 w-5" />
           {totalNotifications > 0 && (
