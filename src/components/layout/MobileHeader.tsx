@@ -3,6 +3,7 @@ import { Bell, MessageSquarePlus } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export function MobileHeader() {
   const { totalNotifications } = useNotifications();
@@ -15,6 +16,7 @@ export function MobileHeader() {
         <ParadeWordmark size="md" />
       </Link>
       <div className="flex-1 flex justify-end gap-1">
+        <ThemeToggle />
         <button
           onClick={openFeedback}
           className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
