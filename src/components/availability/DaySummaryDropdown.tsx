@@ -43,8 +43,14 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
 
   const locationStatus = getLocationStatusForDate(selectedDate);
   
+  const timeSlotOrder: Record<string, number> = {
+    'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
+    'late-afternoon': 3, 'evening': 4, 'late-night': 5,
+  };
   const dayPlans = useMemo(() => {
-    return plans.filter((p) => isSameDay(p.date, selectedDate));
+    return plans
+      .filter((p) => isSameDay(p.date, selectedDate))
+      .sort((a, b) => (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0));
   }, [plans, selectedDate]);
 
   const vibeOptions = Object.entries(VIBE_CONFIG).filter(([key]) => key !== 'custom');
