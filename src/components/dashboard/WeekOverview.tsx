@@ -164,10 +164,10 @@ export function WeekOverview() {
             <div key={key}>
               <button
                 onClick={() => toggleDay(key)}
-                className={cn(
-                  "w-full text-left rounded-lg p-2 transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  isToday && "bg-primary/5"
-                )}
+                 className={cn(
+                   "w-full text-left rounded-lg p-2 transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
+                   isToday && "bg-primary/10 ring-2 ring-primary/30"
+                 )}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 min-w-0">
