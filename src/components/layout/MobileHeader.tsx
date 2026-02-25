@@ -19,8 +19,8 @@ export function MobileHeader() {
           <MessageSquarePlus className="h-5 w-5" />
         </button>
       </div>
-      <Link to="/" className="flex items-center justify-center">
-        <ParadeWordmark size="md" />
+      <Link to="/" className="flex items-center justify-center leading-none">
+        <ParadeWordmark size="md" className="leading-none" />
       </Link>
       <div className="flex-1 flex justify-end gap-1">
         <div className="[&_button]:text-primary-foreground/80 [&_button:hover]:text-primary-foreground [&_button:hover]:bg-white/10">
