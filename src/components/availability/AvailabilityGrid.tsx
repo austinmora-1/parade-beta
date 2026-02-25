@@ -33,24 +33,27 @@ export function AvailabilityGrid() {
   
   // For mobile: 7 days forward from today
   // For desktop: week view starting Monday
-  const [mobileStartDate, setMobileStartDate] = useState(new Date());
+  // Both mobile and desktop use Monday-Sunday weeks
   const [currentWeekStart, setCurrentWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(() => {
+    // Default to today's index within the week (0=Mon, 6=Sun)
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const diff = Math.floor((today.getTime() - weekStart.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, Math.min(6, diff));
+  });
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDaySummaryOpen, setIsDaySummaryOpen] = useState(false);
 
-  // Mobile uses 7 days forward from start date
-  const mobileDays = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => addDays(mobileStartDate, i));
-  }, [mobileStartDate]);
-
-  // Desktop uses week view
+  // Both mobile and desktop use the same Mon-Sun week
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   }, [currentWeekStart]);
+
+  // Month calendar days
 
   // Month calendar days
   const monthDays = useMemo(() => {
@@ -143,12 +146,12 @@ export function AvailabilityGrid() {
         variant="ghost"
         size="icon"
         className="h-7 w-7 shrink-0"
-        onClick={() => setMobileStartDate(addDays(mobileStartDate, -7))}
+        onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <div className="flex flex-1 gap-0.5">
-        {mobileDays.map((day, index) => {
+        {weekDays.map((day, index) => {
            const isTodayDate = isToday(day);
            const isSelected = index === selectedDayIndex;
            const dayAvail = getDayAvailability(day);
@@ -188,7 +191,7 @@ export function AvailabilityGrid() {
         variant="ghost"
         size="icon"
         className="h-7 w-7 shrink-0"
-        onClick={() => setMobileStartDate(addDays(mobileStartDate, 7))}
+        onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
@@ -338,7 +341,7 @@ export function AvailabilityGrid() {
             <div className="flex items-center gap-2">
               {viewMode === 'week' ? (
                 <span className="text-sm font-medium">
-                  {format(mobileDays[selectedDayIndex], 'EEEE, MMM d')}
+                  {format(weekDays[selectedDayIndex], 'EEEE, MMM d')}
                 </span>
               ) : (
                 <span className="text-sm font-medium">
@@ -347,7 +350,7 @@ export function AvailabilityGrid() {
               )}
             </div>
             {(() => {
-              const activeDate = viewMode === 'week' ? mobileDays[selectedDayIndex] : selectedDate;
+              const activeDate = viewMode === 'week' ? weekDays[selectedDayIndex] : selectedDate;
               const loc = activeDate ? getLocationText(activeDate) : undefined;
               return loc ? (
                 <span className="text-[11px] font-medium text-muted-foreground">{loc}</span>
@@ -385,8 +388,11 @@ export function AvailabilityGrid() {
             onClick={() => {
               if (isMobile) {
                 if (viewMode === 'week') {
-                  setMobileStartDate(new Date());
-                  setSelectedDayIndex(0);
+                  setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+                  const today = new Date();
+                  const ws = startOfWeek(today, { weekStartsOn: 1 });
+                  const diff = Math.floor((today.getTime() - ws.getTime()) / (1000 * 60 * 60 * 24));
+                  setSelectedDayIndex(Math.max(0, Math.min(6, diff)));
                 } else {
                   setCurrentMonth(new Date());
                   setSelectedDate(new Date());
@@ -408,7 +414,7 @@ export function AvailabilityGrid() {
             <>
               <MobileWeekStrip />
               <DaySummaryDropdown 
-                selectedDate={mobileDays[selectedDayIndex]} 
+                selectedDate={weekDays[selectedDayIndex]} 
                 isOpen={true}
                 onOpenChange={() => {}}
               />
