@@ -325,9 +325,9 @@ async function handleEventsSync(params: {
     const timeSlot = getTimeSlot(hour)
     const timeSlotHyphen = timeSlot.replace('_', '-')
 
-    const planDate = event.start.dateTime
-      ? event.start.dateTime
-      : `${event.start.date}T12:00:00`
+    // Always store noon UTC of the local calendar day to prevent timezone day-shift
+    const localDateStr = getDateString(startDate!, timezone)
+    const planDate = `${localDateStr}T12:00:00+00:00`
 
     planRows.push({
       user_id: userId,

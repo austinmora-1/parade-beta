@@ -117,8 +117,46 @@ function parseICSDate(line: string): { date: Date; allDay: boolean } | null {
     return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
   }
 
-  // If TZID is specified, we approximate by treating as UTC (edge functions have limited TZ support)
-  // This is acceptable since the sync also receives the user's timezone for slot mapping
+  // Extract TZID (e.g. DTSTART;TZID=America/New_York:20260226T073000)
+  const tzidMatch = params.match(/TZID=([^;:]+)/)
+  const tzid = tzidMatch ? tzidMatch[1] : undefined
+
+  if (tzid) {
+    // The parsed h/min/s are LOCAL to the TZID timezone.
+    // Convert to proper UTC using Intl offset computation.
+    try {
+      // Create a "guess" Date using the local components as if they were UTC
+      const guess = new Date(Date.UTC(y, m, d, h, min, s))
+      // Format that guess in the target timezone to see what local time it maps to
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tzid,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+      })
+      const parts = formatter.formatToParts(guess)
+      const getPart = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0')
+      const tzHour = getPart('hour') === 24 ? 0 : getPart('hour')
+
+      // Build a Date from the timezone-local representation of our guess
+      const localAsUtc = new Date(Date.UTC(
+        getPart('year'), getPart('month') - 1, getPart('day'),
+        tzHour, getPart('minute'), getPart('second')
+      ))
+
+      // offset = what-UTC-looks-like-in-TZ minus actual-UTC
+      const offsetMs = localAsUtc.getTime() - guess.getTime()
+      // Correct: the real UTC = guess(local-components-as-UTC) - offset
+      const correctedUtc = new Date(guess.getTime() - offsetMs)
+
+      return { date: correctedUtc, allDay: false }
+    } catch {
+      // If TZID is unrecognized, fall back to treating as UTC
+      return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
+    }
+  }
+
+  // No timezone info — treat as UTC
   return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
 }
 
@@ -344,9 +382,9 @@ Deno.serve(async (req) => {
       const hour = event.isAllDay ? 8 : getHourInTimezone(event.dtstart, timezone)
       const timeSlot = getTimeSlot(hour).replace('_', '-')
 
-      const planDate = event.isAllDay
-        ? `${getDateString(event.dtstart, timezone)}T12:00:00`
-        : event.dtstart.toISOString()
+      // Always store noon UTC of the local calendar day to prevent timezone day-shift
+      const localDateStr = getDateString(event.dtstart, timezone)
+      const planDate = `${localDateStr}T12:00:00+00:00`
 
       planRows.push({
         user_id: userId,
