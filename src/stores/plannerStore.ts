@@ -159,11 +159,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       const plans: Plan[] = (plansData || []).map((p) => {
         const pps = participantsMap[p.id] || [];
+        // Normalize plan date to local calendar day to prevent timezone day-shift.
+        // Plans stored at midnight UTC (e.g. 2026-02-27T00:00:00+00) appear as
+        // the previous day in western timezones. Extract the UTC date parts and
+        // construct a local-midnight Date so isSameDay() matches correctly.
+        const planDateRaw = new Date(p.date);
+        const planYear = planDateRaw.getUTCFullYear();
+        const planMonth = planDateRaw.getUTCMonth();
+        const planDay = planDateRaw.getUTCDate();
+        // If stored near midnight UTC (hour 0-3), the intended calendar day is
+        // the UTC date. For noon UTC or other times, UTC date is also correct.
+        const normalizedPlanDate = new Date(planYear, planMonth, planDay);
         return {
           id: p.id,
           title: p.title,
           activity: p.activity as ActivityType,
-          date: new Date(p.date),
+          date: normalizedPlanDate,
           timeSlot: p.time_slot as TimeSlot,
           duration: p.duration,
           location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
