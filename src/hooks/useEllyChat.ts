@@ -91,21 +91,49 @@ export function useEllyChat() {
     setIsLoading(true);
 
     try {
-      // Ensure we have a fresh session before calling
-      const { data: { session: freshSession } } = await supabase.auth.getSession();
-      if (!freshSession) {
-        throw new Error("Your session has expired. Please refresh the page and try again.");
-      }
-
       // Build API messages (last 20 for context window)
       const apiMessages = updated.slice(-20).map(m => ({
         role: m.role,
         content: m.content,
       }));
 
-      const { data, error } = await supabase.functions.invoke('chat-with-elly', {
-        body: { messages: apiMessages, context: buildContext() },
-      });
+      const invokeElly = async () => {
+        return supabase.functions.invoke('chat-with-elly', {
+          body: { messages: apiMessages, context: buildContext() },
+        });
+      };
+
+      // Validate local session exists first
+      const { data: { session: localSession } } = await supabase.auth.getSession();
+      if (!localSession) {
+        throw new Error("Your session has expired. Please sign in again.");
+      }
+
+      // Validate the session with backend auth service (catches session_not_found)
+      const { error: sessionValidationError } = await supabase.auth.getUser();
+      if (sessionValidationError) {
+        // Try one refresh before failing
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshed.session) {
+          await supabase.auth.signOut();
+          throw new Error("Your login session is no longer valid. Please sign in again.");
+        }
+      }
+
+      let { data, error } = await invokeElly();
+
+      // If function returns auth-related non-2xx, refresh and retry once
+      if (error) {
+        const message = String((error as any)?.message || '').toLowerCase();
+        if (message.includes('non-2xx') || message.includes('401') || message.includes('invalid session')) {
+          const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError && refreshed.session) {
+            const retry = await invokeElly();
+            data = retry.data;
+            error = retry.error;
+          }
+        }
+      }
 
       if (error) throw error;
 
