@@ -2,11 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useConversations } from '@/hooks/useChat';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart } from 'lucide-react';
-import { useConversations } from '@/hooks/useChat';
 import { cn } from '@/lib/utils';
 import { format, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
@@ -49,6 +49,7 @@ export default function FriendProfile() {
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [availabilityOpen, setAvailabilityOpen] = useState(true);
 
   useEffect(() => {
     if (!userId) return;
@@ -239,141 +240,133 @@ export default function FriendProfile() {
         </Button>
       </div>
 
-      {/* Availability - Collapsible Day Cards (matching dashboard style) */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
-        <h2 className="mb-4 font-display text-base font-semibold md:text-lg">
-          This Week's Availability
-        </h2>
+      {/* Availability - Collapsible */}
+      <div className="rounded-2xl border border-border bg-card shadow-soft">
+        <button
+          onClick={() => setAvailabilityOpen(prev => !prev)}
+          className="flex w-full items-center justify-between p-4 md:p-6 text-left"
+        >
+          <h2 className="font-display text-base font-semibold md:text-lg">
+            This Week's Availability
+          </h2>
+          <ChevronDown className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+            availabilityOpen && "rotate-180"
+          )} />
+        </button>
 
-        {availability.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-3xl mb-2">📅</p>
-            <p className="text-sm text-muted-foreground">
-              No availability shared for this week
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
-            {next7Days.map((day) => {
-              const dayAvail = availability.find(a => a.date === day.dateStr);
-              const isToday = isSameDay(day.date, new Date());
-              const isAway = dayAvail?.location_status === 'away';
-              const summary = getDaySummary(day.dateStr);
-              const isExpanded = expandedDays.has(day.dateStr);
-              const score = summary.available / summary.total;
-              const hasData = !!dayAvail;
+        {availabilityOpen && (
+          <div className="px-4 pb-4 md:px-6 md:pb-6">
+            {availability.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-3xl mb-2">📅</p>
+                <p className="text-sm text-muted-foreground">
+                  No availability shared for this week
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+                {next7Days.map((day) => {
+                  const dayAvail = availability.find(a => a.date === day.dateStr);
+                  const isToday = isSameDay(day.date, new Date());
+                  const isAway = dayAvail?.location_status === 'away';
+                  const summary = getDaySummary(day.dateStr);
+                  const isExpanded = expandedDays.has(day.dateStr);
+                  const score = summary.available / summary.total;
+                  const hasData = !!dayAvail;
 
-              return (
-                <div key={day.dateStr}>
-                  <button
-                    onClick={() => hasData && toggleDay(day.dateStr)}
-                    className={cn(
-                      "w-full text-left rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20",
-                      hasData && "hover:bg-muted/50",
-                      !hasData && "opacity-50 cursor-default",
-                      isToday && "bg-primary/5"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className={cn(
-                          "text-xs font-semibold",
-                          isToday && "text-primary"
-                        )}>
-                          {day.label}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {format(day.date, 'd')}
-                        </span>
-                        {isToday && (
-                          <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-full font-medium">
-                            Today
-                          </span>
+                  return (
+                    <div key={day.dateStr}>
+                      <button
+                        onClick={() => hasData && toggleDay(day.dateStr)}
+                        className={cn(
+                          "w-full text-left rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20",
+                          hasData && "hover:bg-muted/50",
+                          !hasData && "opacity-50 cursor-default",
+                          isToday && "bg-primary/5"
                         )}
-                      </div>
-                      {hasData && (
-                        <ChevronDown className={cn(
-                          "h-3 w-3 text-muted-foreground transition-transform shrink-0",
-                          isExpanded && "rotate-180"
-                        )} />
-                      )}
-                    </div>
-
-                    {/* Availability bar */}
-                    <div className="mt-1.5 flex gap-0.5">
-                      {TIME_SLOT_ORDER.map((slot) => {
-                        const isAvailable = dayAvail ? dayAvail.slots[slot] : false;
-                        return (
-                          <div
-                            key={slot}
-                            className={cn(
-                              "h-1 flex-1 rounded-full",
-                              isAvailable
-                                ? "bg-availability-available/60"
-                                : "bg-muted-foreground/20"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={cn("text-xs font-semibold", isToday && "text-primary")}>
+                              {day.label}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {format(day.date, 'd')}
+                            </span>
+                            {isToday && (
+                              <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-full font-medium">
+                                Today
+                              </span>
                             )}
-                          />
-                        );
-                      })}
-                    </div>
-
-                    {/* Summary + location */}
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className={cn(
-                        "text-[10px] font-medium",
-                        hasData && score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
-                      )}>
-                        {hasData ? `${summary.available}/${summary.total} free` : 'No data'}
-                      </span>
-                      {hasData && (
-                        <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                          {isAway ? (
-                            <Plane className="h-2.5 w-2.5 shrink-0" />
-                          ) : (
-                            <Home className="h-2.5 w-2.5 shrink-0" />
+                          </div>
+                          {hasData && (
+                            <ChevronDown className={cn(
+                              "h-3 w-3 text-muted-foreground transition-transform shrink-0",
+                              isExpanded && "rotate-180"
+                            )} />
                           )}
+                        </div>
+
+                        <div className="mt-1.5 flex gap-0.5">
+                          {TIME_SLOT_ORDER.map((slot) => {
+                            const isAvailable = dayAvail ? dayAvail.slots[slot] : false;
+                            return (
+                              <div
+                                key={slot}
+                                className={cn(
+                                  "h-1 flex-1 rounded-full",
+                                  isAvailable ? "bg-availability-available/60" : "bg-muted-foreground/20"
+                                )}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className={cn(
+                            "text-[10px] font-medium",
+                            hasData && score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
+                          )}>
+                            {hasData ? `${summary.available}/${summary.total} free` : 'No data'}
+                          </span>
+                          {hasData && (
+                            <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                              {isAway ? <Plane className="h-2.5 w-2.5 shrink-0" /> : <Home className="h-2.5 w-2.5 shrink-0" />}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+
+                      {isExpanded && dayAvail && (
+                        <div className="space-y-0.5 animate-fade-in px-0.5 pb-1">
+                          {TIME_SLOT_ORDER.map((slot) => {
+                            const isAvailable = dayAvail.slots[slot];
+                            const slotInfo = TIME_SLOT_LABELS[slot];
+                            return (
+                              <div
+                                key={slot}
+                                className={cn(
+                                  "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors",
+                                  isAvailable ? "bg-availability-available/20 text-foreground" : "bg-muted/30 text-muted-foreground"
+                                )}
+                              >
+                                <span className={cn(
+                                  "h-1.5 w-1.5 shrink-0 rounded-full",
+                                  isAvailable ? "bg-availability-available" : "bg-muted-foreground/40"
+                                )} />
+                                <span className="font-medium truncate">{slotInfo.label}</span>
+                                <span className="text-muted-foreground ml-auto text-[9px] shrink-0">{slotInfo.time}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
-                  </button>
-
-                  {/* Expanded slot details */}
-                  {isExpanded && dayAvail && (
-                    <div className="space-y-0.5 animate-fade-in px-0.5 pb-1">
-                      {TIME_SLOT_ORDER.map((slot) => {
-                        const isAvailable = dayAvail.slots[slot];
-                        const slotInfo = TIME_SLOT_LABELS[slot];
-
-                        return (
-                          <div
-                            key={slot}
-                            className={cn(
-                              "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors",
-                              isAvailable
-                                ? "bg-availability-available/20 text-foreground"
-                                : "bg-muted/30 text-muted-foreground"
-                            )}
-                          >
-                            <span className={cn(
-                              "h-1.5 w-1.5 shrink-0 rounded-full",
-                              isAvailable
-                                ? "bg-availability-available"
-                                : "bg-muted-foreground/40"
-                            )} />
-                            <span className="font-medium truncate">
-                              {slotInfo.label}
-                            </span>
-                            <span className="text-muted-foreground ml-auto text-[9px] shrink-0">
-                              {slotInfo.time}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
