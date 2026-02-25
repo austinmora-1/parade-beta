@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CollapsibleWidget } from './CollapsibleWidget';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
@@ -288,13 +289,11 @@ export function HangRequests() {
 
   if (visibleRequests.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2 text-sm">
-              <Inbox className="h-4 w-4" />
-              Hang Requests
-            </span>
+      <CollapsibleWidget
+        title="Hang Requests"
+        icon={<Inbox className="h-4 w-4 text-primary" />}
+        headerRight={
+          <div onClick={(e) => e.stopPropagation()}>
             <ShareDialog
               trigger={
                 <Button size="sm" className="h-6 px-2 text-xs gap-1">
@@ -303,31 +302,30 @@ export function HangRequests() {
                 </Button>
               }
             />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-4 text-center">
-            <Inbox className="h-6 w-6 text-muted-foreground mb-2" />
-            <p className="text-xs text-muted-foreground">No hang requests yet</p>
           </div>
-        </CardContent>
-      </Card>
+        }
+      >
+        <div className="flex flex-col items-center justify-center py-4 text-center">
+          <Inbox className="h-6 w-6 text-muted-foreground mb-2" />
+          <p className="text-xs text-muted-foreground">No hang requests yet</p>
+        </div>
+      </CollapsibleWidget>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-sm">
-            <Inbox className="h-4 w-4" />
-            Hang Requests
-            {incomingPending.length > 0 && (
-              <Badge variant="default" className="text-[10px] px-1.5 py-0">
-                {incomingPending.length}
-              </Badge>
-            )}
-          </span>
+    <CollapsibleWidget
+      title="Hang Requests"
+      icon={<Inbox className="h-4 w-4 text-primary" />}
+      badge={
+        incomingPending.length > 0 ? (
+          <Badge variant="default" className="text-[10px] px-1.5 py-0">
+            {incomingPending.length}
+          </Badge>
+        ) : undefined
+      }
+      headerRight={
+        <div onClick={(e) => e.stopPropagation()}>
           <ShareDialog
             trigger={
               <Button size="sm" className="h-6 px-2 text-xs gap-1">
@@ -336,10 +334,10 @@ export function HangRequests() {
               </Button>
             }
           />
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2.5">
-        {/* Incoming pending */}
+        </div>
+      }
+    >
+      <div className="space-y-2.5">
         {incomingPending.length > 0 && (
           <div className="space-y-1.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
@@ -349,7 +347,6 @@ export function HangRequests() {
           </div>
         )}
 
-        {/* Outgoing pending */}
         {outgoingPending.length > 0 && (
           <div className="space-y-1.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
@@ -359,7 +356,6 @@ export function HangRequests() {
           </div>
         )}
 
-        {/* Resolved (accepted + unseen declined) */}
         {resolved.length > 0 && (
           <div className="space-y-1.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
@@ -368,7 +364,7 @@ export function HangRequests() {
             {resolved.slice(0, 5).map(r => renderRequestCard(r, isOutgoing(r)))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </CollapsibleWidget>
   );
 }
