@@ -3,20 +3,36 @@ import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { Button } from '@/components/ui/button';
 import { Share2, RefreshCw, Loader2 } from 'lucide-react';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
+import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 
 export default function Availability() {
-  const { isConnected, isSyncing, syncCalendar } = useGoogleCalendar();
+  const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
+  const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadAllData = usePlannerStore((s) => s.loadAllData);
 
+  const isConnected = isGcalConnected || isIcalConnected;
+  const isSyncing = isGcalSyncing || isIcalSyncing;
+
   const handleSync = async () => {
-    const result = await syncCalendar();
-    if (result.synced) {
-      toast.success(result.message || 'Calendar synced successfully');
+    const results: string[] = [];
+    let anySynced = false;
+
+    if (isGcalConnected) {
+      const result = await syncGcal();
+      if (result.synced) { anySynced = true; results.push('Google Calendar'); }
+    }
+    if (isIcalConnected) {
+      const result = await syncIcal();
+      if (result.synced) { anySynced = true; results.push('Apple Calendar'); }
+    }
+
+    if (anySynced) {
+      toast.success(`Synced ${results.join(' & ')} successfully`);
       await loadAllData();
     } else {
-      toast.error(result.message || 'Failed to sync calendar');
+      toast.error('Failed to sync calendar');
     }
   };
 
