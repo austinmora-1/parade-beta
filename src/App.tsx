@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlannerStore } from "@/stores/plannerStore";
+import { ArcadeProvider } from "@/hooks/useArcadeMode";
 import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
 import Availability from "./pages/Availability";
@@ -117,13 +118,15 @@ const AppRoutes = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
+      <ArcadeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </ArcadeProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
