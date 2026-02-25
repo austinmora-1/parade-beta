@@ -5,9 +5,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageCircle, Send, MapPin } from 'lucide-react';
+import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format, addDays, startOfWeek } from 'date-fns';
+import { format, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
@@ -46,6 +46,7 @@ export default function FriendProfile() {
   const [profile, setProfile] = useState<FriendProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!userId) return;
@@ -53,14 +54,12 @@ export default function FriendProfile() {
     const fetchData = async () => {
       setLoading(true);
 
-      // Fetch profile from public_profiles view
       const { data: profileData } = await supabase
         .from('public_profiles')
         .select('display_name, avatar_url, bio')
         .eq('user_id', userId)
         .single();
 
-      // Fetch additional profile data (vibe, location) - works if show_availability is true
       const { data: fullProfile } = await supabase
         .from('profiles')
         .select('current_vibe, location_status')
@@ -75,7 +74,6 @@ export default function FriendProfile() {
         location_status: fullProfile?.location_status || null,
       });
 
-      // Fetch availability for the next 7 days
       const today = format(new Date(), 'yyyy-MM-dd');
       const weekOut = format(addDays(new Date(), 6), 'yyyy-MM-dd');
 
@@ -122,6 +120,22 @@ export default function FriendProfile() {
   const getInitials = (name: string | null) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const getDaySummary = (dateStr: string) => {
+    const dayAvail = availability.find(a => a.date === dateStr);
+    if (!dayAvail) return { available: 0, total: TIME_SLOT_ORDER.length };
+    const available = TIME_SLOT_ORDER.filter(s => dayAvail.slots[s]).length;
+    return { available, total: TIME_SLOT_ORDER.length };
+  };
+
+  const toggleDay = (key: string) => {
+    setExpandedDays(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
 
   if (loading) {
@@ -196,7 +210,7 @@ export default function FriendProfile() {
         </div>
       </div>
 
-      {/* Availability Grid */}
+      {/* Availability - Collapsible Day Cards (matching dashboard style) */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
         <h2 className="mb-4 font-display text-base font-semibold md:text-lg">
           This Week's Availability
@@ -210,46 +224,127 @@ export default function FriendProfile() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-            <div className="min-w-[500px]">
-              {/* Header row */}
-              <div className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-2">
-                <div />
-                {next7Days.map(day => (
-                  <div key={day.dateStr} className="text-center">
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase">{day.label}</p>
-                    <p className="text-xs font-semibold">{format(day.date, 'd')}</p>
-                  </div>
-                ))}
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+            {next7Days.map((day) => {
+              const dayAvail = availability.find(a => a.date === day.dateStr);
+              const isToday = isSameDay(day.date, new Date());
+              const isAway = dayAvail?.location_status === 'away';
+              const summary = getDaySummary(day.dateStr);
+              const isExpanded = expandedDays.has(day.dateStr);
+              const score = summary.available / summary.total;
+              const hasData = !!dayAvail;
 
-              {/* Slot rows */}
-              {TIME_SLOT_ORDER.map(slot => (
-                <div key={slot} className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-1">
-                  <div className="flex items-center">
-                    <span className="text-[10px] text-muted-foreground truncate">
-                      {TIME_SLOT_LABELS[slot].label}
-                    </span>
-                  </div>
-                  {next7Days.map(day => {
-                    const dayAvail = availability.find(a => a.date === day.dateStr);
-                    const isAvailable = dayAvail ? dayAvail.slots[slot] : false;
-                    
-                    return (
-                      <div
-                        key={`${day.dateStr}-${slot}`}
-                        className={cn(
-                          "h-7 rounded-md transition-colors",
-                          isAvailable
-                            ? "bg-availability-available/30 border border-availability-available/40"
-                            : "bg-muted/50 border border-transparent"
+              return (
+                <div key={day.dateStr}>
+                  <button
+                    onClick={() => hasData && toggleDay(day.dateStr)}
+                    className={cn(
+                      "w-full text-left rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20",
+                      hasData && "hover:bg-muted/50",
+                      !hasData && "opacity-50 cursor-default",
+                      isToday && "bg-primary/5"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className={cn(
+                          "text-xs font-semibold",
+                          isToday && "text-primary"
+                        )}>
+                          {day.label}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {format(day.date, 'd')}
+                        </span>
+                        {isToday && (
+                          <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-full font-medium">
+                            Today
+                          </span>
                         )}
-                      />
-                    );
-                  })}
+                      </div>
+                      {hasData && (
+                        <ChevronDown className={cn(
+                          "h-3 w-3 text-muted-foreground transition-transform shrink-0",
+                          isExpanded && "rotate-180"
+                        )} />
+                      )}
+                    </div>
+
+                    {/* Availability bar */}
+                    <div className="mt-1.5 flex gap-0.5">
+                      {TIME_SLOT_ORDER.map((slot) => {
+                        const isAvailable = dayAvail ? dayAvail.slots[slot] : false;
+                        return (
+                          <div
+                            key={slot}
+                            className={cn(
+                              "h-1 flex-1 rounded-full",
+                              isAvailable
+                                ? "bg-availability-available/60"
+                                : "bg-muted-foreground/20"
+                            )}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Summary + location */}
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className={cn(
+                        "text-[10px] font-medium",
+                        hasData && score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
+                      )}>
+                        {hasData ? `${summary.available}/${summary.total} free` : 'No data'}
+                      </span>
+                      {hasData && (
+                        <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                          {isAway ? (
+                            <Plane className="h-2.5 w-2.5 shrink-0" />
+                          ) : (
+                            <Home className="h-2.5 w-2.5 shrink-0" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded slot details */}
+                  {isExpanded && dayAvail && (
+                    <div className="space-y-0.5 animate-fade-in px-0.5 pb-1">
+                      {TIME_SLOT_ORDER.map((slot) => {
+                        const isAvailable = dayAvail.slots[slot];
+                        const slotInfo = TIME_SLOT_LABELS[slot];
+
+                        return (
+                          <div
+                            key={slot}
+                            className={cn(
+                              "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors",
+                              isAvailable
+                                ? "bg-availability-available/20 text-foreground"
+                                : "bg-muted/30 text-muted-foreground"
+                            )}
+                          >
+                            <span className={cn(
+                              "h-1.5 w-1.5 shrink-0 rounded-full",
+                              isAvailable
+                                ? "bg-availability-available"
+                                : "bg-muted-foreground/40"
+                            )} />
+                            <span className="font-medium truncate">
+                              {slotInfo.label}
+                            </span>
+                            <span className="text-muted-foreground ml-auto text-[9px] shrink-0">
+                              {slotInfo.time}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
