@@ -50,11 +50,13 @@ export function UpcomingPlans() {
               )}
               style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <ActivityIcon config={activityConfig} size={18} />
-                  <span className="text-sm font-medium truncate">{plan.title}</span>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <ActivityIcon config={activityConfig} size={18} />
+                    <span className="text-sm font-medium">{plan.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 ml-[26px]">
                     <span className="flex items-center gap-0.5">
                       <Clock className="h-3 w-3" />
                       {timeSlotConfig.time}
@@ -66,14 +68,14 @@ export function UpcomingPlans() {
                       </span>
                     )}
                     {plan.location && (
-                      <span className="flex items-center gap-0.5 truncate max-w-[80px]">
+                      <span className="flex items-center gap-0.5">
                         <MapPin className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{plan.location.name}</span>
+                        <span className="truncate max-w-[100px]">{plan.location.name}</span>
                       </span>
                     )}
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                   {format(plan.date, 'EEE, MMM d')}
                 </span>
               </div>
