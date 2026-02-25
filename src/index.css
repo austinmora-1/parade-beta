@@ -187,8 +187,10 @@
   .parade-wordmark {
     font-family: 'Bungee Shade', sans-serif;
     font-weight: 400;
-    color: hsl(150 50% 50%);
-    -webkit-text-fill-color: hsl(150 50% 50%);
+    background: var(--gradient-wordmark);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .shadow-soft {
