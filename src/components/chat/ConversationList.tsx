@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Conversation } from '@/hooks/useChat';
 import { formatDistanceToNow } from 'date-fns';
 import { Users } from 'lucide-react';
+import { FriendLink } from '@/components/ui/FriendLink';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -60,12 +61,14 @@ export function ConversationList({ conversations, activeId, onSelect }: Conversa
                 : "hover:bg-accent border border-transparent"
             )}
           >
-            <Avatar className="h-10 w-10 shrink-0">
-              {info.avatar ? <AvatarImage src={info.avatar} /> : null}
-              <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                {info.isGroup ? <Users className="h-4 w-4" /> : info.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <FriendLink userId={!info.isGroup ? convo.participants.find(p => p.user_id !== user?.id)?.user_id : null}>
+              <Avatar className="h-10 w-10 shrink-0">
+                {info.avatar ? <AvatarImage src={info.avatar} /> : null}
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {info.isGroup ? <Users className="h-4 w-4" /> : info.name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </FriendLink>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
                 <span className="truncate text-sm font-medium">{info.name}</span>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, ArrowLeft, Users, Check, CheckCheck, Sparkles, Loader2 } from 'lucide-react';
+import { FriendLink } from '@/components/ui/FriendLink';
 import { format, isToday, isYesterday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ELLY_USER_ID } from '@/lib/constants';
@@ -116,16 +117,20 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Avatar className="h-9 w-9 shrink-0">
-          {other?.avatar_url ? <AvatarImage src={other.avatar_url} /> : null}
-          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-            {conversation.type === 'group'
-              ? <Users className="h-4 w-4" />
-              : displayName.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <FriendLink userId={other?.user_id}>
+          <Avatar className="h-9 w-9 shrink-0">
+            {other?.avatar_url ? <AvatarImage src={other.avatar_url} /> : null}
+            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+              {conversation.type === 'group'
+                ? <Users className="h-4 w-4" />
+                : displayName.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </FriendLink>
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold">{displayName}</h2>
+          <FriendLink userId={other?.user_id}>
+            <h2 className="truncate text-sm font-semibold hover:underline">{displayName}</h2>
+          </FriendLink>
           {conversation.type === 'group' && (
             <p className="truncate text-[11px] text-muted-foreground">
               {conversation.participants.map(p => p.display_name || 'Unknown').join(', ')}
@@ -158,20 +163,22 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                 className={cn("flex gap-2", isMe ? "justify-end" : "justify-start")}
               >
                 {!isMe && (
-                  <Avatar className="h-7 w-7 shrink-0 mt-0.5">
-                    {isElly ? (
-                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40 text-primary text-[10px]">
-                        <Sparkles className="h-3 w-3" />
-                      </AvatarFallback>
-                    ) : (
-                      <>
-                        {sender?.avatar_url ? <AvatarImage src={sender.avatar_url} /> : null}
-                        <AvatarFallback className="bg-muted text-[10px]">
-                          {(sender?.display_name || '?').slice(0, 2).toUpperCase()}
+                  <FriendLink userId={isElly ? null : msg.sender_id}>
+                    <Avatar className="h-7 w-7 shrink-0 mt-0.5">
+                      {isElly ? (
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40 text-primary text-[10px]">
+                          <Sparkles className="h-3 w-3" />
                         </AvatarFallback>
-                      </>
-                    )}
-                  </Avatar>
+                      ) : (
+                        <>
+                          {sender?.avatar_url ? <AvatarImage src={sender.avatar_url} /> : null}
+                          <AvatarFallback className="bg-muted text-[10px]">
+                            {(sender?.display_name || '?').slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </>
+                      )}
+                    </Avatar>
+                  </FriendLink>
                 )}
                 <div className={cn("max-w-[75%]", isMe ? "items-end" : "items-start")}>
                   {!isMe && (
@@ -179,7 +186,11 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                       "mb-0.5 text-[10px] font-medium ml-1",
                       isElly ? "text-primary" : "text-muted-foreground"
                     )}>
-                      {isElly ? 'Elly ✨' : (sender?.display_name || 'Unknown')}
+                      {isElly ? 'Elly ✨' : (
+                        <FriendLink userId={msg.sender_id}>
+                          <span className="hover:underline">{sender?.display_name || 'Unknown'}</span>
+                        </FriendLink>
+                      )}
                     </p>
                   )}
                   <div
