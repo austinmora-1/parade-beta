@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock, MoreVertical, Trash2, Edit } from 'lucide-react';
+import { MapPin, Users, Clock, MoreVertical, Trash2, Edit, Eye } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
 import {
@@ -122,16 +122,32 @@ export function PlanCard({
 
       {(plan.participants.length > 0 || plan.location) && (
         <div className="mt-3 flex flex-wrap gap-3">
-          {plan.participants.length > 0 && (
+          {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
             <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                {plan.participants.map((p, i) => (
+                {plan.participants.filter(p => p.role !== 'subscriber').map((p, i, arr) => (
                   <span key={p.id}>
                     <FriendLink userId={p.friendUserId}>
                       <span className="hover:underline">{p.name}</span>
                     </FriendLink>
-                    {i < plan.participants.length - 1 ? ', ' : ''}
+                    {i < arr.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
+              </span>
+            </div>
+          )}
+
+          {plan.participants.filter(p => p.role === 'subscriber').length > 0 && (
+            <div className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-1.5">
+              <Eye className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {plan.participants.filter(p => p.role === 'subscriber').map((p, i, arr) => (
+                  <span key={p.id}>
+                    <FriendLink userId={p.friendUserId}>
+                      <span className="hover:underline">{p.name}</span>
+                    </FriendLink>
+                    {i < arr.length - 1 ? ', ' : ''}
                   </span>
                 ))}
               </span>

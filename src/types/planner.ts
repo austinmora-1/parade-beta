@@ -40,6 +40,8 @@ export interface Location {
   lng?: number;
 }
 
+export type ParticipantRole = 'participant' | 'subscriber';
+
 export interface Friend {
   id: string;
   name: string;
@@ -48,6 +50,7 @@ export interface Friend {
   friendUserId?: string;
   status: 'connected' | 'pending' | 'invited';
   isIncoming?: boolean;
+  role?: ParticipantRole;
 }
 
 export interface Plan {
@@ -62,6 +65,7 @@ export interface Plan {
   participants: Friend[];
   notes?: string;
   createdAt: Date;
+  myRole?: ParticipantRole; // role of the current user (for participated plans)
 }
 
 export interface Vibe {

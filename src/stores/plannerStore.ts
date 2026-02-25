@@ -146,17 +146,17 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       // Load plan participants
       const planIds = (plansData || []).map(p => p.id);
-      let participantsMap: Record<string, { friend_id: string; status: string }[]> = {};
+      let participantsMap: Record<string, { friend_id: string; status: string; role: string }[]> = {};
       
       if (planIds.length > 0) {
         const { data: participantsData } = await supabase
           .from('plan_participants')
-          .select('plan_id, friend_id, status')
+          .select('plan_id, friend_id, status, role')
           .in('plan_id', planIds);
         
         for (const pp of (participantsData || [])) {
           if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
-          participantsMap[pp.plan_id].push({ friend_id: pp.friend_id, status: pp.status });
+          participantsMap[pp.plan_id].push({ friend_id: pp.friend_id, status: pp.status, role: pp.role });
         }
       }
       
@@ -183,23 +183,23 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       }
       
       const plans: Plan[] = (plansData || []).map((p) => {
+        // Get all participants for this plan
+        const allPps = participantsMap[p.id] || [];
+        // Determine current user's role (for participated plans)
+        const myParticipation = allPps.find(pp => pp.friend_id === userId);
+        const myRole = p.user_id === userId ? 'participant' : (myParticipation?.role as 'participant' | 'subscriber') || 'participant';
         // Filter out the current user from participants
-        const rawPps = (participantsMap[p.id] || []).filter(pp => pp.friend_id !== userId);
+        const rawPps = allPps.filter(pp => pp.friend_id !== userId);
         // For participated plans (not owned), include the plan owner as a participant
         const pps = [...rawPps];
         if (p.user_id !== userId && !pps.some(pp => pp.friend_id === p.user_id)) {
-          pps.push({ friend_id: p.user_id, status: 'accepted' });
+          pps.push({ friend_id: p.user_id, status: 'accepted', role: 'participant' });
         }
         // Normalize plan date to local calendar day to prevent timezone day-shift.
-        // Plans stored at midnight UTC (e.g. 2026-02-27T00:00:00+00) appear as
-        // the previous day in western timezones. Extract the UTC date parts and
-        // construct a local-midnight Date so isSameDay() matches correctly.
         const planDateRaw = new Date(p.date);
         const planYear = planDateRaw.getUTCFullYear();
         const planMonth = planDateRaw.getUTCMonth();
         const planDay = planDateRaw.getUTCDate();
-        // If stored near midnight UTC (hour 0-3), the intended calendar day is
-        // the UTC date. For noon UTC or other times, UTC date is also correct.
         const normalizedPlanDate = new Date(planYear, planMonth, planDay);
         return {
           id: p.id,
@@ -216,7 +216,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             name: profilesMap[pp.friend_id] || 'Friend',
             friendUserId: pp.friend_id,
             status: 'connected' as const,
+            role: (pp.role as 'participant' | 'subscriber') || 'participant',
           })),
+          myRole,
           createdAt: new Date(p.created_at),
         };
       });
@@ -450,6 +452,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       createdAt: new Date(data.created_at),
     };
     
+    // Insert participants into plan_participants table
+    if (plan.participants && plan.participants.length > 0) {
+      const participantRows = plan.participants
+        .filter(p => p.friendUserId)
+        .map(p => ({
+          plan_id: data.id,
+          friend_id: p.friendUserId!,
+          status: 'invited',
+          role: p.role || 'participant',
+        }));
+      
+      if (participantRows.length > 0) {
+        await supabase.from('plan_participants').insert(participantRows);
+      }
+    }
+    
     set((state) => ({ plans: [...state.plans, newPlan] }));
     
     // Auto-block the availability slot for this plan
@@ -502,6 +520,25 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (error) {
       console.error('Error updating plan:', error);
       return;
+    }
+    
+    // Sync participants if provided
+    if (updates.participants) {
+      // Delete existing participants and re-insert
+      await supabase.from('plan_participants').delete().eq('plan_id', id);
+      
+      const participantRows = updates.participants
+        .filter(p => p.friendUserId)
+        .map(p => ({
+          plan_id: id,
+          friend_id: p.friendUserId!,
+          status: 'invited',
+          role: p.role || 'participant',
+        }));
+      
+      if (participantRows.length > 0) {
+        await supabase.from('plan_participants').insert(participantRows);
+      }
     }
     
     set((state) => ({
