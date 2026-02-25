@@ -11,9 +11,25 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "check_friend_availability",
+      description: "Check a friend's availability and plans for a specific date to see if they are free. ALWAYS call this before creating a plan that includes a friend.",
+      parameters: {
+        type: "object",
+        properties: {
+          friend_user_id: { type: "string", description: "The friend's user ID" },
+          date: { type: "string", description: "ISO date string (YYYY-MM-DD) to check" },
+        },
+        required: ["friend_user_id", "date"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_plan",
       description:
-        "Create a new plan/event for the user. Use this when they want to schedule something.",
+        "Create a new plan/event for the user. Use this when they want to schedule something. IMPORTANT: Before calling this with participant_friend_ids, ALWAYS call check_friend_availability first to verify each friend is free during the requested time slot.",
       parameters: {
         type: "object",
         properties: {
@@ -89,7 +105,7 @@ const TOOLS = [
     type: "function",
     function: {
       name: "add_participant",
-      description: "Add a friend as a participant to an existing plan. Use when the user wants to invite someone to a plan.",
+      description: "Add a friend as a participant to an existing plan. IMPORTANT: Call check_friend_availability first to verify the friend is free.",
       parameters: {
         type: "object",
         properties: {
@@ -129,12 +145,90 @@ async function executeTool(
   const name = tc.function.name;
   console.log(`Executing tool: ${name}`, JSON.stringify(args));
 
+  if (name === "check_friend_availability") {
+    const dateStr = args.date;
+    const friendId = args.friend_user_id;
+
+    // Fetch availability record
+    const { data: availRow } = await supabaseAdmin
+      .from("availability")
+      .select("early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night")
+      .eq("user_id", friendId)
+      .eq("date", dateStr)
+      .maybeSingle();
+
+    // Fetch plans for that day
+    const { data: friendPlans } = await supabaseAdmin
+      .from("plans")
+      .select("title, time_slot, activity")
+      .eq("user_id", friendId)
+      .gte("date", `${dateStr}T00:00:00`)
+      .lte("date", `${dateStr}T23:59:59`);
+
+    const slotMap: Record<string, string> = {
+      "early-morning": "early_morning",
+      "late-morning": "late_morning",
+      "early-afternoon": "early_afternoon",
+      "late-afternoon": "late_afternoon",
+      "evening": "evening",
+      "late-night": "late_night",
+    };
+
+    const TIME_SLOT_LABELS: Record<string, string> = {
+      "early-morning": "Early Morning (6-9am)",
+      "late-morning": "Morning (9am-12pm)",
+      "early-afternoon": "Midday (12-3pm)",
+      "late-afternoon": "Afternoon (3-6pm)",
+      "evening": "Evening (6-10pm)",
+      "late-night": "Late Night (10pm-2am)",
+    };
+
+    // Build per-slot status
+    const busyPlanSlots = new Set(
+      (friendPlans || []).map((p: any) => p.time_slot.replace("_", "-"))
+    );
+
+    const slots: Record<string, { status: string; plan?: string }> = {};
+    for (const [slot, col] of Object.entries(slotMap)) {
+      if (busyPlanSlots.has(slot)) {
+        const plan = (friendPlans || []).find(
+          (p: any) => p.time_slot.replace("_", "-") === slot
+        );
+        slots[TIME_SLOT_LABELS[slot]] = {
+          status: "busy (has a plan)",
+          plan: plan?.title,
+        };
+      } else if (availRow && (availRow as any)[col] === false) {
+        slots[TIME_SLOT_LABELS[slot]] = { status: "unavailable" };
+      } else {
+        slots[TIME_SLOT_LABELS[slot]] = { status: "available" };
+      }
+    }
+
+    const freeSlots = Object.entries(slots)
+      .filter(([, v]) => v.status === "available")
+      .map(([k]) => k);
+
+    return JSON.stringify({
+      date: dateStr,
+      friend_user_id: friendId,
+      slots,
+      summary:
+        freeSlots.length > 0
+          ? `Friend is free during: ${freeSlots.join(", ")}`
+          : "Friend has NO available slots on this day.",
+    });
+  }
+
   if (name === "create_plan") {
+    // Use noon UTC to prevent timezone day-shift
+    const planDate = `${args.date}T12:00:00+00:00`;
+
     const { data, error } = await supabase.from("plans").insert({
       user_id: userId,
       title: args.title,
       activity: args.activity,
-      date: new Date(args.date).toISOString(),
+      date: planDate,
       time_slot: args.time_slot,
       duration: args.duration || 60,
       location: args.location || null,
@@ -142,6 +236,14 @@ async function executeTool(
     }).select().single();
 
     if (error) throw error;
+
+    // Auto-block the availability slot
+    const slotColumn = args.time_slot.replace("-", "_");
+    await supabaseAdmin.from("availability").upsert({
+      user_id: userId,
+      date: args.date,
+      [slotColumn]: false,
+    }, { onConflict: "user_id,date" });
 
     // Add participants if provided
     if (args.participant_friend_ids?.length && data) {
@@ -160,7 +262,7 @@ async function executeTool(
     const updates: any = {};
     if (args.title) updates.title = args.title;
     if (args.activity) updates.activity = args.activity;
-    if (args.date) updates.date = new Date(args.date).toISOString();
+    if (args.date) updates.date = `${args.date}T12:00:00+00:00`;
     if (args.time_slot) updates.time_slot = args.time_slot;
     if (args.duration) updates.duration = args.duration;
     if (args.location !== undefined) updates.location = args.location;
@@ -276,6 +378,7 @@ ${context?.availability?.length ? `User's availability this week:\n${JSON.string
 
 Guidelines:
 - Be concise, warm, and use emoji sparingly ✨
+- **CRITICAL: Before creating a plan with friends or adding a participant, ALWAYS call check_friend_availability first** to verify the friend is free during the requested time slot on that date. If the friend is busy or unavailable for the requested slot, tell the user and suggest alternative slots where the friend IS available. Do NOT create the plan with that friend if they are not free.
 - When the user wants to create a plan, use the create_plan tool. You can include participant_friend_ids to add friends immediately.
 - When the user wants to change/reschedule a plan, use the update_plan tool  
 - When the user wants to cancel a plan, use the delete_plan tool

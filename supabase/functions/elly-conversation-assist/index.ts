@@ -14,8 +14,24 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "check_friend_availability",
+      description: "Check a friend's availability and plans for a specific date. ALWAYS call this before creating a plan to verify participants are free.",
+      parameters: {
+        type: "object",
+        properties: {
+          friend_user_id: { type: "string", description: "The friend's user ID" },
+          date: { type: "string", description: "ISO date string (YYYY-MM-DD) to check" },
+        },
+        required: ["friend_user_id", "date"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_plan",
-      description: "Create a new plan/event for the requesting user.",
+      description: "Create a new plan/event for the requesting user. IMPORTANT: Before creating, call check_friend_availability for each participant to verify they are free.",
       parameters: {
         type: "object",
         properties: {
@@ -191,19 +207,21 @@ serve(async (req) => {
 Current date: ${today}
 Requesting user: ${userName}
 Other participants: ${participantNames || "none"}
+Other participant user IDs: ${participantIds.filter(id => id !== user.id && id !== ELLY_USER_ID).join(", ") || "none"}
 
 ${userPlans?.length ? `${userName}'s upcoming plans:\n${JSON.stringify(userPlans, null, 2)}` : `${userName} has no upcoming plans.`}
 
 Guidelines:
 - Be concise, warm, and conversational — you're chatting in a group/DM thread
 - Use emoji sparingly ✨
+- **CRITICAL: Before creating a plan, ALWAYS call check_friend_availability for each participant (other than the requester) to verify they are free during the requested time slot.** If a participant is busy or unavailable, tell the user and suggest alternative times where everyone IS free. Do NOT create the plan if a participant is not available.
 - When asked to create/update/delete plans, use the appropriate tools
 - Help coordinate plans between the conversation participants
 - Keep responses short since this is a chat thread
 - Don't prefix your messages with "[Elly]:" — just respond naturally
 - Reference participants by name when relevant
 - IMPORTANT: When you create a plan, it will automatically be created for ALL participants in this conversation (not just the requester). Everyone gets the plan on their calendar. If the user specifically asks to exclude someone, mention that in the notes.
-- IMPORTANT: When you successfully create, update, or delete a plan using tools, always confirm what you did in your response and mention that it's been added to everyone's calendars. For example: "Done! I've created **Dinner at Mario's** for Saturday evening for both of you 🎉" or "Got it — I've updated the time to late afternoon ✅". Be specific about what changed.`;
+- IMPORTANT: When you successfully create, update, or delete a plan using tools, always confirm what you did in your response and mention that it's been added to everyone's calendars.`;
 
     // AI call
     const aiMessages = [
@@ -257,13 +275,52 @@ Guidelines:
         let resultContent = "";
 
         try {
-          if (tc.function.name === "create_plan") {
+          if (tc.function.name === "check_friend_availability") {
+            const dateStr = args.date;
+            const friendId = args.friend_user_id;
+
+            const { data: availRow } = await supabaseAdmin
+              .from("availability")
+              .select("early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night")
+              .eq("user_id", friendId)
+              .eq("date", dateStr)
+              .maybeSingle();
+
+            const { data: friendPlans } = await supabaseAdmin
+              .from("plans")
+              .select("title, time_slot")
+              .eq("user_id", friendId)
+              .gte("date", `${dateStr}T00:00:00`)
+              .lte("date", `${dateStr}T23:59:59`);
+
+            const slotMap: Record<string, string> = {
+              "early-morning": "early_morning", "late-morning": "late_morning",
+              "early-afternoon": "early_afternoon", "late-afternoon": "late_afternoon",
+              "evening": "evening", "late-night": "late_night",
+            };
+            const busyPlanSlots = new Set((friendPlans || []).map((p: any) => p.time_slot.replace("_", "-")));
+            const slots: Record<string, string> = {};
+            for (const [slot, col] of Object.entries(slotMap)) {
+              if (busyPlanSlots.has(slot)) slots[slot] = "busy (has a plan)";
+              else if (availRow && (availRow as any)[col] === false) slots[slot] = "unavailable";
+              else slots[slot] = "available";
+            }
+            const freeSlots = Object.entries(slots).filter(([, v]) => v === "available").map(([k]) => k);
+            resultContent = JSON.stringify({
+              date: dateStr, friend_user_id: friendId, slots,
+              summary: freeSlots.length > 0
+                ? `Friend is free during: ${freeSlots.join(", ")}`
+                : "Friend has NO available slots on this day.",
+            });
+          } else if (tc.function.name === "create_plan") {
+            const planDate = `${args.date}T12:00:00+00:00`;
+
             // Create plan for the requesting user
             const { data: requesterPlan, error } = await supabaseUser.from("plans").insert({
               user_id: user.id,
               title: args.title,
               activity: args.activity,
-              date: new Date(args.date).toISOString(),
+              date: planDate,
               time_slot: args.time_slot,
               duration: args.duration || 60,
               location: args.location || null,
@@ -272,12 +329,17 @@ Guidelines:
 
             if (error) throw error;
 
+            // Auto-block the requester's availability slot
+            const slotColumn = args.time_slot.replace("-", "_");
+            await supabaseAdmin.from("availability").upsert({
+              user_id: user.id, date: args.date, [slotColumn]: false,
+            }, { onConflict: "user_id,date" });
+
             // Create plans for all OTHER real participants using admin client
             const otherParticipants = participantIds.filter(
               id => id !== user.id && id !== ELLY_USER_ID
             );
 
-            // Track plan ownership: { planId -> ownerUserId }
             const planOwners: Record<string, string> = {};
             planOwners[requesterPlan.id] = user.id;
 
@@ -286,7 +348,7 @@ Guidelines:
                 user_id: pid,
                 title: args.title,
                 activity: args.activity,
-                date: new Date(args.date).toISOString(),
+                date: planDate,
                 time_slot: args.time_slot,
                 duration: args.duration || 60,
                 location: args.location || null,
@@ -296,10 +358,14 @@ Guidelines:
 
               if (!otherErr && otherPlan) {
                 planOwners[otherPlan.id] = pid;
+                // Auto-block participant's availability too
+                await supabaseAdmin.from("availability").upsert({
+                  user_id: pid, date: args.date, [slotColumn]: false,
+                }, { onConflict: "user_id,date" });
               }
             }
 
-            // Cross-link: on each plan, add every non-owner as a participant
+            // Cross-link participants
             const allPlanIds = Object.keys(planOwners);
             const allPlanUsers = [user.id, ...otherParticipants];
             for (const planId of allPlanIds) {
@@ -307,9 +373,7 @@ Guidelines:
               for (const uid of allPlanUsers) {
                 if (uid !== ownerId) {
                   await supabaseAdmin.from("plan_participants").insert({
-                    plan_id: planId,
-                    friend_id: uid,
-                    status: "accepted",
+                    plan_id: planId, friend_id: uid, status: "accepted",
                   });
                 }
               }
@@ -321,7 +385,7 @@ Guidelines:
             const updates: any = {};
             if (args.title) updates.title = args.title;
             if (args.activity) updates.activity = args.activity;
-            if (args.date) updates.date = new Date(args.date).toISOString();
+            if (args.date) updates.date = `${args.date}T12:00:00+00:00`;
             if (args.time_slot) updates.time_slot = args.time_slot;
             if (args.duration) updates.duration = args.duration;
             if (args.location !== undefined) updates.location = args.location;
