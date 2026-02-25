@@ -55,7 +55,7 @@ export function VibeSelector() {
     >
 
       {/* Vibe pills */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {vibeTypes.map((type) => {
           const config = VIBE_CONFIG[type];
           const isSelected = currentVibe?.type === type;
@@ -66,14 +66,14 @@ export function VibeSelector() {
               whileTap={{ scale: 0.95 }}
               onClick={() => handleVibeSelect(type)}
               className={cn(
-                "relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-200",
+                "relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200",
                 isSelected
                   ? "text-primary-foreground shadow-md"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted"
               )}
               style={isSelected ? { backgroundColor: vibeColors[type] } : undefined}
             >
-              <span className="text-base">{config.icon}</span>
+              <span className="text-sm">{config.icon}</span>
               <span>{config.label}</span>
               {isSelected && (
                 <motion.div
@@ -95,9 +95,9 @@ export function VibeSelector() {
               initial={{ width: 40, opacity: 0.5 }}
               animate={{ width: 'auto', opacity: 1 }}
               exit={{ width: 40, opacity: 0 }}
-              className="flex items-center gap-1.5 rounded-full border-2 border-primary/40 bg-primary/5 px-3 py-1.5"
+              className="flex items-center gap-1 rounded-full border-2 border-primary/40 bg-primary/5 px-2.5 py-0.5"
             >
-              <span className="text-base">{VIBE_CONFIG.custom.icon}</span>
+              <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
               <input
                 autoFocus
                 placeholder="type a vibe..."
@@ -114,7 +114,7 @@ export function VibeSelector() {
                   if (customText.trim()) handleCustomSubmit();
                   else setShowCustomInput(false);
                 }}
-                className="w-24 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground/60"
+                className="w-24 bg-transparent text-xs font-medium outline-none placeholder:text-muted-foreground/60"
               />
             </motion.div>
           ) : (
@@ -123,13 +123,13 @@ export function VibeSelector() {
               whileTap={{ scale: 0.95 }}
               onClick={() => handleVibeSelect('custom')}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-200 border-2 border-dashed",
+                "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200 border-2 border-dashed",
                 currentVibe?.type === 'custom'
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary"
               )}
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3 w-3" />
               <span>Custom</span>
             </motion.button>
           )}
