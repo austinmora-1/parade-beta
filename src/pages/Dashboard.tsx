@@ -40,11 +40,11 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <LocationToggle />
-          <ShareDialog />
           <Button size="sm" className="gap-2" onClick={() => setCreatePlanOpen(true)}>
               <Plus className="h-4 w-4" />
               New Plan
             </Button>
+          <ShareDialog />
         </div>
       </div>
 
