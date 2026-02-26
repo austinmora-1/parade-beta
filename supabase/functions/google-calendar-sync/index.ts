@@ -131,6 +131,14 @@ interface CalendarEvent {
   start: { dateTime?: string; date?: string }
   end: { dateTime?: string; date?: string }
 }
+
+// Format a Date to HH:MM in the given timezone
+function formatTimeHHMM(date: Date, timezone?: string): string {
+  const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: false }
+  if (timezone) opts.timeZone = timezone
+  const parts = new Intl.DateTimeFormat('en-GB', opts).format(date)
+  return parts // en-GB gives HH:MM
+}
 // Classify a calendar event into a Parade activity type based on its title
 function classifyActivity(summary?: string, isFlight = false): string {
   if (isFlight) return 'flight'
@@ -329,6 +337,10 @@ async function handleEventsSync(params: {
     const localDateStr = getDateString(startDate!, timezone)
     const planDate = `${localDateStr}T12:00:00+00:00`
 
+    // Extract start/end times for timed events
+    const startTimeStr = event.start.dateTime ? formatTimeHHMM(new Date(event.start.dateTime), timezone) : null
+    const endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
+
     planRows.push({
       user_id: userId,
       title: event.summary || 'Gcal imported event',
@@ -338,6 +350,8 @@ async function handleEventsSync(params: {
       duration: 1,
       source: 'gcal',
       source_event_id: event.id,
+      start_time: startTimeStr,
+      end_time: endTimeStr,
     })
   }
 

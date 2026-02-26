@@ -211,6 +211,13 @@ function getEventDates(startTime: Date, endTime: Date, timezone?: string): strin
   return dates
 }
 
+// Format a Date to HH:MM in the given timezone
+function formatTimeHHMM(date: Date, timezone?: string): string {
+  const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: false }
+  if (timezone) opts.timeZone = timezone
+  return new Intl.DateTimeFormat('en-GB', opts).format(date)
+}
+
 // ── Activity Classifier (same as gcal sync) ─────────────────────────────────
 
 function classifyActivity(summary?: string): string {
@@ -386,6 +393,10 @@ Deno.serve(async (req) => {
       const localDateStr = getDateString(event.dtstart, timezone)
       const planDate = `${localDateStr}T12:00:00+00:00`
 
+      // Extract start/end times for timed events
+      const startTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtstart, timezone)
+      const endTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtend, timezone)
+
       planRows.push({
         user_id: userId,
         title: event.summary || 'iCal imported event',
@@ -396,6 +407,8 @@ Deno.serve(async (req) => {
         location: event.location || null,
         source: 'ical',
         source_event_id: event.uid,
+        start_time: startTimeStr,
+        end_time: endTimeStr,
       })
     }
 
