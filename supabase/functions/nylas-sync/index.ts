@@ -45,6 +45,11 @@ function getDateString(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
+// Format a Date to HH:MM
+function formatTimeHHMM(date: Date): string {
+  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(date);
+}
+
 // Get all dates an event spans
 function getEventDates(startTime: Date, endTime: Date): string[] {
   const dates: string[] = [];
@@ -307,18 +312,25 @@ serve(async (req) => {
     }
 
     const eventsData = await eventsResponse.json();
-    const events = (eventsData.data || []).map((event: any) => ({
-      id: event.id,
-      summary: event.title,
-      start: {
-        dateTime: event.when?.start_time ? new Date(event.when.start_time * 1000).toISOString() : undefined,
-        date: event.when?.date,
-      },
-      end: {
-        dateTime: event.when?.end_time ? new Date(event.when.end_time * 1000).toISOString() : undefined,
-        date: event.when?.date,
-      },
-    }));
+    const events = (eventsData.data || []).map((event: any) => {
+      const startDt = event.when?.start_time ? new Date(event.when.start_time * 1000) : null;
+      const endDt = event.when?.end_time ? new Date(event.when.end_time * 1000) : null;
+      return {
+        id: event.id,
+        summary: event.title,
+        start: {
+          dateTime: startDt ? startDt.toISOString() : undefined,
+          date: event.when?.date,
+        },
+        end: {
+          dateTime: endDt ? endDt.toISOString() : undefined,
+          date: event.when?.date,
+        },
+        // Store raw start/end for time extraction
+        _startTime: startDt ? formatTimeHHMM(startDt) : null,
+        _endTime: endDt ? formatTimeHHMM(endDt) : null,
+      };
+    });
 
     const { updatedCount } = await handleEventsSync({
       adminClient: supabaseAdmin,
