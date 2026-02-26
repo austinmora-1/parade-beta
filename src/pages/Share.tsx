@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { format, addDays, addWeeks, startOfWeek, isSameDay, isToday, isSameWeek } from 'date-fns';
 import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send, X, ChevronLeft, ChevronRight, ChevronDown, Plane } from 'lucide-react';
@@ -63,6 +64,7 @@ const LOCATION_CONFIG = {
 
 export default function Share() {
   const { shareCode } = useParams<{ shareCode: string }>();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
@@ -279,12 +281,14 @@ export default function Share() {
           <p className="mt-2 text-muted-foreground">
             This availability page is not available.
           </p>
-          <Link
-            to="/landing"
-            className="mt-6 inline-block rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Get Parade
-          </Link>
+          {!user && (
+            <Link
+              to="/landing"
+              className="mt-6 inline-block rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Get Parade
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -305,12 +309,14 @@ export default function Share() {
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           <ParadeWordmark size="md" />
-          <Link
-            to="/landing"
-            className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Get Parade
-          </Link>
+          {!user && (
+            <Link
+              to="/landing"
+              className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Get Parade
+            </Link>
+          )}
         </div>
       </header>
 
