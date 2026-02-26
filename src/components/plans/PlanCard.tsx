@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, MoreVertical, Trash2, Edit, Eye } from 'lucide-react';
@@ -29,6 +30,7 @@ export function PlanCard({
   plan, onEdit, onDelete, compact = false, 
   changeRequest, onAcceptChange, onDeclineChange, isRespondingToChange 
 }: PlanCardProps) {
+  const navigate = useNavigate();
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
@@ -54,8 +56,9 @@ export function PlanCard({
 
   return (
     <div
+      onClick={() => navigate(`/plan/${plan.id}`)}
       className={cn(
-        "group rounded-2xl border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow",
+        "group rounded-2xl border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow cursor-pointer",
         isTentative 
           ? "border-dashed border-border/60 opacity-70" 
           : "border-border",
@@ -76,7 +79,7 @@ export function PlanCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
           <Button
             variant="ghost"
             size="icon"
@@ -174,12 +177,14 @@ export function PlanCard({
 
       {/* Pending change request */}
       {changeRequest && onAcceptChange && onDeclineChange && (
-        <PlanChangeRequestBadge
-          changeRequest={changeRequest}
-          onAccept={onAcceptChange}
-          onDecline={onDeclineChange}
-          isResponding={isRespondingToChange}
-        />
+        <div onClick={e => e.stopPropagation()}>
+          <PlanChangeRequestBadge
+            changeRequest={changeRequest}
+            onAccept={onAcceptChange}
+            onDecline={onDeclineChange}
+            isResponding={isRespondingToChange}
+          />
+        </div>
       )}
     </div>
   );
