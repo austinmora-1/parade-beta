@@ -9,6 +9,13 @@ import { VIBE_CONFIG, ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+
+function formatTime12(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const hour12 = h % 12 || 12;
+  return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+}
 import {
   AlertDialog,
   AlertDialogAction,
@@ -240,11 +247,20 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{plan.title}</p>
-                          {plan.participants.length > 0 && (
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              w/ {plan.participants.map(p => p.name).join(', ')}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            {(plan.startTime || plan.endTime) && (
+                              <span>
+                                {plan.startTime && formatTime12(plan.startTime)}
+                                {plan.startTime && plan.endTime && ' – '}
+                                {plan.endTime && formatTime12(plan.endTime)}
+                              </span>
+                            )}
+                            {plan.participants.length > 0 && (
+                              <span className="truncate">
+                                {(plan.startTime || plan.endTime) ? ' · ' : ''}w/ {plan.participants.map(p => p.name).join(', ')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button

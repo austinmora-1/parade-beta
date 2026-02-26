@@ -75,6 +75,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [date, setDate] = useState<Date>(new Date());
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('late-morning');
   const [duration, setDuration] = useState('60');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [locationName, setLocationName] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [subscriberFriends, setSubscriberFriends] = useState<string[]>([]);
@@ -155,6 +157,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setDate(editPlan.date);
       setTimeSlot(editPlan.timeSlot);
       setDuration(editPlan.duration?.toString() || '60');
+      setStartTime(editPlan.startTime || '');
+      setEndTime(editPlan.endTime || '');
       setLocationName(editPlan.location?.name || '');
       // Map participant user IDs to friendship record IDs for the friend chips
       const participantUserIds = editPlan.participants.filter(p => p.role !== 'subscriber').map(p => p.friendUserId || p.id);
@@ -177,6 +181,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setDate(defaultDate || new Date());
       setTimeSlot('late-morning');
       setDuration('60');
+      setStartTime('');
+      setEndTime('');
       setLocationName('');
       setSelectedFriends([]);
       setSubscriberFriends([]);
@@ -304,6 +310,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       date,
       timeSlot,
       duration: parseInt(duration) || 60,
+      startTime: startTime || undefined,
+      endTime: endTime || undefined,
       location: locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined,
       participants: allParticipants,
       notes,
@@ -329,6 +337,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     setDate(new Date());
     setTimeSlot('late-morning');
     setDuration('60');
+    setStartTime('');
+    setEndTime('');
     setLocationName('');
     setSelectedFriends([]);
     setSubscriberFriends([]);
@@ -420,8 +430,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             </div>
           </div>
 
-          {/* Date, Time & Duration - all in one row */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* Date & Time Slot */}
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label className="text-xs">Date</Label>
               <Popover>
@@ -451,7 +461,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Time</Label>
+              <Label className="text-xs">Time Slot</Label>
               <Select value={timeSlot} onValueChange={(v) => setTimeSlot(v as TimeSlot)}>
                 <SelectTrigger className="h-9 text-xs px-2">
                   <SelectValue />
@@ -465,7 +475,30 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
+          {/* Start & End Time */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Start Time</Label>
+              <Input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="h-9 text-xs px-2"
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">End Time</Label>
+              <Input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="h-9 text-xs px-2"
+                placeholder="Optional"
+              />
+            </div>
             <div className="space-y-1">
               <Label className="text-xs">Duration</Label>
               <Select value={duration} onValueChange={setDuration}>

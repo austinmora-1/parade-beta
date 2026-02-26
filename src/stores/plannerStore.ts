@@ -209,6 +209,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           date: normalizedPlanDate,
           timeSlot: p.time_slot as TimeSlot,
           duration: p.duration,
+          startTime: (p as any).start_time || undefined,
+          endTime: (p as any).end_time || undefined,
           location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
           notes: p.notes || undefined,
           status: (p as any).status as PlanStatus || 'confirmed',
@@ -428,6 +430,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         date: noonUtcDate,
         time_slot: plan.timeSlot,
         duration: plan.duration,
+        start_time: plan.startTime || null,
+        end_time: plan.endTime || null,
         location: locationStr,
         notes: plan.notes,
         status: plan.status || 'confirmed',
@@ -448,6 +452,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       date: new Date(newPlanDateRaw.getUTCFullYear(), newPlanDateRaw.getUTCMonth(), newPlanDateRaw.getUTCDate()),
       timeSlot: data.time_slot as TimeSlot,
       duration: data.duration,
+      startTime: (data as any).start_time || undefined,
+      endTime: (data as any).end_time || undefined,
       location: data.location ? { id: data.id, name: data.location, address: '' } : undefined,
       notes: data.notes || undefined,
       status: (data as any).status as PlanStatus || 'confirmed',
@@ -514,6 +520,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     }
     if (updates.timeSlot) dbUpdates.time_slot = updates.timeSlot;
     if (updates.duration) dbUpdates.duration = updates.duration;
+    if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime || null;
+    if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime || null;
     if (updates.location !== undefined) dbUpdates.location = updates.location?.name || null;
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
     if (updates.status) dbUpdates.status = updates.status;

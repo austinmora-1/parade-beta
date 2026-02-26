@@ -63,6 +63,8 @@ export interface Plan {
   date: Date;
   timeSlot: TimeSlot;
   duration: number;
+  startTime?: string; // HH:mm format e.g. "14:30"
+  endTime?: string;   // HH:mm format e.g. "16:00"
   participants: Friend[];
   notes?: string;
   status: PlanStatus;

@@ -451,11 +451,13 @@ export type Database = {
           created_at: string
           date: string
           duration: number
+          end_time: string | null
           id: string
           location: string | null
           notes: string | null
           source: string | null
           source_event_id: string | null
+          start_time: string | null
           status: string
           time_slot: string
           title: string
@@ -467,11 +469,13 @@ export type Database = {
           created_at?: string
           date: string
           duration?: number
+          end_time?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           source?: string | null
           source_event_id?: string | null
+          start_time?: string | null
           status?: string
           time_slot: string
           title: string
@@ -483,11 +487,13 @@ export type Database = {
           created_at?: string
           date?: string
           duration?: number
+          end_time?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           source?: string | null
           source_event_id?: string | null
+          start_time?: string | null
           status?: string
           time_slot?: string
           title?: string

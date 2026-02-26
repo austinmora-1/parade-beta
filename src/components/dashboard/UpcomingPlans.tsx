@@ -8,6 +8,13 @@ import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { CollapsibleWidget } from './CollapsibleWidget';
 
+function formatTime12(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const hour12 = h % 12 || 12;
+  return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
 export function UpcomingPlans() {
   const { plans } = usePlannerStore();
   const navigate = useNavigate();
@@ -64,7 +71,7 @@ export function UpcomingPlans() {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 ml-[26px]">
                       <span className="flex items-center gap-0.5">
                         <Clock className="h-3 w-3" />
-                        {timeSlotConfig.time}
+                        {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
                       </span>
                       {plan.participants.length > 0 && (
                         <span className="flex items-center gap-0.5">
