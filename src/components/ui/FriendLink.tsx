@@ -22,6 +22,7 @@ export function FriendLink({ userId, children, className }: FriendLinkProps) {
     <span
       role="link"
       tabIndex={0}
+      data-stop-card-click
       onClick={(e) => {
         e.stopPropagation();
         navigate(`/friend/${userId}`);
