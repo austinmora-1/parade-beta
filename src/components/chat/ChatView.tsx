@@ -113,7 +113,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border pb-3 mb-3">
+      <div className="flex items-center gap-3 border-b border-border pb-3 mb-3 min-w-0">
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -127,12 +127,12 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
             </AvatarFallback>
           </Avatar>
         </FriendLink>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <FriendLink userId={other?.user_id}>
-            <h2 className="truncate text-sm font-semibold hover:underline">{displayName}</h2>
+            <h2 className="text-sm font-semibold hover:underline break-words line-clamp-2">{displayName}</h2>
           </FriendLink>
           {conversation.type === 'group' && (
-            <p className="truncate text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground line-clamp-1">
               {conversation.participants.map(p => p.display_name || 'Unknown').join(', ')}
             </p>
           )}
@@ -140,7 +140,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3">
+      <div className="flex-1 overflow-y-auto space-y-3 overscroll-contain" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-sm text-muted-foreground animate-pulse">Loading messages...</p>
