@@ -275,7 +275,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
           onFocus={handleInputFocus}
-          className="flex-1 rounded-lg text-sm"
+          className="flex-1 rounded-lg text-sm !text-[16px] md:!text-sm"
         />
         <Button
           onClick={handleSend}
