@@ -6,6 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   MapPin, 
   Calendar, 
@@ -18,17 +28,27 @@ import {
   Check,
   X,
   ChevronDown,
-  Clock
+  Clock,
+  Edit,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
-import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
+import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '@/types/planner';
 import { toast } from 'sonner';
 import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
 import { LocationTimeline } from '@/components/profile/LocationTimeline';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 
 interface ProfileData {
   display_name: string | null;
@@ -40,7 +60,7 @@ interface ProfileData {
 export default function Profile() {
   const { session } = useAuth();
   const { updateProfile: updateGlobalProfile } = useCurrentUserProfile();
-  const { plans, friends } = usePlannerStore();
+  const { plans, friends, deletePlan } = usePlannerStore();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -351,6 +371,42 @@ export default function Profile() {
 
   const [hangoutsOpen, setHangoutsOpen] = useState(true);
   const [upcomingOpen, setUpcomingOpen] = useState(true);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const planToDelete = deleteConfirmId ? plans.find(p => p.id === deleteConfirmId) : null;
+  const isOwner = planToDelete && (!planToDelete.userId || planToDelete.userId === session?.user?.id);
+
+  const handleEditPlan = (plan: Plan) => {
+    setEditingPlan(plan);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeletePlan = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeletePlan = async () => {
+    if (!deleteConfirmId || !planToDelete) return;
+    const hadParticipants = planToDelete.participants.length > 0;
+    await deletePlan(deleteConfirmId);
+    setDeleteConfirmId(null);
+    if (!isOwner) {
+      toast.success('You have declined this plan.');
+    } else if (hadParticipants) {
+      toast.success('Plan deleted. Participants have been notified.');
+    } else {
+      toast.success('Plan deleted.');
+    }
+  };
+
+  const handleEditDialogClose = (open: boolean) => {
+    if (!open) {
+      setEditDialogOpen(false);
+      setEditingPlan(null);
+    }
+  };
 
   // Get connected friends count
   const connectedFriendsCount = friends.filter(f => f.status === 'connected').length;
@@ -622,7 +678,7 @@ export default function Profile() {
                   return (
                     <div
                       key={plan.id}
-                      className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
+                      className="group/plan flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
                     >
                       <div 
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"
@@ -650,6 +706,36 @@ export default function Profile() {
                           <span>{plan.participants.length}</span>
                         </div>
                       )}
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover/plan:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleEditPlan(plan)}
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditPlan(plan)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeletePlan(plan.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              {plan.userId === session?.user?.id ? 'Delete' : 'Decline'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   );
                 })}
@@ -740,6 +826,37 @@ export default function Profile() {
           </CollapsibleContent>
         </div>
       </Collapsible>
+
+      {/* Edit Plan Dialog */}
+      <CreatePlanDialog
+        open={editDialogOpen}
+        onOpenChange={handleEditDialogClose}
+        editPlan={editingPlan}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isOwner ? 'Delete this plan?' : 'Decline this plan?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isOwner
+                ? planToDelete?.participants && planToDelete.participants.length > 0
+                  ? 'This will permanently delete the plan for you and all participants.'
+                  : 'This will permanently delete this plan.'
+                : 'This will remove the plan from your view. The organizer and other participants will not be affected.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeletePlan} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isOwner ? 'Delete' : 'Decline'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
