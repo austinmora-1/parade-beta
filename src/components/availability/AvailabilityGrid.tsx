@@ -179,9 +179,9 @@ export function AvailabilityGrid() {
               }}
               className={cn(
                 "flex-1 flex flex-col items-center py-1.5 rounded-md transition-all min-w-0",
+                isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
                 getDayBgColor(dayAvail, isSelected, isTodayDate, isAway, isPast),
-                isSelected && !isPast && "text-primary-foreground",
-                isSelected && isPast && "text-primary-foreground",
+                isSelected && "text-primary-foreground",
                 !isSelected && isPast && "text-muted-foreground/60",
                 !isSelected && !isPast && isAway && "text-orange-600",
                 isTodayDate && !isSelected && !isAway && "text-white",
@@ -317,6 +317,7 @@ export function AvailabilityGrid() {
                 }}
                 className={cn(
                   "flex flex-col items-center py-1.5 rounded-md transition-all relative",
+                  isSelected && "ring-2 ring-primary ring-offset-1 ring-offset-background",
                   getDayBgColor(dayAvail, isSelected || false, isTodayDate, isAway, isPast),
                   isSelected && "text-primary-foreground",
                   !isSelected && isPast && "text-muted-foreground/60",
