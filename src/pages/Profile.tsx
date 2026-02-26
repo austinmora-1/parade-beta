@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format, isPast, isSameDay, isAfter } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,7 @@ export default function Profile() {
   const { session } = useAuth();
   const { updateProfile: updateGlobalProfile } = useCurrentUserProfile();
   const { plans, friends, deletePlan } = usePlannerStore();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -678,7 +679,8 @@ export default function Profile() {
                   return (
                     <div
                       key={plan.id}
-                      className="group/plan flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
+                      onClick={() => navigate(`/plan/${plan.id}`)}
+                      className="group/plan flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted cursor-pointer"
                     >
                       <div 
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"
@@ -706,7 +708,7 @@ export default function Profile() {
                           <span>{plan.participants.length}</span>
                         </div>
                       )}
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover/plan:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover/plan:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -777,7 +779,8 @@ export default function Profile() {
                   return (
                     <div
                       key={plan.id}
-                      className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted"
+                      onClick={() => navigate(`/plan/${plan.id}`)}
+                      className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted cursor-pointer"
                     >
                       <div 
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"
