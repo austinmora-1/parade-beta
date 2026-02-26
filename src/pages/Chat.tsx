@@ -58,7 +58,7 @@ export default function Chat() {
   if (showElly) {
     return (
       <div
-        className="animate-fade-in fixed inset-0 z-40 flex h-[100dvh] flex-col bg-background pt-[max(0px,env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:h-[calc(100dvh-8rem)] md:pt-0 md:pb-0"
+        className="animate-fade-in fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-background pt-[max(0px,env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:h-[calc(100dvh-8rem)] md:pt-0 md:pb-0"
       >
         <div className="flex-1 min-h-0 overflow-hidden px-4 md:px-0">
           <EllyChatView onBack={() => setShowElly(false)} />
@@ -70,7 +70,7 @@ export default function Chat() {
   if (activeConvo) {
     return (
       <div
-        className="animate-fade-in fixed inset-0 z-40 flex h-[100dvh] flex-col bg-background pt-[max(0px,env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:h-[calc(100dvh-8rem)] md:pt-0 md:pb-0"
+        className="animate-fade-in fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-background pt-[max(0px,env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:h-[calc(100dvh-8rem)] md:pt-0 md:pb-0"
       >
         <div className="flex-1 min-h-0 overflow-hidden px-4 md:px-0">
           <ChatView conversation={activeConvo} onBack={() => setActiveId(null)} />
