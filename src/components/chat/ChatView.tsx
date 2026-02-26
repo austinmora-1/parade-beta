@@ -289,7 +289,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 z-20 mt-2 flex gap-2 border-t border-border bg-background pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0">
+      <div className="mt-2 flex gap-2 border-t border-border bg-background pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0">
         <ChatImageUpload onImageUploaded={handleImageUploaded} />
         <EmojiPicker onEmojiSelect={insertEmoji} />
         <button
