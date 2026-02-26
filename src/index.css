@@ -318,8 +318,25 @@
     85% { opacity: 0.1; }
   }
 
-  .arcade-letter-inserted {
-    /* Seamlessly blends with existing letters */
+  .arcade-caret-insert {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 -0.05em;
+    line-height: 1;
+  }
+
+  .arcade-caret-letter {
+    font-size: 0.65em;
+    line-height: 1;
+    transform: translateY(-0.1em);
+  }
+
+  .arcade-caret-symbol {
+    font-size: 0.5em;
+    line-height: 0.6;
+    -webkit-text-fill-color: hsl(330 100% 60%);
+    transform: translateY(-0.05em);
   }
 
   .shadow-soft {
