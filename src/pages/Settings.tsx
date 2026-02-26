@@ -13,7 +13,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
-import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Slider } from '@/components/ui/slider';
 import { VIBE_CONFIG, VibeType, TimeSlot } from '@/types/planner';
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
 
@@ -43,6 +44,26 @@ interface Friend {
   id: string;
   friend_name: string;
   friend_user_id: string | null;
+}
+
+function ArcadeModeToggle({ onChange }: { onChange: () => void }) {
+  const { theme, setTheme } = useTheme();
+  const isArcade = theme === 'arcade';
+
+  return (
+    <div className="flex items-center justify-between pt-1">
+      <div>
+        <p className="text-sm font-medium">🕹️ Retro Arcade Theme</p>
+        <p className="text-[10px] text-muted-foreground">Neon purple, pixel fonts, and 80s vibes</p>
+      </div>
+      <Switch
+        checked={isArcade}
+        onCheckedChange={(checked) => {
+          setTheme(checked ? 'arcade' : 'light');
+        }}
+      />
+    </div>
+  );
 }
 
 export default function Settings() {
@@ -687,6 +708,19 @@ export default function Settings() {
                 </AnimatePresence>
               </div>
             </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Arcade Mode Easter Egg */}
+        <AccordionItem value="arcade" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
+          <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+              <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+              <span className="font-display text-sm font-semibold">Arcade Mode</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-3">
+            <ArcadeModeToggle onChange={handleChange} />
           </AccordionContent>
         </AccordionItem>
 

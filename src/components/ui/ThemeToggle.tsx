@@ -1,37 +1,29 @@
-import { Moon, Sun, Gamepad2 } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-
-const themeOrder = ['light', 'dark', 'arcade'] as const;
-const themeIcons = {
-  light: Sun,
-  dark: Moon,
-  arcade: Gamepad2,
-};
-const themeLabels = {
-  light: 'Switch to dark mode',
-  dark: 'Switch to arcade mode',
-  arcade: 'Switch to light mode',
-};
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
-  const currentIndex = themeOrder.indexOf((theme as typeof themeOrder[number]) || 'light');
-  const nextIndex = (currentIndex + 1) % themeOrder.length;
-  const nextTheme = themeOrder[nextIndex];
-
-  const CurrentIcon = themeIcons[(theme as keyof typeof themeIcons) || 'light'] || Sun;
+  // Toggle between light and dark only (arcade is an easter egg in Settings)
+  const toggleTheme = () => {
+    if (theme === 'arcade') {
+      setTheme('light');
+    } else {
+      setTheme(theme === 'dark' ? 'light' : 'dark');
+    }
+  };
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(nextTheme)}
+      onClick={toggleTheme}
       className="h-7 w-7 rounded-md"
-      title={themeLabels[(theme as keyof typeof themeLabels) || 'light']}
+      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      <CurrentIcon className="h-4 w-4" />
+      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
       <span className="sr-only">Toggle theme</span>
     </Button>
   );
