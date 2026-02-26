@@ -54,9 +54,16 @@ export function PlanCard({
 
   return (
     <div
-      onClick={() => onEdit?.(plan)}
+      role="button"
+      tabIndex={0}
+      onPointerUp={(e) => {
+        // Only fire on primary button and if the target isn't an interactive child
+        if (e.button === 0 && !(e.target as HTMLElement).closest('[data-stop-card-click]')) {
+          onEdit?.(plan);
+        }
+      }}
       className={cn(
-        "group rounded-2xl border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow cursor-pointer",
+        "group rounded-2xl border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow cursor-pointer touch-manipulation",
         isTentative 
           ? "border-dashed border-border/60 opacity-70" 
           : "border-border",
@@ -77,7 +84,7 @@ export function PlanCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -163,7 +170,7 @@ export function PlanCard({
 
       {/* Pending change request */}
       {changeRequest && onAcceptChange && onDeclineChange && (
-        <div onClick={e => e.stopPropagation()}>
+        <div data-stop-card-click onClick={e => e.stopPropagation()}>
           <PlanChangeRequestBadge
             changeRequest={changeRequest}
             onAccept={onAcceptChange}
