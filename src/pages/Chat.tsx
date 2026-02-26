@@ -8,14 +8,14 @@ import { NewChatDialog } from '@/components/chat/NewChatDialog';
 import { useSearchParams } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useVisualViewport } from '@/hooks/useVisualViewport';
+
 
 export default function Chat() {
   const { conversations, loading, createDM, createGroup } = useConversations();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showElly, setShowElly] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const viewportHeight = useVisualViewport();
+  
 
   // Open Elly if navigated with ?elly=true
   useEffect(() => {
@@ -52,28 +52,23 @@ export default function Chat() {
     setShowElly(false);
   };
 
-  // Elly full chat view
-  // Use visual viewport height when available (keyboard-aware), fallback to dvh
-  const chatStyle = viewportHeight
-    ? { height: `${viewportHeight - 112}px` }
-    : undefined;
-  const chatClass = viewportHeight
-    ? "animate-fade-in"
-    : "animate-fade-in h-[calc(100dvh-7rem)] md:h-[calc(100dvh-8rem)]";
-
+  // Fixed overlay on mobile to prevent keyboard from pushing input offscreen
   if (showElly) {
     return (
-      <div className={chatClass} style={chatStyle}>
-        <EllyChatView onBack={() => setShowElly(false)} />
+      <div className="animate-fade-in fixed inset-0 z-40 flex flex-col bg-background pt-12 pb-16 md:relative md:inset-auto md:z-auto md:pt-0 md:pb-0 md:h-[calc(100dvh-8rem)]">
+        <div className="flex-1 overflow-hidden px-4 md:px-0">
+          <EllyChatView onBack={() => setShowElly(false)} />
+        </div>
       </div>
     );
   }
 
-  // Active conversation view (full screen on mobile)
   if (activeConvo) {
     return (
-      <div className={chatClass} style={chatStyle}>
-        <ChatView conversation={activeConvo} onBack={() => setActiveId(null)} />
+      <div className="animate-fade-in fixed inset-0 z-40 flex flex-col bg-background pt-12 pb-16 md:relative md:inset-auto md:z-auto md:pt-0 md:pb-0 md:h-[calc(100dvh-8rem)]">
+        <div className="flex-1 overflow-hidden px-4 md:px-0">
+          <ChatView conversation={activeConvo} onBack={() => setActiveId(null)} />
+        </div>
       </div>
     );
   }
