@@ -154,7 +154,18 @@ export default function Friends() {
     ? friends.map(f => ({ friend: f, ...fuzzyMatch(f.name, searchQuery.trim()) })).filter(r => r.match).sort((a, b) => b.score - a.score).map(r => r.friend)
     : friends;
 
-  const connectedFriends = filteredFriends.filter(f => f.status === 'connected');
+  const connectedFriends = filteredFriends.filter(f => f.status === 'connected').sort((a, b) => {
+    const aId = a.friendUserId;
+    const bId = b.friendUserId;
+    const aDate = aId ? lastHungOut[aId] : undefined;
+    const bDate = bId ? lastHungOut[bId] : undefined;
+    // Friends with no shared plans go to the top (haven't hung out yet = stand out)
+    if (!aDate && !bDate) return 0;
+    if (!aDate) return -1;
+    if (!bDate) return 1;
+    // Most recent first
+    return bDate.getTime() - aDate.getTime();
+  });
   const incomingRequests = filteredFriends.filter(f => f.status === 'pending' && f.isIncoming);
   const outgoingRequests = filteredFriends.filter(f => f.status === 'pending' && !f.isIncoming);
   const invitedFriends = filteredFriends.filter(f => f.status === 'invited');
