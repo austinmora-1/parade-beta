@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Calendar, Clock, Users, MessageCircle, MapPin, X } from 'lucide-react';
+import { Sparkles, ArrowRight, Calendar, Clock, Users, Shield, Sun, Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-const WALKTHROUGH_KEY = 'parade-walkthrough-seen';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface WalkthroughStep {
   icon: React.ReactNode;
@@ -17,43 +17,43 @@ const STEPS: WalkthroughStep[] = [
   {
     icon: <Sparkles className="h-5 w-5" />,
     title: "Hey, I'm Elly! 👋",
-    message: "Welcome to Parade! I'm your AI planning assistant. Let me give you a quick tour of everything you can do here.",
+    message: "Welcome to Parade! I'm your AI planning assistant. Let me walk you through everything so you can hit the ground running.",
     emoji: "✨",
   },
   {
     icon: <Calendar className="h-5 w-5" />,
-    title: "Your Week at a Glance",
-    message: "The Week Overview shows your entire week — what slots are free, busy, or have plans. Tap any day to see details or quickly set your availability.",
+    title: "Connect Your Calendars",
+    message: "Sync your Google or Apple calendar to auto-import your schedule. Go to Settings → Calendar Integration, then tap 'Connect Google Calendar' or paste your Apple Calendar URL (found in Calendar app → Share Calendar → Copy Link).",
     emoji: "📅",
   },
   {
     icon: <Clock className="h-5 w-5" />,
-    title: "Set Your Availability",
-    message: "Head to the Availability tab to mark when you're free. Your friends can see when you're available, making it easy to find the perfect time to hang out.",
+    title: "Set Default Availability & Work Hours",
+    message: "Head to Settings → Availability Defaults to set your typical work days and hours. Parade will automatically mark you as busy during work time and free outside it — saving you from updating every day.",
     emoji: "⏰",
   },
   {
+    icon: <Shield className="h-5 w-5" />,
+    title: "Configure Your Privacy",
+    message: "Control who sees what in Settings → Privacy. Toggle whether friends can see your availability, vibe status, and location. You can also manage who's allowed to send you hang requests.",
+    emoji: "🔒",
+  },
+  {
+    icon: <Sun className="h-5 w-5" />,
+    title: "Light & Dark Mode",
+    message: "Switch between light and dark mode anytime using the theme toggle in the sidebar (or top menu on mobile). There's even a fun Arcade theme if you're feeling retro! 🕹️",
+    emoji: "🌗",
+  },
+  {
     icon: <Users className="h-5 w-5" />,
-    title: "Connect with Friends",
-    message: "Add friends on the Friends tab — search by name or share your invite link. Once connected, you'll see each other's availability and can plan together.",
+    title: "Add Friends & Plan Together",
+    message: "Head to Friends to search by email or share your invite link. Once connected, you'll see each other's availability. Use Messages to chat, and mention @Elly to have me help coordinate plans!",
     emoji: "👯",
-  },
-  {
-    icon: <MessageCircle className="h-5 w-5" />,
-    title: "Chat & Plan Together",
-    message: "Use Messages to chat with friends. You can mention @Elly in any conversation and I'll help coordinate plans, find free times, and create events for everyone!",
-    emoji: "💬",
-  },
-  {
-    icon: <MapPin className="h-5 w-5" />,
-    title: "Vibes & Location",
-    message: "Set your current vibe and location status so friends know what you're up for. Whether you're feeling social, chill, or athletic — it helps find the right hangout.",
-    emoji: "📍",
   },
   {
     icon: <Sparkles className="h-5 w-5" />,
     title: "You're All Set!",
-    message: "That's the basics! Remember, you can always ask me for help — just tap the Elly widget on your dashboard or mention @Elly in any chat. Let's make some plans! 🎉",
+    message: "That's everything! Set your vibe, mark your availability, and start making plans. You can always ask me for help — tap the Elly widget on your dashboard or mention @Elly in any chat. Let's go! 🎉",
     emoji: "🚀",
   },
 ];
@@ -63,17 +63,33 @@ interface EllyWalkthroughProps {
 }
 
 export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
+  const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const seen = localStorage.getItem(WALKTHROUGH_KEY);
-    if (!seen) {
-      // Small delay so the dashboard renders first
-      const timer = setTimeout(() => setVisible(true), 800);
-      return () => clearTimeout(timer);
+    if (!user) return;
+
+    let cancelled = false;
+
+    async function checkWalkthrough() {
+      const { data } = await supabase
+        .from('profiles')
+        .select('walkthrough_completed')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (cancelled) return;
+
+      if (data && !data.walkthrough_completed) {
+        const timer = setTimeout(() => setVisible(true), 800);
+        return () => clearTimeout(timer);
+      }
     }
-  }, []);
+
+    checkWalkthrough();
+    return () => { cancelled = true; };
+  }, [user]);
 
   const handleNext = () => {
     if (step < STEPS.length - 1) {
@@ -83,9 +99,16 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
     }
   };
 
-  const handleDismiss = () => {
+  const handleDismiss = async () => {
     setVisible(false);
-    localStorage.setItem(WALKTHROUGH_KEY, 'true');
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ walkthrough_completed: true })
+        .eq('user_id', user.id);
+    }
+    // Clean up legacy localStorage key
+    localStorage.removeItem('parade-walkthrough-seen');
     onComplete?.();
   };
 
