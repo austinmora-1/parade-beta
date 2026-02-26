@@ -298,6 +298,30 @@
     to { filter: drop-shadow(0 0 14px hsl(330 100% 60% / 0.6)); }
   }
 
+  .arcade-letter-broken {
+    opacity: 0.08;
+    -webkit-text-fill-color: hsl(0 0% 40%);
+    animation: arcade-flicker 4s ease-in-out infinite;
+  }
+
+  @keyframes arcade-flicker {
+    0%, 100% { opacity: 0.06; }
+    4% { opacity: 0.15; }
+    6% { opacity: 0.04; }
+    8% { opacity: 0.18; }
+    9% { opacity: 0.04; }
+    50% { opacity: 0.06; }
+    54% { opacity: 0.12; }
+    56% { opacity: 0.03; }
+    80% { opacity: 0.06; }
+    84% { opacity: 0.2; }
+    85% { opacity: 0.04; }
+  }
+
+  .arcade-letter-inserted {
+    /* Seamlessly blends with existing letters */
+  }
+
   .shadow-soft {
     box-shadow: var(--shadow-md);
   }
