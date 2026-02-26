@@ -84,12 +84,6 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft animate-fade-in space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{format(selectedDate, 'EEEE, MMM d')}</span>
-        <button 
-          onClick={() => onOpenChange(false)}
-          className="p-1 rounded-md hover:bg-muted transition-colors"
-        >
-          <X className="h-4 w-4 text-muted-foreground" />
-        </button>
       </div>
 
       {/* Availability Slots */}
