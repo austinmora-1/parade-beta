@@ -299,23 +299,23 @@
   }
 
   .arcade-letter-broken {
-    opacity: 0.08;
-    -webkit-text-fill-color: hsl(0 0% 40%);
+    opacity: 0.15;
+    -webkit-text-fill-color: hsl(0 0% 50%);
     animation: arcade-flicker 4s ease-in-out infinite;
   }
 
   @keyframes arcade-flicker {
-    0%, 100% { opacity: 0.06; }
-    4% { opacity: 0.15; }
-    6% { opacity: 0.04; }
-    8% { opacity: 0.18; }
-    9% { opacity: 0.04; }
-    50% { opacity: 0.06; }
-    54% { opacity: 0.12; }
-    56% { opacity: 0.03; }
-    80% { opacity: 0.06; }
-    84% { opacity: 0.2; }
-    85% { opacity: 0.04; }
+    0%, 100% { opacity: 0.12; }
+    4% { opacity: 0.28; }
+    6% { opacity: 0.1; }
+    8% { opacity: 0.32; }
+    9% { opacity: 0.1; }
+    50% { opacity: 0.12; }
+    54% { opacity: 0.25; }
+    56% { opacity: 0.08; }
+    80% { opacity: 0.12; }
+    84% { opacity: 0.35; }
+    85% { opacity: 0.1; }
   }
 
   .arcade-letter-inserted {
