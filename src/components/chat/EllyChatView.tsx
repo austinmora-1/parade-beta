@@ -77,7 +77,8 @@ export function EllyChatView({ onBack, compact = false }: EllyChatViewProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 overscroll-contain" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
+      <div className="flex flex-1 flex-col justify-end overflow-y-auto overscroll-contain" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
+        <div className="space-y-3">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/30">
@@ -166,10 +167,11 @@ export function EllyChatView({ onBack, compact = false }: EllyChatViewProps) {
         )}
 
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input */}
-      <div className="mt-3 flex gap-2 pt-3 border-t border-border shrink-0">
+      <div className="mt-2 flex gap-2 pt-2 border-t border-border shrink-0">
         <Input
           placeholder="Ask Elly anything..."
           value={input}

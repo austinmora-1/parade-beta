@@ -145,7 +145,8 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 overscroll-contain" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
+      <div className="flex flex-1 flex-col justify-end overflow-y-auto overscroll-contain" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
+        <div className="space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-sm text-muted-foreground animate-pulse">Loading messages...</p>
@@ -256,10 +257,11 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
         )}
 
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input */}
-      <div className="mt-3 flex gap-2 pt-3 border-t border-border shrink-0">
+      <div className="mt-2 flex gap-2 pt-2 border-t border-border shrink-0">
         <button
           onClick={insertEllyMention}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary hover:bg-primary/10 transition-colors"
