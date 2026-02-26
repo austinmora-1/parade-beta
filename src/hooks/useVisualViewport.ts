@@ -1,26 +1,55 @@
 import { useState, useEffect } from 'react';
 
+interface VisualViewportState {
+  height: number;
+  offsetTop: number;
+}
+
 /**
- * Tracks the visual viewport height to account for mobile keyboard.
- * Returns the current viewport height in pixels.
+ * Tracks viewport size/offset to account for mobile keyboards.
+ * Falls back to window.innerHeight when visualViewport is unavailable.
  */
 export function useVisualViewport() {
-  const [height, setHeight] = useState<number | null>(null);
+  const [viewport, setViewport] = useState<VisualViewportState | null>(null);
 
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
 
-    const update = () => setHeight(vv.height);
-    update();
+    const updateFromVisualViewport = () => {
+      if (!vv) return;
+      setViewport({
+        height: vv.height,
+        offsetTop: vv.offsetTop || 0,
+      });
+    };
 
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+    const updateFromWindow = () => {
+      setViewport({
+        height: window.innerHeight,
+        offsetTop: 0,
+      });
+    };
+
+    if (vv) {
+      updateFromVisualViewport();
+      vv.addEventListener('resize', updateFromVisualViewport);
+      vv.addEventListener('scroll', updateFromVisualViewport);
+      window.addEventListener('resize', updateFromVisualViewport);
+
+      return () => {
+        vv.removeEventListener('resize', updateFromVisualViewport);
+        vv.removeEventListener('scroll', updateFromVisualViewport);
+        window.removeEventListener('resize', updateFromVisualViewport);
+      };
+    }
+
+    updateFromWindow();
+    window.addEventListener('resize', updateFromWindow);
     return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
+      window.removeEventListener('resize', updateFromWindow);
     };
   }, []);
 
-  return height;
+  return viewport;
 }
+
