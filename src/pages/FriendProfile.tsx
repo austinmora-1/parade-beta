@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
 
@@ -31,6 +32,7 @@ interface FriendProfileData {
   bio: string | null;
   current_vibe: string | null;
   location_status: string | null;
+  share_code: string | null;
 }
 
 interface AvailabilityDay {
@@ -80,7 +82,7 @@ export default function FriendProfile() {
 
       const { data: fullProfile } = await supabase
         .from('profiles')
-        .select('current_vibe, location_status')
+        .select('current_vibe, location_status, share_code')
         .eq('user_id', userId)
         .single();
 
@@ -90,6 +92,7 @@ export default function FriendProfile() {
         bio: profileData?.bio || null,
         current_vibe: fullProfile?.current_vibe || null,
         location_status: fullProfile?.location_status || null,
+        share_code: fullProfile?.share_code || null,
       });
 
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -295,7 +298,13 @@ export default function FriendProfile() {
           variant="default"
           size="sm"
           className="gap-1.5 flex-1 text-xs h-8"
-          onClick={() => navigate(`/share?hangTo=${userId}`)}
+          onClick={() => {
+            if (profile?.share_code) {
+              navigate(`/share/${profile.share_code}?hangTo=${userId}`);
+            } else {
+              toast.error('Unable to send hang request — share code not available');
+            }
+          }}
         >
           <HandHeart className="h-3.5 w-3.5" />
           Hang Request
