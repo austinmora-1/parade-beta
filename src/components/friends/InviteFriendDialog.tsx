@@ -26,7 +26,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  const inviteLink = 'https://parade.lovable.app/invite/abc123';
+  const inviteLink = 'https://helloparade.app/invite/abc123';
 
   const handleSendInvite = async () => {
     if (!email.trim()) return;
