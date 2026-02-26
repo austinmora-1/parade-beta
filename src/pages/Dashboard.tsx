@@ -35,7 +35,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-lg font-bold md:text-2xl">Welcome back! 👋</h1>
+          <h1 className="font-display text-base font-bold md:text-lg">Welcome back! 👋</h1>
           <p className="mt-1 text-sm text-muted-foreground md:text-base">Here's what's happening this week</p>
         </div>
         <div className="flex items-center gap-2">
