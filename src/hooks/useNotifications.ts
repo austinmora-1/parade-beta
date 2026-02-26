@@ -8,6 +8,7 @@ let sharedState = {
   pendingHangRequestsCount: 0,
   pendingPlanInvitesCount: 0,
   pendingChangeRequestsCount: 0,
+  newPlanPhotosCount: 0,
 };
 let listeners = new Set<() => void>();
 
@@ -64,11 +65,25 @@ export function useNotifications() {
     emitChange();
   }, [user]);
 
+  const fetchNewPlanPhotos = useCallback(async () => {
+    if (!user) return;
+    // Count photos added by others to plans user owns or participates in, from last 24h
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await supabase
+      .from('plan_photos')
+      .select('*', { count: 'exact', head: true })
+      .neq('uploaded_by', user.id)
+      .gte('created_at', oneDayAgo);
+    sharedState = { ...sharedState, newPlanPhotosCount: count ?? 0 };
+    emitChange();
+  }, [user]);
+
   useEffect(() => {
     fetchPendingHangs();
     fetchPendingPlanInvites();
     fetchPendingChangeRequests();
-  }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests]);
+    fetchNewPlanPhotos();
+  }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos]);
 
   useEffect(() => {
     if (!user) return;
@@ -89,25 +104,32 @@ export function useNotifications() {
         { event: '*', schema: 'public', table: 'plan_change_responses', filter: `participant_id=eq.${user.id}` },
         () => { fetchPendingChangeRequests(); }
       )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'plan_photos' },
+        () => { fetchNewPlanPhotos(); }
+      )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests]);
+  }, [user, fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos]);
 
   const incomingRequestsCount = useMemo(() => {
     return friends.filter(f => f.status === 'pending' && f.isIncoming).length;
   }, [friends]);
 
-  const totalNotifications = incomingRequestsCount + state.pendingHangRequestsCount + state.pendingPlanInvitesCount + state.pendingChangeRequestsCount;
+  const totalNotifications = incomingRequestsCount + state.pendingHangRequestsCount + state.pendingPlanInvitesCount + state.pendingChangeRequestsCount + state.newPlanPhotosCount;
 
   return {
     incomingRequestsCount,
     pendingHangRequestsCount: state.pendingHangRequestsCount,
     pendingPlanInvitesCount: state.pendingPlanInvitesCount,
     pendingChangeRequestsCount: state.pendingChangeRequestsCount,
+    newPlanPhotosCount: state.newPlanPhotosCount,
     totalNotifications,
     refetchHangRequests: fetchPendingHangs,
     refetchPlanInvites: fetchPendingPlanInvites,
     refetchChangeRequests: fetchPendingChangeRequests,
+    refetchPlanPhotos: fetchNewPlanPhotos,
   };
 }

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
+import { PlanPhotos } from '@/components/plans/PlanPhotos';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -225,6 +226,9 @@ export default function PlanDetail() {
             <p className="text-sm bg-muted/30 rounded-lg p-3">{plan.notes}</p>
           </div>
         )}
+
+        {/* Photos */}
+        <PlanPhotos planId={plan.id} />
 
         {/* Change request */}
         {changeRequest && (

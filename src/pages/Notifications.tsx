@@ -7,7 +7,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle } from 'lucide-react';
+import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
@@ -60,7 +60,7 @@ export default function Notifications() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests } = useNotifications();
+  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos } = useNotifications();
 
   const [hangRequests, setHangRequests] = useState<HangRequest[]>([]);
   const [hangLoading, setHangLoading] = useState(true);
@@ -72,6 +72,16 @@ export default function Notifications() {
   const [pendingChanges, setPendingChanges] = useState<PendingChangeRequest[]>([]);
   const [changesLoading, setChangesLoading] = useState(true);
 
+  interface RecentPlanPhoto {
+    id: string;
+    plan_id: string;
+    plan_title: string;
+    uploader_name: string;
+    created_at: string;
+  }
+  const [recentPhotos, setRecentPhotos] = useState<RecentPlanPhoto[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(true);
+
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
 
   useEffect(() => {
@@ -79,8 +89,56 @@ export default function Notifications() {
       fetchHangRequests();
       fetchPlanInvitations();
       fetchPendingChanges();
+      fetchRecentPhotos();
     }
   }, [user]);
+
+  const fetchRecentPhotos = async () => {
+    if (!user) { setPhotosLoading(false); return; }
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: photos } = await supabase
+      .from('plan_photos')
+      .select('id, plan_id, uploaded_by, created_at')
+      .neq('uploaded_by', user.id)
+      .gte('created_at', oneDayAgo)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (!photos || photos.length === 0) {
+      setRecentPhotos([]);
+      setPhotosLoading(false);
+      return;
+    }
+
+    // Get plan titles
+    const planIds = [...new Set(photos.map(p => p.plan_id))];
+    const { data: plans } = await supabase
+      .from('plans')
+      .select('id, title')
+      .in('id', planIds);
+    const planMap: Record<string, string> = {};
+    for (const p of (plans || [])) planMap[p.id] = p.title;
+
+    // Get uploader names
+    const uploaderIds = [...new Set(photos.map(p => p.uploaded_by))];
+    const { data: profiles } = await supabase
+      .from('public_profiles')
+      .select('user_id, display_name')
+      .in('user_id', uploaderIds);
+    const nameMap: Record<string, string> = {};
+    for (const p of (profiles || [])) {
+      if (p.user_id) nameMap[p.user_id] = p.display_name || 'Someone';
+    }
+
+    setRecentPhotos(photos.map(p => ({
+      id: p.id,
+      plan_id: p.plan_id,
+      plan_title: planMap[p.plan_id] || 'Plan',
+      uploader_name: nameMap[p.uploaded_by] || 'Someone',
+      created_at: p.created_at,
+    })));
+    setPhotosLoading(false);
+  };
 
   // --- Hang Requests ---
   const fetchHangRequests = async () => {
@@ -318,7 +376,7 @@ export default function Notifications() {
     return TIME_SLOT_LABELS[hyphenated]?.time || slot;
   };
 
-  const isEmpty = incomingRequests.length === 0 && hangRequests.length === 0 && planInvitations.length === 0 && pendingChanges.length === 0 && !hangLoading && !planInvitesLoading && !changesLoading;
+  const isEmpty = incomingRequests.length === 0 && hangRequests.length === 0 && planInvitations.length === 0 && pendingChanges.length === 0 && recentPhotos.length === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading;
 
   return (
     <div className="animate-fade-in space-y-6 md:space-y-8">
@@ -566,6 +624,49 @@ export default function Notifications() {
                       <X className="h-4 w-4" />
                       Decline
                     </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* New Plan Photos Section */}
+      {(recentPhotos.length > 0 || photosLoading) && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <Camera className="h-4 w-4 text-primary md:h-5 md:w-5" />
+            New Photos
+            {recentPhotos.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
+                {recentPhotos.length}
+              </span>
+            )}
+          </h2>
+
+          {photosLoading ? (
+            <div className="flex h-20 items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentPhotos.map((photo) => (
+                <div
+                  key={photo.id}
+                  onClick={() => navigate(`/plan/${photo.plan_id}`)}
+                  className="rounded-xl border border-border bg-card p-3 flex items-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors shadow-soft"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                    <Camera className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">
+                      {photo.uploader_name} added a photo to <span className="text-primary">{photo.plan_title}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(parseISO(photo.created_at), 'MMM d, h:mm a')}
+                    </p>
                   </div>
                 </div>
               ))}
