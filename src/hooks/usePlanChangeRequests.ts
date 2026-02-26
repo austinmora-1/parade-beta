@@ -122,7 +122,7 @@ export function usePlanChangeRequests() {
       timeSlot?: TimeSlot;
       duration?: number;
     },
-    participantUserIds: string[]
+    respondentUserIds: string[]
   ): Promise<boolean> => {
     if (!userId) return false;
 
@@ -149,18 +149,22 @@ export function usePlanChangeRequests() {
 
       if (error) throw error;
 
-      // Create response entries for each participant
-      const responseInserts = participantUserIds.map(pid => ({
-        change_request_id: request.id,
-        participant_id: pid,
-        response: 'pending',
-      }));
+      // Create response entries for each respondent (everyone except proposer)
+      const responseInserts = respondentUserIds
+        .filter(pid => pid !== userId)
+        .map(pid => ({
+          change_request_id: request.id,
+          participant_id: pid,
+          response: 'pending',
+        }));
 
-      const { error: respError } = await supabase
-        .from('plan_change_responses')
-        .insert(responseInserts);
+      if (responseInserts.length > 0) {
+        const { error: respError } = await supabase
+          .from('plan_change_responses')
+          .insert(responseInserts);
 
-      if (respError) throw respError;
+        if (respError) throw respError;
+      }
 
       await fetchChangeRequests();
       return true;
