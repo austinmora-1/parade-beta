@@ -3,7 +3,14 @@ import { motion, useAnimation } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const THRESHOLD = 80;
+const THRESHOLD = 110;
+const MIN_PULL_BEFORE_TRACKING = 20;
+
+function triggerHaptic() {
+  if (navigator.vibrate) {
+    navigator.vibrate(15);
+  }
+}
 
 export function PullToRefresh({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
@@ -11,6 +18,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
   const [refreshing, setRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const startY = useRef(0);
+  const hasTriggeredHaptic = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const controls = useAnimation();
 
@@ -20,30 +28,46 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
     if (scrollTop <= 0) {
       startY.current = e.touches[0].clientY;
       setPulling(true);
+      hasTriggeredHaptic.current = false;
     }
   }, [refreshing]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!pulling || refreshing) return;
     const currentY = e.touches[0].clientY;
-    const diff = Math.max(0, currentY - startY.current);
-    // Dampen the pull
-    const dampened = Math.min(diff * 0.4, 120);
+    const rawDiff = currentY - startY.current;
+
+    // Only start showing pull indicator after user has pulled past a dead zone
+    if (rawDiff < MIN_PULL_BEFORE_TRACKING) {
+      setPullDistance(0);
+      return;
+    }
+
+    const effectiveDiff = rawDiff - MIN_PULL_BEFORE_TRACKING;
+    const dampened = Math.min(effectiveDiff * 0.35, 130);
     setPullDistance(dampened);
+
+    // Haptic bump when crossing the threshold
+    if (dampened >= THRESHOLD && !hasTriggeredHaptic.current) {
+      hasTriggeredHaptic.current = true;
+      triggerHaptic();
+    } else if (dampened < THRESHOLD) {
+      hasTriggeredHaptic.current = false;
+    }
   }, [pulling, refreshing]);
 
   const handleTouchEnd = useCallback(async () => {
     if (!pulling || refreshing) return;
     setPulling(false);
 
-    if (pullDistance >= THRESHOLD * 0.4) {
+    if (pullDistance >= THRESHOLD) {
       setRefreshing(true);
+      triggerHaptic();
       setPullDistance(50);
       await controls.start({
         rotate: 720,
         transition: { duration: 0.8, ease: 'easeInOut' },
       });
-      // Reload the current page data
       window.location.reload();
     } else {
       setPullDistance(0);
@@ -52,7 +76,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
 
   if (!isMobile) return <>{children}</>;
 
-  const progress = Math.min(pullDistance / (THRESHOLD * 0.4), 1);
+  const progress = Math.min(pullDistance / THRESHOLD, 1);
 
   return (
     <div
