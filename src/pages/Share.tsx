@@ -34,6 +34,8 @@ interface AvailabilityData {
   late_afternoon: boolean | null;
   evening: boolean | null;
   late_night: boolean | null;
+  location_status: string | null;
+  trip_location: string | null;
 }
 
 interface PlanData {
@@ -129,7 +131,7 @@ export default function Share() {
 
         const { data: availData } = await supabase
           .from('availability')
-          .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+          .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
           .eq('user_id', profileData.user_id)
           .gte('date', startDate)
           .lte('date', endDate);
@@ -492,6 +494,25 @@ export default function Share() {
                         {summary.available}/{summary.total} free
                         {summary.planCount > 0 && ` · ${summary.planCount} ${summary.planCount === 1 ? 'plan' : 'plans'}`}
                       </span>
+                      {(() => {
+                        const dateStr = format(day, 'yyyy-MM-dd');
+                        const dayAvail = availability.find(a => a.date === dateStr);
+                        const isAway = dayAvail?.location_status === 'away';
+                        return (
+                          <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                            {isAway ? (
+                              <>
+                                <Plane className="h-2.5 w-2.5 shrink-0" />
+                                {dayAvail?.trip_location && (
+                                  <span className="truncate max-w-[60px]">{dayAvail.trip_location}</span>
+                                )}
+                              </>
+                            ) : (
+                              <Home className="h-2.5 w-2.5 shrink-0" />
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </button>
 
