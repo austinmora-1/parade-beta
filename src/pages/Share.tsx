@@ -450,16 +450,33 @@ export default function Share() {
             )}
           </div>
 
-          {user && (
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-1">
-              <div className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-availability-available" />
-                <span>Both free</span>
+          {user ? (
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-availability-available" />
+                  <span>Both free</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-availability-available/40" />
+                  <span>Only {profile?.display_name?.split(' ')[0] || 'them'} free</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-availability-available/40" />
-                <span>Only {profile?.display_name?.split(' ')[0] || 'them'} free</span>
+              <span className="italic">Tap to request</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="h-1 w-4 rounded-full bg-availability-available/60" />
+                  <span>Free</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="h-1 w-4 rounded-full bg-muted-foreground/20" />
+                  <span>Busy</span>
+                </div>
               </div>
+              <span className="italic">Tap to request</span>
             </div>
           )}
 
@@ -622,17 +639,6 @@ export default function Share() {
             })}
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-border/50 text-[10px]">
-            <div className="flex items-center gap-1.5">
-              <div className="h-1 w-4 rounded-full bg-availability-available/60" />
-              <span className="text-muted-foreground">Free — tap to request</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="h-1 w-4 rounded-full bg-muted-foreground/20" />
-              <span className="text-muted-foreground">Busy</span>
-            </div>
-          </div>
         </div>
 
 
