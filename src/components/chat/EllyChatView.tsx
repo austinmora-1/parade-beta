@@ -7,6 +7,7 @@ import { Send, Sparkles, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isToday } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
+import { EmojiPicker } from './EmojiPicker';
 
 interface EllyChatViewProps {
   onBack?: () => void;
@@ -37,6 +38,10 @@ export function EllyChatView({ onBack, compact = false }: EllyChatViewProps) {
     await sendMessage(text);
   };
 
+  const insertEmoji = (emoji: string) => {
+    setInput(prev => prev + emoji);
+  };
+
   const formatTime = (date: Date) => {
     if (isToday(date)) return format(date, 'h:mm a');
     return format(date, 'MMM d, h:mm a');
@@ -51,8 +56,8 @@ export function EllyChatView({ onBack, compact = false }: EllyChatViewProps) {
 
   return (
     <div className={cn("flex flex-col", compact ? "h-full" : "h-full")}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border pb-3 mb-3 shrink-0">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b border-border pb-3 mb-3 shrink-0">
         <div className="flex items-center gap-3">
           {onBack && (
             <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
@@ -130,7 +135,6 @@ export function EllyChatView({ onBack, compact = false }: EllyChatViewProps) {
                     msg.content
                   )}
                 </div>
-                {/* Action badges */}
                 {msg.actions && msg.actions.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1 ml-1">
                     {msg.actions.map((action, i) => (
@@ -172,6 +176,7 @@ export function EllyChatView({ onBack, compact = false }: EllyChatViewProps) {
 
       {/* Input */}
       <div className="mt-2 flex gap-2 pt-2 border-t border-border shrink-0">
+        <EmojiPicker onEmojiSelect={insertEmoji} />
         <Input
           placeholder="Ask Elly anything..."
           value={input}

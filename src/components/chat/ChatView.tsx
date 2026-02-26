@@ -13,6 +13,9 @@ import { cn } from '@/lib/utils';
 import { ELLY_USER_ID } from '@/lib/constants';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import { MessageReactions } from './MessageReactions';
+import { ChatImageUpload } from './ChatImageUpload';
+import { EmojiPicker } from './EmojiPicker';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -22,7 +25,7 @@ interface ChatViewProps {
 export function ChatView({ conversation, onBack }: ChatViewProps) {
   const { user } = useAuth();
   const { loadAllData } = usePlannerStore();
-  const { messages, loading, sendMessage, readReceipts } = useChatMessages(conversation.id);
+  const { messages, loading, sendMessage, readReceipts, reactions, toggleReaction } = useChatMessages(conversation.id);
   const [input, setInput] = useState('');
   const [ellyLoading, setEllyLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -35,7 +38,6 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     scrollToBottom();
   }, [messages]);
 
-  // Scroll to bottom when keyboard opens (input focused)
   const handleInputFocus = () => {
     setTimeout(scrollToBottom, 300);
   };
@@ -46,11 +48,9 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     setInput('');
     await sendMessage(text);
 
-    // Check for @Elly mention
     if (/@elly/i.test(text)) {
       setEllyLoading(true);
       try {
-        // Strip @Elly from the message for the AI
         const cleanedMessage = text.replace(/@elly/gi, '').trim();
         const { data, error } = await supabase.functions.invoke('elly-conversation-assist', {
           body: { conversation_id: conversation.id, message: cleanedMessage },
@@ -59,7 +59,6 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
-        // If Elly performed actions, reload plan data
         if (data?.actions?.length > 0) {
           await loadAllData();
           toast.success('Elly updated your plans! 🎉');
@@ -73,11 +72,19 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     }
   };
 
+  const handleImageUploaded = async (url: string) => {
+    await sendMessage('', url);
+  };
+
   const insertEllyMention = () => {
     setInput(prev => {
       const prefix = prev.endsWith(' ') || prev === '' ? '' : ' ';
       return prev + prefix + '@Elly ';
     });
+  };
+
+  const insertEmoji = (emoji: string) => {
+    setInput(prev => prev + emoji);
   };
 
   const other = conversation.type === 'dm'
@@ -117,8 +124,8 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border pb-3 mb-3 min-w-0">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-background flex items-center gap-3 border-b border-border pb-3 mb-3 min-w-0">
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -209,14 +216,35 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                           : "bg-card shadow-soft border border-border"
                     )}
                   >
+                    {/* Image */}
+                    {msg.image_url && (
+                      <img
+                        src={msg.image_url}
+                        alt="Shared photo"
+                        className="rounded-lg max-w-full max-h-[240px] object-cover mb-1"
+                        loading="lazy"
+                      />
+                    )}
                     {isElly ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-1 [&>p:last-child]:mb-0">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
                     ) : (
-                      msg.content
+                      msg.content !== '📷 Photo' && msg.content
                     )}
                   </div>
+
+                  {/* Reactions */}
+                  {user && (
+                    <MessageReactions
+                      messageId={msg.id}
+                      reactions={reactions}
+                      currentUserId={user.id}
+                      onToggleReaction={toggleReaction}
+                      isMe={isMe}
+                    />
+                  )}
+
                   {isLastMessage && (
                     <div className={cn(
                       "mt-0.5 flex items-center gap-1",
@@ -262,6 +290,8 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
 
       {/* Input */}
       <div className="mt-2 flex gap-2 pt-2 border-t border-border shrink-0">
+        <ChatImageUpload onImageUploaded={handleImageUploaded} />
+        <EmojiPicker onEmojiSelect={insertEmoji} />
         <button
           onClick={insertEllyMention}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary hover:bg-primary/10 transition-colors"
@@ -270,7 +300,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
           <Sparkles className="h-4 w-4" />
         </button>
         <Input
-          placeholder="Type a message... (@Elly for AI help)"
+          placeholder="Type a message..."
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
