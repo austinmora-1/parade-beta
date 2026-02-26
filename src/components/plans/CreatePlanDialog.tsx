@@ -197,34 +197,57 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     timeSlot !== editPlan.timeSlot ||
     parseInt(duration) !== editPlan.duration
   );
-  const needsProposal = isSharedPlan && isOwner && hasTimeChanges;
+  // Both owners and participants need to propose time changes on shared plans
+  const needsProposal = isSharedPlan && hasTimeChanges;
 
   // Check availability when time/date changes for shared plan edits
   useEffect(() => {
-    if (!isSharedPlan || !isOwner || !hasTimeChanges) {
+    if (!isSharedPlan || !hasTimeChanges) {
       setParticipantAvailability([]);
       return;
     }
 
+    // Check availability for all other members (participants + owner if I'm not owner)
     const participantUserIds = editPlan.participants
       .map(p => p.friendUserId)
       .filter((id): id is string => !!id);
+    
+    // If participant is proposing, also check owner's availability
+    if (!isOwner && editPlan.userId) {
+      if (!participantUserIds.includes(editPlan.userId)) {
+        participantUserIds.push(editPlan.userId);
+      }
+    }
+    // Remove self
+    const othersToCheck = participantUserIds.filter(id => id !== userId);
 
-    if (participantUserIds.length === 0) return;
+    if (othersToCheck.length === 0) return;
 
     setIsCheckingAvailability(true);
-    checkParticipantAvailability(participantUserIds, date, timeSlot)
+    checkParticipantAvailability(othersToCheck, date, timeSlot)
       .then(setParticipantAvailability)
       .finally(() => setIsCheckingAvailability(false));
-  }, [date, timeSlot, isSharedPlan, isOwner, hasTimeChanges]);
+  }, [date, timeSlot, isSharedPlan, hasTimeChanges]);
 
   const handleSubmit = async () => {
     if (needsProposal) {
       // Propose the change instead of direct update
       setIsProposing(true);
-      const participantUserIds = editPlan.participants
-        .map(p => p.friendUserId)
-        .filter((id): id is string => !!id);
+      
+      // Build the list of people who need to respond (everyone except the proposer)
+      const respondentUserIds: string[] = [];
+      // Add participants
+      for (const p of editPlan.participants) {
+        if (p.friendUserId && p.friendUserId !== userId) {
+          respondentUserIds.push(p.friendUserId);
+        }
+      }
+      // If I'm a participant (not owner), the owner also needs to respond
+      if (!isOwner && editPlan.userId && editPlan.userId !== userId) {
+        if (!respondentUserIds.includes(editPlan.userId)) {
+          respondentUserIds.push(editPlan.userId);
+        }
+      }
 
       const changes: { date?: Date; timeSlot?: TimeSlot; duration?: number } = {};
       if (format(date, 'yyyy-MM-dd') !== format(editPlan.date, 'yyyy-MM-dd')) {
@@ -237,24 +260,26 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
         changes.duration = parseInt(duration);
       }
 
-      // Apply non-time changes directly (title, activity, location, notes, participants)
-      const directUpdates: Partial<Plan> = {};
-      if (title !== editPlan.title) directUpdates.title = title;
-      if (activity !== editPlan.activity) directUpdates.activity = activity;
-      if ((locationName || '') !== (editPlan.location?.name || '')) {
-        directUpdates.location = locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined;
-      }
-      if (notes !== (editPlan.notes || '')) directUpdates.notes = notes;
+      // Apply non-time changes directly if owner (title, activity, location, notes, participants)
+      if (isOwner) {
+        const directUpdates: Partial<Plan> = {};
+        if (title !== editPlan.title) directUpdates.title = title;
+        if (activity !== editPlan.activity) directUpdates.activity = activity;
+        if ((locationName || '') !== (editPlan.location?.name || '')) {
+          directUpdates.location = locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined;
+        }
+        if (notes !== (editPlan.notes || '')) directUpdates.notes = notes;
 
-      if (Object.keys(directUpdates).length > 0) {
-        await updatePlan(editPlan.id, directUpdates);
+        if (Object.keys(directUpdates).length > 0) {
+          await updatePlan(editPlan.id, directUpdates);
+        }
       }
 
-      const success = await proposeChange(editPlan.id, changes, participantUserIds);
+      const success = await proposeChange(editPlan.id, changes, respondentUserIds);
       setIsProposing(false);
 
       if (success) {
-        toast.success('Time change proposed! Waiting for participants to accept.');
+        toast.success('Time change proposed! Waiting for approval.');
         onChangeProposed?.();
         onOpenChange(false);
         resetForm();
