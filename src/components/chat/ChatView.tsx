@@ -39,10 +39,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
   }, [messages]);
 
   const handleInputFocus = () => {
-    // Small delay to let the visual viewport resize settle before scrolling
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'instant', block: 'end' });
-    }, 400);
+    // Let mobile browsers handle focus without forcing a viewport jump
   };
 
   const handleSend = async () => {
