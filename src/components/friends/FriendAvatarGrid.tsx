@@ -56,9 +56,16 @@ export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, show
                 }
               }}
             >
-              <Avatar className="h-12 w-12 md:h-14 md:w-14">
+              <Avatar className={cn(
+                "h-12 w-12 md:h-14 md:w-14",
+                isPending && !isIncoming && "ring-2 ring-muted-foreground/30 ring-offset-1 ring-offset-background"
+              )}>
                 <AvatarImage src={friend.avatar} />
-                <AvatarFallback className={cn("text-sm font-semibold", getAvatarColor(friend.name))}>
+                <AvatarFallback className={cn(
+                  "text-sm font-semibold",
+                  getAvatarColor(friend.name),
+                  isPending && !isIncoming && "bg-muted-foreground/15 text-muted-foreground"
+                )}>
                   {getInitials(friend.name)}
                 </AvatarFallback>
               </Avatar>
