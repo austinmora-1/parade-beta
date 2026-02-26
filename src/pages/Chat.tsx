@@ -16,7 +16,7 @@ export default function Chat() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showElly, setShowElly] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const visualViewportHeight = useVisualViewport();
+  const visualViewport = useVisualViewport();
   
 
   // Open Elly if navigated with ?elly=true
@@ -59,7 +59,7 @@ export default function Chat() {
     return (
       <div
         className="animate-fade-in fixed inset-0 z-40 flex flex-col bg-background pt-[max(0px,env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:pt-0 md:pb-0 md:h-[calc(100dvh-8rem)]"
-        style={visualViewportHeight ? { height: `${Math.round(visualViewportHeight)}px`, top: 0, position: 'fixed' } : undefined}
+        style={visualViewport ? { height: `${Math.round(visualViewport.height)}px`, top: Math.max(0, Math.round(visualViewport.offsetTop)), position: 'fixed' } : undefined}
       >
         <div className="flex-1 min-h-0 overflow-visible px-4 md:px-0">
           <EllyChatView onBack={() => setShowElly(false)} />
@@ -72,7 +72,7 @@ export default function Chat() {
     return (
       <div
         className="animate-fade-in fixed inset-0 z-40 flex flex-col bg-background pt-[max(0px,env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:pt-0 md:pb-0 md:h-[calc(100dvh-8rem)]"
-        style={visualViewportHeight ? { height: `${Math.round(visualViewportHeight)}px`, top: 0, position: 'fixed' } : undefined}
+        style={visualViewport ? { height: `${Math.round(visualViewport.height)}px`, top: Math.max(0, Math.round(visualViewport.offsetTop)), position: 'fixed' } : undefined}
       >
         <div className="flex-1 min-h-0 overflow-visible px-4 md:px-0">
           <ChatView conversation={activeConvo} onBack={() => setActiveId(null)} />
