@@ -123,9 +123,9 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
   const isEllyMessage = (senderId: string) => senderId === ELLY_USER_ID;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-background flex items-center gap-3 border-b border-border pb-3 mb-3 min-w-0">
+      <div className="sticky top-0 z-20 shrink-0 bg-background flex items-center gap-3 border-b border-border pb-3 mb-3 min-w-0">
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -152,7 +152,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex flex-1 flex-col justify-end overflow-y-auto overscroll-contain" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
+      <div className="min-h-0 flex flex-1 flex-col justify-end overflow-y-auto overscroll-contain" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
         <div className="space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -289,7 +289,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       </div>
 
       {/* Input */}
-      <div className="mt-2 flex gap-2 pt-2 border-t border-border shrink-0">
+      <div className="mt-2 flex gap-2 pt-2 border-t border-border shrink-0 bg-background">
         <ChatImageUpload onImageUploaded={handleImageUploaded} />
         <EmojiPicker onEmojiSelect={insertEmoji} />
         <button
