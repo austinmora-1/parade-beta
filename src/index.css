@@ -327,9 +327,10 @@
   }
 
   .arcade-caret-letter {
-    font-size: 0.65em;
+    font-size: 0.7em;
     line-height: 1;
-    transform: translateY(-0.1em);
+    -webkit-text-fill-color: hsl(180 100% 60%);
+    filter: drop-shadow(0 0 4px hsl(180 100% 50% / 0.6));
   }
 
   .arcade-caret-symbol {
