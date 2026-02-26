@@ -17,11 +17,33 @@ export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) 
     xl: isArcade ? 'text-2xl' : 'text-5xl',
   };
 
+  if (isArcade) {
+    // Renders "ARCADE" — the P flickers as broken/unlit, C is inserted
+    // Letters: (p-broken) A R C A D E
+    // Visual: the P is nearly invisible/flickering, so you read "ARCADE"
+    return (
+      <span
+        className={cn(
+          'arcade-wordmark tracking-wide inline-flex',
+          sizeClasses[size],
+          className
+        )}
+      >
+        <span className="arcade-letter-broken" aria-hidden="true">P</span>
+        <span>A</span>
+        <span>R</span>
+        <span className="arcade-letter-inserted">C</span>
+        <span>A</span>
+        <span>D</span>
+        <span>E</span>
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(
-        isArcade ? 'arcade-wordmark' : 'parade-wordmark',
-        'tracking-wide',
+        'parade-wordmark tracking-wide',
         sizeClasses[size],
         className
       )}
