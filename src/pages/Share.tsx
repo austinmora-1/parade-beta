@@ -68,6 +68,7 @@ export default function Share() {
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilityData[]>([]);
+  const [myAvailability, setMyAvailability] = useState<AvailabilityData[]>([]);
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +141,17 @@ export default function Share() {
 
         setAvailability(availData || []);
 
+        // Fetch current user's availability for overlap detection
+        if (user) {
+          const { data: myAvailData } = await supabase
+            .from('availability')
+            .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
+            .eq('user_id', user.id)
+            .gte('date', startDate)
+            .lte('date', endDate);
+          setMyAvailability(myAvailData || []);
+        }
+
         // Fetch plans for the week
         const { data: plansData } = await supabase
           .from('plans')
@@ -185,6 +197,22 @@ export default function Share() {
     };
     
     return dayAvail[slotMap[slot]] === false ? 'busy' : 'available';
+  };
+
+  const isMySlotFree = (date: Date, slot: TimeSlot): boolean => {
+    if (!user) return false;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayAvail = myAvailability.find((a) => a.date === dateStr);
+    if (!dayAvail) return true; // Default to available
+    const slotMap: Record<TimeSlot, keyof AvailabilityData> = {
+      'early-morning': 'early_morning',
+      'late-morning': 'late_morning',
+      'early-afternoon': 'early_afternoon',
+      'late-afternoon': 'late_afternoon',
+      'evening': 'evening',
+      'late-night': 'late_night',
+    };
+    return dayAvail[slotMap[slot]] !== false;
   };
 
   const getDayAvailabilityScore = (date: Date): number => {
@@ -422,6 +450,19 @@ export default function Share() {
             )}
           </div>
 
+          {user && (
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-1">
+              <div className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-availability-available" />
+                <span>Both free</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-availability-available/40" />
+                <span>Only {profile?.display_name?.split(' ')[0] || 'them'} free</span>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
             {weekDays.map((day) => {
               const key = day.toISOString();
@@ -478,12 +519,14 @@ export default function Share() {
                     <div className="mt-1.5 flex gap-0.5">
                       {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => {
                         const status = getSlotStatus(day, slot);
+                        const bothFree = status === 'available' && user && isMySlotFree(day, slot);
                         return (
                           <div
                             key={slot}
                             className={cn(
                               "h-1 flex-1 rounded-full",
-                              status === 'available' && "bg-availability-available/60",
+                              status === 'available' && bothFree && "bg-availability-available",
+                              status === 'available' && !bothFree && "bg-availability-available/40",
                               status === 'plan' && "bg-primary/60",
                               status === 'busy' && "bg-muted-foreground/20"
                             )}
@@ -528,6 +571,7 @@ export default function Share() {
                       {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => {
                         const status = getSlotStatus(day, slot);
                         const isAvailable = status === 'available';
+                        const bothFree = isAvailable && user && isMySlotFree(day, slot);
                         const slotInfo = TIME_SLOT_LABELS[slot];
                         const slotPlans = dayPlans.filter(p => p.time_slot === slot);
 
@@ -538,14 +582,16 @@ export default function Share() {
                             onClick={() => isAvailable && handleSlotClick(day, slot)}
                             className={cn(
                               "flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors text-left",
-                              isAvailable && "bg-availability-available/20 text-foreground hover:bg-availability-available/30 cursor-pointer",
+                              isAvailable && bothFree && "bg-availability-available/30 text-foreground hover:bg-availability-available/40 cursor-pointer ring-1 ring-availability-available/30",
+                              isAvailable && !bothFree && "bg-availability-available/15 text-foreground hover:bg-availability-available/25 cursor-pointer",
                               status === 'plan' && "bg-muted/60 text-foreground cursor-not-allowed",
                               status === 'busy' && "bg-muted/30 text-muted-foreground cursor-not-allowed"
                             )}
                           >
                             <span className={cn(
                               "h-1.5 w-1.5 shrink-0 rounded-full",
-                              isAvailable && "bg-availability-available",
+                              isAvailable && bothFree && "bg-availability-available",
+                              isAvailable && !bothFree && "bg-availability-available/50",
                               status === 'plan' && "bg-primary",
                               status === 'busy' && "bg-muted-foreground/40"
                             )} />
