@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType, ACTIVITY_CONFIG } from '@/types/planner';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
+import { MobileNav } from '@/components/layout/MobileNav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -348,7 +349,7 @@ export default function Share() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-4 space-y-4">
+      <main className={cn("mx-auto max-w-2xl px-4 py-4 space-y-4", user && "pb-24")}>
         {/* Profile Card */}
         <div className="rounded-2xl bg-card p-4 shadow-soft">
           <div className="flex items-center gap-3">
@@ -735,6 +736,7 @@ export default function Share() {
           </div>
         </DialogContent>
       </Dialog>
+      {user && <MobileNav />}
     </div>
   );
 }
