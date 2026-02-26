@@ -35,6 +35,11 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     scrollToBottom();
   }, [messages]);
 
+  // Scroll to bottom when keyboard opens (input focused)
+  const handleInputFocus = () => {
+    setTimeout(scrollToBottom, 300);
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text) return;
@@ -267,6 +272,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+          onFocus={handleInputFocus}
           className="flex-1 rounded-lg text-sm"
         />
         <Button

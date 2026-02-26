@@ -26,6 +26,10 @@ export function EllyChatView({ onBack, compact = false }: EllyChatViewProps) {
     scrollToBottom();
   }, [messages, isLoading]);
 
+  const handleInputFocus = () => {
+    setTimeout(scrollToBottom, 300);
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
@@ -171,6 +175,7 @@ export function EllyChatView({ onBack, compact = false }: EllyChatViewProps) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+          onFocus={handleInputFocus}
           className="flex-1 rounded-lg text-sm"
           disabled={isLoading}
         />
