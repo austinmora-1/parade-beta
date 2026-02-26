@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { format, addDays, addWeeks, startOfWeek, isSameDay, isToday, isSameWeek } from 'date-fns';
-import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send, X, ChevronLeft, ChevronRight, ChevronDown, Plane } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType, ACTIVITY_CONFIG } from '@/types/planner';
@@ -80,6 +80,16 @@ export default function Share() {
   const viewParam = searchParams.get('view') || '1w';
   const maxWeekOffset = viewParam === '3m' ? 12 : viewParam === '1m' ? 4 : 0;
   const [weekOffset, setWeekOffset] = useState(0);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+
+  const toggleDay = (key: string) => {
+    setExpandedDays(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   // Get week days based on offset (Monday to Sunday)
   const weekDays = useMemo(() => {
@@ -361,10 +371,10 @@ export default function Share() {
           )}
         </div>
 
-        {/* Week Overview - Similar to Dashboard */}
+        {/* Week Overview — matching dashboard style */}
         <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
           <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -374,9 +384,9 @@ export default function Share() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <h3 className="font-display text-base font-semibold">
-                {weekOffset === 0 ? 'This Week' : weekOffset === 1 ? 'Next Week' : format(weekDays[0], 'MMM d') + ' - ' + format(weekDays[6], 'MMM d')}
-              </h3>
+              <span className="text-xs font-medium min-w-[80px] text-center text-muted-foreground">
+                {weekOffset === 0 ? 'This Week' : weekOffset === 1 ? 'Next Week' : `${format(weekDays[0], 'MMM d')} – ${format(weekDays[6], 'MMM d')}`}
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -386,176 +396,167 @@ export default function Share() {
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              {!isCurrentWeek && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-primary h-6 px-2"
+                  onClick={() => setWeekOffset(0)}
+                >
+                  ← Back to this week
+                </Button>
+              )}
             </div>
-            {isCurrentWeek ? (
+            {isCurrentWeek && (
               <span className="text-xs text-muted-foreground">
-                {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d')}
+                {format(weekDays[0], 'MMM d')} – {format(weekDays[6], 'MMM d')}
               </span>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => setWeekOffset(0)}
-              >
-                Back to this week
-              </Button>
             )}
           </div>
 
-          <div className="grid grid-cols-7 gap-2 sm:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
             {weekDays.map((day) => {
-              const score = getDayAvailabilityScore(day);
+              const key = day.toISOString();
               const isTodayDay = isToday(day);
+              const isPastDay = day < new Date(new Date().setHours(0, 0, 0, 0));
               const dayPlans = getPlansForDay(day);
-              const planCount = dayPlans.length;
-              
+              const summary = (() => {
+                const slots = Object.keys(TIME_SLOT_LABELS) as TimeSlot[];
+                const available = slots.filter(s => getSlotStatus(day, s) === 'available').length;
+                const planCount = slots.filter(s => getSlotStatus(day, s) === 'plan').length;
+                return { available, planCount, total: slots.length };
+              })();
+              const score = summary.available / summary.total;
+              const isExpanded = expandedDays.has(key);
+
               return (
-                <div
-                  key={day.toISOString()}
-                  className="flex flex-col items-center rounded-xl p-2 transition-all duration-200"
-                >
-                  <span className="text-xs font-medium text-muted-foreground mb-1">
-                    {format(day, 'EEE')}
-                  </span>
-                  
-                  {/* Date circle with plan count bubble */}
-                  <div className="relative">
-                    {/* Date circle */}
-                    <span className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors",
-                      isTodayDay 
-                        ? "bg-availability-today text-white"
-                        : score >= 0.7 
-                          ? "bg-availability-available-light text-availability-available"
-                          : score >= 0.3 && score < 0.7 
-                            ? "bg-availability-partial-light text-availability-partial"
-                            : "bg-availability-busy-light text-availability-busy"
-                    )}>
-                      {format(day, 'd')}
-                    </span>
-                    
-                    {/* Plan count bubble */}
-                    {planCount > 0 && (
-                      <span className={cn(
-                        "absolute -bottom-3 left-1/2 -translate-x-1/2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium",
-                        score >= 0.7 && "bg-availability-available text-white",
-                        score >= 0.3 && score < 0.7 && "bg-availability-partial text-white",
-                        score < 0.3 && "bg-availability-busy text-white"
-                      )}>
-                        {planCount}
-                      </span>
+                <div key={key} className={cn(isPastDay && "opacity-50")}>
+                  <button
+                    onClick={() => !isPastDay && toggleDay(key)}
+                    disabled={isPastDay}
+                    className={cn(
+                      "w-full text-left rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20",
+                      !isPastDay && "hover:bg-muted/50",
+                      isPastDay && "cursor-default",
+                      isTodayDay && "bg-primary/10 ring-2 ring-primary/30"
                     )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* When to Reach Out - Interactive Slots */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-          <div className="mb-4">
-            <h3 className="font-display text-lg font-semibold">When to Reach Out</h3>
-            <p className="text-sm text-muted-foreground mt-1">Tap a time slot to see when I'm free</p>
-          </div>
-
-          {/* Day tabs with time slot buttons */}
-          <div className="space-y-3">
-            {weekDays
-              .filter((day) => day >= new Date(new Date().setHours(0, 0, 0, 0)))
-              .map((day) => {
-              const isTodayDay = isToday(day);
-              const dayPlans = getPlansForDay(day);
-              
-              return (
-                <div 
-                  key={day.toISOString()} 
-                  className={cn(
-                    "rounded-xl border p-3 transition-all bg-card border-border",
-                    isTodayDay && "ring-2 ring-primary/30 border-primary/50"
-                  )}
-                >
-                  {/* Day header */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={cn(
-                      "flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg leading-none",
-                      isTodayDay ? "bg-primary text-primary-foreground" : "bg-muted"
-                    )}>
-                      <span className={cn(
-                        "text-[10px] font-medium uppercase leading-none",
-                        isTodayDay ? "text-primary-foreground/80" : "text-muted-foreground"
-                      )}>
-                        {format(day, 'EEE')}
-                      </span>
-                      <span className={cn(
-                        "text-sm font-bold leading-none mt-0.5",
-                        isTodayDay ? "text-primary-foreground" : "text-foreground"
-                      )}>
-                        {format(day, 'd')}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <span className={cn(
-                        "text-sm font-medium",
-                        isTodayDay && "text-primary"
-                      )}>
-                        {isTodayDay ? 'Today' : format(day, 'EEEE')}
-                      </span>
-                      {dayPlans.length > 0 && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {dayPlans.length} plan{dayPlans.length > 1 ? 's' : ''}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className={cn(
+                          "text-xs font-semibold",
+                          isTodayDay && "text-primary"
+                        )}>
+                          {format(day, 'EEE')}
                         </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {format(day, 'd')}
+                        </span>
+                        {isTodayDay && (
+                          <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-full font-medium">
+                            Today
+                          </span>
+                        )}
+                      </div>
+                      {!isPastDay && (
+                        <ChevronDown className={cn(
+                          "h-3 w-3 text-muted-foreground transition-transform shrink-0",
+                          isExpanded && "rotate-180"
+                        )} />
                       )}
                     </div>
-                  </div>
-                  
-                  {/* Time slot buttons */}
-                  <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
-                    {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => {
-                      const status = getSlotStatus(day, slot);
-                      const isAvailable = status === 'available';
-                      const slotInfo = TIME_SLOT_LABELS[slot];
-                      
-                      return (
-                        <button
-                          key={slot}
-                          disabled={!isAvailable}
-                          onClick={() => isAvailable && handleSlotClick(day, slot)}
-                          className={cn(
-                            "flex flex-col items-center justify-center rounded-lg px-2 py-2 text-center transition-all",
-                            "border",
-                            isAvailable
-                              ? "bg-availability-available/10 border-availability-available/30 text-availability-available hover:bg-availability-available/20 hover:border-availability-available/50 hover:scale-105 cursor-pointer"
-                              : "bg-muted/30 border-transparent text-muted-foreground/50 cursor-not-allowed"
-                          )}
-                        >
-                          <span className="text-[10px] font-medium leading-tight">
-                            {slotInfo.label.split(' ')[0]}
-                          </span>
-                          <span className={cn(
-                            "text-[9px] leading-tight",
-                            isAvailable ? "text-availability-available/70" : "text-muted-foreground/40"
-                          )}>
-                            {slotInfo.time}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+
+                    {/* Slot density bars */}
+                    <div className="mt-1.5 flex gap-0.5">
+                      {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => {
+                        const status = getSlotStatus(day, slot);
+                        return (
+                          <div
+                            key={slot}
+                            className={cn(
+                              "h-1 flex-1 rounded-full",
+                              status === 'available' && "bg-availability-available/60",
+                              status === 'plan' && "bg-primary/60",
+                              status === 'busy' && "bg-muted-foreground/20"
+                            )}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className={cn(
+                        "text-[10px] font-medium",
+                        score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
+                      )}>
+                        {summary.available}/{summary.total} free
+                        {summary.planCount > 0 && ` · ${summary.planCount} ${summary.planCount === 1 ? 'plan' : 'plans'}`}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Expanded slot details — tappable for hang requests */}
+                  {isExpanded && !isPastDay && (
+                    <div className="space-y-0.5 animate-fade-in px-0.5 pb-1">
+                      {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map((slot) => {
+                        const status = getSlotStatus(day, slot);
+                        const isAvailable = status === 'available';
+                        const slotInfo = TIME_SLOT_LABELS[slot];
+                        const slotPlans = dayPlans.filter(p => p.time_slot === slot);
+
+                        return (
+                          <button
+                            key={slot}
+                            disabled={!isAvailable}
+                            onClick={() => isAvailable && handleSlotClick(day, slot)}
+                            className={cn(
+                              "flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors text-left",
+                              isAvailable && "bg-availability-available/20 text-foreground hover:bg-availability-available/30 cursor-pointer",
+                              status === 'plan' && "bg-muted/60 text-foreground cursor-not-allowed",
+                              status === 'busy' && "bg-muted/30 text-muted-foreground cursor-not-allowed"
+                            )}
+                          >
+                            <span className={cn(
+                              "h-1.5 w-1.5 shrink-0 rounded-full",
+                              isAvailable && "bg-availability-available",
+                              status === 'plan' && "bg-primary",
+                              status === 'busy' && "bg-muted-foreground/40"
+                            )} />
+                            <span className="font-medium truncate">
+                              {slotInfo.label}
+                            </span>
+                            <span className="text-muted-foreground ml-auto text-[9px] shrink-0">
+                              {slotInfo.time}
+                            </span>
+                            {slotPlans.length > 0 && (
+                              <span className="shrink-0 text-[9px]">
+                                {(() => {
+                                  const cfg = ACTIVITY_CONFIG[slotPlans[0].activity as keyof typeof ACTIVITY_CONFIG];
+                                  return cfg?.icon || '📅';
+                                })()}
+                              </span>
+                            )}
+                            {isAvailable && (
+                              <Send className="h-2.5 w-2.5 shrink-0 text-availability-available/60" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-border/50 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-6 rounded bg-availability-available/20 border border-availability-available/30" />
-              <span className="text-muted-foreground">Available</span>
+          <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-border/50 text-[10px]">
+            <div className="flex items-center gap-1.5">
+              <div className="h-1 w-4 rounded-full bg-availability-available/60" />
+              <span className="text-muted-foreground">Free — tap to request</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-6 rounded bg-muted/30" />
+            <div className="flex items-center gap-1.5">
+              <div className="h-1 w-4 rounded-full bg-muted-foreground/20" />
               <span className="text-muted-foreground">Busy</span>
             </div>
           </div>
