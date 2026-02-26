@@ -12,6 +12,8 @@ import {
   isSameDay,
   isSameMonth,
   isToday,
+  isBefore,
+  startOfDay,
   getDay,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react';
@@ -115,9 +117,15 @@ export function AvailabilityGrid() {
     return availableCount / slots.length;
   };
 
-  // Get background color based on availability, today status, and away status
-  const getDayBgColor = (availability: number, isSelected: boolean, isTodayDate: boolean, isAway: boolean): string => {
-    if (isSelected) return isAway ? 'bg-orange-500' : 'bg-primary';
+  // Check if a day is in the past (before today)
+  const isDayPast = (date: Date): boolean => {
+    return isBefore(startOfDay(date), startOfDay(new Date()));
+  };
+
+  // Get background color based on availability, today status, away status, and past status
+  const getDayBgColor = (availability: number, isSelected: boolean, isTodayDate: boolean, isAway: boolean, isPast: boolean): string => {
+    if (isSelected) return isAway ? 'bg-orange-500' : isPast ? 'bg-muted-foreground/50' : 'bg-primary';
+    if (isPast) return 'bg-muted/40';
     if (isAway) return 'bg-orange-500/20';
     if (isTodayDate) return 'bg-availability-today';
     
@@ -157,6 +165,7 @@ export function AvailabilityGrid() {
            const isSelected = index === selectedDayIndex;
            const dayAvail = getDayAvailability(day);
            const isAway = isDayAway(day);
+           const isPast = isDayPast(day);
            return (
             <button
               key={day.toISOString()}
@@ -170,12 +179,14 @@ export function AvailabilityGrid() {
               }}
               className={cn(
                 "flex-1 flex flex-col items-center py-1.5 rounded-md transition-all min-w-0",
-                getDayBgColor(dayAvail, isSelected, isTodayDate, isAway),
-                isSelected && "text-primary-foreground",
-                !isSelected && isAway && "text-orange-600",
+                getDayBgColor(dayAvail, isSelected, isTodayDate, isAway, isPast),
+                isSelected && !isPast && "text-primary-foreground",
+                isSelected && isPast && "text-primary-foreground",
+                !isSelected && isPast && "text-muted-foreground/60",
+                !isSelected && !isPast && isAway && "text-orange-600",
                 isTodayDate && !isSelected && !isAway && "text-white",
-                !isSelected && !isTodayDate && !isAway && dayAvail === 0 && "text-muted-foreground",
-                !isSelected && !isTodayDate && !isAway && dayAvail > 0 && "text-foreground"
+                !isSelected && !isTodayDate && !isPast && !isAway && dayAvail === 0 && "text-muted-foreground",
+                !isSelected && !isTodayDate && !isPast && !isAway && dayAvail > 0 && "text-foreground"
               )}
             >
               <span className="text-[10px] font-medium uppercase leading-none">
@@ -291,6 +302,7 @@ export function AvailabilityGrid() {
             const dayAvail = getDayAvailability(day);
             const hasPlan = plans.some(p => isSameDay(p.date, day));
             const isAway = isDayAway(day);
+            const isPast = isDayPast(day);
             
             return (
               <button
@@ -305,12 +317,13 @@ export function AvailabilityGrid() {
                 }}
                 className={cn(
                   "flex flex-col items-center py-1.5 rounded-md transition-all relative",
-                  getDayBgColor(dayAvail, isSelected || false, isTodayDate, isAway),
+                  getDayBgColor(dayAvail, isSelected || false, isTodayDate, isAway, isPast),
                   isSelected && "text-primary-foreground",
-                  !isSelected && isAway && "text-orange-600",
+                  !isSelected && isPast && "text-muted-foreground/60",
+                  !isSelected && !isPast && isAway && "text-orange-600",
                   isTodayDate && !isSelected && !isAway && "text-white",
-                  !isSelected && !isTodayDate && !isAway && dayAvail === 0 && "text-muted-foreground",
-                  !isSelected && !isTodayDate && !isAway && dayAvail > 0 && "text-foreground"
+                  !isSelected && !isTodayDate && !isPast && !isAway && dayAvail === 0 && "text-muted-foreground",
+                  !isSelected && !isTodayDate && !isPast && !isAway && dayAvail > 0 && "text-foreground"
                 )}
               >
                 <span className="text-[10px] font-medium uppercase leading-none">
@@ -465,20 +478,23 @@ export function AvailabilityGrid() {
                   </th>
                   {weekDays.map((day) => {
                     const isAway = isDayAway(day);
+                    const isPast = isDayPast(day);
                     return (
                     <th
                       key={day.toISOString()}
                       className={cn(
                         "min-w-[100px] border-b border-border p-3 text-center text-sm font-medium",
+                        isPast && "opacity-50",
                         isToday(day) && !isAway && "bg-primary/5",
-                        isAway && "bg-orange-500/10"
+                        isAway && !isPast && "bg-orange-500/10"
                       )}
                     >
-                      <div className={cn(isAway && "text-orange-600")}>{format(day, 'EEE')}</div>
+                      <div className={cn(isPast && "text-muted-foreground", !isPast && isAway && "text-orange-600")}>{format(day, 'EEE')}</div>
                       <div
                         className={cn(
                           "mt-1 text-lg",
-                          isAway && "text-orange-600 font-bold",
+                          isPast && "text-muted-foreground",
+                          !isPast && isAway && "text-orange-600 font-bold",
                           isToday(day) && !isAway && "text-primary font-bold"
                         )}
                       >
@@ -510,17 +526,19 @@ export function AvailabilityGrid() {
                     </td>
                     {weekDays.map((day) => {
                       const status = getSlotStatus(day, slot);
+                      const isPast = isDayPast(day);
                       return (
                         <td
                           key={`${day.toISOString()}-${slot}`}
                           className={cn(
                             "border-b border-border p-2",
+                            isPast && "opacity-50",
                             isToday(day) && "bg-primary/5"
                           )}
                         >
                           <button
                             onClick={() => toggleSlot(day, slot)}
-                            disabled={status === 'busy'}
+                            disabled={status === 'busy' || isPast}
                             className={cn(
                               "h-12 w-full rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5",
                               status === 'available' &&
