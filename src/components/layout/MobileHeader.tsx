@@ -10,11 +10,11 @@ export function MobileHeader() {
   const { openFeedback } = useFeedback();
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center border-b border-primary/20 bg-[hsl(150_22%_18%)] px-4 md:hidden">
+    <header className="sticky top-0 z-40 flex h-14 items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
       <div className="flex-1 flex justify-start">
         <button
           onClick={openFeedback}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-white/80 transition-colors hover:text-white"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
         >
           <MessageSquareMore className="h-4 w-4" />
         </button>
@@ -23,12 +23,12 @@ export function MobileHeader() {
         <ParadeWordmark size="md" className="leading-none" />
       </Link>
       <div className="flex-1 flex justify-end gap-1">
-        <div className="[&_button]:text-white/80 [&_button:hover]:text-white [&_button:hover]:bg-white/10">
+        <div className="[&_button]:text-sidebar-foreground/80 [&_button:hover]:text-sidebar-foreground [&_button:hover]:bg-sidebar-accent">
           <ThemeToggle />
         </div>
         <Link
           to="/notifications"
-          className="relative flex h-7 w-7 items-center justify-center rounded-md text-white/80 transition-colors hover:text-white"
+          className="relative flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
         >
           <Bell className="h-4 w-4" />
           {totalNotifications > 0 && (

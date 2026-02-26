@@ -28,7 +28,7 @@ export function MobileNav() {
   const isProfileActive = location.pathname === '/profile';
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary/20 bg-[hsl(150_22%_18%)] pb-safe md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden">
       <div className="flex items-center justify-around px-2 py-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -39,13 +39,13 @@ export function MobileNav() {
               className={cn(
                 "relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-1 transition-all duration-200",
                 isActive
-                  ? "text-[hsl(150_50%_50%)]"
-                  : "text-white/60"
+                  ? "text-sidebar-primary"
+                  : "text-sidebar-foreground/60"
               )}
             >
               <div className={cn(
                 "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
-                isActive && "bg-white/20"
+                isActive && "bg-sidebar-accent"
               )}>
                 <item.icon className="h-5 w-5" />
               </div>
