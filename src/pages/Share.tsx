@@ -591,18 +591,20 @@ export default function Share() {
 
 
         {/* CTA */}
-        <div className="text-center pt-2">
-          <p className="mb-3 text-sm text-muted-foreground">
-            Want to share your own availability with friends?
-          </p>
-          <Link
-            to="/landing"
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 font-medium text-primary-foreground shadow-md hover:bg-primary/90"
-          >
-            <Sparkles className="h-4 w-4" />
-            Get Parade - It's Free!
-          </Link>
-        </div>
+        {!user && (
+          <div className="text-center pt-2">
+            <p className="mb-3 text-sm text-muted-foreground">
+              Want to share your own availability with friends?
+            </p>
+            <Link
+              to="/landing"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 font-medium text-primary-foreground shadow-md hover:bg-primary/90"
+            >
+              <Sparkles className="h-4 w-4" />
+              Get Parade - It's Free!
+            </Link>
+          </div>
+        )}
       </main>
 
       {/* Hang Request Dialog */}
