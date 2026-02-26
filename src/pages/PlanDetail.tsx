@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar } from 'lucide-react';
@@ -44,6 +44,10 @@ export default function PlanDetail() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isRespondingToChange, setIsRespondingToChange] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [planId]);
 
   const plan = useMemo(() => plans.find(p => p.id === planId), [plans, planId]);
 
