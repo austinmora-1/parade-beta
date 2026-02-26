@@ -245,6 +245,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         friendUserId: f.friend_user_id || undefined,
         status: f.status as 'connected' | 'pending' | 'invited',
         isIncoming: false,
+        isPodMember: (f as any).is_pod_member || false,
       }));
       
       // For incoming requests, we need to get the requester's profile info
@@ -671,6 +672,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (updates.name) dbUpdates.friend_name = updates.name;
     if (updates.email !== undefined) dbUpdates.friend_email = updates.email;
     if (updates.status) dbUpdates.status = updates.status;
+    if (updates.isPodMember !== undefined) dbUpdates.is_pod_member = updates.isPodMember;
     
     const { error } = await supabase
       .from('friendships')
