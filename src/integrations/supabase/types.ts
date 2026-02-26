@@ -421,6 +421,7 @@ export type Database = {
           notes: string | null
           source: string | null
           source_event_id: string | null
+          status: string
           time_slot: string
           title: string
           updated_at: string
@@ -436,6 +437,7 @@ export type Database = {
           notes?: string | null
           source?: string | null
           source_event_id?: string | null
+          status?: string
           time_slot: string
           title: string
           updated_at?: string
@@ -451,6 +453,7 @@ export type Database = {
           notes?: string | null
           source?: string | null
           source_event_id?: string | null
+          status?: string
           time_slot?: string
           title?: string
           updated_at?: string

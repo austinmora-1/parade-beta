@@ -32,15 +32,21 @@ export function PlanCard({
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
+  const isTentative = plan.status === 'tentative';
+
   if (compact) {
     return (
       <div
-        className="rounded-lg p-2 text-xs"
-        style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
+        className={cn(
+          "rounded-lg p-2 text-xs",
+          isTentative && "border border-dashed border-border opacity-60"
+        )}
+        style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${isTentative ? '0.08' : '0.15'})` }}
       >
         <div className="flex items-center gap-1">
           <ActivityIcon config={activityConfig} size={14} />
           <span className="truncate font-medium">{plan.title}</span>
+          {isTentative && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
         </div>
       </div>
     );
@@ -49,7 +55,10 @@ export function PlanCard({
   return (
     <div
       className={cn(
-        "group rounded-2xl border border-border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow",
+        "group rounded-2xl border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow",
+        isTentative 
+          ? "border-dashed border-border/60 opacity-70" 
+          : "border-border",
         changeRequest && "border-amber-500/30"
       )}
     >
