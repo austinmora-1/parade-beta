@@ -37,6 +37,7 @@ import {
   VibeType,
   TimeSlot, 
   Plan,
+  PlanStatus,
   getActivitiesByVibe,
   getAllVibes
 } from '@/types/planner';
@@ -78,6 +79,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [subscriberFriends, setSubscriberFriends] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [planStatus, setPlanStatus] = useState<PlanStatus>('confirmed');
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -166,6 +168,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setSelectedFriends(matchedFriendIds);
       setSubscriberFriends(matchedSubscriberIds);
       setNotes(editPlan.notes || '');
+      setPlanStatus(editPlan.status || 'confirmed');
     } else if (open && !editPlan) {
       // Reset for new plan
       setTitle('');
@@ -178,6 +181,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setSelectedFriends([]);
       setSubscriberFriends([]);
       setNotes('');
+      setPlanStatus('confirmed');
     }
   }, [open, editPlan, defaultDate]);
 
@@ -303,6 +307,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       location: locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined,
       participants: allParticipants,
       notes,
+      status: planStatus,
     };
 
     if (editPlan) {
@@ -328,6 +333,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     setSelectedFriends([]);
     setSubscriberFriends([]);
     setNotes('');
+    setPlanStatus('confirmed');
     setParticipantAvailability([]);
   };
 
@@ -475,6 +481,23 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Status */}
+          <div className="space-y-1">
+            <Label className="text-xs">Status</Label>
+            <Select value={planStatus} onValueChange={(v) => setPlanStatus(v as PlanStatus)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="confirmed" className="text-xs">✅ Confirmed</SelectItem>
+                <SelectItem value="tentative" className="text-xs">🤔 Tentative</SelectItem>
+              </SelectContent>
+            </Select>
+            {planStatus === 'tentative' && (
+              <p className="text-[10px] text-muted-foreground">Tentative plans won't block your availability</p>
+            )}
           </div>
 
           {/* Location */}

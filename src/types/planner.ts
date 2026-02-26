@@ -41,6 +41,7 @@ export interface Location {
 }
 
 export type ParticipantRole = 'participant' | 'subscriber';
+export type PlanStatus = 'confirmed' | 'tentative';
 
 export interface Friend {
   id: string;
@@ -64,6 +65,7 @@ export interface Plan {
   duration: number;
   participants: Friend[];
   notes?: string;
+  status: PlanStatus;
   createdAt: Date;
   myRole?: ParticipantRole; // role of the current user (for participated plans)
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Plan, Friend, DayAvailability, Vibe, TimeSlot, LocationStatus, ActivityType, VibeType } from '@/types/planner';
+import { Plan, Friend, DayAvailability, Vibe, TimeSlot, LocationStatus, ActivityType, VibeType, PlanStatus } from '@/types/planner';
 import { addDays, startOfWeek, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -211,6 +211,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           duration: p.duration,
           location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
           notes: p.notes || undefined,
+          status: (p as any).status as PlanStatus || 'confirmed',
           participants: pps.map(pp => ({
             id: pp.friend_id,
             name: profilesMap[pp.friend_id] || 'Friend',
@@ -429,7 +430,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         duration: plan.duration,
         location: locationStr,
         notes: plan.notes,
-      })
+        status: plan.status || 'confirmed',
+      } as any)
       .select()
       .single();
     
@@ -448,6 +450,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       duration: data.duration,
       location: data.location ? { id: data.id, name: data.location, address: '' } : undefined,
       notes: data.notes || undefined,
+      status: (data as any).status as PlanStatus || 'confirmed',
       participants: plan.participants || [],
       createdAt: new Date(data.created_at),
     };
@@ -470,32 +473,34 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     set((state) => ({ plans: [...state.plans, newPlan] }));
     
-    // Auto-block the availability slot for this plan
-    const slotColumn = plan.timeSlot.replace('-', '_');
-    await supabase
-      .from('availability')
-      .upsert({
-        user_id: userId,
-        date: dateStr,
-        [slotColumn]: false,
-      }, { onConflict: 'user_id,date' });
-    
-    // Update local availability state
-    const { availability, defaultSettings } = get();
-    const existingIndex = availability.findIndex(
-      (a) => format(a.date, 'yyyy-MM-dd') === dateStr
-    );
-    if (existingIndex >= 0) {
-      const updated = [...availability];
-      updated[existingIndex] = {
-        ...updated[existingIndex],
-        slots: { ...updated[existingIndex].slots, [plan.timeSlot]: false },
-      };
-      set({ availability: updated });
-    } else {
-      const newAvailability = createDefaultAvailability(plan.date, defaultSettings);
-      newAvailability.slots[plan.timeSlot] = false;
-      set({ availability: [...availability, newAvailability] });
+    // Auto-block the availability slot for this plan (only for confirmed plans)
+    if ((plan.status || 'confirmed') === 'confirmed') {
+      const slotColumn = plan.timeSlot.replace('-', '_');
+      await supabase
+        .from('availability')
+        .upsert({
+          user_id: userId,
+          date: dateStr,
+          [slotColumn]: false,
+        }, { onConflict: 'user_id,date' });
+      
+      // Update local availability state
+      const { availability, defaultSettings } = get();
+      const existingIndex = availability.findIndex(
+        (a) => format(a.date, 'yyyy-MM-dd') === dateStr
+      );
+      if (existingIndex >= 0) {
+        const updated = [...availability];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          slots: { ...updated[existingIndex].slots, [plan.timeSlot]: false },
+        };
+        set({ availability: updated });
+      } else {
+        const newAvailability = createDefaultAvailability(plan.date, defaultSettings);
+        newAvailability.slots[plan.timeSlot] = false;
+        set({ availability: [...availability, newAvailability] });
+      }
     }
   },
   
@@ -511,6 +516,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (updates.duration) dbUpdates.duration = updates.duration;
     if (updates.location !== undefined) dbUpdates.location = updates.location?.name || null;
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+    if (updates.status) dbUpdates.status = updates.status;
     
     const { error } = await supabase
       .from('plans')
