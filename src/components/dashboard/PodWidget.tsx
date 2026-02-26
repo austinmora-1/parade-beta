@@ -30,7 +30,15 @@ interface PodMemberInfo {
   freeSlots: number;
   totalSlots: number;
   slots: Record<TimeSlot, boolean>;
+  currentVibe: string | null;
 }
+
+const VIBE_CONFIG: Record<string, { label: string; color: string }> = {
+  social: { label: '🎉 Social', color: 'bg-vibe-social/15 text-vibe-social' },
+  chill: { label: '😌 Chill', color: 'bg-vibe-chill/15 text-vibe-chill' },
+  athletic: { label: '💪 Athletic', color: 'bg-vibe-athletic/15 text-vibe-athletic' },
+  productive: { label: '⚡ Productive', color: 'bg-vibe-productive/15 text-vibe-productive' },
+};
 
 export function PodWidget() {
   const { friends } = usePlannerStore();
@@ -72,7 +80,7 @@ export function PodWidget() {
           .eq('date', today),
         supabase
           .from('profiles')
-          .select('user_id, location_status')
+          .select('user_id, location_status, current_vibe')
           .in('user_id', friendUserIds),
         supabase
           .from('plans')
@@ -118,6 +126,7 @@ export function PodWidget() {
           freeSlots: freeCount,
           totalSlots: TIME_SLOT_ORDER.length,
           slots: slots as Record<TimeSlot, boolean>,
+          currentVibe: profileRow?.current_vibe || null,
         };
       });
 
@@ -170,9 +179,10 @@ export function PodWidget() {
         </div>
       ) : (
         <div className="space-y-2">
-          {podData.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots }) => {
+          {podData.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots, currentVibe }) => {
             const isAway = locationStatus === 'away';
             const hasFreeSlots = freeSlots > 0;
+            const vibeInfo = currentVibe ? VIBE_CONFIG[currentVibe] : null;
 
             return (
               <button
@@ -214,6 +224,14 @@ export function PodWidget() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate text-sm font-medium">{friend.name}</p>
+                    {vibeInfo && (
+                      <span className={cn(
+                        "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0",
+                        vibeInfo.color
+                      )}>
+                        {vibeInfo.label}
+                      </span>
+                    )}
                     {isAway && tripLocation && (
                       <span className="inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground shrink-0">
                         <MapPin className="h-2.5 w-2.5" />
