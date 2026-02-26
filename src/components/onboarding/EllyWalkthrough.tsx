@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Calendar, Clock, Users, Shield, Sun, Settings, X } from 'lucide-react';
+import { Sparkles, ArrowRight, Calendar, Clock, Users, Shield, Sun, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
 
 interface WalkthroughStep {
   icon: React.ReactNode;
   title: string;
   message: string;
   emoji: string;
+  hasCustomContent?: boolean;
 }
 
 const STEPS: WalkthroughStep[] = [
@@ -23,8 +25,9 @@ const STEPS: WalkthroughStep[] = [
   {
     icon: <Calendar className="h-5 w-5" />,
     title: "Connect Your Calendars",
-    message: "Sync your Google or Apple calendar to auto-import your schedule. Go to Settings → Calendar Integration, then tap 'Connect Google Calendar' or paste your Apple Calendar URL (found in Calendar app → Share Calendar → Copy Link).",
+    message: "Sync your Google or Apple calendar so Parade can automatically import your schedule and mark busy times.",
     emoji: "📅",
+    hasCustomContent: true,
   },
   {
     icon: <Clock className="h-5 w-5" />,
@@ -107,7 +110,6 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
         .update({ walkthrough_completed: true })
         .eq('user_id', user.id);
     }
-    // Clean up legacy localStorage key
     localStorage.removeItem('parade-walkthrough-seen');
     onComplete?.();
   };
@@ -193,6 +195,13 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {current.message}
                   </p>
+
+                  {/* Inline calendar integration on the calendar step */}
+                  {current.hasCustomContent && (
+                    <div className="mt-4 max-h-52 overflow-y-auto">
+                      <CalendarIntegration isEmbedded />
+                    </div>
+                  )}
                 </motion.div>
 
                 {/* Actions */}
@@ -219,7 +228,7 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
                       onClick={handleNext}
                       className="h-8 gap-1.5 px-4 text-xs"
                     >
-                      {isLast ? "Let's go!" : 'Next'}
+                      {isLast ? "Let's go!" : current.hasCustomContent ? 'Continue' : 'Next'}
                       {!isLast && <ArrowRight className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
