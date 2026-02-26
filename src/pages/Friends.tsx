@@ -248,7 +248,7 @@ export default function Friends() {
       {/* Incoming Requests */}
       {incomingRequests.length > 0 && (
         <div>
-          <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+          <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-availability-available-light text-[10px] font-bold text-availability-available">
               {incomingRequests.length}
             </span>
@@ -266,7 +266,7 @@ export default function Friends() {
 
       {/* Connected Friends */}
       <div>
-        <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+        <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
           <Users className="h-4 w-4 text-availability-available" />
           Connected ({connectedFriends.length})
         </h2>
@@ -288,7 +288,7 @@ export default function Friends() {
       {/* Outgoing Requests */}
       {outgoingRequests.length > 0 && (
         <div>
-          <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+          <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-availability-partial-light text-[10px] font-bold text-availability-partial">
               {outgoingRequests.length}
             </span>
@@ -301,7 +301,7 @@ export default function Friends() {
       {/* Invited */}
       {invitedFriends.length > 0 && (
         <div>
-          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">
+          <h2 className="mb-2 text-xs font-semibold text-muted-foreground">
             Invited ({invitedFriends.length})
           </h2>
           <FriendAvatarGrid friends={invitedFriends} onRemove={removeFriend} />
