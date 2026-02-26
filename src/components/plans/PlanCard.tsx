@@ -1,8 +1,7 @@
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock, MoreVertical, Trash2, Edit, Eye } from 'lucide-react';
+import { MapPin, Users, Clock, MoreVertical, Trash2, Eye } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
 import {
@@ -30,7 +29,6 @@ export function PlanCard({
   plan, onEdit, onDelete, compact = false, 
   changeRequest, onAcceptChange, onDeclineChange, isRespondingToChange 
 }: PlanCardProps) {
-  const navigate = useNavigate();
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
@@ -56,7 +54,7 @@ export function PlanCard({
 
   return (
     <div
-      onClick={() => navigate(`/plan/${plan.id}`)}
+      onClick={() => onEdit?.(plan)}
       className={cn(
         "group rounded-2xl border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow cursor-pointer",
         isTentative 
@@ -80,14 +78,6 @@ export function PlanCard({
         </div>
 
         <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onEdit?.(plan)}
-            className="h-8 w-8"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -99,10 +89,6 @@ export function PlanCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit?.(plan)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => onDelete?.(plan.id)}
                 className="text-destructive focus:text-destructive"
