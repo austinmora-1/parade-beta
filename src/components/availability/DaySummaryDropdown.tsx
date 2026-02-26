@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { X, Home, Plane, Plus, Pencil, Trash2, CalendarDays } from 'lucide-react';
+import { Home, Plane, Plus, Pencil, Trash2, CalendarDays } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -25,6 +25,11 @@ interface DaySummaryDropdownProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const SLOT_ORDER: TimeSlot[] = [
+  'early-morning', 'late-morning', 'early-afternoon',
+  'late-afternoon', 'evening', 'late-night',
+];
+
 export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySummaryDropdownProps) {
   const { 
     plans, 
@@ -40,6 +45,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
+  const [createDefaultSlot, setCreateDefaultSlot] = useState<TimeSlot | undefined>();
 
   const locationStatus = getLocationStatusForDate(selectedDate);
   
@@ -67,6 +73,10 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
     return 'available';
   };
 
+  const getPlansForSlot = (slot: TimeSlot): Plan[] => {
+    return dayPlans.filter(p => p.timeSlot === slot);
+  };
+
   const toggleSlot = (slot: TimeSlot) => {
     const currentStatus = getSlotStatus(slot);
     if (currentStatus === 'busy') return;
@@ -78,72 +88,27 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
 
   if (!isOpen) return null;
 
-  const slots = Object.keys(TIME_SLOT_LABELS) as TimeSlot[];
-
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft animate-fade-in space-y-3">
+      {/* Date Header */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{format(selectedDate, 'EEEE, MMM d')}</span>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-6 px-2 text-xs gap-1"
+          onClick={() => {
+            setCreateDefaultSlot(undefined);
+            setCreatePlanOpen(true);
+          }}
+        >
+          <Plus className="h-3 w-3" />
+          Add Plan
+        </Button>
       </div>
 
-      {/* Availability Slots */}
-      <div className="grid grid-cols-3 gap-1">
-        {slots.map((slot) => {
-          const status = getSlotStatus(slot);
-          const slotPlan = status === 'busy' 
-            ? plans.find((p) => isSameDay(p.date, selectedDate) && p.timeSlot === slot)
-            : null;
-          return (
-            <button
-              key={slot}
-              onClick={() => toggleSlot(slot)}
-              disabled={status === 'busy'}
-              className={cn(
-                "flex flex-col items-center justify-center rounded-md py-1.5 px-1 transition-all gap-0.5",
-                status === 'available' &&
-                  "bg-availability-available-light hover:bg-availability-available/30 active:scale-95",
-                status === 'unavailable' &&
-                  "bg-muted/50 hover:bg-muted active:scale-95",
-                status === 'busy' &&
-                  "bg-availability-busy-light cursor-not-allowed opacity-60"
-              )}
-            >
-              <span className={cn(
-                "text-[11px] font-medium leading-tight",
-                status === 'available' && "text-availability-available",
-                status === 'unavailable' && "text-muted-foreground",
-                status === 'busy' && "text-availability-busy"
-              )}>
-                {TIME_SLOT_LABELS[slot].label}
-              </span>
-              <span className="text-[9px] text-muted-foreground leading-tight">
-                {TIME_SLOT_LABELS[slot].time}
-              </span>
-              {slotPlan && slotPlan.participants.length > 0 && (
-                <div className="flex items-center justify-center gap-0.5 mt-0.5 flex-wrap">
-                  {slotPlan.participants.slice(0, 3).map((p, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[8px] font-medium px-1.5 py-0.5 leading-none truncate max-w-[60px]"
-                    >
-                      {p.name.split(' ')[0]}
-                    </span>
-                  ))}
-                  {slotPlan.participants.length > 3 && (
-                    <span className="text-[8px] text-muted-foreground">
-                      +{slotPlan.participants.length - 3}
-                    </span>
-                  )}
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Location & Vibe Row */}
+      {/* Location & Vibe Row — right below date */}
       <div className="flex gap-2">
-        {/* Location Status */}
         <div className="flex-1 rounded-lg border border-border bg-background p-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -164,7 +129,6 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
           </div>
         </div>
 
-        {/* Vibe Selector */}
         <div className="flex-1 rounded-lg border border-border bg-background p-2">
           <div className="flex gap-1">
             {vibeOptions.map(([type, config]) => {
@@ -189,67 +153,118 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
         </div>
       </div>
 
-      {/* Plans for the Day */}
-      <div className="rounded-lg border border-border bg-background p-2">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Plans</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-6 px-2 text-xs gap-1"
-            onClick={() => setCreatePlanOpen(true)}
-          >
-            <Plus className="h-3 w-3" />
-            Add
-          </Button>
-        </div>
-        {dayPlans.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic py-1">No plans yet</p>
-        ) : (
-          <div className="space-y-1">
-            {dayPlans.map((plan) => {
-              const activityConfig = ACTIVITY_CONFIG[plan.activity];
-              const slotLabel = TIME_SLOT_LABELS[plan.timeSlot as TimeSlot];
-              return (
-                <div
-                  key={plan.id}
-                  className="flex items-center gap-2 rounded bg-muted/50 px-2 py-1 group"
-                >
-                  {activityConfig ? (
-                    <ActivityIcon config={activityConfig} size={14} />
-                  ) : (
-                    <CalendarDays className="h-3.5 w-3.5" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{plan.title}</p>
-                    <div className="flex items-center gap-1">
-                      <p className="text-[10px] text-muted-foreground">{slotLabel?.time}</p>
-                      {plan.participants.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          · w/ {plan.participants.map(p => p.name).join(', ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    <button
-                      onClick={() => setEditingPlan(plan)}
-                      className="p-1 rounded hover:bg-muted transition-colors"
-                    >
-                      <Pencil className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                    <button
-                      onClick={() => setDeletingPlan(plan)}
-                      className="p-1 rounded hover:bg-destructive/10 transition-colors"
-                    >
-                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                    </button>
-                  </div>
+      {/* Vertical Timeline Day View */}
+      <div className="space-y-0.5">
+        {SLOT_ORDER.map((slot) => {
+          const status = getSlotStatus(slot);
+          const slotPlans = getPlansForSlot(slot);
+          const slotInfo = TIME_SLOT_LABELS[slot];
+          const isAvailable = status === 'available';
+          const isBusy = status === 'busy';
+
+          return (
+            <div
+              key={slot}
+              className={cn(
+                "rounded-lg transition-colors",
+                isAvailable && "bg-availability-available-light",
+                status === 'unavailable' && "bg-muted/30",
+                isBusy && "bg-muted/50"
+              )}
+            >
+              {/* Slot header row */}
+              <button
+                onClick={() => toggleSlot(slot)}
+                disabled={isBusy}
+                className={cn(
+                  "flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors rounded-lg",
+                  !isBusy && "hover:bg-muted/40 active:scale-[0.99]",
+                  isBusy && "cursor-default"
+                )}
+              >
+                {/* Time label */}
+                <span className="text-[10px] text-muted-foreground w-[52px] shrink-0 font-medium">
+                  {slotInfo.time}
+                </span>
+
+                {/* Status dot */}
+                <span className={cn(
+                  "h-1.5 w-1.5 shrink-0 rounded-full",
+                  isAvailable && "bg-availability-available",
+                  status === 'unavailable' && "bg-muted-foreground/40",
+                  isBusy && "bg-primary"
+                )} />
+
+                {/* Slot label */}
+                <span className={cn(
+                  "text-xs font-medium flex-1",
+                  isAvailable && "text-availability-available",
+                  status === 'unavailable' && "text-muted-foreground",
+                  isBusy && "text-foreground"
+                )}>
+                  {slotInfo.label}
+                </span>
+
+                {/* Quick add button for available slots */}
+                {isAvailable && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCreateDefaultSlot(slot);
+                      setCreatePlanOpen(true);
+                    }}
+                    className="p-0.5 rounded hover:bg-availability-available/20 transition-colors"
+                  >
+                    <Plus className="h-3 w-3 text-availability-available/60" />
+                  </button>
+                )}
+              </button>
+
+              {/* Plans within this slot */}
+              {slotPlans.length > 0 && (
+                <div className="px-2.5 pb-1.5 space-y-1 ml-[52px]">
+                  {slotPlans.map((plan) => {
+                    const activityConfig = ACTIVITY_CONFIG[plan.activity];
+                    return (
+                      <div
+                        key={plan.id}
+                        className="flex items-center gap-2 rounded-md bg-background/80 border border-border/50 px-2 py-1.5 group"
+                      >
+                        {activityConfig ? (
+                          <ActivityIcon config={activityConfig} size={14} />
+                        ) : (
+                          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{plan.title}</p>
+                          {plan.participants.length > 0 && (
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              w/ {plan.participants.map(p => p.name).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setEditingPlan(plan)}
+                            className="p-1 rounded hover:bg-muted transition-colors"
+                          >
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingPlan(plan)}
+                            className="p-1 rounded hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Create/Edit Plan Dialog */}
