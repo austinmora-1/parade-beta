@@ -29,7 +29,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden">
-      <div className="flex items-center justify-around px-2 py-1">
+      <div className="flex items-center justify-around px-2 py-1.5">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
