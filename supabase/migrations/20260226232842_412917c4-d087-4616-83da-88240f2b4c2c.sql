@@ -1,0 +1,1 @@
+ALTER TABLE public.friendships ADD COLUMN is_pod_member boolean NOT NULL DEFAULT false;

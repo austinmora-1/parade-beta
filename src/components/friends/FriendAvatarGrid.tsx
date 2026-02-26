@@ -2,7 +2,7 @@ import { Friend } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
-import { Check, Clock, UserPlus, MoreVertical, UserMinus, X } from 'lucide-react';
+import { Check, Clock, UserPlus, MoreVertical, UserMinus, X, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ interface FriendAvatarGridProps {
   onRemove?: (id: string) => void;
   showActions?: boolean;
   lastHungOut?: Record<string, Date>;
+  onTogglePod?: (id: string) => void;
 }
 
 const getInitials = (name: string) =>
@@ -44,7 +45,7 @@ function formatLastHungOut(date: Date): string {
   return `${Math.floor(diffDays / 365)}y ago`;
 }
 
-export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, showActions = false, lastHungOut }: FriendAvatarGridProps) {
+export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, showActions = false, lastHungOut, onTogglePod }: FriendAvatarGridProps) {
   const navigate = useNavigate();
 
   if (friends.length === 0) return null;
@@ -86,11 +87,13 @@ export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, show
               {/* Status indicator dot */}
               <div className={cn(
                 "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-card flex items-center justify-center",
-                isConnected && "bg-availability-available",
+                isConnected && !friend.isPodMember && "bg-availability-available",
+                isConnected && friend.isPodMember && "bg-primary",
                 isPending && "bg-availability-partial",
                 friend.status === 'invited' && "bg-muted-foreground"
               )}>
-                {isConnected && <Check className="h-2.5 w-2.5 text-white" />}
+                {isConnected && friend.isPodMember && <Heart className="h-2.5 w-2.5 text-white fill-white" />}
+                {isConnected && !friend.isPodMember && <Check className="h-2.5 w-2.5 text-white" />}
                 {isPending && <Clock className="h-2.5 w-2.5 text-white" />}
                 {friend.status === 'invited' && <UserPlus className="h-2.5 w-2.5 text-white" />}
               </div>
@@ -127,21 +130,32 @@ export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, show
             )}
 
             {/* Context menu on hover */}
-            {onRemove && !isIncoming && (
+            {(onRemove || onTogglePod) && !isIncoming && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-card border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <MoreVertical className="h-3 w-3 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[120px]">
-                  <DropdownMenuItem
-                    onClick={() => onRemove(friend.id)}
-                    className="text-destructive focus:text-destructive text-xs"
-                  >
-                    <UserMinus className="mr-1.5 h-3 w-3" />
-                    Remove
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="min-w-[140px]">
+                  {onTogglePod && isConnected && (
+                    <DropdownMenuItem
+                      onClick={() => onTogglePod(friend.id)}
+                      className="text-xs"
+                    >
+                      <Heart className={cn("mr-1.5 h-3 w-3", friend.isPodMember && "fill-primary text-primary")} />
+                      {friend.isPodMember ? 'Remove from Pod' : 'Add to Pod'}
+                    </DropdownMenuItem>
+                  )}
+                  {onRemove && (
+                    <DropdownMenuItem
+                      onClick={() => onRemove(friend.id)}
+                      className="text-destructive focus:text-destructive text-xs"
+                    >
+                      <UserMinus className="mr-1.5 h-3 w-3" />
+                      Remove
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

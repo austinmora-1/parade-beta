@@ -52,6 +52,7 @@ export interface Friend {
   status: 'connected' | 'pending' | 'invited';
   isIncoming?: boolean;
   role?: ParticipantRole;
+  isPodMember?: boolean;
 }
 
 export interface Plan {

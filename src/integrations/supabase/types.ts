@@ -202,6 +202,7 @@ export type Database = {
           friend_name: string
           friend_user_id: string | null
           id: string
+          is_pod_member: boolean
           status: string
           updated_at: string
           user_id: string
@@ -212,6 +213,7 @@ export type Database = {
           friend_name: string
           friend_user_id?: string | null
           id?: string
+          is_pod_member?: boolean
           status?: string
           updated_at?: string
           user_id: string
@@ -222,6 +224,7 @@ export type Database = {
           friend_name?: string
           friend_user_id?: string | null
           id?: string
+          is_pod_member?: boolean
           status?: string
           updated_at?: string
           user_id?: string

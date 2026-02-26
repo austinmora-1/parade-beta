@@ -5,7 +5,7 @@ import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserPlus, Search, Users, Loader2 } from 'lucide-react';
+import { UserPlus, Search, Users, Loader2, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -166,9 +166,24 @@ export default function Friends() {
     // Most recent first
     return bDate.getTime() - aDate.getTime();
   });
+  const podFriends = connectedFriends.filter(f => f.isPodMember);
+  const nonPodConnected = connectedFriends.filter(f => !f.isPodMember);
   const incomingRequests = filteredFriends.filter(f => f.status === 'pending' && f.isIncoming);
   const outgoingRequests = filteredFriends.filter(f => f.status === 'pending' && !f.isIncoming);
   const invitedFriends = filteredFriends.filter(f => f.status === 'invited');
+
+  const handleTogglePod = (id: string) => {
+    const friend = friends.find(f => f.id === id);
+    if (friend) {
+      updateFriend(id, { isPodMember: !friend.isPodMember });
+      toast({
+        title: friend.isPodMember ? 'Removed from Pod' : 'Added to Pod 💜',
+        description: friend.isPodMember
+          ? `${friend.name} removed from your Pod`
+          : `${friend.name} is now in your Pod!`,
+      });
+    }
+  };
 
   const handleConnect = async (id: string) => {
     const friend = friends.find(f => f.id === id);
@@ -282,15 +297,36 @@ export default function Friends() {
         </div>
       )}
 
+      {/* My Pod */}
+      {podFriends.length > 0 && (
+        <div>
+          <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
+            <Heart className="h-4 w-4 text-primary fill-primary" />
+            My Pod ({podFriends.length})
+          </h2>
+          <FriendAvatarGrid
+            friends={podFriends}
+            onRemove={removeFriend}
+            onTogglePod={handleTogglePod}
+            lastHungOut={lastHungOut}
+          />
+        </div>
+      )}
+
       {/* Connected Friends */}
       <div>
         <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
           <Users className="h-4 w-4 text-availability-available" />
-          Connected ({connectedFriends.length})
+          Connected ({nonPodConnected.length})
         </h2>
-        {connectedFriends.length > 0 ? (
-          <FriendAvatarGrid friends={connectedFriends} onRemove={removeFriend} lastHungOut={lastHungOut} />
-        ) : (
+        {nonPodConnected.length > 0 ? (
+          <FriendAvatarGrid
+            friends={nonPodConnected}
+            onRemove={removeFriend}
+            onTogglePod={handleTogglePod}
+            lastHungOut={lastHungOut}
+          />
+        ) : connectedFriends.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-5 text-center shadow-soft">
             <div className="text-3xl mb-2">👥</div>
             <h3 className="text-sm font-semibold">No friends yet</h3>
@@ -300,7 +336,7 @@ export default function Friends() {
               Invite Friends
             </Button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Outgoing Requests */}
