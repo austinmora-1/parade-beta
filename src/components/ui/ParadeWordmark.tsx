@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 
 interface ParadeWordmarkProps {
   className?: string;
@@ -6,17 +7,21 @@ interface ParadeWordmarkProps {
 }
 
 export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) {
+  const { theme } = useTheme();
+  const isArcade = theme === 'arcade';
+
   const sizeClasses = {
-    sm: 'text-xl',
-    md: 'text-2xl',
-    lg: 'text-3xl',
-    xl: 'text-5xl',
+    sm: isArcade ? 'text-sm' : 'text-xl',
+    md: isArcade ? 'text-base' : 'text-2xl',
+    lg: isArcade ? 'text-lg' : 'text-3xl',
+    xl: isArcade ? 'text-2xl' : 'text-5xl',
   };
 
   return (
     <span
       className={cn(
-        'parade-wordmark tracking-wide',
+        isArcade ? 'arcade-wordmark' : 'parade-wordmark',
+        'tracking-wide',
         sizeClasses[size],
         className
       )}
