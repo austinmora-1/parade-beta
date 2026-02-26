@@ -10,6 +10,7 @@ import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { HangRequests } from '@/components/dashboard/HangRequests';
 import { AvailableFriends } from '@/components/dashboard/AvailableFriends';
 import { EllyWidget } from '@/components/dashboard/EllyWidget';
+import { PodWidget } from '@/components/dashboard/PodWidget';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
@@ -58,6 +59,9 @@ export default function Dashboard() {
 
       {/* Elly AI Assistant */}
       <EllyWidget />
+
+      {/* Pod Widget */}
+      <PodWidget />
 
       {/* Available Friends & Hang Requests */}
       <div className="grid gap-4 lg:grid-cols-2">
