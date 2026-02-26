@@ -331,13 +331,14 @@
     line-height: 1;
     -webkit-text-fill-color: hsl(180 100% 60%);
     filter: drop-shadow(0 0 4px hsl(180 100% 50% / 0.6));
+    transform: translateY(-0.3em);
   }
 
   .arcade-caret-symbol {
     font-size: 0.5em;
     line-height: 0.6;
     -webkit-text-fill-color: hsl(330 100% 60%);
-    transform: translateY(-0.05em);
+    transform: scaleY(-1) translateY(0.15em);
   }
 
   .shadow-soft {
