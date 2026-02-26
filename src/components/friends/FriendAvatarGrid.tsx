@@ -17,6 +17,7 @@ interface FriendAvatarGridProps {
   onDecline?: (id: string) => void;
   onRemove?: (id: string) => void;
   showActions?: boolean;
+  lastHungOut?: Record<string, Date>;
 }
 
 const getInitials = (name: string) =>
@@ -31,7 +32,19 @@ const avatarColors = [
 ];
 const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length];
 
-export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, showActions = false }: FriendAvatarGridProps) {
+function formatLastHungOut(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+  return `${Math.floor(diffDays / 365)}y ago`;
+}
+
+export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, showActions = false, lastHungOut }: FriendAvatarGridProps) {
   const navigate = useNavigate();
 
   if (friends.length === 0) return null;
@@ -86,6 +99,11 @@ export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, show
             <span className="text-[11px] font-medium text-center leading-tight line-clamp-1 max-w-full">
               {friend.name.split(' ')[0]}
             </span>
+            {isConnected && friend.friendUserId && lastHungOut?.[friend.friendUserId] && (
+              <span className="text-[9px] text-muted-foreground text-center leading-tight">
+                {formatLastHungOut(lastHungOut[friend.friendUserId])}
+              </span>
+            )}
 
             {/* Inline actions for incoming requests */}
             {isIncoming && showActions && (

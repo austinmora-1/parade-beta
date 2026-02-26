@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
 import { GroupScheduler } from '@/components/friends/GroupScheduler';
@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useLastHungOut } from '@/hooks/useLastHungOut';
 
 interface PublicProfile {
   user_id: string;
@@ -76,6 +77,12 @@ export default function Friends() {
   const [searchResults, setSearchResults] = useState<PublicProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
+
+  const connectedFriendUserIds = useMemo(
+    () => friends.filter(f => f.status === 'connected' && f.friendUserId).map(f => f.friendUserId!),
+    [friends]
+  );
+  const lastHungOut = useLastHungOut(connectedFriendUserIds);
 
   // Search for users when query changes
   useEffect(() => {
@@ -271,7 +278,7 @@ export default function Friends() {
           Connected ({connectedFriends.length})
         </h2>
         {connectedFriends.length > 0 ? (
-          <FriendAvatarGrid friends={connectedFriends} onRemove={removeFriend} />
+          <FriendAvatarGrid friends={connectedFriends} onRemove={removeFriend} lastHungOut={lastHungOut} />
         ) : (
           <div className="rounded-xl border border-border bg-card p-5 text-center shadow-soft">
             <div className="text-3xl mb-2">👥</div>
