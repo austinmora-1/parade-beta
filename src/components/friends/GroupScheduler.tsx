@@ -137,7 +137,7 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft md:p-4">
       <h2 className="mb-2 flex items-center gap-2 font-display text-sm font-semibold">
         <Users className="h-4 w-4 text-primary" />
-        Schedule a Group Hang
+        Schedule a Hang
       </h2>
 
       {/* Friend selector chips */}
