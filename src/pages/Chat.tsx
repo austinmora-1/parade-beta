@@ -58,10 +58,10 @@ export default function Chat() {
   if (showElly) {
     return (
       <div
-        className="animate-fade-in fixed top-0 left-0 right-0 z-40 flex flex-col overflow-hidden bg-background pt-12 pb-2 md:relative md:inset-auto md:z-auto md:pt-0 md:pb-0 md:h-[calc(100dvh-8rem)]"
-        style={visualViewportHeight ? { height: `${Math.round(visualViewportHeight)}px` } : undefined}
+        className="animate-fade-in fixed inset-0 z-40 flex flex-col bg-background pt-12 pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:pt-0 md:pb-0 md:h-[calc(100dvh-8rem)]"
+        style={visualViewportHeight ? { height: `${Math.round(visualViewportHeight)}px`, top: 0, position: 'fixed' } : undefined}
       >
-        <div className="flex-1 overflow-hidden px-4 md:px-0">
+        <div className="flex-1 min-h-0 overflow-hidden px-4 md:px-0">
           <EllyChatView onBack={() => setShowElly(false)} />
         </div>
       </div>
@@ -71,10 +71,10 @@ export default function Chat() {
   if (activeConvo) {
     return (
       <div
-        className="animate-fade-in fixed top-0 left-0 right-0 z-40 flex flex-col overflow-hidden bg-background pt-12 pb-2 md:relative md:inset-auto md:z-auto md:pt-0 md:pb-0 md:h-[calc(100dvh-8rem)]"
-        style={visualViewportHeight ? { height: `${Math.round(visualViewportHeight)}px` } : undefined}
+        className="animate-fade-in fixed inset-0 z-40 flex flex-col bg-background pt-12 pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:pt-0 md:pb-0 md:h-[calc(100dvh-8rem)]"
+        style={visualViewportHeight ? { height: `${Math.round(visualViewportHeight)}px`, top: 0, position: 'fixed' } : undefined}
       >
-        <div className="flex-1 overflow-hidden px-4 md:px-0">
+        <div className="flex-1 min-h-0 overflow-hidden px-4 md:px-0">
           <ChatView conversation={activeConvo} onBack={() => setActiveId(null)} />
         </div>
       </div>
