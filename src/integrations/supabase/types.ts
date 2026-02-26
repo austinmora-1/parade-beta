@@ -487,6 +487,7 @@ export type Database = {
           show_vibe_status: boolean | null
           updated_at: string
           user_id: string
+          walkthrough_completed: boolean
         }
         Insert: {
           allow_all_hang_requests?: boolean | null
@@ -516,6 +517,7 @@ export type Database = {
           show_vibe_status?: boolean | null
           updated_at?: string
           user_id: string
+          walkthrough_completed?: boolean
         }
         Update: {
           allow_all_hang_requests?: boolean | null
@@ -545,6 +547,7 @@ export type Database = {
           show_vibe_status?: boolean | null
           updated_at?: string
           user_id?: string
+          walkthrough_completed?: boolean
         }
         Relationships: []
       }
