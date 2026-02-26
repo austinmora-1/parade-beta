@@ -25,6 +25,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
+function formatTime12(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const hour12 = h % 12 || 12;
+  return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
 export default function PlanDetail() {
   const { planId } = useParams<{ planId: string }>();
   const navigate = useNavigate();
@@ -166,8 +173,19 @@ export default function PlanDetail() {
           <div className="flex items-center gap-3 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
             <span>
-              {timeSlotConfig.label} ({timeSlotConfig.time})
-              {plan.duration && (
+              {plan.startTime || plan.endTime ? (
+                <>
+                  {plan.startTime && formatTime12(plan.startTime)}
+                  {plan.startTime && plan.endTime && ' – '}
+                  {plan.endTime && formatTime12(plan.endTime)}
+                  <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>
+                </>
+              ) : (
+                <>
+                  {timeSlotConfig.label} ({timeSlotConfig.time})
+                </>
+              )}
+              {plan.duration && !plan.startTime && !plan.endTime && (
                 <span className="text-muted-foreground">
                   {' · '}
                   {plan.duration >= 60

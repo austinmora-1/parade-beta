@@ -14,6 +14,14 @@ import { Button } from '@/components/ui/button';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
 import { PlanChangeRequest } from '@/hooks/usePlanChangeRequests';
 
+// Format "14:30" -> "2:30pm"
+function formatTimeDisplay(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const hour12 = h % 12 || 12;
+  return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
 interface PlanCardProps {
   plan: Plan;
   onEdit?: (plan: Plan) => void;
@@ -112,11 +120,16 @@ export function PlanCard({
         <div className="flex items-center gap-1.5">
           <Clock className="h-4 w-4" />
           <span>
-            {format(plan.date, 'EEE, MMM d')} • {timeSlotConfig.time}
+            {format(plan.date, 'EEE, MMM d')}
+            {plan.startTime || plan.endTime ? (
+              <> • {plan.startTime && formatTimeDisplay(plan.startTime)}{plan.startTime && plan.endTime && ' – '}{plan.endTime && formatTimeDisplay(plan.endTime)}</>
+            ) : (
+              <> • {timeSlotConfig.time}</>
+            )}
           </span>
         </div>
         
-        {plan.duration && (
+        {plan.duration && !plan.startTime && !plan.endTime && (
           <span className="text-muted-foreground">
             {plan.duration >= 60
               ? `${Math.floor(plan.duration / 60)}h ${plan.duration % 60 > 0 ? `${plan.duration % 60}m` : ''}`
