@@ -9,8 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date-fns';
+import { format, addDays, isSameDay, isPast, isToday as isDateToday, formatDistanceToNow } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
+import { useLastHungOut } from '@/hooks/useLastHungOut';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -67,6 +68,10 @@ export default function FriendProfile() {
   const [availabilityOpen, setAvailabilityOpen] = useState(true);
   const [upcomingOpen, setUpcomingOpen] = useState(true);
   const [previousOpen, setPreviousOpen] = useState(false);
+
+  const friendIds = useMemo(() => userId ? [userId] : [], [userId]);
+  const lastHungOut = useLastHungOut(friendIds);
+  const lastDate = userId ? lastHungOut[userId] : undefined;
 
   useEffect(() => {
     if (!userId) return;
@@ -272,6 +277,12 @@ export default function FriendProfile() {
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                 <MapPin className="h-3 w-3" />
                 {profile.location_status === 'home' ? 'Home' : 'Away'}
+              </span>
+            )}
+            {lastDate && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                Last hung out {formatDistanceToNow(lastDate, { addSuffix: true })}
               </span>
             )}
           </div>
