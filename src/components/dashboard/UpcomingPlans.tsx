@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
@@ -9,6 +10,7 @@ import { CollapsibleWidget } from './CollapsibleWidget';
 
 export function UpcomingPlans() {
   const { plans } = usePlannerStore();
+  const navigate = useNavigate();
 
   const upcomingPlans = useMemo(() => {
     const now = new Date();
@@ -47,8 +49,9 @@ export function UpcomingPlans() {
             return (
               <div
                 key={plan.id}
+                onClick={() => navigate(`/plan/${plan.id}`)}
                 className={cn(
-                  "rounded-lg border-l-[3px] bg-muted/30 px-3 py-2 transition-all duration-200 hover:bg-muted/50",
+                  "rounded-lg border-l-[3px] bg-muted/30 px-3 py-2 transition-all duration-200 hover:bg-muted/50 cursor-pointer",
                 )}
                 style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
               >
