@@ -56,6 +56,9 @@ export default function Dashboard() {
       {/* Vibe */}
       <VibeSelector />
 
+      {/* Upcoming Plans */}
+      <UpcomingPlans />
+
       {/* Week Overview */}
       <WeekOverview />
 
@@ -73,9 +76,6 @@ export default function Dashboard() {
 
       {/* Quick Stats */}
       <QuickStats />
-
-      {/* Upcoming Plans */}
-      <UpcomingPlans />
     </div>
   );
 }
