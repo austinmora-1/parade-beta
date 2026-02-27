@@ -53,3 +53,12 @@ verify_jwt = false
 
 [functions.calendar-sync-worker]
 verify_jwt = false
+
+[functions.plan-reminders]
+verify_jwt = false
+
+[functions.push-subscribe]
+verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
