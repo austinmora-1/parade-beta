@@ -201,7 +201,7 @@ export default function FriendProfile() {
     };
 
     fetchData();
-  }, [userId]);
+  }, [userId, user?.id]);
 
   const next7Days = useMemo(() => {
     const days: { date: Date; label: string; dateStr: string }[] = [];
