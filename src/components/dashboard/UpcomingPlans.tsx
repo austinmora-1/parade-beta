@@ -154,26 +154,11 @@ export function UpcomingPlans() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                    <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                       <span className="flex items-center gap-0.5 shrink-0">
                         <Clock className="h-3 w-3" />
                         {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
                       </span>
-                      {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-                        <span className="flex items-center gap-0.5 ml-auto" data-stop-card-click onClick={e => e.stopPropagation()}>
-                          <Users className="h-3 w-3 shrink-0" />
-                          <span className="truncate max-w-[120px]">
-                            {plan.participants.filter(p => p.role !== 'subscriber').map((p, i, arr) => (
-                              <span key={p.id}>
-                                <FriendLink userId={p.friendUserId}>
-                                  <span className="hover:underline">{p.name}</span>
-                                </FriendLink>
-                                {i < arr.length - 1 ? ', ' : ''}
-                              </span>
-                            ))}
-                          </span>
-                        </span>
-                      )}
                     </div>
                     {plan.location && (
                       <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
@@ -182,9 +167,26 @@ export function UpcomingPlans() {
                       </div>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                    {isSameDay(plan.date, new Date()) ? 'Today' : format(plan.date, 'EEE, MMM d')}
-                  </span>
+                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {isSameDay(plan.date, new Date()) ? 'Today' : format(plan.date, 'EEE, MMM d')}
+                    </span>
+                    {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
+                      <span className="flex items-center gap-0.5 text-xs text-muted-foreground" data-stop-card-click onClick={e => e.stopPropagation()}>
+                        <Users className="h-3 w-3 shrink-0" />
+                        <span className="truncate max-w-[120px]">
+                          {plan.participants.filter(p => p.role !== 'subscriber').map((p, i, arr) => (
+                            <span key={p.id}>
+                              <FriendLink userId={p.friendUserId}>
+                                <span className="hover:underline">{p.name}</span>
+                              </FriendLink>
+                              {i < arr.length - 1 ? ', ' : ''}
+                            </span>
+                          ))}
+                        </span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
