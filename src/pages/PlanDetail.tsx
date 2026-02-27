@@ -73,6 +73,11 @@ export default function PlanDetail() {
   const participants = plan.participants.filter(p => p.role !== 'subscriber');
   const subscribers = plan.participants.filter(p => p.role === 'subscriber');
 
+  // Dynamic title: for 1:1 hangs, show the other person's name
+  const displayTitle = plan.title.startsWith('Hang with') && participants.length === 1
+    ? `Hang with ${participants[0].name}`
+    : plan.title;
+
   const handleDelete = async () => {
     const hadParticipants = plan.participants.length > 0;
     await deletePlan(plan.id);
@@ -157,7 +162,7 @@ export default function PlanDetail() {
               <ActivityIcon config={activityConfig} size={32} />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-bold">{plan.title}</h1>
+              <h1 className="font-display text-2xl font-bold">{displayTitle}</h1>
               <p className="text-sm text-muted-foreground">{activityConfig.label}</p>
               {plan.status === 'tentative' && (
                 <span className="inline-block mt-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
