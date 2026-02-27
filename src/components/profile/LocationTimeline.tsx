@@ -31,6 +31,7 @@ export function LocationTimeline() {
   const [editingTrip, setEditingTrip] = useState<TripData | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [updatingDate, setUpdatingDate] = useState<string | null>(null);
+  const [homeAddress, setHomeAddress] = useState<string | null>(null);
 
   // Get 31 days (next month) starting from today
   const days = useMemo(() => {
@@ -61,6 +62,19 @@ export function LocationTimeline() {
     }
   }, [session?.user, days]);
 
+  // Fetch home address from profile
+  useEffect(() => {
+    if (!session?.user) return;
+    supabase
+      .from('profiles')
+      .select('home_address')
+      .eq('user_id', session.user.id)
+      .single()
+      .then(({ data }) => {
+        setHomeAddress(data?.home_address || null);
+      });
+  }, [session?.user]);
+
   useEffect(() => {
     fetchExtendedAvailability();
   }, [fetchExtendedAvailability, refreshKey]);
@@ -84,11 +98,25 @@ export function LocationTimeline() {
     setAddTripDialogOpen(true);
   };
 
+  // Check if a trip location matches the user's home address
+  const isHomeLocation = useCallback((tripLocation?: string): boolean => {
+    if (!tripLocation || !homeAddress) return false;
+    const normTrip = tripLocation.toLowerCase().trim();
+    const normHome = homeAddress.toLowerCase().trim();
+    // Check if either contains the other (e.g. "New York" matches "New York, NY")
+    return normHome.includes(normTrip) || normTrip.includes(normHome);
+  }, [homeAddress]);
+
   const getDayLocation = (date: Date): LocationStatus => {
     const dateStr = format(date, 'yyyy-MM-dd');
     // First check extended availability (freshly fetched)
     if (extendedAvailability.has(dateStr)) {
-      return extendedAvailability.get(dateStr)!.status;
+      const entry = extendedAvailability.get(dateStr)!;
+      // If marked away but trip location matches home, treat as home
+      if (entry.status === 'away' && isHomeLocation(entry.location)) {
+        return 'home';
+      }
+      return entry.status;
     }
     // Fallback to store data
     return getLocationStatusForDate(date);
