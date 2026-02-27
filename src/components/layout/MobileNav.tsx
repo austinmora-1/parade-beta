@@ -29,7 +29,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden">
-      <div className="flex items-center justify-around px-4 py-2.5">
+      <div className="flex items-center justify-around px-4 py-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -44,12 +44,12 @@ export function MobileNav() {
               )}
             >
               <div className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-xl transition-all",
+                "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
                 isActive && "bg-sidebar-accent"
               )}>
                 <item.icon className="h-6 w-6" />
               </div>
-              <span className="text-[13px] font-medium">{item.label}</span>
+              <span className="text-[12px] font-medium">{item.label}</span>
             </NavLink>
           );
         })}
@@ -60,7 +60,7 @@ export function MobileNav() {
           className="relative flex flex-col items-center justify-center rounded-xl px-3 py-2 transition-all duration-200"
         >
           <Avatar className={cn(
-            "h-10 w-10 transition-all",
+            "h-9 w-9 transition-all",
             isProfileActive && "ring-2 ring-white ring-offset-2 ring-offset-primary"
           )}>
             <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
