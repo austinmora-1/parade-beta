@@ -124,8 +124,8 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-20 shrink-0 bg-background flex items-center gap-3 border-b border-border pb-3 mb-3 min-w-0">
+      {/* Fixed Header */}
+      <div className="z-20 shrink-0 bg-background flex items-center gap-3 border-b border-border pb-3 mb-3 min-w-0">
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -152,8 +152,8 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       </div>
 
       {/* Messages */}
-      <div className="min-h-0 flex flex-1 flex-col justify-end overflow-y-auto overscroll-contain pb-2" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
-        <div className="space-y-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
+        <div className="flex flex-col justify-end min-h-full space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-sm text-muted-foreground animate-pulse">Loading messages...</p>
