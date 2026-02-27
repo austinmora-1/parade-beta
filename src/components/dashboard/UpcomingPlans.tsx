@@ -19,13 +19,22 @@ export function UpcomingPlans() {
   const { plans } = usePlannerStore();
   const navigate = useNavigate();
 
+  const timeSlotOrder: Record<string, number> = {
+    'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
+    'late-afternoon': 3, 'evening': 4, 'late-night': 5,
+  };
+
   const upcomingPlans = useMemo(() => {
     const now = new Date();
     const weekFromNow = addDays(now, 7);
     
     return plans
       .filter((p) => isAfter(p.date, now) && isBefore(p.date, weekFromNow))
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .sort((a, b) => {
+        const dateDiff = a.date.getTime() - b.date.getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
+      })
       .slice(0, 5);
   }, [plans]);
 
