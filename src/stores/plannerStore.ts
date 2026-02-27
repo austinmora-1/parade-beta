@@ -139,9 +139,20 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       // Merge and dedupe plans
       const ownIds = new Set((ownPlansData || []).map(p => p.id));
+      // Build a set of hang-request signatures the user already owns, to filter mirror plans
+      const ownHangKeys = new Set(
+        (ownPlansData || [])
+          .filter(p => p.source === 'hang-request')
+          .map(p => `${p.date}|${p.time_slot}`)
+      );
       const plansData = [
         ...(ownPlansData || []),
-        ...(participatedPlansData || []).filter(p => !ownIds.has(p.id)),
+        ...(participatedPlansData || []).filter(p => {
+          if (ownIds.has(p.id)) return false;
+          // Skip mirror hang-request plans where we already own our copy
+          if (p.source === 'hang-request' && ownHangKeys.has(`${p.date}|${p.time_slot}`)) return false;
+          return true;
+        }),
       ];
       
       // Load plan participants
