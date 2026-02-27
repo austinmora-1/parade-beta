@@ -495,7 +495,7 @@ export default function FriendProfile() {
         const renderPlan = (plan: SharedPlan) => {
           const config = ACTIVITY_CONFIG[plan.activity as ActivityType];
           return (
-            <div key={plan.id} onClick={() => navigate(`/plans/${plan.id}`)} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-muted/50 transition-colors cursor-pointer">
+            <div key={plan.id} onClick={() => navigate(`/plan/${plan.id}`)} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-muted/50 transition-colors cursor-pointer">
               <span className="text-base shrink-0">{config?.icon || '📅'}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium truncate">{plan.title}</p>
