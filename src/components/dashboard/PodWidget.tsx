@@ -7,6 +7,7 @@ import { Heart, Home, Plane, MapPin, Loader2, ArrowRight } from 'lucide-react';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
@@ -31,6 +32,7 @@ interface PodMemberInfo {
   totalSlots: number;
   slots: Record<TimeSlot, boolean>;
   currentVibe: string | null;
+  customVibeTags: string[] | null;
 }
 
 const VIBE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -81,7 +83,7 @@ export function PodWidget() {
           .eq('date', today),
         supabase
           .from('profiles')
-          .select('user_id, location_status, current_vibe')
+          .select('user_id, location_status, current_vibe, custom_vibe_tags')
           .in('user_id', friendUserIds),
         supabase
           .from('plans')
@@ -128,6 +130,7 @@ export function PodWidget() {
           totalSlots: TIME_SLOT_ORDER.length,
           slots: slots as Record<TimeSlot, boolean>,
           currentVibe: profileRow?.current_vibe || null,
+          customVibeTags: (profileRow as any)?.custom_vibe_tags || null,
         };
       });
 
@@ -180,7 +183,7 @@ export function PodWidget() {
         </div>
       ) : (
         <div className="space-y-2">
-          {podData.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots, currentVibe }) => {
+        {podData.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots, currentVibe, customVibeTags }) => {
             const isAway = locationStatus === 'away';
             const hasFreeSlots = freeSlots > 0;
             const vibeInfo = currentVibe ? VIBE_CONFIG[currentVibe] : null;
@@ -225,14 +228,41 @@ export function PodWidget() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="truncate text-sm font-medium">{friend.name}</p>
-                    {vibeInfo && (
+                    {vibeInfo && currentVibe === 'custom' && customVibeTags?.length ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0 cursor-pointer hover:opacity-80 transition-opacity",
+                              vibeInfo.color
+                            )}
+                          >
+                            {vibeInfo.label}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto max-w-48 p-2" side="top" align="start">
+                          <div className="flex flex-wrap gap-1">
+                            {customVibeTags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ) : vibeInfo ? (
                       <span className={cn(
                         "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0",
                         vibeInfo.color
                       )}>
                         {vibeInfo.label}
                       </span>
-                    )}
+                    ) : null}
                     {isAway && tripLocation && (
                       <span className="inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground shrink-0">
                         <MapPin className="h-2.5 w-2.5" />
