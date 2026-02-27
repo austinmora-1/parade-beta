@@ -10,6 +10,7 @@ import { AvailabilityStep } from './steps/AvailabilityStep';
 import { CalendarStep } from './steps/CalendarStep';
 import { LocationStep } from './steps/LocationStep';
 import { FriendsStep } from './steps/FriendsStep';
+import { NotificationsStep } from './steps/NotificationsStep';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ const STEPS = [
   { id: 'availability', title: 'Availability' },
   { id: 'calendar', title: 'Calendar' },
   { id: 'location', title: 'Location' },
+  { id: 'notifications', title: 'Notifications' },
   { id: 'friends', title: 'Friends' },
 ];
 
@@ -125,6 +127,8 @@ export function OnboardingWizard() {
         return <CalendarStep data={data} updateData={updateData} />;
       case 'location':
         return <LocationStep data={data} updateData={updateData} />;
+      case 'notifications':
+        return <NotificationsStep />;
       case 'friends':
         return <FriendsStep data={data} updateData={updateData} />;
       default:

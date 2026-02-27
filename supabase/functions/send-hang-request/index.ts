@@ -194,6 +194,56 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Send push notification to recipient
+    try {
+      const { data: pushConfig } = await supabase
+        .from('push_config')
+        .select('vapid_public_key, vapid_private_key')
+        .eq('id', 'default')
+        .single();
+
+      if (pushConfig) {
+        const { data: pushSubs } = await supabase
+          .from('push_subscriptions')
+          .select('endpoint, p256dh, auth')
+          .eq('user_id', profile.user_id);
+
+        if (pushSubs && pushSubs.length > 0) {
+          const { default: webpush } = await import('npm:web-push@3.6.7');
+          webpush.setVapidDetails(
+            'mailto:hello@parade.app',
+            pushConfig.vapid_public_key,
+            pushConfig.vapid_private_key
+          );
+
+          const payload = JSON.stringify({
+            title: `${requesterName} wants to hang out! 🎉`,
+            body: message || `On ${selectedDayLabel || selectedDay}`,
+            url: '/notifications',
+            icon: '/icon-192.png',
+            badge: '/favicon.png',
+          });
+
+          for (const sub of pushSubs) {
+            try {
+              await webpush.sendNotification(
+                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                payload
+              );
+            } catch (pushErr: any) {
+              console.error('Push send error:', pushErr.statusCode);
+              if (pushErr.statusCode === 404 || pushErr.statusCode === 410) {
+                await supabase.from('push_subscriptions').delete()
+                  .eq('user_id', profile.user_id).eq('endpoint', sub.endpoint);
+              }
+            }
+          }
+        }
+      }
+    } catch (pushError) {
+      console.error('Push notification error:', pushError);
+    }
+
     // Send notification email via Resend
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
