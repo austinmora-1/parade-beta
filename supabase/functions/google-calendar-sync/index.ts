@@ -230,6 +230,9 @@ async function handleEventsSync(params: {
     .single()
   const homeAddress: string | null = profileData?.home_address || null
 
+  // Build a map of date -> slots to mark as busy
+  const busySlotsByDate: Map<string, Set<string>> = new Map()
+
   for (const event of events) {
     // All-day events (they don't have dateTime)
     if (!event.start.dateTime || !event.end.dateTime) {
