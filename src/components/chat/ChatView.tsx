@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatMessages, Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -25,10 +25,11 @@ interface ChatViewProps {
 export function ChatView({ conversation, onBack }: ChatViewProps) {
   const { user } = useAuth();
   const { loadAllData } = usePlannerStore();
-  const { messages, loading, sendMessage, readReceipts, reactions, toggleReaction } = useChatMessages(conversation.id);
+  const { messages, loading, loadingMore, hasMore, loadMore, sendMessage, readReceipts, reactions, toggleReaction } = useChatMessages(conversation.id);
   const [input, setInput] = useState('');
   const [ellyLoading, setEllyLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -41,6 +42,22 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
   const handleInputFocus = () => {
     // Let mobile browsers handle focus without forcing a viewport jump
   };
+
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container || loadingMore || !hasMore) return;
+    if (container.scrollTop < 100) {
+      const prevHeight = container.scrollHeight;
+      loadMore().then(() => {
+        // Preserve scroll position after prepending older messages
+        requestAnimationFrame(() => {
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight - prevHeight;
+          }
+        });
+      });
+    }
+  }, [loadMore, loadingMore, hasMore]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -152,8 +169,13 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       </div>
 
       {/* Messages */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2" onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
+      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2" onScroll={handleScroll} onTouchStart={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
         <div className="flex flex-col justify-end min-h-full space-y-3">
+        {loadingMore && (
+          <div className="flex items-center justify-center py-2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <p className="text-sm text-muted-foreground animate-pulse">Loading messages...</p>

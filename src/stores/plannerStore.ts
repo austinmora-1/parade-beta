@@ -116,12 +116,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set({ isLoading: true });
     
     try {
-      // Load own plans
+      // Load own plans (limit to 200 most recent/upcoming)
       const { data: ownPlansData } = await supabase
         .from('plans')
         .select('*')
         .eq('user_id', userId)
-        .order('date', { ascending: true });
+        .order('date', { ascending: true })
+        .limit(200);
       
       // Load plans where user is a participant (invited by others)
       const { data: participatedPlanIds } = await supabase
@@ -133,7 +134,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           .from('plans')
           .select('*')
           .in('id', participatedPlanIds)
-          .order('date', { ascending: true });
+          .order('date', { ascending: true })
+          .limit(200);
         participatedPlansData = data || [];
       }
       

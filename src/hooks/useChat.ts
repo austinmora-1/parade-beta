@@ -86,15 +86,22 @@ export function useConversations() {
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
+    // Batch-fetch last messages instead of N+1 queries
     const lastMessages: Record<string, ChatMessage> = {};
-    for (const id of conversationIds) {
-      const { data: msgs } = await supabase
+    const CONV_BATCH = 50;
+    for (let i = 0; i < conversationIds.length; i += CONV_BATCH) {
+      const batch = conversationIds.slice(i, i + CONV_BATCH);
+      const { data: allMsgs } = await supabase
         .from('chat_messages')
         .select('*')
-        .eq('conversation_id', id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      if (msgs?.[0]) lastMessages[id] = msgs[0] as ChatMessage;
+        .in('conversation_id', batch)
+        .order('created_at', { ascending: false });
+      // Pick the latest message per conversation
+      for (const msg of (allMsgs || []) as ChatMessage[]) {
+        if (!lastMessages[msg.conversation_id]) {
+          lastMessages[msg.conversation_id] = msg;
+        }
+      }
     }
 
     const myParticipations = allParticipants?.filter(p => p.user_id === user.id) || [];
@@ -224,12 +231,44 @@ export interface ReadReceipt {
   last_read_at: string;
 }
 
+const MESSAGES_PAGE_SIZE = 50;
+
 export function useChatMessages(conversationId: string | null) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [readReceipts, setReadReceipts] = useState<ReadReceipt[]>([]);
   const [reactions, setReactions] = useState<MessageReaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const loadMore = useCallback(async () => {
+    if (!conversationId || loadingMore || !hasMore || messages.length === 0) return;
+    setLoadingMore(true);
+    const oldest = messages[0]?.created_at;
+    const { data } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .lt('created_at', oldest)
+      .order('created_at', { ascending: false })
+      .limit(MESSAGES_PAGE_SIZE);
+
+    const older = ((data as ChatMessage[]) || []).reverse();
+    if (older.length < MESSAGES_PAGE_SIZE) setHasMore(false);
+    if (older.length > 0) {
+      setMessages(prev => [...older, ...prev]);
+      // Fetch reactions for older messages
+      const { data: rxns } = await supabase
+        .from('message_reactions')
+        .select('*')
+        .in('message_id', older.map(m => m.id));
+      if (rxns?.length) {
+        setReactions(prev => [...(rxns as MessageReaction[]), ...prev]);
+      }
+    }
+    setLoadingMore(false);
+  }, [conversationId, loadingMore, hasMore, messages]);
 
   useEffect(() => {
     if (!conversationId) {
@@ -237,6 +276,7 @@ export function useChatMessages(conversationId: string | null) {
       setReadReceipts([]);
       setReactions([]);
       setLoading(false);
+      setHasMore(true);
       return;
     }
 
@@ -245,9 +285,12 @@ export function useChatMessages(conversationId: string | null) {
         .from('chat_messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .limit(MESSAGES_PAGE_SIZE);
 
-      setMessages((data as ChatMessage[]) || []);
+      const msgs = ((data as ChatMessage[]) || []).reverse();
+      setMessages(msgs);
+      setHasMore(msgs.length >= MESSAGES_PAGE_SIZE);
       setLoading(false);
 
       if (user) {
@@ -397,5 +440,5 @@ export function useChatMessages(conversationId: string | null) {
     }
   }, [user, reactions]);
 
-  return { messages, loading, sendMessage, readReceipts, reactions, toggleReaction };
+  return { messages, loading, loadingMore, hasMore, loadMore, sendMessage, readReceipts, reactions, toggleReaction };
 }
