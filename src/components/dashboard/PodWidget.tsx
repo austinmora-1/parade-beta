@@ -38,6 +38,7 @@ const VIBE_CONFIG: Record<string, { label: string; color: string }> = {
   chill: { label: '😌 Chill', color: 'bg-vibe-chill/15 text-vibe-chill' },
   athletic: { label: '💪 Athletic', color: 'bg-vibe-athletic/15 text-vibe-athletic' },
   productive: { label: '⚡ Productive', color: 'bg-vibe-productive/15 text-vibe-productive' },
+  custom: { label: '✨ Custom', color: 'bg-primary/15 text-primary' },
 };
 
 export function PodWidget() {
