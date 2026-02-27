@@ -103,8 +103,13 @@ export function LocationTimeline() {
     if (!tripLocation || !homeAddress) return false;
     const normTrip = tripLocation.toLowerCase().trim();
     const normHome = homeAddress.toLowerCase().trim();
-    // Check if either contains the other (e.g. "New York" matches "New York, NY")
-    return normHome.includes(normTrip) || normTrip.includes(normHome);
+    // Direct substring match
+    if (normHome.includes(normTrip) || normTrip.includes(normHome)) return true;
+    // Extract city portion (before comma) for comparison
+    const tripCity = normTrip.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim();
+    const homeCity = normHome.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim();
+    if (tripCity && homeCity && (tripCity.includes(homeCity) || homeCity.includes(tripCity))) return true;
+    return false;
   }, [homeAddress]);
 
   const getDayLocation = (date: Date): LocationStatus => {
