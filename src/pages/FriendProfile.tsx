@@ -137,6 +137,20 @@ export default function FriendProfile() {
           .select('plan_id, plans!inner(id, title, activity, date, time_slot, location, notes, user_id)')
           .eq('friend_id', user.id);
 
+        // 3. Plans where I participate — to cross-reference group plans
+        const { data: myParticipations } = await supabase
+          .from('plan_participants')
+          .select('plan_id')
+          .eq('friend_id', user.id);
+
+        const myParticipatedPlanIds = new Set(myParticipations?.map(p => p.plan_id) || []);
+
+        // 4. Plans where friend participates — to find group plans we share
+        const { data: friendParticipations } = await supabase
+          .from('plan_participants')
+          .select('plan_id, plans!inner(id, title, activity, date, time_slot, location, notes, user_id)')
+          .eq('friend_id', userId);
+
         const planMap = new Map<string, SharedPlan>();
 
         // Process my plans where friend participates
@@ -161,6 +175,19 @@ export default function FriendProfile() {
               date: p.date, time_slot: p.time_slot,
               location: p.location, notes: p.notes,
               owner_name: profileData?.display_name || 'Friend', is_mine: false,
+            });
+          }
+        });
+
+        // Process group plans (owned by third party) where both of us participate
+        friendParticipations?.forEach((pp: any) => {
+          const p = pp.plans;
+          if (p && p.user_id !== user.id && p.user_id !== userId && myParticipatedPlanIds.has(p.id) && !planMap.has(p.id)) {
+            planMap.set(p.id, {
+              id: p.id, title: p.title, activity: p.activity,
+              date: p.date, time_slot: p.time_slot,
+              location: p.location, notes: p.notes,
+              owner_name: 'Group', is_mine: false,
             });
           }
         });
@@ -455,9 +482,10 @@ export default function FriendProfile() {
 
       {/* Shared Plans Widgets */}
       {(() => {
-        const now = new Date();
-        const upcoming = sharedPlans.filter(p => new Date(p.date) >= now);
-        const previous = sharedPlans.filter(p => new Date(p.date) < now);
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const upcoming = sharedPlans.filter(p => new Date(p.date) >= startOfToday);
+        const previous = sharedPlans.filter(p => new Date(p.date) < startOfToday);
         const slotLabels: Record<string, string> = {
           'early-morning': '6-9am', 'late-morning': '9am-12pm',
           'early-afternoon': '12-3pm', 'late-afternoon': '3-6pm',
@@ -467,7 +495,7 @@ export default function FriendProfile() {
         const renderPlan = (plan: SharedPlan) => {
           const config = ACTIVITY_CONFIG[plan.activity as ActivityType];
           return (
-            <div key={plan.id} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-muted/50 transition-colors">
+            <div key={plan.id} onClick={() => navigate(`/plans/${plan.id}`)} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-muted/50 transition-colors cursor-pointer">
               <span className="text-base shrink-0">{config?.icon || '📅'}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium truncate">{plan.title}</p>
