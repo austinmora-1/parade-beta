@@ -11,7 +11,7 @@ export function MobileHeader() {
 
   return (
     <header className="sticky top-0 z-40 flex h-[60px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
-      <div className="flex-1 flex justify-start">
+      <div className="flex-1 flex items-center justify-start">
         <button
           onClick={openFeedback}
            className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
@@ -22,7 +22,7 @@ export function MobileHeader() {
       <Link to="/" className="flex items-center justify-center leading-none">
         <ParadeWordmark size="md" className="leading-none" />
       </Link>
-      <div className="flex-1 flex justify-end gap-1">
+      <div className="flex-1 flex items-center justify-end gap-1">
         <div className="[&_button]:text-sidebar-foreground/80 [&_button:hover]:text-sidebar-foreground [&_button:hover]:bg-sidebar-accent">
           <ThemeToggle />
         </div>
