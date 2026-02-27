@@ -561,6 +561,7 @@ export type Database = {
           home_address: string | null
           id: string
           location_status: string | null
+          phone_number: string | null
           plan_invitations_notifications: boolean | null
           plan_reminders: boolean | null
           share_code: string
@@ -591,6 +592,7 @@ export type Database = {
           home_address?: string | null
           id?: string
           location_status?: string | null
+          phone_number?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
           share_code?: string
@@ -621,6 +623,7 @@ export type Database = {
           home_address?: string | null
           id?: string
           location_status?: string | null
+          phone_number?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
           share_code?: string
@@ -768,6 +771,15 @@ export type Database = {
       }
       owns_share_code: { Args: { p_share_code: string }; Returns: boolean }
       search_users_by_email_prefix: {
+        Args: { p_query: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          user_id: string
+        }[]
+      }
+      search_users_by_phone_prefix: {
         Args: { p_query: string }
         Returns: {
           avatar_url: string

@@ -94,15 +94,19 @@ export default function Friends() {
       setIsSearching(true);
       try {
         const query = searchQuery.trim();
-        const [nameResult, emailResult] = await Promise.all([
+        const isPhoneSearch = /^\+?\d[\d\s\-()]{2,}$/.test(query);
+        const [nameResult, emailResult, phoneResult] = await Promise.all([
           supabase
             .from('public_profiles')
             .select('user_id, display_name, avatar_url, bio')
             .neq('user_id', user?.id || '')
             .not('display_name', 'is', null)
             .limit(100),
-          query.length >= 3
+          query.length >= 3 && !isPhoneSearch
             ? supabase.rpc('search_users_by_email_prefix', { p_query: query })
+            : Promise.resolve({ data: [], error: null }),
+          isPhoneSearch
+            ? supabase.rpc('search_users_by_phone_prefix', { p_query: query })
             : Promise.resolve({ data: [], error: null }),
         ]);
         if (nameResult.error) throw nameResult.error;
@@ -114,8 +118,11 @@ export default function Friends() {
         const emailProfiles = (emailResult.data || [])
           .filter((p: any) => !friendUserIds.includes(p.user_id))
           .map((p: any) => ({ profile: p as PublicProfile, match: true, score: 2.8 }));
+        const phoneProfiles = (phoneResult.data || [])
+          .filter((p: any) => !friendUserIds.includes(p.user_id))
+          .map((p: any) => ({ profile: p as PublicProfile, match: true, score: 2.9 }));
         const seen = new Set<string>();
-        const merged = [...nameScored, ...emailProfiles]
+        const merged = [...nameScored, ...phoneProfiles, ...emailProfiles]
           .sort((a, b) => b.score - a.score)
           .filter(r => { if (seen.has(r.profile.user_id!)) return false; seen.add(r.profile.user_id!); return true; })
           .slice(0, 10)
@@ -222,7 +229,7 @@ export default function Friends() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search friends or find people..."
+          placeholder="Search by name, email, or phone..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10 h-9"
