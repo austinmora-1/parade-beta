@@ -158,10 +158,12 @@ export function UpcomingPlans() {
                         <Clock className="h-3 w-3" />
                         {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
                       </span>
-                      {plan.participants.length > 0 && (
+                      {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
                         <span className="flex items-center gap-0.5">
                           <Users className="h-3 w-3" />
-                          {plan.participants.length}
+                          <span className="truncate max-w-[160px]">
+                            {plan.participants.filter(p => p.role !== 'subscriber').map(p => p.name).join(', ')}
+                          </span>
                         </span>
                       )}
                     </div>
