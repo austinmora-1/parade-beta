@@ -668,16 +668,59 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   },
   
   updateFriend: async (id, updates) => {
+    const { userId } = get();
+    const friend = get().friends.find(f => f.id === id);
     const dbUpdates: Record<string, unknown> = {};
     if (updates.name) dbUpdates.friend_name = updates.name;
     if (updates.email !== undefined) dbUpdates.friend_email = updates.email;
     if (updates.status) dbUpdates.status = updates.status;
     if (updates.isPodMember !== undefined) dbUpdates.is_pod_member = updates.isPodMember;
     
+    // For incoming friends, the friendship row is owned by the other user,
+    // so we can't update it (RLS). Instead, find or create our own row.
+    let targetId = id;
+    if (friend?.isIncoming && userId && friend.friendUserId) {
+      // Check if we already have an outgoing row for this friend
+      const { data: existingRow } = await supabase
+        .from('friendships')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('friend_user_id', friend.friendUserId)
+        .maybeSingle();
+      
+      if (existingRow) {
+        targetId = existingRow.id;
+      } else {
+        // Create our own reciprocal friendship row
+        const { data: newRow, error: insertError } = await supabase
+          .from('friendships')
+          .insert({
+            user_id: userId,
+            friend_user_id: friend.friendUserId,
+            friend_name: friend.name,
+            status: 'connected',
+            is_pod_member: updates.isPodMember ?? false,
+          })
+          .select()
+          .single();
+        
+        if (insertError || !newRow) {
+          console.error('Error creating reciprocal friendship:', insertError);
+          return;
+        }
+        
+        // Update local state: replace the incoming friend entry with the new outgoing one
+        set((state) => ({
+          friends: state.friends.map((f) => f.id === id ? { ...f, ...updates, id: newRow.id, isIncoming: false } : f),
+        }));
+        return;
+      }
+    }
+    
     const { error } = await supabase
       .from('friendships')
       .update(dbUpdates)
-      .eq('id', id);
+      .eq('id', targetId);
     
     if (error) {
       console.error('Error updating friend:', error);
