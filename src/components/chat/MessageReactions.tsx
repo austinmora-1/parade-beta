@@ -53,7 +53,7 @@ export function MessageReactions({ messageId, reactions, currentUserId, onToggle
             <SmilePlus className="h-3 w-3" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-1.5" side="top" align={isMe ? "end" : "start"}>
+        <PopoverContent className="w-auto p-1.5 z-[70]" side="top" align={isMe ? "end" : "start"}>
           <div className="flex gap-1">
             {REACTION_EMOJIS.map(emoji => (
               <button
