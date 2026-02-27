@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Calendar, Clock, Users, Shield, Sun, X } from 'lucide-react';
+import { Sparkles, ArrowRight, Calendar, Clock, Users, Shield, Sun, Smartphone, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +52,12 @@ const STEPS: WalkthroughStep[] = [
     title: "Add Friends & Plan Together",
     message: "Head to Friends to search by email or share your invite link. Once connected, you'll see each other's availability. Use Messages to chat, and mention @Elly to have me help coordinate plans!",
     emoji: "👯",
+  },
+  {
+    icon: <Smartphone className="h-5 w-5" />,
+    title: "Add to Home Screen",
+    message: "For the best experience, add Parade to your home screen! On iPhone, tap the Share button in Safari and select \"Add to Home Screen.\" On Android, tap the menu (⋮) in Chrome and tap \"Add to Home screen.\" This gives you instant, full-screen access.",
+    emoji: "📱",
   },
   {
     icon: <Sparkles className="h-5 w-5" />,
