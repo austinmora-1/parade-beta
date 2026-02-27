@@ -7,6 +7,7 @@ import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { FriendLink } from '@/components/ui/FriendLink';
 import { CollapsibleWidget } from './CollapsibleWidget';
 
 function formatTime12(time: string): string {
@@ -159,10 +160,17 @@ export function UpcomingPlans() {
                         {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
                       </span>
                       {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-                        <span className="flex items-center gap-0.5 ml-auto">
+                        <span className="flex items-center gap-0.5 ml-auto" data-stop-card-click onClick={e => e.stopPropagation()}>
                           <Users className="h-3 w-3 shrink-0" />
                           <span className="truncate max-w-[120px]">
-                            {plan.participants.filter(p => p.role !== 'subscriber').map(p => p.name).join(', ')}
+                            {plan.participants.filter(p => p.role !== 'subscriber').map((p, i, arr) => (
+                              <span key={p.id}>
+                                <FriendLink userId={p.friendUserId}>
+                                  <span className="hover:underline">{p.name}</span>
+                                </FriendLink>
+                                {i < arr.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
                           </span>
                         </span>
                       )}
