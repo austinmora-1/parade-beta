@@ -24,13 +24,19 @@ export default function Chat() {
     ? { height: `${viewport.height}px`, top: `${viewport.offsetTop}px` }
     : { height: '100dvh', top: 0 };
 
-  // Open Elly if navigated with ?elly=true
+  // Open Elly if navigated with ?elly=true, or specific conversation
   useEffect(() => {
     if (searchParams.get('elly') === 'true') {
       setShowElly(true);
       setActiveId(null);
-      // Clean up the URL param
       searchParams.delete('elly');
+      setSearchParams(searchParams, { replace: true });
+    }
+    const conversationParam = searchParams.get('conversation');
+    if (conversationParam) {
+      setActiveId(conversationParam);
+      setShowElly(false);
+      searchParams.delete('conversation');
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);

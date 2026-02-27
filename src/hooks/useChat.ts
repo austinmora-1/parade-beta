@@ -449,7 +449,7 @@ export function useChatMessages(conversationId: string | null) {
               user_id: p.user_id,
               title: `${senderName}`,
               body: messagePreview,
-              url: '/chat',
+              url: `/chat?conversation=${conversationId}`,
             }),
           }).catch(() => {}); // Fire and forget
         }
