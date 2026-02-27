@@ -37,54 +37,63 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${connections.length} calendar connections to sync`)
 
+    const BATCH_SIZE = 10
+    const BATCH_DELAY_MS = 2000 // 2s pause between batches to avoid overwhelming APIs/DB
     let successCount = 0
     let errorCount = 0
 
-    for (const conn of connections) {
-      try {
-        const functionName = conn.provider === 'google'
-          ? 'google-calendar-sync'
-          : conn.provider === 'ical'
-            ? 'ical-sync'
-            : null
+    // Process in batches to prevent resource exhaustion at scale
+    for (let i = 0; i < connections.length; i += BATCH_SIZE) {
+      const batch = connections.slice(i, i + BATCH_SIZE)
 
-        if (!functionName) {
-          console.log(`Skipping unknown provider: ${conn.provider}`)
-          continue
-        }
+      // Run batch concurrently
+      const results = await Promise.allSettled(
+        batch.map(async (conn) => {
+          const functionName = conn.provider === 'google'
+            ? 'google-calendar-sync'
+            : conn.provider === 'ical'
+              ? 'ical-sync'
+              : null
 
-        // For user-authenticated sync functions, we need to impersonate the user.
-        // We'll call the sync logic directly via internal HTTP with a service role approach.
-        // The sync functions require a Bearer token — we'll generate a short-lived token for the user.
-        
-        // Get the user's session by creating an admin auth link
-        // Instead, call the function URL directly with service role key and pass user_id in body
-        const syncUrl = `${supabaseUrl}/functions/v1/calendar-sync-worker`
-        
-        const response = await fetch(syncUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${serviceRoleKey}`,
-          },
-          body: JSON.stringify({
-            userId: conn.user_id,
-            provider: conn.provider,
-          }),
+          if (!functionName) {
+            console.log(`Skipping unknown provider: ${conn.provider}`)
+            return
+          }
+
+          const syncUrl = `${supabaseUrl}/functions/v1/calendar-sync-worker`
+
+          const response = await fetch(syncUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${serviceRoleKey}`,
+            },
+            body: JSON.stringify({
+              userId: conn.user_id,
+              provider: conn.provider,
+            }),
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log(`Synced ${conn.provider} for user ${conn.user_id}:`, result.message || 'OK')
+            return true
+          } else {
+            const errorText = await response.text()
+            console.error(`Failed to sync ${conn.provider} for user ${conn.user_id}:`, errorText)
+            throw new Error(errorText)
+          }
         })
+      )
 
-        if (response.ok) {
-          const result = await response.json()
-          console.log(`Synced ${conn.provider} for user ${conn.user_id}:`, result.message || 'OK')
-          successCount++
-        } else {
-          const errorText = await response.text()
-          console.error(`Failed to sync ${conn.provider} for user ${conn.user_id}:`, errorText)
-          errorCount++
-        }
-      } catch (err) {
-        console.error(`Error syncing ${conn.provider} for user ${conn.user_id}:`, err)
-        errorCount++
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value === true) successCount++
+        else if (r.status === 'rejected') errorCount++
+      }
+
+      // Stagger batches to avoid API rate limits and DB connection exhaustion
+      if (i + BATCH_SIZE < connections.length) {
+        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS))
       }
     }
 
