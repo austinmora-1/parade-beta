@@ -247,20 +247,18 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{plan.title}</p>
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                            {(plan.startTime || plan.endTime) && (
-                              <span>
-                                {plan.startTime && formatTime12(plan.startTime)}
-                                {plan.startTime && plan.endTime && ' – '}
-                                {plan.endTime && formatTime12(plan.endTime)}
-                              </span>
-                            )}
-                            {plan.participants.length > 0 && (
-                              <span className="truncate">
-                                {(plan.startTime || plan.endTime) ? ' · ' : ''}w/ {plan.participants.map(p => p.name).join(', ')}
-                              </span>
-                            )}
-                          </div>
+                          {(plan.startTime || plan.endTime) && (
+                            <p className="text-[10px] text-muted-foreground">
+                              {plan.startTime && formatTime12(plan.startTime)}
+                              {plan.startTime && plan.endTime && ' – '}
+                              {plan.endTime && formatTime12(plan.endTime)}
+                            </p>
+                          )}
+                          {plan.participants.length > 0 && (
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              w/ {plan.participants.map(p => p.name).join(', ')}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
