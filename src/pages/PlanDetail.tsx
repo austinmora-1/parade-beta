@@ -6,6 +6,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { Button } from '@/components/ui/button';
@@ -73,10 +74,7 @@ export default function PlanDetail() {
   const participants = plan.participants.filter(p => p.role !== 'subscriber');
   const subscribers = plan.participants.filter(p => p.role === 'subscriber');
 
-  // Dynamic title: for 1:1 hangs, show the other person's name
-  const displayTitle = plan.title.startsWith('Hang with') && participants.length === 1
-    ? `Hang with ${participants[0].name}`
-    : plan.title;
+  const displayTitle = getPlanDisplayTitle(plan);
 
   const handleDelete = async () => {
     const hadParticipants = plan.participants.length > 0;
@@ -315,10 +313,10 @@ export default function PlanDetail() {
             <AlertDialogTitle>{isOwner ? 'Delete plan?' : 'Decline this plan?'}</AlertDialogTitle>
             <AlertDialogDescription>
               {!isOwner
-                ? `This will remove "${plan.title}" from your plans and show as a decline to the organiser.`
+                ? `This will remove "${displayTitle}" from your plans and show as a decline to the organiser.`
                 : plan.participants.length > 0
-                  ? `This will permanently delete "${plan.title}" and notify ${plan.participants.map(p => p.name).join(', ')} that the plan has been cancelled.`
-                  : `This will permanently delete "${plan.title}". This action cannot be undone.`}
+                  ? `This will permanently delete "${displayTitle}" and notify ${plan.participants.map(p => p.name).join(', ')} that the plan has been cancelled.`
+                  : `This will permanently delete "${displayTitle}". This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
