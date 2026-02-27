@@ -488,6 +488,30 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       if (participantRows.length > 0) {
         await supabase.from('plan_participants').insert(participantRows);
+
+        // Send push notifications to invited participants
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData?.session?.access_token;
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', userId).single();
+          const senderName = profile?.display_name || 'Someone';
+
+          for (const row of participantRows) {
+            fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: row.friend_id,
+                title: 'New Plan Invite! 📅',
+                body: `${senderName} invited you to "${plan.title}"`,
+                url: `/plan/${data.id}`,
+              }),
+            }).catch(() => {});
+          }
+        } catch (err) {
+          console.error('Push notification error:', err);
+        }
       }
     }
     
@@ -667,6 +691,30 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (error) {
       console.error('Error adding friend:', error);
       return;
+    }
+
+    // Send push notification for friend request
+    if (friend.friendUserId && friend.status === 'pending') {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', userId).single();
+        const senderName = profile?.display_name || 'Someone';
+
+        fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: friend.friendUserId,
+            title: 'New Friend Request! 🎉',
+            body: `${senderName} wants to connect with you`,
+            url: '/notifications',
+          }),
+        }).catch(() => {});
+      } catch (err) {
+        console.error('Push notification error:', err);
+      }
     }
     
     const newFriend: Friend = {

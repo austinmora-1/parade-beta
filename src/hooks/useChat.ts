@@ -415,6 +415,49 @@ export function useChatMessages(conversationId: string | null) {
     if (imageUrl) insertData.image_url = imageUrl;
 
     await supabase.from('chat_messages').insert(insertData);
+
+    // Send push notifications to other participants
+    try {
+      const { data: participants } = await supabase
+        .from('conversation_participants')
+        .select('user_id')
+        .eq('conversation_id', conversationId)
+        .neq('user_id', user.id);
+
+      if (participants && participants.length > 0) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single();
+
+        const senderName = profile?.display_name || 'Someone';
+        const messagePreview = content.trim() ? content.trim().substring(0, 50) : '📷 Photo';
+
+        for (const p of participants) {
+          fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: p.user_id,
+              title: `${senderName}`,
+              body: messagePreview,
+              url: '/chat',
+            }),
+          }).catch(() => {}); // Fire and forget
+        }
+      }
+    } catch (err) {
+      // Don't block message sending if push fails
+      console.error('Push notification error:', err);
+    }
   }, [conversationId, user]);
 
   const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
