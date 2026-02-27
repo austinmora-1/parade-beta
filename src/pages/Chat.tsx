@@ -8,6 +8,7 @@ import { NewChatDialog } from '@/components/chat/NewChatDialog';
 import { useSearchParams } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useVisualViewport } from '@/hooks/useVisualViewport';
 
 
 
@@ -16,8 +17,12 @@ export default function Chat() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showElly, setShowElly] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  
-  
+  const viewport = useVisualViewport();
+
+  // Dynamic height style for mobile keyboard handling
+  const mobileOverlayStyle = viewport
+    ? { height: `${viewport.height}px`, top: `${viewport.offsetTop}px` }
+    : { height: '100dvh', top: 0 };
 
   // Open Elly if navigated with ?elly=true
   useEffect(() => {
@@ -58,9 +63,10 @@ export default function Chat() {
   if (showElly) {
     return (
       <div
-        className="animate-fade-in fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-background pt-14 pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:h-[calc(100dvh-8rem)] md:pt-0 md:pb-0"
+        className="animate-fade-in fixed inset-x-0 z-[60] flex flex-col bg-background pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:h-[calc(100dvh-8rem)] md:pb-0"
+        style={window.innerWidth < 768 ? mobileOverlayStyle : undefined}
       >
-        <div className="flex-1 min-h-0 overflow-hidden px-4 md:px-0">
+        <div className="flex-1 min-h-0 overflow-hidden px-4 pt-14 md:px-0 md:pt-0">
           <EllyChatView onBack={() => setShowElly(false)} />
         </div>
       </div>
@@ -70,9 +76,10 @@ export default function Chat() {
   if (activeConvo) {
     return (
       <div
-        className="animate-fade-in fixed inset-0 z-[60] flex h-[100dvh] flex-col bg-background pt-14 pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:h-[calc(100dvh-8rem)] md:pt-0 md:pb-0"
+        className="animate-fade-in fixed inset-x-0 z-[60] flex flex-col bg-background pb-[env(safe-area-inset-bottom)] md:relative md:inset-auto md:z-auto md:h-[calc(100dvh-8rem)] md:pb-0"
+        style={window.innerWidth < 768 ? mobileOverlayStyle : undefined}
       >
-        <div className="flex-1 min-h-0 overflow-hidden px-4 md:px-0">
+        <div className="flex-1 min-h-0 overflow-hidden px-4 pt-14 md:px-0 md:pt-0">
           <ChatView conversation={activeConvo} onBack={() => setActiveId(null)} />
         </div>
       </div>
