@@ -144,13 +144,11 @@ function parseICSDate(line: string): { date: Date; allDay: boolean } | null {
   return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
 }
 
-// ── Google Calendar Sync Logic ──────────────────────────────────────────────
-
-interface GCalEvent {
-  id: string
-  summary?: string
-  start: { dateTime?: string; date?: string }
-  end: { dateTime?: string; date?: string }
+// Format a Date to HH:MM in the given timezone
+function formatTimeHHMM(date: Date, timezone?: string): string {
+  const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: false }
+  if (timezone) opts.timeZone = timezone
+  return new Intl.DateTimeFormat('en-GB', opts).format(date)
 }
 
 async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ eventsProcessed: number; datesUpdated: number }> {
@@ -163,6 +161,13 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   if (connError || !connRows || connRows.length === 0) {
     throw new Error('Google Calendar not connected')
   }
+
+  // Fetch user's profile for home address and timezone inference
+  const { data: profileData } = await adminClient
+    .from('profiles')
+    .select('home_address')
+    .eq('user_id', userId)
+    .single()
 
   let accessToken = connRows[0].access_token
 
@@ -207,7 +212,21 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   const calendarData = await calendarResponse.json()
   const events: GCalEvent[] = calendarData.items || []
 
-  // Process events into availability + plans
+  // Infer timezone from first event with dateTime (Google includes TZ offset in dateTime)
+  let timezone: string | undefined
+  for (const event of events) {
+    if (event.start.dateTime) {
+      // Google Calendar API returns dateTime with timezone info — try to extract
+      // We use the calendar's timeZone if available, otherwise fall back to America/New_York
+      break
+    }
+  }
+  // Use calendar timeZone from response if available
+  if (calendarData.timeZone) {
+    timezone = calendarData.timeZone
+  }
+
+  // Process events into availability
   const busySlotsByDate: Map<string, Set<string>> = new Map()
   const flightLocationByDate: Map<string, string> = new Map()
 
@@ -216,7 +235,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
       if (event.start.date && event.end.date) {
         const startDate = new Date(event.start.date)
         const endDate = new Date(event.end.date); endDate.setDate(endDate.getDate() - 1)
-        const dates = getEventDates(startDate, endDate)
+        const dates = getEventDates(startDate, endDate, timezone)
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
           ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(s => busySlotsByDate.get(date)!.add(s))
@@ -226,10 +245,10 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     }
     const startTime = new Date(event.start.dateTime)
     const endTime = new Date(event.end.dateTime)
-    const dates = getEventDates(startTime, endTime)
+    const dates = getEventDates(startTime, endTime, timezone)
     for (const date of dates) {
       if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
-      getEventTimeSlots(startTime, endTime).forEach(s => busySlotsByDate.get(date)!.add(s))
+      getEventTimeSlots(startTime, endTime, timezone).forEach(s => busySlotsByDate.get(date)!.add(s))
     }
 
     if (isFlightEvent(event.summary)) {
@@ -251,23 +270,107 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     if (!error) updatedCount++
   }
 
-  // Create plans
-  await adminClient.from('plans').delete().eq('user_id', userId).eq('source', 'gcal')
-  const planRows = events.map(event => {
-    const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
-    if (!startDate) return null
-    const hour = event.start.dateTime ? startDate.getUTCHours() : 8
-    const localDateStr = getDateString(startDate)
-    return {
-      user_id: userId, title: event.summary || 'Gcal imported event',
-      activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
-      time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
-      source: 'gcal', source_event_id: event.id,
-    }
-  }).filter(Boolean)
+  // ── Smart plan reconciliation: preserve manually-enriched plans (those with participants) ──
 
-  if (planRows.length > 0) {
-    await adminClient.from('plans').insert(planRows)
+  // Build incoming plan data by event ID
+  const incomingEventIds = new Set<string>()
+  const planRowsByEventId = new Map<string, any>()
+
+  for (const event of events) {
+    const startDate = event.start.dateTime
+      ? new Date(event.start.dateTime)
+      : event.start.date
+        ? new Date(event.start.date)
+        : null
+    if (!startDate) continue
+
+    const hour = event.start.dateTime ? getHourInTimezone(startDate, timezone) : 8
+    const timeSlotHyphen = getTimeSlot(hour).replace('_', '-')
+    const localDateStr = getDateString(startDate, timezone)
+    const planDate = `${localDateStr}T12:00:00+00:00`
+    const startTimeStr = event.start.dateTime ? formatTimeHHMM(new Date(event.start.dateTime), timezone) : null
+    const endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
+
+    incomingEventIds.add(event.id)
+    planRowsByEventId.set(event.id, {
+      user_id: userId,
+      title: event.summary || 'Gcal imported event',
+      activity: classifyActivity(event.summary),
+      date: planDate,
+      time_slot: timeSlotHyphen,
+      duration: 1,
+      source: 'gcal',
+      source_event_id: event.id,
+      start_time: startTimeStr,
+      end_time: endTimeStr,
+    })
+  }
+
+  // Fetch existing gcal plans for this user
+  const { data: existingPlans } = await adminClient
+    .from('plans')
+    .select('id, source_event_id')
+    .eq('user_id', userId)
+    .eq('source', 'gcal')
+
+  // Find which existing plans have participants (manually enriched)
+  const existingPlanIds = (existingPlans || []).map((p: any) => p.id)
+  let enrichedPlanIds = new Set<string>()
+  if (existingPlanIds.length > 0) {
+    const { data: participantRows } = await adminClient
+      .from('plan_participants')
+      .select('plan_id')
+      .in('plan_id', existingPlanIds)
+    enrichedPlanIds = new Set((participantRows || []).map((r: any) => r.plan_id))
+  }
+
+  // Build lookup of existing event_id → plan
+  const existingByEventId = new Map<string, any>()
+  for (const p of (existingPlans || [])) {
+    if (p.source_event_id) existingByEventId.set(p.source_event_id, p)
+  }
+
+  // Delete plans that are no longer in the calendar AND don't have participants
+  const toDelete = (existingPlans || []).filter((p: any) =>
+    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id)
+  )
+  if (toDelete.length > 0) {
+    await adminClient
+      .from('plans')
+      .delete()
+      .in('id', toDelete.map((p: any) => p.id))
+  }
+
+  // For plans that still exist in calendar:
+  // - If enriched (has participants): skip entirely to preserve manual edits
+  // - If exists but not enriched: update in place (preserving ID)
+  // - If new: insert
+  const toInsert: any[] = []
+  for (const [eventId, planRow] of planRowsByEventId) {
+    const existing = existingByEventId.get(eventId)
+    if (existing) {
+      if (enrichedPlanIds.has(existing.id)) {
+        continue // Skip - preserve manual edits and participants
+      }
+      await adminClient
+        .from('plans')
+        .update({
+          title: planRow.title,
+          activity: planRow.activity,
+          date: planRow.date,
+          time_slot: planRow.time_slot,
+          start_time: planRow.start_time,
+          end_time: planRow.end_time,
+        })
+        .eq('id', existing.id)
+    } else {
+      toInsert.push(planRow)
+    }
+  }
+
+  if (toInsert.length > 0) {
+    const { error: plansError } = await adminClient.from('plans').insert(toInsert)
+    if (plansError) console.error('Error inserting gcal plans:', plansError)
   }
 
   return { eventsProcessed: events.length, datesUpdated: updatedCount }
@@ -321,18 +424,66 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     if (!error) updatedCount++
   }
 
-  await adminClient.from('plans').delete().eq('user_id', userId).eq('source', 'ical')
-  const planRows = events.map(event => {
+  // ── Smart plan reconciliation for iCal (same pattern as gcal) ──
+  const incomingEventIds = new Set<string>()
+  const planRowsByEventId = new Map<string, any>()
+
+  for (const event of events) {
     const hour = event.isAllDay ? 8 : event.dtstart.getUTCHours()
     const localDateStr = getDateString(event.dtstart)
-    return {
+    incomingEventIds.add(event.uid)
+    planRowsByEventId.set(event.uid, {
       user_id: userId, title: event.summary || 'iCal imported event',
       activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
       time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
       location: event.location || null, source: 'ical', source_event_id: event.uid,
+    })
+  }
+
+  // Fetch existing ical plans
+  const { data: existingPlans } = await adminClient
+    .from('plans')
+    .select('id, source_event_id')
+    .eq('user_id', userId)
+    .eq('source', 'ical')
+
+  const existingPlanIds = (existingPlans || []).map((p: any) => p.id)
+  let enrichedPlanIds = new Set<string>()
+  if (existingPlanIds.length > 0) {
+    const { data: participantRows } = await adminClient
+      .from('plan_participants')
+      .select('plan_id')
+      .in('plan_id', existingPlanIds)
+    enrichedPlanIds = new Set((participantRows || []).map((r: any) => r.plan_id))
+  }
+
+  const existingByEventId = new Map<string, any>()
+  for (const p of (existingPlans || [])) {
+    if (p.source_event_id) existingByEventId.set(p.source_event_id, p)
+  }
+
+  // Delete plans no longer in calendar AND not enriched
+  const toDelete = (existingPlans || []).filter((p: any) =>
+    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id)
+  )
+  if (toDelete.length > 0) {
+    await adminClient.from('plans').delete().in('id', toDelete.map((p: any) => p.id))
+  }
+
+  const toInsert: any[] = []
+  for (const [eventId, planRow] of planRowsByEventId) {
+    const existing = existingByEventId.get(eventId)
+    if (existing) {
+      if (enrichedPlanIds.has(existing.id)) continue
+      await adminClient.from('plans').update({
+        title: planRow.title, activity: planRow.activity,
+        date: planRow.date, time_slot: planRow.time_slot,
+      }).eq('id', existing.id)
+    } else {
+      toInsert.push(planRow)
     }
-  })
-  if (planRows.length > 0) await adminClient.from('plans').insert(planRows)
+  }
+  if (toInsert.length > 0) await adminClient.from('plans').insert(toInsert)
 
   return { eventsProcessed: events.length, datesUpdated: updatedCount }
 }
