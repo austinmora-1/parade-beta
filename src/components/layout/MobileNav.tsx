@@ -29,7 +29,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden">
-      <div className="flex items-center justify-around px-4 py-1.5">
+      <div className="flex items-center justify-around px-4 py-2.5">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -37,19 +37,19 @@ export function MobileNav() {
               key={item.path}
               to={item.path}
               className={cn(
-                "relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-1 transition-all duration-200",
+                "relative flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 transition-all duration-200",
                 isActive
                   ? "text-sidebar-primary"
                   : "text-sidebar-foreground/60"
               )}
             >
               <div className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
+                "flex h-10 w-10 items-center justify-center rounded-xl transition-all",
                 isActive && "bg-sidebar-accent"
               )}>
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-6 w-6" />
               </div>
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[13px] font-medium">{item.label}</span>
             </NavLink>
           );
         })}
@@ -60,7 +60,7 @@ export function MobileNav() {
           className="relative flex flex-col items-center justify-center rounded-xl px-3 py-2 transition-all duration-200"
         >
           <Avatar className={cn(
-            "h-8 w-8 transition-all",
+            "h-10 w-10 transition-all",
             isProfileActive && "ring-2 ring-white ring-offset-2 ring-offset-primary"
           )}>
             <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
