@@ -61,6 +61,10 @@ export function UpcomingPlans() {
           {upcomingPlans.map((plan) => {
             const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
             const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
+            const nonSubscribers = plan.participants.filter(p => p.role !== 'subscriber');
+            const displayTitle = plan.title.startsWith('Hang with') && nonSubscribers.length === 1
+              ? `Hang with ${nonSubscribers[0].name}`
+              : plan.title;
             
             return (
               <div
@@ -75,7 +79,7 @@ export function UpcomingPlans() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <ActivityIcon config={activityConfig} size={18} />
-                      <span className="text-sm font-medium">{plan.title}</span>
+                      <span className="text-sm font-medium">{displayTitle}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 ml-[26px]">
                       <span className="flex items-center gap-0.5">
