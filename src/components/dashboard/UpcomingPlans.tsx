@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
@@ -61,10 +62,7 @@ export function UpcomingPlans() {
           {upcomingPlans.map((plan) => {
             const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
             const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
-            const nonSubscribers = plan.participants.filter(p => p.role !== 'subscriber');
-            const displayTitle = plan.title.startsWith('Hang with') && nonSubscribers.length === 1
-              ? `Hang with ${nonSubscribers[0].name}`
-              : plan.title;
+            const displayTitle = getPlanDisplayTitle(plan);
             
             return (
               <div

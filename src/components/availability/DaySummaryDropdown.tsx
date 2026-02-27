@@ -4,6 +4,7 @@ import { format, isSameDay } from 'date-fns';
 import { Home, Plane, Plus, Trash2, CalendarDays } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { cn } from '@/lib/utils';
+import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '@/types/planner';
 import { Switch } from '@/components/ui/switch';
@@ -246,7 +247,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                           <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{plan.title}</p>
+                          <p className="text-xs font-medium truncate">{getPlanDisplayTitle(plan)}</p>
                           {(plan.startTime || plan.endTime) && (
                             <p className="text-[10px] text-muted-foreground">
                               {plan.startTime && formatTime12(plan.startTime)}

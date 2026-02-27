@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { getPlanDisplayTitle } from '@/lib/planTitle';
 import {
   format,
   addDays,
@@ -557,7 +558,7 @@ export function AvailabilityGrid() {
                               return slotPlan ? (
                                 <>
                                   <span className="text-xs font-medium text-availability-busy truncate max-w-[90px]">
-                                    {slotPlan.title}
+                                    {getPlanDisplayTitle(slotPlan)}
                                   </span>
                                   {slotPlan.participants.length > 0 && (
                                     <span className="text-[10px] text-availability-busy/70 truncate max-w-[90px]">

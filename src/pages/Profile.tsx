@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { Link, useNavigate } from 'react-router-dom';
 import { format, isPast, isSameDay, isAfter } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -702,7 +703,7 @@ export default function Profile() {
                         {activityConfig ? <ActivityIcon config={activityConfig} size={20} /> : '📅'}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium truncate">{plan.title}</p>
+                        <p className="font-medium truncate">{getPlanDisplayTitle(plan)}</p>
                         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
                           <span>{format(plan.date, 'EEE, MMM d')}</span>
                           <span>•</span>
@@ -802,7 +803,7 @@ export default function Profile() {
                         {activityConfig?.icon || '📅'}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium truncate">{plan.title}</p>
+                        <p className="font-medium truncate">{getPlanDisplayTitle(plan)}</p>
                         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
                           <span>{format(plan.date, 'MMM d, yyyy')}</span>
                           <span>•</span>

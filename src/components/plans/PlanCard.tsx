@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, MoreVertical, Trash2, Eye } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
@@ -40,11 +41,7 @@ export function PlanCard({
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
-  // Dynamic title: for 1:1 hangs, show the other person's name
-  const nonSubscribers = plan.participants.filter(p => p.role !== 'subscriber');
-  const displayTitle = plan.title.startsWith('Hang with') && nonSubscribers.length === 1
-    ? `Hang with ${nonSubscribers[0].name}`
-    : plan.title;
+  const displayTitle = getPlanDisplayTitle(plan);
 
   const isTentative = plan.status === 'tentative';
 
