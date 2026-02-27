@@ -192,9 +192,15 @@ export default function FriendProfile() {
           }
         });
 
-        setSharedPlans(Array.from(planMap.values()).sort((a, b) =>
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-        ));
+        const slotOrder: Record<string, number> = {
+          'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
+          'late-afternoon': 3, 'evening': 4, 'late-night': 5,
+        };
+        setSharedPlans(Array.from(planMap.values()).sort((a, b) => {
+          const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+          if (dateDiff !== 0) return dateDiff;
+          return (slotOrder[a.time_slot] ?? 0) - (slotOrder[b.time_slot] ?? 0);
+        }));
       }
 
       setLoading(false);

@@ -355,19 +355,32 @@ export default function Profile() {
     };
   }, []);
 
+  const timeSlotOrder: Record<string, number> = {
+    'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
+    'late-afternoon': 3, 'evening': 4, 'late-night': 5,
+  };
+
   // Get past plans (hangout history) - social activities (vibes: social)
   const pastPlans = plans
     .filter(plan => {
       const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
       return isPast(plan.date) && !isSameDay(plan.date, new Date()) && activityConfig?.vibeType === 'social';
     })
-    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .sort((a, b) => {
+      const dateDiff = b.date.getTime() - a.date.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return (timeSlotOrder[b.timeSlot] ?? 0) - (timeSlotOrder[a.timeSlot] ?? 0);
+    })
     .slice(0, 10);
 
   // Get upcoming plans
   const upcomingPlans = plans
     .filter(plan => isAfter(plan.date, new Date()) || isSameDay(plan.date, new Date()))
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .sort((a, b) => {
+      const dateDiff = a.date.getTime() - b.date.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
+    })
     .slice(0, 5);
 
   const [hangoutsOpen, setHangoutsOpen] = useState(true);
