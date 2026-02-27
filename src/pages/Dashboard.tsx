@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
+import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { WeekOverview } from '@/components/dashboard/WeekOverview';
@@ -32,6 +33,7 @@ export default function Dashboard() {
     <div className="animate-fade-in space-y-6 md:space-y-8">
       {/* Elly Walkthrough for first-time users */}
       <EllyWalkthrough />
+      <PushNotificationPrompt />
 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
