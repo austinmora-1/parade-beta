@@ -45,8 +45,15 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
     return days;
   }, [currentMonth]);
 
+  const timeSlotOrder: Record<string, number> = {
+    'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
+    'late-afternoon': 3, 'evening': 4, 'late-night': 5,
+  };
+
   const getPlansForDay = (date: Date) => {
-    return plans.filter((p) => isSameDay(p.date, date));
+    return plans
+      .filter((p) => isSameDay(p.date, date))
+      .sort((a, b) => (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0));
   };
 
   // Get background color based on plan count (0 = green/available, more plans = grayer)
