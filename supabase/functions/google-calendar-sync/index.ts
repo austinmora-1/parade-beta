@@ -332,16 +332,12 @@ async function handleEventsSync(params: {
     else updatedCount++
   }
 
-  // Create plans for each imported event
-  // First, delete old gcal-imported plans so we don't duplicate
-  await adminClient
-    .from('plans')
-    .delete()
-    .eq('user_id', userId)
-    .eq('source', 'gcal')
+  // ── Sync plans: preserve manually-enriched plans (those with participants or manual edits) ──
 
-  // Map each calendar event to a plan row
-  const planRows = []
+  // Collect all source_event_ids from the incoming sync
+  const incomingEventIds = new Set<string>()
+  const planRowsByEventId = new Map<string, any>()
+
   for (const event of events) {
     const startDate = event.start.dateTime
       ? new Date(event.start.dateTime)
@@ -354,15 +350,14 @@ async function handleEventsSync(params: {
     const timeSlot = getTimeSlot(hour)
     const timeSlotHyphen = timeSlot.replace('_', '-')
 
-    // Always store noon UTC of the local calendar day to prevent timezone day-shift
     const localDateStr = getDateString(startDate!, timezone)
     const planDate = `${localDateStr}T12:00:00+00:00`
 
-    // Extract start/end times for timed events
     const startTimeStr = event.start.dateTime ? formatTimeHHMM(new Date(event.start.dateTime), timezone) : null
     const endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
 
-    planRows.push({
+    incomingEventIds.add(event.id)
+    planRowsByEventId.set(event.id, {
       user_id: userId,
       title: event.summary || 'Gcal imported event',
       activity: classifyActivity(event.summary, isFlightEvent(event)),
@@ -376,11 +371,74 @@ async function handleEventsSync(params: {
     })
   }
 
-  if (planRows.length > 0) {
+  // Fetch existing gcal plans for this user
+  const { data: existingPlans } = await adminClient
+    .from('plans')
+    .select('id, source_event_id')
+    .eq('user_id', userId)
+    .eq('source', 'gcal')
+
+  // Find which existing plans have participants (manually enriched)
+  const existingPlanIds = (existingPlans || []).map((p: any) => p.id)
+  let enrichedPlanIds = new Set<string>()
+  if (existingPlanIds.length > 0) {
+    const { data: participantRows } = await adminClient
+      .from('plan_participants')
+      .select('plan_id')
+      .in('plan_id', existingPlanIds)
+    enrichedPlanIds = new Set((participantRows || []).map((r: any) => r.plan_id))
+  }
+
+  // Build lookup of existing event_id → plan
+  const existingByEventId = new Map<string, any>()
+  for (const p of (existingPlans || [])) {
+    if (p.source_event_id) existingByEventId.set(p.source_event_id, p)
+  }
+
+  // Delete plans that are no longer in the calendar AND don't have participants
+  const toDelete = (existingPlans || []).filter((p: any) =>
+    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id)
+  )
+  if (toDelete.length > 0) {
+    await adminClient
+      .from('plans')
+      .delete()
+      .in('id', toDelete.map((p: any) => p.id))
+  }
+
+  // For plans that still exist in calendar:
+  // - If enriched (has participants): skip entirely to preserve manual edits
+  // - If exists but not enriched: update in place (preserving ID)
+  // - If new: insert
+  const toInsert: any[] = []
+  for (const [eventId, planRow] of planRowsByEventId) {
+    const existing = existingByEventId.get(eventId)
+    if (existing) {
+      if (enrichedPlanIds.has(existing.id)) {
+        // Skip - preserve manual edits and participants
+        continue
+      }
+      // Update existing plan in-place (preserves ID and participants)
+      await adminClient
+        .from('plans')
+        .update({
+          title: planRow.title,
+          activity: planRow.activity,
+          date: planRow.date,
+          time_slot: planRow.time_slot,
+          start_time: planRow.start_time,
+          end_time: planRow.end_time,
+        })
+        .eq('id', existing.id)
+    } else {
+      toInsert.push(planRow)
+    }
+  }
+
+  if (toInsert.length > 0) {
     const { error: plansError } = await adminClient
       .from('plans')
-      .insert(planRows)
-
+      .insert(toInsert)
     if (plansError) {
       console.error('Error inserting gcal plans:', plansError)
     }
