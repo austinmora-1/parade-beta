@@ -201,6 +201,19 @@ function classifyActivity(summary?: string, isFlight = false): string {
   return 'events'
 }
 
+// Check if a city name matches a home address
+function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
+  if (!city || !homeAddress) return false
+  const normCity = city.toLowerCase().trim()
+  const normHome = homeAddress.toLowerCase().trim()
+  if (normHome.includes(normCity) || normCity.includes(normHome)) return true
+  // Compare city portion (before comma) stripped of "city/town" suffix
+  const homeCity = normHome.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim()
+  const flightCity = normCity.replace(/\s*(city|town|village)$/i, '').trim()
+  if (homeCity && flightCity && (homeCity.includes(flightCity) || flightCity.includes(homeCity))) return true
+  return false
+}
+
 async function handleEventsSync(params: {
   adminClient: any
   userId: string
@@ -209,8 +222,13 @@ async function handleEventsSync(params: {
 }) {
   const { adminClient, userId, events, timezone } = params
 
-  // Build a map of date -> slots to mark as busy
-  const busySlotsByDate: Map<string, Set<string>> = new Map()
+  // Fetch user's home address to skip return-home flights
+  const { data: profileData } = await adminClient
+    .from('profiles')
+    .select('home_address')
+    .eq('user_id', userId)
+    .single()
+  const homeAddress: string | null = profileData?.home_address || null
 
   for (const event of events) {
     // All-day events (they don't have dateTime)
@@ -252,6 +270,9 @@ async function handleEventsSync(params: {
     if (!isFlightEvent(event)) continue
     const city = extractFlightDestination(event.summary)
     if (!city) continue
+
+    // Skip flights whose destination matches the user's home city
+    if (isCityMatchingHome(city, homeAddress)) continue
 
     const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
     const endDate = event.end.dateTime ? new Date(event.end.dateTime) : event.end.date ? new Date(event.end.date) : null
