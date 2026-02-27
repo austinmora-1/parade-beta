@@ -10,13 +10,13 @@ export function MobileHeader() {
   const { openFeedback } = useFeedback();
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
+    <header className="sticky top-0 z-40 flex h-[60px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
       <div className="flex-1 flex justify-start">
         <button
           onClick={openFeedback}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
-        >
-          <MessageSquareMore className="h-4 w-4" />
+           className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
+         >
+           <MessageSquareMore className="h-[18px] w-[18px]" />
         </button>
       </div>
       <Link to="/" className="flex items-center justify-center leading-none">
@@ -28,9 +28,9 @@ export function MobileHeader() {
         </div>
         <Link
           to="/notifications"
-          className="relative flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
-        >
-          <Bell className="h-4 w-4" />
+           className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
+         >
+           <Bell className="h-[18px] w-[18px]" />
           {totalNotifications > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
               {totalNotifications}
