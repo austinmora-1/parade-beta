@@ -40,6 +40,12 @@ export function PlanCard({
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
+  // Dynamic title: for 1:1 hangs, show the other person's name
+  const nonSubscribers = plan.participants.filter(p => p.role !== 'subscriber');
+  const displayTitle = plan.title.startsWith('Hang with') && nonSubscribers.length === 1
+    ? `Hang with ${nonSubscribers[0].name}`
+    : plan.title;
+
   const isTentative = plan.status === 'tentative';
 
   if (compact) {
@@ -53,7 +59,7 @@ export function PlanCard({
       >
         <div className="flex items-center gap-1">
           <ActivityIcon config={activityConfig} size={14} />
-          <span className="truncate font-medium">{plan.title}</span>
+          <span className="truncate font-medium">{displayTitle}</span>
           {isTentative && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
         </div>
       </div>
@@ -87,7 +93,7 @@ export function PlanCard({
             <ActivityIcon config={activityConfig} size={28} />
           </div>
           <div>
-            <h3 className="font-display text-lg font-semibold">{plan.title}</h3>
+            <h3 className="font-display text-lg font-semibold">{displayTitle}</h3>
             <p className="text-sm text-muted-foreground">{activityConfig.label}</p>
           </div>
         </div>
