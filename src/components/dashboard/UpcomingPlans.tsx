@@ -153,15 +153,15 @@ export function UpcomingPlans() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 ml-[26px]">
-                      <span className="flex items-center gap-0.5">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                      <span className="flex items-center gap-0.5 shrink-0">
                         <Clock className="h-3 w-3" />
                         {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
                       </span>
                       {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-                        <span className="flex items-center gap-0.5">
-                          <Users className="h-3 w-3" />
-                          <span className="truncate max-w-[160px]">
+                        <span className="flex items-center gap-0.5 ml-auto">
+                          <Users className="h-3 w-3 shrink-0" />
+                          <span className="truncate max-w-[120px]">
                             {plan.participants.filter(p => p.role !== 'subscriber').map(p => p.name).join(', ')}
                           </span>
                         </span>
