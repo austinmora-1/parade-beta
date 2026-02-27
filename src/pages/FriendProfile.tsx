@@ -500,25 +500,28 @@ export default function FriendProfile() {
 
         const renderPlan = (plan: SharedPlan) => {
           const config = ACTIVITY_CONFIG[plan.activity as ActivityType];
+          const locationData = plan.location ? (() => {
+            try { return JSON.parse(plan.location); } catch { return null; }
+          })() : null;
+          const locationName = locationData?.name || (typeof plan.location === 'string' ? plan.location : null);
           return (
-            <div key={plan.id} onClick={() => navigate(`/plan/${plan.id}`)} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-muted/50 transition-colors cursor-pointer">
-              <span className="text-base shrink-0">{config?.icon || '📅'}</span>
+            <div key={plan.id} onClick={() => navigate(`/plan/${plan.id}`)} className="flex items-start gap-2.5 rounded-lg px-2.5 py-2 hover:bg-muted/50 transition-colors cursor-pointer">
+              <span className="text-base shrink-0 mt-0.5">{config?.icon || '📅'}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium truncate">{plan.title}</p>
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
                   <Calendar className="h-2.5 w-2.5 shrink-0" />
-                  <span>{format(new Date(plan.date), 'MMM d')}</span>
+                  <span>{format(new Date(plan.date), 'EEE, MMM d')}</span>
                   <span>·</span>
                   <Clock className="h-2.5 w-2.5 shrink-0" />
                   <span>{slotLabels[plan.time_slot] || plan.time_slot}</span>
-                  {plan.location && (
-                    <>
-                      <span>·</span>
-                      <MapPin className="h-2.5 w-2.5 shrink-0" />
-                      <span className="truncate">{plan.location}</span>
-                    </>
-                  )}
                 </div>
+                {locationName && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                    <MapPin className="h-2.5 w-2.5 shrink-0" />
+                    <span className="truncate">{locationName}</span>
+                  </div>
+                )}
               </div>
             </div>
           );
