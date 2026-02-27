@@ -164,13 +164,13 @@ export function UpcomingPlans() {
                           {plan.participants.length}
                         </span>
                       )}
-                      {plan.location && (
-                        <span className="flex items-center gap-0.5">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          <span className="truncate max-w-[100px]">{plan.location.name}</span>
-                        </span>
-                      )}
                     </div>
+                    {plan.location && (
+                      <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate max-w-[140px]">{plan.location.name}</span>
+                      </div>
+                    )}
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                     {isSameDay(plan.date, new Date()) ? 'Today' : format(plan.date, 'EEE, MMM d')}
