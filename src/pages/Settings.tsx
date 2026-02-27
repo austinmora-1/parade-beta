@@ -124,6 +124,7 @@ export default function Settings() {
   // Profile state
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [homeAddress, setHomeAddress] = useState('');
 
   // Notification settings
@@ -173,6 +174,7 @@ export default function Settings() {
 
         if (profile) {
           setDisplayName(profile.display_name || '');
+          setPhoneNumber((profile as any).phone_number || '');
           setHomeAddress(profile.home_address || '');
           setPlanReminders(profile.plan_reminders ?? true);
           setFriendRequests(profile.friend_requests_notifications ?? true);
@@ -224,6 +226,7 @@ export default function Settings() {
         .from('profiles')
         .update({
           display_name: displayName,
+          phone_number: phoneNumber || null,
           home_address: homeAddress,
           plan_reminders: planReminders,
           friend_requests_notifications: friendRequests,
@@ -406,6 +409,18 @@ export default function Settings() {
                   disabled
                   className="bg-muted h-8 text-sm"
                 />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor="phone" className="text-xs">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  value={phoneNumber}
+                  onChange={(e) => { setPhoneNumber(e.target.value); handleChange(); }}
+                  className="h-8 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">Friends can find you by phone number</p>
               </div>
             </div>
           </AccordionContent>
