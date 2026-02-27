@@ -12,7 +12,7 @@ import {
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Copy, Check, Loader2 } from 'lucide-react';
+import { Mail, Copy, Check, Loader2, Phone } from 'lucide-react';
 
 interface InviteFriendDialogProps {
   open: boolean;
@@ -23,13 +23,14 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
   const { addFriend } = usePlannerStore();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
   const inviteLink = 'https://helloparade.app/invite/abc123';
 
   const handleSendInvite = async () => {
-    if (!email.trim()) return;
+    if (!email.trim() && !phone.trim()) return;
 
     setIsSending(true);
     try {
@@ -43,17 +44,18 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
       if (error) throw error;
 
       addFriend({
-        name: email.split('@')[0],
-        email: email,
+        name: email ? email.split('@')[0] : phone,
+        email: email || undefined,
         status: 'invited',
       });
 
       toast({
         title: 'Invitation sent! 🎉',
-        description: `We've sent an invite email to ${email}`,
+        description: email ? `We've sent an invite to ${email}` : `Invite recorded for ${phone}`,
       });
 
       setEmail('');
+      setPhone('');
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error sending invite:', error);
@@ -103,11 +105,30 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendInvite()}
               />
-              <Button onClick={handleSendInvite} disabled={!email.trim() || isSending}>
-                {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
-              </Button>
             </div>
           </div>
+
+          {/* Phone Invite */}
+          <div className="space-y-3">
+            <Label htmlFor="phone" className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              Invite by Phone
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendInvite()}
+              />
+            </div>
+          </div>
+
+          <Button onClick={handleSendInvite} disabled={(!email.trim() && !phone.trim()) || isSending} className="w-full">
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Invite'}
+          </Button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
