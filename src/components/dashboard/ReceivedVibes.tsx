@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
@@ -5,29 +6,45 @@ import { Zap, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
 
 export function ReceivedVibes() {
   const { receivedVibes, markAsRead, loading, unreadCount } = useVibes();
+  const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
 
   if (loading || receivedVibes.length === 0) return null;
 
   return (
-    <CollapsibleWidget
-      title={`Incoming Vibes${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
-      icon={<Zap className="h-4 w-4 text-primary" />}
-    >
-      <div className="space-y-2">
-        <AnimatePresence>
-          {receivedVibes.slice(0, 5).map((vibe) => (
-            <VibeCard key={vibe.id} vibe={vibe} onMarkRead={markAsRead} />
-          ))}
-        </AnimatePresence>
-      </div>
-    </CollapsibleWidget>
+    <>
+      <CollapsibleWidget
+        title={`Incoming Vibes${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
+        icon={<Zap className="h-4 w-4 text-primary" />}
+      >
+        <div className="space-y-2">
+          <AnimatePresence>
+            {receivedVibes.slice(0, 5).map((vibe) => (
+              <VibeCard
+                key={vibe.id}
+                vibe={vibe}
+                onMarkRead={markAsRead}
+                onTap={() => setSelectedVibe(vibe)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      </CollapsibleWidget>
+
+      <VibeDetailDialog
+        vibe={selectedVibe}
+        open={!!selectedVibe}
+        onOpenChange={(open) => { if (!open) setSelectedVibe(null); }}
+        onMarkRead={markAsRead}
+      />
+    </>
   );
 }
 
-function VibeCard({ vibe, onMarkRead }: { vibe: VibeSend; onMarkRead: (id: string) => void }) {
+function VibeCard({ vibe, onMarkRead, onTap }: { vibe: VibeSend; onMarkRead: (id: string) => void; onTap: () => void }) {
   const isCustom = vibe.vibe_type === 'custom';
   const config = isCustom
     ? { label: 'Custom', icon: '✨', color: 'primary', description: 'Custom vibe' }
@@ -46,15 +63,15 @@ function VibeCard({ vibe, onMarkRead }: { vibe: VibeSend; onMarkRead: (id: strin
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
+      onClick={onTap}
       className={cn(
-        "rounded-xl border p-3 transition-all",
+        "rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md active:scale-[0.98]",
         vibe.is_read
           ? "border-border bg-card/50"
           : "border-primary/20 bg-primary/5"
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Sender avatar or vibe icon */}
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
           style={{ backgroundColor: `${vibeColors[vibe.vibe_type] || vibeColors.social}20` }}
@@ -84,7 +101,6 @@ function VibeCard({ vibe, onMarkRead }: { vibe: VibeSend; onMarkRead: (id: strin
             )}
           </div>
 
-          {/* Show custom tags below for non-custom vibes that also have tags */}
           {!isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {vibe.custom_tags.map(tag => (
@@ -113,7 +129,7 @@ function VibeCard({ vibe, onMarkRead }: { vibe: VibeSend; onMarkRead: (id: strin
             </span>
             {!vibe.is_read && vibe.recipient_entry_id && (
               <button
-                onClick={() => onMarkRead(vibe.recipient_entry_id!)}
+                onClick={(e) => { e.stopPropagation(); onMarkRead(vibe.recipient_entry_id!); }}
                 className="flex items-center gap-0.5 text-[10px] text-primary hover:underline"
               >
                 <Eye className="h-3 w-3" />
