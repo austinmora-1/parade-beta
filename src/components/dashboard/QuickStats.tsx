@@ -53,6 +53,7 @@ export function QuickStats() {
         ? `#${currentVibe.customText || currentVibe.customTags?.join(' #') || 'Custom'}` 
         : currentVibe?.type || 'Not set',
       isText: true,
+      isCustomVibe: currentVibe?.type === 'custom',
       color: 'bg-accent text-accent-foreground',
     },
   ];
@@ -73,7 +74,9 @@ export function QuickStats() {
             </div>
             <p className="text-xs text-muted-foreground">{stat.label}</p>
             <p className={`font-display text-xl font-bold ${stat.isText ? 'text-base capitalize' : ''}`}>
-              {stat.value}
+              {stat.isCustomVibe ? (
+                <><span className="italic text-[hsl(120,100%,45%)]">#</span>{String(stat.value).replace(/^#/, '')}</>
+              ) : stat.value}
             </p>
           </div>
         ))}
