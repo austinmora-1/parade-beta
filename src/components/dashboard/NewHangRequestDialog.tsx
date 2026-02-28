@@ -69,7 +69,47 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
     return days;
   }, []);
 
-  // Fetch friend availability + plans
+  // Map time slots to hour ranges for default availability calculation
+  const TIME_SLOT_HOURS: Record<TimeSlot, { start: number; end: number }> = {
+    'early-morning': { start: 6, end: 9 },
+    'late-morning': { start: 9, end: 12 },
+    'early-afternoon': { start: 12, end: 15 },
+    'late-afternoon': { start: 15, end: 18 },
+    'evening': { start: 18, end: 22 },
+    'late-night': { start: 22, end: 26 },
+  };
+
+  const createDefaultSlots = (
+    date: Date,
+    settings: { workDays: string[]; workStartHour: number; workEndHour: number; defaultStatus: string } | null
+  ): Record<TimeSlot, boolean> => {
+    const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+    const isWorkDay = settings?.workDays?.includes(dayOfWeek) ?? false;
+    const defaultFree = settings?.defaultStatus !== 'unavailable';
+
+    const slots: Record<TimeSlot, boolean> = {
+      'early-morning': defaultFree,
+      'late-morning': defaultFree,
+      'early-afternoon': defaultFree,
+      'late-afternoon': defaultFree,
+      'evening': defaultFree,
+      'late-night': defaultFree,
+    };
+
+    if (isWorkDay && settings) {
+      const workStart = settings.workStartHour;
+      const workEnd = settings.workEndHour;
+      for (const [slot, hours] of Object.entries(TIME_SLOT_HOURS)) {
+        if (hours.start < workEnd && hours.end > workStart) {
+          slots[slot as TimeSlot] = false;
+        }
+      }
+    }
+
+    return slots;
+  };
+
+  // Fetch friend availability + plans + default settings
   useEffect(() => {
     if (!selectedFriend?.friendUserId) {
       setFriendAvail([]);
@@ -82,7 +122,7 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
       const today = format(new Date(), 'yyyy-MM-dd');
       const weekOut = format(addDays(new Date(), 7), 'yyyy-MM-dd');
 
-      const [availResult, plansResult] = await Promise.all([
+      const [availResult, plansResult, profileResult] = await Promise.all([
         supabase
           .from('availability')
           .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
@@ -95,17 +135,42 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
           .eq('user_id', selectedFriend.friendUserId!)
           .gte('date', `${today}T00:00:00`)
           .lte('date', `${weekOut}T23:59:59`),
+        supabase
+          .from('profiles')
+          .select('default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status')
+          .eq('user_id', selectedFriend.friendUserId!)
+          .single(),
       ]);
 
+      // Build friend's default settings
+      const friendDefaults = profileResult.data ? {
+        workDays: (profileResult.data.default_work_days as string[]) || ['monday','tuesday','wednesday','thursday','friday'],
+        workStartHour: profileResult.data.default_work_start_hour ?? 9,
+        workEndHour: profileResult.data.default_work_end_hour ?? 17,
+        defaultStatus: (profileResult.data.default_availability_status as string) || 'free',
+      } : null;
+
+      // Map explicit availability records by date
+      const availByDate: Record<string, Record<TimeSlot, boolean>> = {};
       if (!availResult.error && availResult.data) {
-        const mapped: FriendAvailDay[] = availResult.data.map((row: any) => ({
-          date: row.date,
-          slots: Object.fromEntries(
-            TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot]] !== false])
-          ) as Record<TimeSlot, boolean>,
-        }));
-        setFriendAvail(mapped);
+        for (const row of availResult.data) {
+          availByDate[row.date] = Object.fromEntries(
+            TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot] as keyof typeof row] !== false])
+          ) as Record<TimeSlot, boolean>;
+        }
       }
+
+      // Build full 7-day availability, filling in defaults for missing days
+      const allDays: FriendAvailDay[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(new Date(), i);
+        const dateStr = format(d, 'yyyy-MM-dd');
+        allDays.push({
+          date: dateStr,
+          slots: availByDate[dateStr] || createDefaultSlots(d, friendDefaults),
+        });
+      }
+      setFriendAvail(allDays);
 
       if (!plansResult.error && plansResult.data) {
         setFriendPlans(plansResult.data.map((p: any) => ({
