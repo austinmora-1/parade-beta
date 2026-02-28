@@ -194,6 +194,41 @@ export function useVibes() {
 
       if (recipientError) throw recipientError;
 
+      // Send push notifications to recipients (fire-and-forget)
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (token) {
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single();
+        const senderName = senderProfile?.display_name || 'Someone';
+        const vibeLabel = payload.vibe_type === 'custom' 
+          ? (payload.custom_tags?.[0] || 'a vibe') 
+          : payload.vibe_type;
+
+        for (const recipientId of recipientIds) {
+          fetch(
+            `https://${projectId}.supabase.co/functions/v1/send-push-notification`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                user_id: recipientId,
+                title: `${senderName} sent you a vibe`,
+                body: payload.message || `Feeling ${vibeLabel}`,
+                url: '/',
+              }),
+            }
+          ).catch(() => {}); // fire-and-forget
+        }
+      }
+
       toast.success(`Vibe sent to ${recipientIds.length} friend${recipientIds.length > 1 ? 's' : ''}!`);
       loadVibes();
     } catch (err: any) {
