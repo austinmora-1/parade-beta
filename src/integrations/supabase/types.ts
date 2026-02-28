@@ -857,6 +857,11 @@ export type Database = {
       }
     }
     Functions: {
+      check_vibe_recipient: {
+        Args: { p_vibe_send_id: string }
+        Returns: boolean
+      }
+      check_vibe_sender: { Args: { p_vibe_send_id: string }; Returns: boolean }
       decrypt_calendar_token: {
         Args: { encrypted_token: string; p_key_id: string }
         Returns: string
