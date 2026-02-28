@@ -13,7 +13,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
-import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2 } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
@@ -61,6 +61,26 @@ function ArcadeModeToggle({ onChange }: { onChange: () => void }) {
         checked={isArcade}
         onCheckedChange={(checked) => {
           setTheme(checked ? 'arcade' : 'light');
+        }}
+      />
+    </div>
+  );
+}
+
+function AppearanceToggle() {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark' || theme === 'arcade';
+
+  return (
+    <div className="flex items-center justify-between pt-1">
+      <div>
+        <p className="text-sm font-medium">Dark Mode</p>
+        <p className="text-[10px] text-muted-foreground">Switch between light and dark theme</p>
+      </div>
+      <Switch
+        checked={isDark}
+        onCheckedChange={(checked) => {
+          setTheme(checked ? 'dark' : 'light');
         }}
       />
     </div>
@@ -776,15 +796,17 @@ export default function Settings() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Arcade Mode Easter Egg */}
-        <AccordionItem value="arcade" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
+        {/* Appearance */}
+        <AccordionItem value="appearance" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
           <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
             <div className="flex items-center gap-2">
-              <Gamepad2 className="h-4 w-4 text-muted-foreground" />
-              <span className="font-display text-sm font-semibold">Arcade Mode</span>
+              <Palette className="h-4 w-4 text-primary" />
+              <span className="font-display text-sm font-semibold">Appearance</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-3">
+            <AppearanceToggle />
+            <Separator className="my-2" />
             <ArcadeModeToggle onChange={handleChange} />
           </AccordionContent>
         </AccordionItem>
