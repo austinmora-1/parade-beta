@@ -5,6 +5,7 @@ import { MobileHeader } from './MobileHeader';
 import { PullToRefresh } from './PullToRefresh';
 import { FeedbackProvider } from '@/components/feedback/FeedbackContext';
 import { FeedbackPanel } from '@/components/feedback/FeedbackPanel';
+import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
 import { useFriendRequestNotifications } from '@/hooks/useFriendRequestNotifications';
 
 export function AppLayout() {
@@ -24,6 +25,7 @@ export function AppLayout() {
           </PullToRefresh>
         </main>
         <MobileNav />
+        <FloatingFeedbackButton />
         <FeedbackPanel />
       </div>
     </FeedbackProvider>

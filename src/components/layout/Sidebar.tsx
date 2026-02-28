@@ -6,13 +6,11 @@ import {
   MessageCircle, 
   Clock, 
   Bell,
-  MessageSquareMore
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
-import { useFeedback } from '@/components/feedback/FeedbackContext';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -25,7 +23,6 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const { totalNotifications } = useNotifications();
-  const { openFeedback } = useFeedback();
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-sidebar md:block">
@@ -35,13 +32,6 @@ export function Sidebar() {
           <div className="flex-1" />
           <ParadeWordmark size="lg" />
           <div className="flex-1 flex justify-end gap-1">
-            <ThemeToggle />
-            <button
-              onClick={openFeedback}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <MessageSquareMore className="h-4 w-4" />
-            </button>
             <NavLink
               to="/notifications"
               className={cn(
@@ -57,6 +47,17 @@ export function Sidebar() {
                   {totalNotifications}
                 </span>
               )}
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                location.pathname === '/settings'
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Settings className="h-4 w-4" />
             </NavLink>
           </div>
         </div>
