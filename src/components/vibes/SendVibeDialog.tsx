@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useVibes, SendVibePayload } from '@/hooks/useVibes';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { Send, ImagePlus, MapPin, Users, Globe, Shield, X, Plus, Loader2, Check } from 'lucide-react';
+import { GifPicker } from '@/components/chat/GifPicker';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,6 +31,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
   const [targetType, setTargetType] = useState<TargetType>('broadcast');
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'gif' | null>(null);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +69,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('vibe-media').getPublicUrl(path);
       setMediaUrl(publicUrl);
+      setMediaType('image');
     } catch (err) {
       console.error(err);
       toast.error('Failed to upload image');
@@ -96,7 +99,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
       custom_tags: vibeType === 'custom' && customTags.length > 0 ? customTags : undefined,
       message: message || undefined,
       media_url: mediaUrl || undefined,
-      media_type: mediaUrl ? 'image' : undefined,
+      media_type: mediaType || undefined,
       target_type: targetType,
       recipient_ids: targetType === 'selected' ? selectedFriendIds : undefined,
     };
@@ -114,6 +117,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
     setTargetType('broadcast');
     setSelectedFriendIds([]);
     setMediaUrl(null);
+    setMediaType(null);
     onOpenChange(false);
   };
 
@@ -235,23 +239,31 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
               <div className="relative inline-block">
                 <img src={mediaUrl} alt="Vibe" className="h-24 w-24 rounded-xl object-cover border border-border" />
                 <button
-                  onClick={() => setMediaUrl(null)}
+                  onClick={() => { setMediaUrl(null); setMediaType(null); }}
                   className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive text-destructive-foreground h-5 w-5 flex items-center justify-center"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </div>
             ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="gap-2"
-              >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
-                Add photo
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="gap-2"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+                  Add photo
+                </Button>
+                <GifPicker onGifSelect={(url) => { setMediaUrl(url); setMediaType('gif'); }}>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <span className="text-xs font-bold">GIF</span>
+                    Add GIF
+                  </Button>
+                </GifPicker>
+              </div>
             )}
           </div>
 
