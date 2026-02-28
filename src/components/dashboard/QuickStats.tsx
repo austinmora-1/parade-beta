@@ -75,7 +75,7 @@ export function QuickStats() {
             <p className="text-xs text-muted-foreground">{stat.label}</p>
             <p className={`font-display text-xl font-bold ${stat.isText ? 'text-base capitalize' : ''}`}>
               {stat.isCustomVibe ? (
-                <><span className="italic text-[hsl(120,100%,45%)]">#</span>{String(stat.value).replace(/^#/, '')}</>
+                <><span className="italic text-primary">#</span>{String(stat.value).replace(/^#/, '')}</>
               ) : stat.value}
             </p>
           </div>
