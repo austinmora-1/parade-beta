@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, addDays, isSameDay } from 'date-fns';
+import { format, addDays, isSameDay, isToday as isDateToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot, Friend } from '@/types/planner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Loader2, ChevronLeft, Users, Check } from 'lucide-react';
+import { Send, Loader2, ChevronLeft, ChevronDown, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -47,6 +47,7 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
   const [friendAvail, setFriendAvail] = useState<FriendAvailDay[]>([]);
   const [friendPlans, setFriendPlans] = useState<{ date: string; time_slot: string }[]>([]);
   const [loadingAvail, setLoadingAvail] = useState(false);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected' && f.friendUserId);
@@ -216,6 +217,21 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
     setSelectedDay('');
     setSelectedSlot('');
     setMessage('');
+    setExpandedDays(new Set());
+  };
+
+  const toggleDay = (dateStr: string) => {
+    setExpandedDays(prev => {
+      const next = new Set(prev);
+      if (next.has(dateStr)) next.delete(dateStr);
+      else next.add(dateStr);
+      return next;
+    });
+  };
+
+  const getDaySummary = (dateStr: string) => {
+    const bothFree = TIME_SLOT_ORDER.filter(slot => getSlotStatus(dateStr, slot) === 'both-free').length;
+    return { bothFree, total: TIME_SLOT_ORDER.length };
   };
 
   const getInitials = (name: string) =>
@@ -300,7 +316,7 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            /* Step 2: Availability grid + request */
+            /* Step 2: Availability + request */
             <div className="space-y-3">
               {/* Legend */}
               <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
@@ -315,66 +331,119 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
                 </span>
               </div>
 
-              {/* Availability grid */}
-              <div className="rounded-lg border border-border overflow-hidden">
-                {/* Header row */}
-                <div className="grid grid-cols-[80px_repeat(6,1fr)] bg-muted/30 border-b border-border">
-                  <div className="p-1.5 text-[10px] font-medium text-muted-foreground" />
-                  {TIME_SLOT_ORDER.map(slot => (
-                    <div key={slot} className="p-1 text-center">
-                      <span className="text-[9px] font-medium text-muted-foreground leading-tight block">
-                        {TIME_SLOT_LABELS[slot].time}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              {/* Day cards grid */}
+              <ScrollArea className="max-h-[320px]">
+                <div className="grid grid-cols-2 gap-1.5">
+                  {nextDays.map(day => {
+                    const isToday = isDateToday(day.date);
+                    const summary = getDaySummary(day.value);
+                    const isExpanded = expandedDays.has(day.value);
+                    const score = summary.bothFree / summary.total;
 
-                {/* Day rows */}
-                {nextDays.map(day => (
-                  <div
-                    key={day.value}
-                    className={cn(
-                      "grid grid-cols-[80px_repeat(6,1fr)] border-b border-border last:border-b-0",
-                      selectedDay === day.value && "bg-primary/5"
-                    )}
-                  >
-                    <div className="p-1.5 flex items-center">
-                      <span className="text-[11px] font-medium text-foreground truncate">
-                        {day.shortLabel}
-                      </span>
-                    </div>
-                    {TIME_SLOT_ORDER.map(slot => {
-                      const status = getSlotStatus(day.value, slot);
-                      const isSelected = selectedDay === day.value && selectedSlot === slot;
-                      const canSelect = status === 'both-free' || status === 'me-busy';
-
-                      return (
+                    return (
+                      <div key={day.value}>
                         <button
-                          key={slot}
-                          onClick={() => {
-                            if (!canSelect) return;
-                            setSelectedDay(day.value);
-                            setSelectedSlot(slot);
-                          }}
-                          disabled={!canSelect}
+                          onClick={() => toggleDay(day.value)}
                           className={cn(
-                            "p-1 flex items-center justify-center transition-all min-h-[32px]",
-                            status === 'both-free' && !isSelected && "bg-availability-available/40 hover:bg-availability-available/60",
-                            status === 'me-busy' && !isSelected && "bg-availability-available/15 hover:bg-availability-available/25",
-                            status === 'friend-busy' && "bg-muted-foreground/10 cursor-not-allowed",
-                            status === 'both-busy' && "bg-muted-foreground/10 cursor-not-allowed",
-                            isSelected && "bg-primary ring-2 ring-primary ring-inset"
+                            "w-full text-left rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 hover:bg-muted/50",
+                            isToday && "bg-primary/5",
+                            selectedDay === day.value && "ring-2 ring-primary/30"
                           )}
                         >
-                          {isSelected && (
-                            <Check className="h-3 w-3 text-primary-foreground" />
-                          )}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className={cn("text-xs font-semibold", isToday && "text-primary")}>
+                                {day.shortLabel}
+                              </span>
+                              {isToday && (
+                                <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-full font-medium">
+                                  Today
+                                </span>
+                              )}
+                            </div>
+                            <ChevronDown className={cn(
+                              "h-3 w-3 text-muted-foreground transition-transform shrink-0",
+                              isExpanded && "rotate-180"
+                            )} />
+                          </div>
+
+                          {/* Availability bar */}
+                          <div className="mt-1.5 flex gap-0.5">
+                            {TIME_SLOT_ORDER.map(slot => {
+                              const status = getSlotStatus(day.value, slot);
+                              return (
+                                <div
+                                  key={slot}
+                                  className={cn(
+                                    "h-1 flex-1 rounded-full",
+                                    status === 'both-free' && "bg-availability-available",
+                                    status === 'me-busy' && "bg-availability-available/30",
+                                    status === 'friend-busy' && "bg-muted-foreground/20",
+                                    status === 'both-busy' && "bg-muted-foreground/20"
+                                  )}
+                                />
+                              );
+                            })}
+                          </div>
+
+                          <div className="mt-1">
+                            <span className={cn(
+                              "text-[10px] font-medium",
+                              score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
+                            )}>
+                              {summary.bothFree}/{summary.total} mutual
+                            </span>
+                          </div>
                         </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+
+                        {/* Expanded slot list */}
+                        {isExpanded && (
+                          <div className="space-y-0.5 animate-fade-in px-0.5 pb-1">
+                            {TIME_SLOT_ORDER.map(slot => {
+                              const status = getSlotStatus(day.value, slot);
+                              const isSelected = selectedDay === day.value && selectedSlot === slot;
+                              const slotInfo = TIME_SLOT_LABELS[slot];
+
+                              return (
+                                <button
+                                  key={slot}
+                                  onClick={() => {
+                                    setSelectedDay(day.value);
+                                    setSelectedSlot(slot);
+                                  }}
+                                  className={cn(
+                                    "flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] transition-colors w-full text-left",
+                                    status === 'both-free' && !isSelected && "bg-availability-available/20 text-foreground hover:bg-availability-available/30",
+                                    status === 'me-busy' && !isSelected && "bg-availability-available/10 text-foreground hover:bg-availability-available/15",
+                                    (status === 'friend-busy' || status === 'both-busy') && "bg-muted/30 text-muted-foreground",
+                                    isSelected && "bg-primary text-primary-foreground ring-2 ring-primary"
+                                  )}
+                                >
+                                  <span className={cn(
+                                    "h-1.5 w-1.5 shrink-0 rounded-full",
+                                    status === 'both-free' && !isSelected && "bg-availability-available",
+                                    status === 'me-busy' && !isSelected && "bg-availability-available/40",
+                                    (status === 'friend-busy' || status === 'both-busy') && "bg-muted-foreground/40",
+                                    isSelected && "bg-primary-foreground"
+                                  )} />
+                                  <span className="font-medium truncate">{slotInfo.label}</span>
+                                  <span className={cn(
+                                    "ml-auto text-[9px] shrink-0",
+                                    isSelected ? "text-primary-foreground/70" : "text-muted-foreground"
+                                  )}>
+                                    {slotInfo.time}
+                                  </span>
+                                  {isSelected && <Check className="h-3 w-3 shrink-0" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
 
               {/* Message + Send */}
               <Textarea
