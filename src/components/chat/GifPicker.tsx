@@ -3,7 +3,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface GifResult {
   id: string;
@@ -19,26 +18,30 @@ interface GifPickerProps {
   children: React.ReactNode;
 }
 
+const PAGE_SIZE = 20;
+
 export function GifPicker({ onGifSelect, children }: GifPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [gifs, setGifs] = useState<GifResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const offsetRef = useRef(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchGifs = useCallback(async (searchQuery: string) => {
-    setLoading(true);
+  const fetchGifs = useCallback(async (searchQuery: string, offset = 0, append = false) => {
+    if (offset === 0) setLoading(true);
+    else setLoadingMore(true);
+
     try {
-      const params = new URLSearchParams({ limit: '20' });
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(offset),
+      });
       if (searchQuery) params.set('q', searchQuery);
 
-      const { data, error } = await supabase.functions.invoke('giphy-search', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        body: undefined,
-      });
-
-      // Use fetch directly for GET with query params
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const session = (await supabase.auth.getSession()).data.session;
@@ -55,26 +58,51 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
 
       if (!res.ok) throw new Error('Failed to fetch GIFs');
       const result = await res.json();
-      setGifs(result.gifs || []);
+      const newGifs: GifResult[] = result.gifs || [];
+
+      setHasMore(newGifs.length >= PAGE_SIZE);
+      offsetRef.current = offset + newGifs.length;
+
+      if (append) {
+        setGifs(prev => [...prev, ...newGifs]);
+      } else {
+        setGifs(newGifs);
+      }
     } catch (err) {
       console.error('GIF fetch error:', err);
-      setGifs([]);
+      if (!append) setGifs([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
+  // Load trending on open
   useEffect(() => {
     if (!open) return;
+    offsetRef.current = 0;
     fetchGifs('');
   }, [open, fetchGifs]);
 
+  // Debounced search
   useEffect(() => {
     if (!open) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchGifs(query), 400);
+    debounceRef.current = setTimeout(() => {
+      offsetRef.current = 0;
+      fetchGifs(query);
+    }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query, open, fetchGifs]);
+
+  // Infinite scroll
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || loading || loadingMore || !hasMore) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) {
+      fetchGifs(query, offsetRef.current, true);
+    }
+  }, [loading, loadingMore, hasMore, query, fetchGifs]);
 
   const handleSelect = (gif: GifResult) => {
     onGifSelect(gif.url);
@@ -104,7 +132,11 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
           </div>
         </div>
 
-        <div className="h-64 overflow-y-auto p-1.5">
+        <div
+          ref={scrollRef}
+          className="h-64 overflow-y-auto p-1.5"
+          onScroll={handleScroll}
+        >
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -131,6 +163,11 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
                   />
                 </button>
               ))}
+              {loadingMore && (
+                <div className="col-span-2 flex justify-center py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
             </div>
           )}
         </div>
