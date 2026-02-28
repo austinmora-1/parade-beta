@@ -13,6 +13,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Mail, Copy, Check, Loader2, Phone } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface InviteFriendDialogProps {
   open: boolean;
@@ -22,12 +23,14 @@ interface InviteFriendDialogProps {
 export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogProps) {
   const { addFriend } = usePlannerStore();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  const inviteLink = 'https://helloparade.app/invite/abc123';
+  const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
+  const inviteLink = `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
 
   const handleSendInvite = async () => {
     if (!email.trim() && !phone.trim()) return;
