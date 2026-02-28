@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications, dismissNotification } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -12,21 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
 import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
-
-// --- localStorage helpers for dismissed notifications ---
-const DISMISSED_KEY = 'notifications_dismissed';
-
-function getDismissedIds(): Set<string> {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]'));
-  } catch { return new Set(); }
-}
-
-function addDismissedId(id: string) {
-  const ids = getDismissedIds();
-  ids.add(id);
-  localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]));
-}
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
@@ -83,7 +68,7 @@ export default function Notifications() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos } = useNotifications();
+  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, dismissedIds, dismissNotification: dismiss } = useNotifications();
 
   const [hangRequests, setHangRequests] = useState<HangRequest[]>([]);
   const [hangLoading, setHangLoading] = useState(true);
@@ -98,20 +83,9 @@ export default function Notifications() {
   const [recentPhotos, setRecentPhotos] = useState<RecentPlanPhoto[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
 
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(getDismissedIds);
-
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
   const visibleIncomingRequests = incomingRequests.filter(f => !dismissedIds.has(`friend-${f.id}`));
   const dismissedFriendRequestCount = incomingRequests.length - visibleIncomingRequests.length;
-
-  const dismiss = useCallback((id: string) => {
-    addDismissedId(id);
-    setDismissedIds(prev => {
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
-  }, []);
 
   // --- Dismiss button component ---
   const DismissButton = ({ id, className }: { id: string; className?: string }) => (
