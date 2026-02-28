@@ -13,6 +13,7 @@ import { AvailableFriends } from '@/components/dashboard/AvailableFriends';
 import { EllyWidget } from '@/components/dashboard/EllyWidget';
 import { PodWidget } from '@/components/dashboard/PodWidget';
 import { ReceivedVibes } from '@/components/dashboard/ReceivedVibes';
+import { SentVibes } from '@/components/dashboard/SentVibes';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
@@ -58,6 +59,9 @@ export default function Dashboard() {
 
       {/* Received Vibes */}
       <ReceivedVibes />
+
+      {/* Sent Vibes */}
+      <SentVibes />
 
       {/* Upcoming Plans */}
       <UpcomingPlans />
