@@ -127,10 +127,15 @@ export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss, reaction
 
           {/* Location */}
           {vibe.location_name && (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vibe.location_name)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 hover:bg-muted transition-colors group"
+            >
               <MapPin className="h-4 w-4 text-primary shrink-0" />
-              <span className="text-sm text-foreground truncate">{vibe.location_name}</span>
-            </div>
+              <span className="text-sm text-foreground truncate group-hover:underline">{vibe.location_name}</span>
+            </a>
           )}
 
           {/* Reactions */}
