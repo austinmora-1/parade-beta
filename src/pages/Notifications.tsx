@@ -388,16 +388,33 @@ export default function Notifications() {
   const visiblePendingChanges = pendingChanges.filter(c => !dismissedIds.has(`change-${c.id}`));
   const visibleRecentPhotos = recentPhotos.filter(p => !dismissedIds.has(`photo-${p.id}`));
 
-  const isEmpty = visibleIncomingRequests.length === 0 && dismissedFriendRequestCount === 0 && visibleHangRequests.length === 0 && visiblePlanInvitations.length === 0 && visiblePendingChanges.length === 0 && visibleRecentPhotos.length === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading;
+  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length;
+  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading;
+
+  const clearAll = () => {
+    visibleHangRequests.forEach(r => dismiss(`hang-${r.id}`));
+    visiblePlanInvitations.forEach(i => dismiss(`invite-${i.id}`));
+    visiblePendingChanges.forEach(c => dismiss(`change-${c.id}`));
+    visibleRecentPhotos.forEach(p => dismiss(`photo-${p.id}`));
+    visibleIncomingRequests.forEach(f => dismiss(`friend-${f.id}`));
+  };
 
   return (
     <div className="animate-fade-in space-y-6 md:space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="font-display text-lg font-bold md:text-2xl">Notifications</h1>
-        <p className="mt-1 text-sm text-muted-foreground md:text-base">
-          Stay updated with invitations, requests, and changes
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-lg font-bold md:text-2xl">Notifications</h1>
+          <p className="mt-1 text-sm text-muted-foreground md:text-base">
+            Stay updated with invitations, requests, and changes
+          </p>
+        </div>
+        {totalVisible > 0 && (
+          <Button size="sm" variant="outline" onClick={clearAll} className="shrink-0 gap-1.5">
+            <X className="h-3.5 w-3.5" />
+            Clear all
+          </Button>
+        )}
       </div>
 
       {/* Plan Invitations Section */}
