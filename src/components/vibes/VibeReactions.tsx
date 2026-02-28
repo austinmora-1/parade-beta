@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SmilePlus } from 'lucide-react';
+import { SmilePlus, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '🔥', '💯', '🙌'];
@@ -18,9 +18,10 @@ interface VibeReactionsProps {
   reactions: VibeReaction[];
   currentUserId: string;
   onToggleReaction: (vibeSendId: string, emoji: string) => void;
+  commentCount?: number;
 }
 
-export function VibeReactions({ vibeSendId, reactions, currentUserId, onToggleReaction }: VibeReactionsProps) {
+export function VibeReactions({ vibeSendId, reactions, currentUserId, onToggleReaction, commentCount = 0 }: VibeReactionsProps) {
   const [open, setOpen] = useState(false);
   const vibeReactions = reactions.filter(r => r.vibe_send_id === vibeSendId);
 
@@ -34,6 +35,12 @@ export function VibeReactions({ vibeSendId, reactions, currentUserId, onToggleRe
 
   return (
     <div className="flex items-center gap-1 mt-1.5">
+      {commentCount > 0 && (
+        <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] border border-border bg-card text-muted-foreground">
+          <MessageCircle className="h-3 w-3" />
+          <span className="font-medium">{commentCount}</span>
+        </span>
+      )}
       {Array.from(grouped.entries()).map(([emoji, { count, userReacted }]) => (
         <button
           key={emoji}

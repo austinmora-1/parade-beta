@@ -11,7 +11,7 @@ import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
 import { VibeReactions, VibeReaction } from '@/components/vibes/VibeReactions';
 
 export function ReceivedVibes() {
-  const { receivedVibes, dismissVibe, loading, unreadCount, vibeReactions, toggleVibeReaction } = useVibes();
+  const { receivedVibes, dismissVibe, loading, unreadCount, vibeReactions, toggleVibeReaction, commentCounts } = useVibes();
   const { user } = useAuth();
   const currentUserId = user?.id || '';
   const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
@@ -39,6 +39,7 @@ export function ReceivedVibes() {
                 reactions={vibeReactions}
                 currentUserId={currentUserId}
                 onToggleReaction={toggleVibeReaction}
+                commentCount={commentCounts[vibe.id] || 0}
               />
             ))}
           </AnimatePresence>
@@ -66,7 +67,7 @@ export function ReceivedVibes() {
   );
 }
 
-function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleReaction }: { vibe: VibeSend; onDismiss: (id: string) => void; onTap: () => void; reactions: VibeReaction[]; currentUserId: string; onToggleReaction: (vibeSendId: string, emoji: string) => void }) {
+function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleReaction, commentCount }: { vibe: VibeSend; onDismiss: (id: string) => void; onTap: () => void; reactions: VibeReaction[]; currentUserId: string; onToggleReaction: (vibeSendId: string, emoji: string) => void; commentCount: number }) {
   const isCustom = vibe.vibe_type === 'custom';
   const config = isCustom
     ? { label: 'Custom', icon: '✨', color: 'primary', description: 'Custom vibe' }
@@ -174,6 +175,7 @@ function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleRe
             reactions={reactions}
             currentUserId={currentUserId}
             onToggleReaction={onToggleReaction}
+            commentCount={commentCount}
           />
 
           <span className="text-[10px] text-muted-foreground mt-0.5 block">

@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { Send, MapPin } from 'lucide-react';
+import { Send, MapPin, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { VibeReaction } from '@/components/vibes/VibeReactions';
 
 export function SentVibes() {
-  const { sentVibes, sentVibeReactions, loading } = useVibes();
+  const { sentVibes, sentVibeReactions, commentCounts, loading } = useVibes();
   const [expanded, setExpanded] = useState(false);
 
   if (loading || sentVibes.length === 0) return null;
@@ -24,7 +24,7 @@ export function SentVibes() {
       <div className="space-y-2">
         <AnimatePresence>
           {displayVibes.map((vibe) => (
-            <SentVibeCard key={vibe.id} vibe={vibe} reactions={sentVibeReactions} />
+            <SentVibeCard key={vibe.id} vibe={vibe} reactions={sentVibeReactions} commentCount={commentCounts[vibe.id] || 0} />
           ))}
         </AnimatePresence>
       </div>
@@ -48,7 +48,7 @@ const vibeColors: Record<string, string> = {
   custom: 'hsl(var(--primary))',
 };
 
-function SentVibeCard({ vibe, reactions }: { vibe: VibeSend; reactions: VibeReaction[] }) {
+function SentVibeCard({ vibe, reactions, commentCount }: { vibe: VibeSend; reactions: VibeReaction[]; commentCount: number }) {
   const isCustom = vibe.vibe_type === 'custom';
   const config = isCustom
     ? { label: 'Custom', icon: '✨', color: 'primary', description: 'Custom vibe' }
@@ -119,9 +119,15 @@ function SentVibeCard({ vibe, reactions }: { vibe: VibeSend; reactions: VibeReac
             </a>
           )}
 
-          {/* Reaction summary */}
-          {vibeReactions.length > 0 && (
+          {/* Comment & Reaction summary */}
+          {(commentCount > 0 || vibeReactions.length > 0) && (
             <div className="flex items-center gap-1 mt-1.5">
+              {commentCount > 0 && (
+                <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] border border-border bg-card text-muted-foreground">
+                  <MessageCircle className="h-3 w-3" />
+                  <span className="font-medium">{commentCount}</span>
+                </span>
+              )}
               {Array.from(grouped.entries()).map(([emoji, count]) => (
                 <span
                   key={emoji}
@@ -131,9 +137,11 @@ function SentVibeCard({ vibe, reactions }: { vibe: VibeSend; reactions: VibeReac
                   {count > 1 && <span className="font-medium">{count}</span>}
                 </span>
               ))}
-              <span className="text-[10px] text-muted-foreground ml-0.5">
-                {vibeReactions.length} reaction{vibeReactions.length !== 1 ? 's' : ''}
-              </span>
+              {vibeReactions.length > 0 && (
+                <span className="text-[10px] text-muted-foreground ml-0.5">
+                  {vibeReactions.length} reaction{vibeReactions.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
           )}
 
