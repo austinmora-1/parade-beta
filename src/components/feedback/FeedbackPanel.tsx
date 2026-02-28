@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useFeedback } from "./FeedbackContext";
+import { supabase } from "@/integrations/supabase/client";
 
 type FeedbackType = "feature" | "bug" | "general";
 
@@ -27,18 +28,31 @@ export function FeedbackPanel() {
     
     setIsSubmitting(true);
     
-    // Simulate submission - replace with actual API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Thanks for your feedback! 💜",
-      description: "We appreciate you taking the time to help us improve.",
-    });
-    
-    setIsSubmitting(false);
-    setMessage("");
-    setSelectedType(null);
-    closeFeedback();
+    try {
+      const { data, error } = await supabase.functions.invoke("submit-feedback", {
+        body: { feedbackType: selectedType, message: message.trim() },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Thanks for your feedback! 💜",
+        description: "We appreciate you taking the time to help us improve.",
+      });
+
+      setMessage("");
+      setSelectedType(null);
+      closeFeedback();
+    } catch (err) {
+      console.error("Feedback submission error:", err);
+      toast({
+        title: "Couldn't send feedback",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {

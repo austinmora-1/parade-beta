@@ -195,6 +195,33 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          created_at: string
+          feedback_type: string
+          id: string
+          message: string
+          synced_to_sheets: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback_type: string
+          id?: string
+          message: string
+          synced_to_sheets?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          message?: string
+          synced_to_sheets?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       friendships: {
         Row: {
           created_at: string
