@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, MoreVertical, Trash2, Eye } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
+import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,34 +145,16 @@ export function PlanCard({
       {(plan.participants.length > 0 || plan.location) && (
         <div className="mt-3 flex flex-wrap gap-3">
           {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5" data-stop-card-click onClick={e => e.stopPropagation()}>
               <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                {plan.participants.filter(p => p.role !== 'subscriber').map((p, i, arr) => (
-                  <span key={p.id}>
-                    <FriendLink userId={p.friendUserId}>
-                      <span className="hover:underline">{p.name}</span>
-                    </FriendLink>
-                    {i < arr.length - 1 ? ', ' : ''}
-                  </span>
-                ))}
-              </span>
+              <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} />
             </div>
           )}
 
           {plan.participants.filter(p => p.role === 'subscriber').length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-1.5" data-stop-card-click onClick={e => e.stopPropagation()}>
               <Eye className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {plan.participants.filter(p => p.role === 'subscriber').map((p, i, arr) => (
-                  <span key={p.id}>
-                    <FriendLink userId={p.friendUserId}>
-                      <span className="hover:underline">{p.name}</span>
-                    </FriendLink>
-                    {i < arr.length - 1 ? ', ' : ''}
-                  </span>
-                ))}
-              </span>
+              <ParticipantsList participants={plan.participants.filter(p => p.role === 'subscriber')} />
             </div>
           )}
           
