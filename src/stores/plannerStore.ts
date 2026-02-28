@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Plan, Friend, DayAvailability, Vibe, TimeSlot, LocationStatus, ActivityType, VibeType, PlanStatus } from '@/types/planner';
 import { addDays, startOfWeek, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { getUserTimezone } from '@/lib/timezone';
 
 interface DefaultAvailabilitySettings {
   workDays: string[];
@@ -21,6 +22,7 @@ interface PlannerState {
   userId: string | null;
   defaultSettings: DefaultAvailabilitySettings | null;
   homeAddress: string | null;
+  userTimezone: string;
   
   setUserId: (userId: string | null) => void;
   loadAllData: () => Promise<void>;
@@ -103,6 +105,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   userId: null,
   defaultSettings: null,
   homeAddress: null,
+  userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   
   setUserId: (userId) => set({ userId }),
   
@@ -409,6 +412,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         return createDefaultAvailability(date, defaultSettings);
       });
       
+      // Derive user timezone from today's location status
+      const homeAddr = (profile as any)?.home_address || null;
+      const todayTrip = todayAvail?.tripLocation || undefined;
+      const derivedTimezone = getUserTimezone(todayLocationStatus, homeAddr, todayTrip);
+      
       set({
         plans,
         friends,
@@ -416,7 +424,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         currentVibe,
         locationStatus: todayLocationStatus,
         defaultSettings,
-        homeAddress: (profile as any)?.home_address || null,
+        homeAddress: homeAddr,
+        userTimezone: derivedTimezone,
         isLoading: false,
       });
     } catch (error) {

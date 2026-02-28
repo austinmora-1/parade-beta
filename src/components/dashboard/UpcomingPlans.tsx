@@ -9,6 +9,7 @@ import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { CollapsibleWidget } from './CollapsibleWidget';
+import { getTimezoneAbbreviation, getCurrentTimeInTimezone } from '@/lib/timezone';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -34,12 +35,11 @@ function parseTimeToMinutes(time: string): number {
 
 type PlanStatus = 'upcoming' | 'in-progress';
 
-function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: string; endTime?: string; duration?: number }): PlanStatus | null {
+function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: string; endTime?: string; duration?: number }, timezone: string): PlanStatus | null {
   const now = new Date();
   if (!isSameDay(plan.date, now)) return 'upcoming';
 
-  const currentHour = now.getHours();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const { hours: currentHour, minutes: currentMinutes } = getCurrentTimeInTimezone(timezone);
 
   // If plan has specific start/end times, use those
   if (plan.startTime) {
@@ -62,9 +62,8 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
   const isLateNight = slotHours.end > 24;
 
   if (isLateNight) {
-    // Late night: 22-2am — in progress if after 22 OR before 2am
     if (currentHour >= slotHours.start || currentHour < effectiveEnd) return 'in-progress';
-    if (currentHour < slotHours.start && currentHour >= effectiveEnd) return null; // past (after 2am)
+    if (currentHour < slotHours.start && currentHour >= effectiveEnd) return null;
     return 'upcoming';
   }
 
@@ -74,8 +73,9 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
 }
 
 export function UpcomingPlans() {
-  const { plans } = usePlannerStore();
+  const { plans, userTimezone } = usePlannerStore();
   const navigate = useNavigate();
+  const tzAbbr = getTimezoneAbbreviation(userTimezone);
 
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
@@ -93,7 +93,7 @@ export function UpcomingPlans() {
           return p.date > now && isBefore(p.date, weekFromNow);
         }
         // Today: include if upcoming or in-progress
-        const status = getPlanTimeStatus(p);
+        const status = getPlanTimeStatus(p, userTimezone);
         return status !== null;
       })
       .sort((a, b) => {
@@ -102,7 +102,7 @@ export function UpcomingPlans() {
         return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
       })
       .slice(0, 5);
-  }, [plans]);
+  }, [plans, userTimezone]);
 
   return (
     <CollapsibleWidget
@@ -128,7 +128,7 @@ export function UpcomingPlans() {
             const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
             const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
             const displayTitle = getPlanDisplayTitle(plan);
-            const timeStatus = getPlanTimeStatus(plan);
+            const timeStatus = getPlanTimeStatus(plan, userTimezone);
             const isInProgress = timeStatus === 'in-progress';
             
             return (
@@ -157,7 +157,7 @@ export function UpcomingPlans() {
                     <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                       <span className="flex items-center gap-0.5 shrink-0">
                         <Clock className="h-3 w-3" />
-                        {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
+                        {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') + ` ${tzAbbr}` : `${timeSlotConfig.time} ${tzAbbr}`}
                       </span>
                     </div>
                     {plan.location && (
