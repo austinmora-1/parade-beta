@@ -114,10 +114,11 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
     <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
-        className="w-80 p-0 overflow-hidden z-[70] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        className="!w-[calc(100vw-2rem)] !max-w-80 p-0 overflow-hidden z-[70]"
         side="bottom"
         align="center"
         sideOffset={0}
+        style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
         onPointerDownOutside={(e) => {
           const target = e.target as HTMLElement;
           if (scrollRef.current?.contains(target)) {
