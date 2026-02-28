@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { Zap, Eye } from 'lucide-react';
+import { Zap, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
 
 export function ReceivedVibes() {
-  const { receivedVibes, markAsRead, loading, unreadCount } = useVibes();
+  const { receivedVibes, dismissVibe, loading, unreadCount } = useVibes();
   const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
 
   if (loading || receivedVibes.length === 0) return null;
@@ -26,7 +26,7 @@ export function ReceivedVibes() {
               <VibeCard
                 key={vibe.id}
                 vibe={vibe}
-                onMarkRead={markAsRead}
+                onDismiss={dismissVibe}
                 onTap={() => setSelectedVibe(vibe)}
               />
             ))}
@@ -38,13 +38,13 @@ export function ReceivedVibes() {
         vibe={selectedVibe}
         open={!!selectedVibe}
         onOpenChange={(open) => { if (!open) setSelectedVibe(null); }}
-        onMarkRead={markAsRead}
+        onDismiss={(id) => { dismissVibe(id); setSelectedVibe(null); }}
       />
     </>
   );
 }
 
-function VibeCard({ vibe, onMarkRead, onTap }: { vibe: VibeSend; onMarkRead: (id: string) => void; onTap: () => void }) {
+function VibeCard({ vibe, onDismiss, onTap }: { vibe: VibeSend; onDismiss: (id: string) => void; onTap: () => void }) {
   const isCustom = vibe.vibe_type === 'custom';
   const config = isCustom
     ? { label: 'Custom', icon: '✨', color: 'primary', description: 'Custom vibe' }
@@ -65,13 +65,24 @@ function VibeCard({ vibe, onMarkRead, onTap }: { vibe: VibeSend; onMarkRead: (id
       exit={{ opacity: 0, x: -20 }}
       onClick={onTap}
       className={cn(
-        "rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md active:scale-[0.98]",
+        "relative rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md active:scale-[0.98]",
         vibe.is_read
           ? "border-border bg-card/50"
           : "border-primary/20 bg-primary/5"
       )}
     >
-      <div className="flex items-start gap-3">
+      {/* Dismiss X */}
+      {vibe.recipient_entry_id && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDismiss(vibe.recipient_entry_id!); }}
+          className="absolute top-2 right-2 rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Dismiss vibe"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
+
+      <div className="flex items-start gap-3 pr-5">
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
           style={{ backgroundColor: `${vibeColors[vibe.vibe_type] || vibeColors.social}20` }}
@@ -123,20 +134,9 @@ function VibeCard({ vibe, onMarkRead, onTap }: { vibe: VibeSend; onMarkRead: (id
             />
           )}
 
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-[10px] text-muted-foreground">
-              {formatDistanceToNow(new Date(vibe.created_at), { addSuffix: true })}
-            </span>
-            {!vibe.is_read && vibe.recipient_entry_id && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onMarkRead(vibe.recipient_entry_id!); }}
-                className="flex items-center gap-0.5 text-[10px] text-primary hover:underline"
-              >
-                <Eye className="h-3 w-3" />
-                Mark read
-              </button>
-            )}
-          </div>
+          <span className="text-[10px] text-muted-foreground mt-1.5 block">
+            {formatDistanceToNow(new Date(vibe.created_at), { addSuffix: true })}
+          </span>
         </div>
       </div>
     </motion.div>
