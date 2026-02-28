@@ -2,7 +2,7 @@ import { VibeSend } from '@/hooks/useVibes';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MapPin, Clock, Eye } from 'lucide-react';
+import { MapPin, Clock, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -11,7 +11,7 @@ interface VibeDetailDialogProps {
   vibe: VibeSend | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onMarkRead?: (id: string) => void;
+  onDismiss?: (id: string) => void;
 }
 
 const vibeColors: Record<string, string> = {
@@ -22,7 +22,7 @@ const vibeColors: Record<string, string> = {
   custom: 'hsl(var(--primary))',
 };
 
-export function VibeDetailDialog({ vibe, open, onOpenChange, onMarkRead }: VibeDetailDialogProps) {
+export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss }: VibeDetailDialogProps) {
   if (!vibe) return null;
 
   const isCustom = vibe.vibe_type === 'custom';
@@ -138,19 +138,16 @@ export function VibeDetailDialog({ vibe, open, onOpenChange, onMarkRead }: VibeD
             </span>
           </div>
 
-          {/* Mark read action */}
-          {!vibe.is_read && vibe.recipient_entry_id && onMarkRead && (
+          {/* Dismiss action */}
+          {vibe.recipient_entry_id && onDismiss && (
             <Button
               variant="outline"
               size="sm"
               className="w-full gap-2"
-              onClick={() => {
-                onMarkRead(vibe.recipient_entry_id!);
-                onOpenChange(false);
-              }}
+              onClick={() => onDismiss(vibe.recipient_entry_id!)}
             >
-              <Eye className="h-3.5 w-3.5" />
-              Mark as read
+              <X className="h-3.5 w-3.5" />
+              Dismiss vibe
             </Button>
           )}
         </div>

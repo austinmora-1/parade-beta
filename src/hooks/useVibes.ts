@@ -202,6 +202,17 @@ export function useVibes() {
     }
   };
 
+  const dismissVibe = async (recipientEntryId: string) => {
+    if (!user) return;
+
+    await supabase
+      .from('vibe_send_recipients')
+      .delete()
+      .eq('id', recipientEntryId);
+
+    setReceivedVibes(prev => prev.filter(v => v.recipient_entry_id !== recipientEntryId));
+  };
+
   const markAsRead = async (recipientEntryId: string) => {
     if (!user) return;
     
@@ -225,6 +236,7 @@ export function useVibes() {
     loading,
     sendVibe,
     markAsRead,
+    dismissVibe,
     unreadCount,
     refresh: loadVibes,
   };
