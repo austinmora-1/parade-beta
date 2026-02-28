@@ -14,15 +14,12 @@ import { EllyWidget } from '@/components/dashboard/EllyWidget';
 import { PodWidget } from '@/components/dashboard/PodWidget';
 import { ReceivedVibes } from '@/components/dashboard/ReceivedVibes';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
-import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, Zap } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plus, Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
-  const [sendVibeOpen, setSendVibeOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -46,10 +43,6 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <LocationToggle />
-          <Button size="sm" variant="soft" className="gap-2" onClick={() => setSendVibeOpen(true)}>
-              <Zap className="h-4 w-4" />
-              Send Vibe
-            </Button>
           <Button size="sm" className="gap-2" onClick={() => setCreatePlanOpen(true)}>
               <Plus className="h-4 w-4" />
               New Plan
@@ -59,7 +52,6 @@ export default function Dashboard() {
       </div>
 
       <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
-      <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
 
       {/* Vibe */}
       <VibeSelector />
