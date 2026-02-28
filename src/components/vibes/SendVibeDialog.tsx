@@ -8,6 +8,7 @@ import { useVibes, SendVibePayload } from '@/hooks/useVibes';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { Send, ImagePlus, MapPin, Users, Globe, Shield, X, Plus, Loader2, Check } from 'lucide-react';
 import { GifPicker } from '@/components/chat/GifPicker';
+import { VibeLocationInput, VibeLocation } from '@/components/vibes/VibeLocationInput';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,6 +33,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'gif' | null>(null);
+  const [location, setLocation] = useState<VibeLocation | null>(null);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,6 +102,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
       message: message || undefined,
       media_url: mediaUrl || undefined,
       media_type: mediaType || undefined,
+      location_name: location?.name || undefined,
       target_type: targetType,
       recipient_ids: targetType === 'selected' ? selectedFriendIds : undefined,
     };
@@ -118,6 +121,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
     setSelectedFriendIds([]);
     setMediaUrl(null);
     setMediaType(null);
+    setLocation(null);
     onOpenChange(false);
   };
 
@@ -265,6 +269,12 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                 </GifPicker>
               </div>
             )}
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Location (optional)</label>
+            <VibeLocationInput value={location} onChange={setLocation} />
           </div>
 
           {/* Target selection */}
