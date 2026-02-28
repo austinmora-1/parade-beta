@@ -145,10 +145,16 @@ function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleRe
           )}
 
           {vibe.location_name && (
-            <div className="flex items-center gap-1.5 mt-1">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vibe.location_name)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 mt-1 group/loc"
+            >
               <MapPin className="h-3 w-3 text-primary shrink-0" />
-              <span className="text-[11px] text-muted-foreground truncate">{vibe.location_name}</span>
-            </div>
+              <span className="text-[11px] text-muted-foreground truncate group-hover/loc:text-primary group-hover/loc:underline transition-colors">{vibe.location_name}</span>
+            </a>
           )}
 
           <VibeReactions
