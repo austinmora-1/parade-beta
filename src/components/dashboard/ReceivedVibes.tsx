@@ -3,7 +3,7 @@ import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { useAuth } from '@/hooks/useAuth';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { Zap, X } from 'lucide-react';
+import { Zap, X, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -142,6 +142,13 @@ function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleRe
               alt="Vibe media"
               className="mt-1.5 h-20 w-20 rounded-lg object-cover border border-border"
             />
+          )}
+
+          {vibe.location_name && (
+            <div className="flex items-center gap-1.5 mt-1">
+              <MapPin className="h-3 w-3 text-primary shrink-0" />
+              <span className="text-[11px] text-muted-foreground truncate">{vibe.location_name}</span>
+            </div>
           )}
 
           <VibeReactions
