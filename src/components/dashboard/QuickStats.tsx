@@ -49,7 +49,9 @@ export function QuickStats() {
     {
       icon: Sparkles,
       label: 'Current vibe',
-      value: currentVibe?.type === 'custom' ? currentVibe.customText : currentVibe?.type || 'Not set',
+      value: currentVibe?.type === 'custom' 
+        ? (currentVibe.customText || currentVibe.customTags?.join(', ') || 'Custom') 
+        : currentVibe?.type || 'Not set',
       isText: true,
       color: 'bg-accent text-accent-foreground',
     },
