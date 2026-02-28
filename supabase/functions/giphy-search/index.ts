@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,29 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const GIPHY_API_KEY = Deno.env.get('GIPHY_API_KEY');
     if (!GIPHY_API_KEY) {
       throw new Error('GIPHY_API_KEY is not configured');
@@ -21,9 +45,20 @@ serve(async (req) => {
     const offset = url.searchParams.get('offset') || '0';
     const limit = url.searchParams.get('limit') || '20';
 
+    // Input validation
+    if (query.length > 100) {
+      return new Response(JSON.stringify({ error: 'Query too long' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const parsedLimit = Math.min(Math.max(parseInt(limit) || 20, 1), 50);
+    const parsedOffset = Math.max(parseInt(offset) || 0, 0);
+
     const endpoint = query
-      ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}&rating=pg-13&lang=en`
-      : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${limit}&offset=${offset}&rating=pg-13`;
+      ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=${parsedLimit}&offset=${parsedOffset}&rating=pg-13&lang=en`
+      : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${parsedLimit}&offset=${parsedOffset}&rating=pg-13`;
 
     const response = await fetch(endpoint);
     if (!response.ok) {
