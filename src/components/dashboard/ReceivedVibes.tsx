@@ -69,6 +69,16 @@ function VibeCard({ vibe, onMarkRead }: { vibe: VibeSend; onMarkRead: (id: strin
             </span>
           </div>
 
+          {vibe.custom_tags && vibe.custom_tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {vibe.custom_tags.map(tag => (
+                <span key={tag} className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           {vibe.message && (
             <p className="text-sm text-foreground mt-0.5 line-clamp-2">{vibe.message}</p>
           )}

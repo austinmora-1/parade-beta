@@ -6,7 +6,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useVibes, SendVibePayload } from '@/hooks/useVibes';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { Send, ImagePlus, MapPin, Users, Globe, Shield, X, Loader2, Check } from 'lucide-react';
+import { Send, ImagePlus, MapPin, Users, Globe, Shield, X, Plus, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,7 +23,9 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
   const { friends } = usePlannerStore();
   const { sendVibe } = useVibes();
 
-  const [vibeType, setVibeType] = useState<VibeType>('social');
+  const [vibeType, setVibeType] = useState<VibeType | 'custom'>('social');
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState('');
   const [message, setMessage] = useState('');
   const [targetType, setTargetType] = useState<TargetType>('broadcast');
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
@@ -91,6 +93,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
     setSending(true);
     const payload: SendVibePayload = {
       vibe_type: vibeType,
+      custom_tags: vibeType === 'custom' && customTags.length > 0 ? customTags : undefined,
       message: message || undefined,
       media_url: mediaUrl || undefined,
       media_type: mediaUrl ? 'image' : undefined,
@@ -105,6 +108,8 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
 
   const resetAndClose = () => {
     setVibeType('social');
+    setCustomTags([]);
+    setCustomInput('');
     setMessage('');
     setTargetType('broadcast');
     setSelectedFriendIds([]);
@@ -127,7 +132,6 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Vibe type selection */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">What's the vibe?</label>
             <div className="flex flex-wrap gap-1.5">
@@ -151,7 +155,62 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                   </button>
                 );
               })}
+              {/* Custom vibe pill */}
+              <button
+                onClick={() => setVibeType('custom')}
+                className={cn(
+                  "flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all border-2 border-dashed",
+                  vibeType === 'custom'
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                )}
+              >
+                <Plus className="h-3 w-3" />
+                <span>Custom</span>
+              </button>
             </div>
+
+            {/* Custom tags input */}
+            <AnimatePresence>
+              {vibeType === 'custom' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="mt-2 overflow-hidden"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {customTags.map(tag => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                      >
+                        #{tag}
+                        <button
+                          onClick={() => setCustomTags(prev => prev.filter(t => t !== tag))}
+                          className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      placeholder="type a vibe..."
+                      value={customInput}
+                      onChange={e => setCustomInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && customInput.trim()) {
+                          e.preventDefault();
+                          setCustomTags(prev => [...prev, customInput.trim().replace(/\s+/g, '')]);
+                          setCustomInput('');
+                        }
+                      }}
+                      className="h-7 w-28 rounded-full bg-muted px-2.5 text-xs outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/60"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Message */}
