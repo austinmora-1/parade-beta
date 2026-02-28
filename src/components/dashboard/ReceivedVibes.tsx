@@ -28,12 +28,16 @@ export function ReceivedVibes() {
 }
 
 function VibeCard({ vibe, onMarkRead }: { vibe: VibeSend; onMarkRead: (id: string) => void }) {
-  const config = VIBE_CONFIG[vibe.vibe_type as VibeType] || VIBE_CONFIG.social;
+  const isCustom = vibe.vibe_type === 'custom';
+  const config = isCustom
+    ? { label: 'Custom', icon: '✨', color: 'primary', description: 'Custom vibe' }
+    : (VIBE_CONFIG[vibe.vibe_type as VibeType] || VIBE_CONFIG.social);
   const vibeColors: Record<string, string> = {
     social: 'hsl(var(--vibe-social))',
     chill: 'hsl(var(--vibe-chill))',
     athletic: 'hsl(var(--vibe-athletic))',
     productive: 'hsl(var(--vibe-productive))',
+    custom: 'hsl(var(--primary))',
   };
 
   return (
@@ -61,15 +65,27 @@ function VibeCard({ vibe, onMarkRead }: { vibe: VibeSend; onMarkRead: (id: strin
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-medium truncate">{vibe.sender_name}</span>
-            <span
-              className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground"
-              style={{ backgroundColor: vibeColors[vibe.vibe_type] || vibeColors.social }}
-            >
-              {config.label}
-            </span>
+            {isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 ? (
+              vibe.custom_tags.map(tag => (
+                <span
+                  key={tag}
+                  className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary bg-primary/15"
+                >
+                  #{tag}
+                </span>
+              ))
+            ) : (
+              <span
+                className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground"
+                style={{ backgroundColor: vibeColors[vibe.vibe_type] || vibeColors.social }}
+              >
+                {config.label}
+              </span>
+            )}
           </div>
 
-          {vibe.custom_tags && vibe.custom_tags.length > 0 && (
+          {/* Show custom tags below for non-custom vibes that also have tags */}
+          {!isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {vibe.custom_tags.map(tag => (
                 <span key={tag} className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
