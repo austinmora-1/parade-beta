@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
+import { useAuth } from '@/hooks/useAuth';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { Zap, X } from 'lucide-react';
@@ -7,9 +8,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
+import { VibeReactions, VibeReaction } from '@/components/vibes/VibeReactions';
 
 export function ReceivedVibes() {
-  const { receivedVibes, dismissVibe, loading, unreadCount } = useVibes();
+  const { receivedVibes, dismissVibe, loading, unreadCount, vibeReactions, toggleVibeReaction } = useVibes();
+  const { user } = useAuth();
+  const currentUserId = user?.id || '';
   const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
 
   if (loading || receivedVibes.length === 0) return null;
@@ -28,6 +32,9 @@ export function ReceivedVibes() {
                 vibe={vibe}
                 onDismiss={dismissVibe}
                 onTap={() => setSelectedVibe(vibe)}
+                reactions={vibeReactions}
+                currentUserId={currentUserId}
+                onToggleReaction={toggleVibeReaction}
               />
             ))}
           </AnimatePresence>
@@ -39,12 +46,15 @@ export function ReceivedVibes() {
         open={!!selectedVibe}
         onOpenChange={(open) => { if (!open) setSelectedVibe(null); }}
         onDismiss={(id) => { dismissVibe(id); setSelectedVibe(null); }}
+        reactions={vibeReactions}
+        currentUserId={currentUserId}
+        onToggleReaction={toggleVibeReaction}
       />
     </>
   );
 }
 
-function VibeCard({ vibe, onDismiss, onTap }: { vibe: VibeSend; onDismiss: (id: string) => void; onTap: () => void }) {
+function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleReaction }: { vibe: VibeSend; onDismiss: (id: string) => void; onTap: () => void; reactions: VibeReaction[]; currentUserId: string; onToggleReaction: (vibeSendId: string, emoji: string) => void }) {
   const isCustom = vibe.vibe_type === 'custom';
   const config = isCustom
     ? { label: 'Custom', icon: '✨', color: 'primary', description: 'Custom vibe' }
@@ -134,7 +144,14 @@ function VibeCard({ vibe, onDismiss, onTap }: { vibe: VibeSend; onDismiss: (id: 
             />
           )}
 
-          <span className="text-[10px] text-muted-foreground mt-1.5 block">
+          <VibeReactions
+            vibeSendId={vibe.id}
+            reactions={reactions}
+            currentUserId={currentUserId}
+            onToggleReaction={onToggleReaction}
+          />
+
+          <span className="text-[10px] text-muted-foreground mt-0.5 block">
             {formatDistanceToNow(new Date(vibe.created_at), { addSuffix: true })}
           </span>
         </div>
