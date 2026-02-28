@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { format, addDays, isSameDay, isPast, isToday as isDateToday, formatDistanceToNow } from 'date-fns';
+import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 
@@ -315,7 +315,18 @@ export default function FriendProfile() {
             {lastDate && (
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                Last hung out {formatDistanceToNow(lastDate, { addSuffix: true })}
+                Last hung out {(() => {
+                  const now = new Date();
+                  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                  const dateStart = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+                  const diffDays = Math.round((todayStart.getTime() - dateStart.getTime()) / (1000 * 60 * 60 * 24));
+                  if (diffDays === 0) return 'today';
+                  if (diffDays === 1) return 'yesterday';
+                  if (diffDays < 7) return `${diffDays} days ago`;
+                  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+                  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+                  return `${Math.floor(diffDays / 365)}y ago`;
+                })()}
               </span>
             )}
           </div>
