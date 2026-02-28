@@ -68,7 +68,14 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
     body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
   });
 
-  const tokenData = await tokenRes.json();
+  const tokenText = await tokenRes.text();
+  let tokenData;
+  try {
+    tokenData = JSON.parse(tokenText);
+  } catch {
+    console.error("Google OAuth response (not JSON):", tokenText.substring(0, 500));
+    throw new Error(`Google OAuth returned non-JSON response (status ${tokenRes.status})`);
+  }
   if (!tokenRes.ok) {
     throw new Error(`Failed to get access token: ${JSON.stringify(tokenData)}`);
   }
@@ -93,7 +100,15 @@ async function appendToSheet(
     body: JSON.stringify({ values }),
   });
 
-  const data = await res.json();
+  const resText = await res.text();
+  let data;
+  try {
+    data = JSON.parse(resText);
+  } catch {
+    console.error("Sheets API response (not JSON):", resText.substring(0, 500));
+    throw new Error(`Sheets API returned non-JSON response (status ${res.status})`);
+  }
+
   if (!res.ok) {
     throw new Error(`Sheets API error: ${JSON.stringify(data)}`);
   }
