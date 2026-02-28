@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +12,21 @@ import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
 import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
+
+// --- localStorage helpers for dismissed notifications ---
+const DISMISSED_KEY = 'notifications_dismissed';
+
+function getDismissedIds(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]'));
+  } catch { return new Set(); }
+}
+
+function addDismissedId(id: string) {
+  const ids = getDismissedIds();
+  ids.add(id);
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]));
+}
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
@@ -55,6 +70,14 @@ interface PendingChangeRequest {
   proposed_duration: number | null;
 }
 
+interface RecentPlanPhoto {
+  id: string;
+  plan_id: string;
+  plan_title: string;
+  uploader_name: string;
+  created_at: string;
+}
+
 export default function Notifications() {
   const { friends, acceptFriendRequest, removeFriend, loadAllData } = usePlannerStore();
   const { user } = useAuth();
@@ -72,17 +95,34 @@ export default function Notifications() {
   const [pendingChanges, setPendingChanges] = useState<PendingChangeRequest[]>([]);
   const [changesLoading, setChangesLoading] = useState(true);
 
-  interface RecentPlanPhoto {
-    id: string;
-    plan_id: string;
-    plan_title: string;
-    uploader_name: string;
-    created_at: string;
-  }
   const [recentPhotos, setRecentPhotos] = useState<RecentPlanPhoto[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
 
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(getDismissedIds);
+
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
+  const visibleIncomingRequests = incomingRequests.filter(f => !dismissedIds.has(`friend-${f.id}`));
+  const dismissedFriendRequestCount = incomingRequests.length - visibleIncomingRequests.length;
+
+  const dismiss = useCallback((id: string) => {
+    addDismissedId(id);
+    setDismissedIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  // --- Dismiss button component ---
+  const DismissButton = ({ id, className }: { id: string; className?: string }) => (
+    <button
+      onClick={(e) => { e.stopPropagation(); dismiss(id); }}
+      className={`rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted transition-colors ${className || ''}`}
+      aria-label="Dismiss notification"
+    >
+      <X className="h-4 w-4" />
+    </button>
+  );
 
   useEffect(() => {
     if (user) {
@@ -110,7 +150,6 @@ export default function Notifications() {
       return;
     }
 
-    // Get plan titles
     const planIds = [...new Set(photos.map(p => p.plan_id))];
     const { data: plans } = await supabase
       .from('plans')
@@ -119,7 +158,6 @@ export default function Notifications() {
     const planMap: Record<string, string> = {};
     for (const p of (plans || [])) planMap[p.id] = p.title;
 
-    // Get uploader names
     const uploaderIds = [...new Set(photos.map(p => p.uploaded_by))];
     const { data: profiles } = await supabase
       .from('public_profiles')
@@ -177,7 +215,6 @@ export default function Notifications() {
   // --- Plan Invitations ---
   const fetchPlanInvitations = async () => {
     if (!user) return;
-    // Get plan_participants where I'm invited
     const { data: invites } = await supabase
       .from('plan_participants')
       .select('id, plan_id, status')
@@ -190,14 +227,12 @@ export default function Notifications() {
       return;
     }
 
-    // Fetch plan details
     const planIds = invites.map(i => i.plan_id);
     const { data: plans } = await supabase
       .from('plans')
       .select('id, title, activity, date, time_slot, location, user_id')
       .in('id', planIds);
 
-    // Get organizer names
     const organizerIds = [...new Set((plans || []).map(p => p.user_id))];
     let organizerMap: Record<string, string> = {};
     if (organizerIds.length > 0) {
@@ -250,7 +285,6 @@ export default function Notifications() {
   // --- Pending Change Requests ---
   const fetchPendingChanges = async () => {
     if (!user) return;
-    // Get my pending responses
     const { data: responses } = await supabase
       .from('plan_change_responses')
       .select('id, change_request_id')
@@ -276,7 +310,6 @@ export default function Notifications() {
       return;
     }
 
-    // Fetch plan titles
     const planIds = [...new Set(requests.map(r => r.plan_id))];
     const { data: plans } = await supabase
       .from('plans')
@@ -285,7 +318,6 @@ export default function Notifications() {
     const planMap: Record<string, string> = {};
     for (const p of (plans || [])) planMap[p.id] = p.title;
 
-    // Fetch proposer names
     const proposerIds = [...new Set(requests.map(r => r.proposed_by))];
     const { data: profiles } = await supabase
       .from('public_profiles')
@@ -376,7 +408,13 @@ export default function Notifications() {
     return TIME_SLOT_LABELS[hyphenated]?.time || slot;
   };
 
-  const isEmpty = incomingRequests.length === 0 && hangRequests.length === 0 && planInvitations.length === 0 && pendingChanges.length === 0 && recentPhotos.length === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading;
+  // Filter visible notifications by dismissed IDs
+  const visibleHangRequests = hangRequests.filter(r => !dismissedIds.has(`hang-${r.id}`));
+  const visiblePlanInvitations = planInvitations.filter(i => !dismissedIds.has(`invite-${i.id}`));
+  const visiblePendingChanges = pendingChanges.filter(c => !dismissedIds.has(`change-${c.id}`));
+  const visibleRecentPhotos = recentPhotos.filter(p => !dismissedIds.has(`photo-${p.id}`));
+
+  const isEmpty = visibleIncomingRequests.length === 0 && dismissedFriendRequestCount === 0 && visibleHangRequests.length === 0 && visiblePlanInvitations.length === 0 && visiblePendingChanges.length === 0 && visibleRecentPhotos.length === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading;
 
   return (
     <div className="animate-fade-in space-y-6 md:space-y-8">
@@ -389,14 +427,14 @@ export default function Notifications() {
       </div>
 
       {/* Plan Invitations Section */}
-      {(planInvitations.length > 0 || planInvitesLoading) && (
+      {(visiblePlanInvitations.length > 0 || planInvitesLoading) && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
             <CalendarCheck className="h-4 w-4 text-primary md:h-5 md:w-5" />
             Plan Invitations
-            {planInvitations.length > 0 && (
+            {visiblePlanInvitations.length > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
-                {planInvitations.length}
+                {visiblePlanInvitations.length}
               </span>
             )}
           </h2>
@@ -407,7 +445,7 @@ export default function Notifications() {
             </div>
           ) : (
             <div className="space-y-3">
-              {planInvitations.map((invite) => (
+              {visiblePlanInvitations.map((invite) => (
                 <div
                   key={invite.id}
                   className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
@@ -419,7 +457,10 @@ export default function Notifications() {
                         {invite.organizer_name} invited you
                       </p>
                     </div>
-                    <Badge variant="secondary" className="shrink-0">New</Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary" className="shrink-0">New</Badge>
+                      <DismissButton id={`invite-${invite.id}`} />
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 text-sm">
@@ -467,14 +508,14 @@ export default function Notifications() {
       )}
 
       {/* Plan Change Requests Section */}
-      {(pendingChanges.length > 0 || changesLoading) && (
+      {(visiblePendingChanges.length > 0 || changesLoading) && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
             <AlertTriangle className="h-4 w-4 text-amber-500 md:h-5 md:w-5" />
             Plan Changes
-            {pendingChanges.length > 0 && (
+            {visiblePendingChanges.length > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white md:h-6 md:w-6 md:text-xs">
-                {pendingChanges.length}
+                {visiblePendingChanges.length}
               </span>
             )}
           </h2>
@@ -485,16 +526,19 @@ export default function Notifications() {
             </div>
           ) : (
             <div className="space-y-3">
-              {pendingChanges.map((change) => (
+              {visiblePendingChanges.map((change) => (
                 <div
                   key={change.id}
                   className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3 shadow-soft"
                 >
-                  <div className="min-w-0">
-                    <p className="font-semibold text-foreground truncate">{change.plan_title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {change.proposed_by_name} proposed a change
-                    </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground truncate">{change.plan_title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {change.proposed_by_name} proposed a change
+                      </p>
+                    </div>
+                    <DismissButton id={`change-${change.id}`} />
                   </div>
 
                   <div className="flex flex-wrap gap-2 text-sm">
@@ -549,14 +593,14 @@ export default function Notifications() {
       )}
 
       {/* Hang Requests Section */}
-      {(hangRequests.length > 0 || hangLoading) && (
+      {(visibleHangRequests.length > 0 || hangLoading) && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
             <Inbox className="h-4 w-4 text-primary md:h-5 md:w-5" />
             Hang Requests
-            {hangRequests.length > 0 && (
+            {visibleHangRequests.length > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
-                {hangRequests.length}
+                {visibleHangRequests.length}
               </span>
             )}
           </h2>
@@ -567,7 +611,7 @@ export default function Notifications() {
             </div>
           ) : (
             <div className="space-y-3">
-              {hangRequests.map((request) => (
+              {visibleHangRequests.map((request) => (
                 <div
                   key={request.id}
                   className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
@@ -583,7 +627,10 @@ export default function Notifications() {
                       )}
                       <p className="text-sm text-muted-foreground">wants to hang out</p>
                     </div>
-                    <Badge variant="secondary" className="shrink-0">New</Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary" className="shrink-0">New</Badge>
+                      <DismissButton id={`hang-${request.id}`} />
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 text-sm">
@@ -633,14 +680,14 @@ export default function Notifications() {
       )}
 
       {/* New Plan Photos Section */}
-      {(recentPhotos.length > 0 || photosLoading) && (
+      {(visibleRecentPhotos.length > 0 || photosLoading) && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
             <Camera className="h-4 w-4 text-primary md:h-5 md:w-5" />
             New Photos
-            {recentPhotos.length > 0 && (
+            {visibleRecentPhotos.length > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
-                {recentPhotos.length}
+                {visibleRecentPhotos.length}
               </span>
             )}
           </h2>
@@ -651,23 +698,28 @@ export default function Notifications() {
             </div>
           ) : (
             <div className="space-y-2">
-              {recentPhotos.map((photo) => (
+              {visibleRecentPhotos.map((photo) => (
                 <div
                   key={photo.id}
-                  onClick={() => navigate(`/plan/${photo.plan_id}`)}
                   className="rounded-xl border border-border bg-card p-3 flex items-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors shadow-soft"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                    <Camera className="h-5 w-5 text-primary" />
+                  <div
+                    className="flex items-center gap-3 min-w-0 flex-1"
+                    onClick={() => navigate(`/plan/${photo.plan_id}`)}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                      <Camera className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {photo.uploader_name} added a photo to <span className="text-primary">{photo.plan_title}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(parseISO(photo.created_at), 'MMM d, h:mm a')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">
-                      {photo.uploader_name} added a photo to <span className="text-primary">{photo.plan_title}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(parseISO(photo.created_at), 'MMM d, h:mm a')}
-                    </p>
-                  </div>
+                  <DismissButton id={`photo-${photo.id}`} />
                 </div>
               ))}
             </div>
@@ -676,73 +728,94 @@ export default function Notifications() {
       )}
 
       {/* Friend Requests Section */}
-      <div>
-        <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
-          <UserPlus className="h-4 w-4 text-primary md:h-5 md:w-5" />
-          Friend Requests
-          {incomingRequests.length > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
-              {incomingRequests.length}
-            </span>
-          )}
-        </h2>
+      {(visibleIncomingRequests.length > 0 || dismissedFriendRequestCount > 0) && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <UserPlus className="h-4 w-4 text-primary md:h-5 md:w-5" />
+            Friend Requests
+            {incomingRequests.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
+                {incomingRequests.length}
+              </span>
+            )}
+          </h2>
 
-        {incomingRequests.length > 0 ? (
-          <div className="space-y-3">
-            {incomingRequests.map((friend) => (
-              <div
-                key={friend.id}
-                className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={friend.avatar} />
-                    <AvatarFallback className={getAvatarColor(friend.name)}>
-                      {getInitials(friend.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{friend.name}</p>
-                    <p className="text-sm text-muted-foreground">wants to connect with you</p>
+          {visibleIncomingRequests.length > 0 ? (
+            <div className="space-y-3">
+              {visibleIncomingRequests.map((friend) => (
+                <div
+                  key={friend.id}
+                  className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={friend.avatar} />
+                      <AvatarFallback className={getAvatarColor(friend.name)}>
+                        {getInitials(friend.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{friend.name}</p>
+                      <p className="text-sm text-muted-foreground">wants to connect with you</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDecline(friend.id)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Decline
+                    </Button>
+                    <Button size="sm" onClick={() => handleAccept(friend.id)}>
+                      <Check className="h-4 w-4 mr-1" />
+                      Accept
+                    </Button>
+                    <DismissButton id={`friend-${friend.id}`} />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDecline(friend.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Decline
-                  </Button>
-                  <Button size="sm" onClick={() => handleAccept(friend.id)}>
-                    <Check className="h-4 w-4 mr-1" />
-                    Accept
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : isEmpty ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
-            <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">🔔</div>
-            <h3 className="font-display text-base font-semibold md:text-lg">No new notifications</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              You're all caught up! When friends send you requests, they'll appear here.
-            </p>
-            <Button
-              onClick={() => navigate('/friends')}
-              size="sm"
-              variant="outline"
-              className="mt-4 gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Find Friends
-            </Button>
-          </div>
-        ) : null}
-      </div>
+              ))}
+            </div>
+          ) : dismissedFriendRequestCount > 0 ? (
+            <div className="rounded-xl border border-border bg-card p-4 text-center shadow-soft">
+              <p className="text-sm text-muted-foreground">
+                {dismissedFriendRequestCount} pending friend {dismissedFriendRequestCount === 1 ? 'request' : 'requests'} dismissed from view
+              </p>
+              <Button
+                onClick={() => navigate('/friends')}
+                size="sm"
+                variant="outline"
+                className="mt-2 gap-2"
+              >
+                <Users className="h-4 w-4" />
+                View in Friends
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {isEmpty && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && incomingRequests.length === 0 && (
+        <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
+          <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">🔔</div>
+          <h3 className="font-display text-base font-semibold md:text-lg">No new notifications</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You're all caught up! When friends send you requests, they'll appear here.
+          </p>
+          <Button
+            onClick={() => navigate('/friends')}
+            size="sm"
+            variant="outline"
+            className="mt-4 gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Find Friends
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
