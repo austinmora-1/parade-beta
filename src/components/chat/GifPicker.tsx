@@ -113,11 +113,18 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent
+       <PopoverContent
         className="w-80 p-0 overflow-hidden z-[70]"
         side="top"
         align="start"
         sideOffset={8}
+        onPointerDownOutside={(e) => {
+          // Prevent closing when user is touch-scrolling inside the popover
+          const target = e.target as HTMLElement;
+          if (scrollRef.current?.contains(target)) {
+            e.preventDefault();
+          }
+        }}
       >
         <div className="p-2 border-b border-border">
           <div className="relative">
@@ -134,8 +141,9 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
 
         <div
           ref={scrollRef}
-          className="h-64 overflow-y-auto p-1.5"
+          className="h-64 overflow-y-auto p-1.5 overscroll-contain"
           onScroll={handleScroll}
+          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
         >
           {loading ? (
             <div className="flex items-center justify-center h-full">
