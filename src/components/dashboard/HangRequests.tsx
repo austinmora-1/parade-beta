@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import { Check, X, Mail, MessageSquare, Calendar, Clock, Loader2, Inbox, Plus, Send, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { ShareDialog } from './ShareDialog';
+import { NewHangRequestDialog } from './NewHangRequestDialog';
 
 interface HangRequest {
   id: string;
@@ -294,7 +294,7 @@ export function HangRequests() {
         icon={<Inbox className="h-4 w-4 text-primary" />}
         headerRight={
           <div onClick={(e) => e.stopPropagation()}>
-            <ShareDialog
+            <NewHangRequestDialog
               trigger={
                 <Button size="sm" className="h-6 px-2 text-xs gap-1">
                   <Plus className="h-3 w-3" />
@@ -326,7 +326,7 @@ export function HangRequests() {
       }
       headerRight={
         <div onClick={(e) => e.stopPropagation()}>
-          <ShareDialog
+          <NewHangRequestDialog
             trigger={
               <Button size="sm" className="h-6 px-2 text-xs gap-1">
                 <Plus className="h-3 w-3" />
