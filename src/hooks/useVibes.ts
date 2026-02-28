@@ -44,6 +44,7 @@ export function useVibes() {
   const [receivedVibes, setReceivedVibes] = useState<VibeSend[]>([]);
   const [sentVibes, setSentVibes] = useState<VibeSend[]>([]);
   const [vibeReactions, setVibeReactions] = useState<VibeReaction[]>([]);
+  const [sentVibeReactions, setSentVibeReactions] = useState<VibeReaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadVibes = useCallback(async () => {
@@ -111,7 +112,20 @@ export function useVibes() {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      setSentVibes((sentData || []).map(v => ({ ...v, custom_tags: v.custom_tags || [] })));
+      const mappedSent = (sentData || []).map(v => ({ ...v, custom_tags: v.custom_tags || [] }));
+      setSentVibes(mappedSent);
+
+      // Load reactions for sent vibes
+      if (mappedSent.length > 0) {
+        const sentIds = mappedSent.map(v => v.id);
+        const { data: sentReactionsData } = await supabase
+          .from('vibe_reactions')
+          .select('*')
+          .in('vibe_send_id', sentIds);
+        setSentVibeReactions(sentReactionsData as VibeReaction[] || []);
+      } else {
+        setSentVibeReactions([]);
+      }
     } catch (err) {
       console.error('Error loading vibes:', err);
     } finally {
@@ -136,6 +150,30 @@ export function useVibes() {
           schema: 'public',
           table: 'vibe_send_recipients',
           filter: `recipient_id=eq.${user.id}`,
+        },
+        () => {
+          loadVibes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, loadVibes]);
+
+  // Realtime subscription for reactions on sent vibes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('sent-vibe-reactions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vibe_reactions',
         },
         () => {
           loadVibes();
@@ -302,6 +340,7 @@ export function useVibes() {
     receivedVibes,
     sentVibes,
     vibeReactions,
+    sentVibeReactions,
     loading,
     sendVibe,
     markAsRead,
