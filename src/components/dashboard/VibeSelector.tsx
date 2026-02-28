@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { X, Plus, Sparkles } from 'lucide-react';
+import { X, Plus, Sparkles, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CollapsibleWidget } from './CollapsibleWidget';
+import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
+import { Button } from '@/components/ui/button';
 
 export function VibeSelector() {
   const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
@@ -12,7 +14,7 @@ export function VibeSelector() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [showAddMoreInput, setShowAddMoreInput] = useState(false);
   const [addMoreText, setAddMoreText] = useState('');
-
+  const [sendVibeOpen, setSendVibeOpen] = useState(false);
   const handleVibeSelect = (type: VibeType) => {
     if (type === 'custom') {
       setShowCustomInput(true);
@@ -49,9 +51,16 @@ export function VibeSelector() {
   };
 
   return (
+    <>
     <CollapsibleWidget
       title="What's your vibe today?"
       icon={<Sparkles className="h-4 w-4 text-primary" />}
+      headerRight={
+        <Button size="sm" variant="soft" className="gap-1.5 h-7 px-2.5 text-xs" onClick={() => setSendVibeOpen(true)}>
+          <Zap className="h-3.5 w-3.5" />
+          Send Vibe
+        </Button>
+      }
     >
 
       {/* Vibe pills */}
@@ -190,5 +199,7 @@ export function VibeSelector() {
         )}
       </AnimatePresence>
     </CollapsibleWidget>
+    <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
+    </>
   );
 }
