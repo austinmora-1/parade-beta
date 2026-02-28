@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
+import type { VibeReaction } from '@/components/vibes/VibeReactions';
 
 export interface VibeSend {
   id: string;
@@ -42,6 +43,7 @@ export function useVibes() {
   const { friends } = usePlannerStore();
   const [receivedVibes, setReceivedVibes] = useState<VibeSend[]>([]);
   const [sentVibes, setSentVibes] = useState<VibeSend[]>([]);
+  const [vibeReactions, setVibeReactions] = useState<VibeReaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadVibes = useCallback(async () => {
@@ -89,10 +91,18 @@ export function useVibes() {
         });
 
         setReceivedVibes(mapped);
+
+        // Load reactions for received vibes
+        const { data: reactionsData } = await supabase
+          .from('vibe_reactions')
+          .select('*')
+          .in('vibe_send_id', vibeIds);
+
+        setVibeReactions(reactionsData as VibeReaction[] || []);
       } else {
         setReceivedVibes([]);
+        setVibeReactions([]);
       }
-
       // Load sent vibes
       const { data: sentData } = await supabase
         .from('vibe_sends')
@@ -263,15 +273,40 @@ export function useVibes() {
     );
   };
 
+  const toggleVibeReaction = async (vibeSendId: string, emoji: string) => {
+    if (!user) return;
+
+    const existing = vibeReactions.find(
+      r => r.vibe_send_id === vibeSendId && r.user_id === user.id && r.emoji === emoji
+    );
+
+    if (existing) {
+      await supabase.from('vibe_reactions').delete().eq('id', existing.id);
+      setVibeReactions(prev => prev.filter(r => r.id !== existing.id));
+    } else {
+      const { data, error } = await supabase
+        .from('vibe_reactions')
+        .insert({ vibe_send_id: vibeSendId, user_id: user.id, emoji })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setVibeReactions(prev => [...prev, data as VibeReaction]);
+      }
+    }
+  };
+
   const unreadCount = receivedVibes.filter(v => !v.is_read).length;
 
   return {
     receivedVibes,
     sentVibes,
+    vibeReactions,
     loading,
     sendVibe,
     markAsRead,
     dismissVibe,
+    toggleVibeReaction,
     unreadCount,
     refresh: loadVibes,
   };

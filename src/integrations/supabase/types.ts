@@ -716,6 +716,38 @@ export type Database = {
         }
         Relationships: []
       }
+      vibe_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          user_id: string
+          vibe_send_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          user_id: string
+          vibe_send_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          user_id?: string
+          vibe_send_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vibe_reactions_vibe_send_id_fkey"
+            columns: ["vibe_send_id"]
+            isOneToOne: false
+            referencedRelation: "vibe_sends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vibe_send_recipients: {
         Row: {
           created_at: string

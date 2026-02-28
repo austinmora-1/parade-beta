@@ -6,12 +6,16 @@ import { MapPin, Clock, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
+import { VibeReactions, VibeReaction } from './VibeReactions';
 
 interface VibeDetailDialogProps {
   vibe: VibeSend | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDismiss?: (id: string) => void;
+  reactions?: VibeReaction[];
+  currentUserId?: string;
+  onToggleReaction?: (vibeSendId: string, emoji: string) => void;
 }
 
 const vibeColors: Record<string, string> = {
@@ -22,7 +26,7 @@ const vibeColors: Record<string, string> = {
   custom: 'hsl(var(--primary))',
 };
 
-export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss }: VibeDetailDialogProps) {
+export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss, reactions, currentUserId, onToggleReaction }: VibeDetailDialogProps) {
   if (!vibe) return null;
 
   const isCustom = vibe.vibe_type === 'custom';
@@ -127,6 +131,16 @@ export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss }: VibeDe
               <MapPin className="h-4 w-4 text-primary shrink-0" />
               <span className="text-sm text-foreground truncate">{vibe.location_name}</span>
             </div>
+          )}
+
+          {/* Reactions */}
+          {reactions && currentUserId && onToggleReaction && vibe && (
+            <VibeReactions
+              vibeSendId={vibe.id}
+              reactions={reactions}
+              currentUserId={currentUserId}
+              onToggleReaction={onToggleReaction}
+            />
           )}
 
           {/* Timestamp */}
