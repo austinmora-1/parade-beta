@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, Loader2 } from 'lucide-react';
@@ -111,79 +111,68 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={true}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent
-        className="!w-[calc(100vw-2rem)] !max-w-80 p-0 overflow-hidden z-[70]"
-        side="bottom"
-        align="center"
-        sideOffset={0}
-        style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
-        onPointerDownOutside={(e) => {
-          const target = e.target as HTMLElement;
-          if (scrollRef.current?.contains(target)) {
-            e.preventDefault();
-          }
-        }}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <div className="p-2 border-b border-border">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search GIFs..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              className="pl-8 h-8 text-sm"
-            />
+    <>
+      <span onClick={() => setOpen(true)}>{children}</span>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-80 p-0 overflow-hidden gap-0 rounded-xl">
+          <div className="p-2 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search GIFs..."
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
           </div>
-        </div>
 
-        <div
-          ref={scrollRef}
-          className="h-64 overflow-y-auto p-1.5 overscroll-contain"
-          onScroll={handleScroll}
-          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
-        >
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : gifs.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-xs text-muted-foreground">
-                {query ? 'No GIFs found' : 'Loading trending GIFs...'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-1.5">
-              {gifs.map(gif => (
-                <button
-                  key={gif.id}
-                  onClick={() => handleSelect(gif)}
-                  className="rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <img
-                    src={gif.preview}
-                    alt={gif.title}
-                    className="w-full h-24 object-cover"
-                    loading="lazy"
-                  />
-                </button>
-              ))}
-              {loadingMore && (
-                <div className="col-span-2 flex justify-center py-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+          <div
+            ref={scrollRef}
+            className="h-72 overflow-y-auto p-1.5 overscroll-contain"
+            onScroll={handleScroll}
+            style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+          >
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : gifs.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-xs text-muted-foreground">
+                  {query ? 'No GIFs found' : 'Loading trending GIFs...'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5">
+                {gifs.map(gif => (
+                  <button
+                    key={gif.id}
+                    onClick={() => handleSelect(gif)}
+                    className="rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <img
+                      src={gif.preview}
+                      alt={gif.title}
+                      className="w-full h-24 object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+                {loadingMore && (
+                  <div className="col-span-2 flex justify-center py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
-        <div className="border-t border-border px-2 py-1.5 flex items-center justify-end">
-          <span className="text-[9px] text-muted-foreground/50 tracking-wide uppercase">Powered by GIPHY</span>
-        </div>
-      </PopoverContent>
-    </Popover>
+          <div className="border-t border-border px-2 py-1.5 flex items-center justify-end">
+            <span className="text-[9px] text-muted-foreground/50 tracking-wide uppercase">Powered by GIPHY</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
