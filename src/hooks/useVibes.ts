@@ -45,6 +45,7 @@ export function useVibes() {
   const [sentVibes, setSentVibes] = useState<VibeSend[]>([]);
   const [vibeReactions, setVibeReactions] = useState<VibeReaction[]>([]);
   const [sentVibeReactions, setSentVibeReactions] = useState<VibeReaction[]>([]);
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   const loadVibes = useCallback(async () => {
@@ -125,6 +126,27 @@ export function useVibes() {
         setSentVibeReactions(sentReactionsData as VibeReaction[] || []);
       } else {
         setSentVibeReactions([]);
+      }
+
+      // Load comment counts for all vibes
+      const allVibeIds = [
+        ...(recipientData || []).map(r => r.vibe_send_id),
+        ...(sentData || []).map(v => v.id),
+      ];
+      if (allVibeIds.length > 0) {
+        const uniqueIds = [...new Set(allVibeIds)];
+        const { data: commentsData } = await supabase
+          .from('vibe_comments')
+          .select('vibe_send_id')
+          .in('vibe_send_id', uniqueIds);
+        
+        const counts: Record<string, number> = {};
+        (commentsData || []).forEach(c => {
+          counts[c.vibe_send_id] = (counts[c.vibe_send_id] || 0) + 1;
+        });
+        setCommentCounts(counts);
+      } else {
+        setCommentCounts({});
       }
     } catch (err) {
       console.error('Error loading vibes:', err);
@@ -366,6 +388,7 @@ export function useVibes() {
     sentVibes,
     vibeReactions,
     sentVibeReactions,
+    commentCounts,
     loading,
     sendVibe,
     markAsRead,
