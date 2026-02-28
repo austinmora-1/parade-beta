@@ -111,20 +111,20 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-       <PopoverContent
-        className="w-80 p-0 overflow-hidden z-[70]"
-        side="top"
-        align="start"
-        sideOffset={8}
+      <PopoverContent
+        className="w-80 p-0 overflow-hidden z-[70] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        side="bottom"
+        align="center"
+        sideOffset={0}
         onPointerDownOutside={(e) => {
-          // Prevent closing when user is touch-scrolling inside the popover
           const target = e.target as HTMLElement;
           if (scrollRef.current?.contains(target)) {
             e.preventDefault();
           }
         }}
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="p-2 border-b border-border">
           <div className="relative">
@@ -134,7 +134,6 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
               value={query}
               onChange={e => setQuery(e.target.value)}
               className="pl-8 h-8 text-sm"
-              autoFocus
             />
           </div>
         </div>
