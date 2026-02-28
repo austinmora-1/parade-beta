@@ -318,7 +318,7 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden max-h-[85vh] flex flex-col">
         <DialogHeader className="p-4 pb-2">
           <div className="flex items-center gap-2">
             {selectedFriend && (
@@ -341,6 +341,7 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
           </div>
         </DialogHeader>
 
+        <ScrollArea className="flex-1 min-h-0">
         <div className="px-4 pb-4">
           {!selectedFriend ? (
             /* Step 1: Friend selector */
@@ -397,7 +398,6 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
               </div>
 
               {/* Day cards grid */}
-              <ScrollArea className="max-h-[320px]">
                 <div className="grid grid-cols-2 gap-1.5">
                   {nextDays.map(day => {
                     const isToday = isDateToday(day.date);
@@ -508,7 +508,6 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
                     );
                   })}
                 </div>
-              </ScrollArea>
 
               {/* Message + Send */}
               <Textarea
@@ -540,6 +539,7 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
             </div>
           )}
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
