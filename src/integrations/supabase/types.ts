@@ -716,6 +716,83 @@ export type Database = {
         }
         Relationships: []
       }
+      vibe_send_recipients: {
+        Row: {
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          vibe_send_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          vibe_send_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          vibe_send_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vibe_send_recipients_vibe_send_id_fkey"
+            columns: ["vibe_send_id"]
+            isOneToOne: false
+            referencedRelation: "vibe_sends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vibe_sends: {
+        Row: {
+          created_at: string
+          custom_tags: string[] | null
+          id: string
+          location_lat: number | null
+          location_lng: number | null
+          location_name: string | null
+          media_type: string | null
+          media_url: string | null
+          message: string | null
+          sender_id: string
+          target_type: string
+          vibe_type: string
+        }
+        Insert: {
+          created_at?: string
+          custom_tags?: string[] | null
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          message?: string | null
+          sender_id: string
+          target_type?: string
+          vibe_type: string
+        }
+        Update: {
+          created_at?: string
+          custom_tags?: string[] | null
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
+          media_type?: string | null
+          media_url?: string | null
+          message?: string | null
+          sender_id?: string
+          target_type?: string
+          vibe_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       friendships_incoming: {
