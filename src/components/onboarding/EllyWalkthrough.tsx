@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Calendar, Clock, Users, Shield, Sun, Smartphone, X } from 'lucide-react';
+import { Sparkles, ArrowRight, Calendar, Users, Shield, LayoutDashboard, Heart, MessageCircle, MapPin, Smartphone, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,56 +13,74 @@ interface WalkthroughStep {
   message: string;
   emoji: string;
   hasCustomContent?: boolean;
+  tip?: string;
 }
 
 const STEPS: WalkthroughStep[] = [
   {
     icon: <Sparkles className="h-5 w-5" />,
     title: "Hey, I'm Elly! 👋",
-    message: "Welcome to Parade! I'm your AI planning assistant. Let me walk you through everything so you can hit the ground running.",
+    message: "Welcome to Parade! I'm your AI planning assistant. Let me give you a quick tour of the app so you can start making plans with friends.",
     emoji: "✨",
   },
   {
+    icon: <LayoutDashboard className="h-5 w-5" />,
+    title: "Your Dashboard",
+    message: "This is your home base. From here you can see upcoming plans, your weekly availability, friend activity, and quick stats — all at a glance.",
+    emoji: "🏠",
+    tip: "Widgets are collapsible — tap the header to expand or collapse them.",
+  },
+  {
+    icon: <Heart className="h-5 w-5" />,
+    title: "Send Vibes",
+    message: "Let your friends know what you're feeling! Tap the 'Send Vibe' button in the Vibe Selector widget on your dashboard. You can broadcast to all friends, your pod, or select specific people.",
+    emoji: "💚",
+    tip: "Add a message, GIF, or location to your vibe to make it pop. Friends can react with emoji!",
+  },
+  {
     icon: <Calendar className="h-5 w-5" />,
-    title: "Connect Your Calendars",
-    message: "Sync your Google or Apple calendar so Parade can automatically import your schedule and mark busy times.",
+    title: "Availability & Calendar",
+    message: "Mark when you're free each day using the Availability page. Connect your Google or Apple calendar to auto-import busy times.",
     emoji: "📅",
     hasCustomContent: true,
+    tip: "Set default work hours in Settings so your schedule fills in automatically.",
   },
   {
-    icon: <Clock className="h-5 w-5" />,
-    title: "Set Default Availability & Work Hours",
-    message: "Head to Settings → Availability Defaults to set your typical work days and hours. Parade will automatically mark you as busy during work time and free outside it — saving you from updating every day.",
-    emoji: "⏰",
-  },
-  {
-    icon: <Shield className="h-5 w-5" />,
-    title: "Configure Your Privacy",
-    message: "Control who sees what in Settings → Privacy. Toggle whether friends can see your availability, vibe status, and location. You can also manage who's allowed to send you hang requests.",
-    emoji: "🔒",
-  },
-  {
-    icon: <Sun className="h-5 w-5" />,
-    title: "Light & Dark Mode",
-    message: "Switch between light and dark mode anytime using the theme toggle in the sidebar (or top menu on mobile). There's even a fun Arcade theme if you're feeling retro! 🕹️",
-    emoji: "🌗",
+    icon: <MapPin className="h-5 w-5" />,
+    title: "Plans & Hang Requests",
+    message: "Create plans from the dashboard or Plans page. Invite friends, pick a time slot, and add a location. Friends can also send you hang requests when they see you're free!",
+    emoji: "📍",
+    tip: "Share your availability link so anyone can request to hang.",
   },
   {
     icon: <Users className="h-5 w-5" />,
-    title: "Add Friends & Plan Together",
-    message: "Head to Friends to search by email or share your invite link. Once connected, you'll see each other's availability. Use Messages to chat, and mention @Elly to have me help coordinate plans!",
+    title: "Friends & Pods",
+    message: "Add friends by email, phone, or invite link on the Friends page. Mark your closest crew as Pod members for quick access. You'll see each other's availability and vibes.",
     emoji: "👯",
+  },
+  {
+    icon: <MessageCircle className="h-5 w-5" />,
+    title: "Chat & Elly AI",
+    message: "Message your friends directly or in groups from the Chat page. Mention @Elly in any conversation and I'll help coordinate plans, suggest times, or answer questions!",
+    emoji: "💬",
+    tip: "You can also chat with me directly from the Elly widget on your dashboard.",
+  },
+  {
+    icon: <Shield className="h-5 w-5" />,
+    title: "Privacy & Settings",
+    message: "Control who sees your availability, vibe status, and location in Settings → Privacy. You can also manage notifications, themes (try Arcade mode! 🕹️), and more.",
+    emoji: "🔒",
   },
   {
     icon: <Smartphone className="h-5 w-5" />,
     title: "Add to Home Screen",
-    message: "For the best experience, add Parade to your home screen! On iPhone, tap the Share button in Safari and select \"Add to Home Screen.\" On Android, tap the menu (⋮) in Chrome and tap \"Add to Home screen.\" This gives you instant, full-screen access.",
+    message: "For the best experience, add Parade to your home screen! On iPhone, tap Share → \"Add to Home Screen.\" On Android, tap ⋮ → \"Add to Home screen.\"",
     emoji: "📱",
   },
   {
     icon: <Sparkles className="h-5 w-5" />,
     title: "You're All Set!",
-    message: "That's everything! Set your vibe, mark your availability, and start making plans. You can always ask me for help — tap the Elly widget on your dashboard or mention @Elly in any chat. Let's go! 🎉",
+    message: "That's the tour! Set your vibe, mark your availability, and start making plans. I'm always here if you need help — just tap the Elly widget or mention @Elly in chat. Let's go! 🎉",
     emoji: "🚀",
   },
 ];
@@ -201,6 +219,16 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {current.message}
                   </p>
+
+                  {/* Tip callout */}
+                  {current.tip && (
+                    <div className="mt-3 flex gap-2 rounded-lg bg-primary/10 p-3">
+                      <Sparkles className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+                      <p className="text-xs text-foreground/80 leading-relaxed">
+                        <span className="font-semibold text-primary">Tip:</span> {current.tip}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Inline calendar integration on the calendar step */}
                   {current.hasCustomContent && (
