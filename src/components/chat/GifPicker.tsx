@@ -114,7 +114,7 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
-        className="w-80 p-0 overflow-hidden"
+        className="w-80 p-0 overflow-hidden z-[70]"
         side="top"
         align="start"
         sideOffset={8}
