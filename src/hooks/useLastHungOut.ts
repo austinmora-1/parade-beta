@@ -57,19 +57,24 @@ export function useLastHungOut(friendUserIds: string[]) {
             .lt('date', now)
         : { data: [] };
 
-      // Build plan date lookup
-      const planDateMap: Record<string, string> = {};
-      (ownedPlans || []).forEach(p => { planDateMap[p.id] = p.date; });
-      (friendOwnedPlans || []).forEach(p => { planDateMap[p.id] = p.date; });
+      // Build plan date lookup — normalize noon-UTC dates to local calendar day at end-of-day
+      // so relative time shows "today" / "yesterday" instead of "12 hours ago"
+      const planDateMap: Record<string, Date> = {};
+      const toLocalEndOfDay = (isoStr: string): Date => {
+        const raw = new Date(isoStr);
+        // Use UTC parts to avoid timezone day-shift (dates stored as noon UTC)
+        return new Date(raw.getUTCFullYear(), raw.getUTCMonth(), raw.getUTCDate(), 23, 59, 59);
+      };
+      (ownedPlans || []).forEach(p => { planDateMap[p.id] = toLocalEndOfDay(p.date); });
+      (friendOwnedPlans || []).forEach(p => { planDateMap[p.id] = toLocalEndOfDay(p.date); });
 
       // For each friend, find the most recent date
       const result: Record<string, Date> = {};
 
       // From participants on our owned plans
       (participants || []).forEach(p => {
-        const dateStr = planDateMap[p.plan_id];
-        if (!dateStr) return;
-        const d = new Date(dateStr);
+        const d = planDateMap[p.plan_id];
+        if (!d) return;
         if (d > new Date()) return; // future plan
         if (!result[p.friend_id] || d > result[p.friend_id]) {
           result[p.friend_id] = d;
@@ -78,7 +83,8 @@ export function useLastHungOut(friendUserIds: string[]) {
 
       // From friend-owned plans we participated in
       (friendOwnedPlans || []).forEach(p => {
-        const d = new Date(p.date);
+        const d = planDateMap[p.id];
+        if (!d) return;
         if (!result[p.user_id] || d > result[p.user_id]) {
           result[p.user_id] = d;
         }
