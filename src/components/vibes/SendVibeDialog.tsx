@@ -134,15 +134,15 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-auto sm:rounded-2xl">
-        <DialogHeader>
-          <DialogTitle className="font-display text-lg">Send a Vibe ✨</DialogTitle>
+      <DialogContent className="max-w-md mx-auto sm:rounded-2xl p-4 gap-0 max-h-[90dvh] overflow-y-auto">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="font-display text-base">Send a Vibe ✨</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
+          {/* Vibe type pills */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">What's the vibe?</label>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {vibeTypes.map(type => {
                 const config = VIBE_CONFIG[type];
                 const isSelected = vibeType === type;
@@ -151,9 +151,9 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                     key={type}
                     onClick={() => setVibeType(type)}
                     className={cn(
-                      "flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+                      "flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all",
                       isSelected
-                        ? "text-primary-foreground shadow-md"
+                        ? "text-primary-foreground shadow-sm"
                         : "bg-muted/60 text-muted-foreground hover:bg-muted"
                     )}
                     style={isSelected ? { backgroundColor: vibeColors[type] } : undefined}
@@ -163,42 +163,40 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                   </button>
                 );
               })}
-              {/* Custom vibe pill */}
               <button
                 onClick={() => setVibeType('custom')}
                 className={cn(
-                  "flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all border-2 border-dashed",
+                  "flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all border border-dashed",
                   vibeType === 'custom'
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                    : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50"
                 )}
               >
-                <Plus className="h-3 w-3" />
+                <Plus className="h-2.5 w-2.5" />
                 <span>Custom</span>
               </button>
             </div>
 
-            {/* Custom tags input */}
             <AnimatePresence>
               {vibeType === 'custom' && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="mt-2 overflow-hidden"
+                  className="mt-1.5 overflow-hidden"
                 >
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1">
                     {customTags.map(tag => (
                       <span
                         key={tag}
-                        className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                        className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
                       >
                         #{tag}
                         <button
                           onClick={() => setCustomTags(prev => prev.filter(t => t !== tag))}
                           className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-2.5 w-2.5" />
                         </button>
                       </span>
                     ))}
@@ -213,7 +211,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                           setCustomInput('');
                         }
                       }}
-                      className="h-7 w-28 rounded-full bg-muted px-2.5 text-xs outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/60"
+                      className="h-6 w-24 rounded-full bg-muted px-2 text-[11px] outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/60"
                     />
                   </div>
                 </motion.div>
@@ -223,64 +221,66 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
 
           {/* Message */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Message (optional)</label>
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}
-              placeholder="What are you up to?"
+              placeholder="What are you up to? (optional)"
               maxLength={280}
               rows={2}
-              className="w-full rounded-xl border-2 border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-all resize-none"
+              className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary transition-all resize-none"
             />
-            <p className="text-[10px] text-muted-foreground text-right mt-0.5">{message.length}/280</p>
+            <p className="text-[10px] text-muted-foreground text-right -mt-0.5">{message.length}/280</p>
           </div>
 
-          {/* Image upload */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Photo (optional)</label>
+          {/* Attachments row — photo, gif, location inline */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
             {mediaUrl ? (
-              <div className="relative inline-block">
-                <img src={mediaUrl} alt="Vibe" className="h-24 w-24 rounded-xl object-cover border border-border" />
+              <div className="relative">
+                <img src={mediaUrl} alt="Vibe" className="h-14 w-14 rounded-lg object-cover border border-border" />
                 <button
                   onClick={() => { setMediaUrl(null); setMediaType(null); }}
-                  className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive text-destructive-foreground h-5 w-5 flex items-center justify-center"
+                  className="absolute -top-1 -right-1 rounded-full bg-destructive text-destructive-foreground h-4 w-4 flex items-center justify-center"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-2.5 w-2.5" />
                 </button>
               </div>
             ) : (
-              <div className="flex gap-2">
+              <>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="gap-2"
+                  className="gap-1 h-7 text-[11px] px-2"
                 >
-                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
-                  Add photo
+                  {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
+                  Photo
                 </Button>
                 <GifPicker onGifSelect={(url) => { setMediaUrl(url); setMediaType('gif'); }}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <span className="text-xs font-bold">GIF</span>
-                    Add GIF
+                  <Button variant="outline" size="sm" className="gap-1 h-7 text-[11px] px-2">
+                    <span className="text-[10px] font-bold">GIF</span>
                   </Button>
                 </GifPicker>
-              </div>
+              </>
             )}
-          </div>
-
-          {/* Location */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Location (optional)</label>
-            <VibeLocationInput value={location} onChange={setLocation} />
+            {location ? (
+              <div className="flex items-center gap-1 rounded-full bg-primary/10 pl-2 pr-1 py-0.5 text-[11px] text-primary font-medium">
+                <MapPin className="h-2.5 w-2.5" />
+                <span className="truncate max-w-[120px]">{location.name}</span>
+                <button onClick={() => setLocation(null)} className="rounded-full p-0.5 hover:bg-primary/20">
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            ) : (
+              <VibeLocationInput value={location} onChange={setLocation} compact />
+            )}
           </div>
 
           {/* Target selection */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Send to</label>
-            <div className="flex gap-1.5">
+            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Send to</label>
+            <div className="flex gap-1">
               {([
                 { type: 'broadcast' as TargetType, label: 'All Friends', icon: Globe, count: connectedFriends.length },
                 { type: 'pod' as TargetType, label: 'Pod', icon: Shield, count: podFriends.length },
@@ -290,21 +290,21 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                   key={type}
                   onClick={() => setTargetType(type)}
                   className={cn(
-                    "flex-1 flex flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-xs font-medium transition-all border-2",
+                    "flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] font-medium transition-all border",
                     targetType === type
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-transparent bg-muted/60 text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3.5 w-3.5" />
                   <span>{label}</span>
-                  {count !== null && <span className="text-[10px] opacity-60">{count}</span>}
+                  {count !== null && <span className="text-[10px] opacity-60">({count})</span>}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Friend picker for 'selected' */}
+          {/* Friend picker */}
           <AnimatePresence>
             {targetType === 'selected' && (
               <motion.div
@@ -313,9 +313,9 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-border p-2">
+                <div className="max-h-28 overflow-y-auto space-y-0.5 rounded-lg border border-border p-1.5">
                   {connectedFriends.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-2">No connected friends yet</p>
+                    <p className="text-[11px] text-muted-foreground text-center py-1.5">No connected friends yet</p>
                   ) : (
                     connectedFriends.map(friend => {
                       const isSelected = selectedFriendIds.includes(friend.friendUserId!);
@@ -324,15 +324,15 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                           key={friend.id}
                           onClick={() => toggleFriend(friend.friendUserId!)}
                           className={cn(
-                            "w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors text-left",
+                            "w-full flex items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors text-left",
                             isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted"
                           )}
                         >
                           <div className={cn(
-                            "h-4 w-4 rounded-full border-2 flex items-center justify-center transition-colors",
+                            "h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
                             isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
                           )}>
-                            {isSelected && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                            {isSelected && <Check className="h-2 w-2 text-primary-foreground" />}
                           </div>
                           <span className="truncate">{friend.name}</span>
                           {friend.isPodMember && (
@@ -347,16 +347,17 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
             )}
           </AnimatePresence>
 
-          {/* Send button */}
+          {/* Send */}
           <Button
             onClick={handleSend}
             disabled={sending || recipientCount === 0}
-            className="w-full gap-2"
+            className="w-full gap-2 h-9"
+            size="sm"
           >
             {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             )}
             Send to {recipientCount} friend{recipientCount !== 1 ? 's' : ''}
           </Button>

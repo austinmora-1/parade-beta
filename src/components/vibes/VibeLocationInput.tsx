@@ -21,14 +21,16 @@ export interface VibeLocation {
 interface VibeLocationInputProps {
   value: VibeLocation | null;
   onChange: (location: VibeLocation | null) => void;
+  compact?: boolean;
 }
 
-export function VibeLocationInput({ value, onChange }: VibeLocationInputProps) {
+export function VibeLocationInput({ value, onChange, compact }: VibeLocationInputProps) {
   const [mode, setMode] = useState<'search' | 'custom'>('search');
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
@@ -50,11 +52,12 @@ export function VibeLocationInput({ value, onChange }: VibeLocationInputProps) {
       const dropdown = document.getElementById('vibe-location-dropdown');
       if (inputRef.current && !inputRef.current.contains(target) && dropdown && !dropdown.contains(target)) {
         setShowSuggestions(false);
+        if (compact && !query.trim()) setExpanded(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [compact, query]);
 
   const searchPlaces = async (searchQuery: string) => {
     if (searchQuery.length < 2) {
@@ -95,11 +98,13 @@ export function VibeLocationInput({ value, onChange }: VibeLocationInputProps) {
     onChange({ name: displayValue, verified: true });
     setShowSuggestions(false);
     setSuggestions([]);
+    if (compact) setExpanded(false);
   };
 
   const handleCustomConfirm = () => {
     if (query.trim()) {
       onChange({ name: query.trim(), verified: false });
+      if (compact) setExpanded(false);
     }
   };
 
@@ -118,7 +123,8 @@ export function VibeLocationInput({ value, onChange }: VibeLocationInputProps) {
     onChange(null);
   };
 
-  if (value) {
+  // In non-compact mode, show the selected value inline
+  if (value && !compact) {
     return (
       <div className="flex items-center gap-2 rounded-xl border-2 border-input bg-background px-3 py-2">
         <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -130,6 +136,21 @@ export function VibeLocationInput({ value, onChange }: VibeLocationInputProps) {
           <X className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
+    );
+  }
+
+  // Compact mode: just a button that expands into the input
+  if (compact && !expanded) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 50); }}
+        className="gap-1 h-7 text-[11px] px-2"
+      >
+        <MapPin className="h-3 w-3" />
+        Location
+      </Button>
     );
   }
 
@@ -151,7 +172,7 @@ export function VibeLocationInput({ value, onChange }: VibeLocationInputProps) {
             key={suggestion.place_id}
             onMouseDown={(e) => { e.preventDefault(); handleSelectSuggestion(suggestion); }}
             onTouchEnd={(e) => { e.preventDefault(); handleSelectSuggestion(suggestion); }}
-            className="flex cursor-pointer items-center gap-2 px-3 py-2.5 hover:bg-muted active:bg-muted transition-colors"
+            className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted active:bg-muted transition-colors"
           >
             <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <div className="min-w-0">
@@ -166,6 +187,67 @@ export function VibeLocationInput({ value, onChange }: VibeLocationInputProps) {
     </div>,
     document.body
   );
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1">
+        <div className="flex gap-0.5">
+          <button
+            onClick={() => switchMode('search')}
+            className={cn(
+              "rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-all",
+              mode === 'search' ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Search className="h-2.5 w-2.5 inline mr-0.5" />
+            Search
+          </button>
+          <button
+            onClick={() => switchMode('custom')}
+            className={cn(
+              "rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-all",
+              mode === 'custom' ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <PenLine className="h-2.5 w-2.5 inline mr-0.5" />
+            Custom
+          </button>
+        </div>
+        <div className="relative">
+          <Input
+            ref={inputRef}
+            value={query}
+            onChange={handleInputChange}
+            onFocus={() => { if (mode === 'search' && query.length >= 2) setShowSuggestions(true); }}
+            onBlur={() => {
+              if (mode === 'custom') setTimeout(() => handleCustomConfirm(), 150);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && mode === 'custom' && query.trim()) {
+                e.preventDefault();
+                handleCustomConfirm();
+              }
+              if (e.key === 'Escape') { setExpanded(false); setQuery(''); }
+            }}
+            placeholder={mode === 'search' ? "Search place..." : "Type location..."}
+            className="h-7 text-[11px] pl-2 pr-6 w-36 rounded-lg"
+          />
+          {isLoading && (
+            <Loader2 className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+          {!isLoading && query && (
+            <button
+              onClick={() => { setQuery(''); setExpanded(false); }}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2"
+            >
+              <X className="h-3 w-3 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+        {dropdown}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
