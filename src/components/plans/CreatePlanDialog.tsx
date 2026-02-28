@@ -485,7 +485,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="h-9 text-xs px-2"
+                className="h-9 text-xs !px-2 [&::-webkit-calendar-picker-indicator]:ml-0"
                 placeholder="Optional"
               />
             </div>
@@ -495,7 +495,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="h-9 text-xs px-2"
+                className="h-9 text-xs !px-2 [&::-webkit-calendar-picker-indicator]:ml-0"
                 placeholder="Optional"
               />
             </div>
