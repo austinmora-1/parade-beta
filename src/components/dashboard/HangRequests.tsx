@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -337,34 +338,36 @@ export function HangRequests() {
         </div>
       }
     >
-      <div className="space-y-2.5">
-        {incomingPending.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              <ArrowDownLeft className="h-2.5 w-2.5" /> Incoming
-            </p>
-            {incomingPending.map(r => renderRequestCard(r, false))}
-          </div>
-        )}
+      <ScrollArea className="max-h-[280px]">
+        <div className="space-y-2.5">
+          {incomingPending.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <ArrowDownLeft className="h-2.5 w-2.5" /> Incoming
+              </p>
+              {incomingPending.map(r => renderRequestCard(r, false))}
+            </div>
+          )}
 
-        {outgoingPending.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-              <ArrowUpRight className="h-2.5 w-2.5" /> Sent
-            </p>
-            {outgoingPending.map(r => renderRequestCard(r, true))}
-          </div>
-        )}
+          {outgoingPending.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <ArrowUpRight className="h-2.5 w-2.5" /> Sent
+              </p>
+              {outgoingPending.map(r => renderRequestCard(r, true))}
+            </div>
+          )}
 
-        {resolved.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-              Past
-            </p>
-            {resolved.slice(0, 5).map(r => renderRequestCard(r, isOutgoing(r)))}
-          </div>
-        )}
-      </div>
+          {resolved.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                Past
+              </p>
+              {resolved.slice(0, 5).map(r => renderRequestCard(r, isOutgoing(r)))}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </CollapsibleWidget>
   );
 }
