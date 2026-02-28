@@ -305,13 +305,13 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
               {/* Legend */}
               <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-availability-available/60" /> Both free
+                  <span className="h-2.5 w-2.5 rounded-sm bg-availability-available" /> Both free
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-amber-400/40" /> You're busy
+                  <span className="h-2.5 w-2.5 rounded-sm bg-availability-available/30" /> They're free
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-muted" /> They're busy
+                  <span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/20" /> Unavailable
                 </span>
               </div>
 
@@ -359,10 +359,10 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
                           disabled={!canSelect}
                           className={cn(
                             "p-1 flex items-center justify-center transition-all min-h-[32px]",
-                            status === 'both-free' && !isSelected && "bg-availability-available/15 hover:bg-availability-available/30",
-                            status === 'me-busy' && !isSelected && "bg-amber-400/15 hover:bg-amber-400/25",
-                            status === 'friend-busy' && "bg-muted/40 cursor-not-allowed",
-                            status === 'both-busy' && "bg-muted/60 cursor-not-allowed",
+                            status === 'both-free' && !isSelected && "bg-availability-available/40 hover:bg-availability-available/60",
+                            status === 'me-busy' && !isSelected && "bg-availability-available/15 hover:bg-availability-available/25",
+                            status === 'friend-busy' && "bg-muted-foreground/10 cursor-not-allowed",
+                            status === 'both-busy' && "bg-muted-foreground/10 cursor-not-allowed",
                             isSelected && "bg-primary ring-2 ring-primary ring-inset"
                           )}
                         >
