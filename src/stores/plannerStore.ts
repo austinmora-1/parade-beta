@@ -797,40 +797,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const { userId } = get();
     if (!userId) return;
     
-    // 1. Update the original request to 'connected'
-    const { error: updateError } = await supabase
-      .from('friendships')
-      .update({ status: 'connected' })
-      .eq('id', friendshipId);
+    // Use security definer function to atomically accept and create reciprocal record
+    const { error } = await supabase.rpc('accept_friend_request', {
+      p_friendship_id: friendshipId,
+      p_requester_user_id: requesterUserId,
+    });
     
-    if (updateError) {
-      console.error('Error accepting friend request:', updateError);
+    if (error) {
+      console.error('Error accepting friend request:', error);
       return;
     }
     
-    // 2. Get the requester's profile for their name
-    const { data: requesterProfile } = await supabase
-      .from('public_profiles')
-      .select('display_name')
-      .eq('user_id', requesterUserId)
-      .maybeSingle();
-    
-    // 3. Create a reciprocal friendship record for the accepter
-    const { error: insertError } = await supabase
-      .from('friendships')
-      .insert({
-        user_id: userId,
-        friend_user_id: requesterUserId,
-        friend_name: requesterProfile?.display_name || 'Friend',
-        status: 'connected',
-      });
-    
-    if (insertError) {
-      console.error('Error creating reciprocal friendship:', insertError);
-      // Don't return - the original update succeeded
-    }
-    
-    // 4. Update local state - change the incoming request to connected
+    // Update local state - change the incoming request to connected
     set((state) => ({
       friends: state.friends.map((f) => 
         f.id === friendshipId ? { ...f, status: 'connected' as const } : f

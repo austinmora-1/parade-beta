@@ -889,6 +889,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_friend_request: {
+        Args: { p_friendship_id: string; p_requester_user_id: string }
+        Returns: undefined
+      }
       check_vibe_recipient: {
         Args: { p_vibe_send_id: string }
         Returns: boolean
