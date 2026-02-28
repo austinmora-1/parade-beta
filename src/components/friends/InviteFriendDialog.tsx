@@ -37,15 +37,17 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
       const { data: { user } } = await supabase.auth.getUser();
       const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
 
-      const { error } = await supabase.functions.invoke('send-friend-invite', {
-        body: { email: email.trim(), inviterName },
-      });
-
-      if (error) throw error;
+      if (email.trim()) {
+        // Send email invite via edge function
+        const { error } = await supabase.functions.invoke('send-friend-invite', {
+          body: { email: email.trim(), inviterName },
+        });
+        if (error) throw error;
+      }
 
       addFriend({
-        name: email ? email.split('@')[0] : phone,
-        email: email || undefined,
+        name: email ? email.split('@')[0] : phone.trim(),
+        email: email.trim() || undefined,
         status: 'invited',
       });
 
