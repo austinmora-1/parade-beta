@@ -15,8 +15,12 @@ export function ReceivedVibes() {
   const { user } = useAuth();
   const currentUserId = user?.id || '';
   const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   if (loading || receivedVibes.length === 0) return null;
+
+  const displayedVibes = showAll ? receivedVibes : receivedVibes.slice(0, 5);
+  const hasMore = receivedVibes.length > 5;
 
   return (
     <>
@@ -26,7 +30,7 @@ export function ReceivedVibes() {
       >
         <div className="space-y-2">
           <AnimatePresence>
-            {receivedVibes.slice(0, 5).map((vibe) => (
+            {displayedVibes.map((vibe) => (
               <VibeCard
                 key={vibe.id}
                 vibe={vibe}
@@ -38,6 +42,14 @@ export function ReceivedVibes() {
               />
             ))}
           </AnimatePresence>
+          {hasMore && (
+            <button
+              onClick={() => setShowAll(prev => !prev)}
+              className="w-full text-center text-xs font-medium text-primary hover:underline py-1"
+            >
+              {showAll ? 'Show less' : `View all ${receivedVibes.length} vibes`}
+            </button>
+          )}
         </div>
       </CollapsibleWidget>
 
