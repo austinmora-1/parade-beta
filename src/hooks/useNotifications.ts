@@ -1,7 +1,19 @@
-import { useMemo, useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { useMemo, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+
+const DISMISSED_KEY = 'notifications_dismissed';
+
+function loadDismissedIds(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]'));
+  } catch { return new Set(); }
+}
+
+function saveDismissedIds(ids: Set<string>) {
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]));
+}
 
 // Shared state so every component using useNotifications sees the same counts
 let sharedState = {
@@ -9,6 +21,7 @@ let sharedState = {
   pendingPlanInvitesCount: 0,
   pendingChangeRequestsCount: 0,
   newPlanPhotosCount: 0,
+  dismissedIds: loadDismissedIds(),
 };
 let listeners = new Set<() => void>();
 
@@ -24,6 +37,14 @@ function subscribe(listener: () => void) {
 
 function getSnapshot() {
   return sharedState;
+}
+
+export function dismissNotification(id: string) {
+  const next = new Set(sharedState.dismissedIds);
+  next.add(id);
+  sharedState = { ...sharedState, dismissedIds: next };
+  saveDismissedIds(next);
+  emitChange();
 }
 
 export function useNotifications() {
@@ -67,7 +88,6 @@ export function useNotifications() {
 
   const fetchNewPlanPhotos = useCallback(async () => {
     if (!user) return;
-    // Count photos added by others to plans user owns or participates in, from last 24h
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { count } = await supabase
       .from('plan_photos')
@@ -118,7 +138,25 @@ export function useNotifications() {
     return friends.filter(f => f.status === 'pending' && f.isIncoming).length;
   }, [friends]);
 
-  const totalNotifications = incomingRequestsCount + state.pendingHangRequestsCount + state.pendingPlanInvitesCount + state.pendingChangeRequestsCount + state.newPlanPhotosCount;
+  // Count dismissed items per category to subtract from badge
+  const dismissed = state.dismissedIds;
+  const dismissedFriendCount = useMemo(() => {
+    return friends.filter(f => f.status === 'pending' && f.isIncoming && dismissed.has(`friend-${f.id}`)).length;
+  }, [friends, dismissed]);
+
+  // We can't know exact dismissed IDs for count-based queries, so we count by prefix
+  const dismissedHangCount = useMemo(() => [...dismissed].filter(id => id.startsWith('hang-')).length, [dismissed]);
+  const dismissedInviteCount = useMemo(() => [...dismissed].filter(id => id.startsWith('invite-')).length, [dismissed]);
+  const dismissedChangeCount = useMemo(() => [...dismissed].filter(id => id.startsWith('change-')).length, [dismissed]);
+  const dismissedPhotoCount = useMemo(() => [...dismissed].filter(id => id.startsWith('photo-')).length, [dismissed]);
+
+  const effectiveHangCount = Math.max(0, state.pendingHangRequestsCount - dismissedHangCount);
+  const effectiveInviteCount = Math.max(0, state.pendingPlanInvitesCount - dismissedInviteCount);
+  const effectiveChangeCount = Math.max(0, state.pendingChangeRequestsCount - dismissedChangeCount);
+  const effectivePhotoCount = Math.max(0, state.newPlanPhotosCount - dismissedPhotoCount);
+  const effectiveFriendCount = Math.max(0, incomingRequestsCount - dismissedFriendCount);
+
+  const totalNotifications = effectiveFriendCount + effectiveHangCount + effectiveInviteCount + effectiveChangeCount + effectivePhotoCount;
 
   return {
     incomingRequestsCount,
@@ -126,7 +164,9 @@ export function useNotifications() {
     pendingPlanInvitesCount: state.pendingPlanInvitesCount,
     pendingChangeRequestsCount: state.pendingChangeRequestsCount,
     newPlanPhotosCount: state.newPlanPhotosCount,
+    dismissedIds: state.dismissedIds,
     totalNotifications,
+    dismissNotification,
     refetchHangRequests: fetchPendingHangs,
     refetchPlanInvites: fetchPendingPlanInvites,
     refetchChangeRequests: fetchPendingChangeRequests,
