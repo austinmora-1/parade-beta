@@ -9,7 +9,7 @@ import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { CollapsibleWidget } from './CollapsibleWidget';
-import { getTimezoneAbbreviation, getCurrentTimeInTimezone } from '@/lib/timezone';
+import { getCurrentTimeInTimezone } from '@/lib/timezone';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -75,7 +75,6 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
 export function UpcomingPlans() {
   const { plans, userTimezone } = usePlannerStore();
   const navigate = useNavigate();
-  const tzAbbr = getTimezoneAbbreviation(userTimezone);
 
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
@@ -157,7 +156,7 @@ export function UpcomingPlans() {
                     <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                       <span className="flex items-center gap-0.5 shrink-0">
                         <Clock className="h-3 w-3" />
-                        {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') + ` ${tzAbbr}` : `${timeSlotConfig.time} ${tzAbbr}`}
+                        {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
                       </span>
                     </div>
                     {plan.location && (

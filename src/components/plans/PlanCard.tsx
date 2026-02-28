@@ -4,8 +4,6 @@ import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, MoreVertical, Trash2, Eye } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
-import { usePlannerStore } from '@/stores/plannerStore';
-import { getTimezoneAbbreviation } from '@/lib/timezone';
 import { FriendLink } from '@/components/ui/FriendLink';
 import {
   DropdownMenu,
@@ -42,8 +40,6 @@ export function PlanCard({
 }: PlanCardProps) {
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
-  const userTimezone = usePlannerStore((s) => s.userTimezone);
-  const tzAbbr = getTimezoneAbbreviation(userTimezone);
 
   const displayTitle = getPlanDisplayTitle(plan);
 
@@ -129,9 +125,9 @@ export function PlanCard({
           <span>
             {format(plan.date, 'EEE, MMM d')}
             {plan.startTime || plan.endTime ? (
-              <> • {plan.startTime && formatTimeDisplay(plan.startTime)}{plan.startTime && plan.endTime && ' – '}{plan.endTime && formatTimeDisplay(plan.endTime)} {tzAbbr}</>
+              <> • {plan.startTime && formatTimeDisplay(plan.startTime)}{plan.startTime && plan.endTime && ' – '}{plan.endTime && formatTimeDisplay(plan.endTime)}</>
             ) : (
-              <> • {timeSlotConfig.time} {tzAbbr}</>
+              <> • {timeSlotConfig.time}</>
             )}
           </span>
         </div>
