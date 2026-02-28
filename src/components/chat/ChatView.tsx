@@ -16,6 +16,7 @@ import ReactMarkdown from 'react-markdown';
 import { MessageReactions } from './MessageReactions';
 import { ChatImageUpload } from './ChatImageUpload';
 import { EmojiPicker } from './EmojiPicker';
+import { GifPicker } from './GifPicker';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -91,6 +92,10 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
 
   const handleImageUploaded = async (url: string) => {
     await sendMessage('', url);
+  };
+
+  const handleGifSelected = async (gifUrl: string) => {
+    await sendMessage('', gifUrl);
   };
 
   const insertEllyMention = () => {
@@ -313,6 +318,14 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
       {/* Input */}
       <div className="mt-2 flex gap-2 border-t border-border bg-background pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0">
         <ChatImageUpload onImageUploaded={handleImageUploaded} />
+        <GifPicker onGifSelect={handleGifSelected}>
+          <button
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
+            title="Send a GIF"
+          >
+            <span className="text-xs font-bold">GIF</span>
+          </button>
+        </GifPicker>
         <EmojiPicker onEmojiSelect={insertEmoji} />
         <button
           onClick={insertEllyMention}
