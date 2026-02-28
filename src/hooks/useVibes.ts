@@ -137,7 +137,7 @@ export function useVibes() {
     loadVibes();
   }, [loadVibes]);
 
-  // Realtime subscription for new vibes
+  // Realtime subscription for incoming vibes (new + dismissed)
   useEffect(() => {
     if (!user) return;
 
@@ -146,10 +146,35 @@ export function useVibes() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'vibe_send_recipients',
           filter: `recipient_id=eq.${user.id}`,
+        },
+        () => {
+          loadVibes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, loadVibes]);
+
+  // Realtime subscription for sent vibes (auto-sync when user sends a new vibe)
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('vibe-sends-own')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'vibe_sends',
+          filter: `sender_id=eq.${user.id}`,
         },
         () => {
           loadVibes();
