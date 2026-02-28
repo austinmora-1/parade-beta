@@ -716,6 +716,44 @@ export type Database = {
         }
         Relationships: []
       }
+      vibe_comments: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          media_type: string | null
+          media_url: string | null
+          user_id: string
+          vibe_send_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          user_id: string
+          vibe_send_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          user_id?: string
+          vibe_send_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vibe_comments_vibe_send_id_fkey"
+            columns: ["vibe_send_id"]
+            isOneToOne: false
+            referencedRelation: "vibe_sends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vibe_reactions: {
         Row: {
           created_at: string
