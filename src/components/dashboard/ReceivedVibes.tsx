@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { useAuth } from '@/hooks/useAuth';
 import { useSearchParams } from 'react-router-dom';
@@ -19,23 +20,65 @@ export function ReceivedVibes() {
   const currentUserId = user?.id || '';
   const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false);
 
-  // Auto-open vibe detail from push notification deep link
+  // Fast-path: fetch specific vibe directly from DB for push notification deep links
+  // This runs immediately without waiting for the full vibes list to load
   useEffect(() => {
     const vibeId = searchParams.get('vibe');
-    if (vibeId && !loading && receivedVibes.length > 0) {
-      const vibe = receivedVibes.find(v => v.id === vibeId);
-      if (vibe) {
+    if (!vibeId || !user || deepLinkHandled) return;
+
+    setDeepLinkHandled(true);
+    // Clear the param immediately so it doesn't re-trigger
+    searchParams.delete('vibe');
+    setSearchParams(searchParams, { replace: true });
+
+    // Fetch this specific vibe directly - much faster than waiting for full list
+    (async () => {
+      try {
+        const { data: vibeData } = await supabase
+          .from('vibe_sends')
+          .select('*')
+          .eq('id', vibeId)
+          .single();
+
+        if (!vibeData) return;
+
+        // Get sender profile
+        const { data: profile } = await supabase
+          .from('public_profiles')
+          .select('user_id, display_name, avatar_url')
+          .eq('user_id', vibeData.sender_id)
+          .single();
+
+        // Get recipient entry for read status
+        const { data: recipientEntry } = await supabase
+          .from('vibe_send_recipients')
+          .select('id, read_at')
+          .eq('vibe_send_id', vibeId)
+          .eq('recipient_id', user.id)
+          .maybeSingle();
+
+        const vibe: VibeSend = {
+          ...vibeData,
+          custom_tags: vibeData.custom_tags || [],
+          sender_name: profile?.display_name || 'Someone',
+          sender_avatar: profile?.avatar_url || undefined,
+          is_read: !!recipientEntry?.read_at,
+          recipient_entry_id: recipientEntry?.id,
+        };
+
         setSelectedVibe(vibe);
-        if (vibe.recipient_entry_id && !vibe.is_read) {
-          markAsRead(vibe.recipient_entry_id);
+
+        // Mark as read
+        if (recipientEntry?.id && !recipientEntry.read_at) {
+          markAsRead(recipientEntry.id);
         }
+      } catch (err) {
+        console.error('Error loading deep-linked vibe:', err);
       }
-      // Clear the param so it doesn't re-open on navigation
-      searchParams.delete('vibe');
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [loading, receivedVibes, searchParams]);
+    })();
+  }, [user, searchParams]);
 
   if (loading || receivedVibes.length === 0) return null;
 
