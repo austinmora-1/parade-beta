@@ -15,9 +15,7 @@ import { ELLY_USER_ID } from '@/lib/constants';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { MessageReactions } from './MessageReactions';
-import { ChatImageUpload } from './ChatImageUpload';
-import { EmojiPicker } from './EmojiPicker';
-import { GifPicker } from './GifPicker';
+import { ChatAttachMenu } from './ChatAttachMenu';
 import { MessageActions } from './MessageActions';
 import { ReplyPreview } from './ReplyPreview';
 import { ChatMessage } from '@/hooks/useChat';
@@ -409,23 +407,12 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
 
       {/* Input */}
       <div className={cn("flex gap-2 border-t border-border bg-background pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0", !replyTo && "mt-2")}>
-        <ChatImageUpload onImageUploaded={handleImageUploaded} />
-        <GifPicker onGifSelect={handleGifSelected}>
-          <button
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted transition-colors"
-            title="Send a GIF"
-          >
-            <span className="text-xs font-bold">GIF</span>
-          </button>
-        </GifPicker>
-        <EmojiPicker onEmojiSelect={insertEmoji} />
-        <button
-          onClick={insertEllyMention}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary hover:bg-primary/10 transition-colors"
-          title="Mention Elly"
-        >
-          <Sparkles className="h-4 w-4" />
-        </button>
+        <ChatAttachMenu
+          onImageUploaded={handleImageUploaded}
+          onGifSelected={handleGifSelected}
+          onEmojiSelect={insertEmoji}
+          onEllyMention={insertEllyMention}
+        />
         <Input
           ref={inputRef}
           placeholder={replyTo ? "Reply..." : "Type a message..."}
