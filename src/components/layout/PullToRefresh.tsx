@@ -67,7 +67,12 @@ function ElephantIcon({ className, style }: { className?: string; style?: React.
   );
 }
 
-export function PullToRefresh({ children }: { children: React.ReactNode }) {
+interface PullToRefreshProps {
+  children: React.ReactNode;
+  onRefresh?: () => Promise<void>;
+}
+
+export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
   const isMobile = useIsMobile();
   const [pulling, setPulling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -117,11 +122,24 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       setRefreshing(true);
       triggerHaptic();
       setPullDistance(50);
-      await controls.start({
+
+      // Run refresh callback and elephant animation in parallel
+      const refreshPromise = onRefresh ? onRefresh() : Promise.resolve();
+      const animPromise = controls.start({
         y: [0, -8, 0, -5, 0, -3, 0],
-        transition: { duration: 0.8, ease: 'easeInOut' },
+        transition: { duration: 0.8, ease: 'easeInOut', repeat: Infinity },
       });
-      window.location.reload();
+
+      await refreshPromise;
+      // Stop looping animation, play one final settle
+      controls.stop();
+      await controls.start({
+        y: [0, -4, 0],
+        transition: { duration: 0.3, ease: 'easeOut' },
+      });
+
+      setRefreshing(false);
+      setPullDistance(0);
     } else {
       setPullDistance(0);
     }
