@@ -56,6 +56,7 @@ interface ProfileData {
   avatar_url: string | null;
   bio: string | null;
   home_address: string | null;
+  cover_photo_url: string | null;
 }
 
 export default function Profile() {
@@ -80,7 +81,8 @@ export default function Profile() {
   const lastSavedNameRef = useRef<string>('');
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string>('');
-
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     async function loadProfile() {
       if (!session?.user) {
@@ -91,7 +93,7 @@ export default function Profile() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('display_name, avatar_url, bio, home_address')
+          .select('display_name, avatar_url, bio, home_address, cover_photo_url')
           .eq('user_id', session.user.id)
           .single();
 
@@ -191,6 +193,34 @@ export default function Profile() {
         URL.revokeObjectURL(imageToCrop);
         setImageToCrop('');
       }
+    }
+  };
+
+  const handleCoverPhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !session?.user) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be less than 5MB'); return; }
+
+    setIsUploadingCover(true);
+    try {
+      const userId = session.user.id;
+      const ext = file.name.split('.').pop() || 'jpg';
+      const filePath = `${userId}/cover.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const coverUrl = `${publicUrl}?t=${Date.now()}`;
+      const { error: updateError } = await supabase.from('profiles').update({ cover_photo_url: coverUrl }).eq('user_id', userId);
+      if (updateError) throw updateError;
+      setProfile(prev => prev ? { ...prev, cover_photo_url: coverUrl } : null);
+      toast.success('Cover photo updated!');
+    } catch (error) {
+      console.error('Error uploading cover photo:', error);
+      toast.error('Failed to upload cover photo');
+    } finally {
+      setIsUploadingCover(false);
+      if (coverInputRef.current) coverInputRef.current.value = '';
     }
   };
 
@@ -467,6 +497,15 @@ export default function Profile() {
         className="hidden"
       />
 
+      {/* Hidden cover photo input */}
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleCoverPhotoChange}
+        className="hidden"
+      />
+
       {/* Image Crop Dialog */}
       <ImageCropDialog
         open={cropDialogOpen}
@@ -484,7 +523,29 @@ export default function Profile() {
       {/* Profile Header */}
       <Card className="overflow-hidden">
         {/* Banner */}
-        <div className="h-20 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 md:h-24" />
+        <div className="relative h-28 md:h-36 group/cover">
+          {profile?.cover_photo_url ? (
+            <img
+              src={profile.cover_photo_url}
+              alt="Cover photo"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
+          )}
+          <button
+            onClick={() => coverInputRef.current?.click()}
+            disabled={isUploadingCover}
+            className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-lg bg-black/50 px-3 py-1.5 text-xs font-medium text-white opacity-0 backdrop-blur-sm transition-opacity group-hover/cover:opacity-100 hover:bg-black/70 disabled:cursor-not-allowed md:opacity-0"
+          >
+            {isUploadingCover ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Camera className="h-3.5 w-3.5" />
+            )}
+            {profile?.cover_photo_url ? 'Change Cover' : 'Add Cover'}
+          </button>
+        </div>
         
         {/* Profile Info */}
         <div className="relative px-4 pb-4 md:px-6 md:pb-5">

@@ -662,6 +662,7 @@ export type Database = {
           allowed_hang_request_friend_ids: string[] | null
           avatar_url: string | null
           bio: string | null
+          cover_photo_url: string | null
           created_at: string
           current_vibe: string | null
           custom_activities: Json | null
@@ -693,6 +694,7 @@ export type Database = {
           allowed_hang_request_friend_ids?: string[] | null
           avatar_url?: string | null
           bio?: string | null
+          cover_photo_url?: string | null
           created_at?: string
           current_vibe?: string | null
           custom_activities?: Json | null
@@ -724,6 +726,7 @@ export type Database = {
           allowed_hang_request_friend_ids?: string[] | null
           avatar_url?: string | null
           bio?: string | null
+          cover_photo_url?: string | null
           created_at?: string
           current_vibe?: string | null
           custom_activities?: Json | null
