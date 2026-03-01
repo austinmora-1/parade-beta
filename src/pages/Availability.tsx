@@ -14,6 +14,12 @@ export default function Availability() {
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadAllData = usePlannerStore((s) => s.loadAllData);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
+  const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
+
+  const openPlanDialog = (date?: Date) => {
+    setPlanDefaultDate(date);
+    setPlanDialogOpen(true);
+  };
 
   const isConnected = isGcalConnected || isIcalConnected;
   const isSyncing = isGcalSyncing || isIcalSyncing;
@@ -53,7 +59,7 @@ export default function Availability() {
           <Button
             size="sm"
             className="shrink-0 gap-2"
-            onClick={() => setPlanDialogOpen(true)}
+            onClick={() => openPlanDialog()}
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Plan</span>
@@ -86,11 +92,12 @@ export default function Availability() {
       </div>
 
       {/* Availability Grid */}
-      <AvailabilityGrid />
+      <AvailabilityGrid onCreatePlan={(date) => openPlanDialog(date)} />
 
       <CreatePlanDialog
         open={planDialogOpen}
         onOpenChange={setPlanDialogOpen}
+        defaultDate={planDefaultDate}
       />
     </div>
   );

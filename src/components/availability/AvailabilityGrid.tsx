@@ -27,7 +27,11 @@ import { DaySummaryDropdown } from './DaySummaryDropdown';
 
 type ViewMode = 'week' | 'month';
 
-export function AvailabilityGrid() {
+interface AvailabilityGridProps {
+  onCreatePlan?: (date: Date) => void;
+}
+
+export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
   const { plans, availability, setAvailability, homeAddress } = usePlannerStore();
   const isMobile = useIsMobile();
   
