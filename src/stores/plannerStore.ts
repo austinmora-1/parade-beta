@@ -119,32 +119,93 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set({ isLoading: true });
     
     try {
-      // Load own plans (limit to 200 most recent/upcoming)
-      const { data: ownPlansData } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('user_id', userId)
-        .order('date', { ascending: true })
-        .limit(200);
-      
-      // Load plans where user is a participant (invited by others)
-      const { data: participatedPlanIds } = await supabase
-        .rpc('user_participated_plan_ids', { p_user_id: userId });
-      
-      let participatedPlansData: typeof ownPlansData = [];
-      if (participatedPlanIds && participatedPlanIds.length > 0) {
-        const { data } = await supabase
+      // Prepare date range for availability
+      const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+      const dates = Array.from({ length: 35 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
+
+      // Fire ALL independent queries in parallel
+      const [
+        ownPlansResult,
+        participatedPlanIdsResult,
+        outgoingResult,
+        incomingResult,
+        availResult,
+        profileResult,
+      ] = await Promise.all([
+        // 1. Own plans
+        supabase
           .from('plans')
           .select('*')
-          .in('id', participatedPlanIds)
+          .eq('user_id', userId)
           .order('date', { ascending: true })
-          .limit(200);
-        participatedPlansData = data || [];
-      }
+          .limit(200),
+        // 2. Participated plan IDs
+        supabase.rpc('user_participated_plan_ids', { p_user_id: userId }),
+        // 3. Outgoing friendships
+        supabase
+          .from('friendships')
+          .select('*')
+          .eq('user_id', userId),
+        // 4. Incoming friendships
+        supabase
+          .from('friendships_incoming' as any)
+          .select('*')
+          .eq('friend_user_id', userId),
+        // 5. Availability
+        supabase
+          .from('availability')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('date', dates[0])
+          .lte('date', dates[dates.length - 1]),
+        // 6. Profile
+        supabase
+          .from('profiles')
+          .select('current_vibe, location_status, custom_vibe_tags, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address')
+          .eq('user_id', userId)
+          .single(),
+      ]);
+
+      const ownPlansData = ownPlansResult.data;
+      const participatedPlanIds = participatedPlanIdsResult.data;
+      const outgoingData = outgoingResult.data;
+      const incomingData = incomingResult.data;
+      const availData = availResult.data;
+      const profile = profileResult.data;
+
+      // Second wave: fetch participated plans + incoming friend profiles in parallel
+      const participatedPlansPromise = (participatedPlanIds && participatedPlanIds.length > 0)
+        ? supabase
+            .from('plans')
+            .select('*')
+            .in('id', participatedPlanIds)
+            .order('date', { ascending: true })
+            .limit(200)
+        : Promise.resolve({ data: [] as typeof ownPlansData });
+
+      // Batch fetch incoming friend profiles instead of N+1
+      const incomingUserIds = (incomingData || []).map((f: any) => f.user_id).filter(Boolean);
+      const incomingProfilesPromise = incomingUserIds.length > 0
+        ? supabase
+            .from('public_profiles')
+            .select('user_id, display_name, avatar_url')
+            .in('user_id', incomingUserIds)
+        : Promise.resolve({ data: [] as { user_id: string; display_name: string | null; avatar_url: string | null }[] });
+
+      const [participatedPlansResult, incomingProfilesResult] = await Promise.all([
+        participatedPlansPromise,
+        incomingProfilesPromise,
+      ]);
+
+      const participatedPlansData = participatedPlansResult.data || [];
+
+      // Build incoming profiles map
+      const incomingProfilesMap = new Map(
+        (incomingProfilesResult.data || []).map((p: any) => [p.user_id, p])
+      );
       
       // Merge and dedupe plans
       const ownIds = new Set((ownPlansData || []).map(p => p.id));
-      // Build a set of hang-request signatures the user already owns, to filter mirror plans
       const ownHangKeys = new Set(
         (ownPlansData || [])
           .filter(p => p.source === 'hang-request')
@@ -154,13 +215,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         ...(ownPlansData || []),
         ...(participatedPlansData || []).filter(p => {
           if (ownIds.has(p.id)) return false;
-          // Skip mirror hang-request plans where we already own our copy
           if (p.source === 'hang-request' && ownHangKeys.has(`${p.date}|${p.time_slot}`)) return false;
           return true;
         }),
       ];
       
-      // Load plan participants
+      // Load plan participants (third wave - depends on merged plan list)
       const planIds = (plansData || []).map(p => p.id);
       let participantsMap: Record<string, { friend_id: string; status: string; role: string }[]> = {};
       
@@ -176,12 +236,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         }
       }
       
-      // Collect unique friend_ids and plan owner ids to resolve names
+      // Collect unique user IDs for profile resolution
       const participantUserIds = new Set<string>();
       for (const pps of Object.values(participantsMap)) {
         for (const pp of pps) participantUserIds.add(pp.friend_id);
       }
-      // Add owners of participated plans so we can show their names
       for (const p of (plansData || [])) {
         if (p.user_id !== userId) participantUserIds.add(p.user_id);
       }
@@ -199,19 +258,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       }
       
       const plans: Plan[] = (plansData || []).map((p) => {
-        // Get all participants for this plan
         const allPps = participantsMap[p.id] || [];
-        // Determine current user's role (for participated plans)
         const myParticipation = allPps.find(pp => pp.friend_id === userId);
         const myRole = p.user_id === userId ? 'participant' : (myParticipation?.role as 'participant' | 'subscriber') || 'participant';
-        // Filter out the current user from participants
         const rawPps = allPps.filter(pp => pp.friend_id !== userId);
-        // For participated plans (not owned), include the plan owner as a participant
         const pps = [...rawPps];
         if (p.user_id !== userId && !pps.some(pp => pp.friend_id === p.user_id)) {
           pps.push({ friend_id: p.user_id, status: 'accepted', role: 'participant' });
         }
-        // Normalize plan date to local calendar day to prevent timezone day-shift.
         const planDateRaw = new Date(p.date);
         const planYear = planDateRaw.getUTCFullYear();
         const planMonth = planDateRaw.getUTCMonth();
@@ -242,18 +296,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         };
       });
       
-      // Load outgoing friendships (requests I sent)
-      const { data: outgoingData } = await supabase
-        .from('friendships')
-        .select('*')
-        .eq('user_id', userId);
-      
-      // Load incoming friendships (requests sent to me) - uses view that excludes friend_email
-      const { data: incomingData } = await supabase
-        .from('friendships_incoming' as any)
-        .select('*')
-        .eq('friend_user_id', userId);
-      
+      // Process friendships
       const outgoingFriends: Friend[] = (outgoingData || []).map((f) => ({
         id: f.id,
         name: f.friend_name,
@@ -264,29 +307,20 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         isPodMember: (f as any).is_pod_member || false,
       }));
       
-      // For incoming requests, we need to get the requester's profile info
-      const incomingFriends: Friend[] = await Promise.all(
-        (incomingData || []).map(async (f: any) => {
-          // Get the requester's profile
-          const { data: profile } = await supabase
-            .from('public_profiles')
-            .select('display_name, avatar_url')
-            .eq('user_id', f.user_id)
-            .single();
-          
-          return {
-            id: f.id,
-            name: profile?.display_name || f.friend_name || 'User',
-            avatar: profile?.avatar_url || undefined,
-            friendUserId: f.user_id, // The person who sent the request
-            status: f.status as 'connected' | 'pending' | 'invited',
-            isIncoming: true,
-          };
-        })
-      );
+      // Use batched profiles instead of N+1
+      const incomingFriends: Friend[] = (incomingData || []).map((f: any) => {
+        const prof = incomingProfilesMap.get(f.user_id);
+        return {
+          id: f.id,
+          name: (prof as any)?.display_name || f.friend_name || 'User',
+          avatar: (prof as any)?.avatar_url || undefined,
+          friendUserId: f.user_id,
+          status: f.status as 'connected' | 'pending' | 'invited',
+          isIncoming: true,
+        };
+      });
       
-      // Deduplicate outgoing friends: if same friendUserId appears multiple times
-      // (e.g. an 'invited' email record + a 'connected'/'pending' record), keep the best one
+      // Deduplicate outgoing friends
       const dedupeOutgoing = (list: Friend[]): Friend[] => {
         const byUserId = new Map<string, Friend>();
         const noUserId: Friend[] = [];
@@ -303,20 +337,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           }
         }
         
-        // Also remove email-invited entries if we have a match by friendUserId
         return [...byUserId.values(), ...noUserId.filter(f => {
           if (f.status !== 'invited' || !f.email) return true;
-          // Check if any connected/pending friend has the same email-derived name
-          return !byUserId.size; // keep if no userId-based friends exist
+          return !byUserId.size;
         })];
       };
       
       const dedupedOutgoing = dedupeOutgoing(outgoingFriends);
       
-      // Combine and dedupe with incoming (connected friends might appear in both)
       const allFriends = [...dedupedOutgoing];
       for (const incoming of incomingFriends) {
-        // Only add if not already present via outgoing
         const existingOutgoing = dedupedOutgoing.find(
           (o) => o.friendUserId === incoming.friendUserId
         );
@@ -327,51 +357,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       const friends = allFriends;
       
-      // Load availability for the next 5 weeks (35 days) so navigating weeks works
-      const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const dates = Array.from({ length: 35 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
-      
-      const { data: availData } = await supabase
-        .from('availability')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('date', dates[0])
-        .lte('date', dates[dates.length - 1]);
-      
-      const availability: DayAvailability[] = dates.map((dateStr, i) => {
-        const existing = (availData || []).find((a) => a.date === dateStr);
-        const date = addDays(start, i);
-        
-        if (existing) {
-          return {
-            date,
-            slots: {
-              'early-morning': existing.early_morning ?? true,
-              'late-morning': existing.late_morning ?? true,
-              'early-afternoon': existing.early_afternoon ?? true,
-              'late-afternoon': existing.late_afternoon ?? true,
-              'evening': existing.evening ?? true,
-              'late-night': existing.late_night ?? true,
-            },
-            locationStatus: (existing.location_status as LocationStatus) || 'home',
-            tripLocation: existing.trip_location || undefined,
-          };
-        }
-        return createDefaultAvailability(date);
-      });
-      
-      // Get today's location status from availability
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const todayAvail = availability.find(a => format(a.date, 'yyyy-MM-dd') === todayStr);
-      const todayLocationStatus = todayAvail?.locationStatus || 'home';
-      
-      // Load vibe, location, and default availability settings from profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('current_vibe, location_status, custom_vibe_tags, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address')
-        .eq('user_id', userId)
-        .single();
-      
+      // Process availability with default settings from profile
       const customTags = (profile as any)?.custom_vibe_tags || [];
       const currentVibe = (profile as any)?.current_vibe 
         ? { 
@@ -380,7 +366,6 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           } 
         : null;
       
-      // Build default settings from profile
       const defaultSettings: DefaultAvailabilitySettings = {
         workDays: (profile as any)?.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
         workStartHour: (profile as any)?.default_work_start_hour ?? 9,
@@ -389,7 +374,6 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         defaultVibes: (profile as any)?.default_vibes || [],
       };
       
-      // Re-process availability with default settings for days without saved data
       const availabilityWithDefaults: DayAvailability[] = dates.map((dateStr, i) => {
         const existing = (availData || []).find((a) => a.date === dateStr);
         const date = addDays(start, i);
@@ -412,7 +396,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         return createDefaultAvailability(date, defaultSettings);
       });
       
-      // Derive user timezone from today's location status
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const todayAvail = availabilityWithDefaults.find(a => format(a.date, 'yyyy-MM-dd') === todayStr);
+      const todayLocationStatus = todayAvail?.locationStatus || 'home';
+      
       const homeAddr = (profile as any)?.home_address || null;
       const todayTrip = todayAvail?.tripLocation || undefined;
       const derivedTimezone = getUserTimezone(todayLocationStatus, homeAddr, todayTrip);
