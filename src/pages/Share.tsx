@@ -114,12 +114,11 @@ export default function Share() {
       }
 
       try {
-        // Fetch profile by share_code
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id, display_name, avatar_url, current_vibe, custom_vibe_tags, location_status')
-          .eq('share_code', shareCode)
-          .single();
+        // Fetch profile by share_code using security definer function
+        const { data: profileRows, error: profileError } = await supabase
+          .rpc('get_profile_by_share_code', { p_share_code: shareCode });
+
+        const profileData = profileRows?.[0] ?? null;
 
         if (profileError || !profileData) {
           setError('This share link is not valid');
