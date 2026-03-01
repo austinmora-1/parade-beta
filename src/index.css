@@ -242,7 +242,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'DM Sans', sans-serif;
-    font-size: 17px;
+    font-size: 18px;
   }
 
   .arcade body, body.arcade {
