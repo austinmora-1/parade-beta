@@ -10,7 +10,7 @@ import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart, 
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date-fns';
-import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
+import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { SharedVibeHistory } from '@/components/friends/SharedVibeHistory';
 
@@ -33,6 +33,7 @@ interface FriendProfileData {
   avatar_url: string | null;
   bio: string | null;
   current_vibe: string | null;
+  custom_vibe_tags: string[] | null;
   location_status: string | null;
   share_code: string | null;
 }
@@ -88,7 +89,7 @@ export default function FriendProfile() {
 
       const { data: fullProfile } = await supabase
         .from('profiles')
-        .select('current_vibe, location_status, share_code')
+        .select('current_vibe, custom_vibe_tags, location_status, share_code')
         .eq('user_id', userId)
         .single();
 
@@ -97,6 +98,7 @@ export default function FriendProfile() {
         avatar_url: profileData?.avatar_url || null,
         bio: profileData?.bio || null,
         current_vibe: fullProfile?.current_vibe || null,
+        custom_vibe_tags: fullProfile?.custom_vibe_tags || null,
         location_status: fullProfile?.location_status || null,
         share_code: fullProfile?.share_code || null,
       });
@@ -302,11 +304,24 @@ export default function FriendProfile() {
             <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{profile.bio}</p>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {profile.current_vibe && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                ✨ {profile.current_vibe}
-              </span>
-            )}
+            {profile.current_vibe && (() => {
+              const isCustom = profile.current_vibe === 'custom';
+              const vibeConfig = !isCustom ? VIBE_CONFIG[profile.current_vibe as VibeType] : null;
+              const tags = profile.custom_vibe_tags || [];
+              return isCustom && tags.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-1">
+                  {tags.map(tag => (
+                    <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  {vibeConfig?.icon || '✨'} {vibeConfig?.label || profile.current_vibe}
+                </span>
+              );
+            })()}
             {profile.location_status && (
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                 <MapPin className="h-3 w-3" />
