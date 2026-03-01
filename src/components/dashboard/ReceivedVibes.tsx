@@ -81,15 +81,29 @@ function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleRe
     custom: 'hsl(var(--primary))',
   };
 
+  const handleDismiss = () => {
+    if (vibe.recipient_entry_id) {
+      onDismiss(vibe.recipient_entry_id);
+    }
+  };
+
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.3}
+      onDragEnd={(_e, info) => {
+        if (info.offset.x < -100) {
+          handleDismiss();
+        }
+      }}
       onClick={onTap}
       className={cn(
-        "relative rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md active:scale-[0.98]",
+        "relative rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md active:scale-[0.98] touch-pan-y",
         vibe.is_read
           ? "border-border bg-card/50"
           : "border-primary/20 bg-primary/5"
@@ -98,7 +112,7 @@ function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleRe
       {/* Dismiss X */}
       {vibe.recipient_entry_id && (
         <button
-          onClick={(e) => { e.stopPropagation(); onDismiss(vibe.recipient_entry_id!); }}
+          onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
           className="absolute top-2 right-2 rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           aria-label="Dismiss vibe"
         >

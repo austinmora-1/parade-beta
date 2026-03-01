@@ -58,6 +58,7 @@ export function useVibes() {
         .from('vibe_send_recipients')
         .select('id, vibe_send_id, read_at')
         .eq('recipient_id', user.id)
+        .is('dismissed_at', null)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -361,7 +362,7 @@ export function useVibes() {
 
     await supabase
       .from('vibe_send_recipients')
-      .delete()
+      .update({ dismissed_at: new Date().toISOString() })
       .eq('id', recipientEntryId);
 
     setReceivedVibes(prev => prev.filter(v => v.recipient_entry_id !== recipientEntryId));
