@@ -34,14 +34,11 @@ export function useFriendRequestNotifications() {
             status: string;
           };
 
-          // Try to get the requester's profile for their display name
-          const { data: profile } = await supabase
-            .from('public_profiles')
-            .select('display_name, avatar_url')
-            .eq('user_id', newRequest.user_id)
-            .single();
+          // Use RPC to get the requester's name (works even for non-discoverable users)
+          const { data: profiles } = await supabase
+            .rpc('get_display_names_for_users', { p_user_ids: [newRequest.user_id] });
 
-          const requesterName = profile?.display_name || newRequest.friend_name || 'Someone';
+          const requesterName = (profiles as any)?.[0]?.display_name || 'Someone';
 
           toast({
             title: 'New Friend Request! 🎉',
