@@ -13,6 +13,7 @@ import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { SharedVibeHistory } from '@/components/friends/SharedVibeHistory';
+import { usePlannerStore } from '@/stores/plannerStore';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -62,6 +63,7 @@ export default function FriendProfile() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createDM } = useConversations();
+  const { availability: myAvailability, plans: myPlans } = usePlannerStore();
   const [profile, setProfile] = useState<FriendProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
   const [sharedPlans, setSharedPlans] = useState<SharedPlan[]>([]);
@@ -74,6 +76,34 @@ export default function FriendProfile() {
   const friendIds = useMemo(() => userId ? [userId] : [], [userId]);
   const lastHungOut = useLastHungOut(friendIds);
   const lastDate = userId ? lastHungOut[userId] : undefined;
+
+  // Get user's own slot status
+  const getMySlotStatus = (dateStr: string, slot: TimeSlot): 'free' | 'busy' => {
+    const dayDate = next7Days.find(d => d.dateStr === dateStr)?.date;
+    if (!dayDate) return 'free';
+    const hasPlan = myPlans.some(p => isSameDay(p.date, dayDate) && p.timeSlot === slot);
+    if (hasPlan) return 'busy';
+    const dayAvail = myAvailability.find(a => isSameDay(a.date, dayDate));
+    if (dayAvail && !dayAvail.slots[slot]) return 'busy';
+    return 'free';
+  };
+
+  // Get friend's slot status
+  const getFriendSlotStatus = (dateStr: string, slot: TimeSlot): 'free' | 'busy' => {
+    const dayAvail = availability.find(a => a.date === dateStr);
+    if (dayAvail && !dayAvail.slots[slot]) return 'busy';
+    return 'free';
+  };
+
+  // Combined mutual status
+  const getMutualStatus = (dateStr: string, slot: TimeSlot): 'both-free' | 'friend-free' | 'me-free' | 'both-busy' => {
+    const my = getMySlotStatus(dateStr, slot);
+    const friend = getFriendSlotStatus(dateStr, slot);
+    if (my === 'free' && friend === 'free') return 'both-free';
+    if (my === 'busy' && friend === 'busy') return 'both-busy';
+    if (friend === 'free') return 'friend-free';
+    return 'me-free';
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -233,9 +263,10 @@ export default function FriendProfile() {
 
   const getDaySummary = (dateStr: string) => {
     const dayAvail = availability.find(a => a.date === dateStr);
-    if (!dayAvail) return { available: 0, total: TIME_SLOT_ORDER.length };
+    if (!dayAvail) return { available: 0, mutual: 0, total: TIME_SLOT_ORDER.length };
     const available = TIME_SLOT_ORDER.filter(s => dayAvail.slots[s]).length;
-    return { available, total: TIME_SLOT_ORDER.length };
+    const mutual = TIME_SLOT_ORDER.filter(s => getMutualStatus(dateStr, s) === 'both-free').length;
+    return { available, mutual, total: TIME_SLOT_ORDER.length };
   };
 
   const toggleDay = (key: string) => {
@@ -407,14 +438,28 @@ export default function FriendProfile() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+              <>
+                {/* Legend */}
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-sm bg-availability-available" /> Both free
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-sm bg-availability-available/30" /> They're free
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/20" /> Unavailable
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
                 {next7Days.map((day) => {
                   const dayAvail = availability.find(a => a.date === day.dateStr);
                   const isToday = isSameDay(day.date, new Date());
                   const isAway = dayAvail?.location_status === 'away';
                   const summary = getDaySummary(day.dateStr);
                   const isExpanded = expandedDays.has(day.dateStr);
-                  const score = summary.available / summary.total;
+                  const mutualScore = summary.mutual / summary.total;
                   const hasData = !!dayAvail;
 
                   return (
@@ -450,15 +495,19 @@ export default function FriendProfile() {
                           )}
                         </div>
 
+                        {/* Mutual availability bar */}
                         <div className="mt-1.5 flex gap-0.5">
                           {TIME_SLOT_ORDER.map((slot) => {
-                            const isAvailable = dayAvail ? dayAvail.slots[slot] : false;
+                            const status = hasData ? getMutualStatus(day.dateStr, slot) : 'both-busy';
                             return (
                               <div
                                 key={slot}
                                 className={cn(
                                   "h-1 flex-1 rounded-full",
-                                  isAvailable ? "bg-availability-available/60" : "bg-muted-foreground/20"
+                                  status === 'both-free' && "bg-availability-available",
+                                  status === 'friend-free' && "bg-availability-available/30",
+                                  status === 'me-free' && "bg-availability-available/30",
+                                  status === 'both-busy' && "bg-muted-foreground/20"
                                 )}
                               />
                             );
@@ -468,9 +517,9 @@ export default function FriendProfile() {
                         <div className="mt-1 flex items-center justify-between">
                           <span className={cn(
                             "text-[10px] font-medium",
-                            hasData && score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
+                            hasData && mutualScore >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                           )}>
-                            {hasData ? `${summary.available}/${summary.total} free` : 'No data'}
+                            {hasData ? `${summary.mutual}/${summary.total} mutual` : 'No data'}
                           </span>
                           {hasData && (
                             <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
@@ -483,19 +532,24 @@ export default function FriendProfile() {
                       {isExpanded && dayAvail && (
                         <div className="space-y-0.5 animate-fade-in px-0.5 pb-1">
                           {TIME_SLOT_ORDER.map((slot) => {
-                            const isAvailable = dayAvail.slots[slot];
+                            const status = getMutualStatus(day.dateStr, slot);
                             const slotInfo = TIME_SLOT_LABELS[slot];
                             return (
                               <div
                                 key={slot}
                                 className={cn(
                                   "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors",
-                                  isAvailable ? "bg-availability-available/20 text-foreground" : "bg-muted/30 text-muted-foreground"
+                                  status === 'both-free' && "bg-availability-available/20 text-foreground",
+                                  status === 'friend-free' && "bg-availability-available/10 text-foreground",
+                                  status === 'me-free' && "bg-muted/30 text-muted-foreground",
+                                  status === 'both-busy' && "bg-muted/30 text-muted-foreground"
                                 )}
                               >
                                 <span className={cn(
                                   "h-1.5 w-1.5 shrink-0 rounded-full",
-                                  isAvailable ? "bg-availability-available" : "bg-muted-foreground/40"
+                                  status === 'both-free' && "bg-availability-available",
+                                  status === 'friend-free' && "bg-availability-available/40",
+                                  (status === 'me-free' || status === 'both-busy') && "bg-muted-foreground/40"
                                 )} />
                                 <span className="font-medium truncate">{slotInfo.label}</span>
                                 <span className="text-muted-foreground ml-auto text-[9px] shrink-0">{slotInfo.time}</span>
@@ -508,6 +562,7 @@ export default function FriendProfile() {
                   );
                 })}
               </div>
+              </>
             )}
           </div>
         )}
