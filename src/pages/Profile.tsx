@@ -224,6 +224,25 @@ export default function Profile() {
     }
   };
 
+  const handleRemoveCover = async () => {
+    if (!session?.user) return;
+    setIsUploadingCover(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ cover_photo_url: null })
+        .eq('user_id', session.user.id);
+      if (error) throw error;
+      setProfile(prev => prev ? { ...prev, cover_photo_url: null } : null);
+      toast.success('Cover photo removed');
+    } catch (error) {
+      console.error('Error removing cover photo:', error);
+      toast.error('Failed to remove cover photo');
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
+
   const handleEditBio = () => {
     const currentBio = profile?.bio || '';
     setBioValue(currentBio);
@@ -533,18 +552,30 @@ export default function Profile() {
           ) : (
             <div className="h-full w-full bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
           )}
-          <button
-            onClick={() => coverInputRef.current?.click()}
-            disabled={isUploadingCover}
-            className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-lg bg-black/50 px-3 py-1.5 text-xs font-medium text-white opacity-0 backdrop-blur-sm transition-opacity group-hover/cover:opacity-100 hover:bg-black/70 disabled:cursor-not-allowed md:opacity-0"
-          >
-            {isUploadingCover ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Camera className="h-3.5 w-3.5" />
+          <div className="absolute right-3 bottom-3 flex items-center gap-1.5 opacity-0 transition-opacity group-hover/cover:opacity-100">
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              disabled={isUploadingCover}
+              className="flex items-center gap-1.5 rounded-lg bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 disabled:cursor-not-allowed"
+            >
+              {isUploadingCover ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Camera className="h-3.5 w-3.5" />
+              )}
+              {profile?.cover_photo_url ? 'Change' : 'Add Cover'}
+            </button>
+            {profile?.cover_photo_url && (
+              <button
+                onClick={handleRemoveCover}
+                disabled={isUploadingCover}
+                className="flex items-center gap-1.5 rounded-lg bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-red-600/80 disabled:cursor-not-allowed"
+              >
+                <X className="h-3.5 w-3.5" />
+                Remove
+              </button>
             )}
-            {profile?.cover_photo_url ? 'Change Cover' : 'Add Cover'}
-          </button>
+          </div>
         </div>
         
         {/* Profile Info */}
