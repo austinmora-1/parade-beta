@@ -155,7 +155,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
             </Label>
             {generatedLink ? (
               <div className="flex gap-2">
-                <Input value={generatedLink} readOnly className="bg-muted/50 text-xs" />
+                <Input value={generatedLink.replace(/^https:\/\/[^/]+\/functions\/v1\/og-image\?type=meta&token=([^&]+).*$/, 'https://helloparade.app/plan-invite/$1')} readOnly className="bg-muted/50 text-xs" />
                 <Button variant="outline" onClick={handleCopyLink} size="icon">
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
