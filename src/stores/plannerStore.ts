@@ -183,13 +183,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             .limit(200)
         : Promise.resolve({ data: [] as typeof ownPlansData });
 
-      // Batch fetch incoming friend profiles instead of N+1
+      // Batch fetch incoming friend profiles using RPC (works even for non-discoverable users)
       const incomingUserIds = (incomingData || []).map((f: any) => f.user_id).filter(Boolean);
       const incomingProfilesPromise = incomingUserIds.length > 0
-        ? supabase
-            .from('public_profiles')
-            .select('user_id, display_name, avatar_url')
-            .in('user_id', incomingUserIds)
+        ? supabase.rpc('get_display_names_for_users', { p_user_ids: incomingUserIds })
         : Promise.resolve({ data: [] as { user_id: string; display_name: string | null; avatar_url: string | null }[] });
 
       // Batch fetch outgoing friend avatars
@@ -332,7 +329,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         const prof = incomingProfilesMap.get(f.user_id);
         return {
           id: f.id,
-          name: (prof as any)?.display_name || f.friend_name || 'User',
+          name: (prof as any)?.display_name || 'Someone',
           avatar: (prof as any)?.avatar_url || undefined,
           friendUserId: f.user_id,
           status: f.status as 'connected' | 'pending' | 'invited',
