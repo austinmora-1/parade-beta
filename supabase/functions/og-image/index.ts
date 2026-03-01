@@ -124,8 +124,6 @@ function generateConfetti(count: number, width: number, height: number): string 
 
 Deno.serve(async (req) => {
   try {
-    await init();
-
     const url = new URL(req.url);
     const type = url.searchParams.get("type");
     const token = url.searchParams.get("token");
@@ -133,6 +131,8 @@ Deno.serve(async (req) => {
     const height = 630;
 
     // Route: plan-invite meta HTML (serves OG tags + redirect)
+    // NOTE: Do NOT call init() here — it downloads fonts/WASM and causes cold-start
+    // timeouts that break iMessage/social crawler link previews.
     if (type === "meta" && token) {
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
@@ -165,15 +165,17 @@ Deno.serve(async (req) => {
   <meta property="og:title" content="${titleText}"/>
   <meta property="og:description" content="${description}"/>
   <meta property="og:image" content="${ogImageUrl}"/>
+  <meta property="og:image:type" content="image/png"/>
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="630"/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="${redirectUrl}"/>
+  <meta property="og:site_name" content="Parade"/>
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:title" content="${titleText}"/>
   <meta name="twitter:description" content="${description}"/>
   <meta name="twitter:image" content="${ogImageUrl}"/>
-  <meta http-equiv="refresh" content="0;url=${redirectUrl}"/>
+  <meta http-equiv="refresh" content="1;url=${redirectUrl}"/>
 </head>
 <body><p>Redirecting to <a href="${redirectUrl}">Parade</a>...</p></body>
 </html>`;
@@ -189,6 +191,7 @@ Deno.serve(async (req) => {
 
     // Route: plan-invite OG image (PNG)
     if (type === "plan-invite" && token) {
+      await init();
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -292,6 +295,7 @@ Deno.serve(async (req) => {
     }
 
     // Default: branded Parade OG image
+    await init();
     const bgColor = "#24382D";
     const textColor = "#55C78E";
     const confetti = generateConfetti(80, width, height);
