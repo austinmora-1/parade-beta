@@ -54,11 +54,14 @@ export function useVibes() {
 
     try {
       // Load received vibes
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
       const { data: recipientData } = await supabase
         .from('vibe_send_recipients')
         .select('id, vibe_send_id, read_at')
         .eq('recipient_id', user.id)
         .is('dismissed_at', null)
+        .gte('created_at', twentyFourHoursAgo)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -106,11 +109,12 @@ export function useVibes() {
         setReceivedVibes([]);
         setVibeReactions([]);
       }
-      // Load sent vibes
+      // Load sent vibes (only last 24 hours)
       const { data: sentData } = await supabase
         .from('vibe_sends')
         .select('*')
         .eq('sender_id', user.id)
+        .gte('created_at', twentyFourHoursAgo)
         .order('created_at', { ascending: false })
         .limit(20);
 
