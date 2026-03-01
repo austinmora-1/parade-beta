@@ -121,8 +121,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     try {
       // Prepare date range for availability (6 months to match calendar sync window)
       const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const availStartDate = format(addDays(start, -90), 'yyyy-MM-dd');
-      const availEndDate = format(addDays(start, 180), 'yyyy-MM-dd');
+      const availStartDate = format(addDays(start, -183), 'yyyy-MM-dd');
+      const availEndDate = format(addDays(start, 183), 'yyyy-MM-dd');
 
       // Fire ALL independent queries in parallel
       const [
@@ -392,11 +392,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         defaultVibes: (profile as any)?.default_vibes || [],
       };
       
-      // Generate dates array covering the full availability window (270 days: -90 to +180)
-      const allDates = Array.from({ length: 270 }, (_, i) => format(addDays(start, i - 90), 'yyyy-MM-dd'));
+      // Generate dates array covering the full availability window (366 days: -183 to +183)
+      const allDates = Array.from({ length: 366 }, (_, i) => format(addDays(start, i - 183), 'yyyy-MM-dd'));
       const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
         const existing = (availData || []).find((a) => a.date === dateStr);
-        const date = addDays(start, i - 90);
+        const date = addDays(start, i - 183);
         
         if (existing) {
           return {
