@@ -8,40 +8,55 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SignedImage } from '@/components/ui/SignedImage';
 import type { VibeReaction } from '@/components/vibes/VibeReactions';
+import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 export function SentVibes() {
-  const { sentVibes, sentVibeReactions, commentCounts, loading } = useVibes();
+  const { sentVibes, sentVibeReactions, commentCounts, loading, toggleVibeReaction } = useVibes();
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
 
   if (loading) return null;
 
   const displayVibes = expanded ? sentVibes : sentVibes.slice(0, 3);
 
   return (
-    <CollapsibleWidget
-      title="Sent Vibes"
-      icon={<Send className="h-4 w-4 text-primary" />}
-    >
-      {sentVibes.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4 text-center">No sent vibes yet — let your friends know what you're up to!</p>
-      ) : (
-        <div className="space-y-2">
-          <AnimatePresence>
-            {displayVibes.map((vibe) => (
-              <SentVibeCard key={vibe.id} vibe={vibe} reactions={sentVibeReactions} commentCount={commentCounts[vibe.id] || 0} />
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
-      {sentVibes.length > 3 && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-primary hover:underline mt-2 block"
-        >
-          {expanded ? 'Show less' : `Show all ${sentVibes.length} vibes`}
-        </button>
-      )}
-    </CollapsibleWidget>
+    <>
+      <CollapsibleWidget
+        title="Sent Vibes"
+        icon={<Send className="h-4 w-4 text-primary" />}
+      >
+        {sentVibes.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">No sent vibes yet — let your friends know what you're up to!</p>
+        ) : (
+          <div className="space-y-2">
+            <AnimatePresence>
+              {displayVibes.map((vibe) => (
+                <SentVibeCard key={vibe.id} vibe={vibe} reactions={sentVibeReactions} commentCount={commentCounts[vibe.id] || 0} onTap={() => setSelectedVibe(vibe)} />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+        {sentVibes.length > 3 && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs text-primary hover:underline mt-2 block"
+          >
+            {expanded ? 'Show less' : `Show all ${sentVibes.length} vibes`}
+          </button>
+        )}
+      </CollapsibleWidget>
+
+      <VibeDetailDialog
+        vibe={selectedVibe}
+        open={!!selectedVibe}
+        onOpenChange={(open) => { if (!open) setSelectedVibe(null); }}
+        reactions={sentVibeReactions}
+        currentUserId={user?.id}
+        onToggleReaction={toggleVibeReaction}
+      />
+    </>
   );
 }
 
@@ -53,7 +68,7 @@ const vibeColors: Record<string, string> = {
   custom: 'hsl(var(--primary))',
 };
 
-function SentVibeCard({ vibe, reactions, commentCount }: { vibe: VibeSend; reactions: VibeReaction[]; commentCount: number }) {
+function SentVibeCard({ vibe, reactions, commentCount, onTap }: { vibe: VibeSend; reactions: VibeReaction[]; commentCount: number; onTap?: () => void }) {
   const isCustom = vibe.vibe_type === 'custom';
   const config = isCustom
     ? { label: 'Custom', icon: '✨', color: 'primary', description: 'Custom vibe' }
@@ -75,7 +90,8 @@ function SentVibeCard({ vibe, reactions, commentCount }: { vibe: VibeSend; react
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="rounded-xl border border-border bg-card/50 p-3"
+      className="rounded-xl border border-border bg-card/50 p-3 cursor-pointer active:scale-[0.98] transition-transform"
+      onClick={onTap}
     >
       <div className="flex items-start gap-3">
         <div
