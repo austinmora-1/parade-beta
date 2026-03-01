@@ -430,6 +430,43 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             </div>
           </div>
 
+          {/* Quick Time Presets */}
+          <div className="space-y-1">
+            <Label className="text-xs">Quick Set</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: 'Morning ☕', slot: 'late-morning' as TimeSlot, start: '09:00', end: '10:30', dur: '90' },
+                { label: 'Lunch 🍽️', slot: 'early-afternoon' as TimeSlot, start: '12:00', end: '13:00', dur: '60' },
+                { label: 'Afternoon ☀️', slot: 'early-afternoon' as TimeSlot, start: '14:00', end: '16:00', dur: '120' },
+                { label: 'Happy Hour 🍻', slot: 'late-afternoon' as TimeSlot, start: '17:00', end: '19:00', dur: '120' },
+                { label: 'Dinner 🌮', slot: 'evening' as TimeSlot, start: '19:00', end: '21:00', dur: '120' },
+                { label: 'Late Night 🌙', slot: 'late-night' as TimeSlot, start: '21:00', end: '23:00', dur: '120' },
+              ].map((preset) => {
+                const isActive = startTime === preset.start && endTime === preset.end && timeSlot === preset.slot;
+                return (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      setTimeSlot(preset.slot);
+                      setStartTime(preset.start);
+                      setEndTime(preset.end);
+                      setDuration(preset.dur);
+                    }}
+                    className={cn(
+                      "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all border",
+                      isActive
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Date & Time Slot */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
