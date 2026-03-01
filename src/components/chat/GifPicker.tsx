@@ -114,22 +114,24 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
     <>
       <span onClick={() => setOpen(true)}>{children}</span>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-80 p-0 overflow-hidden gap-0 rounded-xl">
-          <div className="p-2 border-b border-border">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-sm p-0 overflow-hidden gap-0 rounded-2xl">
+          {/* Search */}
+          <div className="px-3 pt-3 pb-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search GIFs..."
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                className="pl-8 h-8 text-sm"
+                className="pl-9 h-10 text-sm rounded-xl"
               />
             </div>
           </div>
 
+          {/* Grid */}
           <div
             ref={scrollRef}
-            className="h-72 overflow-y-auto p-1.5 overscroll-contain"
+            className="h-80 overflow-y-auto px-3 pb-3 overscroll-contain"
             onScroll={handleScroll}
             style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
           >
@@ -144,23 +146,23 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-2">
                 {gifs.map(gif => (
                   <button
                     key={gif.id}
                     onClick={() => handleSelect(gif)}
-                    className="rounded-lg overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="rounded-xl overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <img
                       src={gif.preview}
                       alt={gif.title}
-                      className="w-full h-24 object-cover"
+                      className="w-full h-28 object-cover"
                       loading="lazy"
                     />
                   </button>
                 ))}
                 {loadingMore && (
-                  <div className="col-span-2 flex justify-center py-2">
+                  <div className="col-span-2 flex justify-center py-3">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 )}
@@ -168,7 +170,7 @@ export function GifPicker({ onGifSelect, children }: GifPickerProps) {
             )}
           </div>
 
-          <div className="border-t border-border px-2 py-1.5 flex items-center justify-end">
+          <div className="border-t border-border px-3 py-2 flex items-center justify-end">
             <span className="text-[9px] text-muted-foreground/50 tracking-wide uppercase">Powered by GIPHY</span>
           </div>
         </DialogContent>
