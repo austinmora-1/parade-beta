@@ -53,7 +53,7 @@ export function VibeSelector() {
   return (
     <>
     <CollapsibleWidget
-      title="What's your vibe today?"
+      title="What's your vibe?"
       icon={<Sparkles className="h-4 w-4 text-primary" />}
       headerRight={
         <Button size="sm" variant="soft" className="gap-1.5 h-7 px-2.5 text-xs" onClick={() => setSendVibeOpen(true)}>
