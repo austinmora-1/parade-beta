@@ -7,7 +7,7 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     const options = {
       body: data.body || '',
-      icon: data.icon || '/icon-192.png',
+      icon: data.image || data.icon || '/icon-192.png',
       badge: data.badge || '/favicon.png',
       image: data.image || undefined,
       data: { url: data.url || '/' },
