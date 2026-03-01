@@ -26,6 +26,12 @@ export function SentVibes() {
       <CollapsibleWidget
         title="Sent Vibes"
         icon={<Send className="h-4 w-4 text-primary" />}
+        defaultOpen={false}
+        badge={sentVibes.length > 0 ? (
+          <span className="rounded-full bg-primary-glow/20 px-1.5 py-0.5 text-[11px] font-semibold text-primary-glow">
+            {sentVibes.length}
+          </span>
+        ) : undefined}
       >
         {sentVibes.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">No sent vibes yet — let your friends know what you're up to!</p>

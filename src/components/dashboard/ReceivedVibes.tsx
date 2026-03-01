@@ -88,8 +88,14 @@ export function ReceivedVibes() {
   return (
     <>
       <CollapsibleWidget
-        title={`Incoming Vibes${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
+        title="Incoming Vibes"
         icon={<Zap className="h-4 w-4 text-primary" />}
+        defaultOpen={false}
+        badge={unreadCount > 0 ? (
+          <span className="rounded-full bg-primary-glow/20 px-1.5 py-0.5 text-[11px] font-semibold text-primary-glow">
+            {unreadCount}
+          </span>
+        ) : undefined}
       >
         {receivedVibes.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">No incoming vibes yet — send one to a friend to get things started!</p>
