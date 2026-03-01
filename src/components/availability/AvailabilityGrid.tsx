@@ -32,7 +32,7 @@ interface AvailabilityGridProps {
 }
 
 export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
-  const { plans, availability, setAvailability, homeAddress } = usePlannerStore();
+  const { plans, availability, availabilityMap, setAvailability, homeAddress } = usePlannerStore();
   const isMobile = useIsMobile();
   
   // View mode toggle
@@ -89,7 +89,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
 
   // Check if a day has "away" location status
   const isDayAway = (date: Date): boolean => {
-    const dayAvail = availability.find((a) => isSameDay(a.date, date));
+    const dayAvail = availabilityMap[format(date, 'yyyy-MM-dd')];
     return dayAvail?.locationStatus === 'away';
   };
 
@@ -100,7 +100,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
     );
     if (hasPlan) return 'busy';
 
-    const dayAvail = availability.find((a) => isSameDay(a.date, date));
+    const dayAvail = availabilityMap[format(date, 'yyyy-MM-dd')];
     if (dayAvail && !dayAvail.slots[slot]) return 'unavailable';
 
     return 'available';
@@ -108,7 +108,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
 
   // Get location text for a date
   const getLocationText = (date: Date): string | undefined => {
-    const dayAvail = availability.find((a) => isSameDay(a.date, date));
+    const dayAvail = availabilityMap[format(date, 'yyyy-MM-dd')];
     if (dayAvail?.tripLocation) {
       return dayAvail.tripLocation;
     }
@@ -148,7 +148,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
     const currentStatus = getSlotStatus(date, slot);
     if (currentStatus === 'busy') return;
 
-    const dayAvail = availability.find((a) => isSameDay(a.date, date));
+    const dayAvail = availabilityMap[format(date, 'yyyy-MM-dd')];
     const isCurrentlyAvailable = dayAvail ? dayAvail.slots[slot] : true;
     setAvailability(date, slot, !isCurrentlyAvailable);
   };

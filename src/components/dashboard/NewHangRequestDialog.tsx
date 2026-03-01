@@ -36,7 +36,7 @@ interface NewHangRequestDialogProps {
 }
 
 export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
-  const { friends, availability, plans } = usePlannerStore();
+  const { friends, availabilityMap, plans } = usePlannerStore();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
@@ -197,7 +197,7 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
     if (hasPlan) return 'busy';
 
     // Check availability
-    const dayAvail = availability.find(a => isSameDay(a.date, dayDate));
+    const dayAvail = availabilityMap[format(dayDate, 'yyyy-MM-dd')];
     if (dayAvail && !dayAvail.slots[slot]) return 'busy';
 
     return 'free';

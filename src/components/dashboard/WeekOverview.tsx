@@ -20,7 +20,7 @@ const TIME_SLOT_ORDER: TimeSlot[] = [
 ];
 
 export function WeekOverview() {
-  const { plans, availability, homeAddress } = usePlannerStore();
+  const { plans, availabilityMap, homeAddress } = usePlannerStore();
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
@@ -37,7 +37,7 @@ export function WeekOverview() {
       (p) => isSameDay(p.date, date) && p.timeSlot === slot
     );
     if (hasPlan) return 'busy';
-    const dayAvail = availability.find((a) => isSameDay(a.date, date));
+    const dayAvail = availabilityMap[format(date, 'yyyy-MM-dd')];
     if (dayAvail && !dayAvail.slots[slot]) return 'unavailable';
     return 'available';
   };
@@ -47,7 +47,7 @@ export function WeekOverview() {
   };
 
   const getDayAvailability = (date: Date) => {
-    return availability.find((a) => isSameDay(a.date, date));
+    return availabilityMap[format(date, 'yyyy-MM-dd')];
   };
 
   const getDaySummary = (date: Date) => {
