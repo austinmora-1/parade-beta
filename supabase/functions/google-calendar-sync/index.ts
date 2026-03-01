@@ -107,6 +107,14 @@ function extractFlightDestination(summary?: string): string | null {
       return AIRPORT_CITY_MAP[airports[airports.length - 1]]
     }
   }
+
+  // Fallback: match "Flight to <City>" pattern (e.g. "Flight to Dallas (AA 1849)")
+  const flightToMatch = summary.match(/\bflight\s+to\s+([A-Za-z\s]+?)(?:\s*\(|$)/i)
+  if (flightToMatch) {
+    const city = flightToMatch[1].trim()
+    if (city.length >= 3) return city
+  }
+
   return null
 }
 
@@ -269,21 +277,52 @@ async function handleEventsSync(params: {
 
   // Detect flight events and map dates → destination city
   const flightLocationByDate: Map<string, string> = new Map()
+  const returnFlightDates: Map<string, boolean> = new Map()
   for (const event of events) {
     if (!isFlightEvent(event)) continue
     const city = extractFlightDestination(event.summary)
     if (!city) continue
 
-    // Skip flights whose destination matches the user's home city
-    if (isCityMatchingHome(city, homeAddress)) continue
+    // Skip flights whose destination matches the user's home city (return flights)
+    const isReturnFlight = isCityMatchingHome(city, homeAddress)
 
     const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
     const endDate = event.end.dateTime ? new Date(event.end.dateTime) : event.end.date ? new Date(event.end.date) : null
     if (!startDate) continue
 
     const dates = endDate ? getEventDates(startDate, endDate, timezone) : [getDateString(startDate, timezone)]
-    for (const date of dates) {
-      flightLocationByDate.set(date, city)
+    if (!isReturnFlight) {
+      for (const date of dates) {
+        flightLocationByDate.set(date, city)
+      }
+    } else {
+      // Mark return flight dates so we know the trip ends
+      for (const date of dates) {
+        if (!returnFlightDates.has(date)) returnFlightDates.set(date, true)
+      }
+    }
+  }
+
+  // Fill gap days between outbound flights and return flights
+  // Sort all flight dates (outbound) and find return flight dates to fill the gap
+  const outboundDates = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+  const returnDates = Array.from(returnFlightDates.keys()).sort()
+
+  for (const [outDate, city] of outboundDates) {
+    // Find the earliest return date after this outbound date
+    const nextReturn = returnDates.find(rd => rd > outDate)
+    if (nextReturn) {
+      // Fill all days between outbound and return with the same city
+      const current = new Date(outDate)
+      current.setDate(current.getDate() + 1)
+      const returnD = new Date(nextReturn)
+      while (current < returnD) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (!flightLocationByDate.has(dateStr)) {
+          flightLocationByDate.set(dateStr, city)
+        }
+        current.setDate(current.getDate() + 1)
+      }
     }
   }
 
