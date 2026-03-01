@@ -1,20 +1,24 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { initialize, svg2png } from "https://esm.sh/svg2png-wasm@0.6.1";
 
-const FONT_URL = "https://raw.githubusercontent.com/google/fonts/main/ofl/bungeeshade/BungeeShade-Regular.ttf";
+const DISPLAY_FONT_URL = "https://raw.githubusercontent.com/google/fonts/main/ofl/bungeeshade/BungeeShade-Regular.ttf";
+const BODY_FONT_URL = "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf";
 
 let initialized = false;
-let fontData: Uint8Array | null = null;
+let displayFontData: Uint8Array | null = null;
+let bodyFontData: Uint8Array | null = null;
 
 async function init() {
   if (initialized) return;
   
-  const [wasmRes, fontRes] = await Promise.all([
+  const [wasmRes, displayFontRes, bodyFontRes] = await Promise.all([
     fetch("https://esm.sh/svg2png-wasm@0.6.1/svg2png_wasm_bg.wasm"),
-    fetch(FONT_URL),
+    fetch(DISPLAY_FONT_URL),
+    fetch(BODY_FONT_URL),
   ]);
   
-  fontData = new Uint8Array(await fontRes.arrayBuffer());
+  displayFontData = new Uint8Array(await displayFontRes.arrayBuffer());
+  bodyFontData = new Uint8Array(await bodyFontRes.arrayBuffer());
   await initialize(wasmRes);
   initialized = true;
 }
@@ -224,16 +228,18 @@ Deno.serve(async (req) => {
 
       let detailRows = "";
       let ri = 0;
-      detailRows += `<text x="${cardX + innerPad + 40}" y="${detailStartY + ri * rowHeight}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="${textPrimary}" dominant-baseline="central">📅  ${dateStr}</text>`;
+      detailRows += `<text x="${cardX + innerPad + 40}" y="${detailStartY + ri * rowHeight}" font-family="Inter" font-size="26" fill="${textPrimary}" dominant-baseline="central">Date:  ${dateStr}</text>`;
       ri++;
       if (timeStr) {
-        detailRows += `<text x="${cardX + innerPad + 40}" y="${detailStartY + ri * rowHeight}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="${textPrimary}" dominant-baseline="central">🕐  ${timeStr}</text>`;
+        detailRows += `<text x="${cardX + innerPad + 40}" y="${detailStartY + ri * rowHeight}" font-family="Inter" font-size="26" fill="${textPrimary}" dominant-baseline="central">Time:  ${timeStr}</text>`;
         ri++;
       }
       if (location) {
-        detailRows += `<text x="${cardX + innerPad + 40}" y="${detailStartY + ri * rowHeight}" font-family="Arial, Helvetica, sans-serif" font-size="26" fill="${textPrimary}" dominant-baseline="central">📍  ${location}</text>`;
+        detailRows += `<text x="${cardX + innerPad + 40}" y="${detailStartY + ri * rowHeight}" font-family="Inter" font-size="26" fill="${textPrimary}" dominant-baseline="central">Location:  ${location}</text>`;
         ri++;
       }
+
+      const activityLabel = ACTIVITY_LABELS[invite.plan_activity] || invite.plan_activity.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
 
       const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -253,17 +259,19 @@ Deno.serve(async (req) => {
   <rect width="${width}" height="${height}" fill="url(#dots)"/>
   <rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="${cardR}" fill="${cardBg}" stroke="${cardStroke}" stroke-width="1.5" filter="url(#cs)"/>
   <rect x="${cardX}" y="${cardY}" width="${cardW}" height="6" fill="url(#accentGrad)"/>
-  <text x="${cardX + innerPad}" y="${cardY + 90}" font-size="64" dominant-baseline="central">${emoji}</text>
-  <text x="${cardX + innerPad + 86}" y="${cardY + 78}" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="38" fill="${textPrimary}" dominant-baseline="central">${title}</text>
-  <rect x="${cardX + innerPad}" y="${cardY + 130}" width="200" height="36" rx="18" fill="${accent}" opacity="0.15"/>
-  <text x="${cardX + innerPad + 100}" y="${cardY + 148}" font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="16" fill="${accent}" text-anchor="middle" dominant-baseline="central">You're invited!</text>
-  <text x="${cardX + innerPad + 220}" y="${cardY + 148}" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="${textSecondary}" dominant-baseline="central">from ${inviterName}</text>
+  <text x="${cardX + innerPad}" y="${cardY + 78}" font-family="Inter" font-weight="700" font-size="38" fill="${textPrimary}" dominant-baseline="central">${title}</text>
+  <rect x="${cardX + innerPad}" y="${cardY + 120}" width="200" height="36" rx="18" fill="${accent}" opacity="0.15"/>
+  <text x="${cardX + innerPad + 100}" y="${cardY + 138}" font-family="Inter" font-weight="600" font-size="16" fill="${accent}" text-anchor="middle" dominant-baseline="central">You're invited!</text>
+  <text x="${cardX + innerPad + 220}" y="${cardY + 138}" font-family="Inter" font-size="18" fill="${textSecondary}" dominant-baseline="central">from ${inviterName}</text>
+  <rect x="${cardX + innerPad}" y="${cardY + 180}" width="auto" height="30" rx="15" fill="${accent}" opacity="0.1"/>
+  <text x="${cardX + innerPad + 16}" y="${cardY + 195}" font-family="Inter" font-weight="600" font-size="20" fill="${accent}" dominant-baseline="central">${escapeXml(activityLabel)}</text>
   <line x1="${cardX + innerPad}" y1="${detailStartY - 40}" x2="${cardX + cardW - innerPad}" y2="${detailStartY - 40}" stroke="${cardStroke}" stroke-width="1" stroke-dasharray="6,4"/>
   ${detailRows}
   <text x="${width / 2}" y="${height - 36}" font-family="Bungee Shade" font-size="28" fill="${accentDim}" text-anchor="middle" dominant-baseline="central" letter-spacing="3">parade</text>
 </svg>`;
 
-      const png = await svg2png(svg, { width, height, fonts: [fontData!] });
+      const allFonts = [displayFontData!, bodyFontData!];
+      const png = await svg2png(svg, { width, height, fonts: allFonts });
       return new Response(png, {
         headers: {
           "Content-Type": "image/png",
@@ -285,7 +293,7 @@ Deno.serve(async (req) => {
     font-family="Bungee Shade" font-size="120" letter-spacing="6" fill="${textColor}">parade</text>
 </svg>`;
 
-    const png = await svg2png(svg, { width, height, fonts: [fontData!] });
+    const png = await svg2png(svg, { width, height, fonts: [displayFontData!] });
     return new Response(png, {
       headers: {
         "Content-Type": "image/png",
