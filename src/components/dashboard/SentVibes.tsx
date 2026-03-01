@@ -13,7 +13,7 @@ export function SentVibes() {
   const { sentVibes, sentVibeReactions, commentCounts, loading } = useVibes();
   const [expanded, setExpanded] = useState(false);
 
-  if (loading || sentVibes.length === 0) return null;
+  if (loading) return null;
 
   const displayVibes = expanded ? sentVibes : sentVibes.slice(0, 3);
 
@@ -22,13 +22,17 @@ export function SentVibes() {
       title="Sent Vibes"
       icon={<Send className="h-4 w-4 text-primary" />}
     >
-      <div className="space-y-2">
-        <AnimatePresence>
-          {displayVibes.map((vibe) => (
-            <SentVibeCard key={vibe.id} vibe={vibe} reactions={sentVibeReactions} commentCount={commentCounts[vibe.id] || 0} />
-          ))}
-        </AnimatePresence>
-      </div>
+      {sentVibes.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4 text-center">No sent vibes yet — let your friends know what you're up to!</p>
+      ) : (
+        <div className="space-y-2">
+          <AnimatePresence>
+            {displayVibes.map((vibe) => (
+              <SentVibeCard key={vibe.id} vibe={vibe} reactions={sentVibeReactions} commentCount={commentCounts[vibe.id] || 0} />
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
       {sentVibes.length > 3 && (
         <button
           onClick={() => setExpanded(!expanded)}

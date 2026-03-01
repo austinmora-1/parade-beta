@@ -80,7 +80,7 @@ export function ReceivedVibes() {
     })();
   }, [user, searchParams]);
 
-  if (loading || receivedVibes.length === 0) return null;
+  if (loading) return null;
 
   const displayedVibes = showAll ? receivedVibes : receivedVibes.slice(0, 5);
   const hasMore = receivedVibes.length > 5;
@@ -91,30 +91,34 @@ export function ReceivedVibes() {
         title={`Incoming Vibes${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
         icon={<Zap className="h-4 w-4 text-primary" />}
       >
-        <div className="space-y-2">
-          <AnimatePresence>
-            {displayedVibes.map((vibe) => (
-              <VibeCard
-                key={vibe.id}
-                vibe={vibe}
-                onDismiss={dismissVibe}
-                onTap={() => setSelectedVibe(vibe)}
-                reactions={vibeReactions}
-                currentUserId={currentUserId}
-                onToggleReaction={toggleVibeReaction}
-                commentCount={commentCounts[vibe.id] || 0}
-              />
-            ))}
-          </AnimatePresence>
-          {hasMore && (
-            <button
-              onClick={() => setShowAll(prev => !prev)}
-              className="w-full text-center text-xs font-medium text-primary hover:underline py-1"
-            >
-              {showAll ? 'Show less' : `View all ${receivedVibes.length} vibes`}
-            </button>
-          )}
-        </div>
+        {receivedVibes.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">No incoming vibes yet — send one to a friend to get things started!</p>
+        ) : (
+          <div className="space-y-2">
+            <AnimatePresence>
+              {displayedVibes.map((vibe) => (
+                <VibeCard
+                  key={vibe.id}
+                  vibe={vibe}
+                  onDismiss={dismissVibe}
+                  onTap={() => setSelectedVibe(vibe)}
+                  reactions={vibeReactions}
+                  currentUserId={currentUserId}
+                  onToggleReaction={toggleVibeReaction}
+                  commentCount={commentCounts[vibe.id] || 0}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+        {hasMore && (
+          <button
+            onClick={() => setShowAll(prev => !prev)}
+            className="w-full text-center text-xs font-medium text-primary hover:underline py-1"
+          >
+            {showAll ? 'Show less' : `View all ${receivedVibes.length} vibes`}
+          </button>
+        )}
       </CollapsibleWidget>
 
       <VibeDetailDialog
