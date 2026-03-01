@@ -453,6 +453,50 @@ export type Database = {
           },
         ]
       }
+      plan_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string | null
+          id: string
+          invite_token: string
+          invited_by: string
+          plan_id: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          invite_token?: string
+          invited_by: string
+          plan_id: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          plan_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_invites_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_participants: {
         Row: {
           created_at: string
@@ -974,6 +1018,7 @@ export type Database = {
         Args: { p_friendship_id: string; p_requester_user_id: string }
         Returns: undefined
       }
+      accept_plan_invite: { Args: { p_token: string }; Returns: string }
       check_vibe_recipient: {
         Args: { p_vibe_send_id: string }
         Returns: boolean
@@ -995,6 +1040,26 @@ export type Database = {
           expires_at: string
           grant_id: string
           refresh_token: string
+        }[]
+      }
+      get_plan_invite_details: {
+        Args: { p_token: string }
+        Returns: {
+          invite_email: string
+          invite_id: string
+          invite_status: string
+          invited_by_avatar: string
+          invited_by_name: string
+          plan_activity: string
+          plan_date: string
+          plan_duration: number
+          plan_end_time: string
+          plan_id: string
+          plan_location: string
+          plan_notes: string
+          plan_start_time: string
+          plan_time_slot: string
+          plan_title: string
         }[]
       }
       get_profile_by_share_code: {
