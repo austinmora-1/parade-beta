@@ -136,7 +136,7 @@ export function UpcomingPlans() {
                 key={plan.id}
                 onClick={() => navigate(`/plan/${plan.id}`)}
                 className={cn(
-                  "rounded-lg border-l-[3px] px-3 py-2 transition-all duration-200 cursor-pointer",
+                  "rounded-lg border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer",
                   isInProgress
                     ? "bg-primary/10 hover:bg-primary/15"
                     : "bg-muted/30 hover:bg-muted/50",
@@ -162,7 +162,7 @@ export function UpcomingPlans() {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-end justify-between gap-0.5 shrink-0 self-stretch">
+                  <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {isSameDay(plan.date, new Date()) ? 'Today' : format(plan.date, 'EEE, MMM d')}
                     </span>
