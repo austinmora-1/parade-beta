@@ -193,7 +193,7 @@ export function useVibes() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'vibe_sends',
           filter: `sender_id=eq.${user.id}`,
@@ -209,7 +209,7 @@ export function useVibes() {
     };
   }, [user, loadVibes]);
 
-  // Realtime subscription for reactions on sent vibes
+  // Realtime subscription for reactions on vibes
   useEffect(() => {
     if (!user) return;
 
@@ -221,6 +221,30 @@ export function useVibes() {
           event: '*',
           schema: 'public',
           table: 'vibe_reactions',
+        },
+        () => {
+          loadVibes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, loadVibes]);
+
+  // Realtime subscription for comments on vibes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('vibe-comments-rt')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vibe_comments',
         },
         () => {
           loadVibes();
