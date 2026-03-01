@@ -477,25 +477,25 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             </div>
           </div>
 
-          {/* Start & End Time */}
+          {/* Start & End Time + Duration */}
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs">Start Time</Label>
+              <Label className="text-xs">Start</Label>
               <Input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="h-9 text-xs !px-2 [&::-webkit-calendar-picker-indicator]:ml-0"
+                className="h-9 text-xs !px-1.5 [&::-webkit-calendar-picker-indicator]:ml-0 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:w-3"
                 placeholder="Optional"
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">End Time</Label>
+              <Label className="text-xs">End</Label>
               <Input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="h-9 text-xs !px-2 [&::-webkit-calendar-picker-indicator]:ml-0"
+                className="h-9 text-xs !px-1.5 [&::-webkit-calendar-picker-indicator]:ml-0 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:w-3"
                 placeholder="Optional"
               />
             </div>
