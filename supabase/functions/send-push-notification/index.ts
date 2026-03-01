@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { user_id, title, body, url } = await req.json();
+    const { user_id, title, body, url, image } = await req.json();
     if (!user_id || !title) {
       return new Response(JSON.stringify({ error: 'user_id and title required' }), {
         status: 400,
@@ -92,13 +92,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    const payload = JSON.stringify({
+    const notifPayload: Record<string, string> = {
       title,
       body: body || '',
       url: url || '/',
       icon: '/icon-192.png',
       badge: '/favicon.png',
-    });
+    };
+    if (image) {
+      notifPayload.image = image;
+    }
+    const payload = JSON.stringify(notifPayload);
 
     let sent = 0;
     const staleEndpoints: string[] = [];

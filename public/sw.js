@@ -9,6 +9,7 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: data.icon || '/icon-192.png',
       badge: data.badge || '/favicon.png',
+      image: data.image || undefined,
       data: { url: data.url || '/' },
       vibrate: [200, 100, 200],
       tag: data.tag || 'parade-notification',

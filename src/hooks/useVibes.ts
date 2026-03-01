@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
+import { resolveMediaUrl } from '@/lib/storage';
 import type { VibeReaction } from '@/components/vibes/VibeReactions';
 
 export interface VibeSend {
@@ -333,6 +334,16 @@ export function useVibes() {
           ? (payload.custom_tags?.[0] || 'a vibe') 
           : payload.vibe_type;
 
+        // Resolve media URL for push notification image preview
+        let imageUrl: string | undefined;
+        if (payload.media_url) {
+          try {
+            imageUrl = await resolveMediaUrl(payload.media_url, 'vibe-media');
+          } catch {
+            // non-critical, skip image
+          }
+        }
+
         for (const recipientId of recipientIds) {
           fetch(
             `https://${projectId}.supabase.co/functions/v1/send-push-notification`,
@@ -347,6 +358,7 @@ export function useVibes() {
                 title: `${senderName} sent you a vibe`,
                 body: payload.message || `Feeling ${vibeLabel}`,
                 url: '/',
+                image: imageUrl,
               }),
             }
           ).catch(() => {}); // fire-and-forget
