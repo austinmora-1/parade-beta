@@ -44,7 +44,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      const link = `https://helloparade.app/plan-invite/${data.invite_token}`;
+      const link = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?type=meta&token=${data.invite_token}&origin=${encodeURIComponent('https://helloparade.app')}`;
       setGeneratedLink(link);
     } catch (err: any) {
       toast({ title: 'Failed to generate link', description: err.message, variant: 'destructive' });
