@@ -1045,6 +1045,14 @@ export type Database = {
           refresh_token: string
         }[]
       }
+      get_display_names_for_users: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          user_id: string
+        }[]
+      }
       get_plan_invite_details: {
         Args: { p_token: string }
         Returns: {
