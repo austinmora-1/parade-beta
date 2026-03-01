@@ -981,6 +981,22 @@ export type Database = {
           refresh_token: string
         }[]
       }
+      get_profile_by_share_code: {
+        Args: { p_share_code: string }
+        Returns: {
+          allow_all_hang_requests: boolean
+          allowed_hang_request_friend_ids: string[]
+          avatar_url: string
+          current_vibe: string
+          custom_vibe_tags: string[]
+          display_name: string
+          location_status: string
+          show_availability: boolean
+          show_location: boolean
+          show_vibe_status: boolean
+          user_id: string
+        }[]
+      }
       owns_share_code: { Args: { p_share_code: string }; Returns: boolean }
       search_users_by_email_prefix: {
         Args: { p_query: string }
