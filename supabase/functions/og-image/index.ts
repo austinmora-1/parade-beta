@@ -253,6 +253,12 @@ Deno.serve(async (req) => {
     <filter id="cs" x="-5%" y="-5%" width="110%" height="115%">
       <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#000" flood-opacity="0.4"/>
     </filter>
+    <filter id="btnShadow" x="-10%" y="-20%" width="120%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="${accent}" flood-opacity="0.35"/>
+    </filter>
+    <filter id="btnShadowOutline" x="-10%" y="-20%" width="120%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
   </defs>
   <rect width="${width}" height="${height}" fill="url(#bgGrad)"/>
   <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse"><circle cx="15" cy="15" r="1" fill="${accent}" opacity="0.06"/></pattern>
@@ -265,13 +271,13 @@ Deno.serve(async (req) => {
   <text x="${cardX + innerPad + 220}" y="${cardY + 138}" font-family="Inter" font-size="18" fill="${textSecondary}" dominant-baseline="central">from ${inviterName}</text>
   <rect x="${cardX + innerPad}" y="${cardY + 180}" width="auto" height="30" rx="15" fill="${accent}" opacity="0.1"/>
   <text x="${cardX + innerPad + 16}" y="${cardY + 195}" font-family="Inter" font-weight="600" font-size="20" fill="${accent}" dominant-baseline="central">${escapeXml(activityLabel)}</text>
-      <line x1="${cardX + innerPad}" y1="${detailStartY - 40}" x2="${cardX + cardW - innerPad}" y2="${detailStartY - 40}" stroke="${cardStroke}" stroke-width="1" stroke-dasharray="6,4"/>
-      ${detailRows}
-      <rect x="${cardX + innerPad}" y="${cardY + cardH - 80}" width="200" height="48" rx="24" fill="${accent}"/>
-      <text x="${cardX + innerPad + 100}" y="${cardY + cardH - 56}" font-family="Inter" font-weight="700" font-size="18" fill="#1A2B22" text-anchor="middle" dominant-baseline="central">Accept</text>
-      <rect x="${cardX + innerPad + 220}" y="${cardY + cardH - 80}" width="200" height="48" rx="24" fill="none" stroke="${textSecondary}" stroke-width="2"/>
-      <text x="${cardX + innerPad + 320}" y="${cardY + cardH - 56}" font-family="Inter" font-weight="700" font-size="18" fill="${textSecondary}" text-anchor="middle" dominant-baseline="central">Decline</text>
-      <text x="${width / 2}" y="${height - 36}" font-family="Bungee Shade" font-size="28" fill="${accentDim}" text-anchor="middle" dominant-baseline="central" letter-spacing="3">parade</text>
+  <line x1="${cardX + innerPad}" y1="${detailStartY - 40}" x2="${cardX + cardW - innerPad}" y2="${detailStartY - 40}" stroke="${cardStroke}" stroke-width="1" stroke-dasharray="6,4"/>
+  ${detailRows}
+  <rect x="${cardX + innerPad}" y="${cardY + cardH - 86}" width="220" height="52" rx="26" fill="url(#accentGrad)" filter="url(#btnShadow)"/>
+  <text x="${cardX + innerPad + 110}" y="${cardY + cardH - 60}" font-family="Inter" font-weight="700" font-size="19" fill="#0F1A14" text-anchor="middle" dominant-baseline="central">Accept</text>
+  <rect x="${cardX + innerPad + 240}" y="${cardY + cardH - 86}" width="220" height="52" rx="26" fill="none" stroke="${textSecondary}" stroke-width="2" filter="url(#btnShadowOutline)"/>
+  <text x="${cardX + innerPad + 350}" y="${cardY + cardH - 60}" font-family="Inter" font-weight="700" font-size="19" fill="${textSecondary}" text-anchor="middle" dominant-baseline="central">Decline</text>
+  <text x="${width / 2}" y="${height - 36}" font-family="Bungee Shade" font-size="28" fill="${accentDim}" text-anchor="middle" dominant-baseline="central" letter-spacing="3">parade</text>
 </svg>`;
 
       const allFonts = [displayFontData!, bodyFontData!];
