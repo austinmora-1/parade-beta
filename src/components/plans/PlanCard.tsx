@@ -124,7 +124,9 @@ export function PlanCard({
         <div className="flex items-center gap-1.5">
           <Clock className="h-4 w-4" />
           <span>
-            {format(plan.date, 'EEE, MMM d')}
+            {plan.endDate
+              ? `${format(plan.date, 'EEE, MMM d')} – ${format(plan.endDate, 'EEE, MMM d')}`
+              : format(plan.date, 'EEE, MMM d')}
             {plan.startTime || plan.endTime ? (
               <> • {plan.startTime && formatTimeDisplay(plan.startTime)}{plan.startTime && plan.endTime && ' – '}{plan.endTime && formatTimeDisplay(plan.endTime)}</>
             ) : (

@@ -177,7 +177,10 @@ export default function PlanDetail() {
         <div className="space-y-3">
           <div className="flex items-center gap-3 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>{format(plan.date, 'EEEE, MMMM d, yyyy')}</span>
+            <span>
+              {format(plan.date, 'EEEE, MMMM d, yyyy')}
+              {plan.endDate && ` – ${format(plan.endDate, 'EEEE, MMMM d, yyyy')}`}
+            </span>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground shrink-0" />

@@ -88,6 +88,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [selectedVibe, setSelectedVibe] = useState<VibeType>('social');
   const [activity, setActivity] = useState<ActivityType | string>('drinks');
   const [date, setDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [isMultiDay, setIsMultiDay] = useState(false);
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('late-morning');
   const [duration, setDuration] = useState('60');
   const [startTime, setStartTime] = useState('');
@@ -187,6 +189,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
         setSelectedVibe(config.vibeType);
       }
       setDate(editPlan.date);
+      setEndDate(editPlan.endDate || undefined);
+      setIsMultiDay(!!editPlan.endDate);
       setTimeSlot(editPlan.timeSlot);
       setDuration(editPlan.duration?.toString() || '60');
       setStartTime(editPlan.startTime || '');
@@ -211,6 +215,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setSelectedVibe('social');
       setActivity('drinks');
       setDate(defaultDate || new Date());
+      setEndDate(undefined);
+      setIsMultiDay(false);
       setTimeSlot('late-morning');
       setDuration('60');
       setStartTime('');
@@ -340,6 +346,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       title,
       activity,
       date,
+      endDate: isMultiDay && endDate ? endDate : undefined,
       timeSlot,
       duration: parseInt(duration) || 60,
       startTime: startTime || undefined,
@@ -367,6 +374,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     setSelectedVibe('social');
     setActivity('drinks');
     setDate(new Date());
+    setEndDate(undefined);
+    setIsMultiDay(false);
     setTimeSlot('late-morning');
     setDuration('60');
     setStartTime('');
@@ -502,7 +511,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
           {/* Date & Time Slot */}
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs">Date</Label>
+              <Label className="text-xs">{isMultiDay ? 'Start Date' : 'Date'}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -521,7 +530,13 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={(d) => d && setDate(d)}
+                    onSelect={(d) => {
+                      if (d) {
+                        setDate(d);
+                        // If end date is before start, reset it
+                        if (endDate && d > endDate) setEndDate(undefined);
+                      }
+                    }}
                     initialFocus
                     className="pointer-events-auto"
                   />
@@ -545,6 +560,54 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               </Select>
             </div>
           </div>
+
+          {/* Multi-day toggle & end date */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isMultiDay}
+                onChange={(e) => {
+                  setIsMultiDay(e.target.checked);
+                  if (!e.target.checked) setEndDate(undefined);
+                }}
+                className="rounded border-border"
+              />
+              <span className="text-xs text-muted-foreground">Multi-day plan</span>
+            </label>
+
+            {isMultiDay && (
+              <div className="space-y-1">
+                <Label className="text-xs">End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-9 text-xs px-2",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-1 h-3 w-3" />
+                      {endDate ? format(endDate, 'MMM d') : 'Pick end date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={(d) => d && setEndDate(d)}
+                      disabled={(d) => d < date}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+          </div>
+
 
           {/* Start & End Time + Duration */}
           <div className="grid grid-cols-3 gap-2">
