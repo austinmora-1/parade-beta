@@ -38,7 +38,7 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; slot: TimeSlot } | null>(null);
-  const { availability: myAvailability, plans } = usePlannerStore();
+  const { availabilityMap: myAvailabilityMap, plans } = usePlannerStore();
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
@@ -100,7 +100,7 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
     const dateStr = format(date, 'yyyy-MM-dd');
 
     // Check my availability
-    const myDay = myAvailability.find(a => isSameDay(a.date, date));
+    const myDay = myAvailabilityMap[format(date, 'yyyy-MM-dd')];
     const myFree = myDay ? myDay.slots[slot] : true;
     const myBusy = plans.some(p => isSameDay(p.date, date) && p.timeSlot === slot);
 

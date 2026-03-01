@@ -64,7 +64,7 @@ export default function FriendProfile() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createDM } = useConversations();
-  const { availability: myAvailability, plans: myPlans } = usePlannerStore();
+  const { availabilityMap: myAvailabilityMap, plans: myPlans } = usePlannerStore();
   const [profile, setProfile] = useState<FriendProfileData | null>(null);
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
   const [sharedPlans, setSharedPlans] = useState<SharedPlan[]>([]);
@@ -84,7 +84,7 @@ export default function FriendProfile() {
     if (!dayDate) return 'free';
     const hasPlan = myPlans.some(p => isSameDay(p.date, dayDate) && p.timeSlot === slot);
     if (hasPlan) return 'busy';
-    const dayAvail = myAvailability.find(a => isSameDay(a.date, dayDate));
+    const dayAvail = myAvailabilityMap[format(dayDate, 'yyyy-MM-dd')];
     if (dayAvail && !dayAvail.slots[slot]) return 'busy';
     return 'free';
   };

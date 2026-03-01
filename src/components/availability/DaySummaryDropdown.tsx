@@ -43,7 +43,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
   const navigate = useNavigate();
   const { 
     plans, 
-    availability,
+    availabilityMap,
     currentVibe, 
     getLocationStatusForDate, 
     setLocationStatus,
@@ -77,7 +77,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
     );
     if (hasPlan) return 'busy';
 
-    const dayAvail = availability.find((a) => isSameDay(a.date, selectedDate));
+    const dayAvail = availabilityMap[format(selectedDate, 'yyyy-MM-dd')];
     if (dayAvail && !dayAvail.slots[slot]) return 'unavailable';
 
     return 'available';
@@ -91,7 +91,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
     const currentStatus = getSlotStatus(slot);
     if (currentStatus === 'busy') return;
 
-    const dayAvail = availability.find((a) => isSameDay(a.date, selectedDate));
+    const dayAvail = availabilityMap[format(selectedDate, 'yyyy-MM-dd')];
     const isCurrentlyAvailable = dayAvail ? dayAvail.slots[slot] : true;
     setAvailability(selectedDate, slot, !isCurrentlyAvailable);
   };

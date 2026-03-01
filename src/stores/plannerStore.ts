@@ -12,10 +12,20 @@ interface DefaultAvailabilitySettings {
   defaultVibes: string[];
 }
 
+// Helper to build a date-string-keyed map from an availability array
+const buildAvailabilityMap = (availability: DayAvailability[]): Record<string, DayAvailability> => {
+  const map: Record<string, DayAvailability> = {};
+  for (const a of availability) {
+    map[format(a.date, 'yyyy-MM-dd')] = a;
+  }
+  return map;
+};
+
 interface PlannerState {
   plans: Plan[];
   friends: Friend[];
   availability: DayAvailability[];
+  availabilityMap: Record<string, DayAvailability>;
   currentVibe: Vibe | null;
   locationStatus: LocationStatus;
   isLoading: boolean;
@@ -99,6 +109,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   plans: [],
   friends: [],
   availability: [],
+  availabilityMap: {},
   currentVibe: null,
   locationStatus: 'home',
   isLoading: true,
@@ -392,10 +403,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         defaultVibes: (profile as any)?.default_vibes || [],
       };
       
+      // Build a lookup map from fetched availability data for O(1) access
+      const availDataMap = new Map<string, typeof availData extends (infer T)[] ? T : never>();
+      if (availData) {
+        for (const a of availData) {
+          availDataMap.set(a.date, a);
+        }
+      }
+      
       // Generate dates array covering the full availability window (366 days: -183 to +183)
       const allDates = Array.from({ length: 366 }, (_, i) => format(addDays(start, i - 183), 'yyyy-MM-dd'));
       const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
-        const existing = (availData || []).find((a) => a.date === dateStr);
+        const existing = availDataMap.get(dateStr);
         const date = addDays(start, i - 183);
         
         if (existing) {
@@ -416,8 +435,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         return createDefaultAvailability(date, defaultSettings);
       });
       
+      // Build the availability map for O(1) lookups by consumers
+      const availabilityMap = buildAvailabilityMap(availabilityWithDefaults);
+      
       const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const todayAvail = availabilityWithDefaults.find(a => format(a.date, 'yyyy-MM-dd') === todayStr);
+      const todayAvail = availabilityMap[todayStr];
       const todayLocationStatus = todayAvail?.locationStatus || 'home';
       
       const homeAddr = (profile as any)?.home_address || null;
@@ -428,6 +450,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         plans,
         friends,
         availability: availabilityWithDefaults,
+        availabilityMap,
         currentVibe,
         locationStatus: todayLocationStatus,
         defaultSettings,
@@ -553,21 +576,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         }, { onConflict: 'user_id,date' });
       
       // Update local availability state
-      const { availability, defaultSettings } = get();
-      const existingIndex = availability.findIndex(
-        (a) => format(a.date, 'yyyy-MM-dd') === dateStr
-      );
-      if (existingIndex >= 0) {
-        const updated = [...availability];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          slots: { ...updated[existingIndex].slots, [plan.timeSlot]: false },
+      const { availability, availabilityMap, defaultSettings } = get();
+      const existing = availabilityMap[dateStr];
+      if (existing) {
+        const updatedEntry = {
+          ...existing,
+          slots: { ...existing.slots, [plan.timeSlot]: false },
         };
-        set({ availability: updated });
+        const updated = availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
+        set({ availability: updated, availabilityMap: { ...availabilityMap, [dateStr]: updatedEntry } });
       } else {
         const newAvailability = createDefaultAvailability(plan.date, defaultSettings);
         newAvailability.slots[plan.timeSlot] = false;
-        set({ availability: [...availability, newAvailability] });
+        set({ 
+          availability: [...availability, newAvailability],
+          availabilityMap: { ...availabilityMap, [dateStr]: newAvailability },
+        });
       }
     }
   },
@@ -684,16 +708,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             [slotColumn]: true,
           }, { onConflict: 'user_id,date' });
         
-        const existingIndex = availability.findIndex(
-          (a) => format(a.date, 'yyyy-MM-dd') === dateStr
-        );
-        if (existingIndex >= 0) {
-          const updated = [...get().availability];
-          updated[existingIndex] = {
-            ...updated[existingIndex],
-            slots: { ...updated[existingIndex].slots, [planToDelete.timeSlot]: true },
+        const existingEntry = get().availabilityMap[dateStr];
+        if (existingEntry) {
+          const updatedEntry = {
+            ...existingEntry,
+            slots: { ...existingEntry.slots, [planToDelete.timeSlot]: true },
           };
-          set({ availability: updated });
+          const updated = get().availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
+          set({ availability: updated, availabilityMap: { ...get().availabilityMap, [dateStr]: updatedEntry } });
         }
       }
     }
@@ -858,7 +880,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   },
   
   setAvailability: async (date, slot, available) => {
-    const { userId, availability, defaultSettings } = get();
+    const { userId, availability, availabilityMap, defaultSettings } = get();
     if (!userId) return;
     
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -877,26 +899,27 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       return;
     }
     
-    const existingIndex = availability.findIndex(
-      (a) => format(a.date, 'yyyy-MM-dd') === dateStr
-    );
+    const existing = availabilityMap[dateStr];
     
-    if (existingIndex >= 0) {
-      const updated = [...availability];
-      updated[existingIndex] = {
-        ...updated[existingIndex],
-        slots: { ...updated[existingIndex].slots, [slot]: available },
+    if (existing) {
+      const updatedEntry = {
+        ...existing,
+        slots: { ...existing.slots, [slot]: available },
       };
-      set({ availability: updated });
+      const updated = availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
+      set({ availability: updated, availabilityMap: { ...availabilityMap, [dateStr]: updatedEntry } });
     } else {
       const newAvailability = createDefaultAvailability(date, defaultSettings);
       newAvailability.slots[slot] = available;
-      set({ availability: [...availability, newAvailability] });
+      set({ 
+        availability: [...availability, newAvailability],
+        availabilityMap: { ...availabilityMap, [dateStr]: newAvailability },
+      });
     }
   },
   
   setLocationStatus: async (status, date) => {
-    const { userId, availability, defaultSettings } = get();
+    const { userId, availability, availabilityMap, defaultSettings } = get();
     if (!userId) return;
     
     const targetDate = date || new Date();
@@ -915,22 +938,19 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       return;
     }
     
-    // Update availability array
-    const existingIndex = availability.findIndex(
-      (a) => format(a.date, 'yyyy-MM-dd') === dateStr
-    );
+    const existing = availabilityMap[dateStr];
     
-    if (existingIndex >= 0) {
-      const updated = [...availability];
-      updated[existingIndex] = {
-        ...updated[existingIndex],
-        locationStatus: status,
-      };
-      set({ availability: updated });
+    if (existing) {
+      const updatedEntry = { ...existing, locationStatus: status };
+      const updated = availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
+      set({ availability: updated, availabilityMap: { ...availabilityMap, [dateStr]: updatedEntry } });
     } else {
       const newAvailability = createDefaultAvailability(targetDate, defaultSettings);
       newAvailability.locationStatus = status;
-      set({ availability: [...availability, newAvailability] });
+      set({ 
+        availability: [...availability, newAvailability],
+        availabilityMap: { ...availabilityMap, [dateStr]: newAvailability },
+      });
     }
     
     // If updating today, also update the global locationStatus for UI
@@ -941,9 +961,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   },
   
   getLocationStatusForDate: (date) => {
-    const { availability } = get();
+    const { availabilityMap } = get();
     const dateStr = format(date, 'yyyy-MM-dd');
-    const dayAvail = availability.find(a => format(a.date, 'yyyy-MM-dd') === dateStr);
+    const dayAvail = availabilityMap[dateStr];
     return dayAvail?.locationStatus || 'home';
   },
   
@@ -1036,7 +1056,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       for (let i = 0; i < 7; i++) {
         week.push(createDefaultAvailability(addDays(start, i), defaultSettings));
       }
-      set({ availability: week });
+      set({ availability: week, availabilityMap: buildAvailabilityMap(week) });
       return;
     }
     
