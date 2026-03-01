@@ -52,14 +52,26 @@ export default function PlanInvite() {
       const { data, error } = await supabase.rpc('get_plan_invite_details', { p_token: token });
       if (error || !data || (data as any[]).length === 0) {
         setError('This invite link is invalid or has expired.');
+        setLoading(false);
       } else {
-        setInvite((data as any[])[0]);
+        const inviteData = (data as any[])[0] as PlanInviteData;
+        setInvite(inviteData);
+
+        // If signed in, redirect to plan detail page with invite token
+        if (!authLoading && user) {
+          if (inviteData.invite_status === 'accepted') {
+            navigate(`/plan/${inviteData.plan_id}`, { replace: true });
+          } else {
+            navigate(`/plan/${inviteData.plan_id}?invite_token=${token}`, { replace: true });
+          }
+          return;
+        }
+        setLoading(false);
       }
-      setLoading(false);
     };
     
     fetchInvite();
-  }, [token]);
+  }, [token, user, authLoading]);
 
   const handleAccept = async () => {
     if (!token) return;
