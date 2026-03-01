@@ -520,6 +520,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               <Label className="text-xs">Start</Label>
               <Input
                 type="time"
+                step="900"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="h-9 text-xs !px-1.5 [&::-webkit-calendar-picker-indicator]:ml-0 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:w-3"
@@ -530,6 +531,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               <Label className="text-xs">End</Label>
               <Input
                 type="time"
+                step="900"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 className="h-9 text-xs !px-1.5 [&::-webkit-calendar-picker-indicator]:ml-0 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:w-3"
