@@ -192,9 +192,19 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             .in('user_id', incomingUserIds)
         : Promise.resolve({ data: [] as { user_id: string; display_name: string | null; avatar_url: string | null }[] });
 
-      const [participatedPlansResult, incomingProfilesResult] = await Promise.all([
+      // Batch fetch outgoing friend avatars
+      const outgoingUserIds = (outgoingData || []).map((f: any) => f.friend_user_id).filter(Boolean) as string[];
+      const outgoingProfilesPromise = outgoingUserIds.length > 0
+        ? supabase
+            .from('public_profiles')
+            .select('user_id, avatar_url')
+            .in('user_id', outgoingUserIds)
+        : Promise.resolve({ data: [] as { user_id: string; avatar_url: string | null }[] });
+
+      const [participatedPlansResult, incomingProfilesResult, outgoingProfilesResult] = await Promise.all([
         participatedPlansPromise,
         incomingProfilesPromise,
+        outgoingProfilesPromise,
       ]);
 
       const participatedPlansData = participatedPlansResult.data || [];
@@ -202,6 +212,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       // Build incoming profiles map
       const incomingProfilesMap = new Map(
         (incomingProfilesResult.data || []).map((p: any) => [p.user_id, p])
+      );
+
+      // Build outgoing avatar map
+      const outgoingAvatarMap = new Map<string, string | null>(
+        (outgoingProfilesResult.data || []).map((p: any) => [p.user_id, p.avatar_url])
       );
       
       // Merge and dedupe plans
@@ -301,6 +316,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         id: f.id,
         name: f.friend_name,
         email: f.friend_email || undefined,
+        avatar: f.friend_user_id ? (outgoingAvatarMap.get(f.friend_user_id) || undefined) : undefined,
         friendUserId: f.friend_user_id || undefined,
         status: f.status as 'connected' | 'pending' | 'invited',
         isIncoming: false,
