@@ -31,6 +31,7 @@ export interface ChatMessage {
   image_url: string | null;
   created_at: string;
   edited_at: string | null;
+  reply_to_id: string | null;
 }
 
 export interface MessageReaction {
@@ -431,7 +432,7 @@ export function useChatMessages(conversationId: string | null) {
     };
   }, [conversationId, user]);
 
-  const sendMessage = useCallback(async (content: string, imageUrl?: string) => {
+  const sendMessage = useCallback(async (content: string, imageUrl?: string, replyToId?: string) => {
     if (!conversationId || !user || (!content.trim() && !imageUrl)) return;
 
     const insertData: any = {
@@ -440,6 +441,7 @@ export function useChatMessages(conversationId: string | null) {
       content: content.trim() || (imageUrl ? '📷 Photo' : ''),
     };
     if (imageUrl) insertData.image_url = imageUrl;
+    if (replyToId) insertData.reply_to_id = replyToId;
 
     await supabase.from('chat_messages').insert(insertData);
 
