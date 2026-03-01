@@ -118,7 +118,7 @@ export function GifPicker({ onGifSelect, children, externalOpen, onExternalOpenC
     <>
       <span onClick={() => setOpen(true)}>{children}</span>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-sm p-0 overflow-hidden gap-0 rounded-2xl">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-sm p-0 overflow-hidden gap-0 rounded-2xl z-[70]">
           {/* Search */}
           <div className="px-3 pt-3 pb-2">
             <div className="relative">
