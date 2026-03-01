@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { AvailabilityGrid } from '@/components/availability/AvailabilityGrid';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
+import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { Button } from '@/components/ui/button';
-import { Share2, RefreshCw, Loader2 } from 'lucide-react';
+import { Share2, RefreshCw, Loader2, Plus } from 'lucide-react';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -11,6 +13,7 @@ export default function Availability() {
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadAllData = usePlannerStore((s) => s.loadAllData);
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
 
   const isConnected = isGcalConnected || isIcalConnected;
   const isSyncing = isGcalSyncing || isIcalSyncing;
@@ -47,6 +50,14 @@ export default function Availability() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            className="shrink-0 gap-2"
+            onClick={() => setPlanDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Plan</span>
+          </Button>
           {isConnected && (
             <Button
               size="sm"
@@ -65,7 +76,7 @@ export default function Availability() {
           )}
           <ShareDialog
             trigger={
-              <Button size="sm" className="shrink-0 gap-2">
+              <Button size="sm" variant="outline" className="shrink-0 gap-2">
                 <Share2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Share</span>
               </Button>
@@ -76,6 +87,11 @@ export default function Availability() {
 
       {/* Availability Grid */}
       <AvailabilityGrid />
+
+      <CreatePlanDialog
+        open={planDialogOpen}
+        onOpenChange={setPlanDialogOpen}
+      />
     </div>
   );
 }
