@@ -20,15 +20,21 @@ async function init() {
 }
 
 const ACTIVITY_EMOJI: Record<string, string> = {
+  drinks: "🍹", "getting-food": "🍽️", coffee: "☕",
+  events: "🎉", movies: "🎬", "other-events": "✨",
+  "me-time": "🧘", reading: "📚", watching: "📺", "making-food": "👨‍🍳",
+  "workout-in": "💪", "workout-out": "🏋️",
+  chores: "🧹", errands: "🏃", shopping: "🛍️", doctor: "🏥",
+  flight: "✈️", custom: "✨",
+  // Legacy/additional mappings
   dinner: "🍽️", lunch: "🍽️", brunch: "🥂", breakfast: "☕",
-  coffee: "☕", drinks: "🍻", "happy-hour": "🍸",
-  movie: "🎬", concert: "🎵", "live-music": "🎵",
+  "happy-hour": "🍸", movie: "🎬", concert: "🎵", "live-music": "🎵",
   hiking: "🥾", biking: "🚴", running: "🏃", yoga: "🧘",
   gym: "💪", swimming: "🏊", climbing: "🧗", tennis: "🎾",
   golf: "⛳", basketball: "🏀", soccer: "⚽", volleyball: "🏐",
   "board-games": "🎲", gaming: "🎮", karaoke: "🎤",
   "art-class": "🎨", museum: "🏛️", theater: "🎭",
-  shopping: "🛍️", spa: "💆", picnic: "🧺", bbq: "🔥",
+  spa: "💆", picnic: "🧺", bbq: "🔥",
   "beach-day": "🏖️", camping: "⛺", travel: "✈️",
   "road-trip": "🚗", "book-club": "📚", study: "📖",
   coworking: "💻", meetup: "🤝", party: "🎉",
@@ -37,20 +43,26 @@ const ACTIVITY_EMOJI: Record<string, string> = {
 };
 
 const ACTIVITY_LABELS: Record<string, string> = {
+  drinks: "Drinks", "getting-food": "Getting Food", coffee: "Coffee",
+  events: "Events", movies: "Movies", "other-events": "Other Events",
+  "me-time": "Me Time", reading: "Reading", watching: "Watching", "making-food": "Cooking",
+  "workout-in": "Home Workout", "workout-out": "Gym/Outdoor",
+  chores: "Chores", errands: "Errands", shopping: "Shopping", doctor: "Appointment",
+  flight: "Flight", custom: "Custom",
+  // Legacy/additional mappings
   dinner: "Dinner", lunch: "Lunch", brunch: "Brunch", breakfast: "Breakfast",
-  coffee: "Coffee", drinks: "Drinks", "happy-hour": "Happy Hour",
-  movie: "Movie", concert: "Concert", "live-music": "Live Music",
+  "happy-hour": "Happy Hour", movie: "Movie", concert: "Concert", "live-music": "Live Music",
   hiking: "Hiking", biking: "Biking", running: "Running", yoga: "Yoga",
   gym: "Gym", swimming: "Swimming", climbing: "Climbing", tennis: "Tennis",
   golf: "Golf", basketball: "Basketball", soccer: "Soccer", volleyball: "Volleyball",
   "board-games": "Board Games", gaming: "Gaming", karaoke: "Karaoke",
   "art-class": "Art Class", museum: "Museum", theater: "Theater",
-  shopping: "Shopping", spa: "Spa", picnic: "Picnic", bbq: "BBQ",
+  spa: "Spa", picnic: "Picnic", bbq: "BBQ",
   "beach-day": "Beach Day", camping: "Camping", travel: "Travel",
   "road-trip": "Road Trip", "book-club": "Book Club", study: "Study",
   coworking: "Coworking", meetup: "Meetup", party: "Party",
   birthday: "Birthday", wedding: "Wedding", potluck: "Potluck",
-  other: "Activity",
+  other: "Other",
 };
 
 const TIME_LABELS: Record<string, string> = {
@@ -132,7 +144,7 @@ Deno.serve(async (req) => {
       let ogImageUrl = `${supabaseUrl}/functions/v1/og-image`;
 
       if (invite) {
-        const activityLabel = ACTIVITY_LABELS[invite.plan_activity] || "Activity";
+        const activityLabel = ACTIVITY_LABELS[invite.plan_activity] || invite.plan_activity.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
         titleText = escapeXml(`${invite.invited_by_name} invited you: ${invite.plan_title}`);
         description = escapeXml(`Join for ${activityLabel} — tap to view details and RSVP on Parade.`);
         ogImageUrl = `${supabaseUrl}/functions/v1/og-image?type=plan-invite&token=${token}`;
@@ -165,7 +177,7 @@ Deno.serve(async (req) => {
       return new Response(html, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "public, max-age=300",
           "Access-Control-Allow-Origin": "*",
         },
       });
