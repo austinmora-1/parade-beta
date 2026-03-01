@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, MoreVertical, X, Check } from 'lucide-react';
+import { Pencil, Trash2, MoreVertical, X, Check, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,14 +27,13 @@ interface MessageActionsProps {
   hasImage: boolean;
   onEdit: (messageId: string, newContent: string) => Promise<void>;
   onDelete: (messageId: string) => Promise<void>;
+  onReply?: (messageId: string) => void;
 }
 
-export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onDelete }: MessageActionsProps) {
+export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onDelete, onReply }: MessageActionsProps) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(content);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  if (!isMe) return null;
 
   const handleSaveEdit = async () => {
     if (editText.trim() && editText.trim() !== content) {
@@ -80,19 +79,27 @@ export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onD
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align={isMe ? "end" : "start"} className="w-32">
-          {!hasImage && (
+          {onReply && (
+            <DropdownMenuItem onClick={() => onReply(messageId)}>
+              <Reply className="h-3.5 w-3.5 mr-2 scale-x-[-1]" />
+              Reply
+            </DropdownMenuItem>
+          )}
+          {isMe && !hasImage && (
             <DropdownMenuItem onClick={() => { setEditText(content); setEditing(true); }}>
               <Pencil className="h-3.5 w-3.5 mr-2" />
               Edit
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem
-            onClick={() => setShowDeleteConfirm(true)}
-            className="text-destructive focus:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-2" />
-            Delete
-          </DropdownMenuItem>
+          {isMe && (
+            <DropdownMenuItem
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

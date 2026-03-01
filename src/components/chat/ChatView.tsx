@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, ArrowLeft, Users, Check, CheckCheck, Sparkles, Loader2 } from 'lucide-react';
+import { Send, ArrowLeft, Users, Check, CheckCheck, Sparkles, Loader2, Reply } from 'lucide-react';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { SignedImage } from '@/components/ui/SignedImage';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -19,6 +19,8 @@ import { ChatImageUpload } from './ChatImageUpload';
 import { EmojiPicker } from './EmojiPicker';
 import { GifPicker } from './GifPicker';
 import { MessageActions } from './MessageActions';
+import { ReplyPreview } from './ReplyPreview';
+import { ChatMessage } from '@/hooks/useChat';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -31,8 +33,10 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
   const { messages, loading, loadingMore, hasMore, loadMore, sendMessage, editMessage, deleteMessage, readReceipts, reactions, toggleReaction } = useChatMessages(conversation.id);
   const [input, setInput] = useState('');
   const [ellyLoading, setEllyLoading] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -66,7 +70,9 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
     const text = input.trim();
     if (!text) return;
     setInput('');
-    await sendMessage(text);
+    const replyId = replyTo?.id;
+    setReplyTo(null);
+    await sendMessage(text, undefined, replyId);
 
     if (/@elly/i.test(text)) {
       setEllyLoading(true);
@@ -146,6 +152,28 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
 
   const isEllyMessage = (senderId: string) => senderId === ELLY_USER_ID;
 
+  const handleReply = (messageId: string) => {
+    const msg = messages.find(m => m.id === messageId);
+    if (msg) {
+      setReplyTo(msg);
+      inputRef.current?.focus();
+    }
+  };
+
+  const getReplyMessage = (replyToId: string | null) => {
+    if (!replyToId) return null;
+    return messages.find(m => m.id === replyToId) || null;
+  };
+
+  const scrollToMessage = (messageId: string) => {
+    const el = document.getElementById(`msg-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('bg-primary/5');
+      setTimeout(() => el.classList.remove('bg-primary/5'), 1500);
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Fixed Header */}
@@ -202,7 +230,8 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
             return (
               <div
                 key={msg.id}
-                className={cn("flex gap-2 group", isMe ? "justify-end" : "justify-start")}
+                id={`msg-${msg.id}`}
+                className={cn("flex gap-2 group transition-colors duration-500 rounded-lg", isMe ? "justify-end" : "justify-start")}
               >
                 {!isMe && (
                   <FriendLink userId={isElly ? null : msg.sender_id}>
@@ -244,6 +273,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                         hasImage={!!msg.image_url}
                         onEdit={editMessage}
                         onDelete={deleteMessage}
+                        onReply={handleReply}
                       />
                     )}
                     <div
@@ -256,6 +286,21 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                             : "bg-card shadow-soft border border-border"
                       )}
                     >
+                      {/* Reply quote */}
+                      {msg.reply_to_id && (() => {
+                        const repliedMsg = getReplyMessage(msg.reply_to_id);
+                        if (!repliedMsg) return null;
+                        const replySender = participantMap.get(repliedMsg.sender_id);
+                        return (
+                          <ReplyPreview
+                            senderName={replySender?.display_name || 'Unknown'}
+                            senderId={repliedMsg.sender_id}
+                            content={repliedMsg.content}
+                            inline
+                            onClick={() => scrollToMessage(repliedMsg.id)}
+                          />
+                        );
+                      })()}
                       {/* Image */}
                       {msg.image_url && (
                         <SignedImage
@@ -273,6 +318,17 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                         msg.content !== '📷 Photo' && msg.content
                       )}
                     </div>
+                    {!isMe && (
+                      <MessageActions
+                        messageId={msg.id}
+                        content={msg.content}
+                        isMe={false}
+                        hasImage={!!msg.image_url}
+                        onEdit={editMessage}
+                        onDelete={deleteMessage}
+                        onReply={handleReply}
+                      />
+                    )}
                   </div>
 
                   {/* Edited indicator */}
@@ -339,8 +395,20 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
         </div>
       </div>
 
+      {/* Reply banner */}
+      {replyTo && (
+        <div className="mt-2 shrink-0">
+          <ReplyPreview
+            senderName={participantMap.get(replyTo.sender_id)?.display_name || 'Unknown'}
+            senderId={replyTo.sender_id}
+            content={replyTo.content}
+            onClear={() => setReplyTo(null)}
+          />
+        </div>
+      )}
+
       {/* Input */}
-      <div className="mt-2 flex gap-2 border-t border-border bg-background pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0">
+      <div className={cn("flex gap-2 border-t border-border bg-background pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0", !replyTo && "mt-2")}>
         <ChatImageUpload onImageUploaded={handleImageUploaded} />
         <GifPicker onGifSelect={handleGifSelected}>
           <button
@@ -359,7 +427,8 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
           <Sparkles className="h-4 w-4" />
         </button>
         <Input
-          placeholder="Type a message..."
+          ref={inputRef}
+          placeholder={replyTo ? "Reply..." : "Type a message..."}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
