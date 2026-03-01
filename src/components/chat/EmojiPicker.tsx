@@ -14,10 +14,14 @@ const EMOJI_GROUPS = [
 
 interface EmojiPickerProps {
   onEmojiSelect: (emoji: string) => void;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
-export function EmojiPicker({ onEmojiSelect }: EmojiPickerProps) {
-  const [open, setOpen] = useState(false);
+export function EmojiPicker({ onEmojiSelect, externalOpen, onExternalOpenChange }: EmojiPickerProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = onExternalOpenChange || setInternalOpen;
   const [search, setSearch] = useState('');
 
   const filteredGroups = search
@@ -29,16 +33,18 @@ export function EmojiPicker({ onEmojiSelect }: EmojiPickerProps) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        title="Add emoji"
-      >
-        <Smile className="h-4 w-4" />
-      </button>
+      {externalOpen === undefined && (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          title="Add emoji"
+        >
+          <Smile className="h-4 w-4" />
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(''); }}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-sm p-0 overflow-hidden gap-0 rounded-2xl">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-sm p-0 overflow-hidden gap-0 rounded-2xl z-[70]">
           {/* Search */}
           <div className="px-3 pt-3 pb-2">
             <div className="relative">
