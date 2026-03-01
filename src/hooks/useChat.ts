@@ -30,6 +30,7 @@ export interface ChatMessage {
   content: string;
   image_url: string | null;
   created_at: string;
+  edited_at: string | null;
 }
 
 export interface MessageReaction {
@@ -356,6 +357,32 @@ export function useChatMessages(conversationId: string | null) {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as ChatMessage;
+          setMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          setMessages(prev => prev.filter(m => m.id !== deleted.id));
+        }
+      )
       .subscribe();
 
     const receiptChannel = supabase
@@ -483,5 +510,35 @@ export function useChatMessages(conversationId: string | null) {
     }
   }, [user, reactions]);
 
-  return { messages, loading, loadingMore, hasMore, loadMore, sendMessage, readReceipts, reactions, toggleReaction };
+  const editMessage = useCallback(async (messageId: string, newContent: string) => {
+    if (!user || !newContent.trim()) return;
+    const { error } = await supabase
+      .from('chat_messages')
+      .update({ content: newContent.trim(), edited_at: new Date().toISOString() })
+      .eq('id', messageId)
+      .eq('sender_id', user.id);
+    if (error) {
+      toast.error('Failed to edit message');
+      console.error('Edit message error:', error);
+    } else {
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent.trim(), edited_at: new Date().toISOString() } : m));
+    }
+  }, [user]);
+
+  const deleteMessage = useCallback(async (messageId: string) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('chat_messages')
+      .delete()
+      .eq('id', messageId)
+      .eq('sender_id', user.id);
+    if (error) {
+      toast.error('Failed to delete message');
+      console.error('Delete message error:', error);
+    } else {
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    }
+  }, [user]);
+
+  return { messages, loading, loadingMore, hasMore, loadMore, sendMessage, editMessage, deleteMessage, readReceipts, reactions, toggleReaction };
 }

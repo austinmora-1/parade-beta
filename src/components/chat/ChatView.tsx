@@ -18,6 +18,7 @@ import { MessageReactions } from './MessageReactions';
 import { ChatImageUpload } from './ChatImageUpload';
 import { EmojiPicker } from './EmojiPicker';
 import { GifPicker } from './GifPicker';
+import { MessageActions } from './MessageActions';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -27,7 +28,7 @@ interface ChatViewProps {
 export function ChatView({ conversation, onBack }: ChatViewProps) {
   const { user } = useAuth();
   const { loadAllData } = usePlannerStore();
-  const { messages, loading, loadingMore, hasMore, loadMore, sendMessage, readReceipts, reactions, toggleReaction } = useChatMessages(conversation.id);
+  const { messages, loading, loadingMore, hasMore, loadMore, sendMessage, editMessage, deleteMessage, readReceipts, reactions, toggleReaction } = useChatMessages(conversation.id);
   const [input, setInput] = useState('');
   const [ellyLoading, setEllyLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -201,7 +202,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
             return (
               <div
                 key={msg.id}
-                className={cn("flex gap-2", isMe ? "justify-end" : "justify-start")}
+                className={cn("flex gap-2 group", isMe ? "justify-end" : "justify-start")}
               >
                 {!isMe && (
                   <FriendLink userId={isElly ? null : msg.sender_id}>
@@ -234,33 +235,55 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                       )}
                     </p>
                   )}
-                  <div
-                    className={cn(
-                      "rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                      isMe
-                        ? "bg-primary text-primary-foreground"
-                        : isElly
-                          ? "bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 shadow-soft"
-                          : "bg-card shadow-soft border border-border"
-                    )}
-                  >
-                    {/* Image */}
-                    {msg.image_url && (
-                      <SignedImage
-                        src={msg.image_url}
-                        alt="Shared photo"
-                        className="rounded-lg max-w-full max-h-[240px] object-cover mb-1"
-                        loading="lazy"
+                  <div className="flex items-start gap-1">
+                    {isMe && (
+                      <MessageActions
+                        messageId={msg.id}
+                        content={msg.content}
+                        isMe={isMe}
+                        hasImage={!!msg.image_url}
+                        onEdit={editMessage}
+                        onDelete={deleteMessage}
                       />
                     )}
-                    {isElly ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-1 [&>p:last-child]:mb-0">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
-                    ) : (
-                      msg.content !== '📷 Photo' && msg.content
-                    )}
+                    <div
+                      className={cn(
+                        "rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                        isMe
+                          ? "bg-primary text-primary-foreground"
+                          : isElly
+                            ? "bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 shadow-soft"
+                            : "bg-card shadow-soft border border-border"
+                      )}
+                    >
+                      {/* Image */}
+                      {msg.image_url && (
+                        <SignedImage
+                          src={msg.image_url}
+                          alt="Shared photo"
+                          className="rounded-lg max-w-full max-h-[240px] object-cover mb-1"
+                          loading="lazy"
+                        />
+                      )}
+                      {isElly ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-1 [&>p:last-child]:mb-0">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        msg.content !== '📷 Photo' && msg.content
+                      )}
+                    </div>
                   </div>
+
+                  {/* Edited indicator */}
+                  {msg.edited_at && (
+                    <span className={cn(
+                      "text-[9px] text-muted-foreground/50 ml-1",
+                      isMe ? "text-right block" : ""
+                    )}>
+                      (edited)
+                    </span>
+                  )}
 
                   {/* Reactions */}
                   {user && (
