@@ -88,9 +88,14 @@ export function UpcomingPlans() {
     
     return plans
       .filter((p) => {
+        // Multi-day plans: show if end date is today or later
+        const effectiveEndDate = p.endDate || p.date;
+        
         // Future days within the week
-        if (!isSameDay(p.date, now)) {
-          return p.date > now && isBefore(p.date, weekFromNow);
+        if (!isSameDay(p.date, now) && !isSameDay(effectiveEndDate, now)) {
+          // Show if start is within next week, or if it's a multi-day spanning into the week
+          return (p.date > now && isBefore(p.date, weekFromNow)) ||
+                 (p.endDate && p.date <= now && effectiveEndDate >= now);
         }
         // Today: include if upcoming or in-progress
         const status = getPlanTimeStatus(p, userTimezone);
@@ -164,7 +169,11 @@ export function UpcomingPlans() {
                   </div>
                   <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {isSameDay(plan.date, new Date()) ? 'Today' : format(plan.date, 'EEE, MMM d')}
+                      {isSameDay(plan.date, new Date())
+                        ? (plan.endDate ? `Today – ${format(plan.endDate, 'MMM d')}` : 'Today')
+                        : (plan.endDate
+                          ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
+                          : format(plan.date, 'EEE, MMM d'))}
                     </span>
                     {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
                       <span className="flex items-center gap-0.5 text-xs text-muted-foreground" data-stop-card-click onClick={e => e.stopPropagation()}>

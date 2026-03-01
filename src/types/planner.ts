@@ -62,6 +62,7 @@ export interface Plan {
   activity: ActivityType | string; // Allow custom activity IDs
   location?: Location;
   date: Date;
+  endDate?: Date; // For multi-day plans
   timeSlot: TimeSlot;
   duration: number;
   startTime?: string; // HH:mm format e.g. "14:30"

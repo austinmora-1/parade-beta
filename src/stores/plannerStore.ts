@@ -292,6 +292,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           title: p.title,
           activity: p.activity as ActivityType,
           date: normalizedPlanDate,
+          endDate: (p as any).end_date ? (() => {
+            const ed = new Date((p as any).end_date);
+            return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate());
+          })() : undefined,
           timeSlot: p.time_slot as TimeSlot,
           duration: p.duration,
           startTime: (p as any).start_time || undefined,
@@ -447,6 +451,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const dateStr = format(plan.date, 'yyyy-MM-dd');
     const noonUtcDate = `${dateStr}T12:00:00+00:00`;
     
+    const endDateStr = plan.endDate ? format(plan.endDate, 'yyyy-MM-dd') : null;
+    const noonUtcEndDate = endDateStr ? `${endDateStr}T12:00:00+00:00` : null;
+    
     const { data, error } = await supabase
       .from('plans')
       .insert({
@@ -454,6 +461,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         title: plan.title,
         activity: plan.activity,
         date: noonUtcDate,
+        end_date: noonUtcEndDate,
         time_slot: plan.timeSlot,
         duration: plan.duration,
         start_time: plan.startTime || null,
@@ -476,6 +484,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       title: data.title,
       activity: data.activity as ActivityType,
       date: new Date(newPlanDateRaw.getUTCFullYear(), newPlanDateRaw.getUTCMonth(), newPlanDateRaw.getUTCDate()),
+      endDate: (data as any).end_date ? (() => {
+        const ed = new Date((data as any).end_date);
+        return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate());
+      })() : undefined,
       timeSlot: data.time_slot as TimeSlot,
       duration: data.duration,
       startTime: (data as any).start_time || undefined,
@@ -567,6 +579,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (updates.date) {
       const dateStr = format(updates.date, 'yyyy-MM-dd');
       dbUpdates.date = `${dateStr}T12:00:00+00:00`;
+    }
+    if (updates.endDate !== undefined) {
+      dbUpdates.end_date = updates.endDate ? `${format(updates.endDate, 'yyyy-MM-dd')}T12:00:00+00:00` : null;
     }
     if (updates.timeSlot) dbUpdates.time_slot = updates.timeSlot;
     if (updates.duration) dbUpdates.duration = updates.duration;
