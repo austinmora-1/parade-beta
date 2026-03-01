@@ -3,10 +3,10 @@ import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { useAuth } from '@/hooks/useAuth';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { Zap, X, MapPin } from 'lucide-react';
+import { Zap, X, MapPin, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
 import { SignedImage } from '@/components/ui/SignedImage';
 import { VibeReactions, VibeReaction } from '@/components/vibes/VibeReactions';
@@ -87,117 +87,141 @@ function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleRe
     }
   };
 
+  const x = useMotionValue(0);
+  const dismissOpacity = useTransform(x, [-120, -60, 0], [1, 0.8, 0]);
+  const dismissScale = useTransform(x, [-120, -60, 0], [1, 0.8, 0.5]);
+  const cardOpacity = useTransform(x, [-150, -100, 0], [0.4, 0.7, 1]);
+  const bgColor = useTransform(x, [-100, 0], ['hsl(var(--destructive) / 0.15)', 'transparent']);
+
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.3}
-      onDragEnd={(_e, info) => {
-        if (info.offset.x < -100) {
-          handleDismiss();
-        }
-      }}
-      onClick={onTap}
-      className={cn(
-        "relative rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md active:scale-[0.98] touch-pan-y",
-        vibe.is_read
-          ? "border-border bg-card/50"
-          : "border-primary/20 bg-primary/5"
-      )}
-    >
-      {/* Dismiss X */}
-      {vibe.recipient_entry_id && (
-        <button
-          onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
-          className="absolute top-2 right-2 rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          aria-label="Dismiss vibe"
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Dismiss indicator behind the card */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-end pr-4 rounded-xl"
+        style={{ backgroundColor: bgColor }}
+      >
+        <motion.div
+          className="flex items-center gap-1.5 text-destructive"
+          style={{ opacity: dismissOpacity, scale: dismissScale }}
         >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      )}
+          <Trash2 className="h-4 w-4" />
+          <span className="text-xs font-semibold">Dismiss</span>
+        </motion.div>
+      </motion.div>
 
-      <div className="flex items-start gap-3 pr-5">
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
-          style={{ backgroundColor: `${vibeColors[vibe.vibe_type] || vibeColors.social}20` }}
-        >
-          {config.icon}
-        </div>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, x: -200, transition: { duration: 0.2 } }}
+        style={{ x, opacity: cardOpacity }}
+        drag="x"
+        dragDirectionLock
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.15}
+        onDragEnd={(_e, info) => {
+          if (info.offset.x < -80 || (info.velocity.x < -300 && info.offset.x < -30)) {
+            handleDismiss();
+          }
+        }}
+        onClick={onTap}
+        className={cn(
+          "relative rounded-xl border p-3 cursor-pointer hover:shadow-md active:scale-[0.98] touch-pan-y",
+          vibe.is_read
+            ? "border-border bg-card/50"
+            : "border-primary/20 bg-primary/5"
+        )}
+      >
+        {/* Dismiss X */}
+        {vibe.recipient_entry_id && (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
+            className="absolute top-2 right-2 rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Dismiss vibe"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-medium truncate">{vibe.sender_name}</span>
-            {isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 ? (
-              vibe.custom_tags.map(tag => (
-                <span
-                  key={tag}
-                  className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary bg-primary/15"
-                >
-                  #{tag}
-                </span>
-              ))
-            ) : (
-              <span
-                className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground"
-                style={{ backgroundColor: vibeColors[vibe.vibe_type] || vibeColors.social }}
-              >
-                {config.label}
-              </span>
-            )}
+        <div className="flex items-start gap-3 pr-5">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
+            style={{ backgroundColor: `${vibeColors[vibe.vibe_type] || vibeColors.social}20` }}
+          >
+            {config.icon}
           </div>
 
-          {!isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {vibe.custom_tags.map(tag => (
-                <span key={tag} className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
-                  #{tag}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium truncate">{vibe.sender_name}</span>
+              {isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 ? (
+                vibe.custom_tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary bg-primary/15"
+                  >
+                    #{tag}
+                  </span>
+                ))
+              ) : (
+                <span
+                  className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground"
+                  style={{ backgroundColor: vibeColors[vibe.vibe_type] || vibeColors.social }}
+                >
+                  {config.label}
                 </span>
-              ))}
+              )}
             </div>
-          )}
 
-          {vibe.message && (
-            <p className="text-sm text-foreground mt-0.5 line-clamp-2">{vibe.message}</p>
-          )}
+            {!isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {vibe.custom_tags.map(tag => (
+                  <span key={tag} className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          {vibe.media_url && (
-            <SignedImage
-              src={vibe.media_url}
-              alt="Vibe media"
-              className="mt-1.5 h-20 w-20 rounded-lg object-cover border border-border"
+            {vibe.message && (
+              <p className="text-sm text-foreground mt-0.5 line-clamp-2">{vibe.message}</p>
+            )}
+
+            {vibe.media_url && (
+              <SignedImage
+                src={vibe.media_url}
+                alt="Vibe media"
+                className="mt-1.5 h-20 w-20 rounded-lg object-cover border border-border"
+              />
+            )}
+
+            {vibe.location_name && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vibe.location_name)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 mt-1 group/loc"
+              >
+                <MapPin className="h-3 w-3 text-primary shrink-0" />
+                <span className="text-[11px] text-muted-foreground truncate group-hover/loc:text-primary group-hover/loc:underline transition-colors">{vibe.location_name}</span>
+              </a>
+            )}
+
+            <VibeReactions
+              vibeSendId={vibe.id}
+              reactions={reactions}
+              currentUserId={currentUserId}
+              onToggleReaction={onToggleReaction}
+              commentCount={commentCount}
             />
-          )}
 
-          {vibe.location_name && (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vibe.location_name)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 mt-1 group/loc"
-            >
-              <MapPin className="h-3 w-3 text-primary shrink-0" />
-              <span className="text-[11px] text-muted-foreground truncate group-hover/loc:text-primary group-hover/loc:underline transition-colors">{vibe.location_name}</span>
-            </a>
-          )}
-
-          <VibeReactions
-            vibeSendId={vibe.id}
-            reactions={reactions}
-            currentUserId={currentUserId}
-            onToggleReaction={onToggleReaction}
-            commentCount={commentCount}
-          />
-
-          <span className="text-[10px] text-muted-foreground mt-0.5 block">
-            {formatDistanceToNow(new Date(vibe.created_at), { addSuffix: true })}
-          </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 block">
+              {formatDistanceToNow(new Date(vibe.created_at), { addSuffix: true })}
+            </span>
+          </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
