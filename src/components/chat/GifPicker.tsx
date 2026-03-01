@@ -16,12 +16,16 @@ interface GifResult {
 interface GifPickerProps {
   onGifSelect: (gifUrl: string) => void;
   children: React.ReactNode;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 const PAGE_SIZE = 20;
 
-export function GifPicker({ onGifSelect, children }: GifPickerProps) {
-  const [open, setOpen] = useState(false);
+export function GifPicker({ onGifSelect, children, externalOpen, onExternalOpenChange }: GifPickerProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = onExternalOpenChange || setInternalOpen;
   const [query, setQuery] = useState('');
   const [gifs, setGifs] = useState<GifResult[]>([]);
   const [loading, setLoading] = useState(false);
