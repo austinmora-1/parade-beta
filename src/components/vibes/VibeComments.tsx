@@ -282,7 +282,7 @@ export function VibeComments({ vibeSendId }: VibeCommentsProps) {
           value={text}
           onChange={e => setText(e.target.value)}
           placeholder="Add a comment..."
-          className="h-8 text-xs flex-1"
+          className="h-8 text-[16px] sm:text-xs flex-1"
           disabled={sending}
         />
 
