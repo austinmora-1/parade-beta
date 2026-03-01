@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Friend } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -10,6 +11,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface FriendAvatarGridProps {
   friends: Friend[];
@@ -49,6 +60,7 @@ function formatLastHungOut(date: Date): string {
 
 export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, showActions = false, lastHungOut, onTogglePod }: FriendAvatarGridProps) {
   const navigate = useNavigate();
+  const [removingFriend, setRemovingFriend] = useState<Friend | null>(null);
 
   if (friends.length === 0) return null;
 
@@ -151,7 +163,7 @@ export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, show
                   )}
                   {onRemove && (
                     <DropdownMenuItem
-                      onClick={() => onRemove(friend.id)}
+                      onClick={() => setRemovingFriend(friend)}
                       className="text-destructive focus:text-destructive text-xs"
                     >
                       <UserMinus className="mr-1.5 h-3 w-3" />
@@ -164,6 +176,29 @@ export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, show
           </div>
         );
       })}
+
+      <AlertDialog open={!!removingFriend} onOpenChange={(open) => !open && setRemovingFriend(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {removingFriend?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove {removingFriend?.name} from your friends. You can always add them back later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (removingFriend) onRemove?.(removingFriend.id);
+                setRemovingFriend(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

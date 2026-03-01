@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Friend } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface FriendCardProps {
   friend: Friend;
@@ -20,6 +31,7 @@ interface FriendCardProps {
 
 export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }: FriendCardProps) {
   const navigate = useNavigate();
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const getStatusConfig = () => {
     switch (friend.status) {
       case 'connected':
@@ -165,7 +177,7 @@ export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => onRemove?.(friend.id)}
+              onClick={() => setShowRemoveConfirm(true)}
               className="text-destructive focus:text-destructive"
             >
               <UserMinus className="mr-2 h-4 w-4" />
@@ -174,6 +186,26 @@ export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {friend.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove {friend.name} from your friends. You can always add them back later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => onRemove?.(friend.id)}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
