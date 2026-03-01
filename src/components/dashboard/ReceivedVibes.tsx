@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
+import { SignedImage } from '@/components/ui/SignedImage';
 import { VibeReactions, VibeReaction } from '@/components/vibes/VibeReactions';
 
 export function ReceivedVibes() {
@@ -150,7 +151,7 @@ function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleRe
           )}
 
           {vibe.media_url && (
-            <img
+            <SignedImage
               src={vibe.media_url}
               alt="Vibe media"
               className="mt-1.5 h-20 w-20 rounded-lg object-cover border border-border"

@@ -10,6 +10,7 @@ import { Send, ImagePlus, MapPin, Users, Globe, Shield, X, Plus, Loader2, Check 
 import { GifPicker } from '@/components/chat/GifPicker';
 import { VibeLocationInput, VibeLocation } from '@/components/vibes/VibeLocationInput';
 import { supabase } from '@/integrations/supabase/client';
+import { SignedImage } from '@/components/ui/SignedImage';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -69,8 +70,9 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
       const path = `${user.id}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from('vibe-media').upload(path, file);
       if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from('vibe-media').getPublicUrl(path);
-      setMediaUrl(publicUrl);
+      // Store the file path (bucket:path format) instead of public URL
+      const storagePath = `storage:vibe-media:${path}`;
+      setMediaUrl(storagePath);
       setMediaType('image');
     } catch (err) {
       console.error(err);
@@ -237,7 +239,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
             {mediaUrl ? (
               <div className="relative">
-                <img src={mediaUrl} alt="Vibe" className="h-14 w-14 rounded-lg object-cover border border-border" />
+                <SignedImage src={mediaUrl} alt="Vibe" className="h-14 w-14 rounded-lg object-cover border border-border" />
                 <button
                   onClick={() => { setMediaUrl(null); setMediaType(null); }}
                   className="absolute -top-1 -right-1 rounded-full bg-destructive text-destructive-foreground h-4 w-4 flex items-center justify-center"

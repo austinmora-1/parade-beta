@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Image, Smile, Loader2, Trash2 } from 'lucide-react';
+import { SignedImage } from '@/components/ui/SignedImage';
 import { GifPicker } from '@/components/chat/GifPicker';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -151,11 +152,8 @@ export function VibeComments({ vibeSendId }: VibeCommentsProps) {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('vibe-media')
-        .getPublicUrl(path);
-
-      await sendComment(urlData.publicUrl, 'image');
+      // Store the file path (bucket:path format) instead of public URL
+      await sendComment(`storage:vibe-media:${path}`, 'image');
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error('Failed to upload image');
@@ -236,7 +234,7 @@ export function VibeComments({ vibeSendId }: VibeCommentsProps) {
                 )}
                 {comment.media_url && (
                   <div className="mt-1 rounded-lg overflow-hidden border border-border max-w-[200px]">
-                    <img
+                    <SignedImage
                       src={comment.media_url}
                       alt="Comment media"
                       className="w-full max-h-32 object-cover"

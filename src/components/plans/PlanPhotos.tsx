@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Camera, X, Loader2, ImagePlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { getSignedUrls } from '@/lib/storage';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -24,6 +25,7 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<PlanPhoto[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<PlanPhoto | null>(null);
@@ -92,9 +94,15 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
     return () => { supabase.removeChannel(channel); };
   }, [planId]);
 
-  const getPublicUrl = (filePath: string) => {
-    const { data } = supabase.storage.from('plan-photos').getPublicUrl(filePath);
-    return data.publicUrl;
+  // Resolve signed URLs whenever photos change
+  useEffect(() => {
+    if (photos.length === 0) return;
+    const paths = photos.map(p => p.file_path);
+    getSignedUrls('plan-photos', paths).then(setPhotoUrls);
+  }, [photos]);
+
+  const getPhotoUrl = (filePath: string) => {
+    return photoUrls.get(filePath) || '';
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -224,7 +232,7 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
               className="relative aspect-square rounded-lg overflow-hidden bg-muted group"
             >
               <img
-                src={getPublicUrl(photo.file_path)}
+                src={getPhotoUrl(photo.file_path)}
                 alt="Plan photo"
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 loading="lazy"
@@ -249,7 +257,7 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
         >
           <div className="relative max-w-3xl w-full" onClick={e => e.stopPropagation()}>
             <img
-              src={getPublicUrl(selectedPhoto.file_path)}
+              src={getPhotoUrl(selectedPhoto.file_path)}
               alt="Plan photo"
               className="w-full rounded-lg max-h-[80vh] object-contain"
             />
