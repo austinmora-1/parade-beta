@@ -148,11 +148,6 @@ export function UpcomingPlans() {
                     <div className="flex items-center gap-2">
                       <ActivityIcon config={activityConfig} size={18} />
                       <span className="text-sm font-medium">{displayTitle}</span>
-                      {isInProgress && (
-                        <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
-                          In Progress
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                       <span className="flex items-center gap-0.5 shrink-0">
@@ -167,7 +162,7 @@ export function UpcomingPlans() {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                  <div className="flex flex-col items-end justify-between gap-0.5 shrink-0 self-stretch">
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {isSameDay(plan.date, new Date()) ? 'Today' : format(plan.date, 'EEE, MMM d')}
                     </span>
@@ -175,6 +170,11 @@ export function UpcomingPlans() {
                       <span className="flex items-center gap-0.5 text-xs text-muted-foreground" data-stop-card-click onClick={e => e.stopPropagation()}>
                         <Users className="h-3 w-3 shrink-0" />
                         <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
+                      </span>
+                    )}
+                    {isInProgress && (
+                      <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
+                        In Progress
                       </span>
                     )}
                   </div>
