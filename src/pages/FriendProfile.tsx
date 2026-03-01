@@ -37,6 +37,7 @@ interface FriendProfileData {
   custom_vibe_tags: string[] | null;
   location_status: string | null;
   share_code: string | null;
+  cover_photo_url: string | null;
 }
 
 interface AvailabilityDay {
@@ -119,7 +120,7 @@ export default function FriendProfile() {
 
       const { data: fullProfile } = await supabase
         .from('profiles')
-        .select('current_vibe, custom_vibe_tags, location_status, share_code')
+        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url')
         .eq('user_id', userId)
         .single();
 
@@ -131,6 +132,7 @@ export default function FriendProfile() {
         custom_vibe_tags: fullProfile?.custom_vibe_tags || null,
         location_status: fullProfile?.location_status || null,
         share_code: fullProfile?.share_code || null,
+        cover_photo_url: (fullProfile as any)?.cover_photo_url || null,
       });
 
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -319,63 +321,83 @@ export default function FriendProfile() {
         Back
       </Button>
 
-      {/* Profile Header */}
-      <div className="flex items-center gap-4">
-        <Avatar className="h-16 w-16 md:h-20 md:w-20">
-          <AvatarImage src={profile.avatar_url || undefined} alt={profile.display_name || 'User'} />
-          <AvatarFallback className="bg-primary/20 text-primary text-lg md:text-xl font-display font-semibold">
-            {getInitials(profile.display_name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <h1 className="font-display text-xl font-bold md:text-2xl truncate">
-            {profile.display_name || 'User'}
-          </h1>
-          {profile.bio && (
-            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{profile.bio}</p>
+      {/* Profile Header Card */}
+      <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
+        {/* Cover Photo / Banner */}
+        <div className="h-28 md:h-36">
+          {profile.cover_photo_url ? (
+            <img
+              src={profile.cover_photo_url}
+              alt="Cover photo"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
           )}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {profile.current_vibe && (() => {
-              const isCustom = profile.current_vibe === 'custom';
-              const vibeConfig = !isCustom ? VIBE_CONFIG[profile.current_vibe as VibeType] : null;
-              const tags = profile.custom_vibe_tags || [];
-              return isCustom && tags.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-1">
-                  {tags.map(tag => (
-                    <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                  {vibeConfig?.icon || '✨'} {vibeConfig?.label || profile.current_vibe}
+        </div>
+
+        <div className="relative px-4 pb-4 md:px-6 md:pb-5">
+          {/* Avatar */}
+          <div className="-mt-10 mb-3 md:-mt-12">
+            <Avatar className="h-20 w-20 border-4 border-background shadow-lg md:h-24 md:w-24">
+              <AvatarImage src={profile.avatar_url || undefined} alt={profile.display_name || 'User'} />
+              <AvatarFallback className="bg-primary/20 text-primary text-lg md:text-xl font-display font-semibold">
+                {getInitials(profile.display_name)}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+
+          {/* Name & Info */}
+          <div className="min-w-0">
+            <h1 className="font-display text-xl font-bold md:text-2xl truncate">
+              {profile.display_name || 'User'}
+            </h1>
+            {profile.bio && (
+              <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{profile.bio}</p>
+            )}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {profile.current_vibe && (() => {
+                const isCustom = profile.current_vibe === 'custom';
+                const vibeConfig = !isCustom ? VIBE_CONFIG[profile.current_vibe as VibeType] : null;
+                const tags = profile.custom_vibe_tags || [];
+                return isCustom && tags.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-1">
+                    {tags.map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                    {vibeConfig?.icon || '✨'} {vibeConfig?.label || profile.current_vibe}
+                  </span>
+                );
+              })()}
+              {profile.location_status && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  {profile.location_status === 'home' ? 'Home' : 'Away'}
                 </span>
-              );
-            })()}
-            {profile.location_status && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                <MapPin className="h-3 w-3" />
-                {profile.location_status === 'home' ? 'Home' : 'Away'}
-              </span>
-            )}
-            {lastDate && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                Last hung out {(() => {
-                  const now = new Date();
-                  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                  const dateStart = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
-                  const diffDays = Math.round((todayStart.getTime() - dateStart.getTime()) / (1000 * 60 * 60 * 24));
-                  if (diffDays === 0) return 'today';
-                  if (diffDays === 1) return 'yesterday';
-                  if (diffDays < 7) return `${diffDays} days ago`;
-                  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-                  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
-                  return `${Math.floor(diffDays / 365)}y ago`;
-                })()}
-              </span>
-            )}
+              )}
+              {lastDate && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  Last hung out {(() => {
+                    const now = new Date();
+                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const dateStart = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+                    const diffDays = Math.round((todayStart.getTime() - dateStart.getTime()) / (1000 * 60 * 60 * 24));
+                    if (diffDays === 0) return 'today';
+                    if (diffDays === 1) return 'yesterday';
+                    if (diffDays < 7) return `${diffDays} days ago`;
+                    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+                    if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+                    return `${Math.floor(diffDays / 365)}y ago`;
+                  })()}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
