@@ -44,7 +44,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      const link = `${window.location.origin}/plan-invite/${data.invite_token}`;
+      const link = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-meta?token=${data.invite_token}&origin=${encodeURIComponent(window.location.origin)}`;
       setGeneratedLink(link);
     } catch (err: any) {
       toast({ title: 'Failed to generate link', description: err.message, variant: 'destructive' });
@@ -71,7 +71,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      const inviteUrl = `${window.location.origin}/plan-invite/${data.invite_token}`;
+      const inviteUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-meta?token=${data.invite_token}&origin=${encodeURIComponent(window.location.origin)}`;
       const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
 
       // Send email via existing edge function
