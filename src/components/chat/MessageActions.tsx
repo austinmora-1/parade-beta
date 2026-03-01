@@ -78,7 +78,7 @@ export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onD
             <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align={isMe ? "end" : "start"} className="w-32">
+        <DropdownMenuContent align={isMe ? "end" : "start"} className="w-32 z-[70]">
           {onReply && (
             <DropdownMenuItem onClick={() => onReply(messageId)}>
               <Reply className="h-3.5 w-3.5 mr-2 scale-x-[-1]" />
@@ -104,7 +104,7 @@ export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onD
       </DropdownMenu>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[70]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete message?</AlertDialogTitle>
             <AlertDialogDescription>
