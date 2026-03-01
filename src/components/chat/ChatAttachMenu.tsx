@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Sparkles } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChatImageUpload } from './ChatImageUpload';
@@ -16,6 +16,18 @@ export function ChatAttachMenu({ onImageUploaded, onGifSelected, onEmojiSelect, 
   const [open, setOpen] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
 
+  // Open GIF picker after popover fully closes
+  useEffect(() => {
+    if (!open && gifOpen) {
+      // gifOpen is set before popover closes; the actual Dialog renders below
+    }
+  }, [open, gifOpen]);
+
+  const handleGifClick = () => {
+    setOpen(false);
+    setGifOpen(true);
+  };
+
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
@@ -31,7 +43,7 @@ export function ChatAttachMenu({ onImageUploaded, onGifSelected, onEmojiSelect, 
           <div className="flex items-center gap-1">
             <ChatImageUpload onImageUploaded={(url) => { onImageUploaded(url); setOpen(false); }} />
             <button
-              onClick={() => { setOpen(false); setTimeout(() => setGifOpen(true), 150); }}
+              onClick={handleGifClick}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
               title="Send a GIF"
             >
@@ -49,9 +61,15 @@ export function ChatAttachMenu({ onImageUploaded, onGifSelected, onEmojiSelect, 
         </PopoverContent>
       </Popover>
 
-      <GifPicker onGifSelect={onGifSelected} externalOpen={gifOpen} onExternalOpenChange={setGifOpen}>
-        <span />
-      </GifPicker>
+      {gifOpen && (
+        <GifPicker
+          onGifSelect={(url) => { onGifSelected(url); setGifOpen(false); }}
+          externalOpen={gifOpen}
+          onExternalOpenChange={setGifOpen}
+        >
+          <span />
+        </GifPicker>
+      )}
     </>
   );
 }
