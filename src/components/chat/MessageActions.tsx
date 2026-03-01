@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, MoreVertical, X, Check, Reply } from 'lucide-react';
+import { Pencil, Trash2, MoreVertical, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,6 +18,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 interface MessageActionsProps {
@@ -31,39 +38,16 @@ interface MessageActionsProps {
 }
 
 export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onDelete, onReply }: MessageActionsProps) {
-  const [editing, setEditing] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [editText, setEditText] = useState(content);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleSaveEdit = async () => {
     if (editText.trim() && editText.trim() !== content) {
-      await onEdit(messageId, editText);
+      await onEdit(messageId, editText.trim());
     }
-    setEditing(false);
+    setEditOpen(false);
   };
-
-  if (editing) {
-    return (
-      <div className="mt-1 flex items-center gap-1.5">
-        <Input
-          value={editText}
-          onChange={e => setEditText(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && !e.shiftKey) handleSaveEdit();
-            if (e.key === 'Escape') setEditing(false);
-          }}
-          className="h-7 text-xs flex-1 !text-[16px] md:!text-xs"
-          autoFocus
-        />
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSaveEdit}>
-          <Check className="h-3 w-3" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditing(false)}>
-          <X className="h-3 w-3" />
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -86,7 +70,7 @@ export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onD
             </DropdownMenuItem>
           )}
           {isMe && !hasImage && (
-            <DropdownMenuItem onClick={() => { setEditText(content); setEditing(true); }}>
+            <DropdownMenuItem onClick={() => { setEditText(content); setEditOpen(true); }}>
               <Pencil className="h-3.5 w-3.5 mr-2" />
               Edit
             </DropdownMenuItem>
@@ -103,6 +87,29 @@ export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onD
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="z-[70] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit message</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={editText}
+            onChange={e => setEditText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) handleSaveEdit();
+            }}
+            className="!text-[16px] md:!text-sm"
+            autoFocus
+          />
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={!editText.trim() || editText.trim() === content}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent className="z-[70]">
           <AlertDialogHeader>
