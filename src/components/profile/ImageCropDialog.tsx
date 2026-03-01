@@ -85,7 +85,7 @@ export function ImageCropDialog({
     const scaleX = image.naturalWidth / (image.width * zoom);
     const scaleY = image.naturalHeight / (image.height * zoom);
 
-    const outputSize = Math.min(512, completedCrop.width * scaleX, completedCrop.height * scaleY);
+    const outputSize = Math.min(1024, completedCrop.width * scaleX, completedCrop.height * scaleY);
     canvas.width = outputSize;
     canvas.height = outputSize;
 
