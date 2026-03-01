@@ -472,6 +472,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
           </div>
 
           {/* Quick Time Presets */}
+          {!isMultiDay && (
           <div className="space-y-1">
             <Label className="text-xs">Quick Set</Label>
             <div className="flex flex-wrap gap-1.5">
@@ -507,9 +508,10 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               })}
             </div>
           </div>
+          )}
 
           {/* Date & Time Slot */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className={cn("grid gap-2", isMultiDay ? "grid-cols-1" : "grid-cols-2")}>
             <div className="space-y-1">
               <Label className="text-xs">{isMultiDay ? 'Start Date' : 'Date'}</Label>
               <Popover>
@@ -544,6 +546,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               </Popover>
             </div>
 
+            {!isMultiDay && (
             <div className="space-y-1">
               <Label className="text-xs">Time Slot</Label>
               <Select value={timeSlot} onValueChange={(v) => setTimeSlot(v as TimeSlot)}>
@@ -559,6 +562,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                 </SelectContent>
               </Select>
             </div>
+            )}
           </div>
 
           {/* Multi-day toggle & end date */}
@@ -610,6 +614,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
 
 
           {/* Start & End Time + Duration */}
+          {!isMultiDay && (
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <Label className="text-xs">Start</Label>
@@ -657,6 +662,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               </Select>
             </div>
           </div>
+          )}
 
           {/* Status */}
           <div className="space-y-1">
