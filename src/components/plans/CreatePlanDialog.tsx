@@ -57,6 +57,21 @@ interface LocationSuggestion {
   place_id?: string;
 }
 
+/** Generate 15-minute interval time options for select dropdowns */
+function generateTimeOptions() {
+  const options: { value: string; label: string }[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const value = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const period = h >= 12 ? 'PM' : 'AM';
+      const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      const label = `${displayH}:${m.toString().padStart(2, '0')} ${period}`;
+      options.push({ value, label });
+    }
+  }
+  return options;
+}
+
 interface CreatePlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -535,25 +550,33 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <Label className="text-xs">Start</Label>
-              <Input
-                type="time"
-                step="900"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="h-9 text-xs !px-1.5 [&::-webkit-calendar-picker-indicator]:ml-0 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:w-3"
-                placeholder="Optional"
-              />
+              <Select value={startTime} onValueChange={setStartTime}>
+                <SelectTrigger className="h-9 text-xs px-2">
+                  <SelectValue placeholder="Start" />
+                </SelectTrigger>
+                <SelectContent className="max-h-48">
+                  {generateTimeOptions().map((t) => (
+                    <SelectItem key={t.value} value={t.value} className="text-xs">
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">End</Label>
-              <Input
-                type="time"
-                step="900"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="h-9 text-xs !px-1.5 [&::-webkit-calendar-picker-indicator]:ml-0 [&::-webkit-calendar-picker-indicator]:p-0 [&::-webkit-calendar-picker-indicator]:w-3"
-                placeholder="Optional"
-              />
+              <Select value={endTime} onValueChange={setEndTime}>
+                <SelectTrigger className="h-9 text-xs px-2">
+                  <SelectValue placeholder="End" />
+                </SelectTrigger>
+                <SelectContent className="max-h-48">
+                  {generateTimeOptions().map((t) => (
+                    <SelectItem key={t.value} value={t.value} className="text-xs">
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Duration</Label>
