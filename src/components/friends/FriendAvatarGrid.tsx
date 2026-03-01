@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Friend } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { useNavigate } from 'react-router-dom';
 import { Check, Clock, UserPlus, MoreVertical, UserMinus, X, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -88,7 +89,7 @@ export function FriendAvatarGrid({ friends, onConnect, onDecline, onRemove, show
                 "h-12 w-12 md:h-14 md:w-14 ring-1 ring-border",
                 isPending && !isIncoming && "ring-2 ring-muted-foreground/30 ring-offset-1 ring-offset-background"
               )}>
-                <AvatarImage src={friend.avatar} />
+                <AvatarImage src={friend.avatar || getElephantAvatar(friend.name)} />
                 <AvatarFallback className={cn(
                   "text-sm font-semibold",
                   getAvatarColor(friend.name),

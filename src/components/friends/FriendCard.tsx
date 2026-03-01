@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Friend } from '@/types/planner';
 import { cn } from '@/lib/utils';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Button } from '@/components/ui/button';
 import { Check, Clock, UserPlus, MessageCircle, MoreVertical, UserMinus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -105,15 +106,11 @@ export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }
             getAvatarColor(friend.name)
           )}
         >
-          {friend.avatar ? (
-            <img
-              src={friend.avatar}
-              alt={friend.name}
-              className="h-full w-full rounded-full object-cover"
-            />
-          ) : (
-            getInitials(friend.name)
-          )}
+          <img
+            src={friend.avatar || getElephantAvatar(friend.name)}
+            alt={friend.name}
+            className="h-full w-full rounded-full object-cover"
+          />
         </div>
 
         {/* Info */}
