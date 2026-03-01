@@ -239,10 +239,13 @@
     @apply border-border;
   }
 
+  html {
+    font-size: 19px;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'DM Sans', sans-serif;
-    font-size: 19px;
   }
 
   .arcade body, body.arcade {
