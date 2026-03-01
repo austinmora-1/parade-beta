@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { format, formatDistanceToNow } from 'date-fns';
 import { VibeComments } from './VibeComments';
 import { motion } from 'framer-motion';
+import { SignedImage } from '@/components/ui/SignedImage';
 import { VibeReactions, VibeReaction } from './VibeReactions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -120,7 +121,7 @@ export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss, reaction
                 animate={{ opacity: 1, scale: 1 }}
                 className="overflow-hidden rounded-xl border border-border"
               >
-                <img
+                <SignedImage
                   src={vibe.media_url}
                   alt="Vibe media"
                   className="w-full max-h-64 object-cover"

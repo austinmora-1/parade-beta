@@ -6,6 +6,7 @@ import { Send, MapPin, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SignedImage } from '@/components/ui/SignedImage';
 import type { VibeReaction } from '@/components/vibes/VibeReactions';
 
 export function SentVibes() {
@@ -104,7 +105,7 @@ function SentVibeCard({ vibe, reactions, commentCount }: { vibe: VibeSend; react
           )}
 
           {vibe.media_url && (
-            <img src={vibe.media_url} alt="Vibe media" className="mt-1.5 h-16 w-16 rounded-lg object-cover border border-border" />
+            <SignedImage src={vibe.media_url} alt="Vibe media" className="mt-1.5 h-16 w-16 rounded-lg object-cover border border-border" />
           )}
 
           {vibe.location_name && (

@@ -38,11 +38,8 @@ export function ChatImageUpload({ onImageUploaded }: ChatImageUploadProps) {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-images')
-        .getPublicUrl(path);
-
-      onImageUploaded(publicUrl);
+      // Store the file path (bucket:path format) instead of public URL
+      onImageUploaded(`storage:chat-images:${path}`);
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error('Failed to upload image');

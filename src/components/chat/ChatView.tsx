@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, ArrowLeft, Users, Check, CheckCheck, Sparkles, Loader2 } from 'lucide-react';
 import { FriendLink } from '@/components/ui/FriendLink';
+import { SignedImage } from '@/components/ui/SignedImage';
 import { format, isToday, isYesterday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ELLY_USER_ID } from '@/lib/constants';
@@ -245,7 +246,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
                   >
                     {/* Image */}
                     {msg.image_url && (
-                      <img
+                      <SignedImage
                         src={msg.image_url}
                         alt="Shared photo"
                         className="rounded-lg max-w-full max-h-[240px] object-cover mb-1"
