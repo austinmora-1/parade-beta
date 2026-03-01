@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar } from 'lucide-react';
+import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,6 +14,7 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
 import { PlanPhotos } from '@/components/plans/PlanPhotos';
+import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +46,7 @@ export default function PlanDetail() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isRespondingToChange, setIsRespondingToChange] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -273,6 +275,12 @@ export default function PlanDetail() {
             </Button>
           )}
 
+          {isOwner && (
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setInviteDialogOpen(true)}>
+              <UserPlus className="h-4 w-4" /> Invite
+            </Button>
+          )}
+
           {plan.participants.length > 0 && (
             <Button
               variant="outline"
@@ -304,6 +312,14 @@ export default function PlanDetail() {
         onOpenChange={setEditDialogOpen}
         editPlan={plan}
         onChangeProposed={refetchChangeRequests}
+      />
+
+      {/* Invite dialog */}
+      <InviteToPlanDialog
+        open={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
+        planId={plan.id}
+        planTitle={displayTitle}
       />
 
       {/* Delete confirm */}

@@ -12,6 +12,9 @@ const corsHeaders = {
 interface InviteEmailRequest {
   email: string;
   inviterName?: string;
+  customSubject?: string;
+  customMessage?: string;
+  customUrl?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -47,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
     const userId = claimsData.claims.sub;
     console.log('Authenticated user sending invite:', userId);
 
-    const { email, inviterName = "A friend" }: InviteEmailRequest = await req.json();
+    const { email, inviterName = "A friend", customSubject, customMessage, customUrl }: InviteEmailRequest = await req.json();
 
     if (!email) {
       return new Response(
@@ -60,7 +63,10 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
-    const inviteUrl = `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
+    const inviteUrl = customUrl || `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
+    const emailSubject = customSubject || `${inviterName} wants to make plans with you`;
+    const emailIntro = customMessage || `<strong style="color: #8b5cf6;">${inviterName}</strong> invited you to join them on Parade — the easiest way to coordinate plans with friends.`;
+    const ctaText = customUrl ? 'View Plan & Join' : 'Accept Invitation';
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -72,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
         from: "Parade <hello@helloparade.app>",
         reply_to: "hello@helloparade.app",
         to: [email],
-        subject: `${inviterName} wants to make plans with you`,
+        subject: emailSubject,
         headers: {
           "X-Entity-Ref-ID": crypto.randomUUID(),
           "List-Unsubscribe": "<https://helloparade.app/unsubscribe>",
@@ -107,12 +113,13 @@ const handler = async (req: Request): Promise<Response> => {
                           Hi there,
                         </p>
                         <p style="margin: 0 0 20px; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                          <strong style="color: #8b5cf6;">${inviterName}</strong> invited you to join them on Parade — the easiest way to coordinate plans with friends.
+                          ${emailIntro}
                         </p>
-                        <p style="margin: 0 0 24px; font-size: 16px; color: #3f3f46; line-height: 1.6;">
+                        ${!customMessage ? `<p style="margin: 0 0 24px; font-size: 16px; color: #3f3f46; line-height: 1.6;">
                           Here's what you can do together:
-                        </p>
-                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 30px;">
+                        </p>` : ''}
+                          Here's what you can do together:
+                        ${!customMessage ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 30px;">
                           <tr>
                             <td style="padding: 12px 16px; background-color: #faf5ff; border-radius: 8px; margin-bottom: 8px;">
                               <p style="margin: 0; font-size: 15px; color: #3f3f46;">Share when you're free to hang out</p>
@@ -130,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
                               <p style="margin: 0; font-size: 15px; color: #3f3f46;">Plan meetups without the back-and-forth</p>
                             </td>
                           </tr>
-                        </table>
+                        </table>` : ''}
                         
                         <!-- CTA Button -->
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -140,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
                                 <!--[if mso]>
                                 <i style="mso-font-width:200%;mso-text-raise:24pt">&nbsp;</i>
                                 <![endif]-->
-                                <span style="mso-text-raise:12pt;">Accept Invitation</span>
+                                <span style="mso-text-raise:12pt;">${ctaText}</span>
                                 <!--[if mso]>
                                 <i style="mso-font-width:200%;">&nbsp;</i>
                                 <![endif]-->
