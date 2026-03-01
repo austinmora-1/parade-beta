@@ -92,6 +92,23 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isProposing, setIsProposing] = useState(false);
 
+  // Auto-calculate duration when both start and end times are set
+  useEffect(() => {
+    if (startTime && endTime) {
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = endTime.split(':').map(Number);
+      const diffMin = (eh * 60 + em) - (sh * 60 + sm);
+      if (diffMin > 0) {
+        // Snap to nearest valid duration option
+        const options = [30, 60, 90, 120, 180];
+        const closest = options.reduce((prev, curr) =>
+          Math.abs(curr - diffMin) < Math.abs(prev - diffMin) ? curr : prev
+        );
+        setDuration(closest.toString());
+      }
+    }
+  }, [startTime, endTime]);
+
   // Get activities for selected vibe
   const vibeActivities = getActivitiesByVibe(selectedVibe);
 
