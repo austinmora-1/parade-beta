@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { useAuth } from '@/hooks/useAuth';
+import { useSearchParams } from 'react-router-dom';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { Zap, X, MapPin, Trash2 } from 'lucide-react';
@@ -12,11 +13,29 @@ import { SignedImage } from '@/components/ui/SignedImage';
 import { VibeReactions, VibeReaction } from '@/components/vibes/VibeReactions';
 
 export function ReceivedVibes() {
-  const { receivedVibes, dismissVibe, loading, unreadCount, vibeReactions, toggleVibeReaction, commentCounts } = useVibes();
+  const { receivedVibes, dismissVibe, loading, unreadCount, vibeReactions, toggleVibeReaction, commentCounts, markAsRead } = useVibes();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currentUserId = user?.id || '';
   const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
   const [showAll, setShowAll] = useState(false);
+
+  // Auto-open vibe detail from push notification deep link
+  useEffect(() => {
+    const vibeId = searchParams.get('vibe');
+    if (vibeId && !loading && receivedVibes.length > 0) {
+      const vibe = receivedVibes.find(v => v.id === vibeId);
+      if (vibe) {
+        setSelectedVibe(vibe);
+        if (vibe.recipient_entry_id && !vibe.is_read) {
+          markAsRead(vibe.recipient_entry_id);
+        }
+      }
+      // Clear the param so it doesn't re-open on navigation
+      searchParams.delete('vibe');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [loading, receivedVibes, searchParams]);
 
   if (loading || receivedVibes.length === 0) return null;
 

@@ -357,7 +357,7 @@ export function useVibes() {
                 user_id: recipientId,
                 title: `${senderName} sent you a vibe`,
                 body: payload.message || `Feeling ${vibeLabel}`,
-                url: '/',
+                url: `/?vibe=${vibeSend.id}`,
                 image: imageUrl,
               }),
             }
