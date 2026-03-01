@@ -816,6 +816,7 @@ export type Database = {
       vibe_send_recipients: {
         Row: {
           created_at: string
+          dismissed_at: string | null
           id: string
           read_at: string | null
           recipient_id: string
@@ -823,6 +824,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           read_at?: string | null
           recipient_id: string
@@ -830,6 +832,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           read_at?: string | null
           recipient_id?: string

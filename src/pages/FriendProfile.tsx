@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
+import { SharedVibeHistory } from '@/components/friends/SharedVibeHistory';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -496,6 +497,9 @@ export default function FriendProfile() {
           </div>
         )}
       </div>
+
+      {/* Shared Vibe History */}
+      {userId && <SharedVibeHistory friendUserId={userId} />}
 
       {/* Shared Plans Widgets */}
       {(() => {
