@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Sparkles, Smile } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChatImageUpload } from './ChatImageUpload';
 import { GifPicker } from './GifPicker';
@@ -15,18 +15,7 @@ interface ChatAttachMenuProps {
 export function ChatAttachMenu({ onImageUploaded, onGifSelected, onEmojiSelect, onEllyMention }: ChatAttachMenuProps) {
   const [open, setOpen] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
-
-  // Open GIF picker after popover fully closes
-  useEffect(() => {
-    if (!open && gifOpen) {
-      // gifOpen is set before popover closes; the actual Dialog renders below
-    }
-  }, [open, gifOpen]);
-
-  const handleGifClick = () => {
-    setOpen(false);
-    setGifOpen(true);
-  };
+  const [emojiOpen, setEmojiOpen] = useState(false);
 
   return (
     <>
@@ -43,13 +32,19 @@ export function ChatAttachMenu({ onImageUploaded, onGifSelected, onEmojiSelect, 
           <div className="flex items-center gap-1">
             <ChatImageUpload onImageUploaded={(url) => { onImageUploaded(url); setOpen(false); }} />
             <button
-              onClick={handleGifClick}
+              onClick={() => { setOpen(false); setGifOpen(true); }}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
               title="Send a GIF"
             >
               <span className="text-xs font-bold">GIF</span>
             </button>
-            <EmojiPicker onEmojiSelect={(emoji) => { onEmojiSelect(emoji); }} />
+            <button
+              onClick={() => { setOpen(false); setEmojiOpen(true); }}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+              title="Add emoji"
+            >
+              <Smile className="h-4 w-4" />
+            </button>
             <button
               onClick={() => { onEllyMention(); setOpen(false); }}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors"
@@ -69,6 +64,14 @@ export function ChatAttachMenu({ onImageUploaded, onGifSelected, onEmojiSelect, 
         >
           <span />
         </GifPicker>
+      )}
+
+      {emojiOpen && (
+        <EmojiPicker
+          onEmojiSelect={(emoji) => { onEmojiSelect(emoji); setEmojiOpen(false); }}
+          externalOpen={emojiOpen}
+          onExternalOpenChange={setEmojiOpen}
+        />
       )}
     </>
   );
