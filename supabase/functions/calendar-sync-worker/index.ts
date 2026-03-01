@@ -91,7 +91,25 @@ function extractFlightDestination(summary?: string): string | null {
     const airports = codes.filter(c => c in AIRPORT_CITY_MAP)
     if (airports.length > 0) return AIRPORT_CITY_MAP[airports[airports.length - 1]]
   }
+  // Fallback: match "Flight to <City>" pattern
+  const flightToMatch = summary.match(/\bflight\s+to\s+([A-Za-z\s]+?)(?:\s*\(|$)/i)
+  if (flightToMatch) {
+    const city = flightToMatch[1].trim()
+    if (city.length >= 3) return city
+  }
   return null
+}
+
+// Check if a city name matches a home address
+function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
+  if (!city || !homeAddress) return false
+  const normCity = city.toLowerCase().trim()
+  const normHome = homeAddress.toLowerCase().trim()
+  if (normHome.includes(normCity) || normCity.includes(normHome)) return true
+  const homeCity = normHome.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim()
+  const flightCity = normCity.replace(/\s*(city|town|village)$/i, '').trim()
+  if (homeCity && flightCity && (homeCity.includes(flightCity) || flightCity.includes(homeCity))) return true
+  return false
 }
 
 // ── ICS Parser ──────────────────────────────────────────────────────────────
@@ -168,6 +186,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     .select('home_address')
     .eq('user_id', userId)
     .single()
+  const homeAddress: string | null = profileData?.home_address || null
 
   let accessToken = connRows[0].access_token
 
@@ -229,6 +248,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   // Process events into availability
   const busySlotsByDate: Map<string, Set<string>> = new Map()
   const flightLocationByDate: Map<string, string> = new Map()
+  const returnFlightDates: Map<string, boolean> = new Map()
 
   for (const event of events) {
     if (!event.start.dateTime || !event.end.dateTime) {
@@ -254,7 +274,31 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     if (isFlightEvent(event.summary)) {
       const city = extractFlightDestination(event.summary)
       if (city) {
-        for (const date of dates) flightLocationByDate.set(date, city)
+        const isReturnFlight = isCityMatchingHome(city, homeAddress)
+        if (!isReturnFlight) {
+          for (const date of dates) flightLocationByDate.set(date, city)
+        } else {
+          for (const date of dates) returnFlightDates.set(date, true)
+        }
+      }
+    }
+  }
+
+  // Fill gap days between outbound and return flights
+  const outboundDates = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+  const returnDates = Array.from(returnFlightDates.keys()).sort()
+  for (const [outDate, city] of outboundDates) {
+    const nextReturn = returnDates.find(rd => rd > outDate)
+    if (nextReturn) {
+      const current = new Date(outDate)
+      current.setDate(current.getDate() + 1)
+      const returnD = new Date(nextReturn)
+      while (current < returnD) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (!flightLocationByDate.has(dateStr)) {
+          flightLocationByDate.set(dateStr, city)
+        }
+        current.setDate(current.getDate() + 1)
       }
     }
   }
