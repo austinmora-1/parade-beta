@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import {
@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { Loader2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -25,6 +26,9 @@ interface ImageCropDialogProps {
   imageSrc: string;
   onCropComplete: (croppedImageBlob: Blob) => void;
 }
+
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
 
 function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number) {
   return centerCrop(
@@ -42,6 +46,10 @@ function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: numbe
   );
 }
 
+function getDistance(t1: React.Touch, t2: React.Touch) {
+  return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+}
+
 export function ImageCropDialog({
   open,
   onOpenChange,
@@ -51,8 +59,17 @@ export function ImageCropDialog({
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pinchStartDist = useRef<number | null>(null);
+  const pinchStartZoom = useRef<number>(1);
   const isMobile = useIsMobile();
+
+  // Reset zoom when dialog opens
+  useEffect(() => {
+    if (open) setZoom(1);
+  }, [open]);
 
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
@@ -64,8 +81,9 @@ export function ImageCropDialog({
     if (!image || !completedCrop) return null;
 
     const canvas = document.createElement('canvas');
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
+    // Account for zoom: the displayed image is scaled, so we need to adjust coordinates
+    const scaleX = image.naturalWidth / (image.width * zoom);
+    const scaleY = image.naturalHeight / (image.height * zoom);
 
     const outputSize = Math.min(512, completedCrop.width * scaleX, completedCrop.height * scaleY);
     canvas.width = outputSize;
@@ -96,7 +114,7 @@ export function ImageCropDialog({
         0.9
       );
     });
-  }, [completedCrop]);
+  }, [completedCrop, zoom]);
 
   const handleSave = async () => {
     setIsProcessing(true);
@@ -114,18 +132,48 @@ export function ImageCropDialog({
   };
 
   const handleReset = () => {
+    setZoom(1);
     if (imgRef.current) {
       const { width, height } = imgRef.current;
       setCrop(centerAspectCrop(width, height, 1));
     }
   };
 
+  // Pinch-to-zoom handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      pinchStartDist.current = getDistance(e.touches[0], e.touches[1]);
+      pinchStartZoom.current = zoom;
+    }
+  }, [zoom]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchStartDist.current !== null) {
+      e.preventDefault();
+      const currentDist = getDistance(e.touches[0], e.touches[1]);
+      const scale = currentDist / pinchStartDist.current;
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinchStartZoom.current * scale));
+      setZoom(newZoom);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    pinchStartDist.current = null;
+  }, []);
+
   const cropArea = (
     <div className="flex flex-col items-center gap-3">
       <p className="text-xs text-muted-foreground text-center">
-        Drag to reposition • Drag corners to resize
+        {isMobile ? 'Pinch to zoom • Drag to reposition' : 'Drag to reposition • Drag corners to resize'}
       </p>
-      <div className="flex items-center justify-center w-full touch-none">
+      <div
+        ref={containerRef}
+        className="flex items-center justify-center w-full overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <ReactCrop
           crop={crop}
           onChange={(_, percentCrop) => setCrop(percentCrop)}
@@ -135,6 +183,7 @@ export function ImageCropDialog({
           minWidth={50}
           minHeight={50}
           className={isMobile ? 'max-h-[50dvh]' : 'max-h-[400px]'}
+          style={{ transform: `scale(${zoom})`, transformOrigin: 'center center', transition: pinchStartDist.current !== null ? 'none' : 'transform 0.1s ease-out' }}
         >
           <img
             ref={imgRef}
@@ -146,6 +195,33 @@ export function ImageCropDialog({
           />
         </ReactCrop>
       </div>
+
+      {/* Zoom controls */}
+      <div className="flex items-center gap-3 w-full max-w-[280px]">
+        <button
+          onClick={() => setZoom(z => Math.max(MIN_ZOOM, z - 0.2))}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Zoom out"
+        >
+          <ZoomOut className="h-4 w-4" />
+        </button>
+        <Slider
+          value={[zoom]}
+          onValueChange={([v]) => setZoom(v)}
+          min={MIN_ZOOM}
+          max={MAX_ZOOM}
+          step={0.05}
+          className="flex-1"
+        />
+        <button
+          onClick={() => setZoom(z => Math.min(MAX_ZOOM, z + 0.2))}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Zoom in"
+        >
+          <ZoomIn className="h-4 w-4" />
+        </button>
+      </div>
+
       <Button
         variant="ghost"
         size="sm"
@@ -153,7 +229,7 @@ export function ImageCropDialog({
         className="gap-1.5 text-xs text-muted-foreground"
       >
         <RotateCcw className="h-3.5 w-3.5" />
-        Reset crop
+        Reset
       </Button>
     </div>
   );
