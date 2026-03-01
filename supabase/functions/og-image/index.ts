@@ -274,9 +274,9 @@ Deno.serve(async (req) => {
   <line x1="${cardX + innerPad}" y1="${detailStartY - 40}" x2="${cardX + cardW - innerPad}" y2="${detailStartY - 40}" stroke="${cardStroke}" stroke-width="1" stroke-dasharray="6,4"/>
   ${detailRows}
   <rect x="${cardX + innerPad}" y="${cardY + cardH - 86}" width="220" height="52" rx="26" fill="url(#accentGrad)" filter="url(#btnShadow)"/>
-  <text x="${cardX + innerPad + 110}" y="${cardY + cardH - 60}" font-family="Inter" font-weight="700" font-size="19" fill="#0F1A14" text-anchor="middle" dominant-baseline="central">Accept</text>
+  <text x="${cardX + innerPad + 110}" y="${cardY + cardH - 86 + 26 + 7}" font-family="Inter" font-weight="700" font-size="19" fill="#0F1A14" text-anchor="middle">Accept</text>
   <rect x="${cardX + innerPad + 240}" y="${cardY + cardH - 86}" width="220" height="52" rx="26" fill="none" stroke="${textSecondary}" stroke-width="2" filter="url(#btnShadowOutline)"/>
-  <text x="${cardX + innerPad + 350}" y="${cardY + cardH - 60}" font-family="Inter" font-weight="700" font-size="19" fill="${textSecondary}" text-anchor="middle" dominant-baseline="central">Decline</text>
+  <text x="${cardX + innerPad + 350}" y="${cardY + cardH - 86 + 26 + 7}" font-family="Inter" font-weight="700" font-size="19" fill="${textSecondary}" text-anchor="middle">Decline</text>
   <text x="${width / 2}" y="${height - 36}" font-family="Bungee Shade" font-size="28" fill="${accentDim}" text-anchor="middle" dominant-baseline="central" letter-spacing="3">parade</text>
 </svg>`;
 
