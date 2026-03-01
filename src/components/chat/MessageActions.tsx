@@ -71,8 +71,8 @@ export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onD
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              "opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity",
-              "h-6 w-6 flex items-center justify-center rounded-full hover:bg-muted"
+              "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity",
+              "h-7 w-7 flex items-center justify-center rounded-full hover:bg-muted active:bg-muted"
             )}
           >
             <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
