@@ -69,7 +69,7 @@ export function MessageActions({ messageId, content, isMe, hasImage, onEdit, onD
               Reply
             </DropdownMenuItem>
           )}
-          {isMe && !hasImage && (
+          {isMe && (
             <DropdownMenuItem onClick={() => { setEditText(content); setEditOpen(true); }}>
               <Pencil className="h-3.5 w-3.5 mr-2" />
               Edit
