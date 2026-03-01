@@ -998,6 +998,10 @@ export type Database = {
         }[]
       }
       owns_share_code: { Args: { p_share_code: string }; Returns: boolean }
+      remove_friendship: {
+        Args: { p_friendship_id: string }
+        Returns: undefined
+      }
       search_users_by_email_prefix: {
         Args: { p_query: string }
         Returns: {

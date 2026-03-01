@@ -827,9 +827,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   
   removeFriend: async (id) => {
     const { error } = await supabase
-      .from('friendships')
-      .delete()
-      .eq('id', id);
+      .rpc('remove_friendship', { p_friendship_id: id });
     
     if (error) {
       console.error('Error removing friend:', error);
