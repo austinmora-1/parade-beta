@@ -158,6 +158,17 @@ export function useNotifications() {
 
   const totalNotifications = effectiveFriendCount + effectiveHangCount + effectiveInviteCount + effectiveChangeCount + effectivePhotoCount;
 
+  // Sync PWA app badge with notification count
+  useEffect(() => {
+    if ('setAppBadge' in navigator) {
+      if (totalNotifications > 0) {
+        navigator.setAppBadge(totalNotifications).catch(() => {});
+      } else {
+        navigator.clearAppBadge?.().catch(() => {});
+      }
+    }
+  }, [totalNotifications]);
+
   return {
     incomingRequestsCount,
     pendingHangRequestsCount: state.pendingHangRequestsCount,
