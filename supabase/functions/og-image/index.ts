@@ -265,9 +265,13 @@ Deno.serve(async (req) => {
   <text x="${cardX + innerPad + 220}" y="${cardY + 138}" font-family="Inter" font-size="18" fill="${textSecondary}" dominant-baseline="central">from ${inviterName}</text>
   <rect x="${cardX + innerPad}" y="${cardY + 180}" width="auto" height="30" rx="15" fill="${accent}" opacity="0.1"/>
   <text x="${cardX + innerPad + 16}" y="${cardY + 195}" font-family="Inter" font-weight="600" font-size="20" fill="${accent}" dominant-baseline="central">${escapeXml(activityLabel)}</text>
-  <line x1="${cardX + innerPad}" y1="${detailStartY - 40}" x2="${cardX + cardW - innerPad}" y2="${detailStartY - 40}" stroke="${cardStroke}" stroke-width="1" stroke-dasharray="6,4"/>
-  ${detailRows}
-  <text x="${width / 2}" y="${height - 36}" font-family="Bungee Shade" font-size="28" fill="${accentDim}" text-anchor="middle" dominant-baseline="central" letter-spacing="3">parade</text>
+      <line x1="${cardX + innerPad}" y1="${detailStartY - 40}" x2="${cardX + cardW - innerPad}" y2="${detailStartY - 40}" stroke="${cardStroke}" stroke-width="1" stroke-dasharray="6,4"/>
+      ${detailRows}
+      <rect x="${cardX + innerPad}" y="${cardY + cardH - 80}" width="200" height="48" rx="24" fill="${accent}"/>
+      <text x="${cardX + innerPad + 100}" y="${cardY + cardH - 56}" font-family="Inter" font-weight="700" font-size="18" fill="#1A2B22" text-anchor="middle" dominant-baseline="central">Accept</text>
+      <rect x="${cardX + innerPad + 220}" y="${cardY + cardH - 80}" width="200" height="48" rx="24" fill="none" stroke="${textSecondary}" stroke-width="2"/>
+      <text x="${cardX + innerPad + 320}" y="${cardY + cardH - 56}" font-family="Inter" font-weight="700" font-size="18" fill="${textSecondary}" text-anchor="middle" dominant-baseline="central">Decline</text>
+      <text x="${width / 2}" y="${height - 36}" font-family="Bungee Shade" font-size="28" fill="${accentDim}" text-anchor="middle" dominant-baseline="central" letter-spacing="3">parade</text>
 </svg>`;
 
       const allFonts = [displayFontData!, bodyFontData!];
