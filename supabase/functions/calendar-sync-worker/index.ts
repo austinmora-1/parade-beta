@@ -248,7 +248,8 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   // Process events into availability
   const busySlotsByDate: Map<string, Set<string>> = new Map()
   const flightLocationByDate: Map<string, string> = new Map()
-  const returnFlightDates: Map<string, boolean> = new Map()
+  interface FlightInfo { date: string; city: string | null; isReturn: boolean }
+  const allFlights: FlightInfo[] = []
 
   for (const event of events) {
     if (!event.start.dateTime || !event.end.dateTime) {
@@ -273,33 +274,29 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
 
     if (isFlightEvent(event.summary)) {
       const city = extractFlightDestination(event.summary)
-      if (city) {
-        const isReturnFlight = isCityMatchingHome(city, homeAddress)
-        if (!isReturnFlight) {
-          for (const date of dates) flightLocationByDate.set(date, city)
-        } else {
-          for (const date of dates) returnFlightDates.set(date, true)
-        }
+      const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
+      const dateStr = getDateString(startTime, timezone)
+      allFlights.push({ date: dateStr, city, isReturn })
+      if (city && !isReturn) {
+        flightLocationByDate.set(dateStr, city)
       }
     }
   }
 
-  // Fill gap days between outbound and return flights
-  const outboundDates = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
-  const returnDates = Array.from(returnFlightDates.keys()).sort()
-  for (const [outDate, city] of outboundDates) {
-    const nextReturn = returnDates.find(rd => rd > outDate)
-    if (nextReturn) {
-      const current = new Date(outDate)
+  // Build set of ALL flight dates as trip boundaries
+  allFlights.sort((a, b) => a.date.localeCompare(b.date))
+  const allFlightDatesSet = new Set(allFlights.map(f => f.date))
+
+  // Fill gap days: stop at any other flight date
+  const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+  for (const [outDate, city] of outboundEntries) {
+    const current = new Date(outDate)
+    current.setDate(current.getDate() + 1)
+    for (let i = 0; i < 30; i++) {
+      const dateStr = current.toISOString().split('T')[0]
+      if (allFlightDatesSet.has(dateStr)) break
+      flightLocationByDate.set(dateStr, city)
       current.setDate(current.getDate() + 1)
-      const returnD = new Date(nextReturn)
-      while (current < returnD) {
-        const dateStr = current.toISOString().split('T')[0]
-        if (!flightLocationByDate.has(dateStr)) {
-          flightLocationByDate.set(dateStr, city)
-        }
-        current.setDate(current.getDate() + 1)
-      }
     }
   }
 
