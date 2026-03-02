@@ -232,7 +232,7 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
           >
             <ParadeWordmark size="xl" className="text-white drop-shadow-lg" />
-            <p className="mt-1 font-medium text-sm sm:text-base tracking-[0.2em] uppercase text-primary drop-shadow-md" style={{ fontFamily: "'Oleo Script', system-ui" }}>
+            <p className="mt-1 font-medium text-sm sm:text-base tracking-[0.2em] uppercase text-primary drop-shadow-md" style={{ fontFamily: "'RocknRoll One', system-ui" }}>
               Designed for Fun
             </p>
             <p className="mt-3 text-white/80 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
