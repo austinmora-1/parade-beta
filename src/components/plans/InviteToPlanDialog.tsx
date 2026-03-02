@@ -45,17 +45,11 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Call edge function to pre-generate OG HTML page in storage
-      // Storage serves it with correct Content-Type: text/html (unlike edge functions)
+      // The shared link points to the edge function which serves HTML with OG tags
+      // and redirects to the app. Display a clean URL to the user.
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/og-image?type=generate-meta&token=${data.invite_token}&origin=${encodeURIComponent('https://helloparade.app')}`,
-      );
-      
-      if (!response.ok) throw new Error('Failed to generate invite page');
-      
-      const result = await response.json();
-      setGeneratedLink(result.url);
+      const edgeFnLink = `${supabaseUrl}/functions/v1/og-image?type=meta&token=${data.invite_token}&origin=${encodeURIComponent('https://helloparade.app')}`;
+      setGeneratedLink(edgeFnLink);
       setDisplayLink(`https://helloparade.app/plan-invite/${data.invite_token}`);
     } catch (err: any) {
       toast({ title: 'Failed to generate link', description: err.message, variant: 'destructive' });
