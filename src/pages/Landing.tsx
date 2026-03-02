@@ -217,14 +217,14 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="relative min-h-screen bg-background text-foreground">
+      <ConfettiBackground count={100} />
       {/* Hero Section */}
       <section className="relative h-[100dvh] flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A2B22' }}>
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)' }}
         />
-        <ConfettiBackground count={90} />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto w-full flex flex-col items-center" style={{ isolation: 'isolate' }}>
           <img src={paradeElephantLogo} alt="Parade" className="h-32 w-32 sm:h-40 sm:w-40 mx-auto mb-6" style={{ mixBlendMode: 'screen', filter: 'brightness(1.2)' }} />
           <motion.div
