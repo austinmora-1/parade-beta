@@ -238,8 +238,7 @@ export default function Landing() {
               Designed for Fun
             </p>
             <p className="mt-3 text-white/80 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
-              Plan your social life in one place. Connect your calendars, see when friends are free,
-              share your vibe for the day, and make plans faster — all in one fun, AI-powered social calendar.
+              Your social life, all in one place. Connect your calendars, see when friends are free, share your vibes, and make plans faster. Parade makes it easy to have more fun.
             </p>
             <div className="mt-5 flex flex-row gap-3 justify-center w-full items-center">
               <Button onClick={scrollToAuth} className="text-sm sm:text-base px-5 py-4 sm:px-6 sm:py-5">
