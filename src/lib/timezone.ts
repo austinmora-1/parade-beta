@@ -293,16 +293,23 @@ export function getCurrentTimeInTimezone(timezone: string): { hours: number; min
 }
 
 /**
- * Determine the user's effective timezone based on their location status.
- * - If "away" with a trip_location, use that city's timezone
- * - If "home", use the home_address timezone
- * - Fallback to browser timezone
+ * Determine the user's effective timezone based on their settings.
+ * Priority:
+ * 1. Explicit timezone setting from profile (if set by user)
+ * 2. If "away" with a trip_location, use that city's timezone
+ * 3. If "home", use the home_address timezone
+ * 4. Fallback to browser timezone
  */
 export function getUserTimezone(
   locationStatus: 'home' | 'away',
   homeAddress: string | null | undefined,
   tripLocation: string | null | undefined,
+  explicitTimezone?: string | null,
 ): string {
+  // If user has explicitly set a timezone, always use it
+  if (explicitTimezone) {
+    return explicitTimezone;
+  }
   if (locationStatus === 'away' && tripLocation) {
     return getTimezoneForCity(tripLocation);
   }

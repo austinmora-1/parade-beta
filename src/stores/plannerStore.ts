@@ -443,8 +443,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       const todayLocationStatus = todayAvail?.locationStatus || 'home';
       
       const homeAddr = (profile as any)?.home_address || null;
+      const explicitTz = (profile as any)?.timezone || null;
       const todayTrip = todayAvail?.tripLocation || undefined;
-      const derivedTimezone = getUserTimezone(todayLocationStatus, homeAddr, todayTrip);
+      const derivedTimezone = getUserTimezone(todayLocationStatus, homeAddr, todayTrip, explicitTz);
       
       set({
         plans,

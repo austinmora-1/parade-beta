@@ -13,7 +13,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
-import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
@@ -26,6 +26,66 @@ import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { getTimezoneForCity, getTimezoneAbbreviation } from '@/lib/timezone';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// Common IANA timezones grouped by region
+const TIMEZONE_OPTIONS = [
+  { group: 'US & Canada', zones: [
+    { value: 'America/New_York', label: 'Eastern Time (ET)' },
+    { value: 'America/Chicago', label: 'Central Time (CT)' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)' },
+    { value: 'America/Phoenix', label: 'Arizona (no DST)' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+    { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT)' },
+    { value: 'America/Toronto', label: 'Eastern - Toronto' },
+    { value: 'America/Vancouver', label: 'Pacific - Vancouver' },
+    { value: 'America/Edmonton', label: 'Mountain - Edmonton' },
+  ]},
+  { group: 'Europe', zones: [
+    { value: 'Europe/London', label: 'London (GMT/BST)' },
+    { value: 'Europe/Paris', label: 'Paris (CET)' },
+    { value: 'Europe/Berlin', label: 'Berlin (CET)' },
+    { value: 'Europe/Amsterdam', label: 'Amsterdam (CET)' },
+    { value: 'Europe/Rome', label: 'Rome (CET)' },
+    { value: 'Europe/Madrid', label: 'Madrid (CET)' },
+    { value: 'Europe/Lisbon', label: 'Lisbon (WET)' },
+    { value: 'Europe/Dublin', label: 'Dublin (GMT/IST)' },
+    { value: 'Europe/Stockholm', label: 'Stockholm (CET)' },
+    { value: 'Europe/Athens', label: 'Athens (EET)' },
+    { value: 'Europe/Istanbul', label: 'Istanbul (TRT)' },
+    { value: 'Europe/Moscow', label: 'Moscow (MSK)' },
+  ]},
+  { group: 'Asia & Pacific', zones: [
+    { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+    { value: 'Asia/Kolkata', label: 'India (IST)' },
+    { value: 'Asia/Bangkok', label: 'Bangkok (ICT)' },
+    { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
+    { value: 'Asia/Hong_Kong', label: 'Hong Kong (HKT)' },
+    { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+    { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+    { value: 'Asia/Seoul', label: 'Seoul (KST)' },
+    { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
+    { value: 'Australia/Melbourne', label: 'Melbourne (AEST)' },
+    { value: 'Australia/Perth', label: 'Perth (AWST)' },
+    { value: 'Pacific/Auckland', label: 'Auckland (NZST)' },
+  ]},
+  { group: 'Americas', zones: [
+    { value: 'America/Mexico_City', label: 'Mexico City' },
+    { value: 'America/Sao_Paulo', label: 'São Paulo' },
+    { value: 'America/Argentina/Buenos_Aires', label: 'Buenos Aires' },
+    { value: 'America/Lima', label: 'Lima' },
+    { value: 'America/Bogota', label: 'Bogotá' },
+    { value: 'America/Santiago', label: 'Santiago' },
+  ]},
+];
 
 // Helper function for formatting time
 const formatTime = (decimalHour: number) => {
@@ -166,6 +226,7 @@ export default function Settings() {
   const [workEndHour, setWorkEndHour] = useState(17);
   const [defaultAvailability, setDefaultAvailability] = useState<'free' | 'unavailable'>('free');
   const [defaultVibes, setDefaultVibes] = useState<VibeType[]>([]);
+  const [timezone, setTimezone] = useState<string>('');
 
   // Friends list
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -211,6 +272,7 @@ export default function Settings() {
           setWorkEndHour((profile as any).default_work_end_hour ?? 17);
           setDefaultAvailability((profile as any).default_availability_status || 'free');
           setDefaultVibes((profile as any).default_vibes || []);
+          setTimezone((profile as any).timezone || '');
         }
 
         // Load friends
@@ -263,6 +325,7 @@ export default function Settings() {
           default_work_end_hour: workEndHour,
           default_availability_status: defaultAvailability,
           default_vibes: defaultVibes,
+          timezone: timezone || null,
         } as any)
         .eq('user_id', session.user.id);
 
@@ -400,7 +463,7 @@ export default function Settings() {
         )}
       </div>
 
-      <Accordion type="multiple" defaultValue={['profile']} className="space-y-1.5">
+      <Accordion type="multiple" defaultValue={[]} className="space-y-1.5">
         {/* Profile Section */}
         <AccordionItem value="profile" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
           <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
@@ -468,6 +531,39 @@ export default function Settings() {
                   placeholder="Search for your city..."
                   compact
                 />
+              </div>
+
+              {/* Timezone */}
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Globe className="h-3 w-3 text-muted-foreground" />
+                  Time Zone
+                </Label>
+                <Select
+                  value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
+                  onValueChange={(value) => { setTimezone(value); handleChange(); }}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Select your time zone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIMEZONE_OPTIONS.map((group) => (
+                      <div key={group.group}>
+                        <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          {group.group}
+                        </div>
+                        {group.zones.map((tz) => (
+                          <SelectItem key={tz.value} value={tz.value} className="text-sm">
+                            {tz.label}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground">
+                  {!timezone ? 'Auto-detected from your Home Base' : 'Manually set — overrides Home Base detection'}
+                </p>
               </div>
 
               <Separator />
