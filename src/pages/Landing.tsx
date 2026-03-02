@@ -309,7 +309,7 @@ export default function Landing() {
       <section ref={authRef} className="py-20 px-6 bg-card">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
-            <img src={landingElephants} alt="" className="h-20 w-20 rounded-2xl mx-auto mb-4 object-cover" />
+            <img src="/icon-192.png" alt="Parade" className="h-20 w-20 rounded-2xl mx-auto mb-4 object-cover" />
             <h2 className="text-3xl font-bold text-foreground">Join the Parade</h2>
             <p className="text-muted-foreground mt-2">Create your account and start planning.</p>
           </div>
