@@ -122,6 +122,7 @@ function generateConfetti(count: number, width: number, height: number): string 
   return shapes.join("\n    ");
 }
 
+// v2 - fixed duplicate supabaseUrl declaration
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
@@ -179,20 +180,27 @@ Deno.serve(async (req) => {
 <body><p>Redirecting to <a href="${redirectUrl}">Parade</a>...</p></body>
 </html>`;
 
-      // Upload HTML as binary to storage so it's served with correct Content-Type
-      // (Edge function gateway overrides Content-Type to text/plain)
+      // Upload HTML to storage via REST API to ensure correct Content-Type
       const filePath = `${token}.html`;
-      const encoder = new TextEncoder();
-      const htmlBytes = encoder.encode(html);
+      const storageUrl = `${supabaseUrl}/storage/v1/object/og-pages/${filePath}`;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      
+      const uploadRes = await fetch(storageUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${serviceKey}`,
+          "apikey": serviceKey,
+          "Content-Type": "text/html; charset=utf-8",
+          "x-upsert": "true",
+        },
+        body: html,
+      });
+      
+      if (!uploadRes.ok) {
+        const errBody = await uploadRes.text();
+        console.error("Storage upload failed:", uploadRes.status, errBody);
+      }
 
-      await supabase.storage
-        .from("og-pages")
-        .upload(filePath, htmlBytes, {
-          contentType: "text/html; charset=utf-8",
-          upsert: true,
-        });
-
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const publicUrl = `${supabaseUrl}/storage/v1/object/public/og-pages/${filePath}`;
 
       return new Response(JSON.stringify({ url: publicUrl }), {
