@@ -45,9 +45,10 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      const link = `https://helloparade.app/plan-invite/${data.invite_token}`;
-      setGeneratedLink(link);
-      setDisplayLink(link);
+      const ogLink = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}`;
+      const directLink = `https://helloparade.app/plan-invite/${data.invite_token}`;
+      setGeneratedLink(ogLink);
+      setDisplayLink(directLink);
     } catch (err: any) {
       toast({ title: 'Failed to generate link', description: err.message, variant: 'destructive' });
     } finally {
@@ -73,7 +74,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      const inviteUrl = `https://helloparade.app/plan-invite/${data.invite_token}`;
+      const inviteUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}`;
       const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
 
       // Send email via existing edge function
