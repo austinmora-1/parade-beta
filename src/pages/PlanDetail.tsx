@@ -15,6 +15,7 @@ import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
 import { PlanPhotos } from '@/components/plans/PlanPhotos';
 import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
+import { SuggestFriendDialog } from '@/components/plans/SuggestFriendDialog';
 import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
@@ -50,6 +51,7 @@ export default function PlanDetail() {
   const [isRespondingToChange, setIsRespondingToChange] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [suggestDialogOpen, setSuggestDialogOpen] = useState(false);
   const [acceptingInvite, setAcceptingInvite] = useState(false);
   const [inviteAccepted, setInviteAccepted] = useState(false);
 
@@ -388,6 +390,12 @@ export default function PlanDetail() {
               </Button>
             )}
 
+            {!isOwner && (
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => setSuggestDialogOpen(true)}>
+                <UserPlus className="h-4 w-4" /> Suggest Friend
+              </Button>
+            )}
+
             {plan.participants.length > 0 && (
               <Button
                 variant="outline"
@@ -425,12 +433,24 @@ export default function PlanDetail() {
       )}
 
       {/* Invite dialog */}
-      {plan && (
+      {plan && isOwner && (
         <InviteToPlanDialog
           open={inviteDialogOpen}
           onOpenChange={setInviteDialogOpen}
           planId={plan.id}
           planTitle={displayTitle}
+        />
+      )}
+
+      {/* Suggest friend dialog (for non-organizers) */}
+      {plan && !isOwner && (
+        <SuggestFriendDialog
+          open={suggestDialogOpen}
+          onOpenChange={setSuggestDialogOpen}
+          planId={plan.id}
+          planTitle={displayTitle}
+          existingParticipantIds={participants.map((p: any) => p.friendUserId).filter(Boolean)}
+          organizerId={plan.userId || ''}
         />
       )}
 

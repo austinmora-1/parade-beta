@@ -63,12 +63,21 @@ interface RecentPlanPhoto {
   created_at: string;
 }
 
+interface ParticipantRequest {
+  id: string;
+  plan_id: string;
+  plan_title: string;
+  friend_name: string;
+  requester_name: string;
+  created_at: string;
+}
+
 export default function Notifications() {
   const { friends, acceptFriendRequest, removeFriend, loadAllData } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, dismissedIds, dismissNotification: dismiss } = useNotifications();
+  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, dismissedIds, dismissNotification: dismiss } = useNotifications();
 
   const [hangRequests, setHangRequests] = useState<HangRequest[]>([]);
   const [hangLoading, setHangLoading] = useState(true);
@@ -82,6 +91,9 @@ export default function Notifications() {
 
   const [recentPhotos, setRecentPhotos] = useState<RecentPlanPhoto[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
+
+  const [participantRequests, setParticipantRequests] = useState<ParticipantRequest[]>([]);
+  const [participantReqLoading, setParticipantReqLoading] = useState(true);
 
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
   const visibleIncomingRequests = incomingRequests.filter(f => !dismissedIds.has(`friend-${f.id}`));
@@ -104,6 +116,7 @@ export default function Notifications() {
       fetchPlanInvitations();
       fetchPendingChanges();
       fetchRecentPhotos();
+      fetchParticipantRequestsData();
     }
   }, [user]);
 
@@ -337,6 +350,88 @@ export default function Notifications() {
     setUpdating(null);
   };
 
+  // --- Participant Requests (organizer approval) ---
+  const fetchParticipantRequestsData = async () => {
+    if (!user) { setParticipantReqLoading(false); return; }
+    // Get plans the user organizes
+    const { data: ownedPlans } = await supabase
+      .from('plans')
+      .select('id, title')
+      .eq('user_id', user.id);
+    if (!ownedPlans || ownedPlans.length === 0) {
+      setParticipantRequests([]);
+      setParticipantReqLoading(false);
+      return;
+    }
+    const planIds = ownedPlans.map(p => p.id);
+    const planTitleMap: Record<string, string> = {};
+    for (const p of ownedPlans) planTitleMap[p.id] = p.title;
+
+    const { data: reqs } = await supabase
+      .from('plan_participant_requests' as any)
+      .select('*')
+      .in('plan_id', planIds)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (!reqs || reqs.length === 0) {
+      setParticipantRequests([]);
+      setParticipantReqLoading(false);
+      return;
+    }
+
+    // Get requester names
+    const requesterIds = [...new Set((reqs as any[]).map((r: any) => r.requested_by))];
+    const { data: profiles } = await supabase
+      .from('public_profiles')
+      .select('user_id, display_name')
+      .in('user_id', requesterIds);
+    const nameMap: Record<string, string> = {};
+    for (const p of (profiles || [])) {
+      if (p.user_id) nameMap[p.user_id] = p.display_name || 'Someone';
+    }
+
+    setParticipantRequests((reqs as any[]).map((r: any) => ({
+      id: r.id,
+      plan_id: r.plan_id,
+      plan_title: planTitleMap[r.plan_id] || 'Plan',
+      friend_name: r.friend_name,
+      requester_name: nameMap[r.requested_by] || 'Someone',
+      created_at: r.created_at,
+    })));
+    setParticipantReqLoading(false);
+  };
+
+  const handleApproveParticipantRequest = async (requestId: string) => {
+    setUpdating(requestId);
+    const { error } = await supabase.rpc('approve_participant_request', { p_request_id: requestId });
+    if (error) {
+      sonnerToast.error(error.message || 'Failed to approve');
+    } else {
+      sonnerToast.success('Friend added to plan! 🎉');
+      setParticipantRequests(prev => prev.filter(r => r.id !== requestId));
+      await refetchParticipantRequests();
+      await loadAllData();
+    }
+    setUpdating(null);
+  };
+
+  const handleDenyParticipantRequest = async (requestId: string) => {
+    setUpdating(requestId);
+    const { error } = await supabase
+      .from('plan_participant_requests' as any)
+      .update({ status: 'denied', resolved_at: new Date().toISOString() })
+      .eq('id', requestId);
+    if (error) {
+      sonnerToast.error('Failed to deny request');
+    } else {
+      sonnerToast.info('Request denied');
+      setParticipantRequests(prev => prev.filter(r => r.id !== requestId));
+      await refetchParticipantRequests();
+    }
+    setUpdating(null);
+  };
+
   // --- Friend Requests ---
   const handleAccept = async (id: string) => {
     const friend = friends.find(f => f.id === id);
@@ -387,15 +482,17 @@ export default function Notifications() {
   const visiblePlanInvitations = planInvitations.filter(i => !dismissedIds.has(`invite-${i.id}`));
   const visiblePendingChanges = pendingChanges.filter(c => !dismissedIds.has(`change-${c.id}`));
   const visibleRecentPhotos = recentPhotos.filter(p => !dismissedIds.has(`photo-${p.id}`));
+  const visibleParticipantRequests = participantRequests.filter(r => !dismissedIds.has(`participant-req-${r.id}`));
 
-  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length;
-  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading;
+  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length;
+  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading;
 
   const clearAll = () => {
     visibleHangRequests.forEach(r => dismiss(`hang-${r.id}`));
     visiblePlanInvitations.forEach(i => dismiss(`invite-${i.id}`));
     visiblePendingChanges.forEach(c => dismiss(`change-${c.id}`));
     visibleRecentPhotos.forEach(p => dismiss(`photo-${p.id}`));
+    visibleParticipantRequests.forEach(r => dismiss(`participant-req-${r.id}`));
     visibleIncomingRequests.forEach(f => dismiss(`friend-${f.id}`));
   };
 
@@ -416,6 +513,70 @@ export default function Notifications() {
           </Button>
         )}
       </div>
+
+      {/* Participant Requests Section (organizer approval) */}
+      {(visibleParticipantRequests.length > 0 || participantReqLoading) && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <UserPlus className="h-4 w-4 text-primary md:h-5 md:w-5" />
+            Participant Suggestions
+            {visibleParticipantRequests.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
+                {visibleParticipantRequests.length}
+              </span>
+            )}
+          </h2>
+
+          {participantReqLoading ? (
+            <div className="flex h-20 items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {visibleParticipantRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-foreground">
+                        Add <span className="text-primary">{req.friend_name}</span> to {req.plan_title}?
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Suggested by {req.requester_name}
+                      </p>
+                    </div>
+                    <DismissButton id={`participant-req-${req.id}`} />
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      onClick={() => handleApproveParticipantRequest(req.id)}
+                      disabled={updating === req.id}
+                      className="flex-1 gap-1"
+                    >
+                      {updating === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDenyParticipantRequest(req.id)}
+                      disabled={updating === req.id}
+                      className="flex-1 gap-1"
+                    >
+                      <X className="h-4 w-4" />
+                      Deny
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Plan Invitations Section */}
       {(visiblePlanInvitations.length > 0 || planInvitesLoading) && (
@@ -789,7 +950,7 @@ export default function Notifications() {
       )}
 
       {/* Empty state */}
-      {isEmpty && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && incomingRequests.length === 0 && (
+      {isEmpty && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && incomingRequests.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
           <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">🔔</div>
           <h3 className="font-display text-base font-semibold md:text-lg">No new notifications</h3>
