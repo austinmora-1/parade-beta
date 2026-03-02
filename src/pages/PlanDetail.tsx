@@ -384,11 +384,9 @@ export default function PlanDetail() {
               </Button>
             )}
 
-            {isOwner && (
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setInviteDialogOpen(true)}>
-                <UserPlus className="h-4 w-4" /> Invite
-              </Button>
-            )}
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setInviteDialogOpen(true)}>
+              <UserPlus className="h-4 w-4" /> Invite
+            </Button>
 
             {!isOwner && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setSuggestDialogOpen(true)}>
@@ -433,7 +431,7 @@ export default function PlanDetail() {
       )}
 
       {/* Invite dialog */}
-      {plan && isOwner && (
+      {plan && (
         <InviteToPlanDialog
           open={inviteDialogOpen}
           onOpenChange={setInviteDialogOpen}
