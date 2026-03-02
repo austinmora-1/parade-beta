@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, ChevronDown, LayoutDashboard, CalendarClock, CalendarPlus, Users, MessageCircle } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import landingHero from '@/assets/landing-hero.jpeg';
-import landingElephants from '@/assets/landing-elephants.png';
+import landingElephants from '@/assets/parade-logo.png';
 import { motion } from 'framer-motion';
 
 const FEATURES = [
@@ -225,7 +225,7 @@ export default function Landing() {
           style={{ backgroundImage: `url(${landingHero})` }}
         />
         <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
+        <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto w-full flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -239,7 +239,7 @@ export default function Landing() {
               Plan your social life in one place. Connect your calendars, see when friends are free,
               share your vibe for the day, and make plans faster — all in one fun, AI-powered social calendar.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center w-full items-center">
               <Button size="lg" onClick={scrollToAuth} className="text-lg px-8 py-6">
                 Get Started
               </Button>
