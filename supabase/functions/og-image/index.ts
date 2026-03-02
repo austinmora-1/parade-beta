@@ -130,9 +130,9 @@ Deno.serve(async (req) => {
     const width = 1200;
     const height = 630;
 
-    // Route: generate-meta — pre-generate OG HTML and upload to storage
-    // Returns the public storage URL so crawlers get proper text/html Content-Type
-    if (type === "generate-meta" && token) {
+    // Route: serve OG meta HTML directly for crawlers (iMessage, Facebook, Twitter, etc.)
+    // Also supports generate-meta for backward compat — both return HTML directly now
+    if ((type === "meta" || type === "generate-meta") && token) {
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -174,35 +174,16 @@ Deno.serve(async (req) => {
   <meta name="twitter:title" content="${titleText}"/>
   <meta name="twitter:description" content="${description}"/>
   <meta name="twitter:image" content="${ogImageUrl}"/>
-  <meta http-equiv="refresh" content="0;url=${redirectUrl}"/>
+  <meta http-equiv="refresh" content="1;url=${redirectUrl}"/>
 </head>
 <body><p>Redirecting to <a href="${redirectUrl}">Parade</a>...</p></body>
 </html>`;
 
-      // Upload HTML to storage bucket so it's served with correct Content-Type
-      const filePath = `${token}.html`;
-      const { error: uploadError } = await supabase.storage
-        .from("og-pages")
-        .upload(filePath, html, {
-          contentType: "text/html; charset=utf-8",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        console.error("Failed to upload OG page:", uploadError);
-        return new Response(JSON.stringify({ error: "Failed to generate page" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-        });
-      }
-
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/og-pages/${filePath}`;
-
-      return new Response(JSON.stringify({ url: publicUrl }), {
+      return new Response(html, {
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=300",
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
         },
       });
     }
