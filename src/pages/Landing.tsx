@@ -309,7 +309,7 @@ export default function Landing() {
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <img src="/icon-192.png" alt="Parade" className="h-20 w-20 rounded-2xl mx-auto mb-4 object-cover" />
-            <h2 className="text-3xl font-bold text-foreground" style={{ fontFamily: "'Bungee', system-ui" }}>Join the Parade</h2>
+            <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Bungee', system-ui" }}>Join the Parade</h2>
             <p className="text-muted-foreground mt-2">Create your account and start planning.</p>
           </div>
           <AuthSection />
