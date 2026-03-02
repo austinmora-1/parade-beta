@@ -28,6 +28,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [displayLink, setDisplayLink] = useState<string | null>(null);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   const handleGenerateLink = async () => {
@@ -55,6 +56,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
       
       const result = await response.json();
       setGeneratedLink(result.url);
+      setDisplayLink(`https://helloparade.app/plan-invite/${data.invite_token}`);
     } catch (err: any) {
       toast({ title: 'Failed to generate link', description: err.message, variant: 'destructive' });
     } finally {
@@ -164,7 +166,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
             </Label>
             {generatedLink ? (
               <div className="flex gap-2">
-                <Input value={generatedLink.replace(/^https:\/\/[^/]+\/functions\/v1\/og-image\?type=meta&token=([^&]+).*$/, 'https://helloparade.app/plan-invite/$1')} readOnly className="bg-muted/50 text-xs" />
+                <Input value={displayLink || ''} readOnly className="bg-muted/50 text-xs" />
                 <Button variant="outline" onClick={handleCopyLink} size="icon">
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
