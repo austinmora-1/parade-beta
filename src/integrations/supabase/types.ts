@@ -497,6 +497,47 @@ export type Database = {
           },
         ]
       }
+      plan_participant_requests: {
+        Row: {
+          created_at: string
+          friend_name: string
+          friend_user_id: string
+          id: string
+          plan_id: string
+          requested_by: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          friend_name: string
+          friend_user_id: string
+          id?: string
+          plan_id: string
+          requested_by: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          friend_name?: string
+          friend_user_id?: string
+          id?: string
+          plan_id?: string
+          requested_by?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_participant_requests_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_participants: {
         Row: {
           created_at: string
@@ -1031,6 +1072,10 @@ export type Database = {
         Returns: undefined
       }
       accept_plan_invite: { Args: { p_token: string }; Returns: string }
+      approve_participant_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       check_vibe_recipient: {
         Args: { p_vibe_send_id: string }
         Returns: boolean
