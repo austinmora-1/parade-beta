@@ -50,7 +50,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
       const token = data.invite_token;
       try {
         const response = await fetch(
-          `${supabaseUrl}/functions/v1/og-meta?token=${token}&origin=${encodeURIComponent('https://helloparade.app')}`,
+          `${supabaseUrl}/functions/v1/og-image?type=generate-meta&token=${token}&origin=${encodeURIComponent('https://helloparade.app')}`,
         );
         if (response.ok) {
           const result = await response.json();
