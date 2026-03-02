@@ -170,11 +170,7 @@ export function PodWidget() {
     <CollapsibleWidget
       title="Where's Your Pod?"
       icon={<Heart className="h-4 w-4 text-primary fill-primary" />}
-      badge={
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-          {podFriends.length}
-        </span>
-      }
+      badge={undefined}
       headerRight={viewAllLink}
     >
       {loading ? (
