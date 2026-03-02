@@ -227,7 +227,7 @@ export default function Landing() {
         />
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto w-full flex flex-col items-center" style={{ isolation: 'isolate' }}>
-          <img src={paradeElephantLogo} alt="Parade" className="h-24 w-24 sm:h-32 sm:w-32 mx-auto mb-3" style={{ mixBlendMode: 'screen' }} />
+          <img src={paradeElephantLogo} alt="Parade" className="h-32 w-32 sm:h-40 sm:w-40 mx-auto mb-6" style={{ mixBlendMode: 'screen' }} />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
