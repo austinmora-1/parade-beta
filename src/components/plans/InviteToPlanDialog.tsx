@@ -45,10 +45,25 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Share the clean app URL directly — OG tags are in index.html
-      const link = `https://helloparade.app/plan-invite/${data.invite_token}`;
-      setGeneratedLink(link);
-      setDisplayLink(link);
+      // Call edge function to generate OG HTML page in storage with dynamic invite details
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const token = data.invite_token;
+      try {
+        const response = await fetch(
+          `${supabaseUrl}/functions/v1/og-meta?token=${token}&origin=${encodeURIComponent('https://helloparade.app')}`,
+        );
+        if (response.ok) {
+          const result = await response.json();
+          // Share the storage URL (has dynamic OG tags + redirects to app)
+          setGeneratedLink(result.url);
+        } else {
+          // Fallback to direct app URL
+          setGeneratedLink(`https://helloparade.app/plan-invite/${token}`);
+        }
+      } catch {
+        setGeneratedLink(`https://helloparade.app/plan-invite/${token}`);
+      }
+      setDisplayLink(`https://helloparade.app/plan-invite/${token}`);
     } catch (err: any) {
       toast({ title: 'Failed to generate link', description: err.message, variant: 'destructive' });
     } finally {
