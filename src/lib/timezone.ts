@@ -293,6 +293,116 @@ export function getCurrentTimeInTimezone(timezone: string): { hours: number; min
 }
 
 /**
+ * Convert a time string (HH:mm) from one timezone to another on a given date.
+ * Returns { time: "HH:mm", dayOffset: number } where dayOffset is -1, 0, or 1
+ * indicating if the converted time falls on the previous or next day.
+ */
+export function convertTimeBetweenTimezones(
+  time: string,
+  date: Date,
+  fromTimezone: string,
+  toTimezone: string,
+): { time: string; dayOffset: number } {
+  if (fromTimezone === toTimezone) {
+    return { time, dayOffset: 0 };
+  }
+
+  const [hours, minutes] = time.split(':').map(Number);
+  
+  // Create a date in the source timezone by constructing an ISO string
+  // Use the date's year/month/day with the given time
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const h = String(hours).padStart(2, '0');
+  const m = String(minutes).padStart(2, '0');
+  
+  // Format a date string and parse it in the source timezone
+  // We'll use the trick of formatting in both timezones and comparing
+  const refDate = new Date(`${year}-${month}-${day}T${h}:${m}:00`);
+  
+  // Get the offset difference by formatting the same instant in both zones
+  const sourceFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: fromTimezone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+  const targetFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: toTimezone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+  
+  // Create a UTC date that represents the given time in the source timezone
+  // First, find what UTC time corresponds to "hours:minutes on date in fromTimezone"
+  // by creating a temp date and adjusting
+  const tempDate = new Date(Date.UTC(year, date.getMonth(), date.getDate(), hours, minutes, 0));
+  
+  // Get what time this UTC moment shows in the source timezone
+  const sourceParts = sourceFormatter.formatToParts(tempDate);
+  const sourceHour = parseInt(sourceParts.find(p => p.type === 'hour')?.value || '0');
+  const sourceMin = parseInt(sourceParts.find(p => p.type === 'minute')?.value || '0');
+  
+  // Calculate the offset: we want the time to be hours:minutes in the source tz
+  // but tempDate shows as sourceHour:sourceMin in source tz
+  const diffMinutes = (hours * 60 + minutes) - (sourceHour * 60 + sourceMin);
+  
+  // Adjust the UTC date by the difference
+  const adjustedUtc = new Date(tempDate.getTime() + diffMinutes * 60 * 1000);
+  
+  // Now format this adjusted UTC time in the target timezone
+  const targetParts = targetFormatter.formatToParts(adjustedUtc);
+  const targetHour = parseInt(targetParts.find(p => p.type === 'hour')?.value || '0');
+  const targetMin = parseInt(targetParts.find(p => p.type === 'minute')?.value || '0');
+  const targetDay = parseInt(targetParts.find(p => p.type === 'day')?.value || '0');
+  const targetMonth = parseInt(targetParts.find(p => p.type === 'month')?.value || '0');
+  
+  // Calculate day offset
+  const sourceDay = date.getDate();
+  const sourceMonth = date.getMonth() + 1;
+  let dayOffset = 0;
+  if (targetMonth !== sourceMonth || targetDay !== sourceDay) {
+    // Determine direction
+    if (targetMonth > sourceMonth || (targetMonth === sourceMonth && targetDay > sourceDay)) {
+      dayOffset = 1;
+    } else {
+      dayOffset = -1;
+    }
+  }
+  
+  const convertedTime = `${String(targetHour).padStart(2, '0')}:${String(targetMin).padStart(2, '0')}`;
+  return { time: convertedTime, dayOffset };
+}
+
+/**
+ * Determine which time slot a given HH:mm time falls into.
+ */
+export function getTimeSlotForTime(time: string): string {
+  const [h] = time.split(':').map(Number);
+  if (h >= 6 && h < 9) return 'early-morning';
+  if (h >= 9 && h < 12) return 'late-morning';
+  if (h >= 12 && h < 15) return 'early-afternoon';
+  if (h >= 15 && h < 18) return 'late-afternoon';
+  if (h >= 18 && h < 22) return 'evening';
+  return 'late-night';
+}
+
+/**
+ * Get the midpoint time for a time slot (used when no specific start_time exists).
+ */
+export function getTimeSlotMidpoint(timeSlot: string): string {
+  const midpoints: Record<string, string> = {
+    'early-morning': '07:30',
+    'late-morning': '10:30',
+    'early-afternoon': '13:30',
+    'late-afternoon': '16:30',
+    'evening': '20:00',
+    'late-night': '23:00',
+  };
+  return midpoints[timeSlot] || '12:00';
+}
+
+/**
  * Determine the user's effective timezone based on their settings.
  * Priority:
  * 1. Explicit timezone setting from profile (if set by user)

@@ -187,7 +187,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   // Fetch user's profile for home address and timezone inference
   const { data: profileData } = await adminClient
     .from('profiles')
-    .select('home_address')
+    .select('home_address, timezone')
     .eq('user_id', userId)
     .single()
   const homeAddress: string | null = profileData?.home_address || null
@@ -348,6 +348,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
       source_event_id: event.id,
       start_time: startTimeStr,
       end_time: endTimeStr,
+      source_timezone: timezone || null,
     })
   }
 
@@ -432,6 +433,13 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
 
   if (connError || !connRows || connRows.length === 0) throw new Error('iCal not connected')
 
+  // Fetch profile for timezone
+  const { data: profileData } = await adminClient
+    .from('profiles')
+    .select('timezone')
+    .eq('user_id', userId)
+    .single()
+
   const icalUrl = connRows[0].access_token
   if (!icalUrl) throw new Error('No iCal URL stored')
 
@@ -482,6 +490,7 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
       activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
       time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
       location: event.location || null, source: 'ical', source_event_id: event.uid,
+      source_timezone: profileData?.timezone || null,
     })
   }
 
