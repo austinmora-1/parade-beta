@@ -56,14 +56,18 @@ function classifyActivity(summary?: string): string {
   if (!summary) return 'events'
   const s = summary.toLowerCase()
   if (/\bflight\b/.test(s)) return 'flight'
-  if (/\b(workout|gym|fitness|yoga|run|running|swim|cycling|hike|basketball|soccer|tennis|training|exercise)\b/.test(s)) return 'workout-out'
-  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|food)\b/.test(s)) return 'getting-food'
-  if (/\b(drinks|happy hour|bar|cocktail|beer|wine)\b/.test(s)) return 'drinks'
-  if (/\b(coffee|cafe|café|tea)\b/.test(s)) return 'coffee'
-  if (/\b(movie|cinema|concert|show|theater|theatre)\b/.test(s)) return 'movies'
-  if (/\b(doctor|dentist|appointment|therapy)\b/.test(s)) return 'doctor'
-  if (/\b(errand|bank|pickup)\b/.test(s)) return 'errands'
-  if (/\b(shop|shopping|grocery)\b/.test(s)) return 'shopping'
+  // Athletic / Gym / Outdoor — broad fitness matching
+  if (/\b(workout|gym|fitness|yoga|pilates|barre|run|running|jog|jogging|swim|swimming|cycling|bike|biking|hike|hiking|climb|climbing|basketball|soccer|football|tennis|golf|volleyball|baseball|hockey|lacrosse|rugby|cricket|boxing|kickboxing|martial\s*arts|karate|judo|jiu[\s-]?jitsu|mma|crossfit|cross[\s-]?fit|strength|conditioning|weight\s*lifting|weightlifting|lifting|spin|spinning|rowing|rowing|paddle|surfing|surf|ski|skiing|snowboard|track|field|athletics|bootcamp|boot\s*camp|cardio|hiit|tabata|zumba|stretching|calisthenics|walk|walking|trail|obstacle|spartan|triathlon|marathon|5k|10k|half[\s-]?marathon|peloton|orangetheory|f45|soulcycle|barry|equinox|class\s*pass|classpass)\b/.test(s)) return 'workout-out'
+  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|eating|food|supper|bistro|diner|sushi|pizza|ramen|taco|bbq|barbecue|buffet|dim\s*sum|tapas)\b/.test(s)) return 'getting-food'
+  if (/\b(drinks|happy\s*hour|bar|cocktail|cocktails|beer|beers|wine|wines|pub|brewery|nightclub|club)\b/.test(s)) return 'drinks'
+  if (/\b(coffee|cafe|café|tea|espresso|latte|matcha)\b/.test(s)) return 'coffee'
+  if (/\b(movie|movies|cinema|concert|show|theater|theatre|play|musical|opera|performance|gig|festival|exhibit|exhibition|gallery|museum)\b/.test(s)) return 'movies'
+  if (/\b(cook|cooking|bake|baking|meal\s*prep)\b/.test(s)) return 'making-food'
+  if (/\b(read|reading|book\s*club)\b/.test(s)) return 'reading'
+  if (/\b(doctor|dentist|dental|appointment|therapy|therapist|counselor|counseling|physio|physiotherapy|chiropractor|dermatologist|optometrist|checkup|check[\s-]?up|medical|clinic|hospital|vet|veterinarian)\b/.test(s)) return 'doctor'
+  if (/\b(errand|errands|bank|pickup|pick[\s-]?up|drop[\s-]?off|post\s*office|dmv|notary|dry\s*clean|laundry)\b/.test(s)) return 'errands'
+  if (/\b(shop|shopping|grocery|groceries|market|mall|store|target|walmart|costco|trader|whole\s*foods)\b/.test(s)) return 'shopping'
+  if (/\b(chore|chores|clean|cleaning|mow|yard\s*work|organize|declutter|tidy)\b/.test(s)) return 'chores'
   return 'events'
 }
 
