@@ -235,7 +235,7 @@ export default function Landing() {
             <p className="mt-1 font-medium text-sm sm:text-base tracking-[0.2em] uppercase text-primary drop-shadow-md">
               Designed for Fun
             </p>
-            <p className="mt-3 text-white/80 text-sm sm:text-base md:text-xl leading-relaxed max-w-2xl mx-auto">
+            <p className="mt-3 text-white/80 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
               Plan your social life in one place. Connect your calendars, see when friends are free,
               share your vibe for the day, and make plans faster — all in one fun, AI-powered social calendar.
             </p>
