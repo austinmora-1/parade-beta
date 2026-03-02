@@ -28,16 +28,25 @@ Deno.serve(async (req) => {
     }
 
     const planInviteUrl = `${APP_URL}/plan-invite/${token}`;
-    const ogImageUrl = `${SUPABASE_URL}/functions/v1/og-image?type=invite-card&v=4`;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const ogImageUrl = `${SUPABASE_URL}/functions/v1/og-image?type=invite-card&v=5`;
 
+    if (mode === "generate") {
+      // Called from the app: return the edge function URL itself as the shareable link
+      // This way iMessage will hit the edge function directly and get proper HTML with OG tags
+      const shareableUrl = `${SUPABASE_URL}/functions/v1/plan-invite-og?token=${token}`;
+      return new Response(JSON.stringify({ url: shareableUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Direct hit from a crawler or user — serve HTML directly with OG meta tags
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>You're Invited! — Parade</title>
-<meta property="og:title" content="You're Invited! — Parade" />
-<meta property="og:description" content="You've been invited to join a plan on Parade — tap to view details and RSVP!" />
+<title>You're Invited! - Parade</title>
+<meta property="og:title" content="You're Invited! - Parade" />
+<meta property="og:description" content="You've been invited to join a plan on Parade. Tap to view details and RSVP!" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="${escapeHtml(ogImageUrl)}" />
 <meta property="og:image:width" content="1200" />
@@ -45,48 +54,21 @@ Deno.serve(async (req) => {
 <meta property="og:site_name" content="Parade" />
 <meta property="og:url" content="${escapeHtml(planInviteUrl)}" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="You're Invited! — Parade" />
-<meta name="twitter:description" content="You've been invited to join a plan on Parade — tap to view details and RSVP!" />
+<meta name="twitter:title" content="You're Invited! - Parade" />
+<meta name="twitter:description" content="You've been invited to join a plan on Parade. Tap to view details and RSVP!" />
 <meta name="twitter:image" content="${escapeHtml(ogImageUrl)}" />
 <meta http-equiv="refresh" content="0;url=${escapeHtml(planInviteUrl)}" />
 </head>
 <body><p>Redirecting to Parade...</p></body>
 </html>`;
 
-    // Upload to public storage bucket with correct Content-Type
-    const filePath = `invite-${token}.html`;
-    const { error: uploadError } = await supabase.storage
-      .from("og-pages")
-      .upload(filePath, html, {
-        contentType: "text/html; charset=utf-8",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      if (mode === "generate") {
-        return new Response(JSON.stringify({ url: planInviteUrl }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return Response.redirect(planInviteUrl, 302);
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("og-pages")
-      .getPublicUrl(filePath);
-
-    const shareableUrl = publicUrlData.publicUrl;
-
-    if (mode === "generate") {
-      // Called from the app: return the shareable URL as JSON
-      return new Response(JSON.stringify({ url: shareableUrl }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Direct hit (shouldn't happen often): redirect to the storage HTML
-    return Response.redirect(shareableUrl, 302);
+    return new Response(html, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=300",
+      },
+    });
   } catch (error) {
     console.error("Error:", error);
     const url = new URL(req.url);
