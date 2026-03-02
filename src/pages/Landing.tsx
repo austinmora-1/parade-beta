@@ -217,10 +217,12 @@ export default function Landing() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
-      <ConfettiBackground count={100} />
+    <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
+      <div className="fixed inset-0 z-[1] pointer-events-none">
+        <ConfettiBackground count={100} />
+      </div>
       {/* Hero Section */}
-      <section className="relative h-[100dvh] flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A2B22' }}>
+      <section className="relative h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#1A2B22' }}>
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)' }}
@@ -265,7 +267,7 @@ export default function Landing() {
         return (
           <section
             key={feature.title}
-            className={`py-20 px-6 ${i % 2 === 0 ? 'bg-card' : 'bg-background'}`}
+            className={`relative py-20 px-6 ${i % 2 === 0 ? 'bg-card/90' : 'bg-background/90'}`}
           >
             <div
               className={`max-w-5xl mx-auto flex flex-col ${isReversed ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-12 md:gap-16`}
@@ -304,7 +306,7 @@ export default function Landing() {
       })}
 
       {/* CTA + Auth Section */}
-      <section ref={authRef} className="py-20 px-6 bg-card">
+      <section ref={authRef} className="relative py-20 px-6 bg-card/90">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <img src="/icon-192.png" alt="Parade" className="h-20 w-20 rounded-2xl mx-auto mb-4 object-cover" />
