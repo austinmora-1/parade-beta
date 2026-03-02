@@ -232,18 +232,18 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
           >
             <ParadeWordmark size="xl" className="text-white drop-shadow-lg" />
-            <div className="mt-3 inline-block rounded-full border border-white/30 bg-white/10 backdrop-blur-sm px-4 py-1.5">
-              <p className="text-white/90 font-medium text-base">Social Planning, Designed for Fun</p>
+            <div className="mt-2 inline-block rounded-full border border-white/30 bg-white/10 backdrop-blur-sm px-4 py-1">
+              <p className="text-white/90 font-medium text-sm sm:text-base">Social Planning, Designed for Fun</p>
             </div>
-            <p className="mt-4 text-white/80 text-base md:text-xl leading-relaxed max-w-2xl mx-auto">
+            <p className="mt-3 text-white/80 text-sm sm:text-base md:text-xl leading-relaxed max-w-2xl mx-auto">
               Plan your social life in one place. Connect your calendars, see when friends are free,
               share your vibe for the day, and make plans faster — all in one fun, AI-powered social calendar.
             </p>
-            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center w-full items-center">
-              <Button size="lg" onClick={scrollToAuth} className="text-base px-6 py-5">
+            <div className="mt-5 flex flex-row gap-3 justify-center w-full items-center">
+              <Button onClick={scrollToAuth} className="text-sm sm:text-base px-5 py-4 sm:px-6 sm:py-5">
                 Get Started
               </Button>
-              <Button size="lg" variant="outline" onClick={scrollToAuth} className="text-base px-6 py-5 border-white/30 text-white hover:bg-white/10 bg-white/5">
+              <Button variant="outline" onClick={scrollToAuth} className="text-sm sm:text-base px-5 py-4 sm:px-6 sm:py-5 border-white/30 text-white hover:bg-white/10 bg-white/5">
                 Sign In
               </Button>
             </div>
