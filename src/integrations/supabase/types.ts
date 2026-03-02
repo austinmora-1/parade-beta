@@ -609,6 +609,7 @@ export type Database = {
           notes: string | null
           source: string | null
           source_event_id: string | null
+          source_timezone: string | null
           start_time: string | null
           status: string
           time_slot: string
@@ -628,6 +629,7 @@ export type Database = {
           notes?: string | null
           source?: string | null
           source_event_id?: string | null
+          source_timezone?: string | null
           start_time?: string | null
           status?: string
           time_slot: string
@@ -647,6 +649,7 @@ export type Database = {
           notes?: string | null
           source?: string | null
           source_event_id?: string | null
+          source_timezone?: string | null
           start_time?: string | null
           status?: string
           time_slot?: string

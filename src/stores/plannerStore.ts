@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Plan, Friend, DayAvailability, Vibe, TimeSlot, LocationStatus, ActivityType, VibeType, PlanStatus } from '@/types/planner';
 import { addDays, startOfWeek, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
-import { getUserTimezone } from '@/lib/timezone';
+import { getUserTimezone, convertTimeBetweenTimezones, getTimeSlotForTime, getTimeSlotMidpoint } from '@/lib/timezone';
 
 interface DefaultAvailabilitySettings {
   workDays: string[];
@@ -173,7 +173,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         // 6. Profile
         supabase
           .from('profiles')
-          .select('current_vibe, location_status, custom_vibe_tags, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address')
+          .select('current_vibe, location_status, custom_vibe_tags, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address, timezone')
           .eq('user_id', userId)
           .single(),
       ]);
@@ -281,6 +281,17 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         }
       }
       
+      // Derive viewer's timezone early so we can convert participated plan times
+      const homeAddr = (profile as any)?.home_address || null;
+      const explicitTz = (profile as any)?.timezone || null;
+      // We need availability map for today's location, but it's built later.
+      // Pre-compute today's location from raw avail data.
+      const todayStrForTz = format(new Date(), 'yyyy-MM-dd');
+      const todayAvailRaw = availData?.find(a => a.date === todayStrForTz);
+      const todayLocStatus = (todayAvailRaw?.location_status as LocationStatus) || 'home';
+      const todayTripLoc = todayAvailRaw?.trip_location || undefined;
+      const viewerTimezone = getUserTimezone(todayLocStatus, homeAddr, todayTripLoc, explicitTz);
+
       const plans: Plan[] = (plansData || []).map((p) => {
         const allPps = participantsMap[p.id] || [];
         const myParticipation = allPps.find(pp => pp.friend_id === userId);
@@ -294,7 +305,38 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         const planYear = planDateRaw.getUTCFullYear();
         const planMonth = planDateRaw.getUTCMonth();
         const planDay = planDateRaw.getUTCDate();
-        const normalizedPlanDate = new Date(planYear, planMonth, planDay);
+        let normalizedPlanDate = new Date(planYear, planMonth, planDay);
+        
+        let effectiveTimeSlot = p.time_slot as TimeSlot;
+        let effectiveStartTime: string | undefined = (p as any).start_time || undefined;
+        let effectiveEndTime: string | undefined = (p as any).end_time || undefined;
+        
+        // Convert times for participated plans from other timezones
+        const sourceTimezone = (p as any).source_timezone;
+        if (sourceTimezone && sourceTimezone !== viewerTimezone && p.user_id !== userId) {
+          if (effectiveStartTime) {
+            const converted = convertTimeBetweenTimezones(effectiveStartTime, normalizedPlanDate, sourceTimezone, viewerTimezone);
+            effectiveStartTime = converted.time;
+            if (converted.dayOffset !== 0) {
+              normalizedPlanDate = addDays(normalizedPlanDate, converted.dayOffset);
+            }
+            // Derive time slot from converted start time
+            effectiveTimeSlot = getTimeSlotForTime(converted.time) as TimeSlot;
+          } else {
+            // No specific time — convert the slot midpoint to get approximate slot
+            const midpoint = getTimeSlotMidpoint(p.time_slot);
+            const converted = convertTimeBetweenTimezones(midpoint, normalizedPlanDate, sourceTimezone, viewerTimezone);
+            effectiveTimeSlot = getTimeSlotForTime(converted.time) as TimeSlot;
+            if (converted.dayOffset !== 0) {
+              normalizedPlanDate = addDays(normalizedPlanDate, converted.dayOffset);
+            }
+          }
+          if (effectiveEndTime) {
+            const convertedEnd = convertTimeBetweenTimezones(effectiveEndTime, new Date(planYear, planMonth, planDay), sourceTimezone, viewerTimezone);
+            effectiveEndTime = convertedEnd.time;
+          }
+        }
+        
         return {
           id: p.id,
           userId: p.user_id,
@@ -305,10 +347,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             const ed = new Date((p as any).end_date);
             return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate());
           })() : undefined,
-          timeSlot: p.time_slot as TimeSlot,
+          timeSlot: effectiveTimeSlot,
           duration: p.duration,
-          startTime: (p as any).start_time || undefined,
-          endTime: (p as any).end_time || undefined,
+          startTime: effectiveStartTime,
+          endTime: effectiveEndTime,
           location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
           notes: p.notes || undefined,
           status: (p as any).status as PlanStatus || 'confirmed',
@@ -442,11 +484,6 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       const todayAvail = availabilityMap[todayStr];
       const todayLocationStatus = todayAvail?.locationStatus || 'home';
       
-      const homeAddr = (profile as any)?.home_address || null;
-      const explicitTz = (profile as any)?.timezone || null;
-      const todayTrip = todayAvail?.tripLocation || undefined;
-      const derivedTimezone = getUserTimezone(todayLocationStatus, homeAddr, todayTrip, explicitTz);
-      
       set({
         plans,
         friends,
@@ -456,7 +493,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         locationStatus: todayLocationStatus,
         defaultSettings,
         homeAddress: homeAddr,
-        userTimezone: derivedTimezone,
+        userTimezone: viewerTimezone,
         isLoading: false,
       });
     } catch (error) {
@@ -478,6 +515,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const endDateStr = plan.endDate ? format(plan.endDate, 'yyyy-MM-dd') : null;
     const noonUtcEndDate = endDateStr ? `${endDateStr}T12:00:00+00:00` : null;
     
+    const { userTimezone } = get();
     const { data, error } = await supabase
       .from('plans')
       .insert({
@@ -493,6 +531,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         location: locationStr,
         notes: plan.notes,
         status: plan.status || 'confirmed',
+        source_timezone: userTimezone,
       } as any)
       .select()
       .single();
