@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     }
 
     const planInviteUrl = `${APP_URL}/plan-invite/${token}`;
-    const ogImageUrl = `${SUPABASE_URL}/functions/v1/og-image?type=invite-card`;
+    const ogImageUrl = `${SUPABASE_URL}/functions/v1/og-image?type=invite-card&v=4`;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const html = `<!DOCTYPE html>
