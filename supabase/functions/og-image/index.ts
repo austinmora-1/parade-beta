@@ -2,22 +2,26 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { initialize, svg2png } from "https://esm.sh/svg2png-wasm@0.6.1";
 
 const DISPLAY_FONT_URL = "https://raw.githubusercontent.com/google/fonts/main/ofl/bungeeshade/BungeeShade-Regular.ttf";
+const BUNGEE_FONT_URL = "https://raw.githubusercontent.com/google/fonts/main/ofl/bungee/Bungee-Regular.ttf";
 const BODY_FONT_URL = "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf";
 
 let initialized = false;
 let displayFontData: Uint8Array | null = null;
+let bungeeFontData: Uint8Array | null = null;
 let bodyFontData: Uint8Array | null = null;
 
 async function init() {
   if (initialized) return;
   
-  const [wasmRes, displayFontRes, bodyFontRes] = await Promise.all([
+  const [wasmRes, displayFontRes, bungeeFontRes, bodyFontRes] = await Promise.all([
     fetch("https://esm.sh/svg2png-wasm@0.6.1/svg2png_wasm_bg.wasm"),
     fetch(DISPLAY_FONT_URL),
+    fetch(BUNGEE_FONT_URL),
     fetch(BODY_FONT_URL),
   ]);
   
   displayFontData = new Uint8Array(await displayFontRes.arrayBuffer());
+  bungeeFontData = new Uint8Array(await bungeeFontRes.arrayBuffer());
   bodyFontData = new Uint8Array(await bodyFontRes.arrayBuffer());
   await initialize(wasmRes);
   initialized = true;
@@ -195,7 +199,7 @@ Deno.serve(async (req) => {
   <text x="${width / 2}" y="525" font-family="Inter" font-weight="700" font-size="22" fill="#0F1A14" text-anchor="middle">View Plan</text>
 </svg>`;
 
-      const png = await svg2png(svg, { width, height, fonts: [displayFontData!, bodyFontData!] });
+      const png = await svg2png(svg, { width, height, fonts: [displayFontData!, bungeeFontData!, bodyFontData!] });
       return new Response(png, {
         headers: {
           "Content-Type": "image/png",
@@ -227,13 +231,13 @@ Deno.serve(async (req) => {
   <text x="${width / 2}" y="180" font-family="Bungee Shade" font-size="80" fill="${accent}" text-anchor="middle" dominant-baseline="central" letter-spacing="4">parade</text>
   <rect x="${width / 2 - 200}" y="250" width="400" height="4" rx="2" fill="url(#accentGrad)" opacity="0.6"/>
   <text x="${width / 2}" y="320" font-family="Inter" font-weight="700" font-size="28" fill="#9BB8A8" text-anchor="middle" dominant-baseline="central">you have been</text>
-  <text x="${width / 2}" y="390" font-family="Bungee Shade" font-size="64" fill="#E8F5EE" text-anchor="middle" dominant-baseline="central" letter-spacing="3">invited</text>
+  <text x="${width / 2}" y="390" font-family="Bungee" font-size="64" fill="${accent}" text-anchor="middle" dominant-baseline="central" letter-spacing="3">INVITED</text>
   <text x="${width / 2}" y="455" font-family="Inter" font-size="24" fill="#9BB8A8" text-anchor="middle" dominant-baseline="central">Tap to view details and RSVP</text>
   <rect x="${width / 2 - 120}" y="500" width="240" height="56" rx="28" fill="url(#accentGrad)"/>
   <text x="${width / 2}" y="535" font-family="Inter" font-weight="700" font-size="22" fill="#0F1A14" text-anchor="middle">View Plan</text>
 </svg>`;
 
-      const png = await svg2png(svg, { width, height, fonts: [displayFontData!, bodyFontData!] });
+      const png = await svg2png(svg, { width, height, fonts: [displayFontData!, bungeeFontData!, bodyFontData!] });
       return new Response(png, {
         headers: {
           "Content-Type": "image/png",
