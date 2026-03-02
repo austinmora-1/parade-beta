@@ -133,24 +133,25 @@ Deno.serve(async (req) => {
 
     // Route: serve OG meta HTML directly for crawlers (iMessage, Facebook, Twitter, etc.)
     // Also supports generate-meta for backward compat — both return HTML directly now
-    if ((type === "meta" || type === "generate-meta") && token) {
+    if (type === "meta" && token) {
+      // Serve HTML directly with OG tags for crawlers (iMessage, Facebook, Twitter)
       const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       );
       const { data } = await supabase.rpc("get_plan_invite_details", { p_token: token });
       const invite = data && data.length > 0 ? data[0] : null;
-      const origin = url.searchParams.get("origin") || "https://parade.lovable.app";
+      const origin = url.searchParams.get("origin") || "https://helloparade.app";
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-      let titleText = "You're invited to a plan on Parade";
+      let titleText = "You're invited to a plan on Parade 🎉";
       let description = "Join your friend's plan on Parade — the social planner for real-life hangs.";
       let ogImageUrl = `${supabaseUrl}/functions/v1/og-image`;
 
       if (invite) {
         const activityLabel = ACTIVITY_LABELS[invite.plan_activity] || invite.plan_activity.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
-        titleText = escapeXml(`${invite.invited_by_name} invited you: ${invite.plan_title}`);
-        description = escapeXml(`Join for ${activityLabel} — tap to view details and RSVP on Parade.`);
+        titleText = `${invite.invited_by_name} invited you: ${invite.plan_title}`;
+        description = `Join for ${activityLabel} — tap to view details and RSVP on Parade.`;
         ogImageUrl = `${supabaseUrl}/functions/v1/og-image?type=plan-invite&token=${token}`;
       }
 
@@ -158,52 +159,44 @@ Deno.serve(async (req) => {
       const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>${titleText}</title>
-  <meta name="description" content="${description}"/>
-  <meta property="og:title" content="${titleText}"/>
-  <meta property="og:description" content="${description}"/>
-  <meta property="og:image" content="${ogImageUrl}"/>
-  <meta property="og:image:type" content="image/png"/>
-  <meta property="og:image:width" content="1200"/>
-  <meta property="og:image:height" content="630"/>
-  <meta property="og:type" content="website"/>
-  <meta property="og:url" content="${redirectUrl}"/>
-  <meta property="og:site_name" content="Parade"/>
-  <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:title" content="${titleText}"/>
-  <meta name="twitter:description" content="${description}"/>
-  <meta name="twitter:image" content="${ogImageUrl}"/>
-  <meta http-equiv="refresh" content="1;url=${redirectUrl}"/>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>${escapeXml(titleText)}</title>
+<meta name="description" content="${escapeXml(description)}"/>
+<meta property="og:title" content="${escapeXml(titleText)}"/>
+<meta property="og:description" content="${escapeXml(description)}"/>
+<meta property="og:image" content="${ogImageUrl}"/>
+<meta property="og:image:type" content="image/png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="${redirectUrl}"/>
+<meta property="og:site_name" content="Parade"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="${escapeXml(titleText)}"/>
+<meta name="twitter:description" content="${escapeXml(description)}"/>
+<meta name="twitter:image" content="${ogImageUrl}"/>
+<meta http-equiv="refresh" content="0;url=${redirectUrl}"/>
 </head>
 <body><p>Redirecting to <a href="${redirectUrl}">Parade</a>...</p></body>
 </html>`;
 
-      // Upload HTML to storage via REST API to ensure correct Content-Type
-      const filePath = `${token}.html`;
-      const storageUrl = `${supabaseUrl}/storage/v1/object/og-pages/${filePath}`;
-      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      
-      const uploadRes = await fetch(storageUrl, {
-        method: "POST",
+      return new Response(html, {
         headers: {
-          "Authorization": `Bearer ${serviceKey}`,
-          "apikey": serviceKey,
           "Content-Type": "text/html; charset=utf-8",
-          "x-upsert": "true",
+          "Cache-Control": "public, max-age=3600",
+          "Access-Control-Allow-Origin": "*",
         },
-        body: html,
       });
-      
-      if (!uploadRes.ok) {
-        const errBody = await uploadRes.text();
-        console.error("Storage upload failed:", uploadRes.status, errBody);
-      }
+    }
 
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/og-pages/${filePath}`;
-
-      return new Response(JSON.stringify({ url: publicUrl }), {
+    // Route: generate-meta - returns JSON with the shareable URL
+    if (type === "generate-meta" && token) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const origin = url.searchParams.get("origin") || "https://helloparade.app";
+      // The shareable link is the edge function URL itself with type=meta
+      const shareUrl = `${supabaseUrl}/functions/v1/og-image?type=meta&token=${token}&origin=${encodeURIComponent(origin)}`;
+      return new Response(JSON.stringify({ url: shareUrl }), {
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
