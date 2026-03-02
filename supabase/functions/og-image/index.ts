@@ -122,16 +122,90 @@ function generateConfetti(count: number, width: number, height: number): string 
   return shapes.join("\n    ");
 }
 
-// v2 - fixed duplicate supabaseUrl declaration
+// v3 - added dynamic plan-invite OG image
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const type = url.searchParams.get("type");
-    const token = url.searchParams.get("token");
     const width = 1200;
     const height = 630;
 
-    // Route: invite-card — branded "You're invited!" image (no dynamic data needed)
+    // Route: plan-invite — dynamic plan invite card with title, date, inviter, activity
+    if (type === "plan-invite") {
+      await init();
+      const title = url.searchParams.get("title") || "A Plan";
+      const date = url.searchParams.get("date") || "";
+      const time = url.searchParams.get("time") || "";
+      const inviter = url.searchParams.get("inviter") || "A friend";
+      const activity = url.searchParams.get("activity") || "other";
+      const location = url.searchParams.get("location") || "";
+
+      const emoji = ACTIVITY_EMOJI[activity] || "✨";
+      const activityLabel = ACTIVITY_LABELS[activity] || "Activity";
+      const formattedDate = date ? formatDate(date) : "";
+      const timeLabel = time ? (TIME_LABELS[time] || time) : "";
+
+      const bg = "#1A2B22";
+      const accent = "#55C78E";
+      const confetti = generateConfetti(40, width, height);
+
+      // Truncate title if too long
+      const displayTitle = escapeXml(title.length > 35 ? title.substring(0, 32) + "..." : title);
+      const displayInviter = escapeXml(inviter.length > 25 ? inviter.substring(0, 22) + "..." : inviter);
+
+      // Build detail line
+      const details: string[] = [];
+      if (formattedDate) details.push(escapeXml(formattedDate));
+      if (timeLabel) details.push(escapeXml(timeLabel));
+      const detailLine = details.join("  ·  ");
+
+      const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0F1A14"/><stop offset="100%" stop-color="${bg}"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="${accent}"/><stop offset="100%" stop-color="#4ECDC4"/>
+    </linearGradient>
+  </defs>
+  <rect width="${width}" height="${height}" fill="url(#bgGrad)"/>
+  <g opacity="0.4">${confetti}</g>
+
+  <!-- Parade wordmark -->
+  <text x="${width / 2}" y="100" font-family="Bungee Shade" font-size="48" fill="${accent}" text-anchor="middle" dominant-baseline="central" letter-spacing="3">parade</text>
+
+  <!-- Invited by line -->
+  <text x="${width / 2}" y="170" font-family="Inter" font-weight="700" font-size="22" fill="#9BB8A8" text-anchor="middle" dominant-baseline="central">${displayInviter} invited you to</text>
+
+  <!-- Plan title -->
+  <text x="${width / 2}" y="260" font-family="Inter" font-weight="700" font-size="52" fill="#E8F5EE" text-anchor="middle" dominant-baseline="central">${displayTitle}</text>
+
+  <!-- Activity badge -->
+  <text x="${width / 2}" y="330" font-family="Inter" font-weight="700" font-size="24" fill="${accent}" text-anchor="middle" dominant-baseline="central">${escapeXml(activityLabel)}</text>
+
+  <!-- Date and time -->
+  ${detailLine ? `<text x="${width / 2}" y="390" font-family="Inter" font-size="24" fill="#9BB8A8" text-anchor="middle" dominant-baseline="central">${detailLine}</text>` : ""}
+
+  <!-- Location -->
+  ${location ? `<text x="${width / 2}" y="435" font-family="Inter" font-size="20" fill="#6B8F7B" text-anchor="middle" dominant-baseline="central">${escapeXml(location.length > 45 ? location.substring(0, 42) + "..." : location)}</text>` : ""}
+
+  <!-- CTA button -->
+  <rect x="${width / 2 - 120}" y="490" width="240" height="56" rx="28" fill="url(#accentGrad)"/>
+  <text x="${width / 2}" y="525" font-family="Inter" font-weight="700" font-size="22" fill="#0F1A14" text-anchor="middle">View Plan</text>
+</svg>`;
+
+      const png = await svg2png(svg, { width, height, fonts: [displayFontData!, bodyFontData!] });
+      return new Response(png, {
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "public, max-age=300",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    // Route: invite-card — static branded "You're invited!" image (legacy)
     if (type === "invite-card") {
       await init();
       const bg = "#1A2B22";
