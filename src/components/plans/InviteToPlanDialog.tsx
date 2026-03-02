@@ -45,9 +45,18 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      const ogLink = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}`;
       const directLink = `https://helloparade.app/plan-invite/${data.invite_token}`;
-      setGeneratedLink(ogLink);
+
+      // Generate OG page in storage for rich link previews
+      try {
+        const ogRes = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}&mode=generate`
+        );
+        const ogJson = await ogRes.json();
+        setGeneratedLink(ogJson?.url || directLink);
+      } catch {
+        setGeneratedLink(directLink);
+      }
       setDisplayLink(directLink);
     } catch (err: any) {
       toast({ title: 'Failed to generate link', description: err.message, variant: 'destructive' });
@@ -74,7 +83,16 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      const inviteUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}`;
+      // Generate OG page for rich preview in email link
+      let inviteUrl = `https://helloparade.app/plan-invite/${data.invite_token}`;
+      try {
+        const ogRes = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}&mode=generate`
+        );
+        const ogJson = await ogRes.json();
+        if (ogJson?.url) inviteUrl = ogJson.url;
+      } catch {}
+
       const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
 
       // Send email via existing edge function
