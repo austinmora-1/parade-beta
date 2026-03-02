@@ -219,7 +219,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${landingHero})` }}
@@ -232,29 +232,29 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
           >
             <ParadeWordmark size="xl" className="text-white drop-shadow-lg" />
-            <div className="mt-4 inline-block rounded-full border border-white/30 bg-white/10 backdrop-blur-sm px-6 py-2">
-              <p className="text-white/90 font-medium text-lg">Social Planning, Designed for Fun</p>
+            <div className="mt-3 inline-block rounded-full border border-white/30 bg-white/10 backdrop-blur-sm px-4 py-1.5">
+              <p className="text-white/90 font-medium text-base">Social Planning, Designed for Fun</p>
             </div>
-            <p className="mt-6 text-white/80 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
+            <p className="mt-4 text-white/80 text-base md:text-xl leading-relaxed max-w-2xl mx-auto">
               Plan your social life in one place. Connect your calendars, see when friends are free,
               share your vibe for the day, and make plans faster — all in one fun, AI-powered social calendar.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center w-full items-center">
-              <Button size="lg" onClick={scrollToAuth} className="text-lg px-8 py-6">
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center w-full items-center">
+              <Button size="lg" onClick={scrollToAuth} className="text-base px-6 py-5">
                 Get Started
               </Button>
-              <Button size="lg" variant="outline" onClick={scrollToAuth} className="text-lg px-8 py-6 border-white/30 text-white hover:bg-white/10 bg-white/5">
+              <Button size="lg" variant="outline" onClick={scrollToAuth} className="text-base px-6 py-5 border-white/30 text-white hover:bg-white/10 bg-white/5">
                 Sign In
               </Button>
             </div>
           </motion.div>
           <motion.div
-            className="mt-16"
+            className="mt-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.8 }}
           >
-            <ChevronDown className="mx-auto h-8 w-8 text-white/50 animate-bounce" />
+            <ChevronDown className="mx-auto h-7 w-7 text-white/50 animate-bounce" />
           </motion.div>
         </div>
       </section>
