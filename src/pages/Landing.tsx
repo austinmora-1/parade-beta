@@ -233,7 +233,7 @@ export default function Landing() {
           >
             <ParadeWordmark size="xl" className="text-white drop-shadow-lg" />
             <p className="mt-1 font-medium text-sm sm:text-base tracking-[0.2em] uppercase text-primary drop-shadow-md">
-              Social Planning, Designed for Fun
+              Designed for Fun
             </p>
             <p className="mt-3 text-white/80 text-sm sm:text-base md:text-xl leading-relaxed max-w-2xl mx-auto">
               Plan your social life in one place. Connect your calendars, see when friends are free,
