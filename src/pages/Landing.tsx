@@ -11,6 +11,7 @@ import { ArrowLeft, ChevronDown, LayoutDashboard, CalendarClock, CalendarPlus, U
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import landingHero from '@/assets/landing-hero.jpeg';
 import landingElephants from '@/assets/parade-logo.png';
+import paradeElephantLogo from '@/assets/parade-elephant-logo.png';
 import { motion } from 'framer-motion';
 
 const FEATURES = [
@@ -231,6 +232,7 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
+            <img src={paradeElephantLogo} alt="Parade" className="h-16 w-16 sm:h-20 sm:w-20 mx-auto mb-2 drop-shadow-lg" style={{ background: 'transparent' }} />
             <ParadeWordmark size="xl" className="text-white drop-shadow-lg" />
             <p className="mt-1 font-medium text-sm sm:text-base tracking-[0.2em] uppercase text-primary drop-shadow-md" style={{ fontFamily: "'Bungee', system-ui" }}>
               Designed for Fun
