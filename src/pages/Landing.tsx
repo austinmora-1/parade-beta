@@ -232,9 +232,9 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
           >
             <ParadeWordmark size="xl" className="text-white drop-shadow-lg" />
-            <div className="mt-2 inline-block rounded-full border border-white/30 bg-white/10 backdrop-blur-sm px-4 py-1">
-              <p className="text-white/90 font-medium text-sm sm:text-base">Social Planning, Designed for Fun</p>
-            </div>
+            <p className="mt-1 font-medium text-sm sm:text-base tracking-[0.2em] uppercase text-primary drop-shadow-md">
+              Social Planning, Designed for Fun
+            </p>
             <p className="mt-3 text-white/80 text-sm sm:text-base md:text-xl leading-relaxed max-w-2xl mx-auto">
               Plan your social life in one place. Connect your calendars, see when friends are free,
               share your vibe for the day, and make plans faster — all in one fun, AI-powered social calendar.
