@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
   <g>${confetti}</g>
   <text x="${width / 2}" y="220" font-family="Bungee Shade" font-size="80" fill="${accent}" text-anchor="middle" dominant-baseline="central" letter-spacing="4">parade</text>
   <rect x="${width / 2 - 200}" y="290" width="400" height="4" rx="2" fill="url(#accentGrad)" opacity="0.6"/>
-  <text x="${width / 2}" y="360" font-family="Inter" font-weight="700" font-size="48" fill="#E8F5EE" text-anchor="middle" dominant-baseline="central">You are invited!</text>
+  <text x="${width / 2}" y="360" font-family="Inter" font-weight="700" font-size="48" fill="#E8F5EE" text-anchor="middle" dominant-baseline="central">You&apos;re Invited!</text>
   <text x="${width / 2}" y="430" font-family="Inter" font-size="26" fill="#9BB8A8" text-anchor="middle" dominant-baseline="central">Tap to view details and RSVP</text>
   <rect x="${width / 2 - 120}" y="480" width="240" height="56" rx="28" fill="url(#accentGrad)"/>
   <text x="${width / 2}" y="515" font-family="Inter" font-weight="700" font-size="22" fill="#0F1A14" text-anchor="middle">View Plan</text>
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
       return new Response(png, {
         headers: {
           "Content-Type": "image/png",
-          "Cache-Control": "public, max-age=86400",
+          "Cache-Control": "public, max-age=300",
           "Access-Control-Allow-Origin": "*",
         },
       });
