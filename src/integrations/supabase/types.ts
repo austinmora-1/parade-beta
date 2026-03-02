@@ -685,6 +685,7 @@ export type Database = {
           show_availability: boolean | null
           show_location: boolean | null
           show_vibe_status: boolean | null
+          timezone: string | null
           updated_at: string
           user_id: string
           walkthrough_completed: boolean
@@ -717,6 +718,7 @@ export type Database = {
           show_availability?: boolean | null
           show_location?: boolean | null
           show_vibe_status?: boolean | null
+          timezone?: string | null
           updated_at?: string
           user_id: string
           walkthrough_completed?: boolean
@@ -749,6 +751,7 @@ export type Database = {
           show_availability?: boolean | null
           show_location?: boolean | null
           show_vibe_status?: boolean | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string
           walkthrough_completed?: boolean
