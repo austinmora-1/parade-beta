@@ -7,49 +7,53 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, Calendar, Users, MessageCircle, Clock, Sparkles, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import landingHero from '@/assets/landing-hero.jpeg';
 import landingElephants from '@/assets/landing-elephants.png';
+import screenshotDashboard from '@/assets/screenshots/dashboard.png';
+import screenshotAvailability from '@/assets/screenshots/availability.png';
+import screenshotFriends from '@/assets/screenshots/friends.png';
+import screenshotChat from '@/assets/screenshots/chat.png';
+import screenshotPlans from '@/assets/screenshots/plans.png';
 import { motion } from 'framer-motion';
 
 const FEATURES = [
   {
-    icon: Calendar,
-    title: 'Shared Availability',
-    description: 'See when your friends are free at a glance. Share your weekly schedule and find overlapping time slots instantly.',
+    title: 'Your Social Home Base',
+    description: 'See everything at a glance — upcoming plans, your vibe for the day, incoming vibes from friends, and what\'s happening this week. Parade keeps your social life organized without the effort.',
+    screenshot: screenshotDashboard,
   },
   {
-    icon: Users,
-    title: 'Friend Pods',
-    description: 'Group your closest friends into pods. Schedule hangs with multiple people by finding times that work for everyone.',
+    title: 'Share Your Availability',
+    description: 'Let friends know when you\'re free without the back-and-forth texting. Set your weekly schedule, toggle between home and away, and sync your calendar so availability updates automatically.',
+    screenshot: screenshotAvailability,
   },
   {
-    icon: MessageCircle,
-    title: 'Vibes & Chat',
-    description: 'Send vibes to let friends know your mood. Chat directly about plans without leaving the app.',
+    title: 'Make Plans in Seconds',
+    description: 'Create plans with a tap — pick an activity, invite friends, and find a time that works for everyone. Calendar sync means you\'ll never double-book, and friends get notified instantly.',
+    screenshot: screenshotPlans,
   },
   {
-    icon: Clock,
-    title: 'Calendar Sync',
-    description: 'Connect Google Calendar or iCal. Your availability updates automatically so you never double-book.',
+    title: 'Your Friends, Your Pod',
+    description: 'Group your closest friends into pods for easy scheduling. See who\'s available, send hang requests, and coordinate group plans without the chaos of group chats.',
+    screenshot: screenshotFriends,
   },
   {
-    icon: Sparkles,
-    title: 'AI Planning Assistant',
-    description: 'Elly, your AI assistant, helps suggest plans, find the best times, and keep your social life on track.',
+    title: 'Chat & Send Vibes',
+    description: 'Message friends directly about plans, send vibes to share your mood, and let Elly — your AI planning assistant — help suggest the perfect hangout. All your social coordination in one place.',
+    screenshot: screenshotChat,
   },
 ];
 
 type AuthView = 'auth' | 'forgot-password' | 'reset-password';
 
-export default function Landing() {
+function AuthSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<AuthView>('auth');
   const { signIn, signUp, resetPassword, updatePassword, session } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const authRef = useRef<HTMLDivElement>(null);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -65,10 +69,6 @@ export default function Landing() {
       setView('reset-password');
     }
   }, [searchParams, session]);
-
-  const scrollToAuth = () => {
-    authRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +106,119 @@ export default function Landing() {
     if (error) toast.error(error.message);
     else { toast.success('Password updated successfully!'); navigate('/'); }
     setIsLoading(false);
+  };
+
+  return (
+    <Card className="border-border/50 shadow-xl backdrop-blur-sm bg-card/95">
+      {view === 'auth' && (
+        <>
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-xl">Get Started</CardTitle>
+            <CardDescription>Sign in or create a new account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="signup" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="login">Login</TabsTrigger>
+              </TabsList>
+              <TabsContent value="signup">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Display Name</Label>
+                    <Input id="signup-name" type="text" placeholder="Your name" value={signupName} onChange={(e) => setSignupName(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input id="signup-email" type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password</Label>
+                    <Input id="signup-password" type="password" placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={6} />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Creating account...' : 'Create Account'}
+                  </Button>
+                </form>
+              </TabsContent>
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <Input id="login-email" type="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Password</Label>
+                    <Input id="login-password" type="password" placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                  <button type="button" onClick={() => setView('forgot-password')} className="w-full text-sm text-muted-foreground hover:text-primary transition-colors">
+                    Forgot your password?
+                  </button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </>
+      )}
+
+      {view === 'forgot-password' && (
+        <>
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-xl">Reset Password</CardTitle>
+            <CardDescription>Enter your email and we'll send you a reset link</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <Input id="reset-email" type="email" placeholder="you@example.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Sending...' : 'Send Reset Link'}
+              </Button>
+              <button type="button" onClick={() => setView('auth')} className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                <ArrowLeft className="h-4 w-4" /> Back to login
+              </button>
+            </form>
+          </CardContent>
+        </>
+      )}
+
+      {view === 'reset-password' && (
+        <>
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-xl">Set New Password</CardTitle>
+            <CardDescription>Enter your new password below</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input id="new-password" type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Input id="confirm-password" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Updating...' : 'Update Password'}
+              </Button>
+            </form>
+          </CardContent>
+        </>
+      )}
+    </Card>
+  );
+}
+
+export default function Landing() {
+  const authRef = useRef<HTMLDivElement>(null);
+
+  const scrollToAuth = () => {
+    authRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -151,80 +264,54 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-6 bg-card">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+      {/* Feature Sections — alternating layout */}
+      {FEATURES.map((feature, i) => {
+        const isReversed = i % 2 === 1;
+        return (
+          <section
+            key={feature.title}
+            className={`py-20 px-6 ${i % 2 === 0 ? 'bg-card' : 'bg-background'}`}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Everything you need to hang out more
-            </h2>
-            <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-              Stop missing out. Parade makes it effortless to coordinate with friends and turn free time into quality time.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {FEATURES.map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                className="p-6 rounded-2xl border border-border bg-background hover:shadow-lg transition-shadow"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Video Section */}
-      <section className="py-20 px-6 bg-background">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              See Parade in Action
-            </h2>
-            <p className="text-muted-foreground text-lg mb-10">
-              Watch how easy it is to coordinate plans with your friends.
-            </p>
-          </motion.div>
-          <motion.div
-            className="rounded-2xl overflow-hidden shadow-2xl border border-border aspect-[9/16] max-w-sm mx-auto"
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <video
-              className="w-full h-full object-cover"
-              controls
-              playsInline
-              preload="metadata"
-              poster={landingElephants}
+            <div
+              className={`max-w-5xl mx-auto flex flex-col ${isReversed ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-12 md:gap-16`}
             >
-              <source src="/demo-video.mov" type="video/quicktime" />
-              <source src="/demo-video.mov" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          </motion.div>
-        </div>
-      </section>
+              {/* Text */}
+              <motion.div
+                className="flex-1 text-center md:text-left"
+                initial={{ opacity: 0, x: isReversed ? 30 : -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                  {feature.title}
+                </h2>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  {feature.description}
+                </p>
+              </motion.div>
+
+              {/* Screenshot */}
+              <motion.div
+                className="flex-shrink-0"
+                initial={{ opacity: 0, x: isReversed ? -30 : 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="rounded-3xl overflow-hidden shadow-2xl border border-border w-[260px] md:w-[280px]">
+                  <img
+                    src={feature.screenshot}
+                    alt={`${feature.title} screenshot`}
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                </div>
+              </motion.div>
+            </div>
+          </section>
+        );
+      })}
 
       {/* CTA + Auth Section */}
       <section ref={authRef} className="py-20 px-6 bg-card">
@@ -234,110 +321,7 @@ export default function Landing() {
             <h2 className="text-3xl font-bold text-foreground">Join the Parade</h2>
             <p className="text-muted-foreground mt-2">Create your account and start planning.</p>
           </div>
-
-          <Card className="border-border/50 shadow-xl backdrop-blur-sm bg-card/95">
-            {view === 'auth' && (
-              <>
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-xl">Get Started</CardTitle>
-                  <CardDescription>Sign in or create a new account</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="signup" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6">
-                      <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                      <TabsTrigger value="login">Login</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="signup">
-                      <form onSubmit={handleSignup} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="signup-name">Display Name</Label>
-                          <Input id="signup-name" type="text" placeholder="Your name" value={signupName} onChange={(e) => setSignupName(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="signup-email">Email</Label>
-                          <Input id="signup-email" type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="signup-password">Password</Label>
-                          <Input id="signup-password" type="password" placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={6} />
-                        </div>
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                          {isLoading ? 'Creating account...' : 'Create Account'}
-                        </Button>
-                      </form>
-                    </TabsContent>
-                    <TabsContent value="login">
-                      <form onSubmit={handleLogin} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="login-email">Email</Label>
-                          <Input id="login-email" type="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="login-password">Password</Label>
-                          <Input id="login-password" type="password" placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
-                        </div>
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                          {isLoading ? 'Signing in...' : 'Sign In'}
-                        </Button>
-                        <button type="button" onClick={() => setView('forgot-password')} className="w-full text-sm text-muted-foreground hover:text-primary transition-colors">
-                          Forgot your password?
-                        </button>
-                      </form>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </>
-            )}
-
-            {view === 'forgot-password' && (
-              <>
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-xl">Reset Password</CardTitle>
-                  <CardDescription>Enter your email and we'll send you a reset link</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleForgotPassword} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="reset-email">Email</Label>
-                      <Input id="reset-email" type="email" placeholder="you@example.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Sending...' : 'Send Reset Link'}
-                    </Button>
-                    <button type="button" onClick={() => setView('auth')} className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                      <ArrowLeft className="h-4 w-4" /> Back to login
-                    </button>
-                  </form>
-                </CardContent>
-              </>
-            )}
-
-            {view === 'reset-password' && (
-              <>
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-xl">Set New Password</CardTitle>
-                  <CardDescription>Enter your new password below</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleUpdatePassword} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <Input id="new-password" type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm Password</Label>
-                      <Input id="confirm-password" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Updating...' : 'Update Password'}
-                    </Button>
-                  </form>
-                </CardContent>
-              </>
-            )}
-          </Card>
-
+          <AuthSection />
           <p className="text-center text-sm text-muted-foreground mt-6">
             By continuing, you agree to our Terms of Service and Privacy Policy.
           </p>

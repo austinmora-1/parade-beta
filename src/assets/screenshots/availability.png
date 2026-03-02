@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script type="module">import { injectIntoGlobalHook } from "/@react-refresh";
+injectIntoGlobalHook(window);
+window.$RefreshReg$ = () => {};
+window.$RefreshSig$ = () => (type) => type;</script>
+
+    <script type="module" src="/@vite/client"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Parade - Social Planner</title>
+    <meta name="description" content="Plan and share activities with friends using Parade, your social planning companion." />
+    <meta name="author" content="Parade" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#3D8C6C" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Parade" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&family=Bungee+Shade&family=Press+Start+2P&display=swap" rel="stylesheet" />
+
+    <meta property="og:title" content="You're invited to a plan on Parade 🎉" />
+    <meta property="og:description" content="Join your friend's plan on Parade — the social planner for real-life hangs. Tap to view details and RSVP!" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://womtzaraskisayzskafe.supabase.co/functions/v1/og-image?type=invite-card&v=2" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Parade" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@ParadeApp" />
+    <meta name="twitter:title" content="You're invited to a plan on Parade 🎉" />
+    <meta name="twitter:description" content="Join your friend's plan on Parade — the social planner for real-life hangs." />
+    <meta name="twitter:image" content="https://womtzaraskisayzskafe.supabase.co/functions/v1/og-image?type=invite-card&v=2" />
+  </head>
+
+  <body>
+    <div id="root"></div><script src="https://cdn.gpteng.co/lovable.js" type="module"></script>
+    <script type="module" src="/src/main.tsx?t=1772474901684"></script>
+  </body>
+</html>
