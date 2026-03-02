@@ -7,42 +7,37 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown, LayoutDashboard, CalendarClock, CalendarPlus, Users, MessageCircle } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import landingHero from '@/assets/landing-hero.jpeg';
 import landingElephants from '@/assets/landing-elephants.png';
-import screenshotDashboard from '@/assets/screenshots/dashboard.png';
-import screenshotAvailability from '@/assets/screenshots/availability.png';
-import screenshotFriends from '@/assets/screenshots/friends.png';
-import screenshotChat from '@/assets/screenshots/chat.png';
-import screenshotPlans from '@/assets/screenshots/plans.png';
 import { motion } from 'framer-motion';
 
 const FEATURES = [
   {
     title: 'Your Social Home Base',
     description: 'See everything at a glance — upcoming plans, your vibe for the day, incoming vibes from friends, and what\'s happening this week. Parade keeps your social life organized without the effort.',
-    screenshot: screenshotDashboard,
+    icon: LayoutDashboard,
   },
   {
     title: 'Share Your Availability',
     description: 'Let friends know when you\'re free without the back-and-forth texting. Set your weekly schedule, toggle between home and away, and sync your calendar so availability updates automatically.',
-    screenshot: screenshotAvailability,
+    icon: CalendarClock,
   },
   {
     title: 'Make Plans in Seconds',
     description: 'Create plans with a tap — pick an activity, invite friends, and find a time that works for everyone. Calendar sync means you\'ll never double-book, and friends get notified instantly.',
-    screenshot: screenshotPlans,
+    icon: CalendarPlus,
   },
   {
     title: 'Your Friends, Your Pod',
     description: 'Group your closest friends into pods for easy scheduling. See who\'s available, send hang requests, and coordinate group plans without the chaos of group chats.',
-    screenshot: screenshotFriends,
+    icon: Users,
   },
   {
     title: 'Chat & Send Vibes',
     description: 'Message friends directly about plans, send vibes to share your mood, and let Elly — your AI planning assistant — help suggest the perfect hangout. All your social coordination in one place.',
-    screenshot: screenshotChat,
+    icon: MessageCircle,
   },
 ];
 
@@ -291,7 +286,7 @@ export default function Landing() {
                 </p>
               </motion.div>
 
-              {/* Screenshot */}
+              {/* Icon */}
               <motion.div
                 className="flex-shrink-0"
                 initial={{ opacity: 0, x: isReversed ? -30 : 30 }}
@@ -299,13 +294,8 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="rounded-3xl overflow-hidden shadow-2xl border border-border w-[260px] md:w-[280px]">
-                  <img
-                    src={feature.screenshot}
-                    alt={`${feature.title} screenshot`}
-                    className="w-full h-auto"
-                    loading="lazy"
-                  />
+                <div className="w-[200px] h-[200px] md:w-[240px] md:h-[240px] rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-2xl">
+                  <feature.icon className="w-20 h-20 md:w-24 md:h-24 text-primary" strokeWidth={1.2} />
                 </div>
               </motion.div>
             </div>
