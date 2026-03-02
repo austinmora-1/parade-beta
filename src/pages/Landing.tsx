@@ -11,7 +11,7 @@ import { ArrowLeft, ChevronDown, LayoutDashboard, CalendarClock, CalendarPlus, U
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import landingHero from '@/assets/landing-hero.jpeg';
 import landingElephants from '@/assets/parade-logo.png';
-import paradeElephantLogo from '@/assets/parade-elephant-logo.png';
+import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
 
 const FEATURES = [
@@ -226,13 +226,13 @@ export default function Landing() {
           style={{ backgroundImage: `url(${landingHero})` }}
         />
         <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto w-full flex flex-col items-center">
+        <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto w-full flex flex-col items-center" style={{ isolation: 'isolate' }}>
+          <img src={paradeElephantLogo} alt="Parade" className="h-24 w-24 sm:h-32 sm:w-32 mx-auto mb-3" style={{ mixBlendMode: 'screen' }} />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <img src="/icon-192.png" alt="Parade" className="h-24 w-24 sm:h-32 sm:w-32 mx-auto mb-3 drop-shadow-lg rounded-2xl" style={{ mixBlendMode: 'multiply' }} />
             <ParadeWordmark size="xl" className="text-white drop-shadow-lg" />
             <p className="mt-1 font-medium text-sm sm:text-base tracking-[0.2em] uppercase text-primary drop-shadow-md" style={{ fontFamily: "'Bungee', system-ui" }}>
               Designed for Fun
