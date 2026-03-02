@@ -28,62 +28,114 @@ import { format, addDays, startOfWeek } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { getTimezoneForCity, getTimezoneAbbreviation } from '@/lib/timezone';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
-// Common IANA timezones grouped by region
+// Comprehensive IANA timezones grouped by region
 const TIMEZONE_OPTIONS = [
   { group: 'US & Canada', zones: [
-    { value: 'America/New_York', label: 'Eastern Time (ET)' },
-    { value: 'America/Chicago', label: 'Central Time (CT)' },
-    { value: 'America/Denver', label: 'Mountain Time (MT)' },
-    { value: 'America/Phoenix', label: 'Arizona (no DST)' },
-    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
-    { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
-    { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT)' },
-    { value: 'America/Toronto', label: 'Eastern - Toronto' },
-    { value: 'America/Vancouver', label: 'Pacific - Vancouver' },
-    { value: 'America/Edmonton', label: 'Mountain - Edmonton' },
+    { value: 'America/New_York', label: 'Eastern Time (ET)', keywords: 'new york boston philadelphia miami atlanta' },
+    { value: 'America/Chicago', label: 'Central Time (CT)', keywords: 'chicago houston dallas austin' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)', keywords: 'denver boulder salt lake' },
+    { value: 'America/Phoenix', label: 'Arizona (no DST)', keywords: 'phoenix scottsdale tucson' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)', keywords: 'los angeles san francisco seattle portland' },
+    { value: 'America/Anchorage', label: 'Alaska Time (AKT)', keywords: 'anchorage fairbanks juneau' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT)', keywords: 'honolulu maui' },
+    { value: 'America/Toronto', label: 'Eastern - Toronto', keywords: 'toronto montreal ottawa' },
+    { value: 'America/Vancouver', label: 'Pacific - Vancouver', keywords: 'vancouver victoria' },
+    { value: 'America/Edmonton', label: 'Mountain - Edmonton', keywords: 'edmonton calgary' },
+    { value: 'America/Winnipeg', label: 'Central - Winnipeg', keywords: 'winnipeg' },
+    { value: 'America/Halifax', label: 'Atlantic - Halifax', keywords: 'halifax nova scotia' },
+    { value: 'America/St_Johns', label: 'Newfoundland (NT)', keywords: 'st johns newfoundland' },
+    { value: 'America/Regina', label: 'Saskatchewan (no DST)', keywords: 'regina saskatoon' },
   ]},
   { group: 'Europe', zones: [
-    { value: 'Europe/London', label: 'London (GMT/BST)' },
-    { value: 'Europe/Paris', label: 'Paris (CET)' },
-    { value: 'Europe/Berlin', label: 'Berlin (CET)' },
-    { value: 'Europe/Amsterdam', label: 'Amsterdam (CET)' },
-    { value: 'Europe/Rome', label: 'Rome (CET)' },
-    { value: 'Europe/Madrid', label: 'Madrid (CET)' },
-    { value: 'Europe/Lisbon', label: 'Lisbon (WET)' },
-    { value: 'Europe/Dublin', label: 'Dublin (GMT/IST)' },
-    { value: 'Europe/Stockholm', label: 'Stockholm (CET)' },
-    { value: 'Europe/Athens', label: 'Athens (EET)' },
-    { value: 'Europe/Istanbul', label: 'Istanbul (TRT)' },
-    { value: 'Europe/Moscow', label: 'Moscow (MSK)' },
+    { value: 'Europe/London', label: 'London (GMT/BST)', keywords: 'london uk england britain' },
+    { value: 'Europe/Paris', label: 'Paris (CET)', keywords: 'paris france' },
+    { value: 'Europe/Berlin', label: 'Berlin (CET)', keywords: 'berlin germany munich' },
+    { value: 'Europe/Amsterdam', label: 'Amsterdam (CET)', keywords: 'amsterdam netherlands' },
+    { value: 'Europe/Rome', label: 'Rome (CET)', keywords: 'rome italy milan' },
+    { value: 'Europe/Madrid', label: 'Madrid (CET)', keywords: 'madrid barcelona spain' },
+    { value: 'Europe/Lisbon', label: 'Lisbon (WET)', keywords: 'lisbon portugal' },
+    { value: 'Europe/Dublin', label: 'Dublin (GMT/IST)', keywords: 'dublin ireland' },
+    { value: 'Europe/Zurich', label: 'Zurich (CET)', keywords: 'zurich geneva switzerland' },
+    { value: 'Europe/Vienna', label: 'Vienna (CET)', keywords: 'vienna austria' },
+    { value: 'Europe/Brussels', label: 'Brussels (CET)', keywords: 'brussels belgium' },
+    { value: 'Europe/Stockholm', label: 'Stockholm (CET)', keywords: 'stockholm sweden' },
+    { value: 'Europe/Oslo', label: 'Oslo (CET)', keywords: 'oslo norway' },
+    { value: 'Europe/Copenhagen', label: 'Copenhagen (CET)', keywords: 'copenhagen denmark' },
+    { value: 'Europe/Helsinki', label: 'Helsinki (EET)', keywords: 'helsinki finland' },
+    { value: 'Europe/Prague', label: 'Prague (CET)', keywords: 'prague czech' },
+    { value: 'Europe/Warsaw', label: 'Warsaw (CET)', keywords: 'warsaw poland' },
+    { value: 'Europe/Budapest', label: 'Budapest (CET)', keywords: 'budapest hungary' },
+    { value: 'Europe/Bucharest', label: 'Bucharest (EET)', keywords: 'bucharest romania' },
+    { value: 'Europe/Athens', label: 'Athens (EET)', keywords: 'athens greece' },
+    { value: 'Europe/Istanbul', label: 'Istanbul (TRT)', keywords: 'istanbul turkey' },
+    { value: 'Europe/Moscow', label: 'Moscow (MSK)', keywords: 'moscow russia st petersburg' },
+    { value: 'Europe/Kiev', label: 'Kyiv (EET)', keywords: 'kyiv kiev ukraine' },
   ]},
   { group: 'Asia & Pacific', zones: [
-    { value: 'Asia/Dubai', label: 'Dubai (GST)' },
-    { value: 'Asia/Kolkata', label: 'India (IST)' },
-    { value: 'Asia/Bangkok', label: 'Bangkok (ICT)' },
-    { value: 'Asia/Singapore', label: 'Singapore (SGT)' },
-    { value: 'Asia/Hong_Kong', label: 'Hong Kong (HKT)' },
-    { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
-    { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
-    { value: 'Asia/Seoul', label: 'Seoul (KST)' },
-    { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
-    { value: 'Australia/Melbourne', label: 'Melbourne (AEST)' },
-    { value: 'Australia/Perth', label: 'Perth (AWST)' },
-    { value: 'Pacific/Auckland', label: 'Auckland (NZST)' },
+    { value: 'Asia/Dubai', label: 'Dubai (GST)', keywords: 'dubai abu dhabi uae' },
+    { value: 'Asia/Riyadh', label: 'Riyadh (AST)', keywords: 'riyadh saudi' },
+    { value: 'Asia/Tehran', label: 'Tehran (IRST)', keywords: 'tehran iran' },
+    { value: 'Asia/Karachi', label: 'Karachi (PKT)', keywords: 'karachi pakistan' },
+    { value: 'Asia/Kolkata', label: 'India (IST)', keywords: 'mumbai delhi bangalore kolkata india' },
+    { value: 'Asia/Colombo', label: 'Colombo (IST)', keywords: 'colombo sri lanka' },
+    { value: 'Asia/Dhaka', label: 'Dhaka (BST)', keywords: 'dhaka bangladesh' },
+    { value: 'Asia/Bangkok', label: 'Bangkok (ICT)', keywords: 'bangkok thailand' },
+    { value: 'Asia/Ho_Chi_Minh', label: 'Ho Chi Minh (ICT)', keywords: 'saigon vietnam' },
+    { value: 'Asia/Jakarta', label: 'Jakarta (WIB)', keywords: 'jakarta indonesia' },
+    { value: 'Asia/Singapore', label: 'Singapore (SGT)', keywords: 'singapore' },
+    { value: 'Asia/Kuala_Lumpur', label: 'Kuala Lumpur (MYT)', keywords: 'kuala lumpur malaysia' },
+    { value: 'Asia/Manila', label: 'Manila (PHT)', keywords: 'manila philippines' },
+    { value: 'Asia/Hong_Kong', label: 'Hong Kong (HKT)', keywords: 'hong kong' },
+    { value: 'Asia/Taipei', label: 'Taipei (CST)', keywords: 'taipei taiwan' },
+    { value: 'Asia/Shanghai', label: 'Shanghai (CST)', keywords: 'shanghai beijing china' },
+    { value: 'Asia/Tokyo', label: 'Tokyo (JST)', keywords: 'tokyo osaka japan' },
+    { value: 'Asia/Seoul', label: 'Seoul (KST)', keywords: 'seoul korea' },
+    { value: 'Australia/Perth', label: 'Perth (AWST)', keywords: 'perth western australia' },
+    { value: 'Australia/Adelaide', label: 'Adelaide (ACST)', keywords: 'adelaide south australia' },
+    { value: 'Australia/Sydney', label: 'Sydney (AEST)', keywords: 'sydney new south wales' },
+    { value: 'Australia/Melbourne', label: 'Melbourne (AEST)', keywords: 'melbourne victoria' },
+    { value: 'Australia/Brisbane', label: 'Brisbane (AEST)', keywords: 'brisbane queensland' },
+    { value: 'Pacific/Auckland', label: 'Auckland (NZST)', keywords: 'auckland new zealand' },
+    { value: 'Pacific/Fiji', label: 'Fiji (FJT)', keywords: 'fiji suva' },
+    { value: 'Pacific/Guam', label: 'Guam (ChST)', keywords: 'guam' },
   ]},
   { group: 'Americas', zones: [
-    { value: 'America/Mexico_City', label: 'Mexico City' },
-    { value: 'America/Sao_Paulo', label: 'São Paulo' },
-    { value: 'America/Argentina/Buenos_Aires', label: 'Buenos Aires' },
-    { value: 'America/Lima', label: 'Lima' },
-    { value: 'America/Bogota', label: 'Bogotá' },
-    { value: 'America/Santiago', label: 'Santiago' },
+    { value: 'America/Mexico_City', label: 'Mexico City (CST)', keywords: 'mexico city' },
+    { value: 'America/Cancun', label: 'Cancún (EST)', keywords: 'cancun' },
+    { value: 'America/Havana', label: 'Havana (CST)', keywords: 'havana cuba' },
+    { value: 'America/Puerto_Rico', label: 'Puerto Rico (AST)', keywords: 'san juan puerto rico caribbean' },
+    { value: 'America/Panama', label: 'Panama (EST)', keywords: 'panama' },
+    { value: 'America/Bogota', label: 'Bogotá (COT)', keywords: 'bogota colombia' },
+    { value: 'America/Lima', label: 'Lima (PET)', keywords: 'lima peru' },
+    { value: 'America/Caracas', label: 'Caracas (VET)', keywords: 'caracas venezuela' },
+    { value: 'America/Sao_Paulo', label: 'São Paulo (BRT)', keywords: 'sao paulo rio brazil' },
+    { value: 'America/Argentina/Buenos_Aires', label: 'Buenos Aires (ART)', keywords: 'buenos aires argentina' },
+    { value: 'America/Santiago', label: 'Santiago (CLT)', keywords: 'santiago chile' },
+    { value: 'America/Montevideo', label: 'Montevideo (UYT)', keywords: 'montevideo uruguay' },
+  ]},
+  { group: 'Africa & Middle East', zones: [
+    { value: 'Africa/Cairo', label: 'Cairo (EET)', keywords: 'cairo egypt' },
+    { value: 'Africa/Casablanca', label: 'Casablanca (WET)', keywords: 'casablanca morocco' },
+    { value: 'Africa/Lagos', label: 'Lagos (WAT)', keywords: 'lagos nigeria' },
+    { value: 'Africa/Nairobi', label: 'Nairobi (EAT)', keywords: 'nairobi kenya' },
+    { value: 'Africa/Johannesburg', label: 'Johannesburg (SAST)', keywords: 'johannesburg cape town south africa' },
+    { value: 'Africa/Accra', label: 'Accra (GMT)', keywords: 'accra ghana' },
+    { value: 'Asia/Jerusalem', label: 'Jerusalem (IST)', keywords: 'jerusalem tel aviv israel' },
+    { value: 'Asia/Beirut', label: 'Beirut (EET)', keywords: 'beirut lebanon' },
   ]},
 ];
 
@@ -105,6 +157,64 @@ interface Friend {
   id: string;
   friend_name: string;
   friend_user_id: string | null;
+}
+
+function TimezoneCombobox({ value, onChange, isAutoDetected }: { value: string; onChange: (v: string) => void; isAutoDetected: boolean }) {
+  const [open, setOpen] = useState(false);
+
+  const allZones = TIMEZONE_OPTIONS.flatMap(g => g.zones);
+  const selectedLabel = allZones.find(z => z.value === value)?.label || value;
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="flex items-center gap-1.5 text-xs">
+        <Globe className="h-3 w-3 text-muted-foreground" />
+        Time Zone
+      </Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between h-8 text-sm font-normal"
+          >
+            <span className="truncate">{selectedLabel}</span>
+            <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search timezone or city..." className="h-8 text-sm" />
+            <CommandList className="max-h-[240px]">
+              <CommandEmpty>No timezone found.</CommandEmpty>
+              {TIMEZONE_OPTIONS.map((group) => (
+                <CommandGroup key={group.group} heading={group.group}>
+                  {group.zones.map((tz) => (
+                    <CommandItem
+                      key={tz.value}
+                      value={`${tz.label} ${tz.keywords}`}
+                      onSelect={() => {
+                        onChange(tz.value);
+                        setOpen(false);
+                      }}
+                      className="text-sm"
+                    >
+                      <Check className={cn("mr-2 h-3.5 w-3.5", value === tz.value ? "opacity-100" : "opacity-0")} />
+                      {tz.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <p className="text-[10px] text-muted-foreground">
+        {isAutoDetected ? 'Auto-detected from your Home Base' : 'Manually set — overrides Home Base detection'}
+      </p>
+    </div>
+  );
 }
 
 function ArcadeModeToggle({ onChange }: { onChange: () => void }) {
@@ -534,37 +644,11 @@ export default function Settings() {
               </div>
 
               {/* Timezone */}
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1.5 text-xs">
-                  <Globe className="h-3 w-3 text-muted-foreground" />
-                  Time Zone
-                </Label>
-                <Select
-                  value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
-                  onValueChange={(value) => { setTimezone(value); handleChange(); }}
-                >
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select your time zone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIMEZONE_OPTIONS.map((group) => (
-                      <div key={group.group}>
-                        <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                          {group.group}
-                        </div>
-                        {group.zones.map((tz) => (
-                          <SelectItem key={tz.value} value={tz.value} className="text-sm">
-                            {tz.label}
-                          </SelectItem>
-                        ))}
-                      </div>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-muted-foreground">
-                  {!timezone ? 'Auto-detected from your Home Base' : 'Manually set — overrides Home Base detection'}
-                </p>
-              </div>
+              <TimezoneCombobox
+                value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
+                onChange={(value) => { setTimezone(value); handleChange(); }}
+                isAutoDetected={!timezone}
+              />
 
               <Separator />
 
