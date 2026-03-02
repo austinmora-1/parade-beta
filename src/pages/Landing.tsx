@@ -9,8 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { ArrowLeft, ChevronDown, LayoutDashboard, CalendarClock, CalendarPlus, Users, MessageCircle } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
-import landingHero from '@/assets/landing-hero.jpeg';
-import landingElephants from '@/assets/parade-logo.png';
+import { ConfettiBackground } from '@/components/landing/ConfettiBackground';
 import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
 
@@ -220,14 +219,14 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
-      <section className="relative h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative h-[100dvh] flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A2B22' }}>
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${landingHero})` }}
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)' }}
         />
-        <div className="absolute inset-0 bg-black/40" />
+        <ConfettiBackground count={90} />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto w-full flex flex-col items-center" style={{ isolation: 'isolate' }}>
-          <img src={paradeElephantLogo} alt="Parade" className="h-32 w-32 sm:h-40 sm:w-40 mx-auto mb-6" style={{ mixBlendMode: 'screen' }} />
+          <img src={paradeElephantLogo} alt="Parade" className="h-32 w-32 sm:h-40 sm:w-40 mx-auto mb-6" style={{ mixBlendMode: 'screen', filter: 'brightness(1.2)' }} />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
