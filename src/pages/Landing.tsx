@@ -232,7 +232,7 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <img src={paradeElephantLogo} alt="Parade" className="h-24 w-24 sm:h-32 sm:w-32 mx-auto mb-3 drop-shadow-lg rounded-2xl" style={{ mixBlendMode: 'lighten' }} />
+            <img src="/icon-192.png" alt="Parade" className="h-24 w-24 sm:h-32 sm:w-32 mx-auto mb-3 drop-shadow-lg rounded-2xl" style={{ mixBlendMode: 'multiply' }} />
             <ParadeWordmark size="xl" className="text-white drop-shadow-lg" />
             <p className="mt-1 font-medium text-sm sm:text-base tracking-[0.2em] uppercase text-primary drop-shadow-md" style={{ fontFamily: "'Bungee', system-ui" }}>
               Designed for Fun
