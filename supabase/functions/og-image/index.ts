@@ -179,10 +179,25 @@ Deno.serve(async (req) => {
 <body><p>Redirecting to <a href="${redirectUrl}">Parade</a>...</p></body>
 </html>`;
 
-      return new Response(html, {
+      // Upload HTML as binary to storage so it's served with correct Content-Type
+      // (Edge function gateway overrides Content-Type to text/plain)
+      const filePath = `${token}.html`;
+      const encoder = new TextEncoder();
+      const htmlBytes = encoder.encode(html);
+
+      await supabase.storage
+        .from("og-pages")
+        .upload(filePath, htmlBytes, {
+          contentType: "text/html; charset=utf-8",
+          upsert: true,
+        });
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/og-pages/${filePath}`;
+
+      return new Response(JSON.stringify({ url: publicUrl }), {
         headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=300",
+          "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
         },
       });
