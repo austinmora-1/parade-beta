@@ -700,6 +700,65 @@ export type Database = {
         }
         Relationships: []
       }
+      pod_members: {
+        Row: {
+          created_at: string
+          friend_user_id: string
+          id: string
+          pod_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_user_id: string
+          id?: string
+          pod_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_user_id?: string
+          id?: string
+          pod_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_members_pod_id_fkey"
+            columns: ["pod_id"]
+            isOneToOne: false
+            referencedRelation: "pods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pods: {
+        Row: {
+          created_at: string
+          emoji: string | null
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           allow_all_hang_requests: boolean | null

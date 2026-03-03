@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import { usePods, Pod } from '@/hooks/usePods';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -45,14 +46,31 @@ const VIBE_CONFIG: Record<string, { label: string; color: string }> = {
 
 export function PodWidget() {
   const { friends } = usePlannerStore();
+  const { pods, loading: podsLoading } = usePods();
   const navigate = useNavigate();
   const [podData, setPodData] = useState<PodMemberInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
-  const podFriends = useMemo(
-    () => friends.filter(f => f.status === 'connected' && f.isPodMember),
-    [friends]
-  );
+  // Set initial active tab
+  useEffect(() => {
+    if (pods.length > 0 && !activeTab) {
+      setActiveTab(pods[0].id);
+    }
+    // If active tab was deleted, switch to first
+    if (activeTab && !pods.find(p => p.id === activeTab) && pods.length > 0) {
+      setActiveTab(pods[0].id);
+    }
+  }, [pods, activeTab]);
+
+  const activePod = pods.find(p => p.id === activeTab);
+
+  const podFriends = useMemo(() => {
+    if (!activePod) return [];
+    return friends.filter(
+      f => f.status === 'connected' && f.friendUserId && activePod.memberUserIds.includes(f.friendUserId)
+    );
+  }, [friends, activePod]);
 
   useEffect(() => {
     if (podFriends.length === 0) {
@@ -93,7 +111,6 @@ export function PodWidget() {
           .lte('date', `${today}T23:59:59`),
       ]);
 
-      // Build busy slots map
       const busySlots = new Map<string, Set<string>>();
       for (const plan of (plansResult.data || [])) {
         if (!busySlots.has(plan.user_id)) busySlots.set(plan.user_id, new Set());
@@ -155,7 +172,12 @@ export function PodWidget() {
     return colors[name.charCodeAt(0) % colors.length];
   };
 
-  if (podFriends.length === 0) return null;
+  if (podsLoading) return null;
+  if (pods.length === 0) return null;
+
+  // Check if any pod has members
+  const anyMembers = pods.some(p => p.memberUserIds.length > 0);
+  if (!anyMembers) return null;
 
   const viewAllLink = (
     <Link to="/friends" onClick={(e) => e.stopPropagation()}>
@@ -173,13 +195,38 @@ export function PodWidget() {
       badge={undefined}
       headerRight={viewAllLink}
     >
+      {/* Pod tabs */}
+      {pods.length > 1 && (
+        <div className="flex gap-1 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+          {pods.filter(p => p.memberUserIds.length > 0).map(pod => (
+            <button
+              key={pod.id}
+              onClick={() => setActiveTab(pod.id)}
+              className={cn(
+                "flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition-all shrink-0",
+                activeTab === pod.id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              <span className="text-xs">{pod.emoji}</span>
+              {pod.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-6">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
+      ) : podData.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">
+          No members in this pod yet
+        </p>
       ) : (
         <div className="space-y-2">
-        {podData.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots, currentVibe, customVibeTags }) => {
+          {podData.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots, currentVibe, customVibeTags }) => {
             const isAway = locationStatus === 'away';
             const hasFreeSlots = freeSlots > 0;
             const vibeInfo = currentVibe ? VIBE_CONFIG[currentVibe] : null;
@@ -208,7 +255,6 @@ export function PodWidget() {
                   ) : (
                     getInitials(friend.name)
                   )}
-                  {/* Location dot */}
                   <div className={cn(
                     "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center",
                     isAway ? "bg-activity-events" : "bg-availability-available"
