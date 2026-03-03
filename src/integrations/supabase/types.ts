@@ -718,9 +718,11 @@ export type Database = {
           default_work_start_hour: number | null
           discoverable: boolean | null
           display_name: string | null
+          first_name: string | null
           friend_requests_notifications: boolean | null
           home_address: string | null
           id: string
+          last_name: string | null
           location_status: string | null
           phone_number: string | null
           plan_invitations_notifications: boolean | null
@@ -751,9 +753,11 @@ export type Database = {
           default_work_start_hour?: number | null
           discoverable?: boolean | null
           display_name?: string | null
+          first_name?: string | null
           friend_requests_notifications?: boolean | null
           home_address?: string | null
           id?: string
+          last_name?: string | null
           location_status?: string | null
           phone_number?: string | null
           plan_invitations_notifications?: boolean | null
@@ -784,9 +788,11 @@ export type Database = {
           default_work_start_hour?: number | null
           discoverable?: boolean | null
           display_name?: string | null
+          first_name?: string | null
           friend_requests_notifications?: boolean | null
           home_address?: string | null
           id?: string
+          last_name?: string | null
           location_status?: string | null
           phone_number?: string | null
           plan_invitations_notifications?: boolean | null

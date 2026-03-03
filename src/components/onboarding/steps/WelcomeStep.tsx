@@ -48,6 +48,18 @@ export function WelcomeStep({ data, updateData }: WelcomeStepProps) {
             />
           </div>
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="username" className="text-base">Username</Label>
+          <Input
+            id="username"
+            placeholder="Choose a unique username"
+            value={data.displayName}
+            onChange={(e) => updateData({ displayName: e.target.value })}
+            className="h-12 text-lg"
+          />
+          <p className="text-sm text-muted-foreground">This is how you'll appear to friends on Parade</p>
+        </div>
       </div>
 
       <div className="mt-8 rounded-xl bg-muted/50 p-4">

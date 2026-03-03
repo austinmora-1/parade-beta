@@ -368,10 +368,8 @@ export default function Settings() {
         if (profile) {
           const fullName = profile.display_name || '';
           setDisplayName(fullName);
-          // Split display_name into first/last
-          const nameParts = fullName.trim().split(/\s+/);
-          setFirstName(nameParts[0] || '');
-          setLastName(nameParts.slice(1).join(' ') || '');
+          setFirstName((profile as any).first_name || '');
+          setLastName((profile as any).last_name || '');
           setPhoneNumber((profile as any).phone_number || '');
           setHomeAddress(profile.home_address || '');
           setPlanReminders(profile.plan_reminders ?? true);
@@ -424,7 +422,9 @@ export default function Settings() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          display_name: [firstName, lastName].filter(Boolean).join(' ').trim() || displayName,
+          display_name: displayName,
+          first_name: firstName || null,
+          last_name: lastName || null,
           phone_number: phoneNumber || null,
           home_address: homeAddress,
           plan_reminders: planReminders,
@@ -610,6 +610,17 @@ export default function Settings() {
                   onChange={(e) => { setLastName(e.target.value); handleChange(); }}
                   className="h-8 text-sm"
                 />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor="username" className="text-xs">Username</Label>
+                <Input
+                  id="username"
+                  placeholder="Choose a unique username"
+                  value={displayName}
+                  onChange={(e) => { setDisplayName(e.target.value); handleChange(); }}
+                  className="h-8 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">This is how you appear to friends across Parade</p>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="email" className="text-xs">Email</Label>
