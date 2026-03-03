@@ -17,6 +17,7 @@ import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gam
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
+import { DeleteAccountDialog } from '@/components/settings/DeleteAccountDialog';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1081,7 +1082,7 @@ export default function Settings() {
               <span className="font-display text-sm font-semibold">Account</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-4 pb-3">
+          <AccordionContent className="px-4 pb-3 space-y-3">
             <div className="flex items-center justify-between pt-1">
               <div>
                 <p className="text-sm font-medium">Sign Out</p>
@@ -1090,6 +1091,14 @@ export default function Settings() {
               <Button variant="destructive" size="sm" onClick={handleLogout}>
                 Sign Out
               </Button>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-destructive">Delete Account</p>
+                <p className="text-[10px] text-muted-foreground">Permanently delete your account and all data</p>
+              </div>
+              <DeleteAccountDialog />
             </div>
           </AccordionContent>
         </AccordionItem>
