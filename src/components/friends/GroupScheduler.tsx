@@ -72,29 +72,29 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const suggestedFriends = useSuggestedFriends(connectedFriends);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  // Filter friends based on search
-  const filteredFriends = useMemo(() => {
+  // Filter friends for search dropdown (only when actively searching)
+  const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    if (q.length === 0) return [];
     const selectedIds = new Set(selectedFriends.map(f => f.id));
-    const base = q.length > 0
-      ? connectedFriends.filter(f => !selectedIds.has(f.id) && f.name.toLowerCase().includes(q))
-      : suggestedFriends.filter(f => !selectedIds.has(f.id));
-    return base;
-  }, [searchQuery, connectedFriends, suggestedFriends, selectedFriends]);
+    return connectedFriends.filter(f => !selectedIds.has(f.id) && f.name.toLowerCase().includes(q));
+  }, [searchQuery, connectedFriends, selectedFriends]);
 
-  // Close dropdown on outside click
+  // Suggested friends (excluding already selected)
+  const visibleSuggestions = useMemo(() => {
+    const selectedIds = new Set(selectedFriends.map(f => f.id));
+    return suggestedFriends.filter(f => !selectedIds.has(f.id));
+  }, [suggestedFriends, selectedFriends]);
+
+  // Close search dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
-        searchRef.current && !searchRef.current.contains(e.target as Node)
-      ) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setIsSearchFocused(false);
       }
     };
@@ -202,7 +202,7 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
 
   if (connectedFriends.length === 0) return null;
 
-  const showDropdown = isSearchFocused && filteredFriends.length > 0;
+  const showSearchDropdown = isSearchFocused && searchQuery.trim().length > 0 && searchResults.length > 0;
 
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft md:p-4">
@@ -235,10 +235,9 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
       )}
 
       {/* Search input */}
-      <div className="relative mb-3">
+      <div className="relative" ref={searchRef}>
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
-          ref={searchRef}
           placeholder="Search friends to schedule with..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -246,20 +245,11 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
           className="pl-8 h-8 text-xs"
         />
 
-        {/* Dropdown */}
-        {showDropdown && (
-          <div
-            ref={dropdownRef}
-            className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-popover shadow-md overflow-hidden"
-          >
-            {searchQuery.trim().length === 0 && (
-              <div className="px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
-                <Sparkles className="h-3 w-3" />
-                Suggested
-              </div>
-            )}
+        {/* Search results dropdown (only when typing) */}
+        {showSearchDropdown && (
+          <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-popover shadow-md overflow-hidden">
             <div className="max-h-48 overflow-y-auto py-1">
-              {filteredFriends.map(friend => (
+              {searchResults.map(friend => (
                 <button
                   key={friend.id}
                   onClick={() => addFriend(friend)}
@@ -281,6 +271,33 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
           </div>
         )}
       </div>
+
+      {/* Suggested friends (always visible below search) */}
+      {visibleSuggestions.length > 0 && selectedFriends.length === 0 && (
+        <div className="mt-2.5">
+          <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+            <Sparkles className="h-3 w-3" />
+            Suggested
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {visibleSuggestions.map(friend => (
+              <button
+                key={friend.id}
+                onClick={() => addFriend(friend)}
+                className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
+              >
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={friend.avatar} />
+                  <AvatarFallback className={cn("text-[8px]", getAvatarColor(friend.name))}>
+                    {getInitials(friend.name)}
+                  </AvatarFallback>
+                </Avatar>
+                {friend.name.split(' ')[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Availability overlay grid */}
       {selectedFriends.length > 0 && (
