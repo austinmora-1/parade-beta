@@ -86,7 +86,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="font-display text-xl">Invite Friends</DialogTitle>
           <DialogDescription>
