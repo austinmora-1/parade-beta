@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Calendar, Check, Loader2, ExternalLink, RefreshCw, Apple, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { useAuth } from '@/hooks/useAuth';
@@ -113,9 +114,25 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
             <span className="flex items-center gap-1 text-[10px] text-primary">
               <Check className="h-3 w-3" />
             </span>
-            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={googleDisconnect}>
-              Disconnect
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs px-2">
+                  Disconnect
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Disconnect Google Calendar?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will remove the connection to your Google Calendar. Your synced busy times will no longer update automatically.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={googleDisconnect}>Disconnect</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ) : (
           <Button onClick={googleConnect} size="sm" className="h-7 text-xs gap-1.5">
@@ -177,9 +194,25 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
             <span className="flex items-center gap-1 text-[10px] text-primary">
               <Check className="h-3 w-3" />
             </span>
-            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={icalDisconnect}>
-              Disconnect
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs px-2">
+                  Disconnect
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Disconnect Apple Calendar?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will remove the connection to your Apple Calendar. Your synced busy times will no longer update automatically.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={icalDisconnect}>Disconnect</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ) : (
           <Button onClick={() => setShowIcalInput(!showIcalInput)} size="sm" className="h-7 text-xs gap-1.5">
