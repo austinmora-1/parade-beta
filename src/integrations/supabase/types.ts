@@ -1082,6 +1082,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      check_username_available: {
+        Args: { p_username: string }
+        Returns: boolean
+      }
       check_vibe_recipient: {
         Args: { p_vibe_send_id: string }
         Returns: boolean
