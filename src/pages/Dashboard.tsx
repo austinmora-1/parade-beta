@@ -50,8 +50,7 @@ export default function Dashboard() {
           </Button>
           <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => setInviteFriendOpen(true)}>
             <UserPlus className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Friends</span>
-            <span className="sm:hidden">Add</span>
+            Add Friends
           </Button>
           <ShareDialog />
         </div>
