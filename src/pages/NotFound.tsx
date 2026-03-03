@@ -1,42 +1,8 @@
 import { useLocation, Link } from "react-router-dom";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const ELEPHANT_EMOJIS = ["🐘", "🎪", "🎠", "🎡", "🎈", "🎉", "🥜"];
-
-function FloatingParticle({ index }: { index: number }) {
-  const config = useMemo(() => ({
-    x: Math.random() * 100,
-    emoji: ELEPHANT_EMOJIS[index % ELEPHANT_EMOJIS.length],
-    size: 16 + Math.random() * 20,
-    duration: 6 + Math.random() * 8,
-    delay: -(Math.random() * 10),
-    drift: (Math.random() - 0.5) * 60,
-  }), [index]);
-
-  return (
-    <motion.div
-      className="absolute pointer-events-none select-none"
-      style={{ left: `${config.x}%`, fontSize: config.size }}
-      animate={{
-        y: ['-10vh', '110vh'],
-        x: [0, config.drift],
-        rotate: [0, 360],
-        opacity: [0.6, 0],
-      }}
-      transition={{
-        duration: config.duration,
-        delay: config.delay,
-        repeat: Infinity,
-        ease: 'linear',
-      }}
-    >
-      {config.emoji}
-    </motion.div>
-  );
-}
 
 const NotFound = () => {
   const location = useLocation();
@@ -47,32 +13,110 @@ const NotFound = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background overflow-hidden relative">
-      {/* Floating particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {Array.from({ length: 18 }).map((_, i) => (
-          <FloatingParticle key={i} index={i} />
-        ))}
-      </div>
-
       <div className="text-center relative z-10 px-6">
-        {/* Animated 404 number */}
-        <motion.div
-          className="relative mb-6"
-          initial={{ scale: 0, rotate: -20 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
+        {/* 404 text */}
+        <motion.h1
+          className="text-[7rem] sm:text-[9rem] font-display font-bold leading-none tracking-tight text-primary/10 select-none mb-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
         >
-          <h1 className="text-[8rem] sm:text-[10rem] font-display font-bold leading-none tracking-tight text-primary/15 select-none">
-            404
-          </h1>
+          404
+        </motion.h1>
+
+        {/* Scene container */}
+        <div className="relative h-40 w-72 sm:w-96 mx-auto mb-6">
+          {/* Ground line */}
+          <div className="absolute bottom-6 left-0 right-0 h-px bg-border" />
+
+          {/* Mouse scurrying in from the left */}
           <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute bottom-6 text-2xl select-none"
+            initial={{ left: "-10%", opacity: 0 }}
+            animate={{
+              left: ["−10%", "38%", "42%", "40%", "42%"],
+              opacity: [0, 1, 1, 1, 1],
+            }}
+            transition={{ duration: 2, delay: 0.5, ease: "easeOut" }}
           >
-            <span className="text-7xl sm:text-8xl">🐘</span>
+            <motion.span
+              className="inline-block"
+              animate={{ y: [0, -2, 0] }}
+              transition={{ duration: 0.3, repeat: Infinity }}
+            >
+              🐭
+            </motion.span>
           </motion.div>
-        </motion.div>
+
+          {/* Elephant — jumps up in fear */}
+          <motion.div
+            className="absolute bottom-6 right-[15%] text-6xl sm:text-7xl select-none origin-bottom"
+            initial={{ y: 0, rotate: 0 }}
+            animate={{
+              y: [0, 0, -40, -35, -40, -38],
+              rotate: [0, 0, -8, -5, -10, -6],
+              scale: [1, 1, 1.1, 1.08, 1.12, 1.1],
+            }}
+            transition={{
+              duration: 2,
+              delay: 1.2,
+              times: [0, 0.1, 0.35, 0.5, 0.7, 1],
+              ease: "easeOut",
+            }}
+          >
+            🐘
+          </motion.div>
+
+          {/* Sweat drops when scared */}
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute text-sm select-none"
+              style={{ right: `${12 + i * 8}%`, bottom: '65%' }}
+              initial={{ opacity: 0, y: 0 }}
+              animate={{
+                opacity: [0, 0, 1, 0],
+                y: [0, 0, -10 - i * 8, -20 - i * 12],
+                x: (i - 1) * 10,
+              }}
+              transition={{
+                duration: 2,
+                delay: 1.5 + i * 0.15,
+                ease: "easeOut",
+              }}
+            >
+              💧
+            </motion.div>
+          ))}
+
+          {/* Exclamation when scared */}
+          <motion.div
+            className="absolute right-[8%] bottom-[75%] text-2xl font-display font-bold text-destructive select-none"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, 0, 1, 1], scale: [0, 0, 1.3, 1] }}
+            transition={{ duration: 1.5, delay: 1.3, ease: "easeOut" }}
+          >
+            ❗
+          </motion.div>
+
+          {/* Tiny dust clouds at elephant's feet */}
+          {[0, 1].map((i) => (
+            <motion.div
+              key={`dust-${i}`}
+              className="absolute bottom-5 text-xs text-muted-foreground/50 select-none"
+              style={{ right: `${18 + i * 12}%` }}
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: [0, 0, 0.7, 0],
+                y: [0, 0, -5, -15],
+                scale: [0.5, 0.5, 1, 1.5],
+              }}
+              transition={{ duration: 1.5, delay: 1.3 + i * 0.1, ease: "easeOut" }}
+            >
+              💨
+            </motion.div>
+          ))}
+        </div>
 
         {/* Message */}
         <motion.div
@@ -81,10 +125,10 @@ const NotFound = () => {
           transition={{ delay: 0.4, duration: 0.5 }}
         >
           <h2 className="text-2xl font-display font-bold text-foreground mb-2">
-            This elephant wandered off!
+            Eek! Wrong turn!
           </h2>
           <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
-            The page at <span className="font-mono text-sm text-primary">{location.pathname}</span> doesn't exist. Let's get you back to the parade.
+            Our elephant got spooked — <span className="font-mono text-sm text-primary">{location.pathname}</span> doesn't exist. Let's tiptoe back to safety.
           </p>
         </motion.div>
 
@@ -97,7 +141,7 @@ const NotFound = () => {
           <Button asChild size="lg" className="gap-2">
             <Link to="/">
               <Home className="h-4 w-4" />
-              Back to Parade
+              Back to safety
             </Link>
           </Button>
         </motion.div>
