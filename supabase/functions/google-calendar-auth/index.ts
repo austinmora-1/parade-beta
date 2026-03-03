@@ -45,13 +45,14 @@ Deno.serve(async (req) => {
       })
     }
 
-    const redirectUri = `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-calendar-callback`
+    // Redirect through the app domain for a cleaner OAuth consent screen
+    const appOrigin = req.headers.get('origin') || 'https://helloparade.app'
+    const redirectUri = `${appOrigin}/google-callback`
     // Minimal scope to reduce Google policy blocks (read events only)
     const scope = 'https://www.googleapis.com/auth/calendar.readonly'
     
-    // Include the origin so we can redirect back to the correct app
-    const origin = req.headers.get('origin') || req.headers.get('referer') || ''
-    const state = btoa(JSON.stringify({ userId, origin }))
+    // Include the origin so the callback can reconstruct the same redirect_uri
+    const state = btoa(JSON.stringify({ userId, origin: appOrigin }))
     
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
     authUrl.searchParams.set('client_id', clientId)

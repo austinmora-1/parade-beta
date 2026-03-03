@@ -1,25 +1,50 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-Deno.serve(async (req) => {
-  try {
-    const url = new URL(req.url)
-    const code = url.searchParams.get('code')
-    const state = url.searchParams.get('state')
-    const error = url.searchParams.get('error')
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
-    console.log('Callback received:', { hasCode: !!code, hasState: !!state, error })
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    let code: string | null = null
+    let state: string | null = null
+    let error: string | null = null
+    let callerOrigin: string = ''
+
+    if (req.method === 'POST') {
+      // Called from client-side GoogleCallback page
+      const body = await req.json()
+      code = body.code
+      state = body.state
+      callerOrigin = req.headers.get('origin') || ''
+    } else {
+      // Legacy: direct GET redirect from Google (fallback)
+      const url = new URL(req.url)
+      code = url.searchParams.get('code')
+      state = url.searchParams.get('state')
+      error = url.searchParams.get('error')
+    }
+
+    console.log('Callback received:', { method: req.method, hasCode: !!code, hasState: !!state, error })
 
     if (error) {
       console.error('OAuth error from Google:', error)
-      return new Response(getErrorHtml(error), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(JSON.stringify({ error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     if (!code || !state) {
-      console.error('Missing code or state')
-      return new Response(getErrorHtml('Missing authorization code or state'), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(JSON.stringify({ error: 'Missing authorization code or state' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -32,8 +57,9 @@ Deno.serve(async (req) => {
       console.log('Parsed userId:', userId, 'origin:', origin)
     } catch (e) {
       console.error('Failed to parse state:', e)
-      return new Response(getErrorHtml('Invalid state parameter'), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(JSON.stringify({ error: 'Invalid state parameter' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -43,12 +69,23 @@ Deno.serve(async (req) => {
     
     if (!clientId || !clientSecret) {
       console.error('Missing Google credentials')
-      return new Response(getErrorHtml('Google OAuth not configured'), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(JSON.stringify({ error: 'Google OAuth not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const redirectUri = `${supabaseUrl}/functions/v1/google-calendar-callback`
+    // The redirect_uri must match what was used in the auth request
+    // Use the origin from state (which was set during auth) or the caller's origin
+    const appOrigin = origin || callerOrigin || 'https://helloparade.app'
+    let cleanOrigin: string
+    try {
+      cleanOrigin = new URL(appOrigin).origin
+    } catch {
+      cleanOrigin = 'https://helloparade.app'
+    }
+    const redirectUri = `${cleanOrigin}/google-callback`
+    
     console.log('Exchanging code for tokens with redirect:', redirectUri)
 
     // Exchange code for tokens
@@ -69,8 +106,9 @@ Deno.serve(async (req) => {
 
     if (tokens.error) {
       console.error('Token error:', tokens)
-      return new Response(getErrorHtml(tokens.error_description || tokens.error), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(JSON.stringify({ error: tokens.error_description || tokens.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -83,7 +121,6 @@ Deno.serve(async (req) => {
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
     console.log('Saving connection for user:', userId, 'expires:', expiresAt)
 
-    // Upsert directly into calendar_connections table (service role bypasses RLS)
     const { error: upsertError } = await supabase
       .from('calendar_connections')
       .upsert({
@@ -96,8 +133,9 @@ Deno.serve(async (req) => {
 
     if (upsertError) {
       console.error('Database upsert error:', upsertError)
-      return new Response(getErrorHtml('Failed to save connection: ' + upsertError.message), {
-        headers: { 'Content-Type': 'text/html' },
+      return new Response(JSON.stringify({ error: 'Failed to save connection: ' + upsertError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -121,23 +159,21 @@ Deno.serve(async (req) => {
     } catch (e) {
       console.error('Failed to trigger initial sync:', e)
     }
-    
-    // Determine the redirect URL - use origin from state, or fallback to published URL
-    let appUrl = origin
-    if (!appUrl || appUrl === 'null') {
-      // Fallback to known app URLs
-      appUrl = 'https://parade.lovable.app'
+
+    // For POST requests (client-side flow), return JSON
+    if (req.method === 'POST') {
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
-    
-    // Clean up the URL - extract just the origin part
+
+    // For GET requests (legacy), redirect
+    let appUrl = origin || 'https://helloparade.app'
     try {
-      const parsedUrl = new URL(appUrl)
-      appUrl = parsedUrl.origin
+      appUrl = new URL(appUrl).origin
     } catch {
-      appUrl = 'https://parade.lovable.app'
+      appUrl = 'https://helloparade.app'
     }
-    
-    console.log('Redirecting to:', appUrl)
     
     return new Response(null, {
       status: 302,
@@ -146,57 +182,9 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     console.error('Unhandled error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(null, {
-      status: 302,
-      headers: { 'Location': `https://parade.lovable.app/settings?calendar=error&message=${encodeURIComponent(message)}` },
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
-
-function getSuccessHtml() {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Connected!</title>
-      <style>
-        body { font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0fdf4; }
-        .container { text-align: center; padding: 2rem; }
-        h1 { color: #16a34a; }
-        p { color: #666; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1>✓ Google Calendar Connected!</h1>
-        <p>You can close this window and return to the app.</p>
-        <script>setTimeout(() => window.close(), 2000);</script>
-      </div>
-    </body>
-    </html>
-  `
-}
-
-function getErrorHtml(error: string) {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Connection Failed</title>
-      <style>
-        body { font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #fef2f2; }
-        .container { text-align: center; padding: 2rem; max-width: 400px; }
-        h1 { color: #dc2626; }
-        p { color: #666; word-break: break-word; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1>✗ Connection Failed</h1>
-        <p>${error}</p>
-        <p>Please close this window and try again.</p>
-      </div>
-    </body>
-    </html>
-  `
-}

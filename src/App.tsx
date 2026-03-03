@@ -27,6 +27,7 @@ import Onboarding from "./pages/Onboarding";
 import PlanInvite from "./pages/PlanInvite";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import GoogleCallback from "./pages/GoogleCallback";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const AppRoutes = () => (
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/privacy" element={<Privacy />} />
     <Route path="/terms" element={<Terms />} />
+    <Route path="/google-callback" element={<GoogleCallback />} />
     <Route
       path="/landing"
       element={
