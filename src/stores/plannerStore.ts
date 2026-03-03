@@ -1091,21 +1091,38 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const existingTags = currentVibe?.customTags || [];
     const newTags = existingTags.filter(t => t !== tag);
     
+    const gifUrl = currentVibe?.gifUrl;
+    
     if (newTags.length === 0) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          current_vibe: null,
-          custom_vibe_tags: []
-        })
-        .eq('user_id', userId);
-      
-      if (error) {
-        console.error('Error removing custom vibe:', error);
-        return;
+      // Keep the vibe if there's still a GIF attached
+      if (gifUrl) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ custom_vibe_tags: [] })
+          .eq('user_id', userId);
+        
+        if (error) {
+          console.error('Error removing custom vibe:', error);
+          return;
+        }
+        
+        set({ currentVibe: { type: 'custom', customTags: [], gifUrl } });
+      } else {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ 
+            current_vibe: null,
+            custom_vibe_tags: []
+          })
+          .eq('user_id', userId);
+        
+        if (error) {
+          console.error('Error removing custom vibe:', error);
+          return;
+        }
+        
+        set({ currentVibe: null });
       }
-      
-      set({ currentVibe: null });
     } else {
       const { error } = await supabase
         .from('profiles')
@@ -1117,7 +1134,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         return;
       }
       
-      const newVibe: Vibe = { type: 'custom', customTags: newTags };
+      const newVibe: Vibe = { type: 'custom', customTags: newTags, gifUrl };
       set({ currentVibe: newVibe });
     }
   },
