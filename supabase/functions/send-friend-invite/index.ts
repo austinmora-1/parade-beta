@@ -113,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
                     <tr>
                       <td style="padding: 40px 30px; background-color: #ffffff;">
                         <p style="margin: 0 0 24px; font-size: 16px; color: #18181b; line-height: 1.7;">
-                          Hey ${capitalizedName},
+                          Hey there,
                         </p>
                         <p style="margin: 0 0 20px; font-size: 16px; color: #3f3f46; line-height: 1.7;">
                           <strong style="color: #18181b;">${inviterName}</strong> thought you'd be a good fit for Parade — and honestly, that's the best way to join.
@@ -178,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
           </body>
           </html>
         `,
-        text: `Hey ${capitalizedName},\n\n${inviterName} thought you'd be a good fit for Parade — and honestly, that's the best way to join.\n\nParade is a social calendar and platform built for one simple reason: making plans with the people you care about shouldn't be that hard. We built this app because we were tired of the endless "are you free?" texts, forgetting a friend mentioned they would be out of town, manually typing out your availability every time someone asked, and arriving at the weekend without anything planned.\n\nYour boss can book time with you in two clicks (unfortunately). Your best friend should be able to do the same — so we built something for that.\n\nThe idea is simple: connect your existing calendar(s), share your availability, see when your friends are free, and make your plans without all the back-and-forth. No corporate scheduling links. No friction. No missed opportunities to hang. Just a tool that makes the fun stuff easier to make happen.\n\nJoin Parade: ${inviteUrl}\n\nBen and Austin\nFrom Parade`,
+        text: `Hey there,\n\n${inviterName} thought you'd be a good fit for Parade — and honestly, that's the best way to join.\n\nParade is a social calendar and platform built for one simple reason: making plans with the people you care about shouldn't be that hard. We built this app because we were tired of the endless "are you free?" texts, forgetting a friend mentioned they would be out of town, manually typing out your availability every time someone asked, and arriving at the weekend without anything planned.\n\nYour boss can book time with you in two clicks (unfortunately). Your best friend should be able to do the same — so we built something for that.\n\nThe idea is simple: connect your existing calendar(s), share your availability, see when your friends are free, and make your plans without all the back-and-forth. No corporate scheduling links. No friction. No missed opportunities to hang. Just a tool that makes the fun stuff easier to make happen.\n\nJoin Parade: ${inviteUrl}\n\nBen and Austin\nFrom Parade`,
       }),
     });
 
