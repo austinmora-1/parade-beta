@@ -734,6 +734,7 @@ export type Database = {
           timezone: string | null
           updated_at: string
           user_id: string
+          vibe_gif_url: string | null
           walkthrough_completed: boolean
         }
         Insert: {
@@ -769,6 +770,7 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           user_id: string
+          vibe_gif_url?: string | null
           walkthrough_completed?: boolean
         }
         Update: {
@@ -804,6 +806,7 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           user_id?: string
+          vibe_gif_url?: string | null
           walkthrough_completed?: boolean
         }
         Relationships: []

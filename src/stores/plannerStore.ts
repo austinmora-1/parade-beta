@@ -173,7 +173,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         // 6. Profile
         supabase
           .from('profiles')
-          .select('current_vibe, location_status, custom_vibe_tags, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address, timezone')
+          .select('current_vibe, location_status, custom_vibe_tags, vibe_gif_url, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address, timezone')
           .eq('user_id', userId)
           .single(),
       ]);
@@ -430,10 +430,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       // Process availability with default settings from profile
       const customTags = (profile as any)?.custom_vibe_tags || [];
+      const vibeGifUrl = (profile as any)?.vibe_gif_url || undefined;
       const currentVibe = (profile as any)?.current_vibe 
         ? { 
             type: (profile as any).current_vibe as VibeType,
-            customTags: (profile as any).current_vibe === 'custom' ? customTags : undefined
+            customTags: (profile as any).current_vibe === 'custom' ? customTags : undefined,
+            gifUrl: vibeGifUrl,
           } 
         : null;
       
@@ -1013,7 +1015,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     const { error } = await supabase
       .from('profiles')
-      .update({ current_vibe: vibe?.type || null })
+      .update({ 
+        current_vibe: vibe?.type || null,
+        vibe_gif_url: vibe?.gifUrl || null,
+      })
       .eq('user_id', userId);
     
     if (error) {

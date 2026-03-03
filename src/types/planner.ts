@@ -91,6 +91,7 @@ export interface Vibe {
   type: VibeType;
   customText?: string;
   customTags?: string[];
+  gifUrl?: string;
 }
 
 export interface DayAvailability {
