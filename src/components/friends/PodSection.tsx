@@ -5,6 +5,13 @@ import { FriendAvatarGrid } from './FriendAvatarGrid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -78,6 +85,13 @@ export function PodSection({
   const [newPodName, setNewPodName] = useState('');
   const [newPodEmoji, setNewPodEmoji] = useState('💜');
   const [memberSearch, setMemberSearch] = useState('');
+  const [selectedPodId, setSelectedPodId] = useState<string>(pods[0]?.id ?? '');
+
+  // Keep selectedPodId in sync when pods change
+  const selectedPod = pods.find(p => p.id === selectedPodId) ?? pods[0] ?? null;
+  if (selectedPod && selectedPodId !== selectedPod.id) {
+    setSelectedPodId(selectedPod.id);
+  }
 
   const connectedFriends = friends.filter(f => f.status === 'connected' && f.friendUserId);
 
@@ -132,11 +146,11 @@ export function PodSection({
 
   return (
     <div className="space-y-3">
-      {/* Header */}
+      {/* Header with dropdown */}
       <div className="flex items-center justify-between">
         <h2 className="flex items-center gap-1.5 text-xs font-semibold">
           <Heart className="h-4 w-4 text-primary fill-primary" />
-          Pods ({pods.length})
+          Pods
         </h2>
         <Button
           variant="ghost"
@@ -153,83 +167,102 @@ export function PodSection({
         </Button>
       </div>
 
-      {/* Pod list */}
-      {pods.map(pod => {
-        const podFriends = getPodFriends(pod);
-        return (
-          <div key={pod.id} className="rounded-xl border border-border bg-card p-3 shadow-soft">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="flex items-center gap-1.5 text-xs font-semibold">
-                <span>{pod.emoji}</span>
-                {pod.name} ({podFriends.length})
-              </h3>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => {
-                    setMemberSearch('');
-                    setAddMemberPod(pod);
-                  }}
-                >
-                  <UserPlus className="h-3 w-3 text-muted-foreground" />
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                      <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-[120px]">
-                    <DropdownMenuItem
-                      className="text-xs"
+      {pods.length > 0 ? (
+        <>
+          {/* Pod selector dropdown */}
+          <Select value={selectedPodId} onValueChange={setSelectedPodId}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Select a pod" />
+            </SelectTrigger>
+            <SelectContent>
+              {pods.map(pod => (
+                <SelectItem key={pod.id} value={pod.id} className="text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span>{pod.emoji}</span>
+                    <span>{pod.name}</span>
+                    <span className="text-muted-foreground">({getPodFriends(pod).length})</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Selected pod content */}
+          {selectedPod && (() => {
+            const podFriends = getPodFriends(selectedPod);
+            return (
+              <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="flex items-center gap-1.5 text-xs font-semibold">
+                    <span>{selectedPod.emoji}</span>
+                    {selectedPod.name} ({podFriends.length})
+                  </h3>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
                       onClick={() => {
-                        setNewPodName(pod.name);
-                        setNewPodEmoji(pod.emoji);
-                        setEditingPod(pod);
+                        setMemberSearch('');
+                        setAddMemberPod(selectedPod);
                       }}
                     >
-                      <Pencil className="mr-1.5 h-3 w-3" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive text-xs"
-                      onClick={() => setDeletingPod(pod)}
-                    >
-                      <Trash2 className="mr-1.5 h-3 w-3" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <UserPlus className="h-3 w-3 text-muted-foreground" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-[120px]">
+                        <DropdownMenuItem
+                          className="text-xs"
+                          onClick={() => {
+                            setNewPodName(selectedPod.name);
+                            setNewPodEmoji(selectedPod.emoji);
+                            setEditingPod(selectedPod);
+                          }}
+                        >
+                          <Pencil className="mr-1.5 h-3 w-3" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive text-xs"
+                          onClick={() => setDeletingPod(selectedPod)}
+                        >
+                          <Trash2 className="mr-1.5 h-3 w-3" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {podFriends.length > 0 ? (
+                  <FriendAvatarGrid
+                    friends={podFriends}
+                    onRemove={onRemoveFriend}
+                    lastHungOut={lastHungOut}
+                    onTogglePod={(friendId) => {
+                      const friend = friends.find(f => f.id === friendId);
+                      if (friend?.friendUserId) {
+                        onRemoveMember(selectedPod.id, friend.friendUserId);
+                        toast({ title: `Removed ${friend.name} from ${selectedPod.name}` });
+                      }
+                    }}
+                  />
+                ) : (
+                  <p className="text-[11px] text-muted-foreground text-center py-3">
+                    No members yet — tap <UserPlus className="inline h-3 w-3" /> to add friends
+                  </p>
+                )}
               </div>
-            </div>
-
-            {podFriends.length > 0 ? (
-              <FriendAvatarGrid
-                friends={podFriends}
-                onRemove={onRemoveFriend}
-                lastHungOut={lastHungOut}
-                onTogglePod={(friendId) => {
-                  const friend = friends.find(f => f.id === friendId);
-                  if (friend?.friendUserId) {
-                    onRemoveMember(pod.id, friend.friendUserId);
-                    toast({ title: `Removed ${friend.name} from ${pod.name}` });
-                  }
-                }}
-              />
-            ) : (
-              <p className="text-[11px] text-muted-foreground text-center py-3">
-                No members yet — tap <UserPlus className="inline h-3 w-3" /> to add friends
-              </p>
-            )}
-          </div>
-        );
-      })}
-
-      {/* Empty state */}
-      {pods.length === 0 && (
+            );
+          })()}
+        </>
+      ) : (
         <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 text-center">
           <Heart className="h-6 w-6 text-primary mx-auto mb-1.5" />
           <h3 className="text-xs font-semibold">Create your first Pod</h3>
