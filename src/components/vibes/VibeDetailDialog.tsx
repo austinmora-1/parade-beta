@@ -20,36 +20,25 @@ function VibeRecipientNames({ vibeSendId, currentUserId }: { vibeSendId: string;
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // Get all recipient IDs for this vibe
-      const { data: recipients } = await supabase
-        .from('vibe_send_recipients')
-        .select('recipient_id')
-        .eq('vibe_send_id', vibeSendId);
+      const { data, error } = await supabase.rpc('get_vibe_recipient_names', {
+        p_vibe_send_id: vibeSendId,
+      });
 
-      if (cancelled || !recipients || recipients.length === 0) {
+      if (cancelled) return;
+
+      if (error) {
+        console.error('Error fetching vibe recipients:', error);
         setLoading(false);
         return;
       }
 
-      // Exclude current user from the list
-      const otherIds = recipients
-        .map(r => r.recipient_id)
-        .filter(id => id !== currentUserId);
+      // Exclude current user from the displayed list
+      const otherNames = (data || [])
+        .filter((r: any) => r.user_id !== currentUserId)
+        .map((r: any) => r.display_name || 'Someone');
 
-      if (otherIds.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: profiles } = await supabase
-        .from('public_profiles')
-        .select('user_id, display_name')
-        .in('user_id', otherIds);
-
-      if (!cancelled) {
-        setNames((profiles || []).map(p => p.display_name || 'Someone'));
-        setLoading(false);
-      }
+      setNames(otherNames);
+      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [vibeSendId, currentUserId]);
