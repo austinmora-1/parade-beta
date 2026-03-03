@@ -92,11 +92,12 @@ export function OnboardingWizard() {
     setIsSubmitting(true);
     try {
       // Update profile with onboarding data
-      const fullName = [data.firstName, data.lastName].filter(Boolean).join(' ').trim();
       const { error } = await supabase
         .from('profiles')
         .update({
-          display_name: fullName || data.displayName || null,
+          first_name: data.firstName || null,
+          last_name: data.lastName || null,
+          display_name: data.displayName || null,
           show_availability: data.showAvailability,
           show_location: data.showLocation,
           show_vibe_status: data.showVibeStatus,
