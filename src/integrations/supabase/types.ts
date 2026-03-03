@@ -1156,6 +1156,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_vibe_recipient_names: {
+        Args: { p_vibe_send_id: string }
+        Returns: {
+          display_name: string
+          user_id: string
+        }[]
+      }
       owns_share_code: { Args: { p_share_code: string }; Returns: boolean }
       remove_friendship: {
         Args: { p_friendship_id: string }
