@@ -45,9 +45,10 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Use the edge function URL as the shareable link — it serves HTML with OG meta tags
-      // and auto-redirects to the app. This ensures iMessage/social crawlers see the OG card.
-      const ogLink = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}`;
+      // Use a static HTML page at /i/ that has proper OG meta tags for iMessage/social crawlers.
+      // Supabase edge functions can't serve HTML (text/html is rewritten to text/plain),
+      // so we use a static page that redirects to the SPA plan-invite route via JavaScript.
+      const ogLink = `https://helloparade.app/i/?t=${data.invite_token}`;
       setGeneratedLink(ogLink);
       setDisplayLink(ogLink);
     } catch (err: any) {
@@ -75,8 +76,8 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Use edge function URL for rich link previews in email
-      const inviteUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}`;
+      // Use static invite page for rich link previews in email
+      const inviteUrl = `https://helloparade.app/i/?t=${data.invite_token}`;
 
       const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
 

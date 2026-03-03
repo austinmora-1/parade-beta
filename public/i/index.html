@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>You're Invited! - Parade</title>
+<meta property="og:title" content="You're Invited! - Parade" />
+<meta property="og:description" content="You've been invited to join a plan on Parade. Tap to view details and RSVP!" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://helloparade.app/og-invite.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:site_name" content="Parade" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="You're Invited! - Parade" />
+<meta name="twitter:description" content="You've been invited to join a plan on Parade. Tap to view details and RSVP!" />
+<meta name="twitter:image" content="https://helloparade.app/og-invite.png" />
+<style>
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: #0F1A14;
+    color: #55C78E;
+  }
+  a { color: #55C78E; }
+  .loader { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<script>
+  // Extract token from query param and redirect to the SPA plan-invite page
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('t');
+  if (token) {
+    window.location.replace('/plan-invite/' + token);
+  }
+</script>
+</head>
+<body>
+<p>Redirecting to <a href="/">Parade</a>...</p>
+</body>
+</html>
