@@ -72,3 +72,6 @@ verify_jwt = false
 [functions.og-invite-image]
 verify_jwt = false
 
+[functions.send-sms-invite]
+verify_jwt = false
+
