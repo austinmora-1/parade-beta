@@ -46,11 +46,11 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           <Button size="sm" className="gap-2 h-8" onClick={() => setCreatePlanOpen(true)}>
             <CalendarPlus className="h-4 w-4" />
-            New Plan
+            Plan
           </Button>
           <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => setInviteFriendOpen(true)}>
             <UserPlus className="h-4 w-4" />
-            Add Friends
+            Friends
           </Button>
           <ShareDialog />
         </div>

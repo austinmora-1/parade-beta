@@ -193,8 +193,7 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
         {trigger || (
           <Button variant="outline" size="sm" className="gap-2 h-8">
             <CalendarArrowUp className="h-4 w-4" />
-            <span className="hidden sm:inline">Share Avail</span>
-            <span className="sm:hidden">Share</span>
+            Share
           </Button>
         )}
       </DialogTrigger>
