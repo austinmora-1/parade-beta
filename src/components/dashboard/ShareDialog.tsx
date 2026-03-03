@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Image, Copy, Check, CalendarArrowUp, Eye, ExternalLink } from 'lucide-react';
+import { MessageSquare, Image, Copy, Check, Eye, ExternalLink } from 'lucide-react';
+import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -192,7 +193,7 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="gap-2 h-8">
-            <CalendarArrowUp className="h-4 w-4" />
+            <CalendarShareIcon className="h-4 w-4" />
             Share
           </Button>
         )}
