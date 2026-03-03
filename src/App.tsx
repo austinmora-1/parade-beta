@@ -25,6 +25,8 @@ import Share from "./pages/Share";
 import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import PlanInvite from "./pages/PlanInvite";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +82,8 @@ const AppRoutes = () => (
     <Route path="/invite" element={<Invite />} />
     <Route path="/plan-invite/:token" element={<PlanInvite />} />
     <Route path="/reset-password" element={<ResetPassword />} />
+    <Route path="/privacy" element={<Privacy />} />
+    <Route path="/terms" element={<Terms />} />
     <Route
       path="/landing"
       element={
