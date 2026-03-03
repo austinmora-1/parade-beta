@@ -81,7 +81,7 @@ interface CreatePlanDialogProps {
 }
 
 export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, onChangeProposed }: CreatePlanDialogProps) {
-  const { addPlan, updatePlan, friends, userId } = usePlannerStore();
+  const { addPlan, updatePlan, friends, userId, plans } = usePlannerStore();
   const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
   
   const [title, setTitle] = useState('');
@@ -97,6 +97,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [locationName, setLocationName] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [subscriberFriends, setSubscriberFriends] = useState<string[]>([]);
+  const [friendSearch, setFriendSearch] = useState('');
   const [notes, setNotes] = useState('');
   const [planStatus, setPlanStatus] = useState<PlanStatus>('confirmed');
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
@@ -224,6 +225,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setLocationName('');
       setSelectedFriends([]);
       setSubscriberFriends([]);
+      setFriendSearch('');
       setNotes('');
       setPlanStatus('confirmed');
     }
@@ -383,6 +385,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     setLocationName('');
     setSelectedFriends([]);
     setSubscriberFriends([]);
+    setFriendSearch('');
     setNotes('');
     setPlanStatus('confirmed');
     setParticipantAvailability([]);
@@ -721,40 +724,132 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
           </div>
 
           {/* Friends - compact */}
-          {friends.filter((f) => f.status === 'connected').length > 0 && (
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                Friends
-              </Label>
-              <div className="flex flex-wrap gap-1">
-                {friends
-                  .filter((f) => f.status === 'connected')
-                  .map((friend) => {
-                    const isParticipant = selectedFriends.includes(friend.id);
-                    const isSubscriber = subscriberFriends.includes(friend.id);
-                    return (
-                      <button
-                        key={friend.id}
-                        onClick={() => toggleFriend(friend.id)}
-                        className={cn(
-                          "rounded-full px-2.5 py-1 text-xs font-medium transition-all flex items-center gap-1",
-                          isParticipant && "bg-primary text-primary-foreground",
-                          isSubscriber && "bg-accent text-accent-foreground border border-border",
-                          !isParticipant && !isSubscriber && "bg-muted text-muted-foreground hover:bg-muted/80"
-                        )}
-                      >
-                        {isSubscriber && <Eye className="h-3 w-3" />}
-                        {friend.name}
-                      </button>
-                    );
-                  })}
+          {(() => {
+            const connectedFriends = friends.filter((f) => f.status === 'connected');
+            if (connectedFriends.length === 0) return null;
+
+            // Compute suggested friends: ranked by how often they co-appear in past plans
+            const friendPlanCounts = new Map<string, number>();
+            for (const plan of plans) {
+              for (const p of plan.participants) {
+                const matchedFriend = connectedFriends.find(f => f.friendUserId === p.friendUserId || f.id === p.id);
+                if (matchedFriend) {
+                  friendPlanCounts.set(matchedFriend.id, (friendPlanCounts.get(matchedFriend.id) || 0) + 1);
+                }
+              }
+            }
+
+            const suggestedFriends = [...connectedFriends]
+              .sort((a, b) => (friendPlanCounts.get(b.id) || 0) - (friendPlanCounts.get(a.id) || 0))
+              .slice(0, 5);
+
+            const searchLower = friendSearch.toLowerCase();
+            const filteredFriends = searchLower
+              ? connectedFriends.filter(f => f.name.toLowerCase().includes(searchLower))
+              : [];
+
+            // Selected friends always visible at top
+            const selectedConnected = connectedFriends.filter(f => selectedFriends.includes(f.id) || subscriberFriends.includes(f.id));
+
+            return (
+              <div className="space-y-2">
+                <Label className="text-xs flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  Friends
+                </Label>
+
+                {/* Selected friends chips */}
+                {selectedConnected.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedConnected.map((friend) => {
+                      const isParticipant = selectedFriends.includes(friend.id);
+                      const isSubscriber = subscriberFriends.includes(friend.id);
+                      return (
+                        <button
+                          key={friend.id}
+                          onClick={() => toggleFriend(friend.id)}
+                          className={cn(
+                            "rounded-full px-2.5 py-1 text-xs font-medium transition-all flex items-center gap-1",
+                            isParticipant && "bg-primary text-primary-foreground",
+                            isSubscriber && "bg-accent text-accent-foreground border border-border",
+                          )}
+                        >
+                          {isSubscriber && <Eye className="h-3 w-3" />}
+                          {friend.name}
+                          <span className="ml-0.5 opacity-60">×</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Search input */}
+                <div className="relative">
+                  <Input
+                    placeholder="Search friends..."
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    className="h-8 text-xs pl-7"
+                  />
+                  <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                </div>
+
+                {/* Search results */}
+                {friendSearch && (
+                  <div className="max-h-28 overflow-y-auto rounded-lg border border-border bg-popover">
+                    {filteredFriends.length === 0 ? (
+                      <p className="px-2.5 py-2 text-xs text-muted-foreground">No friends found</p>
+                    ) : (
+                      filteredFriends.map((friend) => {
+                        const isParticipant = selectedFriends.includes(friend.id);
+                        const isSubscriber = subscriberFriends.includes(friend.id);
+                        const isSelected = isParticipant || isSubscriber;
+                        return (
+                          <button
+                            key={friend.id}
+                            onClick={() => { toggleFriend(friend.id); setFriendSearch(''); }}
+                            className={cn(
+                              "flex w-full items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-muted transition-colors",
+                              isSelected && "opacity-50"
+                            )}
+                          >
+                            <Users className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span>{friend.name}</span>
+                            {isParticipant && <span className="ml-auto text-[10px] text-primary">Invited</span>}
+                            {isSubscriber && <span className="ml-auto text-[10px] text-accent-foreground">Subscribed</span>}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Suggested friends (when not searching) */}
+                {!friendSearch && suggestedFriends.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-muted-foreground font-medium">Suggested</span>
+                    <div className="flex flex-wrap gap-1">
+                      {suggestedFriends
+                        .filter(f => !selectedFriends.includes(f.id) && !subscriberFriends.includes(f.id))
+                        .map((friend) => (
+                          <button
+                            key={friend.id}
+                            onClick={() => toggleFriend(friend.id)}
+                            className="rounded-full px-2.5 py-1 text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-all"
+                          >
+                            + {friend.name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-muted-foreground">
+                  Tap to invite · Tap again: subscribe (view only) · Again: remove
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                Click: invite · Click again: subscribe (view only) · Click again: remove
-              </p>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Availability Warning for shared plan edits */}
           {needsProposal && participantAvailability.length > 0 && (
