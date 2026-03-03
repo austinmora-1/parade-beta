@@ -12,7 +12,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Copy, Check, Loader2, Link2 } from 'lucide-react';
+import { Mail, Copy, Check, Loader2, Link2, Phone } from 'lucide-react';
 
 interface InviteToPlanDialogProps {
   open: boolean;
@@ -25,31 +25,37 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
   const { user } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isSendingSms, setIsSendingSms] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [displayLink, setDisplayLink] = useState<string | null>(null);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
+  const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
+
+  const createInviteAndGetLink = async () => {
+    const { data, error } = await supabase
+      .from('plan_invites')
+      .insert({
+        plan_id: planId,
+        invited_by: user!.id,
+      })
+      .select('invite_token')
+      .single();
+
+    if (error) throw error;
+
+    const ogLink = `https://helloparade.app/invite.html?t=${data.invite_token}`;
+    return ogLink;
+  };
+
   const handleGenerateLink = async () => {
     setIsGeneratingLink(true);
     try {
-      const { data, error } = await supabase
-        .from('plan_invites')
-        .insert({
-          plan_id: planId,
-          invited_by: user!.id,
-        })
-        .select('invite_token')
-        .single();
-
-      if (error) throw error;
-
-      // Static HTML file with OG meta tags for iMessage/social crawlers.
-      // Using explicit .html extension ensures hosting serves it as static HTML, not SPA.
-      // Crawlers see "You're Invited!" card; users get JS-redirected to /plan-invite/TOKEN.
-      const ogLink = `https://helloparade.app/invite.html?t=${data.invite_token}`;
-      const cleanLink = `https://helloparade.app/plan-invite/${data.invite_token}`;
+      const ogLink = await createInviteAndGetLink();
+      const cleanLink = ogLink.replace('/invite.html?t=', '/plan-invite/');
       setGeneratedLink(ogLink);
       setDisplayLink(cleanLink);
     } catch (err: any) {
@@ -64,7 +70,6 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
     setIsSending(true);
     try {
-      // Create the invite record with email
       const { data, error } = await supabase
         .from('plan_invites')
         .insert({
@@ -77,12 +82,8 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Static HTML file with OG tags for rich link previews in email
       const inviteUrl = `https://helloparade.app/invite.html?t=${data.invite_token}`;
 
-      const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
-
-      // Send email via existing edge function
       await supabase.functions.invoke('send-friend-invite', {
         body: {
           email: email.trim(),
@@ -99,6 +100,37 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
       toast({ title: 'Failed to send invite', description: err.message, variant: 'destructive' });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleSendSmsInvite = async () => {
+    const cleanPhone = phone.trim().replace(/[^\d+]/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      toast({ title: 'Invalid phone number', description: 'Please enter a valid phone number with country code (e.g. +1...)', variant: 'destructive' });
+      return;
+    }
+
+    setIsSendingSms(true);
+    try {
+      const ogLink = await createInviteAndGetLink();
+
+      const { data, error } = await supabase.functions.invoke('send-sms-invite', {
+        body: {
+          phone: cleanPhone,
+          inviteUrl: ogLink,
+          inviterName,
+          planTitle,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Text sent! 📱', description: `Invite texted to ${phone}` });
+      setPhone('');
+    } catch (err: any) {
+      toast({ title: 'Failed to send text', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSendingSms(false);
     }
   };
 
@@ -142,7 +174,41 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
               disabled={!email.trim() || isSending}
               className="w-full"
             >
-              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Invite'}
+              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Email Invite'}
+            </Button>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
+
+          {/* SMS Invite */}
+          <div className="space-y-3">
+            <Label htmlFor="invite-phone" className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              Invite by Text Message
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="invite-phone"
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendSmsInvite()}
+              />
+            </div>
+            <Button
+              onClick={handleSendSmsInvite}
+              disabled={!phone.trim() || isSendingSms}
+              className="w-full"
+            >
+              {isSendingSms ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Text Invite'}
             </Button>
           </div>
 
