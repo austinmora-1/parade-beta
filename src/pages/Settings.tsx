@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -310,6 +310,9 @@ export default function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [originalUsername, setOriginalUsername] = useState('');
 
   // Profile state
   const [firstName, setFirstName] = useState('');
@@ -368,6 +371,7 @@ export default function Settings() {
         if (profile) {
           const fullName = profile.display_name || '';
           setDisplayName(fullName);
+          setOriginalUsername(fullName);
           setFirstName((profile as any).first_name || '');
           setLastName((profile as any).last_name || '');
           setPhoneNumber((profile as any).phone_number || '');
@@ -410,9 +414,47 @@ export default function Settings() {
     loadProfile();
   }, [session?.user]);
 
+  // Debounced username availability check
+  const usernameTimerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (!displayName.trim() || displayName === originalUsername) {
+      setUsernameError('');
+      setIsCheckingUsername(false);
+      return;
+    }
+    setIsCheckingUsername(true);
+    setUsernameError('');
+    if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
+    usernameTimerRef.current = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.rpc('check_username_available', {
+          p_username: displayName.trim(),
+        });
+        if (error) throw error;
+        if (!data) {
+          setUsernameError('This username is already taken');
+        } else {
+          setUsernameError('');
+        }
+      } catch (err) {
+        console.error('Username check error:', err);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    }, 500);
+    return () => {
+      if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
+    };
+  }, [displayName, originalUsername]);
+
   const handleSaveChanges = async () => {
     if (!session?.user) {
       toast.error('You must be logged in to save settings');
+      return;
+    }
+
+    if (usernameError) {
+      toast.error('Please fix the username error before saving');
       return;
     }
 
@@ -613,14 +655,26 @@ export default function Settings() {
               </div>
               <div className="space-y-1 sm:col-span-2">
                 <Label htmlFor="username" className="text-xs">Username</Label>
-                <Input
-                  id="username"
-                  placeholder="Choose a unique username"
-                  value={displayName}
-                  onChange={(e) => { setDisplayName(e.target.value); handleChange(); }}
-                  className="h-8 text-sm"
-                />
-                <p className="text-[10px] text-muted-foreground">This is how you appear to friends across Parade</p>
+                <div className="relative">
+                  <Input
+                    id="username"
+                    placeholder="Choose a unique username"
+                    value={displayName}
+                    onChange={(e) => { setDisplayName(e.target.value); handleChange(); }}
+                    className={cn("h-8 text-sm pr-8", usernameError && "border-destructive focus-visible:ring-destructive")}
+                  />
+                  {isCheckingUsername && (
+                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  )}
+                  {!isCheckingUsername && displayName && displayName !== originalUsername && !usernameError && (
+                    <Check className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-availability-available" />
+                  )}
+                </div>
+                {usernameError ? (
+                  <p className="text-[10px] text-destructive">{usernameError}</p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">This is how you appear to friends across Parade</p>
+                )}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="email" className="text-xs">Email</Label>
