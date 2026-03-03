@@ -28,7 +28,9 @@ Deno.serve(async (req) => {
     }
 
     const planInviteUrl = `${APP_URL}/plan-invite/${token}`;
-    const ogImageUrl = `${SUPABASE_URL}/functions/v1/og-image?type=invite-card&v=6`;
+    // Use a static image from the published domain — iMessage/social crawlers
+    // reliably fetch images from standard web domains but struggle with edge function URLs.
+    const ogImageUrl = `${APP_URL}/og-invite.png`;
 
     // Build the HTML page with OG meta tags that auto-redirects to the app
     const html = `<!DOCTYPE html>
