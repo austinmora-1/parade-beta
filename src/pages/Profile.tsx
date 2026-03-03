@@ -553,7 +553,7 @@ export default function Profile() {
           ) : (
             <div className="h-full w-full bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
           )}
-          <div className="absolute right-3 bottom-3 flex items-center gap-1.5 opacity-0 transition-opacity group-hover/cover:opacity-100">
+          <div className="absolute right-3 bottom-3 flex items-center gap-1.5 opacity-100 md:opacity-0 transition-opacity group-hover/cover:opacity-100">
             <button
               onClick={() => coverInputRef.current?.click()}
               disabled={isUploadingCover}
