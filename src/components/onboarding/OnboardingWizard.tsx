@@ -17,6 +17,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export interface OnboardingData {
+  firstName: string;
+  lastName: string;
   displayName: string;
   showAvailability: boolean;
   showLocation: boolean;
@@ -48,6 +50,8 @@ export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [data, setData] = useState<OnboardingData>({
+    firstName: '',
+    lastName: '',
     displayName: '',
     showAvailability: true,
     showLocation: true,
@@ -88,10 +92,11 @@ export function OnboardingWizard() {
     setIsSubmitting(true);
     try {
       // Update profile with onboarding data
+      const fullName = [data.firstName, data.lastName].filter(Boolean).join(' ').trim();
       const { error } = await supabase
         .from('profiles')
         .update({
-          display_name: data.displayName || null,
+          display_name: fullName || data.displayName || null,
           show_availability: data.showAvailability,
           show_location: data.showLocation,
           show_vibe_status: data.showVibeStatus,
