@@ -544,11 +544,11 @@ export default function Profile() {
         }}
         imageSrc={imageToCrop}
         onCropComplete={handleCropComplete}
-        aspect={cropMode === 'cover' ? 16 / 9 : 1}
+        aspect={cropMode === 'cover' ? 4 : 1}
         circular={cropMode === 'avatar'}
         title={cropMode === 'cover' ? 'Crop Cover Photo' : 'Crop Profile Picture'}
-        outputWidth={cropMode === 'cover' ? 1920 : 1024}
-        outputHeight={cropMode === 'cover' ? 432 : undefined}
+        outputWidth={cropMode === 'cover' ? 1600 : 1024}
+        outputHeight={cropMode === 'cover' ? 400 : undefined}
       />
 
       {/* Profile Header */}
