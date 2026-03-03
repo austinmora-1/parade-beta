@@ -13,9 +13,11 @@ import { VibeReactions, VibeReaction } from './VibeReactions';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 
-function VibeRecipientNames({ vibeSendId, currentUserId }: { vibeSendId: string; currentUserId?: string }) {
+function VibeRecipientNames({ vibeSendId, currentUserId, senderId }: { vibeSendId: string; currentUserId?: string; senderId?: string }) {
   const [names, setNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isSentByMe = currentUserId && senderId && currentUserId === senderId;
 
   useEffect(() => {
     let cancelled = false;
@@ -32,28 +34,40 @@ function VibeRecipientNames({ vibeSendId, currentUserId }: { vibeSendId: string;
         return;
       }
 
-      // Exclude current user from the displayed list
-      const otherNames = (data || [])
-        .filter((r: any) => r.user_id !== currentUserId)
-        .map((r: any) => r.display_name || 'Someone');
-
-      setNames(otherNames);
+      if (isSentByMe) {
+        // For sent vibes, show all recipients
+        const allNames = (data || []).map((r: any) => r.display_name || 'Someone');
+        setNames(allNames);
+      } else {
+        // For received vibes, exclude current user
+        const otherNames = (data || [])
+          .filter((r: any) => r.user_id !== currentUserId)
+          .map((r: any) => r.display_name || 'Someone');
+        setNames(otherNames);
+      }
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [vibeSendId, currentUserId]);
+  }, [vibeSendId, currentUserId, isSentByMe]);
 
   if (loading || names.length === 0) return null;
 
-  const displayNames = names.length <= 3
-    ? names.join(', ')
-    : `${names.slice(0, 2).join(', ')} & ${names.length - 2} other${names.length - 2 > 1 ? 's' : ''}`;
+  let displayNames: string;
+  if (names.length <= 2) {
+    displayNames = names.join(', ');
+  } else {
+    const extra = names.length - 2;
+    displayNames = `${names.slice(0, 2).join(', ')}`;
+    displayNames += ` +${extra} friend${extra > 1 ? 's' : ''}`;
+  }
+
+  const label = isSentByMe ? 'Sent to' : 'Also sent to';
 
   return (
     <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
       <Users className="h-4 w-4 text-muted-foreground shrink-0" />
       <span className="text-xs text-muted-foreground">
-        Also sent to <span className="font-medium text-foreground">{displayNames}</span>
+        {label} <span className="font-medium text-foreground">{displayNames}</span>
       </span>
     </div>
   );
@@ -201,7 +215,7 @@ export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss, reaction
             )}
 
             {/* Other recipients */}
-            <VibeRecipientNames vibeSendId={vibe.id} currentUserId={currentUserId} />
+            <VibeRecipientNames vibeSendId={vibe.id} currentUserId={currentUserId} senderId={vibe.sender_id} />
 
             {/* Timestamp */}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
