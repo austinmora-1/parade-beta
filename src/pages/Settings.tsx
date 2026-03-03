@@ -312,6 +312,8 @@ export default function Settings() {
   const [hasChanges, setHasChanges] = useState(false);
 
   // Profile state
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -364,7 +366,12 @@ export default function Settings() {
         }
 
         if (profile) {
-          setDisplayName(profile.display_name || '');
+          const fullName = profile.display_name || '';
+          setDisplayName(fullName);
+          // Split display_name into first/last
+          const nameParts = fullName.trim().split(/\s+/);
+          setFirstName(nameParts[0] || '');
+          setLastName(nameParts.slice(1).join(' ') || '');
           setPhoneNumber((profile as any).phone_number || '');
           setHomeAddress(profile.home_address || '');
           setPlanReminders(profile.plan_reminders ?? true);
@@ -417,7 +424,7 @@ export default function Settings() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          display_name: displayName,
+          display_name: [firstName, lastName].filter(Boolean).join(' ').trim() || displayName,
           phone_number: phoneNumber || null,
           home_address: homeAddress,
           plan_reminders: planReminders,
@@ -585,11 +592,22 @@ export default function Settings() {
           <AccordionContent className="px-4 pb-4">
             <div className="grid gap-3 sm:grid-cols-2 pt-1">
               <div className="space-y-1">
-                <Label htmlFor="name" className="text-xs">Display Name</Label>
+                <Label htmlFor="firstName" className="text-xs">First Name</Label>
                 <Input
-                  id="name"
-                  value={displayName}
-                  onChange={(e) => { setDisplayName(e.target.value); handleChange(); }}
+                  id="firstName"
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => { setFirstName(e.target.value); handleChange(); }}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="lastName" className="text-xs">Last Name</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => { setLastName(e.target.value); handleChange(); }}
                   className="h-8 text-sm"
                 />
               </div>
@@ -603,7 +621,7 @@ export default function Settings() {
                   className="bg-muted h-8 text-sm"
                 />
               </div>
-              <div className="space-y-1 sm:col-span-2">
+              <div className="space-y-1">
                 <Label htmlFor="phone" className="text-xs">Phone Number</Label>
                 <Input
                   id="phone"
@@ -613,7 +631,6 @@ export default function Settings() {
                   onChange={(e) => { setPhoneNumber(e.target.value); handleChange(); }}
                   className="h-8 text-sm"
                 />
-                <p className="text-[10px] text-muted-foreground">Friends can find you by phone number</p>
               </div>
             </div>
           </AccordionContent>
