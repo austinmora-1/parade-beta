@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { X, Plus, Sparkles, Zap } from 'lucide-react';
+import { X, Plus, Sparkles, Zap, ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { Button } from '@/components/ui/button';
+import { GifPicker } from '@/components/chat/GifPicker';
 
 export function VibeSelector() {
   const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
@@ -15,11 +16,12 @@ export function VibeSelector() {
   const [showAddMoreInput, setShowAddMoreInput] = useState(false);
   const [addMoreText, setAddMoreText] = useState('');
   const [sendVibeOpen, setSendVibeOpen] = useState(false);
+
   const handleVibeSelect = (type: VibeType) => {
     if (type === 'custom') {
       setShowCustomInput(true);
     } else {
-      setVibe({ type });
+      setVibe({ type, gifUrl: currentVibe?.gifUrl });
       setShowCustomInput(false);
     }
   };
@@ -37,6 +39,21 @@ export function VibeSelector() {
       addCustomVibe(addMoreText.trim().replace(/\s+/g, ''));
       setAddMoreText('');
       setShowAddMoreInput(false);
+    }
+  };
+
+  const handleGifSelect = (gifUrl: string) => {
+    const vibeType = currentVibe?.type || 'social';
+    setVibe({
+      ...currentVibe,
+      type: vibeType,
+      gifUrl,
+    });
+  };
+
+  const handleRemoveGif = () => {
+    if (currentVibe) {
+      setVibe({ ...currentVibe, gifUrl: undefined });
     }
   };
 
@@ -143,7 +160,49 @@ export function VibeSelector() {
             </motion.button>
           )}
         </AnimatePresence>
+
+        {/* GIF button */}
+        <GifPicker onGifSelect={handleGifSelect}>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            className={cn(
+              "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200 border-2 border-dashed",
+              currentVibe?.gifUrl
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary"
+            )}
+          >
+            <ImageIcon className="h-3 w-3" />
+            <span>GIF</span>
+          </motion.button>
+        </GifPicker>
       </div>
+
+      {/* Current GIF preview */}
+      <AnimatePresence>
+        {currentVibe?.gifUrl && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="mt-3 overflow-hidden"
+          >
+            <div className="relative inline-block rounded-xl overflow-hidden border border-border">
+              <img
+                src={currentVibe.gifUrl}
+                alt="Vibe GIF"
+                className="h-24 max-w-full object-cover rounded-xl"
+              />
+              <button
+                onClick={handleRemoveGif}
+                className="absolute top-1 right-1 rounded-full bg-background/80 backdrop-blur-sm p-0.5 hover:bg-background transition-colors"
+              >
+                <X className="h-3.5 w-3.5 text-foreground" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Custom tags */}
       <AnimatePresence>

@@ -38,6 +38,7 @@ interface FriendProfileData {
   location_status: string | null;
   share_code: string | null;
   cover_photo_url: string | null;
+  vibe_gif_url: string | null;
 }
 
 interface AvailabilityDay {
@@ -120,7 +121,7 @@ export default function FriendProfile() {
 
       const { data: fullProfile } = await supabase
         .from('profiles')
-        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url')
+        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url')
         .eq('user_id', userId)
         .single();
 
@@ -133,6 +134,7 @@ export default function FriendProfile() {
         location_status: fullProfile?.location_status || null,
         share_code: fullProfile?.share_code || null,
         cover_photo_url: (fullProfile as any)?.cover_photo_url || null,
+        vibe_gif_url: (fullProfile as any)?.vibe_gif_url || null,
       });
 
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -356,6 +358,11 @@ export default function FriendProfile() {
               <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{profile.bio}</p>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
+              {profile.vibe_gif_url && (
+                <div className="w-full mb-1">
+                  <img src={profile.vibe_gif_url} alt="Vibe GIF" className="h-20 rounded-lg object-cover" />
+                </div>
+              )}
               {profile.current_vibe && (() => {
                 const isCustom = profile.current_vibe === 'custom';
                 const vibeConfig = !isCustom ? VIBE_CONFIG[profile.current_vibe as VibeType] : null;

@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN vibe_gif_url text DEFAULT NULL;
