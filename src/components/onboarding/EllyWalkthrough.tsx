@@ -1,87 +1,47 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Calendar, Users, Shield, LayoutDashboard, Heart, MessageCircle, MapPin, Smartphone, X } from 'lucide-react';
+import { Sparkles, ArrowRight, LayoutDashboard, Heart, Calendar, MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
 
 interface WalkthroughStep {
   icon: React.ReactNode;
   title: string;
   message: string;
   emoji: string;
-  hasCustomContent?: boolean;
   tip?: string;
 }
 
 const STEPS: WalkthroughStep[] = [
   {
-    icon: <Sparkles className="h-5 w-5" />,
-    title: "Hey, I'm Elly! 👋",
-    message: "Welcome to Parade! I'm your AI planning assistant. Let me give you a quick tour of the app so you can start making plans with friends.",
-    emoji: "✨",
-  },
-  {
     icon: <LayoutDashboard className="h-5 w-5" />,
-    title: "Your Dashboard",
-    message: "This is your home base. From here you can see upcoming plans, your weekly availability, friend activity, and quick stats — all at a glance.",
+    title: "Your Home Base",
+    message: "This is your dashboard — your command center. See upcoming plans, weekly availability, friend activity, and your vibe status all in one place. Widgets are collapsible so you can customize your view.",
     emoji: "🏠",
-    tip: "Widgets are collapsible — tap the header to expand or collapse them.",
-  },
-  {
-    icon: <Heart className="h-5 w-5" />,
-    title: "Send Vibes",
-    message: "Let your friends know what you're feeling! Tap the 'Send Vibe' button in the Vibe Selector widget on your dashboard. You can broadcast to all friends, your pod, or select specific people.",
-    emoji: "💚",
-    tip: "Add a message, GIF, or location to your vibe to make it pop. Friends can react with emoji!",
+    tip: "Tap any widget header to expand or collapse it.",
   },
   {
     icon: <Calendar className="h-5 w-5" />,
-    title: "Availability & Calendar",
-    message: "Mark when you're free each day using the Availability page. Connect your Google or Apple calendar to auto-import busy times.",
+    title: "Creating Plans",
+    message: "Tap '+ New Plan' on the dashboard or head to the Plans page to create hangouts. Pick friends, a time slot, and a location. Friends can also send you hang requests when they see you're free!",
     emoji: "📅",
-    hasCustomContent: true,
-    tip: "Set default work hours in Settings so your schedule fills in automatically.",
+    tip: "Share your availability link so anyone can request to hang with you.",
   },
   {
-    icon: <MapPin className="h-5 w-5" />,
-    title: "Plans & Hang Requests",
-    message: "Create plans from the dashboard or Plans page. Invite friends, pick a time slot, and add a location. Friends can also send you hang requests when they see you're free!",
-    emoji: "📍",
-    tip: "Share your availability link so anyone can request to hang.",
-  },
-  {
-    icon: <Users className="h-5 w-5" />,
-    title: "Friends & Pods",
-    message: "Add friends by email, phone, or invite link on the Friends page. Mark your closest crew as Pod members for quick access. You'll see each other's availability and vibes.",
-    emoji: "👯",
+    icon: <Heart className="h-5 w-5" />,
+    title: "Sending Vibes",
+    message: "Let friends know what you're feeling! Use the Vibe Selector on your dashboard to broadcast your mood, add a GIF, or share your location. Send to all friends, a pod, or specific people.",
+    emoji: "💚",
+    tip: "Friends can react to your vibes with emoji and comments!",
   },
   {
     icon: <MessageCircle className="h-5 w-5" />,
-    title: "Chat & Elly AI",
-    message: "Message your friends directly or in groups from the Chat page. Mention @Elly in any conversation and I'll help coordinate plans, suggest times, or answer questions!",
-    emoji: "💬",
-    tip: "You can also chat with me directly from the Elly widget on your dashboard.",
-  },
-  {
-    icon: <Shield className="h-5 w-5" />,
-    title: "Privacy & Settings",
-    message: "Control who sees your availability, vibe status, and location in Settings → Privacy. You can also manage notifications, themes (try Arcade mode! 🕹️), and more.",
-    emoji: "🔒",
-  },
-  {
-    icon: <Smartphone className="h-5 w-5" />,
-    title: "Add to Home Screen",
-    message: "For the best experience, add Parade to your home screen! On iPhone, tap Share → \"Add to Home Screen.\" On Android, tap ⋮ → \"Add to Home screen.\"",
-    emoji: "📱",
-  },
-  {
-    icon: <Sparkles className="h-5 w-5" />,
-    title: "You're All Set!",
-    message: "That's the tour! Set your vibe, mark your availability, and start making plans. I'm always here if you need help — just tap the Elly widget or mention @Elly in chat. Let's go! 🎉",
-    emoji: "🚀",
+    title: "Meet Elly, Your AI Assistant",
+    message: "I'm Elly! 👋 Chat with me from the dashboard widget or mention @Elly in any group chat. I can help find times that work for everyone, create plans, and coordinate hangouts automatically.",
+    emoji: "✨",
+    tip: "Try asking me 'When are we all free this weekend?' in a group chat!",
   },
 ];
 
@@ -230,12 +190,6 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
                     </div>
                   )}
 
-                  {/* Inline calendar integration on the calendar step */}
-                  {current.hasCustomContent && (
-                    <div className="mt-4 max-h-52 overflow-y-auto">
-                      <CalendarIntegration isEmbedded />
-                    </div>
-                  )}
                 </motion.div>
 
                 {/* Actions */}
@@ -262,7 +216,7 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
                       onClick={handleNext}
                       className="h-8 gap-1.5 px-4 text-xs"
                     >
-                      {isLast ? "Let's go!" : current.hasCustomContent ? 'Continue' : 'Next'}
+                      {isLast ? "Let's go!" : 'Next'}
                       {!isLast && <ArrowRight className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
