@@ -416,17 +416,31 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       const dedupedOutgoing = dedupeOutgoing(outgoingFriends);
       
-      const allFriends = [...dedupedOutgoing];
-      for (const incoming of incomingFriends) {
-        const existingOutgoing = dedupedOutgoing.find(
-          (o) => o.friendUserId === incoming.friendUserId
-        );
-        if (!existingOutgoing) {
-          allFriends.push(incoming);
+      // Global dedup across outgoing + incoming by friendUserId, keeping highest priority status
+      const statusPriority: Record<string, number> = { connected: 3, pending: 2, invited: 1 };
+      const globalByUserId = new Map<string, Friend>();
+      const noUserId: Friend[] = [];
+      
+      for (const f of [...dedupedOutgoing, ...incomingFriends]) {
+        if (!f.friendUserId) {
+          noUserId.push(f);
+          continue;
+        }
+        const existing = globalByUserId.get(f.friendUserId);
+        if (!existing || (statusPriority[f.status] || 0) > (statusPriority[existing.status] || 0)) {
+          // When merging, prefer the outgoing record's metadata (isPodMember, etc.)
+          if (existing && !f.isIncoming && existing.isIncoming) {
+            globalByUserId.set(f.friendUserId, { ...f });
+          } else if (existing && f.isIncoming && !existing.isIncoming) {
+            // Keep outgoing record but upgrade status
+            globalByUserId.set(f.friendUserId, { ...existing, status: f.status });
+          } else {
+            globalByUserId.set(f.friendUserId, f);
+          }
         }
       }
       
-      const friends = allFriends;
+      const friends = [...globalByUserId.values(), ...noUserId];
       
       // Process availability with default settings from profile
       const customTags = (profile as any)?.custom_vibe_tags || [];
@@ -766,6 +780,21 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   addFriend: async (friend) => {
     const { userId } = get();
     if (!userId) return;
+    
+    // Check if a friendship already exists for this user
+    if (friend.friendUserId) {
+      const { data: existing } = await supabase
+        .from('friendships')
+        .select('id, status')
+        .eq('user_id', userId)
+        .eq('friend_user_id', friend.friendUserId)
+        .maybeSingle();
+      
+      if (existing) {
+        console.log('Friendship already exists:', existing.id, existing.status);
+        return;
+      }
+    }
     
     const { data, error } = await supabase
       .from('friendships')
