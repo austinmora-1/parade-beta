@@ -45,10 +45,10 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Edge function serves HTML with OG meta tags for iMessage/social crawlers.
-      // Crawlers see "You're Invited!" card; users get redirected to /plan-invite/TOKEN.
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const ogLink = `${supabaseUrl}/functions/v1/plan-invite-og?token=${data.invite_token}`;
+      // Static HTML file with OG meta tags for iMessage/social crawlers.
+      // Using explicit .html extension ensures hosting serves it as static HTML, not SPA.
+      // Crawlers see "You're Invited!" card; users get JS-redirected to /plan-invite/TOKEN.
+      const ogLink = `https://helloparade.app/invite.html?t=${data.invite_token}`;
       const cleanLink = `https://helloparade.app/plan-invite/${data.invite_token}`;
       setGeneratedLink(ogLink);
       setDisplayLink(cleanLink);
@@ -77,9 +77,8 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Edge function serves HTML with OG tags for rich link previews in email
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const inviteUrl = `${supabaseUrl}/functions/v1/plan-invite-og?token=${data.invite_token}`;
+      // Static HTML file with OG tags for rich link previews in email
+      const inviteUrl = `https://helloparade.app/invite.html?t=${data.invite_token}`;
 
       const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
 
