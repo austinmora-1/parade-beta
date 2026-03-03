@@ -28,6 +28,7 @@ import PlanInvite from "./pages/PlanInvite";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import GoogleCallback from "./pages/GoogleCallback";
+import { usePostHogPageView } from "@/hooks/usePostHog";
 
 const queryClient = new QueryClient();
 
@@ -77,7 +78,9 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const AppRoutes = () => (
+const AppRoutes = () => {
+  usePostHogPageView();
+  return (
   <Routes>
     <Route path="/share/:shareCode" element={<Share />} />
     <Route path="/invite" element={<Invite />} />
@@ -122,7 +125,8 @@ const AppRoutes = () => (
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>
-);
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
