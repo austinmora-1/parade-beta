@@ -7,11 +7,11 @@ import { useNotifications, dismissNotification } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera } from 'lucide-react';
+import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
-import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
+import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG } from '@/types/planner';
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
@@ -72,12 +72,22 @@ interface ParticipantRequest {
   created_at: string;
 }
 
+interface IncomingVibe {
+  id: string;
+  vibe_send_id: string;
+  sender_name: string;
+  sender_avatar: string | null;
+  vibe_type: string;
+  message: string | null;
+  created_at: string;
+}
+
 export default function Notifications() {
   const { friends, acceptFriendRequest, removeFriend, loadAllData } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, dismissedIds, dismissNotification: dismiss } = useNotifications();
+  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchUnreadVibes, dismissedIds, dismissNotification: dismiss } = useNotifications();
 
   const [hangRequests, setHangRequests] = useState<HangRequest[]>([]);
   const [hangLoading, setHangLoading] = useState(true);
@@ -94,6 +104,9 @@ export default function Notifications() {
 
   const [participantRequests, setParticipantRequests] = useState<ParticipantRequest[]>([]);
   const [participantReqLoading, setParticipantReqLoading] = useState(true);
+
+  const [incomingVibes, setIncomingVibes] = useState<IncomingVibe[]>([]);
+  const [vibesLoading, setVibesLoading] = useState(true);
 
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
   const visibleIncomingRequests = incomingRequests.filter(f => !dismissedIds.has(`friend-${f.id}`));
@@ -117,8 +130,70 @@ export default function Notifications() {
       fetchPendingChanges();
       fetchRecentPhotos();
       fetchParticipantRequestsData();
+      fetchIncomingVibes();
     }
   }, [user]);
+
+  const fetchIncomingVibes = async () => {
+    if (!user) { setVibesLoading(false); return; }
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recipients } = await supabase
+      .from('vibe_send_recipients')
+      .select('id, vibe_send_id, created_at, read_at, dismissed_at')
+      .eq('recipient_id', user.id)
+      .is('read_at', null)
+      .is('dismissed_at', null)
+      .gte('created_at', oneDayAgo)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (!recipients || recipients.length === 0) {
+      setIncomingVibes([]);
+      setVibesLoading(false);
+      return;
+    }
+
+    const vibeSendIds = recipients.map(r => r.vibe_send_id);
+    const { data: vibeSends } = await supabase
+      .from('vibe_sends')
+      .select('id, sender_id, vibe_type, message, created_at')
+      .in('id', vibeSendIds);
+
+    const senderIds = [...new Set((vibeSends || []).map(v => v.sender_id))];
+    const { data: profiles } = await supabase
+      .from('public_profiles')
+      .select('user_id, display_name, avatar_url')
+      .in('user_id', senderIds);
+    const profileMap: Record<string, { name: string; avatar: string | null }> = {};
+    for (const p of (profiles || [])) {
+      if (p.user_id) profileMap[p.user_id] = { name: p.display_name || 'Someone', avatar: p.avatar_url };
+    }
+
+    setIncomingVibes(recipients.map(r => {
+      const vs = (vibeSends || []).find(v => v.id === r.vibe_send_id);
+      const sender = vs ? profileMap[vs.sender_id] : undefined;
+      return {
+        id: r.id,
+        vibe_send_id: r.vibe_send_id,
+        sender_name: sender?.name || 'Someone',
+        sender_avatar: sender?.avatar || null,
+        vibe_type: vs?.vibe_type || 'custom',
+        message: vs?.message || null,
+        created_at: vs?.created_at || r.created_at,
+      };
+    }));
+    setVibesLoading(false);
+  };
+
+  const handleDismissVibe = async (recipientId: string) => {
+    dismiss(`vibe-${recipientId}`);
+    // Also mark as read in the database
+    await supabase
+      .from('vibe_send_recipients')
+      .update({ read_at: new Date().toISOString() })
+      .eq('id', recipientId);
+    await refetchUnreadVibes();
+  };
 
   const fetchRecentPhotos = async () => {
     if (!user) { setPhotosLoading(false); return; }
@@ -483,9 +558,10 @@ export default function Notifications() {
   const visiblePendingChanges = pendingChanges.filter(c => !dismissedIds.has(`change-${c.id}`));
   const visibleRecentPhotos = recentPhotos.filter(p => !dismissedIds.has(`photo-${p.id}`));
   const visibleParticipantRequests = participantRequests.filter(r => !dismissedIds.has(`participant-req-${r.id}`));
+  const visibleVibes = incomingVibes.filter(v => !dismissedIds.has(`vibe-${v.id}`));
 
-  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length;
-  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading;
+  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length;
+  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading;
 
   const clearAll = () => {
     visibleHangRequests.forEach(r => dismiss(`hang-${r.id}`));
@@ -493,6 +569,7 @@ export default function Notifications() {
     visiblePendingChanges.forEach(c => dismiss(`change-${c.id}`));
     visibleRecentPhotos.forEach(p => dismiss(`photo-${p.id}`));
     visibleParticipantRequests.forEach(r => dismiss(`participant-req-${r.id}`));
+    visibleVibes.forEach(v => dismiss(`vibe-${v.id}`));
     visibleIncomingRequests.forEach(f => dismiss(`friend-${f.id}`));
   };
 
@@ -578,7 +655,70 @@ export default function Notifications() {
         </div>
       )}
 
-      {/* Plan Invitations Section */}
+      {/* Incoming Vibes Section */}
+      {(visibleVibes.length > 0 || vibesLoading) && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <Sparkles className="h-4 w-4 text-primary md:h-5 md:w-5" />
+            Incoming Vibes
+            {visibleVibes.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
+                {visibleVibes.length}
+              </span>
+            )}
+          </h2>
+
+          {vibesLoading ? (
+            <div className="flex h-20 items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {visibleVibes.map((vibe) => {
+                const vibeConfig = VIBE_CONFIG[vibe.vibe_type as keyof typeof VIBE_CONFIG];
+                return (
+                  <div
+                    key={vibe.id}
+                    className="rounded-2xl border border-border bg-card p-4 shadow-soft cursor-pointer hover:bg-muted/30 transition-colors"
+                    onClick={() => navigate('/')}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={vibe.sender_avatar || undefined} />
+                          <AvatarFallback className={getAvatarColor(vibe.sender_name)}>
+                            {getInitials(vibe.sender_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm">
+                            <span className="text-primary">{vibe.sender_name}</span> sent you a vibe
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-sm">{vibeConfig?.icon || '✨'}</span>
+                            <span className="text-xs text-muted-foreground capitalize">{vibeConfig?.label || vibe.vibe_type}</span>
+                            {vibe.message && (
+                              <span className="text-xs text-muted-foreground truncate">· {vibe.message}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDismissVibe(vibe.id); }}
+                        className="rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted transition-colors"
+                        aria-label="Dismiss vibe"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {(visiblePlanInvitations.length > 0 || planInvitesLoading) && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
@@ -950,7 +1090,7 @@ export default function Notifications() {
       )}
 
       {/* Empty state */}
-      {isEmpty && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && incomingRequests.length === 0 && (
+      {isEmpty && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && incomingRequests.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
           <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">🔔</div>
           <h3 className="font-display text-base font-semibold md:text-lg">No new notifications</h3>
