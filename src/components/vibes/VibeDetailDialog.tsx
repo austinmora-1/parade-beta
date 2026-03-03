@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import { VibeSend } from '@/hooks/useVibes';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MapPin, Clock, X } from 'lucide-react';
+import { MapPin, Clock, X, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, formatDistanceToNow } from 'date-fns';
 import { VibeComments } from './VibeComments';
@@ -10,6 +11,64 @@ import { motion } from 'framer-motion';
 import { SignedImage } from '@/components/ui/SignedImage';
 import { VibeReactions, VibeReaction } from './VibeReactions';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
+
+function VibeRecipientNames({ vibeSendId, currentUserId }: { vibeSendId: string; currentUserId?: string }) {
+  const [names, setNames] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Get all recipient IDs for this vibe
+      const { data: recipients } = await supabase
+        .from('vibe_send_recipients')
+        .select('recipient_id')
+        .eq('vibe_send_id', vibeSendId);
+
+      if (cancelled || !recipients || recipients.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Exclude current user from the list
+      const otherIds = recipients
+        .map(r => r.recipient_id)
+        .filter(id => id !== currentUserId);
+
+      if (otherIds.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: profiles } = await supabase
+        .from('public_profiles')
+        .select('user_id, display_name')
+        .in('user_id', otherIds);
+
+      if (!cancelled) {
+        setNames((profiles || []).map(p => p.display_name || 'Someone'));
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [vibeSendId, currentUserId]);
+
+  if (loading || names.length === 0) return null;
+
+  const displayNames = names.length <= 3
+    ? names.join(', ')
+    : `${names.slice(0, 2).join(', ')} & ${names.length - 2} other${names.length - 2 > 1 ? 's' : ''}`;
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
+      <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+      <span className="text-xs text-muted-foreground">
+        Also sent to <span className="font-medium text-foreground">{displayNames}</span>
+      </span>
+    </div>
+  );
+}
 
 interface VibeDetailDialogProps {
   vibe: VibeSend | null;
@@ -151,6 +210,9 @@ export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss, reaction
                 onToggleReaction={onToggleReaction}
               />
             )}
+
+            {/* Other recipients */}
+            <VibeRecipientNames vibeSendId={vibe.id} currentUserId={currentUserId} />
 
             {/* Timestamp */}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
