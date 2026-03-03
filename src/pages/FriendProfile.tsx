@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useChat';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -74,6 +75,7 @@ export default function FriendProfile() {
   const [availabilityOpen, setAvailabilityOpen] = useState(true);
   const [upcomingOpen, setUpcomingOpen] = useState(true);
   const [previousOpen, setPreviousOpen] = useState(false);
+  const [showAvatarLightbox, setShowAvatarLightbox] = useState(false);
 
   const friendIds = useMemo(() => userId ? [userId] : [], [userId]);
   const lastHungOut = useLastHungOut(friendIds);
@@ -341,7 +343,10 @@ export default function FriendProfile() {
         <div className="relative px-4 pb-4 md:px-6 md:pb-5">
           {/* Avatar */}
           <div className="-mt-10 mb-3 md:-mt-12">
-            <Avatar className="h-20 w-20 border-4 border-background shadow-lg md:h-24 md:w-24">
+            <Avatar
+              className="h-20 w-20 border-4 border-background shadow-lg md:h-24 md:w-24 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+              onClick={() => setShowAvatarLightbox(true)}
+            >
               <AvatarImage src={profile.avatar_url || undefined} alt={profile.display_name || 'User'} />
               <AvatarFallback className="bg-primary/20 text-primary text-lg md:text-xl font-display font-semibold">
                 {getInitials(profile.display_name)}
@@ -719,6 +724,27 @@ export default function FriendProfile() {
           </>
         );
       })()}
+      {/* Avatar Lightbox */}
+      <Dialog open={showAvatarLightbox} onOpenChange={setShowAvatarLightbox}>
+        <DialogContent className="max-w-xs sm:max-w-sm p-2 bg-background/95 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 py-2">
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.display_name || 'User'}
+                className="h-56 w-56 rounded-full object-cover ring-2 ring-border shadow-lg"
+              />
+            ) : (
+              <div className="h-56 w-56 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-border shadow-lg">
+                <span className="text-5xl font-display font-semibold text-primary">
+                  {getInitials(profile.display_name)}
+                </span>
+              </div>
+            )}
+            <p className="font-display font-semibold text-base">{profile.display_name || 'User'}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
