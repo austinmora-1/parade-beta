@@ -50,6 +50,7 @@ import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
 import { LocationTimeline } from '@/components/profile/LocationTimeline';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { QuickStats } from '@/components/dashboard/QuickStats';
 
 interface ProfileData {
   display_name: string | null;
@@ -756,6 +757,9 @@ export default function Profile() {
           </div>
         </div>
       </Card>
+
+      {/* Quick Stats */}
+      <QuickStats />
 
       {/* Location Timeline */}
       <LocationTimeline />
