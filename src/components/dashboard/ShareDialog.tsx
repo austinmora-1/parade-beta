@@ -198,119 +198,121 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="left-4 right-4 w-auto max-w-none -translate-x-0 p-4 sm:left-[50%] sm:right-auto sm:w-full sm:max-w-md sm:translate-x-[-50%] sm:p-6 overflow-x-hidden">
-        <DialogHeader>
+      <DialogContent className="left-4 right-4 w-auto max-w-none -translate-x-0 p-0 sm:left-[50%] sm:right-auto sm:w-full sm:max-w-md sm:translate-x-[-50%] sm:p-0 overflow-hidden max-h-[85dvh] flex flex-col">
+        <DialogHeader className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6 shrink-0">
           <DialogTitle className="font-display text-lg sm:text-xl">Share Your Availability</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-3 py-3 sm:space-y-4 sm:py-4">
-          <p className="text-sm text-muted-foreground">
-            Choose how much of your schedule to share.
-          </p>
+        <div className="flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6">
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Choose how much of your schedule to share.
+            </p>
 
-          {/* View Duration Picker */}
-          <div className="flex gap-1 rounded-lg border border-border bg-muted/30 p-1">
-            {VIEW_DURATION_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setViewDuration(option.value)}
-                className={cn(
-                  "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all",
-                  viewDuration === option.value
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
+            {/* View Duration Picker */}
+            <div className="flex gap-1 rounded-lg border border-border bg-muted/30 p-1">
+              {VIEW_DURATION_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setViewDuration(option.value)}
+                  className={cn(
+                    "flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
+                    viewDuration === option.value
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Preview Profile */}
+            {shareCode && (
+              <Link
+                to={`/share/${shareCode}?view=${viewDuration}`}
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-2.5 text-left transition-all hover:bg-primary/10 hover:border-primary/50"
               >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          
-          {/* Preview Profile */}
-          {shareCode && (
-            <Link
-              to={`/share/${shareCode}?view=${viewDuration}`}
-              onClick={() => setOpen(false)}
-              className="flex w-full max-w-full overflow-hidden items-center gap-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-3 text-left transition-all hover:bg-primary/10 hover:border-primary/50 sm:gap-4 sm:p-4"
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                  <Eye className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-medium text-sm truncate">Preview Your Profile</h3>
+                  <p className="text-xs text-muted-foreground truncate">See what friends will see</p>
+                </div>
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </Link>
+            )}
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Share options</span>
+              </div>
+            </div>
+            
+            {/* Share via Text Message */}
+            <button
+              onClick={handleShareViaText}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2.5 text-left transition-all hover:bg-muted/50"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 sm:h-12 sm:w-12">
-                <Eye className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <MessageSquare className="h-4 w-4 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-medium text-sm sm:text-base truncate">Preview Your Profile</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">See what friends will see</p>
+                <h3 className="font-medium text-sm truncate">Share via Text</h3>
+                <p className="text-xs text-muted-foreground truncate">Send a link to friends</p>
               </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
-            </Link>
-          )}
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Share options</span>
-            </div>
-          </div>
-          
-          {/* Share via Text Message */}
-          <button
-            onClick={handleShareViaText}
-            className="flex w-full max-w-full overflow-hidden items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:bg-muted/50 sm:gap-4 sm:p-4"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 sm:h-12 sm:w-12">
-              <MessageSquare className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-sm sm:text-base truncate">Share via Text</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">Send a link to friends</p>
-            </div>
-          </button>
-          
-          {/* Share Screenshot */}
-          <button
-            onClick={handleShareScreenshot}
-            disabled={isCapturing}
-            className="flex w-full max-w-full overflow-hidden items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:bg-muted/50 disabled:opacity-50 sm:gap-4 sm:p-4"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 sm:h-12 sm:w-12">
-              <Image className="h-5 w-5 text-secondary sm:h-6 sm:w-6" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-sm sm:text-base truncate">
-                {isCapturing ? 'Capturing...' : 'Share Screenshot'}
-              </h3>
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">Capture and share an image</p>
-            </div>
-          </button>
-          
-          {/* Copy Link */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or copy link</span>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <div className="flex-1 min-w-0 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs sm:text-sm text-muted-foreground truncate">
-              {shareUrl}
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleCopyLink}
-              className="shrink-0 h-9 w-9 sm:h-10 sm:w-10"
+            </button>
+            
+            {/* Share Screenshot */}
+            <button
+              onClick={handleShareScreenshot}
+              disabled={isCapturing}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2.5 text-left transition-all hover:bg-muted/50 disabled:opacity-50"
             >
-              {copied ? (
-                <Check className="h-4 w-4 text-availability-available" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-            </Button>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/10">
+                <Image className="h-4 w-4 text-secondary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-medium text-sm truncate">
+                  {isCapturing ? 'Capturing...' : 'Share Screenshot'}
+                </h3>
+                <p className="text-xs text-muted-foreground truncate">Capture and share an image</p>
+              </div>
+            </button>
+            
+            {/* Copy Link */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or copy link</span>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <div className="flex-1 min-w-0 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground truncate">
+                {shareUrl}
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleCopyLink}
+                className="shrink-0 h-9 w-9"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-availability-available" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
