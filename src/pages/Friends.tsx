@@ -3,6 +3,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
 import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
+import { PodSection } from '@/components/friends/PodSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserPlus, Search, Users, Loader2, Heart } from 'lucide-react';
@@ -12,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
+import { usePods } from '@/hooks/usePods';
 
 interface PublicProfile {
   user_id: string;
@@ -72,6 +74,7 @@ export default function Friends() {
   const { friends, updateFriend, removeFriend, addFriend, acceptFriendRequest } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
+  const podsHook = usePods();
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<PublicProfile[]>([]);
@@ -173,24 +176,9 @@ export default function Friends() {
     // Most recent first
     return bDate.getTime() - aDate.getTime();
   });
-  const podFriends = connectedFriends.filter(f => f.isPodMember);
-  const nonPodConnected = connectedFriends.filter(f => !f.isPodMember);
   const incomingRequests = filteredFriends.filter(f => f.status === 'pending' && f.isIncoming);
   const outgoingRequests = filteredFriends.filter(f => f.status === 'pending' && !f.isIncoming);
   const invitedFriends = filteredFriends.filter(f => f.status === 'invited');
-
-  const handleTogglePod = (id: string) => {
-    const friend = friends.find(f => f.id === id);
-    if (friend) {
-      updateFriend(id, { isPodMember: !friend.isPodMember });
-      toast({
-        title: friend.isPodMember ? 'Removed from Pod' : 'Added to Pod 💜',
-        description: friend.isPodMember
-          ? `${friend.name} removed from your Pod`
-          : `${friend.name} is now in your Pod!`,
-      });
-    }
-  };
 
   const handleConnect = async (id: string) => {
     const friend = friends.find(f => f.id === id);
@@ -304,36 +292,32 @@ export default function Friends() {
         </div>
       )}
 
-      {/* My Pod */}
-      {podFriends.length > 0 && (
-        <div>
-          <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
-            <Heart className="h-4 w-4 text-primary fill-primary" />
-            My Pod ({podFriends.length})
-          </h2>
-          <FriendAvatarGrid
-            friends={podFriends}
-            onRemove={removeFriend}
-            onTogglePod={handleTogglePod}
-            lastHungOut={lastHungOut}
-          />
-        </div>
-      )}
+      {/* Pods */}
+      <PodSection
+        pods={podsHook.pods}
+        friends={friends}
+        lastHungOut={lastHungOut}
+        onRemoveFriend={removeFriend}
+        onCreatePod={podsHook.createPod}
+        onUpdatePod={podsHook.updatePod}
+        onDeletePod={podsHook.deletePod}
+        onAddMember={podsHook.addMember}
+        onRemoveMember={podsHook.removeMember}
+      />
 
       {/* Connected Friends */}
       <div>
         <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
           <Users className="h-4 w-4 text-availability-available" />
-          Connected ({nonPodConnected.length})
+          Connected ({connectedFriends.length})
         </h2>
-        {nonPodConnected.length > 0 ? (
+        {connectedFriends.length > 0 ? (
           <FriendAvatarGrid
-            friends={nonPodConnected}
+            friends={connectedFriends}
             onRemove={removeFriend}
-            onTogglePod={handleTogglePod}
             lastHungOut={lastHungOut}
           />
-        ) : connectedFriends.length === 0 ? (
+        ) : (
           <div className="rounded-xl border border-border bg-card p-5 text-center shadow-soft">
             <div className="text-3xl mb-2">👥</div>
             <h3 className="text-sm font-semibold">No friends yet</h3>
@@ -343,7 +327,7 @@ export default function Friends() {
               Invite Friends
             </Button>
           </div>
-        ) : null}
+        )}
       </div>
 
       {/* Outgoing Requests */}
