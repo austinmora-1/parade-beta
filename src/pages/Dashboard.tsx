@@ -16,7 +16,7 @@ import { SentVibes } from '@/components/dashboard/SentVibes';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, UserPlus, Loader2 } from 'lucide-react';
+import { CalendarPlus, UserPlus, CalendarArrowUp, Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
@@ -45,7 +45,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" className="gap-2 h-8" onClick={() => setCreatePlanOpen(true)}>
-            <Plus className="h-4 w-4" />
+            <CalendarPlus className="h-4 w-4" />
             New Plan
           </Button>
           <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => setInviteFriendOpen(true)}>
