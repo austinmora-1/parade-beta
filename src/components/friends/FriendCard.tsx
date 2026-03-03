@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Friend } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 interface FriendCardProps {
   friend: Friend;
@@ -33,6 +34,14 @@ interface FriendCardProps {
 export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }: FriendCardProps) {
   const navigate = useNavigate();
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [showAvatarLightbox, setShowAvatarLightbox] = useState(false);
+  const avatarSrc = friend.avatar || getElephantAvatar(friend.name);
+
+  const handleAvatarClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowAvatarLightbox(true);
+  }, []);
+
   const getStatusConfig = () => {
     switch (friend.status) {
       case 'connected':
@@ -102,12 +111,13 @@ export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }
         {/* Avatar */}
         <div
           className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-full font-display font-semibold",
+            "flex h-12 w-12 items-center justify-center rounded-full font-display font-semibold cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all",
             getAvatarColor(friend.name)
           )}
+          onClick={handleAvatarClick}
         >
           <img
-            src={friend.avatar || getElephantAvatar(friend.name)}
+            src={avatarSrc}
             alt={friend.name}
             className="h-full w-full rounded-full object-cover"
           />
@@ -203,6 +213,20 @@ export function FriendCard({ friend, onConnect, onDecline, onMessage, onRemove }
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Avatar Lightbox */}
+      <Dialog open={showAvatarLightbox} onOpenChange={setShowAvatarLightbox}>
+        <DialogContent className="max-w-xs sm:max-w-sm p-2 bg-background/95 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 py-2">
+            <img
+              src={avatarSrc}
+              alt={friend.name}
+              className="h-56 w-56 rounded-full object-cover ring-2 ring-border shadow-lg"
+            />
+            <p className="font-display font-semibold text-base">{friend.name}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
