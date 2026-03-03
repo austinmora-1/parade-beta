@@ -9,7 +9,7 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -57,8 +57,6 @@ Deno.serve(async (req) => {
 </html>`;
 
     if (mode === "generate") {
-      // Return the edge function URL itself as the shareable link
-      // When iMessage/crawlers hit this URL, they'll get the HTML above with OG tags
       const shareableUrl = `${SUPABASE_URL}/functions/v1/plan-invite-og?token=${encodeURIComponent(token)}`;
       return new Response(JSON.stringify({ url: shareableUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
