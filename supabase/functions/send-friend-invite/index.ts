@@ -95,21 +95,21 @@ const handler = async (req: Request): Promise<Response> => {
             <meta name="color-scheme" content="light">
             <meta name="supported-color-schemes" content="light">
             <title>${inviterName} invited you to Parade</title>
-            <link href="https://fonts.googleapis.com/css2?family=Bungee+Shade&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
           </head>
           <body style="margin: 0; padding: 0; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; -webkit-font-smoothing: antialiased;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 40px 20px;">
               <tr>
                 <td align="center">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
-                    <!-- Header -->
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e4e4e7;">
+                    <!-- Header with wordmark image -->
                     <tr>
-                      <td style="background-color: #111E16; padding: 36px 30px; text-align: center;">
-                        <h1 style="margin: 0; color: #55C78E; font-family: 'Bungee Shade', cursive; font-size: 32px; font-weight: 400; letter-spacing: 2px;">parade</h1>
+                      <td style="background-color: #1a2e22; padding: 0; text-align: center;">
+                        <img src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/og-pages/email-wordmark.png" alt="Parade" width="560" style="display: block; width: 100%; max-width: 560px; height: auto;" />
                       </td>
                     </tr>
                     
-                    <!-- Body -->
+                    <!-- Body with subtle green tint -->
                     <tr>
                       <td style="padding: 40px 30px; background-color: #ffffff;">
                         <p style="margin: 0 0 24px; font-size: 16px; color: #18181b; line-height: 1.7;">
