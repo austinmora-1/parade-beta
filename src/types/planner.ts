@@ -9,6 +9,10 @@ export type ActivityType =
   | 'coffee'
   | 'events'
   | 'movies'
+  | 'show'
+  | 'concert'
+  | 'sports-event'
+  | 'game-night'
   | 'other-events'
   // Chill activities
   | 'me-time'
@@ -18,11 +22,20 @@ export type ActivityType =
   // Athletic activities
   | 'workout-in'
   | 'workout-out'
+  | 'yoga'
+  | 'running'
+  | 'swimming'
+  | 'hiking'
+  | 'sports'
   // Productive activities
   | 'chores'
   | 'errands'
   | 'shopping'
   | 'doctor'
+  | 'studying'
+  | 'cleaning'
+  | 'work'
+  | 'volunteering'
   // Travel
   | 'flight'
   // Custom (placeholder for user-defined)
@@ -131,7 +144,7 @@ export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color:
   custom: { label: 'Custom', icon: '✨', color: 'primary', description: 'Your own vibe' },
 };
 
-import { Wine, Utensils, Coffee, PartyPopper, Clapperboard, Sparkles, Flower2, BookOpen, Tv, ChefHat, Home, Dumbbell, Brush, Footprints, ShoppingBag, Stethoscope, Plane } from 'lucide-react';
+import { Wine, Utensils, Coffee, PartyPopper, Clapperboard, Sparkles, Flower2, BookOpen, Tv, ChefHat, Home, Dumbbell, Brush, Footprints, ShoppingBag, Stethoscope, Plane, Theater, Music, Trophy, Dice1, PersonStanding, Waves, Mountain, Dribbble, GraduationCap, SprayCan, Briefcase, Heart } from 'lucide-react';
 
 export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   // Social activities
@@ -140,6 +153,10 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   'coffee': { label: 'Coffee', icon: '☕', lucideIcon: Coffee, color: 'activity-coffee', vibeType: 'social' },
   'events': { label: 'Events', icon: '🎉', lucideIcon: PartyPopper, color: 'activity-events', vibeType: 'social' },
   'movies': { label: 'Movies', icon: '🎬', lucideIcon: Clapperboard, color: 'activity-movies', vibeType: 'social' },
+  'show': { label: 'Seeing a Show', icon: '🎭', lucideIcon: Theater, color: 'activity-events', vibeType: 'social' },
+  'concert': { label: 'Concert', icon: '🎵', lucideIcon: Music, color: 'activity-events', vibeType: 'social' },
+  'sports-event': { label: 'Sports Game', icon: '🏟️', lucideIcon: Trophy, color: 'activity-events', vibeType: 'social' },
+  'game-night': { label: 'Game Night', icon: '🎲', lucideIcon: Dice1, color: 'activity-events', vibeType: 'social' },
   'other-events': { label: 'Other Events', icon: '✨', lucideIcon: Sparkles, color: 'activity-misc', vibeType: 'social' },
   // Chill activities
   'me-time': { label: 'Me Time', icon: '🧘', lucideIcon: Flower2, color: 'activity-me-time', vibeType: 'chill' },
@@ -149,11 +166,20 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   // Athletic activities
   'workout-in': { label: 'Home Workout', icon: '🏠💪', lucideIcon: Home, color: 'activity-workout', vibeType: 'athletic' },
   'workout-out': { label: 'Gym/Outdoor', icon: '🏋️', lucideIcon: Dumbbell, color: 'activity-workout', vibeType: 'athletic' },
+  'yoga': { label: 'Yoga', icon: '🧘‍♀️', lucideIcon: PersonStanding, color: 'activity-workout', vibeType: 'athletic' },
+  'running': { label: 'Running', icon: '🏃‍♂️', lucideIcon: Footprints, color: 'activity-workout', vibeType: 'athletic' },
+  'swimming': { label: 'Swimming', icon: '🏊', lucideIcon: Waves, color: 'activity-workout', vibeType: 'athletic' },
+  'hiking': { label: 'Hiking', icon: '🥾', lucideIcon: Mountain, color: 'activity-workout', vibeType: 'athletic' },
+  'sports': { label: 'Playing Sports', icon: '⚽', lucideIcon: Dribbble, color: 'activity-workout', vibeType: 'athletic' },
   // Productive activities
   'chores': { label: 'Chores', icon: '🧹', lucideIcon: Brush, color: 'activity-chores', vibeType: 'productive' },
   'errands': { label: 'Errands', icon: '🏃', lucideIcon: Footprints, color: 'activity-errands', vibeType: 'productive' },
   'shopping': { label: 'Shopping', icon: '🛍️', lucideIcon: ShoppingBag, color: 'activity-shopping', vibeType: 'productive' },
   'doctor': { label: 'Appointment', icon: '🏥', lucideIcon: Stethoscope, color: 'activity-doctor', vibeType: 'productive' },
+  'studying': { label: 'Studying', icon: '📖', lucideIcon: GraduationCap, color: 'activity-chores', vibeType: 'productive' },
+  'cleaning': { label: 'Cleaning', icon: '🧽', lucideIcon: SprayCan, color: 'activity-chores', vibeType: 'productive' },
+  'work': { label: 'Work', icon: '💼', lucideIcon: Briefcase, color: 'activity-errands', vibeType: 'productive' },
+  'volunteering': { label: 'Volunteering', icon: '🤝', lucideIcon: Heart, color: 'activity-errands', vibeType: 'productive' },
   // Travel
   'flight': { label: 'Flight', icon: '✈️', lucideIcon: Plane, color: 'activity-events', vibeType: 'social' },
   // Custom placeholder (not used directly, for type safety)
