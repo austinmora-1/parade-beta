@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { QuickStats } from '@/components/dashboard/QuickStats';
+
 import { WeekOverview } from '@/components/dashboard/WeekOverview';
 import { UpcomingPlans } from '@/components/dashboard/UpcomingPlans';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
@@ -81,8 +81,6 @@ export default function Dashboard() {
         <HangRequests />
       </div>
 
-      {/* Quick Stats */}
-      <QuickStats />
     </div>
   );
 }

@@ -15,10 +15,15 @@ export function QuickStats() {
       (p) => isAfter(p.date, now) && isBefore(p.date, weekFromNow)
     );
     
-    const availableSlots = availability.reduce((total, day) => {
-      const daySlots = Object.values(day.slots).filter(Boolean).length;
-      return total + daySlots;
-    }, 0);
+    const availableSlots = availability
+      .filter((day) => {
+        const dayDate = new Date(day.date);
+        return isAfter(dayDate, now) && isBefore(dayDate, weekFromNow);
+      })
+      .reduce((total, day) => {
+        const daySlots = Object.values(day.slots).filter(Boolean).length;
+        return total + daySlots;
+      }, 0);
     
     return {
       plansThisWeek: upcomingPlans.length,
