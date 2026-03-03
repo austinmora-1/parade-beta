@@ -4,20 +4,24 @@ import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
 
 // jsdelivr CDN for reliable direct TTF access
 const BUNGEE_URL = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bungee/Bungee-Regular.ttf";
+const BUNGEE_SHADE_URL = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/bungeeshade/BungeeShade-Regular.ttf";
 
-let fontCache: ArrayBuffer | null = null;
+let bungeeCache: ArrayBuffer | null = null;
+let bungeeShadeCache: ArrayBuffer | null = null;
 
-async function getFont() {
-  if (fontCache) return fontCache;
-  const res = await fetch(BUNGEE_URL);
-  if (!res.ok) throw new Error(`Font fetch failed: ${res.status} ${await res.text()}`);
-  fontCache = await res.arrayBuffer();
-  return fontCache;
+async function getFonts() {
+  const [bungee, bungeeShade] = await Promise.all([
+    bungeeCache ?? fetch(BUNGEE_URL).then(r => { if (!r.ok) throw new Error("Bungee fetch failed"); return r.arrayBuffer(); }),
+    bungeeShadeCache ?? fetch(BUNGEE_SHADE_URL).then(r => { if (!r.ok) throw new Error("BungeeShade fetch failed"); return r.arrayBuffer(); }),
+  ]);
+  bungeeCache = bungee;
+  bungeeShadeCache = bungeeShade;
+  return { bungee, bungeeShade };
 }
 
 export async function handler(_req: Request): Promise<Response> {
   try {
-    const bungeeData = await getFont();
+    const { bungee, bungeeShade } = await getFonts();
 
     return new ImageResponse(
       (
@@ -35,9 +39,9 @@ export async function handler(_req: Request): Promise<Response> {
         >
           <div
             style={{
-              fontFamily: "Bungee",
+              fontFamily: "BungeeShade",
               fontSize: "52px",
-              color: "#45B87A",
+              color: "#55C78E",
               letterSpacing: "4px",
               marginBottom: "24px",
             }}
@@ -72,7 +76,8 @@ export async function handler(_req: Request): Promise<Response> {
         width: 1200,
         height: 630,
         fonts: [
-          { name: "Bungee", data: bungeeData, style: "normal" as const },
+          { name: "Bungee", data: bungee, style: "normal" as const },
+          { name: "BungeeShade", data: bungeeShade, style: "normal" as const },
         ],
       }
     );
