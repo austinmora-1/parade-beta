@@ -161,6 +161,7 @@ export default function PlanDetail() {
   const handleDelete = async () => {
     if (!plan) return;
     const hadParticipants = plan.participants.length > 0;
+    await deletePlan(plan.id);
     setDeleteConfirmOpen(false);
     if (!isOwner) {
       toast.success('You have declined this plan.');
