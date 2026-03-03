@@ -45,11 +45,12 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Use the edge function URL as the shareable link — it serves HTML with OG meta tags
-      // so iMessage/social crawlers see the "You're Invited!" card preview.
-      const ogLink = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}`;
+      // Static HTML page at /i/ has OG meta tags for iMessage/social crawlers.
+      // Crawlers see "You're Invited!" card; users get redirected to /plan-invite/TOKEN.
+      const ogLink = `https://helloparade.app/i/?t=${data.invite_token}`;
+      const cleanLink = `https://helloparade.app/plan-invite/${data.invite_token}`;
       setGeneratedLink(ogLink);
-      setDisplayLink(ogLink);
+      setDisplayLink(cleanLink);
     } catch (err: any) {
       toast({ title: 'Failed to generate link', description: err.message, variant: 'destructive' });
     } finally {
@@ -75,8 +76,8 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       if (error) throw error;
 
-      // Use edge function URL for rich link previews in email
-      const inviteUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-invite-og?token=${data.invite_token}`;
+      // Static HTML page with OG tags for rich link previews in email
+      const inviteUrl = `https://helloparade.app/i/?t=${data.invite_token}`;
 
       const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
 
