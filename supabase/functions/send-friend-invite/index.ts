@@ -64,9 +64,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const inviteUrl = customUrl || `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
-    const emailSubject = customSubject || `${inviterName} wants to make plans with you`;
-    const emailIntro = customMessage || `<strong style="color: #8b5cf6;">${inviterName}</strong> invited you to join them on Parade — the easiest way to coordinate plans with friends.`;
-    const ctaText = customUrl ? 'View Plan & Join' : 'Accept Invitation';
+    const emailSubject = customSubject || `${inviterName} invited you to Parade`;
+    const ctaText = customUrl ? 'View Plan & Join' : 'Join Parade';
+
+    // Try to extract a first name from the recipient email (fallback)
+    const recipientFirstName = email.split('@')[0].replace(/[._-]/g, ' ').split(' ')[0];
+    const capitalizedName = recipientFirstName.charAt(0).toUpperCase() + recipientFirstName.slice(1);
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -91,59 +94,45 @@ const handler = async (req: Request): Promise<Response> => {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta name="color-scheme" content="light">
             <meta name="supported-color-schemes" content="light">
-            <title>Join ${inviterName} on Parade</title>
+            <title>${inviterName} invited you to Parade</title>
+            <link href="https://fonts.googleapis.com/css2?family=Bungee+Shade&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
           </head>
-          <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5; -webkit-font-smoothing: antialiased;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+          <body style="margin: 0; padding: 0; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; -webkit-font-smoothing: antialiased;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; padding: 40px 20px;">
               <tr>
                 <td align="center">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
-                    <!-- Header with Logo -->
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
+                    <!-- Header -->
                     <tr>
-                      <td style="background-color: #8b5cf6; padding: 32px 30px; text-align: center;">
-                        <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Parade</h1>
-                        <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Make plans, not excuses</p>
+                      <td style="background-color: #111E16; padding: 36px 30px; text-align: center;">
+                        <h1 style="margin: 0; color: #55C78E; font-family: 'Bungee Shade', cursive; font-size: 32px; font-weight: 400; letter-spacing: 2px;">parade</h1>
                       </td>
                     </tr>
                     
                     <!-- Body -->
                     <tr>
-                      <td style="padding: 40px 30px;">
-                        <p style="margin: 0 0 20px; font-size: 18px; color: #18181b; line-height: 1.6;">
-                          Hi there,
+                      <td style="padding: 40px 30px; background-color: #ffffff;">
+                        <p style="margin: 0 0 24px; font-size: 16px; color: #18181b; line-height: 1.7;">
+                          Hey ${capitalizedName},
                         </p>
-                        <p style="margin: 0 0 20px; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                          ${emailIntro}
+                        <p style="margin: 0 0 20px; font-size: 16px; color: #3f3f46; line-height: 1.7;">
+                          <strong style="color: #18181b;">${inviterName}</strong> thought you'd be a good fit for Parade — and honestly, that's the best way to join.
                         </p>
-                        ${!customMessage ? `<p style="margin: 0 0 24px; font-size: 16px; color: #3f3f46; line-height: 1.6;">
-                          Here's what you can do together:
-                        </p>` : ''}
-                          Here's what you can do together:
-                        ${!customMessage ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 30px;">
-                          <tr>
-                            <td style="padding: 12px 16px; background-color: #faf5ff; border-radius: 8px; margin-bottom: 8px;">
-                              <p style="margin: 0; font-size: 15px; color: #3f3f46;">Share when you're free to hang out</p>
-                            </td>
-                          </tr>
-                          <tr><td style="height: 8px;"></td></tr>
-                          <tr>
-                            <td style="padding: 12px 16px; background-color: #faf5ff; border-radius: 8px;">
-                              <p style="margin: 0; font-size: 15px; color: #3f3f46;">See when friends are available</p>
-                            </td>
-                          </tr>
-                          <tr><td style="height: 8px;"></td></tr>
-                          <tr>
-                            <td style="padding: 12px 16px; background-color: #faf5ff; border-radius: 8px;">
-                              <p style="margin: 0; font-size: 15px; color: #3f3f46;">Plan meetups without the back-and-forth</p>
-                            </td>
-                          </tr>
-                        </table>` : ''}
+                        <p style="margin: 0 0 20px; font-size: 16px; color: #3f3f46; line-height: 1.7;">
+                          Parade is a social calendar and platform built for one simple reason: making plans with the people you care about shouldn't be that hard. We built this app because we were tired of the endless "are you free?" texts, forgetting a friend mentioned they would be out of town, manually typing out your availability every time someone asked, and arriving at the weekend without anything planned.
+                        </p>
+                        <p style="margin: 0 0 20px; font-size: 16px; color: #3f3f46; line-height: 1.7;">
+                          Your boss can book time with you in two clicks (unfortunately). Your best friend should be able to do the same — so we built something for that.
+                        </p>
+                        <p style="margin: 0 0 28px; font-size: 16px; color: #3f3f46; line-height: 1.7;">
+                          The idea is simple: connect your existing calendar(s), share your availability, see when your friends are free, and make your plans without all the back-and-forth. No corporate scheduling links. No friction. No missed opportunities to hang. Just a tool that makes the fun stuff easier to make happen.
+                        </p>
                         
                         <!-- CTA Button -->
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                           <tr>
                             <td align="center" style="padding: 10px 0 30px;">
-                              <a href="${inviteUrl}" style="display: inline-block; background-color: #8b5cf6; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 32px; border-radius: 8px; mso-padding-alt: 0;">
+                              <a href="${inviteUrl}" style="display: inline-block; background-color: #55C78E; color: #111E16; text-decoration: none; font-size: 16px; font-weight: 600; padding: 14px 36px; border-radius: 12px; mso-padding-alt: 0;">
                                 <!--[if mso]>
                                 <i style="mso-font-width:200%;mso-text-raise:24pt">&nbsp;</i>
                                 <![endif]-->
@@ -156,20 +145,23 @@ const handler = async (req: Request): Promise<Response> => {
                           </tr>
                         </table>
                         
-                        <p style="margin: 0; font-size: 14px; color: #71717a; line-height: 1.6; text-align: center;">
-                          Or copy this link: <a href="${inviteUrl}" style="color: #8b5cf6; text-decoration: underline;">${inviteUrl}</a>
+                        <p style="margin: 0 0 4px; font-size: 16px; color: #18181b; line-height: 1.7; font-weight: 600;">
+                          Ben and Austin
+                        </p>
+                        <p style="margin: 0; font-size: 14px; color: #71717a; line-height: 1.6;">
+                          From Parade
                         </p>
                       </td>
                     </tr>
                     
                     <!-- Footer -->
                     <tr>
-                      <td style="background-color: #fafafa; padding: 24px 30px; text-align: center; border-top: 1px solid #e4e4e7;">
-                        <p style="margin: 0 0 8px; font-size: 13px; color: #71717a;">
+                      <td style="background-color: #111E16; padding: 24px 30px; text-align: center;">
+                        <p style="margin: 0 0 8px; font-size: 13px; color: #55C78E;">
                           This email was sent by Parade
                         </p>
-                        <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
-                          <a href="https://helloparade.app" style="color: #a1a1aa; text-decoration: none;">helloparade.app</a>
+                        <p style="margin: 0; font-size: 12px; color: rgba(85, 199, 142, 0.6);">
+                          <a href="https://helloparade.app" style="color: rgba(85, 199, 142, 0.6); text-decoration: none;">helloparade.app</a>
                         </p>
                       </td>
                     </tr>
@@ -180,7 +172,7 @@ const handler = async (req: Request): Promise<Response> => {
           </body>
           </html>
         `,
-        text: `${inviterName} invited you to join them on Parade - the easiest way to coordinate plans with friends.\n\nWith Parade you can:\n- Share when you're free to hang out\n- See when friends are available\n- Plan meetups without the back-and-forth\n\nAccept the invitation: ${inviteUrl}\n\nOr visit: helloparade.app`,
+        text: `Hey ${capitalizedName},\n\n${inviterName} thought you'd be a good fit for Parade — and honestly, that's the best way to join.\n\nParade is a social calendar and platform built for one simple reason: making plans with the people you care about shouldn't be that hard. We built this app because we were tired of the endless "are you free?" texts, forgetting a friend mentioned they would be out of town, manually typing out your availability every time someone asked, and arriving at the weekend without anything planned.\n\nYour boss can book time with you in two clicks (unfortunately). Your best friend should be able to do the same — so we built something for that.\n\nThe idea is simple: connect your existing calendar(s), share your availability, see when your friends are free, and make your plans without all the back-and-forth. No corporate scheduling links. No friction. No missed opportunities to hang. Just a tool that makes the fun stuff easier to make happen.\n\nJoin Parade: ${inviteUrl}\n\nBen and Austin\nFrom Parade`,
       }),
     });
 
