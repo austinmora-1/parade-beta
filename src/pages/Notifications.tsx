@@ -680,7 +680,7 @@ export default function Notifications() {
                   <div
                     key={vibe.id}
                     className="rounded-2xl border border-border bg-card p-4 shadow-soft cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => navigate('/')}
+                    onClick={() => { handleDismissVibe(vibe.id); navigate(`/?vibe=${vibe.vibe_send_id}`); }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
