@@ -154,15 +154,21 @@ const handler = async (req: Request): Promise<Response> => {
                       </td>
                     </tr>
                     
-                    <!-- Footer -->
+                    <!-- Footer with confetti background -->
                     <tr>
-                      <td style="background-color: #111E16; padding: 24px 30px; text-align: center;">
-                        <p style="margin: 0 0 8px; font-size: 13px; color: #55C78E;">
-                          This email was sent by Parade
-                        </p>
-                        <p style="margin: 0; font-size: 12px; color: rgba(85, 199, 142, 0.6);">
-                          <a href="https://helloparade.app" style="color: rgba(85, 199, 142, 0.6); text-decoration: none;">helloparade.app</a>
-                        </p>
+                      <td style="padding: 0; text-align: center; background-color: #1a6e4a;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-image: url('https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/og-pages/email-footer-confetti.png'); background-size: cover; background-position: center;">
+                          <tr>
+                            <td style="padding: 32px 30px; text-align: center;">
+                              <p style="margin: 0 0 8px; font-size: 13px; color: #ffffff; font-weight: 500;">
+                                This email was sent by Parade
+                              </p>
+                              <p style="margin: 0; font-size: 12px;">
+                                <a href="https://helloparade.app" style="color: rgba(255, 255, 255, 0.7); text-decoration: none;">helloparade.app</a>
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                   </table>
