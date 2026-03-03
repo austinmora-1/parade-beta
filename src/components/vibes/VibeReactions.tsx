@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { SmilePlus, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '🔥', '💯', '🙌'];
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😢', '🔥', '💯', '🙌'];
 
 export interface VibeReaction {
   id: string;
