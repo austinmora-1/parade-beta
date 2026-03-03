@@ -6,7 +6,6 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { WeekOverview } from '@/components/dashboard/WeekOverview';
 import { UpcomingPlans } from '@/components/dashboard/UpcomingPlans';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
-import { LocationToggle } from '@/components/dashboard/LocationToggle';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { HangRequests } from '@/components/dashboard/HangRequests';
 import { AvailableFriends } from '@/components/dashboard/AvailableFriends';
@@ -15,12 +14,14 @@ import { PodWidget } from '@/components/dashboard/PodWidget';
 import { ReceivedVibes } from '@/components/dashboard/ReceivedVibes';
 import { SentVibes } from '@/components/dashboard/SentVibes';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, UserPlus, Loader2 } from 'lucide-react';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [inviteFriendOpen, setInviteFriendOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -43,16 +44,21 @@ export default function Dashboard() {
           <p className="mt-1 text-sm text-muted-foreground md:text-base">Here's what's happening this week</p>
         </div>
         <div className="flex items-center gap-2">
-          <LocationToggle />
           <Button size="sm" className="gap-2 h-8" onClick={() => setCreatePlanOpen(true)}>
-              <Plus className="h-4 w-4" />
-              New Plan
-            </Button>
+            <Plus className="h-4 w-4" />
+            New Plan
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2 h-8" onClick={() => setInviteFriendOpen(true)}>
+            <UserPlus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Friends</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
           <ShareDialog />
         </div>
       </div>
 
       <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
+      <InviteFriendDialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen} />
 
       {/* Vibe */}
       <VibeSelector />
