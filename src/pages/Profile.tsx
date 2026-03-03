@@ -82,6 +82,7 @@ export default function Profile() {
   const lastSavedNameRef = useRef<string>('');
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string>('');
+  const [cropMode, setCropMode] = useState<'avatar' | 'cover'>('avatar');
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -136,6 +137,7 @@ export default function Profile() {
     // Create object URL for cropping
     const imageUrl = URL.createObjectURL(file);
     setImageToCrop(imageUrl);
+    setCropMode('avatar');
     setCropDialogOpen(true);
 
     // Reset file input
@@ -147,40 +149,36 @@ export default function Profile() {
   const handleCropComplete = async (croppedBlob: Blob) => {
     if (!session?.user) return;
 
-    setIsUploading(true);
+    if (cropMode === 'cover') {
+      await handleCoverUpload(croppedBlob);
+    } else {
+      await handleAvatarUpload(croppedBlob);
+    }
 
+    // Clean up object URL
+    if (imageToCrop) {
+      URL.revokeObjectURL(imageToCrop);
+      setImageToCrop('');
+    }
+  };
+
+  const handleAvatarUpload = async (croppedBlob: Blob) => {
+    if (!session?.user) return;
+    setIsUploading(true);
     try {
       const userId = session.user.id;
-      const fileName = `avatar.jpg`;
-      const filePath = `${userId}/${fileName}`;
-
-      // Upload cropped image to storage
+      const filePath = `${userId}/avatar.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, croppedBlob, { 
-          upsert: true,
-          contentType: 'image/jpeg'
-        });
-
+        .upload(filePath, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
       if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Add cache-busting query param
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
       const avatarUrl = `${publicUrl}?t=${Date.now()}`;
-
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: avatarUrl })
         .eq('user_id', userId);
-
       if (updateError) throw updateError;
-
-      // Update local state and global profile for navbar
       setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null);
       updateGlobalProfile({ avatar_url: avatarUrl });
       toast.success('Profile picture updated!');
@@ -189,30 +187,25 @@ export default function Profile() {
       toast.error('Failed to upload profile picture');
     } finally {
       setIsUploading(false);
-      // Clean up object URL
-      if (imageToCrop) {
-        URL.revokeObjectURL(imageToCrop);
-        setImageToCrop('');
-      }
     }
   };
 
-  const handleCoverPhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !session?.user) return;
-    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be less than 5MB'); return; }
-
+  const handleCoverUpload = async (croppedBlob: Blob) => {
+    if (!session?.user) return;
     setIsUploadingCover(true);
     try {
       const userId = session.user.id;
-      const ext = file.name.split('.').pop() || 'jpg';
-      const filePath = `${userId}/cover.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true, contentType: file.type });
+      const filePath = `${userId}/cover.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
       const coverUrl = `${publicUrl}?t=${Date.now()}`;
-      const { error: updateError } = await supabase.from('profiles').update({ cover_photo_url: coverUrl }).eq('user_id', userId);
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ cover_photo_url: coverUrl })
+        .eq('user_id', userId);
       if (updateError) throw updateError;
       setProfile(prev => prev ? { ...prev, cover_photo_url: coverUrl } : null);
       toast.success('Cover photo updated!');
@@ -221,8 +214,21 @@ export default function Profile() {
       toast.error('Failed to upload cover photo');
     } finally {
       setIsUploadingCover(false);
-      if (coverInputRef.current) coverInputRef.current.value = '';
     }
+  };
+
+  const handleCoverPhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !session?.user) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error('Image must be less than 10MB'); return; }
+
+    const imageUrl = URL.createObjectURL(file);
+    setImageToCrop(imageUrl);
+    setCropMode('cover');
+    setCropDialogOpen(true);
+
+    if (coverInputRef.current) coverInputRef.current.value = '';
   };
 
   const handleRemoveCover = async () => {
@@ -538,6 +544,11 @@ export default function Profile() {
         }}
         imageSrc={imageToCrop}
         onCropComplete={handleCropComplete}
+        aspect={cropMode === 'cover' ? 16 / 9 : 1}
+        circular={cropMode === 'avatar'}
+        title={cropMode === 'cover' ? 'Crop Cover Photo' : 'Crop Profile Picture'}
+        outputWidth={cropMode === 'cover' ? 1920 : 1024}
+        outputHeight={cropMode === 'cover' ? 432 : undefined}
       />
 
       {/* Profile Header */}

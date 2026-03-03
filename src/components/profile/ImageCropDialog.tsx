@@ -25,6 +25,11 @@ interface ImageCropDialogProps {
   onOpenChange: (open: boolean) => void;
   imageSrc: string;
   onCropComplete: (croppedImageBlob: Blob) => void;
+  aspect?: number;
+  circular?: boolean;
+  title?: string;
+  outputWidth?: number;
+  outputHeight?: number;
 }
 
 const MIN_ZOOM = 1;
@@ -55,6 +60,11 @@ export function ImageCropDialog({
   onOpenChange,
   imageSrc,
   onCropComplete,
+  aspect = 1,
+  circular = true,
+  title = 'Crop Profile Picture',
+  outputWidth = 1024,
+  outputHeight,
 }: ImageCropDialogProps) {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -73,21 +83,21 @@ export function ImageCropDialog({
 
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
-    setCrop(centerAspectCrop(width, height, 1));
-  }, []);
+    setCrop(centerAspectCrop(width, height, aspect));
+  }, [aspect]);
 
   const getCroppedImage = useCallback(async (): Promise<Blob | null> => {
     const image = imgRef.current;
     if (!image || !completedCrop) return null;
 
     const canvas = document.createElement('canvas');
-    // Account for zoom: the displayed image is scaled, so we need to adjust coordinates
     const scaleX = image.naturalWidth / (image.width * zoom);
     const scaleY = image.naturalHeight / (image.height * zoom);
 
-    const outputSize = Math.min(1024, completedCrop.width * scaleX, completedCrop.height * scaleY);
-    canvas.width = outputSize;
-    canvas.height = outputSize;
+    const finalWidth = outputWidth;
+    const finalHeight = outputHeight ?? (aspect === 1 ? outputWidth : Math.round(outputWidth / aspect));
+    canvas.width = finalWidth;
+    canvas.height = finalHeight;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
@@ -103,8 +113,8 @@ export function ImageCropDialog({
       completedCrop.height * scaleY,
       0,
       0,
-      outputSize,
-      outputSize
+      finalWidth,
+      finalHeight
     );
 
     return new Promise((resolve) => {
@@ -114,7 +124,7 @@ export function ImageCropDialog({
         0.9
       );
     });
-  }, [completedCrop, zoom]);
+  }, [completedCrop, zoom, outputWidth, outputHeight, aspect]);
 
   const handleSave = async () => {
     setIsProcessing(true);
@@ -135,7 +145,7 @@ export function ImageCropDialog({
     setZoom(1);
     if (imgRef.current) {
       const { width, height } = imgRef.current;
-      setCrop(centerAspectCrop(width, height, 1));
+      setCrop(centerAspectCrop(width, height, aspect));
     }
   };
 
@@ -178,8 +188,8 @@ export function ImageCropDialog({
           crop={crop}
           onChange={(_, percentCrop) => setCrop(percentCrop)}
           onComplete={(c) => setCompletedCrop(c)}
-          aspect={1}
-          circularCrop
+          aspect={aspect}
+          circularCrop={circular}
           minWidth={50}
           minHeight={50}
           className={isMobile ? 'max-h-[50dvh]' : 'max-h-[400px]'}
@@ -263,7 +273,7 @@ export function ImageCropDialog({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[90dvh]">
           <DrawerHeader className="text-left">
-            <DrawerTitle>Crop Profile Picture</DrawerTitle>
+            <DrawerTitle>{title}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-2 overflow-y-auto">
             {cropArea}
@@ -281,7 +291,7 @@ export function ImageCropDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Crop Profile Picture</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="py-4">
           {cropArea}
