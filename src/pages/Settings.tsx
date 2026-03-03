@@ -1094,6 +1094,12 @@ export default function Settings() {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      <div className="flex justify-center gap-4 pt-2 pb-4">
+        <a href="/privacy" className="text-xs text-muted-foreground hover:text-primary hover:underline">Privacy Policy</a>
+        <span className="text-xs text-muted-foreground">·</span>
+        <a href="/terms" className="text-xs text-muted-foreground hover:text-primary hover:underline">Terms of Service</a>
+      </div>
     </div>
   );
 }

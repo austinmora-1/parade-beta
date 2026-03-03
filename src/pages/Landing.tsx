@@ -315,7 +315,10 @@ export default function Landing() {
           </div>
           <AuthSection />
           <p className="text-center text-sm text-muted-foreground mt-6">
-            By continuing, you agree to our Terms of Service and Privacy Policy.
+            By continuing, you agree to our{' '}
+            <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
+            {' '}and{' '}
+            <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>.
           </p>
         </div>
       </section>
