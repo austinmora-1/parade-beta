@@ -10,6 +10,7 @@ import { GifPicker } from '@/components/chat/GifPicker';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { notifyVibeOwner } from '@/lib/vibeNotifications';
 
 interface VibeComment {
   id: string;
@@ -124,6 +125,8 @@ export function VibeComments({ vibeSendId }: VibeCommentsProps) {
 
       if (error) throw error;
       setText('');
+      // Send push notification to vibe owner (fire-and-forget)
+      notifyVibeOwner({ vibeSendId, actorUserId: user.id, type: 'comment' });
     } catch (err: any) {
       console.error('Error sending comment:', err);
       toast.error('Failed to send comment');
