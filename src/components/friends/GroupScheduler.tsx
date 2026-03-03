@@ -1,14 +1,15 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Friend, TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { X, CalendarPlus, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, CalendarPlus, Users, ChevronLeft, ChevronRight, Search, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GroupSchedulerProps {
   friends: Friend[];
@@ -31,6 +32,35 @@ const avatarColors = [
 ];
 const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avatarColors.length];
 
+function useSuggestedFriends(connectedFriends: Friend[]) {
+  const { user } = useAuth();
+  const { plans } = usePlannerStore();
+  
+  return useMemo(() => {
+    if (!user?.id || connectedFriends.length === 0) return connectedFriends.slice(0, 5);
+    
+    // Count co-participation frequency from plans
+    const coCount = new Map<string, number>();
+    for (const plan of plans) {
+      if (!plan.participants) continue;
+      for (const p of plan.participants) {
+        if (p.friendUserId && p.friendUserId !== user.id) {
+          coCount.set(p.friendUserId, (coCount.get(p.friendUserId) || 0) + 1);
+        }
+      }
+    }
+    
+    // Sort connected friends by co-participation, then alphabetically
+    const scored = connectedFriends.map(f => ({
+      friend: f,
+      score: f.friendUserId ? (coCount.get(f.friendUserId) || 0) : 0,
+    }));
+    scored.sort((a, b) => b.score - a.score || a.friend.name.localeCompare(b.friend.name));
+    
+    return scored.slice(0, 5).map(s => s.friend);
+  }, [user?.id, connectedFriends, plans]);
+}
+
 export function GroupScheduler({ friends }: GroupSchedulerProps) {
   const connectedFriends = friends.filter(f => f.status === 'connected');
   const [selectedFriends, setSelectedFriends] = useState<Friend[]>([]);
@@ -39,8 +69,38 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; slot: TimeSlot } | null>(null);
   const { availabilityMap: myAvailabilityMap, plans } = usePlannerStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const suggestedFriends = useSuggestedFriends(connectedFriends);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+
+  // Filter friends based on search
+  const filteredFriends = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const selectedIds = new Set(selectedFriends.map(f => f.id));
+    const base = q.length > 0
+      ? connectedFriends.filter(f => !selectedIds.has(f.id) && f.name.toLowerCase().includes(q))
+      : suggestedFriends.filter(f => !selectedIds.has(f.id));
+    return base;
+  }, [searchQuery, connectedFriends, suggestedFriends, selectedFriends]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+        searchRef.current && !searchRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   // Fetch availability for selected friends
   useEffect(() => {
@@ -91,6 +151,18 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
         ? prev.filter(f => f.id !== friend.id)
         : [...prev, friend]
     );
+    setSearchQuery('');
+    setIsSearchFocused(false);
+  };
+
+  const addFriend = (friend: Friend) => {
+    setSelectedFriends(prev => [...prev, friend]);
+    setSearchQuery('');
+    setIsSearchFocused(false);
+  };
+
+  const removeFriend = (friendId: string) => {
+    setSelectedFriends(prev => prev.filter(f => f.id !== friendId));
   };
 
   // Get combined availability status for a day/slot
@@ -99,12 +171,10 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
 
     const dateStr = format(date, 'yyyy-MM-dd');
 
-    // Check my availability
     const myDay = myAvailabilityMap[format(date, 'yyyy-MM-dd')];
     const myFree = myDay ? myDay.slots[slot] : true;
     const myBusy = plans.some(p => isSameDay(p.date, date) && p.timeSlot === slot);
 
-    // Check friends' availability
     let freeCount = 0;
     let totalChecked = 0;
 
@@ -120,7 +190,6 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
 
     if (iAmFree && allFriendsFree) return 'all-free';
     if (iAmFree && someFriendsFree) return 'some-free';
-    if (!iAmFree) return 'none-free';
     return 'none-free';
   };
 
@@ -133,39 +202,84 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
 
   if (connectedFriends.length === 0) return null;
 
+  const showDropdown = isSearchFocused && filteredFriends.length > 0;
+
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft md:p-4">
-      <h2 className="mb-2 flex items-center gap-2 font-display text-sm font-semibold">
+      <h2 className="mb-2.5 flex items-center gap-2 font-display text-sm font-semibold">
         <Users className="h-4 w-4 text-primary" />
         Schedule a Hang
       </h2>
 
-      {/* Friend selector chips */}
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {connectedFriends.map(friend => {
-          const isSelected = selectedFriends.some(f => f.id === friend.id);
-          return (
-            <button
+      {/* Selected friends chips */}
+      {selectedFriends.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {selectedFriends.map(friend => (
+            <span
               key={friend.id}
-              onClick={() => toggleFriend(friend)}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all",
-                isSelected
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              )}
+              className="flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-2.5 py-1 text-xs font-medium"
             >
-              <Avatar className="h-5 w-5">
+              <Avatar className="h-4 w-4">
                 <AvatarImage src={friend.avatar} />
-                <AvatarFallback className={cn("text-[8px]", getAvatarColor(friend.name))}>
+                <AvatarFallback className="text-[7px] bg-primary-foreground/20 text-primary-foreground">
                   {getInitials(friend.name)}
                 </AvatarFallback>
               </Avatar>
               {friend.name.split(' ')[0]}
-              {isSelected && <X className="h-3 w-3 ml-0.5" />}
-            </button>
-          );
-        })}
+              <button onClick={() => removeFriend(friend.id)} className="hover:opacity-70 transition-opacity">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Search input */}
+      <div className="relative mb-3">
+        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          ref={searchRef}
+          placeholder="Search friends to schedule with..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => setIsSearchFocused(true)}
+          className="pl-8 h-8 text-xs"
+        />
+
+        {/* Dropdown */}
+        {showDropdown && (
+          <div
+            ref={dropdownRef}
+            className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-popover shadow-md overflow-hidden"
+          >
+            {searchQuery.trim().length === 0 && (
+              <div className="px-3 py-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
+                <Sparkles className="h-3 w-3" />
+                Suggested
+              </div>
+            )}
+            <div className="max-h-48 overflow-y-auto py-1">
+              {filteredFriends.map(friend => (
+                <button
+                  key={friend.id}
+                  onClick={() => addFriend(friend)}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted/60 transition-colors"
+                >
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={friend.avatar} />
+                    <AvatarFallback className={cn("text-[9px]", getAvatarColor(friend.name))}>
+                      {getInitials(friend.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium truncate">{friend.name}</span>
+                  {friend.isPodMember && (
+                    <span className="ml-auto text-[9px] text-primary font-medium">Pod</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Availability overlay grid */}
