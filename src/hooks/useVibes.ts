@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 import { resolveMediaUrl } from '@/lib/storage';
+import { notifyVibeOwner } from '@/lib/vibeNotifications';
 import type { VibeReaction } from '@/components/vibes/VibeReactions';
 
 export interface VibeSend {
@@ -418,6 +419,8 @@ export function useVibes() {
 
       if (!error && data) {
         setVibeReactions(prev => [...prev, data as VibeReaction]);
+        // Send push notification to vibe owner (fire-and-forget)
+        notifyVibeOwner({ vibeSendId, actorUserId: user.id, type: 'reaction', emoji });
       }
     }
   };
