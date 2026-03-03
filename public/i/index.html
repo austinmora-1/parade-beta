@@ -27,15 +27,12 @@
     color: #55C78E;
   }
   a { color: #55C78E; }
-  .loader { animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 <script>
-  // Extract token from query param and redirect to the SPA plan-invite page
   var params = new URLSearchParams(window.location.search);
   var token = params.get('t');
   if (token) {
-    window.location.replace('/plan-invite/' + token);
+    window.location.replace('/plan-invite/' + encodeURIComponent(token));
   }
 </script>
 </head>
