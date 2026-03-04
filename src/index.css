@@ -89,13 +89,13 @@
     --shadow-lg: 0 16px 48px -12px hsl(150 20% 15% / 0.15);
     --shadow-glow: 0 0 40px hsl(150 35% 40% / 0.25);
 
-    --sidebar-background: 140 14% 82%;
-    --sidebar-foreground: 150 40% 28%;
-    --sidebar-primary: 150 40% 28%;
+    --sidebar-background: 150 20% 22%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 35% 90%;
-    --sidebar-accent-foreground: 200 45% 25%;
-    --sidebar-border: 150 15% 90%;
+    --sidebar-accent: 150 15% 28%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 150 15% 28%;
     --sidebar-ring: 150 35% 40%;
   }
 
@@ -281,6 +281,10 @@
     font-family: 'Bungee Shade', sans-serif;
     font-weight: 400;
     color: hsl(150 50% 55%);
+  }
+
+  :root:not(.dark):not(.arcade) .parade-wordmark {
+    color: hsl(0 0% 100%);
   }
 
   .arcade-wordmark {
