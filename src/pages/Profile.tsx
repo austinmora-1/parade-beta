@@ -433,18 +433,8 @@ export default function Profile() {
     })
     .slice(0, 10);
 
-  // Get upcoming plans
-  const upcomingPlans = plans
-    .filter(plan => isAfter(plan.date, new Date()) || isSameDay(plan.date, new Date()))
-    .sort((a, b) => {
-      const dateDiff = a.date.getTime() - b.date.getTime();
-      if (dateDiff !== 0) return dateDiff;
-      return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
-    })
-    .slice(0, 5);
-
   const [hangoutsOpen, setHangoutsOpen] = useState(true);
-  const [upcomingOpen, setUpcomingOpen] = useState(true);
+  
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -777,96 +767,6 @@ export default function Profile() {
 
       {/* Location Timeline */}
       <LocationTimeline />
-
-      {/* Upcoming Plans */}
-      <Collapsible open={upcomingOpen} onOpenChange={setUpcomingOpen}>
-        <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
-          <CollapsibleTrigger asChild>
-            <button className="mb-0 data-[state=open]:mb-4 flex w-full items-center justify-between group [&[data-state=open]]:mb-4">
-              <div className="flex items-center gap-2">
-                <CalendarCheck className="h-4 w-4 text-primary" />
-                <h2 className="font-display text-sm font-semibold">Upcoming Plans</h2>
-                {upcomingPlans.length > 0 && (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                    {upcomingPlans.length}
-                  </span>
-                )}
-              </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            {upcomingPlans.length > 0 ? (
-              <div className="space-y-1.5">
-                {upcomingPlans.map((plan) => {
-                  const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG] || { label: 'Activity', icon: '✨', color: 'activity-misc', vibeType: 'social' as const, category: 'staying-in' as const };
-                  const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot as TimeSlot];
-                  const displayTitle = getPlanDisplayTitle(plan);
-                  
-                  const formatTime12 = (time: string) => {
-                    const [h, m] = time.split(':').map(Number);
-                    const ampm = h >= 12 ? 'pm' : 'am';
-                    const hour12 = h % 12 || 12;
-                    return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
-                  };
-
-                  return (
-                    <div
-                      key={plan.id}
-                      onClick={() => navigate(`/plan/${plan.id}`)}
-                      className="rounded-lg border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer bg-muted/30 hover:bg-muted/50"
-                      style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <ActivityIcon config={activityConfig} size={18} />
-                            <span className="text-sm font-medium truncate">{displayTitle}</span>
-                          </div>
-                          <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
-                            <span className="flex items-center gap-0.5 shrink-0">
-                              <Clock className="h-3 w-3" />
-                              {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig?.time || plan.timeSlot}
-                            </span>
-                          </div>
-                          {plan.location && (
-                            <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
-                              <MapPin className="h-3 w-3 shrink-0" />
-                              <span className="truncate max-w-[140px]">{plan.location.name}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {isSameDay(plan.date, new Date())
-                              ? (plan.endDate ? `Today – ${format(plan.endDate, 'MMM d')}` : 'Today')
-                              : (plan.endDate
-                                ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
-                                : format(plan.date, 'EEE, MMM d'))}
-                          </span>
-                          {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-                            <span className="flex items-center gap-0.5 text-xs text-muted-foreground" data-stop-card-click onClick={e => e.stopPropagation()}>
-                              <Users className="h-3 w-3 shrink-0" />
-                              <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-6 text-center">
-                <p className="text-sm text-muted-foreground mb-3">No upcoming plans</p>
-                <Link to="/plans">
-                  <Button size="sm">Create a Plan</Button>
-                </Link>
-              </div>
-            )}
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
 
       {/* Hangout History */}
       <Collapsible open={hangoutsOpen} onOpenChange={setHangoutsOpen}>
