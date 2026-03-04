@@ -126,8 +126,9 @@ export default {
           "50%": { transform: "translateY(-5px)" },
         },
         "marquee": {
-          "0%, 10%": { transform: "translateX(0)" },
-          "90%, 100%": { transform: "translateX(var(--marquee-distance))" },
+          "0%, 5%": { transform: "translateX(0)" },
+          "45%, 55%": { transform: "translateX(var(--marquee-distance))" },
+          "95%, 100%": { transform: "translateX(0)" },
         },
       },
       animation: {
@@ -136,7 +137,7 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-in-left": "slide-in-left 0.3s ease-out",
         "bounce-soft": "bounce-soft 2s ease-in-out infinite",
-        "marquee": "marquee var(--marquee-duration, 5s) linear infinite alternate",
+        "marquee": "marquee var(--marquee-duration, 10s) ease-in-out infinite",
       },
     },
   },

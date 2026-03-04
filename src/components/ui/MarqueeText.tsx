@@ -24,7 +24,8 @@ export function MarqueeText({ text, className }: MarqueeTextProps) {
       if (overflow) {
         const px = textEl.scrollWidth - container.clientWidth;
         setOverflowPx(px);
-        setDuration(Math.max(3, px / 30));
+        // Total cycle ~10s: pause at start, scroll, pause at end, scroll back
+        setDuration(Math.max(6, 10 + px / 40));
       }
     };
 
