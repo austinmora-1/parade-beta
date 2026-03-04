@@ -1,14 +1,28 @@
 import { Link } from 'react-router-dom';
-import { Bell, Settings } from 'lucide-react';
+import { Bell, Settings, MessageSquareMore } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 
 export function MobileHeader() {
   const { totalNotifications } = useNotifications();
+  const { openFeedback } = useFeedback();
 
   return (
     <header className="sticky top-0 z-40 flex h-[60px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
       <div className="flex-1 flex items-center justify-start">
+        <button
+          onClick={openFeedback}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
+          aria-label="Send feedback"
+        >
+          <MessageSquareMore className="h-[18px] w-[18px]" />
+        </button>
+      </div>
+      <Link to="/" className="flex items-center justify-center leading-none">
+        <ParadeWordmark size="md" className="leading-none" />
+      </Link>
+      <div className="flex-1 flex items-center justify-end gap-1">
         <Link
           to="/notifications"
           className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
@@ -20,11 +34,6 @@ export function MobileHeader() {
             </span>
           )}
         </Link>
-      </div>
-      <Link to="/" className="flex items-center justify-center leading-none">
-        <ParadeWordmark size="md" className="leading-none" />
-      </Link>
-      <div className="flex-1 flex items-center justify-end">
         <Link
           to="/settings"
           className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
