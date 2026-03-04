@@ -149,7 +149,7 @@ export function VibeSelector() {
                   : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary"
               )}
             >
-              <Plus className="h-3 w-3" />
+              <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
               <span>Custom</span>
             </motion.button>
           )}
