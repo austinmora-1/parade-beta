@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 interface MarqueeTextProps {
@@ -11,7 +11,9 @@ export function MarqueeText({ text, className }: MarqueeTextProps) {
   const textRef = useRef<HTMLSpanElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [overflowPx, setOverflowPx] = useState(0);
-  const [duration, setDuration] = useState(5);
+  const [scrollDuration, setScrollDuration] = useState(3);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -24,8 +26,7 @@ export function MarqueeText({ text, className }: MarqueeTextProps) {
       if (overflow) {
         const px = textEl.scrollWidth - container.clientWidth;
         setOverflowPx(px);
-        // Total cycle ~10s: pause at start, scroll, pause at end, scroll back
-        setDuration(Math.max(6, 10 + px / 40));
+        setScrollDuration(Math.max(2, px / 40));
       }
     };
 
@@ -35,6 +36,30 @@ export function MarqueeText({ text, className }: MarqueeTextProps) {
     return () => observer.disconnect();
   }, [text]);
 
+  const startCycle = useCallback(() => {
+    if (!isOverflowing) return;
+    setIsAnimating(true);
+  }, [isOverflowing]);
+
+  // Start first cycle after mount + a short delay
+  useEffect(() => {
+    if (!isOverflowing) return;
+    timerRef.current = setTimeout(() => startCycle(), 1000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [isOverflowing, startCycle]);
+
+  const handleAnimationEnd = () => {
+    setIsAnimating(false);
+    // Wait 10 seconds then run again
+    timerRef.current = setTimeout(() => {
+      setIsAnimating(true);
+    }, 10000);
+  };
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -42,15 +67,16 @@ export function MarqueeText({ text, className }: MarqueeTextProps) {
     >
       <span
         ref={textRef}
-        className={cn("inline-block", isOverflowing && "animate-marquee")}
+        className="inline-block"
         style={
-          isOverflowing
+          isAnimating
             ? {
+                animation: `marquee-once ${scrollDuration}s ease-in-out forwards`,
                 '--marquee-distance': `-${overflowPx}px`,
-                '--marquee-duration': `${duration}s`,
               } as React.CSSProperties
-            : undefined
+            : { transform: 'translateX(0)' }
         }
+        onAnimationEnd={handleAnimationEnd}
       >
         {text}
       </span>
