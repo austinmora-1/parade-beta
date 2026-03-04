@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { usePods } from '@/hooks/usePods';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
@@ -36,6 +37,7 @@ interface FriendInfo {
   currentVibe: string | null;
   customVibeTags: string[] | null;
   isPodMember: boolean;
+  sharedPlanCount: number;
 }
 
 const VIBE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -51,6 +53,7 @@ type TabValue = 'available' | string; // 'available' or pod id
 export function FriendsAndPodWidget() {
   const { friends } = usePlannerStore();
   const { pods, loading: podsLoading } = usePods();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [friendData, setFriendData] = useState<FriendInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +83,7 @@ export function FriendsAndPodWidget() {
       setLoading(true);
       const today = format(new Date(), 'yyyy-MM-dd');
 
-      const [availResult, profileResult, plansResult] = await Promise.all([
+      const [availResult, profileResult, plansResult, myParticipantsResult, friendParticipantsResult] = await Promise.all([
         supabase
           .from('availability')
           .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
@@ -96,7 +99,27 @@ export function FriendsAndPodWidget() {
           .in('user_id', friendUserIds)
           .gte('date', `${today}T00:00:00`)
           .lte('date', `${today}T23:59:59`),
+        // Get plans the current user owns or participates in
+        user ? supabase
+          .from('plan_participants')
+          .select('plan_id, friend_id')
+          .in('friend_id', friendUserIds) : Promise.resolve({ data: [] }),
+        // Get plans owned by the current user that have these friends as participants
+        user ? supabase
+          .from('plans')
+          .select('id')
+          .eq('user_id', user.id) : Promise.resolve({ data: [] }),
       ]);
+
+      // Count shared plans per friend (plans where both current user and friend participate)
+      const sharedPlanCounts = new Map<string, number>();
+      const myPlanIds = new Set((friendParticipantsResult.data || []).map((p: any) => p.id));
+      
+      for (const pp of (myParticipantsResult.data || [])) {
+        if (myPlanIds.has(pp.plan_id)) {
+          sharedPlanCounts.set(pp.friend_id, (sharedPlanCounts.get(pp.friend_id) || 0) + 1);
+        }
+      }
 
       const busySlots = new Map<string, Set<string>>();
       for (const plan of (plansResult.data || [])) {
@@ -136,7 +159,17 @@ export function FriendsAndPodWidget() {
           currentVibe: profileRow?.current_vibe || null,
           customVibeTags: (profileRow as any)?.custom_vibe_tags || null,
           isPodMember: podMemberIds.has(uid),
+          sharedPlanCount: sharedPlanCounts.get(uid) || 0,
         };
+      });
+
+      // Sort: pod members first, then by shared plan count desc, then by free slots desc
+      data.sort((a, b) => {
+        const podDiff = (b.isPodMember ? 1 : 0) - (a.isPodMember ? 1 : 0);
+        if (podDiff !== 0) return podDiff;
+        const planDiff = b.sharedPlanCount - a.sharedPlanCount;
+        if (planDiff !== 0) return planDiff;
+        return b.freeSlots - a.freeSlots;
       });
 
       setFriendData(data);
@@ -144,7 +177,7 @@ export function FriendsAndPodWidget() {
     };
 
     fetchData();
-  }, [connectedFriends, podMemberIds]);
+  }, [connectedFriends, podMemberIds, user]);
 
   // Filter by active tab
   const displayedFriends = useMemo(() => {
