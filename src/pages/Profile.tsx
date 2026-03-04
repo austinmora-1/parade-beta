@@ -781,8 +781,8 @@ export default function Profile() {
           <CollapsibleTrigger asChild>
             <button className="mb-0 data-[state=open]:mb-4 flex w-full items-center justify-between group [&[data-state=open]]:mb-4">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <h2 className="font-display text-lg font-semibold">Upcoming Plans</h2>
+                <Clock className="h-4 w-4 text-primary" />
+                <h2 className="font-display text-sm font-semibold">Upcoming Plans</h2>
                 {upcomingPlans.length > 0 && (
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                     {upcomingPlans.length}
@@ -804,14 +804,14 @@ export default function Profile() {
                       className="group/plan flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted cursor-pointer"
                     >
                       <div 
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm"
                         style={{ backgroundColor: activityConfig ? `hsl(var(--${activityConfig.color}) / 0.2)` : 'hsl(var(--muted))' }}
                       >
-                        {activityConfig ? <ActivityIcon config={activityConfig} size={20} /> : '📅'}
+                        {activityConfig ? <ActivityIcon config={activityConfig} size={16} /> : '📅'}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium truncate">{getPlanDisplayTitle(plan)}</p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                        <p className="text-sm font-medium truncate">{getPlanDisplayTitle(plan)}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                           <span>{format(plan.date, 'EEE, MMM d')}</span>
                           <span>•</span>
                           <span>{TIME_SLOT_LABELS[plan.timeSlot as TimeSlot]?.time || plan.timeSlot}</span>
