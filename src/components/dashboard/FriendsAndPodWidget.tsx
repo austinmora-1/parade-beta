@@ -5,6 +5,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot, Friend } from '@/types/planner';
 import { Heart, Home, Plane, MapPin, Loader2, ArrowRight, Users } from 'lucide-react';
 import { CollapsibleWidget } from './CollapsibleWidget';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -253,6 +254,7 @@ export function FriendsAndPodWidget() {
           {activeTab === 'available' ? 'No friends available today' : 'No members in this pod yet'}
         </p>
       ) : (
+        <ScrollArea className="max-h-[320px]">
         <div className="space-y-2">
           {displayedFriends.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots, currentVibe, customVibeTags }) => {
             const isAway = locationStatus === 'away';
@@ -353,6 +355,7 @@ export function FriendsAndPodWidget() {
             );
           })}
         </div>
+        </ScrollArea>
       )}
     </CollapsibleWidget>
   );
