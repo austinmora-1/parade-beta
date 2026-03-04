@@ -3,6 +3,7 @@ import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, MoreVertical, Trash2, Eye } from 'lucide-react';
+import { MarqueeText } from '@/components/ui/MarqueeText';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
@@ -55,10 +56,10 @@ export function PlanCard({
         )}
         style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${isTentative ? '0.08' : '0.15'})` }}
       >
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 min-w-0">
           <ActivityIcon config={activityConfig} size={14} />
-          <span className="truncate font-medium">{displayTitle}</span>
-          {isTentative && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
+          <MarqueeText text={displayTitle} className="font-medium min-w-0 flex-1" />
+          {isTentative && <span className="text-[8px] text-muted-foreground ml-auto shrink-0">tentative</span>}
         </div>
       </div>
     );
@@ -90,8 +91,8 @@ export function PlanCard({
           >
             <ActivityIcon config={activityConfig} size={28} />
           </div>
-          <div>
-            <h3 className="font-display text-lg font-semibold">{displayTitle}</h3>
+          <div className="min-w-0 flex-1">
+            <MarqueeText text={displayTitle} className="font-display text-lg font-semibold" />
             <p className="text-sm text-muted-foreground">{activityConfig.label}</p>
           </div>
         </div>

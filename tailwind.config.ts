@@ -125,6 +125,10 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-5px)" },
         },
+        "marquee": {
+          "0%, 10%": { transform: "translateX(0)" },
+          "90%, 100%": { transform: "translateX(var(--marquee-distance))" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -132,6 +136,7 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-in-left": "slide-in-left 0.3s ease-out",
         "bounce-soft": "bounce-soft 2s ease-in-out infinite",
+        "marquee": "marquee var(--marquee-duration, 5s) linear infinite alternate",
       },
     },
   },
