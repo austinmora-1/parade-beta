@@ -37,19 +37,19 @@ export function MobileNav() {
               key={item.path}
               to={item.path}
               className={cn(
-                "relative flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 transition-all duration-200",
+                "relative flex flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-all duration-200",
                 isActive
                   ? "text-sidebar-primary"
                   : "text-sidebar-foreground/60"
               )}
             >
               <div className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-xl transition-all",
+                "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
                 isActive && "bg-sidebar-accent"
               )}>
-                <item.icon className="h-6 w-6" />
+                <item.icon className="h-5 w-5" />
               </div>
-              <span className="text-[12px] font-medium">{item.label}</span>
+              <span className="text-[11px] font-medium">{item.label}</span>
             </NavLink>
           );
         })}
@@ -57,10 +57,10 @@ export function MobileNav() {
         {/* Profile link with avatar */}
         <NavLink
           to="/profile"
-          className="relative flex flex-col items-center justify-center rounded-xl px-3 py-2 transition-all duration-200"
+          className="relative flex flex-col items-center justify-center rounded-xl px-2 py-2 transition-all duration-200"
         >
           <Avatar className={cn(
-            "h-9 w-9 transition-all",
+            "h-8 w-8 transition-all",
             isProfileActive && "ring-2 ring-white ring-offset-2 ring-offset-primary"
           )}>
             <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
