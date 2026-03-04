@@ -51,6 +51,9 @@ import { LocationTimeline } from '@/components/profile/LocationTimeline';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { QuickStats } from '@/components/dashboard/QuickStats';
+import { ParticipantsList } from '@/components/plans/ParticipantsList';
+import { CalendarCheck } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProfileData {
   display_name: string | null;
@@ -781,7 +784,7 @@ export default function Profile() {
           <CollapsibleTrigger asChild>
             <button className="mb-0 data-[state=open]:mb-4 flex w-full items-center justify-between group [&[data-state=open]]:mb-4">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
+                <CalendarCheck className="h-4 w-4 text-primary" />
                 <h2 className="font-display text-sm font-semibold">Upcoming Plans</h2>
                 {upcomingPlans.length > 0 && (
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
@@ -794,70 +797,60 @@ export default function Profile() {
           </CollapsibleTrigger>
           <CollapsibleContent>
             {upcomingPlans.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {upcomingPlans.map((plan) => {
-                  const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
+                  const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG] || { label: 'Activity', icon: '✨', color: 'activity-misc', vibeType: 'social' as const, category: 'staying-in' as const };
+                  const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot as TimeSlot];
+                  const displayTitle = getPlanDisplayTitle(plan);
+                  
+                  const formatTime12 = (time: string) => {
+                    const [h, m] = time.split(':').map(Number);
+                    const ampm = h >= 12 ? 'pm' : 'am';
+                    const hour12 = h % 12 || 12;
+                    return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+                  };
+
                   return (
                     <div
                       key={plan.id}
                       onClick={() => navigate(`/plan/${plan.id}`)}
-                      className="group/plan flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted cursor-pointer"
+                      className="rounded-lg border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer bg-muted/30 hover:bg-muted/50"
+                      style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
                     >
-                      <div 
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm"
-                        style={{ backgroundColor: activityConfig ? `hsl(var(--${activityConfig.color}) / 0.2)` : 'hsl(var(--muted))' }}
-                      >
-                        {activityConfig ? <ActivityIcon config={activityConfig} size={16} /> : '📅'}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{getPlanDisplayTitle(plan)}</p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          <span>{format(plan.date, 'EEE, MMM d')}</span>
-                          <span>•</span>
-                          <span>{TIME_SLOT_LABELS[plan.timeSlot as TimeSlot]?.time || plan.timeSlot}</span>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <ActivityIcon config={activityConfig} size={18} />
+                            <span className="text-sm font-medium truncate">{displayTitle}</span>
+                          </div>
+                          <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                            <span className="flex items-center gap-0.5 shrink-0">
+                              <Clock className="h-3 w-3" />
+                              {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig?.time || plan.timeSlot}
+                            </span>
+                          </div>
                           {plan.location && (
-                            <>
-                              <span>•</span>
-                              <span className="truncate">{plan.location.name}</span>
-                            </>
+                            <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              <span className="truncate max-w-[140px]">{plan.location.name}</span>
+                            </div>
                           )}
                         </div>
-                      </div>
-                      {plan.participants && plan.participants.length > 0 && (
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Users className="h-4 w-4" />
-                          <span>{plan.participants.length}</span>
+                        <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {isSameDay(plan.date, new Date())
+                              ? (plan.endDate ? `Today – ${format(plan.endDate, 'MMM d')}` : 'Today')
+                              : (plan.endDate
+                                ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
+                                : format(plan.date, 'EEE, MMM d'))}
+                          </span>
+                          {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
+                            <span className="flex items-center gap-0.5 text-xs text-muted-foreground" data-stop-card-click onClick={e => e.stopPropagation()}>
+                              <Users className="h-3 w-3 shrink-0" />
+                              <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
+                            </span>
+                          )}
                         </div>
-                      )}
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover/plan:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleEditPlan(plan)}
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              <MoreVertical className="h-3.5 w-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditPlan(plan)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeletePlan(plan.id)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              {plan.userId === session?.user?.id ? 'Delete' : 'Decline'}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
                     </div>
                   );
