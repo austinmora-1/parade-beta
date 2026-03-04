@@ -3,7 +3,8 @@ import { AvailabilityGrid } from '@/components/availability/AvailabilityGrid';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { Button } from '@/components/ui/button';
-import { Share2, RefreshCw, Loader2, Plus } from 'lucide-react';
+import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
+import { RefreshCw, Loader2, Plus } from 'lucide-react';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -83,7 +84,7 @@ export default function Availability() {
           <ShareDialog
             trigger={
               <Button size="sm" variant="outline" className="shrink-0 gap-2">
-                <Share2 className="h-4 w-4" />
+                <CalendarShareIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">Share</span>
               </Button>
             }
