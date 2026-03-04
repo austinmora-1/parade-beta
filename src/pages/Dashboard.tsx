@@ -6,13 +6,14 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { WeekOverview } from '@/components/dashboard/WeekOverview';
 import { UpcomingPlans } from '@/components/dashboard/UpcomingPlans';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
+import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { FriendsAndPodWidget } from '@/components/dashboard/FriendsAndPodWidget';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
 import { NewHangRequestDialog } from '@/components/dashboard/NewHangRequestDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, CalendarPlus, CalendarArrowUp, UserPlus, Send, Loader2 } from 'lucide-react';
+import { Plus, CalendarPlus, CalendarArrowUp, UserPlus, Send, Zap, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,7 @@ export default function Dashboard() {
   const [inviteFriendOpen, setInviteFriendOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [hangRequestOpen, setHangRequestOpen] = useState(false);
+  const [sendVibeOpen, setSendVibeOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -57,6 +59,10 @@ export default function Dashboard() {
               <CalendarPlus className="h-4 w-4" />
               Create a Plan
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSendVibeOpen(true)} className="gap-2">
+              <Zap className="h-4 w-4" />
+              Send Vibe
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setShareOpen(true)} className="gap-2">
               <CalendarArrowUp className="h-4 w-4" />
               Share Availability
@@ -80,6 +86,7 @@ export default function Dashboard() {
         open={hangRequestOpen}
         onOpenChange={setHangRequestOpen}
       />
+      <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
 
       {/* Vibe */}
       <VibeSelector />
