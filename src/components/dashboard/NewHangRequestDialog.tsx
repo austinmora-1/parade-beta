@@ -32,13 +32,17 @@ interface FriendAvailDay {
 }
 
 interface NewHangRequestDialogProps {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
+export function NewHangRequestDialog({ trigger, open: controlledOpen, onOpenChange }: NewHangRequestDialogProps) {
   const { friends, availabilityMap, plans } = usePlannerStore();
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [selectedDay, setSelectedDay] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | ''>('');
@@ -315,9 +319,11 @@ export function NewHangRequestDialog({ trigger }: NewHangRequestDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetAndClose(); else setOpen(true); }}>
-      <DialogTrigger asChild>
-        {trigger}
-      </DialogTrigger>
+      {trigger && (
+        <DialogTrigger asChild>
+          {trigger}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden max-h-[85vh] !flex !flex-col">
         <DialogHeader className="p-4 pb-2 shrink-0">
           <div className="flex items-center gap-2">

@@ -5,6 +5,8 @@ import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatView } from '@/components/chat/ChatView';
 import { EllyChatView } from '@/components/chat/EllyChatView';
 import { NewChatDialog } from '@/components/chat/NewChatDialog';
+import { ReceivedVibes } from '@/components/dashboard/ReceivedVibes';
+import { SentVibes } from '@/components/dashboard/SentVibes';
 import { useSearchParams } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -92,9 +94,11 @@ export default function Chat() {
     );
   }
 
-  // Conversation list with pinned Elly
   return (
     <div className="animate-fade-in space-y-4 md:space-y-6">
+      {/* Vibes */}
+      <ReceivedVibes />
+      <SentVibes />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
