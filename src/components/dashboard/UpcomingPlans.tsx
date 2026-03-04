@@ -6,6 +6,7 @@ import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
+import { MarqueeText } from '@/components/ui/MarqueeText';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
@@ -150,9 +151,9 @@ export function UpcomingPlans() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <ActivityIcon config={activityConfig} size={18} />
-                      <span className="text-sm font-medium">{displayTitle}</span>
+                      <MarqueeText text={displayTitle} className="text-sm font-medium min-w-0 flex-1" />
                     </div>
                     <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                       <span className="flex items-center gap-0.5 shrink-0">
