@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 
 interface ShareDialogProps {
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type ViewDuration = '1w' | '1m' | '3m';
@@ -27,8 +29,10 @@ const VIEW_DURATION_OPTIONS: { value: ViewDuration; label: string }[] = [
   { value: '3m', label: '3 Months' },
 ];
 
-export function ShareDialog({ trigger }: ShareDialogProps) {
-  const [open, setOpen] = useState(false);
+export function ShareDialog({ trigger, open: controlledOpen, onOpenChange }: ShareDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [copied, setCopied] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [shareCode, setShareCode] = useState<string | null>(null);
@@ -190,14 +194,19 @@ export function ShareDialog({ trigger }: ShareDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
+      {trigger && (
+        <DialogTrigger asChild>
+          {trigger}
+        </DialogTrigger>
+      )}
+      {!trigger && controlledOpen === undefined && (
+        <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2 h-8">
             <CalendarShareIcon className="h-4 w-4" />
             Share
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      )}
       <DialogContent className="left-4 right-4 w-auto max-w-none -translate-x-0 p-0 sm:left-[50%] sm:right-auto sm:w-full sm:max-w-md sm:translate-x-[-50%] sm:p-0 overflow-hidden max-h-[85dvh] flex flex-col">
         <DialogHeader className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6 shrink-0">
           <DialogTitle className="font-display text-lg sm:text-xl">Share Your Availability</DialogTitle>

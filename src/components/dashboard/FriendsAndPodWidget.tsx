@@ -1,0 +1,359 @@
+import { useMemo, useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { usePlannerStore } from '@/stores/plannerStore';
+import { TIME_SLOT_LABELS, TimeSlot, Friend } from '@/types/planner';
+import { Heart, Home, Plane, MapPin, Loader2, ArrowRight, Users } from 'lucide-react';
+import { CollapsibleWidget } from './CollapsibleWidget';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { supabase } from '@/integrations/supabase/client';
+import { usePods } from '@/hooks/usePods';
+
+const TIME_SLOT_ORDER: TimeSlot[] = [
+  'early-morning', 'late-morning', 'early-afternoon',
+  'late-afternoon', 'evening', 'late-night',
+];
+
+const SLOT_TO_DB_COL: Record<TimeSlot, string> = {
+  'early-morning': 'early_morning',
+  'late-morning': 'late_morning',
+  'early-afternoon': 'early_afternoon',
+  'late-afternoon': 'late_afternoon',
+  'evening': 'evening',
+  'late-night': 'late_night',
+};
+
+interface FriendInfo {
+  friend: Friend;
+  locationStatus: string | null;
+  tripLocation: string | null;
+  freeSlots: number;
+  totalSlots: number;
+  slots: Record<TimeSlot, boolean>;
+  currentVibe: string | null;
+  customVibeTags: string[] | null;
+  isPodMember: boolean;
+}
+
+const VIBE_CONFIG: Record<string, { label: string; color: string }> = {
+  social: { label: '🎉 Social', color: 'bg-vibe-social/15 text-vibe-social' },
+  chill: { label: '😌 Chill', color: 'bg-vibe-chill/15 text-vibe-chill' },
+  athletic: { label: '💪 Athletic', color: 'bg-vibe-athletic/15 text-vibe-athletic' },
+  productive: { label: '⚡ Productive', color: 'bg-vibe-productive/15 text-vibe-productive' },
+  custom: { label: '✨ Custom', color: 'bg-primary/15 text-primary' },
+};
+
+type TabValue = 'available' | string; // 'available' or pod id
+
+export function FriendsAndPodWidget() {
+  const { friends } = usePlannerStore();
+  const { pods, loading: podsLoading } = usePods();
+  const navigate = useNavigate();
+  const [friendData, setFriendData] = useState<FriendInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabValue>('available');
+
+  const connectedFriends = useMemo(() => {
+    return friends.filter(f => f.status === 'connected' && f.friendUserId);
+  }, [friends]);
+
+  const podMemberIds = useMemo(() => {
+    const ids = new Set<string>();
+    pods.forEach(p => p.memberUserIds.forEach(id => ids.add(id)));
+    return ids;
+  }, [pods]);
+
+  // Fetch availability/vibe data for all connected friends
+  useEffect(() => {
+    if (connectedFriends.length === 0) {
+      setFriendData([]);
+      setLoading(false);
+      return;
+    }
+
+    const friendUserIds = connectedFriends.map(f => f.friendUserId!);
+
+    const fetchData = async () => {
+      setLoading(true);
+      const today = format(new Date(), 'yyyy-MM-dd');
+
+      const [availResult, profileResult, plansResult] = await Promise.all([
+        supabase
+          .from('availability')
+          .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
+          .in('user_id', friendUserIds)
+          .eq('date', today),
+        supabase
+          .from('profiles')
+          .select('user_id, location_status, current_vibe, custom_vibe_tags')
+          .in('user_id', friendUserIds),
+        supabase
+          .from('plans')
+          .select('user_id, time_slot')
+          .in('user_id', friendUserIds)
+          .gte('date', `${today}T00:00:00`)
+          .lte('date', `${today}T23:59:59`),
+      ]);
+
+      const busySlots = new Map<string, Set<string>>();
+      for (const plan of (plansResult.data || [])) {
+        if (!busySlots.has(plan.user_id)) busySlots.set(plan.user_id, new Set());
+        busySlots.get(plan.user_id)!.add(plan.time_slot.replace('_', '-'));
+      }
+
+      const data: FriendInfo[] = connectedFriends.map(friend => {
+        const uid = friend.friendUserId!;
+        const availRow = (availResult.data || []).find((r: any) => r.user_id === uid);
+        const profileRow = (profileResult.data || []).find((r: any) => r.user_id === uid);
+        const friendBusy = busySlots.get(uid) || new Set();
+
+        const slots: Record<string, boolean> = {};
+        let freeCount = 0;
+
+        for (const slot of TIME_SLOT_ORDER) {
+          if (friendBusy.has(slot)) {
+            slots[slot] = false;
+          } else if (!availRow) {
+            slots[slot] = true;
+            freeCount++;
+          } else {
+            const val = (availRow as any)[SLOT_TO_DB_COL[slot]] !== false;
+            slots[slot] = val;
+            if (val) freeCount++;
+          }
+        }
+
+        return {
+          friend,
+          locationStatus: availRow?.location_status || profileRow?.location_status || 'home',
+          tripLocation: availRow?.trip_location || null,
+          freeSlots: freeCount,
+          totalSlots: TIME_SLOT_ORDER.length,
+          slots: slots as Record<TimeSlot, boolean>,
+          currentVibe: profileRow?.current_vibe || null,
+          customVibeTags: (profileRow as any)?.custom_vibe_tags || null,
+          isPodMember: podMemberIds.has(uid),
+        };
+      });
+
+      setFriendData(data);
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [connectedFriends, podMemberIds]);
+
+  // Filter by active tab
+  const displayedFriends = useMemo(() => {
+    if (activeTab === 'available') {
+      return friendData.filter(f => f.freeSlots > 0);
+    }
+    // Pod tab
+    const pod = pods.find(p => p.id === activeTab);
+    if (!pod) return [];
+    return friendData.filter(f => pod.memberUserIds.includes(f.friend.friendUserId!));
+  }, [activeTab, friendData, pods]);
+
+  const getInitials = (name: string) =>
+    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const getAvatarColor = (name: string) => {
+    const colors = [
+      'bg-primary/20 text-primary',
+      'bg-activity-drinks/20 text-activity-drinks',
+      'bg-activity-sports/20 text-activity-sports',
+      'bg-activity-music/20 text-activity-music',
+      'bg-activity-nature/20 text-activity-nature',
+    ];
+    return colors[name.charCodeAt(0) % colors.length];
+  };
+
+  const availableCount = friendData.filter(f => f.freeSlots > 0).length;
+  const hasPods = pods.some(p => p.memberUserIds.length > 0);
+
+  if (connectedFriends.length === 0) {
+    return (
+      <CollapsibleWidget
+        title="Friends"
+        icon={<Users className="h-4 w-4 text-primary" />}
+      >
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <div className="mb-3 rounded-full bg-muted p-3">
+            <Users className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground">No friends connected yet</p>
+          <Link to="/friends" className="mt-2">
+            <Button size="sm" variant="outline">Add Friends</Button>
+          </Link>
+        </div>
+      </CollapsibleWidget>
+    );
+  }
+
+  const tabs = [
+    { id: 'available' as TabValue, label: `Available (${availableCount})`, icon: '🟢' },
+    ...pods.filter(p => p.memberUserIds.length > 0).map(p => ({
+      id: p.id as TabValue,
+      label: p.name,
+      icon: p.emoji || '👥',
+    })),
+  ];
+
+  const viewAllLink = (
+    <Link to="/friends" onClick={(e) => e.stopPropagation()}>
+      <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
+        View All
+        <ArrowRight className="h-3 w-3" />
+      </Button>
+    </Link>
+  );
+
+  return (
+    <CollapsibleWidget
+      title="Friends"
+      icon={<Users className="h-4 w-4 text-primary" />}
+      badge={
+        availableCount > 0 ? (
+          <span className="rounded-full bg-availability-available/10 px-2 py-0.5 text-xs font-medium text-availability-available">
+            {availableCount} free
+          </span>
+        ) : undefined
+      }
+      headerRight={viewAllLink}
+    >
+      {/* Tabs */}
+      {(hasPods || tabs.length > 1) && (
+        <div className="flex gap-1 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap transition-all shrink-0",
+                activeTab === tab.id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              <span className="text-xs">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : displayedFriends.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">
+          {activeTab === 'available' ? 'No friends available today' : 'No members in this pod yet'}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {displayedFriends.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots, currentVibe, customVibeTags }) => {
+            const isAway = locationStatus === 'away';
+            const hasFreeSlots = freeSlots > 0;
+            const vibeInfo = currentVibe ? VIBE_CONFIG[currentVibe] : null;
+
+            return (
+              <button
+                key={friend.id}
+                onClick={() => {
+                  if (friend.friendUserId) navigate(`/friend/${friend.friendUserId}`);
+                }}
+                className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-all hover:border-primary/20 hover:shadow-soft text-left w-full"
+              >
+                {/* Avatar */}
+                <div
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold relative",
+                    getAvatarColor(friend.name)
+                  )}
+                >
+                  {friend.avatar ? (
+                    <img src={friend.avatar} alt={friend.name} className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    getInitials(friend.name)
+                  )}
+                  <div className={cn(
+                    "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-background flex items-center justify-center",
+                    isAway ? "bg-activity-events" : "bg-availability-available"
+                  )}>
+                    {isAway ? <Plane className="h-2.5 w-2.5 text-white" /> : <Home className="h-2.5 w-2.5 text-white" />}
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-medium">{friend.name}</p>
+                    {vibeInfo && currentVibe === 'custom' && customVibeTags?.length ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0 cursor-pointer hover:opacity-80 transition-opacity",
+                              vibeInfo.color
+                            )}
+                          >
+                            {vibeInfo.label}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto max-w-48 p-2" side="top" align="start">
+                          <div className="flex flex-wrap gap-1">
+                            {customVibeTags.map((tag) => (
+                              <span key={tag} className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ) : vibeInfo ? (
+                      <span className={cn("inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0", vibeInfo.color)}>
+                        {vibeInfo.label}
+                      </span>
+                    ) : null}
+                    {isAway && tripLocation && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground shrink-0">
+                        <MapPin className="h-2.5 w-2.5" />
+                        {tripLocation}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Availability bar */}
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <div className="flex gap-0.5 flex-1">
+                      {TIME_SLOT_ORDER.map(slot => (
+                        <div
+                          key={slot}
+                          className={cn(
+                            "h-1.5 flex-1 rounded-full",
+                            slots[slot] ? "bg-availability-available/60" : "bg-muted-foreground/20"
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <span className={cn(
+                      "text-[10px] font-medium shrink-0",
+                      hasFreeSlots ? "text-availability-available" : "text-muted-foreground"
+                    )}>
+                      {freeSlots}/{totalSlots}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </CollapsibleWidget>
+  );
+}
