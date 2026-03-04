@@ -254,8 +254,8 @@ export function FriendsAndPodWidget() {
           {activeTab === 'available' ? 'No friends available today' : 'No members in this pod yet'}
         </p>
       ) : (
-        <ScrollArea className="max-h-[320px]">
-        <div className="space-y-2">
+        <div className="max-h-[320px] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
+        <div className="space-y-2 pr-1">
           {displayedFriends.map(({ friend, locationStatus, tripLocation, freeSlots, totalSlots, slots, currentVibe, customVibeTags }) => {
             const isAway = locationStatus === 'away';
             const hasFreeSlots = freeSlots > 0;
@@ -355,7 +355,7 @@ export function FriendsAndPodWidget() {
             );
           })}
         </div>
-        </ScrollArea>
+        </div>
       )}
     </CollapsibleWidget>
   );
