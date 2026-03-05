@@ -156,21 +156,20 @@ export default function Availability() {
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex rounded-xl bg-muted/50 p-1 gap-1">
-        {TABS.map((tab) => (
+      {/* Tab dots */}
+      <div className="flex justify-center gap-2">
+        {TABS.map((tab, i) => (
           <button
             key={tab.id}
             onClick={() => goToTab(tab.id)}
             className={cn(
-              "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
-              activeTab === tab.id
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+              "rounded-full transition-all duration-200",
+              activeIndex === i
+                ? "h-2.5 w-6 bg-primary"
+                : "h-2.5 w-2.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
             )}
-          >
-            {tab.label}
-          </button>
+            aria-label={tab.label}
+          />
         ))}
       </div>
 
@@ -198,20 +197,6 @@ export default function Availability() {
         </AnimatePresence>
       </div>
 
-      {/* Swipe indicator dots */}
-      <div className="flex justify-center gap-1.5 pb-2">
-        {TABS.map((tab, i) => (
-          <div
-            key={tab.id}
-            className={cn(
-              "h-1.5 rounded-full transition-all duration-200",
-              activeIndex === i
-                ? "w-4 bg-primary"
-                : "w-1.5 bg-muted-foreground/30"
-            )}
-          />
-        ))}
-      </div>
 
       <CreatePlanDialog
         open={planDialogOpen}
