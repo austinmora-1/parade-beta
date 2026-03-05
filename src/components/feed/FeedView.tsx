@@ -4,6 +4,7 @@ import { format, isSameDay, formatDistanceToNow, isPast, subDays } from 'date-fn
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ACTIVITY_CONFIG, VIBE_CONFIG, VibeType, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSignedUrl } from '@/lib/storage';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
 
 type FeedItem =
   | { type: 'vibe'; data: VibeSend; timestamp: Date }
@@ -39,6 +41,7 @@ function formatTimeRange(start: string, end?: string): string {
 
 export function FeedView() {
   const { user } = useAuth();
+  const { profile: currentUserProfile } = useCurrentUserProfile();
   const navigate = useNavigate();
   const { plans } = usePlannerStore();
   const {
@@ -123,7 +126,7 @@ export function FeedView() {
     sentVibes.forEach((vibe) => {
       items.push({
         type: 'vibe',
-        data: { ...vibe, sender_name: 'You' },
+        data: { ...vibe, sender_name: 'You', sender_avatar: currentUserProfile?.avatar_url || undefined },
         timestamp: new Date(vibe.created_at),
       });
     });
@@ -296,17 +299,12 @@ function VibeFeedCard({
     >
       <div className="flex items-start gap-3">
         {/* Sender avatar */}
-        <div
-          className="h-10 w-10 shrink-0 rounded-full ring-1 ring-border overflow-hidden"
-          style={{ backgroundColor: `${vibeColors[vibe.vibe_type] || vibeColors.social}20` }}
-        >
-          {vibe.sender_avatar ? (
-            <img src={vibe.sender_avatar} alt={vibe.sender_name || ''} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-lg">
-              {config.icon}
-            </div>
-          )}
+        <div className="h-10 w-10 shrink-0 rounded-full ring-1 ring-border overflow-hidden">
+          <img
+            src={vibe.sender_avatar || getElephantAvatar(vibe.sender_name || 'User')}
+            alt={vibe.sender_name || ''}
+            className="h-full w-full object-cover"
+          />
         </div>
 
         <div className="flex-1 min-w-0">
