@@ -34,7 +34,7 @@ export default function Availability() {
   // Swipe handling
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  const isSwiping = useRef(false);
+  const isHorizontalSwipe = useRef<boolean | null>(null);
 
   const openPlanDialog = (date?: Date) => {
     setPlanDefaultDate(date);
@@ -77,15 +77,25 @@ export default function Availability() {
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
-    isSwiping.current = false;
+    isHorizontalSwipe.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isHorizontalSwipe.current === null) {
+      const deltaX = Math.abs(e.touches[0].clientX - touchStartX.current);
+      const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current);
+      if (deltaX > 10 || deltaY > 10) {
+        isHorizontalSwipe.current = deltaX > deltaY;
+      }
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isHorizontalSwipe.current) return;
+    
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
 
-    // Only swipe if horizontal movement is dominant and > 50px
-    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+    if (Math.abs(deltaX) > 40) {
       if (deltaX < 0 && activeIndex < TABS.length - 1) {
         goToTab(TABS[activeIndex + 1].id);
       } else if (deltaX > 0 && activeIndex > 0) {
@@ -95,9 +105,9 @@ export default function Availability() {
   };
 
   const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? 100 : -100, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
+    exit: (dir: number) => ({ x: dir > 0 ? -100 : 100, opacity: 0 }),
   };
 
   return (
@@ -166,8 +176,9 @@ export default function Availability() {
 
       {/* Swipeable content */}
       <div
-        className="relative overflow-hidden"
+        className="relative overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         <AnimatePresence mode="wait" custom={direction}>
