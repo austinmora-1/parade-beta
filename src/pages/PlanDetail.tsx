@@ -1,15 +1,23 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
-import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS, FeedVisibility } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
+import { usePods } from '@/hooks/usePods';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
@@ -41,9 +49,10 @@ export default function PlanDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plans, deletePlan, userId, loadAllData } = usePlannerStore();
+  const { plans, deletePlan, updatePlan, userId, loadAllData } = usePlannerStore();
   const { createGroup, createDM } = useConversations();
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
+  const { pods } = usePods();
 
   const inviteToken = searchParams.get('invite_token');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -372,7 +381,37 @@ export default function PlanDetail() {
             </div>
           )}
 
-          {/* Change request */}
+          {/* Visibility */}
+          {plan && isOwner && !isPast && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Visibility</h3>
+              <Select
+                value={plan.feedVisibility || 'private'}
+                onValueChange={async (value: string) => {
+                  await updatePlan(plan.id, { feedVisibility: value as FeedVisibility });
+                  toast.success('Visibility updated');
+                }}
+              >
+                <SelectTrigger className="w-full max-w-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="private">
+                    <span className="flex items-center gap-2"><Lock className="h-3.5 w-3.5" /> Private</span>
+                  </SelectItem>
+                  <SelectItem value="friends">
+                    <span className="flex items-center gap-2"><Globe className="h-3.5 w-3.5" /> All Friends</span>
+                  </SelectItem>
+                  {pods.map(pod => (
+                    <SelectItem key={pod.id} value={`pod:${pod.id}`}>
+                      <span className="flex items-center gap-2">{pod.emoji} {pod.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
         {changeRequest && (
           <PlanChangeRequestBadge
             changeRequest={changeRequest}
