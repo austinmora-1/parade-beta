@@ -21,11 +21,20 @@ type FeedItem =
   | { type: 'vibe'; data: VibeSend; timestamp: Date }
   | { type: 'plan'; data: any; timestamp: Date };
 
-function formatTime12(time: string): string {
+function formatTime12(time: string, showSuffix = true): string {
   const [h, m] = time.split(':').map(Number);
   const ampm = h >= 12 ? 'pm' : 'am';
   const hour12 = h % 12 || 12;
-  return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+  const suffix = showSuffix ? ampm : '';
+  return m === 0 ? `${hour12}${suffix}` : `${hour12}:${m.toString().padStart(2, '0')}${suffix}`;
+}
+
+function formatTimeRange(start: string, end?: string): string {
+  if (!end) return formatTime12(start);
+  const startH = parseInt(start.split(':')[0], 10);
+  const endH = parseInt(end.split(':')[0], 10);
+  const samePeriod = (startH >= 12) === (endH >= 12);
+  return `${formatTime12(start, !samePeriod)} – ${formatTime12(end)}`;
 }
 
 export function FeedView() {
@@ -459,7 +468,7 @@ function PlanFeedCard({
           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
             <Clock className="h-3 w-3" />
             {plan.startTime
-              ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '')
+              ? formatTimeRange(plan.startTime, plan.endTime)
               : timeSlotConfig.time}
           </div>
 
