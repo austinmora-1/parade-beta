@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
@@ -341,19 +341,38 @@ export default function PlanDetail() {
             )}
           </div>
 
-          {/* Participants */}
+          {/* Participants with RSVP status */}
           {participants.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Participants</h3>
-              <div className="flex flex-wrap gap-2">
-                {participants.map(p => (
-                  <div key={p.id} className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
-                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                    <FriendLink userId={p.friendUserId}>
-                      <span className="text-sm hover:underline">{p.name}</span>
-                    </FriendLink>
-                  </div>
-                ))}
+              <div className="flex flex-col gap-2">
+                {participants.map((p: any) => {
+                  const rsvpLabel = p.rsvpStatus === 'accepted' ? 'Going' 
+                    : p.rsvpStatus === 'maybe' ? 'Maybe'
+                    : p.rsvpStatus === 'declined' ? 'Declined'
+                    : 'Invited';
+                  const rsvpColor = p.rsvpStatus === 'accepted' ? 'text-primary'
+                    : p.rsvpStatus === 'maybe' ? 'text-amber-500'
+                    : p.rsvpStatus === 'declined' ? 'text-destructive'
+                    : 'text-muted-foreground';
+                  const timeAgo = p.respondedAt 
+                    ? formatDistanceToNow(new Date(p.respondedAt), { addSuffix: true })
+                    : null;
+                  return (
+                    <div key={p.id} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                        <FriendLink userId={p.friendUserId}>
+                          <span className="text-sm hover:underline">{p.name}</span>
+                        </FriendLink>
+                      </div>
+                      <span className={`text-xs ${rsvpColor}`}>
+                        {rsvpLabel}
+                        {timeAgo && <span className="text-muted-foreground"> · {timeAgo}</span>}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

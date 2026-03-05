@@ -544,6 +544,7 @@ export type Database = {
           friend_id: string
           id: string
           plan_id: string
+          responded_at: string | null
           role: string
           status: string
         }
@@ -552,6 +553,7 @@ export type Database = {
           friend_id: string
           id?: string
           plan_id: string
+          responded_at?: string | null
           role?: string
           status?: string
         }
@@ -560,6 +562,7 @@ export type Database = {
           friend_id?: string
           id?: string
           plan_id?: string
+          responded_at?: string | null
           role?: string
           status?: string
         }
