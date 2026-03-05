@@ -649,6 +649,7 @@ export type Database = {
           id: string
           location: string | null
           notes: string | null
+          recurring_plan_id: string | null
           source: string | null
           source_event_id: string | null
           source_timezone: string | null
@@ -670,6 +671,7 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          recurring_plan_id?: string | null
           source?: string | null
           source_event_id?: string | null
           source_timezone?: string | null
@@ -691,6 +693,7 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          recurring_plan_id?: string | null
           source?: string | null
           source_event_id?: string | null
           source_timezone?: string | null
@@ -701,7 +704,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "plans_recurring_plan_id_fkey"
+            columns: ["recurring_plan_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pod_members: {
         Row: {
@@ -921,6 +932,84 @@ export type Database = {
           p256dh?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      recurring_plans: {
+        Row: {
+          activity: string
+          created_at: string
+          day_of_week: number | null
+          duration: number
+          end_time: string | null
+          ends_on: string | null
+          feed_visibility: string
+          frequency: string
+          id: string
+          is_active: boolean
+          last_generated_date: string | null
+          location: string | null
+          max_occurrences: number | null
+          notes: string | null
+          source_timezone: string | null
+          start_time: string | null
+          starts_on: string
+          status: string
+          time_slot: string
+          title: string
+          updated_at: string
+          user_id: string
+          week_of_month: number | null
+        }
+        Insert: {
+          activity: string
+          created_at?: string
+          day_of_week?: number | null
+          duration?: number
+          end_time?: string | null
+          ends_on?: string | null
+          feed_visibility?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_generated_date?: string | null
+          location?: string | null
+          max_occurrences?: number | null
+          notes?: string | null
+          source_timezone?: string | null
+          start_time?: string | null
+          starts_on?: string
+          status?: string
+          time_slot: string
+          title: string
+          updated_at?: string
+          user_id: string
+          week_of_month?: number | null
+        }
+        Update: {
+          activity?: string
+          created_at?: string
+          day_of_week?: number | null
+          duration?: number
+          end_time?: string | null
+          ends_on?: string | null
+          feed_visibility?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_generated_date?: string | null
+          location?: string | null
+          max_occurrences?: number | null
+          notes?: string | null
+          source_timezone?: string | null
+          start_time?: string | null
+          starts_on?: string
+          status?: string
+          time_slot?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          week_of_month?: number | null
         }
         Relationships: []
       }

@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock, MoreVertical, Trash2, Eye } from 'lucide-react';
+import { MapPin, Users, Clock, MoreVertical, Trash2, Eye, Repeat } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
@@ -97,7 +97,12 @@ export function PlanCard({
             <ActivityIcon config={activityConfig} size={28} />
           </div>
           <div>
-            <h3 className="font-display text-lg font-semibold">{displayTitle}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-display text-lg font-semibold">{displayTitle}</h3>
+              {plan.recurringPlanId && (
+                <span title="Recurring plan"><Repeat className="h-3.5 w-3.5 text-muted-foreground" /></span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">{activityConfig.label}</p>
           </div>
         </div>
