@@ -192,11 +192,7 @@ export function PodSection({
             const podFriends = getPodFriends(selectedPod);
             return (
               <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="flex items-center gap-1.5 text-xs font-semibold">
-                    <span>{selectedPod.emoji}</span>
-                    {selectedPod.name} ({podFriends.length})
-                  </h3>
+                <div className="flex items-center justify-end mb-2">
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
