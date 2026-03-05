@@ -1,22 +1,13 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Sparkles } from 'lucide-react';
+import { Sparkles, MessageCircle } from 'lucide-react';
 import { useConversations } from '@/hooks/useChat';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatView } from '@/components/chat/ChatView';
 import { EllyChatView } from '@/components/chat/EllyChatView';
 import { NewChatDialog } from '@/components/chat/NewChatDialog';
-import { FeedView } from '@/components/feed/FeedView';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
-import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 
 export default function Chat() {
   const { conversations, loading, createDM, createGroup } = useConversations();
@@ -97,94 +88,65 @@ export default function Chat() {
     );
   }
 
-  const unreadCount = conversations.reduce((acc, c) => acc + ((c as any).unread_count || (c as any).unreadCount || 0), 0);
-
   return (
     <div className="animate-fade-in space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 md:h-12 md:w-12 md:rounded-2xl">
-            <Sparkles className="h-5 w-5 text-primary md:h-6 md:w-6" />
+            <MessageCircle className="h-5 w-5 text-primary md:h-6 md:w-6" />
           </div>
           <div>
-            <h1 className="font-display text-lg font-bold md:text-xl">Feed</h1>
+            <h1 className="font-display text-lg font-bold md:text-xl">Messages</h1>
             <p className="text-xs text-muted-foreground md:text-sm">
-              Vibes & plans from your crew
+              Chat with your friends
             </p>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          {/* Chat drawer trigger */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button size="sm" variant="outline" className="relative gap-2">
-                <MessageCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">Chats</span>
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[340px] sm:w-[400px] p-0">
-              <SheetHeader className="px-4 pt-4 pb-2">
-                <SheetTitle className="flex items-center justify-between">
-                  <span>Messages</span>
-                  <NewChatDialog onCreateDM={handleCreateDM} onCreateGroup={handleCreateGroup} />
-                </SheetTitle>
-              </SheetHeader>
-              <div className="px-4 pb-4">
-                {/* Elly pinned */}
-                <button
-                  onClick={handleSelectElly}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all mb-1",
-                    "hover:bg-accent border border-transparent",
-                    "bg-gradient-to-r from-primary/5 to-transparent"
-                  )}
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/40">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium">Elly</span>
-                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary uppercase tracking-wide">
-                        AI
-                      </span>
-                    </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      Your planning assistant
-                    </p>
-                  </div>
-                </button>
-
-                {conversations.length > 0 && (
-                  <div className="my-2 border-t border-border" />
-                )}
-
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
-                  </div>
-                ) : (
-                  <ConversationList
-                    conversations={conversations}
-                    activeId={activeId}
-                    onSelect={handleSelectConvo}
-                  />
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+        <NewChatDialog onCreateDM={handleCreateDM} onCreateGroup={handleCreateGroup} />
       </div>
 
-      {/* Chronological Feed */}
-      <FeedView />
+      {/* Elly pinned */}
+      <button
+        onClick={handleSelectElly}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
+          "hover:bg-accent border border-transparent",
+          "bg-gradient-to-r from-primary/5 to-transparent"
+        )}
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/40">
+          <Sparkles className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">Elly</span>
+            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-semibold text-primary uppercase tracking-wide">
+              AI
+            </span>
+          </div>
+          <p className="truncate text-xs text-muted-foreground">
+            Your planning assistant
+          </p>
+        </div>
+      </button>
+
+      {conversations.length > 0 && (
+        <div className="border-t border-border" />
+      )}
+
+      {/* Conversation list */}
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+        </div>
+      ) : (
+        <ConversationList
+          conversations={conversations}
+          activeId={activeId}
+          onSelect={handleSelectConvo}
+        />
+      )}
     </div>
   );
 }
