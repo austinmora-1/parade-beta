@@ -14,7 +14,7 @@ type ShareMode = 'all' | 'select';
 export function LiveLocationSharing() {
   const {
     isSharing, isLoading, sharedWith, friendLocations,
-    suggestedFriendIds, startSharing, stopSharing, updateSharedWith,
+    suggestedFriendIds, hasUpcomingPlanSoon, startSharing, stopSharing, updateSharedWith,
   } = useLiveLocation();
   const { friends } = usePlannerStore();
   const { pods } = usePods();
@@ -33,7 +33,6 @@ export function LiveLocationSharing() {
     [connectedFriends]
   );
 
-  // Build suggested friends from upcoming plans
   const suggestedFriends = useMemo(
     () => connectedFriends.filter(f => suggestedFriendIds.includes(f.friendUserId!)),
     [connectedFriends, suggestedFriendIds]
@@ -43,6 +42,11 @@ export function LiveLocationSharing() {
     () => connectedFriends.filter(f => !suggestedFriendIds.includes(f.friendUserId!)),
     [connectedFriends, suggestedFriendIds]
   );
+
+  // Only show location sharing when already sharing or a plan is within 1 hour
+  if (!isSharing && !hasUpcomingPlanSoon && friendLocations.length === 0) {
+    return null;
+  }
 
   const toggleFriend = (id: string) => {
     setSelectedIds(prev => {
