@@ -118,12 +118,12 @@ export function FeedView() {
       });
     });
 
-    // Add only past plans (already happened)
+    // Add only past plans that are shared with friends
     const now = new Date();
     const sevenDaysAgo = subDays(now, 7);
     plans.forEach((plan) => {
       const planDate = new Date(plan.date);
-      if (planDate >= sevenDaysAgo && planDate < now) {
+      if (planDate >= sevenDaysAgo && planDate < now && plan.participants && plan.participants.length > 0) {
         items.push({
           type: 'plan',
           data: plan,
