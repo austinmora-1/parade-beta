@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
@@ -39,12 +40,14 @@ export function PlanCard({
   plan, onEdit, onDelete, compact = false, 
   changeRequest, onAcceptChange, onDeclineChange, isRespondingToChange 
 }: PlanCardProps) {
+  const navigate = useNavigate();
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
   const displayTitle = getPlanDisplayTitle(plan);
 
   const isTentative = plan.status === 'tentative';
+  const isPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
 
   if (compact) {
     return (
@@ -69,9 +72,12 @@ export function PlanCard({
       role="button"
       tabIndex={0}
       onPointerUp={(e) => {
-        // Only fire on primary button and if the target isn't an interactive child
         if (e.button === 0 && !(e.target as HTMLElement).closest('[data-stop-card-click]')) {
-          onEdit?.(plan);
+          if (isPast) {
+            navigate(`/plan/${plan.id}`);
+          } else {
+            onEdit?.(plan);
+          }
         }
       }}
       className={cn(
