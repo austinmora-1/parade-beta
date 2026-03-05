@@ -7,6 +7,8 @@ import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { SmartNudges } from '@/components/dashboard/SmartNudges';
+import { EventSuggestions } from '@/components/dashboard/EventSuggestions';
+import { LiveLocationSharing } from '@/components/dashboard/LiveLocationSharing';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
@@ -29,6 +31,12 @@ export default function Dashboard() {
 
       {/* Vibe */}
       <VibeSelector />
+
+      {/* Live Location Sharing */}
+      <LiveLocationSharing />
+
+      {/* AI Event Suggestions */}
+      <EventSuggestions />
 
       {/* Smart Nudges */}
       <SmartNudges />
