@@ -113,14 +113,14 @@ export default function Availability() {
   return (
     <div className="animate-fade-in space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2">
+      <div>
         <div className="min-w-0">
           <h1 className="font-display text-lg font-bold md:text-2xl">Availability</h1>
           <p className="hidden text-muted-foreground md:block">
             Set when you're free and share with friends
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
           <Button
             size="sm"
             variant="outline"
