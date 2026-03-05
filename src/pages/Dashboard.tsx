@@ -5,6 +5,7 @@ import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendsAndPodWidget } from '@/components/dashboard/FriendsAndPodWidget';
+import { FeedView } from '@/components/feed/FeedView';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
@@ -33,6 +34,9 @@ export default function Dashboard() {
 
       {/* Friends & Pod Combined */}
       <FriendsAndPodWidget />
+
+      {/* Feed */}
+      <FeedView />
     </div>
   );
 }
