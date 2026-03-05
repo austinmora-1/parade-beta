@@ -477,9 +477,24 @@ function PlanFeedCard({
                 : timeSlotConfig.time}
             </span>
             {plan.participants.filter((p: any) => p.role !== 'subscriber').length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground" onClick={e => e.stopPropagation()}>
-                <Users className="h-3 w-3 shrink-0" />
-                <ParticipantsList participants={plan.participants.filter((p: any) => p.role !== 'subscriber')} compact />
+              <div className="flex items-center -space-x-1.5" onClick={e => e.stopPropagation()}>
+                {plan.participants
+                  .filter((p: any) => p.role !== 'subscriber')
+                  .slice(0, 4)
+                  .map((p: any, i: number) => (
+                    <div key={p.id || i} className="h-5 w-5 rounded-full ring-1 ring-background overflow-hidden shrink-0">
+                      <img
+                        src={p.avatar || getElephantAvatar(p.name)}
+                        alt={p.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ))}
+                {plan.participants.filter((p: any) => p.role !== 'subscriber').length > 4 && (
+                  <span className="text-[10px] text-muted-foreground ml-1.5">
+                    +{plan.participants.filter((p: any) => p.role !== 'subscriber').length - 4}
+                  </span>
+                )}
               </div>
             )}
           </div>
