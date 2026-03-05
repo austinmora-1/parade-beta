@@ -47,13 +47,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '@/types/planner';
 import { toast } from 'sonner';
 import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
-import { LocationTimeline } from '@/components/profile/LocationTimeline';
+import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { CalendarCheck } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface ProfileData {
   display_name: string | null;
@@ -765,8 +764,8 @@ export default function Profile() {
       {/* Quick Stats */}
       <QuickStats />
 
-      {/* Location Timeline */}
-      <LocationTimeline />
+
+      {/* Hangout History */}
 
       {/* Hangout History */}
       <Collapsible open={hangoutsOpen} onOpenChange={setHangoutsOpen}>
