@@ -382,7 +382,7 @@ export default function PlanDetail() {
           )}
 
           {/* Visibility */}
-          {plan && isOwner && !isPast && (
+          {plan && isOwner && (
             <div className="space-y-2">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Visibility</h3>
               <Select
