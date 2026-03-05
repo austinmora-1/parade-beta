@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlannerStore } from '@/stores/plannerStore';
+import { addDays, isAfter, isBefore, startOfDay } from 'date-fns';
 
-interface LiveLocation {
+export interface LiveLocation {
   user_id: string;
   latitude: number;
   longitude: number;
@@ -14,9 +16,29 @@ interface LiveLocation {
 export function useLiveLocation() {
   const { user } = useAuth();
   const [isSharing, setIsSharing] = useState(false);
+  const [sharedWith, setSharedWith] = useState<string[] | null>(null);
   const [friendLocations, setFriendLocations] = useState<LiveLocation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  const { plans, friends } = usePlannerStore();
+
+  // Suggest friends from upcoming shared plans (next 2 days)
+  const suggestedFriendIds = useMemo(() => {
+    if (!user) return [];
+    const now = startOfDay(new Date());
+    const limit = addDays(now, 2);
+    const ids = new Set<string>();
+
+    for (const plan of plans) {
+      if (isBefore(plan.date, now) || isAfter(plan.date, limit)) continue;
+      for (const p of plan.participants) {
+        if (p.friendUserId && p.friendUserId !== user.id && p.role !== 'subscriber') {
+          ids.add(p.friendUserId);
+        }
+      }
+    }
+    return Array.from(ids);
+  }, [plans, user]);
 
   // Check if currently sharing
   useEffect(() => {
@@ -24,11 +46,12 @@ export function useLiveLocation() {
     const check = async () => {
       const { data } = await supabase
         .from('live_locations')
-        .select('id, expires_at')
+        .select('id, expires_at, shared_with')
         .eq('user_id', user.id)
         .single();
       if (data && new Date(data.expires_at) > new Date()) {
         setIsSharing(true);
+        setSharedWith(data.shared_with as string[] | null);
       }
     };
     check();
@@ -50,18 +73,16 @@ export function useLiveLocation() {
   useEffect(() => {
     if (!user) return;
     fetchFriendLocations();
-
     const channel = supabase
       .channel('live-locations')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_locations' }, () => {
         fetchFriendLocations();
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchFriendLocations]);
 
-  const startSharing = useCallback(async () => {
+  const startSharing = useCallback(async (selectedIds: string[] | null) => {
     if (!user || !navigator.geolocation) return false;
     setIsLoading(true);
 
@@ -75,13 +96,14 @@ export function useLiveLocation() {
               latitude: pos.coords.latitude,
               longitude: pos.coords.longitude,
               accuracy: pos.coords.accuracy,
+              shared_with: selectedIds,
               updated_at: new Date().toISOString(),
               expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
             }, { onConflict: 'user_id' });
 
           if (!error) {
             setIsSharing(true);
-            // Start watching
+            setSharedWith(selectedIds);
             watchIdRef.current = navigator.geolocation.watchPosition(
               async (p) => {
                 await supabase
@@ -110,6 +132,15 @@ export function useLiveLocation() {
     });
   }, [user]);
 
+  const updateSharedWith = useCallback(async (selectedIds: string[] | null) => {
+    if (!user) return;
+    await supabase
+      .from('live_locations')
+      .update({ shared_with: selectedIds })
+      .eq('user_id', user.id);
+    setSharedWith(selectedIds);
+  }, [user]);
+
   const stopSharing = useCallback(async () => {
     if (!user) return;
     if (watchIdRef.current !== null) {
@@ -121,9 +152,9 @@ export function useLiveLocation() {
       .delete()
       .eq('user_id', user.id);
     setIsSharing(false);
+    setSharedWith(null);
   }, [user]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (watchIdRef.current !== null) {
@@ -132,5 +163,8 @@ export function useLiveLocation() {
     };
   }, []);
 
-  return { isSharing, isLoading, friendLocations, startSharing, stopSharing };
+  return {
+    isSharing, isLoading, sharedWith, friendLocations,
+    suggestedFriendIds, startSharing, stopSharing, updateSharedWith,
+  };
 }
