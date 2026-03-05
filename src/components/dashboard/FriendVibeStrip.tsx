@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Friend, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
+import { Friend, TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -23,13 +23,7 @@ interface FriendVibe {
   availableSlots: TimeSlot[];
 }
 
-const VIBE_LABELS: Record<string, { emoji: string; label: string }> = {
-  social: { emoji: '🎉', label: 'Social' },
-  chill: { emoji: '😌', label: 'Chill' },
-  athletic: { emoji: '💪', label: 'Athletic' },
-  productive: { emoji: '⚡', label: 'Productive' },
-  custom: { emoji: '✨', label: 'Custom' },
-};
+// Use canonical VIBE_CONFIG from planner.ts
 
 const SLOT_KEYS: { key: string; slot: TimeSlot }[] = [
   { key: 'early_morning', slot: 'early-morning' },
@@ -129,7 +123,7 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
   const [hangMessage, setHangMessage] = useState('');
   const [sending, setSending] = useState(false);
 
-  const vibeInfo = currentVibe ? VIBE_LABELS[currentVibe] : null;
+  const vibeConfig = currentVibe ? VIBE_CONFIG[currentVibe as VibeType] : null;
   const isCustom = currentVibe === 'custom';
 
   const handleSlotClick = (slot: TimeSlot) => {
@@ -257,9 +251,9 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-sm">
-                  {vibeInfo?.emoji} {isCustom && customVibeTags?.length
+                  {vibeConfig?.icon} {isCustom && customVibeTags?.length
                     ? customVibeTags.map(t => `#${t}`).join(' ')
-                    : vibeInfo?.label}
+                    : vibeConfig?.label}
                 </span>
               </div>
               {vibeGifUrl && (
