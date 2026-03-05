@@ -1,13 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isBefore, addDays, isSameDay } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { getCurrentTimeInTimezone } from '@/lib/timezone';
@@ -75,39 +77,127 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
 
 export function UpcomingPlans({ standalone = false }: { standalone?: boolean } = {}) {
   const { plans, userTimezone } = usePlannerStore();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
 
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
     'late-afternoon': 3, 'evening': 4, 'late-night': 5,
   };
 
+  // Fetch friends' shared future plans
+  useEffect(() => {
+    if (!user?.id) return;
+    const now = new Date();
+    const weekFromNow = addDays(now, 7);
+    (async () => {
+      const { data } = await supabase
+        .from('plans')
+        .select('*')
+        .neq('feed_visibility', 'private')
+        .neq('user_id', user.id)
+        .gte('date', now.toISOString())
+        .lte('date', weekFromNow.toISOString())
+        .order('date', { ascending: true })
+        .limit(20);
+
+      if (data && data.length > 0) {
+        const planIds = data.map(p => p.id);
+        let participantsMap: Record<string, any[]> = {};
+        const { data: pData } = await supabase
+          .from('plan_participants')
+          .select('plan_id, friend_id, status, role')
+          .in('plan_id', planIds);
+        for (const pp of (pData || [])) {
+          if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
+          participantsMap[pp.plan_id].push(pp);
+        }
+
+        const allUserIds = new Set(data.map(p => p.user_id));
+        for (const pps of Object.values(participantsMap)) {
+          for (const pp of pps) allUserIds.add(pp.friend_id);
+        }
+
+        let profilesMap: Record<string, { name: string; avatar?: string }> = {};
+        if (allUserIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('public_profiles')
+            .select('user_id, display_name, avatar_url')
+            .in('user_id', Array.from(allUserIds));
+          for (const p of (profiles || [])) {
+            if (p.user_id) {
+              profilesMap[p.user_id] = { name: p.display_name || 'Friend', avatar: p.avatar_url || undefined };
+            }
+          }
+        }
+
+        const mapped = data.map(p => {
+          const planDate = new Date(p.date);
+          const pps = (participantsMap[p.id] || []).filter((pp: any) => pp.friend_id !== user.id);
+          const ownerProfile = profilesMap[p.user_id];
+          return {
+            id: p.id,
+            userId: p.user_id,
+            title: p.title,
+            activity: p.activity,
+            date: new Date(planDate.getUTCFullYear(), planDate.getUTCMonth(), planDate.getUTCDate()),
+            endDate: p.end_date ? (() => { const ed = new Date(p.end_date); return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate()); })() : undefined,
+            timeSlot: p.time_slot as TimeSlot,
+            duration: p.duration,
+            startTime: p.start_time || undefined,
+            endTime: p.end_time || undefined,
+            location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
+            notes: p.notes || undefined,
+            status: p.status,
+            feedVisibility: p.feed_visibility || 'private',
+            isFriendPlan: true,
+            ownerName: ownerProfile?.name || 'Someone',
+            participants: [
+              { id: p.user_id, name: ownerProfile?.name || 'Someone', avatar: ownerProfile?.avatar, friendUserId: p.user_id, status: 'connected', role: 'participant' as const },
+              ...pps.map((pp: any) => ({
+                id: pp.friend_id,
+                name: profilesMap[pp.friend_id]?.name || 'Friend',
+                avatar: profilesMap[pp.friend_id]?.avatar,
+                friendUserId: pp.friend_id,
+                status: 'connected',
+                role: (pp.role || 'participant') as string,
+              })),
+            ],
+          };
+        });
+        setFriendUpcomingPlans(mapped);
+      }
+    })();
+  }, [user?.id]);
+
   const upcomingPlans = useMemo(() => {
     const now = new Date();
     const weekFromNow = addDays(now, 7);
     
-    return plans
+    const ownPlans = plans
       .filter((p) => {
-        // Multi-day plans: show if end date is today or later
         const effectiveEndDate = p.endDate || p.date;
-        
-        // Future days within the week
         if (!isSameDay(p.date, now) && !isSameDay(effectiveEndDate, now)) {
-          // Show if start is within next week, or if it's a multi-day spanning into the week
           return (p.date > now && isBefore(p.date, weekFromNow)) ||
                  (p.endDate && p.date <= now && effectiveEndDate >= now);
         }
-        // Today: include if upcoming or in-progress
         const status = getPlanTimeStatus(p, userTimezone);
         return status !== null;
-      })
+      });
+
+    // Merge with friend plans, deduplicating
+    const ownPlanIds = new Set(ownPlans.map(p => p.id));
+    const friendPlans = friendUpcomingPlans.filter(p => !ownPlanIds.has(p.id));
+
+    return [...ownPlans, ...friendPlans]
       .sort((a, b) => {
         const dateDiff = a.date.getTime() - b.date.getTime();
         if (dateDiff !== 0) return dateDiff;
         return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
       })
-      .slice(0, 5);
-  }, [plans, userTimezone]);
+      .slice(0, 8);
+  }, [plans, friendUpcomingPlans, userTimezone]);
 
   const content = upcomingPlans.length === 0 ? (
     <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -142,6 +232,11 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
                   <ActivityIcon config={activityConfig} size={18} />
                   <span className="text-sm font-medium truncate">{displayTitle}</span>
                 </div>
+                {plan.isFriendPlan && plan.ownerName && (
+                  <div className="text-[10px] text-muted-foreground ml-[26px]">
+                    {plan.ownerName}'s plan
+                  </div>
+                )}
                 <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                   <span className="flex items-center gap-0.5 shrink-0">
                     <Clock className="h-3 w-3" />
