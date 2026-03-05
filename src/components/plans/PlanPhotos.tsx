@@ -182,11 +182,88 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Photos {photos.length > 0 && `(${photos.length})`}
-        </h3>
+    <div>
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : photos.length === 0 ? (
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full border-b border-border py-10 flex flex-col items-center gap-2 text-muted-foreground hover:bg-muted/30 transition-colors"
+        >
+          <Camera className="h-8 w-8" />
+          <span className="text-sm">Add photos to this plan</span>
+        </button>
+      ) : photos.length === 1 ? (
+        <div>
+          <button
+            onClick={() => setSelectedPhoto(photos[0])}
+            className="relative w-full aspect-[16/9] overflow-hidden bg-muted group"
+          >
+            <img
+              src={getPhotoUrl(photos[0].file_path)}
+              alt="Plan photo"
+              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+              loading="lazy"
+            />
+          </button>
+        </div>
+      ) : photos.length === 2 ? (
+        <div className="grid grid-cols-2 gap-0.5">
+          {photos.map(photo => (
+            <button
+              key={photo.id}
+              onClick={() => setSelectedPhoto(photo)}
+              className="relative aspect-square overflow-hidden bg-muted group"
+            >
+              <img
+                src={getPhotoUrl(photo.file_path)}
+                alt="Plan photo"
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                loading="lazy"
+              />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-0.5">
+          {/* First photo spans 2 cols */}
+          <button
+            onClick={() => setSelectedPhoto(photos[0])}
+            className="relative col-span-2 row-span-2 aspect-square overflow-hidden bg-muted group"
+          >
+            <img
+              src={getPhotoUrl(photos[0].file_path)}
+              alt="Plan photo"
+              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+              loading="lazy"
+            />
+          </button>
+          {photos.slice(1, 3).map((photo, i) => (
+            <button
+              key={photo.id}
+              onClick={() => setSelectedPhoto(photo)}
+              className="relative aspect-square overflow-hidden bg-muted group"
+            >
+              <img
+                src={getPhotoUrl(photo.file_path)}
+                alt="Plan photo"
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                loading="lazy"
+              />
+              {i === 1 && photos.length > 3 && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <span className="text-white font-semibold text-lg">+{photos.length - 3}</span>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Add Photo button below photos */}
+      <div className="px-5 pt-3">
         <Button
           variant="ghost"
           size="sm"
@@ -201,53 +278,16 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
           )}
           Add Photo
         </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={handleUpload}
-        />
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : photos.length === 0 ? (
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full rounded-xl border-2 border-dashed border-border py-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
-        >
-          <Camera className="h-8 w-8" />
-          <span className="text-sm">Add photos to this plan</span>
-        </button>
-      ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {photos.map(photo => (
-            <button
-              key={photo.id}
-              onClick={() => setSelectedPhoto(photo)}
-              className="relative aspect-square rounded-lg overflow-hidden bg-muted group"
-            >
-              <img
-                src={getPhotoUrl(photo.file_path)}
-                alt="Plan photo"
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                loading="lazy"
-              />
-            </button>
-          ))}
-          {/* Add more button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="aspect-square rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
-          >
-            <ImagePlus className="h-6 w-6" />
-          </button>
-        </div>
-      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleUpload}
+      />
 
       {/* Lightbox */}
       {selectedPhoto && (
