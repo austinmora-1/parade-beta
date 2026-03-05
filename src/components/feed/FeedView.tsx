@@ -58,6 +58,7 @@ export function FeedView() {
   const currentUserId = user?.id || '';
   const [selectedVibe, setSelectedVibe] = useState<VibeSend | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [friendPublicPlans, setFriendPublicPlans] = useState<any[]>([]);
 
   // Deep link handling for vibes from push notifications
   useEffect(() => {
@@ -109,6 +110,96 @@ export function FeedView() {
     })();
   }, [user, searchParams]);
 
+  // Fetch friends' public plans (feed_visibility != 'private')
+  useEffect(() => {
+    if (!user?.id) return;
+    const sevenDaysAgo = subDays(new Date(), 7);
+    (async () => {
+      // This query will return plans where the user is a friend AND the plan is shared
+      // The RLS policies handle the access control
+      const { data } = await supabase
+        .from('plans')
+        .select('*')
+        .neq('feed_visibility', 'private')
+        .neq('user_id', user.id)
+        .gte('date', sevenDaysAgo.toISOString())
+        .order('date', { ascending: false })
+        .limit(50);
+      
+      if (data) {
+        // Fetch participant info for these plans
+        const planIds = data.map(p => p.id);
+        let participantsMap: Record<string, any[]> = {};
+        if (planIds.length > 0) {
+          const { data: pData } = await supabase
+            .from('plan_participants')
+            .select('plan_id, friend_id, status, role')
+            .in('plan_id', planIds);
+          for (const pp of (pData || [])) {
+            if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
+            participantsMap[pp.plan_id].push(pp);
+          }
+        }
+
+        // Fetch owner profiles
+        const ownerIds = [...new Set(data.map(p => p.user_id))];
+        const allUserIds = new Set([...ownerIds]);
+        for (const pps of Object.values(participantsMap)) {
+          for (const pp of pps) allUserIds.add(pp.friend_id);
+        }
+        
+        let profilesMap: Record<string, { name: string; avatar?: string }> = {};
+        if (allUserIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('public_profiles')
+            .select('user_id, display_name, avatar_url')
+            .in('user_id', Array.from(allUserIds));
+          for (const p of (profiles || [])) {
+            if (p.user_id) {
+              profilesMap[p.user_id] = { name: p.display_name || 'Friend', avatar: p.avatar_url || undefined };
+            }
+          }
+        }
+
+        const mapped = data.map(p => {
+          const planDate = new Date(p.date);
+          const pps = (participantsMap[p.id] || []).filter((pp: any) => pp.friend_id !== user.id);
+          // Add owner as a participant for display
+          const ownerProfile = profilesMap[p.user_id];
+          return {
+            id: p.id,
+            userId: p.user_id,
+            ownerName: ownerProfile?.name || 'Someone',
+            ownerAvatar: ownerProfile?.avatar,
+            title: p.title,
+            activity: p.activity,
+            date: new Date(planDate.getUTCFullYear(), planDate.getUTCMonth(), planDate.getUTCDate()),
+            endDate: p.end_date ? (() => { const ed = new Date(p.end_date); return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate()); })() : undefined,
+            timeSlot: p.time_slot,
+            duration: p.duration,
+            startTime: p.start_time || undefined,
+            endTime: p.end_time || undefined,
+            location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
+            notes: p.notes || undefined,
+            status: p.status,
+            participants: [
+              { id: p.user_id, name: ownerProfile?.name || 'Someone', avatar: ownerProfile?.avatar, friendUserId: p.user_id, status: 'connected', role: 'participant' },
+              ...pps.map((pp: any) => ({
+                id: pp.friend_id,
+                name: profilesMap[pp.friend_id]?.name || 'Friend',
+                avatar: profilesMap[pp.friend_id]?.avatar,
+                friendUserId: pp.friend_id,
+                status: 'connected',
+                role: pp.role || 'participant',
+              })),
+            ],
+          };
+        });
+        setFriendPublicPlans(mapped);
+      }
+    })();
+  }, [user?.id]);
+
   // Merge vibes and recent plans into a chronological feed
   const feedItems = useMemo(() => {
     const items: FeedItem[] = [];
@@ -131,7 +222,7 @@ export function FeedView() {
       });
     });
 
-    // Add only past plans that are shared with friends
+    // Add user's own plans (past, with participants)
     const now = new Date();
     const sevenDaysAgo = subDays(now, 7);
     plans.forEach((plan) => {
@@ -145,11 +236,22 @@ export function FeedView() {
       }
     });
 
+    // Add friends' public plans
+    const ownPlanIds = new Set(plans.map(p => p.id));
+    friendPublicPlans.forEach((plan) => {
+      if (ownPlanIds.has(plan.id)) return; // skip if already in own plans
+      items.push({
+        type: 'plan',
+        data: plan,
+        timestamp: new Date(plan.date),
+      });
+    });
+
     // Sort newest first
     items.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return items;
-  }, [receivedVibes, sentVibes, plans]);
+  }, [receivedVibes, sentVibes, plans, friendPublicPlans]);
 
   // Fetch plan photos for feed plans
   const [planPhotos, setPlanPhotos] = useState<Record<string, string[]>>({});

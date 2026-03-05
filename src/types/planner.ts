@@ -55,6 +55,7 @@ export interface Location {
 
 export type ParticipantRole = 'participant' | 'subscriber';
 export type PlanStatus = 'confirmed' | 'tentative';
+export type FeedVisibility = 'private' | 'friends' | string; // string for 'pod:<id>'
 
 export interface Friend {
   id: string;
@@ -83,6 +84,7 @@ export interface Plan {
   participants: Friend[];
   notes?: string;
   status: PlanStatus;
+  feedVisibility?: FeedVisibility;
   createdAt: Date;
   myRole?: ParticipantRole; // role of the current user (for participated plans)
 }
