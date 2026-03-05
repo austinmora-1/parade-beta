@@ -215,7 +215,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                         key={slot}
                         className={cn(
                           "h-1 flex-1 rounded-full",
-                          status === 'available' && (isAway ? "bg-orange-500/60" : "bg-availability-available/60"),
+                          status === 'available' && "bg-availability-available/60",
                           status === 'busy' && "bg-primary/60",
                           status === 'unavailable' && "bg-muted-foreground/20"
                         )}
