@@ -16,8 +16,8 @@ const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/plans', icon: Calendar, label: 'Plans' },
   { path: '/availability', icon: Clock, label: 'Availability' },
-  { path: '/friends', icon: Users, label: 'Friends' },
   { path: '/chat', icon: MessageCircle, label: 'Messages' },
+  { path: '/friends', icon: Users, label: 'Friends' },
 ];
 
 export function Sidebar() {
