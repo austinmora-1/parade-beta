@@ -192,50 +192,6 @@ export function PodSection({
             const podFriends = getPodFriends(selectedPod);
             return (
               <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
-                <div className="flex items-center justify-end mb-2">
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => {
-                        setMemberSearch('');
-                        setAddMemberPod(selectedPod);
-                      }}
-                    >
-                      <UserPlus className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-[120px]">
-                        <DropdownMenuItem
-                          className="text-xs"
-                          onClick={() => {
-                            setNewPodName(selectedPod.name);
-                            setNewPodEmoji(selectedPod.emoji);
-                            setEditingPod(selectedPod);
-                          }}
-                        >
-                          <Pencil className="mr-1.5 h-3 w-3" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive text-xs"
-                          onClick={() => setDeletingPod(selectedPod)}
-                        >
-                          <Trash2 className="mr-1.5 h-3 w-3" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-
                 {podFriends.length > 0 ? (
                   <FriendAvatarGrid
                     friends={podFriends}
@@ -254,6 +210,47 @@ export function PodSection({
                     No members yet — tap <UserPlus className="inline h-3 w-3" /> to add friends
                   </p>
                 )}
+                <div className="flex items-center justify-end mt-2 gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      setMemberSearch('');
+                      setAddMemberPod(selectedPod);
+                    }}
+                  >
+                    <UserPlus className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-[120px]">
+                      <DropdownMenuItem
+                        className="text-xs"
+                        onClick={() => {
+                          setNewPodName(selectedPod.name);
+                          setNewPodEmoji(selectedPod.emoji);
+                          setEditingPod(selectedPod);
+                        }}
+                      >
+                        <Pencil className="mr-1.5 h-3 w-3" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive text-xs"
+                        onClick={() => setDeletingPod(selectedPod)}
+                      >
+                        <Trash2 className="mr-1.5 h-3 w-3" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
           })()}
