@@ -1,18 +1,20 @@
 import { useNavigate } from 'react-router-dom';
 import { useSmartNudges } from '@/hooks/useSmartNudges';
-import { X, MessageCircle, Users, CalendarPlus, Sparkles } from 'lucide-react';
+import { X, MessageCircle, Users, CalendarPlus, Sparkles, Plane } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 const NUDGE_ICONS: Record<string, React.ReactNode> = {
   fading_friendship: <MessageCircle className="h-4 w-4" />,
   friends_available: <Users className="h-4 w-4" />,
+  trip_overlap: <Plane className="h-4 w-4" />,
   reconnect: <Sparkles className="h-4 w-4" />,
 };
 
 const NUDGE_COLORS: Record<string, string> = {
   fading_friendship: 'border-l-amber-400 dark:border-l-amber-500',
   friends_available: 'border-l-emerald-400 dark:border-l-emerald-500',
+  trip_overlap: 'border-l-orange-400 dark:border-l-orange-500',
   reconnect: 'border-l-violet-400 dark:border-l-violet-500',
 };
 
@@ -30,7 +32,7 @@ export function SmartNudges() {
 
   const handleAction = (nudge: typeof nudges[0]) => {
     markActedOn(nudge.id);
-    if (nudge.nudge_type === 'fading_friendship' && nudge.friend_user_id) {
+    if ((nudge.nudge_type === 'fading_friendship' || nudge.nudge_type === 'trip_overlap') && nudge.friend_user_id) {
       navigate(`/friend/${nudge.friend_user_id}`);
     } else if (nudge.nudge_type === 'friends_available') {
       navigate('/plans');
@@ -93,6 +95,11 @@ export function SmartNudges() {
                     <>
                       <CalendarPlus className="h-3 w-3 mr-1" />
                       Reach out
+                    </>
+                  ) : nudge.nudge_type === 'trip_overlap' ? (
+                    <>
+                      <Plane className="h-3 w-3 mr-1" />
+                      Connect
                     </>
                   ) : (
                     <>

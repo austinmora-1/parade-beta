@@ -126,8 +126,56 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get upcoming weekend availability
+    // ── TRIP OVERLAP DATA ──
+    // Get all availability entries with away status in the next 35 days
     const today = new Date();
+    const thirtyFiveDaysOut = new Date(Date.now() + 35 * MS_PER_DAY);
+    const todayStr = today.toISOString().split('T')[0];
+    const thirtyFiveStr = thirtyFiveDaysOut.toISOString().split('T')[0];
+
+    const { data: upcomingAwayData } = await admin
+      .from('availability')
+      .select('user_id, date, location_status, trip_location')
+      .eq('location_status', 'away')
+      .gte('date', todayStr)
+      .lte('date', thirtyFiveStr)
+      .not('trip_location', 'is', null);
+
+    // Build: userId -> [{date, trip_location}]
+    const tripMap = new Map<string, Array<{ date: string; location: string }>>();
+    for (const a of (upcomingAwayData || [])) {
+      if (!a.trip_location) continue;
+      if (!tripMap.has(a.user_id)) tripMap.set(a.user_id, []);
+      tripMap.get(a.user_id)!.push({ date: a.date, location: a.trip_location.toLowerCase().trim() });
+    }
+
+    // Get friend profiles' home addresses and away locations for overlap detection
+    const { data: allProfilesFull } = await admin
+      .from('profiles')
+      .select('user_id, display_name, home_address, location_status');
+
+    const homeAddressMap = new Map<string, string>();
+    for (const p of (allProfilesFull || [])) {
+      if (p.home_address) {
+        homeAddressMap.set(p.user_id, p.home_address.toLowerCase().trim());
+      }
+    }
+
+    // Normalize city for fuzzy matching
+    const normalizeCity = (loc: string): string => {
+      return loc
+        .replace(/,?\s*(usa|us|united states|uk|united kingdom|canada|australia)$/i, '')
+        .replace(/\s+(city|metro|area|county|borough|district)$/i, '')
+        .trim();
+    };
+
+    const citiesMatch = (a: string, b: string): boolean => {
+      const na = normalizeCity(a);
+      const nb = normalizeCity(b);
+      return na === nb || na.includes(nb) || nb.includes(na);
+    };
+
+    // Get upcoming weekend availability
     const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
     const daysUntilSat = (6 - dayOfWeek + 7) % 7 || 7;
     const saturday = new Date(today);
@@ -159,12 +207,22 @@ Deno.serve(async (req) => {
     // Get existing active nudges to avoid duplicates
     const { data: existingNudges } = await admin
       .from('smart_nudges')
-      .select('user_id, nudge_type, friend_user_id')
+      .select('user_id, nudge_type, friend_user_id, metadata')
       .is('dismissed_at', null)
       .is('acted_on_at', null);
 
     const existingSet = new Set(
       (existingNudges || []).map(n => `${n.user_id}:${n.nudge_type}:${n.friend_user_id || 'group'}`)
+    );
+
+    // For trip_overlap, track existing nudges by user:friend:location:threshold
+    const existingTripNudgeSet = new Set(
+      (existingNudges || [])
+        .filter(n => n.nudge_type === 'trip_overlap')
+        .map(n => {
+          const m = n.metadata as any;
+          return `${n.user_id}:${n.friend_user_id}:${m?.trip_location || ''}:${m?.days_before || ''}`;
+        })
     );
 
     const nudgesToInsert: Array<{
@@ -179,6 +237,8 @@ Deno.serve(async (req) => {
 
     const pushToSend: Array<{ userId: string; title: string; body: string; url: string }> = [];
 
+    const TRIP_THRESHOLDS = [30, 21, 14, 7];
+
     // Process each user
     for (const [userId, friends] of friendshipMap) {
       const profile = profileMap.get(userId);
@@ -191,13 +251,11 @@ Deno.serve(async (req) => {
         
         let daysSince: number;
         if (!lastDate) {
-          // Never hung out — check if friendship is older than 14 days
-          daysSince = 30; // treat as 30 days for never-hung-out friends
+          daysSince = 30;
         } else {
           daysSince = Math.floor((Date.now() - lastDate.getTime()) / MS_PER_DAY);
         }
 
-        // Generate nudge at 14, 21, 30, 60 day thresholds
         if (daysSince >= 14) {
           const nudgeKey = `${userId}:fading_friendship:${friend.friendUserId}`;
           if (existingSet.has(nudgeKey)) continue;
@@ -236,11 +294,100 @@ Deno.serve(async (req) => {
             expires_at: expiresAt,
           });
 
-          // Push for medium/high urgency
           if ((urgency === 'high' || urgency === 'medium') && profile.plan_reminders !== false) {
             pushToSend.push({
               userId,
               title: `💛 ${title}`,
+              body: message,
+              url: `/friend/${friend.friendUserId}`,
+            });
+          }
+        }
+      }
+
+      // ── TRIP OVERLAP NUDGES ──
+      const userTrips = tripMap.get(userId) || [];
+      for (const trip of userTrips) {
+        const tripDate = new Date(trip.date + 'T12:00:00Z');
+        const daysUntilTrip = Math.floor((tripDate.getTime() - Date.now()) / MS_PER_DAY);
+
+        // Find matching threshold
+        const matchedThreshold = TRIP_THRESHOLDS.find(t => {
+          // Allow a 2-day window around each threshold
+          return Math.abs(daysUntilTrip - t) <= 1;
+        });
+        if (!matchedThreshold) continue;
+
+        // Find friends in that location (home address or also traveling there)
+        for (const friend of friends) {
+          const friendHome = homeAddressMap.get(friend.friendUserId);
+          const friendTrips = tripMap.get(friend.friendUserId) || [];
+
+          let friendInLocation = false;
+
+          // Check if friend's home is in the trip location
+          if (friendHome && citiesMatch(trip.location, friendHome)) {
+            friendInLocation = true;
+          }
+
+          // Check if friend is also traveling to the same place around the same time
+          if (!friendInLocation) {
+            for (const ft of friendTrips) {
+              if (citiesMatch(trip.location, ft.location)) {
+                const ftDate = new Date(ft.date + 'T12:00:00Z');
+                const daysDiff = Math.abs(tripDate.getTime() - ftDate.getTime()) / MS_PER_DAY;
+                if (daysDiff <= 3) {
+                  friendInLocation = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (!friendInLocation) continue;
+
+          // Check for existing nudge at this threshold
+          const tripNudgeKey = `${userId}:${friend.friendUserId}:${trip.location}:${matchedThreshold}`;
+          if (existingTripNudgeSet.has(tripNudgeKey)) continue;
+
+          const urgency = matchedThreshold <= 7 ? 'high' : matchedThreshold <= 14 ? 'medium' : 'low';
+          const friendDisplayName = friend.friendName;
+          const locationDisplay = trip.location.split(',')[0].replace(/^\w/, c => c.toUpperCase());
+
+          let title: string;
+          let message: string;
+
+          if (matchedThreshold <= 7) {
+            title = `${friendDisplayName} is in ${locationDisplay}!`;
+            message = `Your trip to ${locationDisplay} is in ${daysUntilTrip} days. Reach out to ${friendDisplayName} to meet up!`;
+          } else if (matchedThreshold <= 14) {
+            title = `Visiting ${locationDisplay} soon?`;
+            message = `${friendDisplayName} is in ${locationDisplay} — you'll be there in ${daysUntilTrip} days. Plan something together?`;
+          } else {
+            title = `${friendDisplayName} in ${locationDisplay}`;
+            message = `You're heading to ${locationDisplay} in ${daysUntilTrip} days. ${friendDisplayName} lives there — want to connect?`;
+          }
+
+          nudgesToInsert.push({
+            user_id: userId,
+            nudge_type: 'trip_overlap',
+            friend_user_id: friend.friendUserId,
+            title,
+            message,
+            metadata: {
+              urgency,
+              days_before: matchedThreshold,
+              days_until_trip: daysUntilTrip,
+              trip_location: trip.location,
+              trip_date: trip.date,
+            },
+            expires_at: new Date(tripDate.getTime() + 2 * MS_PER_DAY).toISOString(),
+          });
+
+          if (profile.plan_reminders !== false) {
+            pushToSend.push({
+              userId,
+              title: `✈️ ${title}`,
               body: message,
               url: `/friend/${friend.friendUserId}`,
             });
@@ -287,7 +434,6 @@ Deno.serve(async (req) => {
         }
       }
     }
-
     // Batch insert nudges
     if (nudgesToInsert.length > 0) {
       const { error: insertError } = await admin.from('smart_nudges').insert(nudgesToInsert);
