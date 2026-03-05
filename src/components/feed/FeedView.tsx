@@ -455,20 +455,12 @@ function PlanFeedCard({
             </div>
           </div>
 
-          {/* Time & Date */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {plan.startTime
-                ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '')
-                : timeSlotConfig.time}
-            </span>
-            <span className="flex items-center gap-1">
-              <CalendarCheck className="h-3 w-3" />
-              {plan.endDate
-                ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
-                : format(plan.date, 'EEE, MMM d')}
-            </span>
+          {/* Time */}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+            <Clock className="h-3 w-3" />
+            {plan.startTime
+              ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '')
+              : timeSlotConfig.time}
           </div>
 
           {/* Location */}
@@ -479,13 +471,21 @@ function PlanFeedCard({
             </div>
           )}
 
-          {/* Participants */}
-          {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5" onClick={e => e.stopPropagation()}>
-              <Users className="h-3 w-3 shrink-0" />
-              <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
-            </div>
-          )}
+          {/* Date (left) & Participants (right) */}
+          <div className="flex items-center justify-between mt-2">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarCheck className="h-3 w-3" />
+              {plan.endDate
+                ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
+                : format(plan.date, 'EEE, MMM d')}
+            </span>
+            {plan.participants.filter((p: any) => p.role !== 'subscriber').length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground" onClick={e => e.stopPropagation()}>
+                <Users className="h-3 w-3 shrink-0" />
+                <ParticipantsList participants={plan.participants.filter((p: any) => p.role !== 'subscriber')} compact />
+              </div>
+            )}
+          </div>
         </div>
       </div>
       </div>
