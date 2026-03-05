@@ -73,7 +73,7 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
   return null; // past
 }
 
-export function UpcomingPlans() {
+export function UpcomingPlans({ standalone = false }: { standalone?: boolean } = {}) {
   const { plans, userTimezone } = usePlannerStore();
   const navigate = useNavigate();
 
@@ -109,6 +109,83 @@ export function UpcomingPlans() {
       .slice(0, 5);
   }, [plans, userTimezone]);
 
+  const content = upcomingPlans.length === 0 ? (
+    <div className="flex flex-col items-center justify-center py-6 text-center">
+      <div className="mb-3 text-4xl">📅</div>
+      <p className="text-muted-foreground">No upcoming plans this week</p>
+      <p className="text-sm text-muted-foreground">Create a new plan or chat with Elly!</p>
+    </div>
+  ) : (
+    <div className="space-y-1.5">
+      {upcomingPlans.map((plan) => {
+        const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
+        const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
+        const displayTitle = getPlanDisplayTitle(plan);
+        const timeStatus = getPlanTimeStatus(plan, userTimezone);
+        const isInProgress = timeStatus === 'in-progress';
+        
+        return (
+          <div
+            key={plan.id}
+            onClick={() => navigate(`/plan/${plan.id}`)}
+            className={cn(
+              "rounded-lg border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer",
+              isInProgress
+                ? "bg-primary/10 hover:bg-primary/15"
+                : "bg-muted/30 hover:bg-muted/50",
+            )}
+            style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <ActivityIcon config={activityConfig} size={18} />
+                  <span className="text-sm font-medium truncate">{displayTitle}</span>
+                </div>
+                <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                  <span className="flex items-center gap-0.5 shrink-0">
+                    <Clock className="h-3 w-3" />
+                    {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
+                  </span>
+                </div>
+                {plan.location && (
+                  <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate max-w-[140px]">{plan.location.name}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {isSameDay(plan.date, new Date())
+                    ? (plan.endDate ? `Today – ${format(plan.endDate, 'MMM d')}` : 'Today')
+                    : (plan.endDate
+                      ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
+                      : format(plan.date, 'EEE, MMM d'))}
+                </span>
+                {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
+                  <span className="flex items-center gap-0.5 text-xs text-muted-foreground" data-stop-card-click onClick={e => e.stopPropagation()}>
+                    <Users className="h-3 w-3 shrink-0" />
+                    <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
+                  </span>
+                )}
+                {isInProgress && (
+                  <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
+                    In Progress
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  if (standalone) {
+    return <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">{content}</div>;
+  }
+
   return (
     <CollapsibleWidget
       title="Upcoming Plans"
@@ -121,78 +198,7 @@ export function UpcomingPlans() {
         ) : undefined
       }
     >
-      {upcomingPlans.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-6 text-center">
-          <div className="mb-3 text-4xl">📅</div>
-          <p className="text-muted-foreground">No upcoming plans this week</p>
-          <p className="text-sm text-muted-foreground">Create a new plan or chat with Elly!</p>
-        </div>
-      ) : (
-        <div className="space-y-1.5">
-          {upcomingPlans.map((plan) => {
-            const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
-            const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
-            const displayTitle = getPlanDisplayTitle(plan);
-            const timeStatus = getPlanTimeStatus(plan, userTimezone);
-            const isInProgress = timeStatus === 'in-progress';
-            
-            return (
-              <div
-                key={plan.id}
-                onClick={() => navigate(`/plan/${plan.id}`)}
-                className={cn(
-                  "rounded-lg border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer",
-                  isInProgress
-                    ? "bg-primary/10 hover:bg-primary/15"
-                    : "bg-muted/30 hover:bg-muted/50",
-                )}
-                style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <ActivityIcon config={activityConfig} size={18} />
-                      <span className="text-sm font-medium truncate">{displayTitle}</span>
-                    </div>
-                    <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
-                      <span className="flex items-center gap-0.5 shrink-0">
-                        <Clock className="h-3 w-3" />
-                        {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
-                      </span>
-                    </div>
-                    {plan.location && (
-                      <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
-                        <MapPin className="h-3 w-3 shrink-0" />
-                        <span className="truncate max-w-[140px]">{plan.location.name}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {isSameDay(plan.date, new Date())
-                        ? (plan.endDate ? `Today – ${format(plan.endDate, 'MMM d')}` : 'Today')
-                        : (plan.endDate
-                          ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
-                          : format(plan.date, 'EEE, MMM d'))}
-                    </span>
-                    {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-                      <span className="flex items-center gap-0.5 text-xs text-muted-foreground" data-stop-card-click onClick={e => e.stopPropagation()}>
-                        <Users className="h-3 w-3 shrink-0" />
-                        <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
-                      </span>
-                    )}
-                    {isInProgress && (
-                      <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
-                        In Progress
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {content}
     </CollapsibleWidget>
   );
 }

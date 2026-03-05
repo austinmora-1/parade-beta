@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { AvailabilityGrid } from '@/components/availability/AvailabilityGrid';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
@@ -9,6 +9,18 @@ import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { UpcomingPlans } from '@/components/dashboard/UpcomingPlans';
+import { WeekOverview } from '@/components/dashboard/WeekOverview';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const TABS = [
+  { id: 'upcoming', label: 'Upcoming' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'grid', label: 'Grid' },
+] as const;
+
+type TabId = typeof TABS[number]['id'];
 
 export default function Availability() {
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
@@ -16,6 +28,13 @@ export default function Availability() {
   const loadAllData = usePlannerStore((s) => s.loadAllData);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<TabId>('upcoming');
+  const [direction, setDirection] = useState(0);
+
+  // Swipe handling
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isSwiping = useRef(false);
 
   const openPlanDialog = (date?: Date) => {
     setPlanDefaultDate(date);
@@ -46,9 +65,44 @@ export default function Availability() {
     }
   };
 
+  const activeIndex = TABS.findIndex(t => t.id === activeTab);
+
+  const goToTab = useCallback((tabId: TabId) => {
+    const newIndex = TABS.findIndex(t => t.id === tabId);
+    const oldIndex = TABS.findIndex(t => t.id === activeTab);
+    setDirection(newIndex > oldIndex ? 1 : -1);
+    setActiveTab(tabId);
+  }, [activeTab]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Only swipe if horizontal movement is dominant and > 50px
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX < 0 && activeIndex < TABS.length - 1) {
+        goToTab(TABS[activeIndex + 1].id);
+      } else if (deltaX > 0 && activeIndex > 0) {
+        goToTab(TABS[activeIndex - 1].id);
+      }
+    }
+  };
+
+  const variants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
+  };
+
   return (
-    <div className="animate-fade-in space-y-4 md:space-y-8">
-      {/* Header - condensed on mobile */}
+    <div className="animate-fade-in space-y-4 md:space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="font-display text-lg font-bold md:text-2xl">Availability</h1>
@@ -92,8 +146,61 @@ export default function Availability() {
         </div>
       </div>
 
-      {/* Availability Grid */}
-      <AvailabilityGrid onCreatePlan={(date) => openPlanDialog(date)} />
+      {/* Tab bar */}
+      <div className="flex rounded-xl bg-muted/50 p-1 gap-1">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => goToTab(tab.id)}
+            className={cn(
+              "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+              activeTab === tab.id
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Swipeable content */}
+      <div
+        className="relative overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={activeTab}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+          >
+            {activeTab === 'upcoming' && <UpcomingPlans standalone />}
+            {activeTab === 'overview' && <WeekOverview standalone />}
+            {activeTab === 'grid' && <AvailabilityGrid onCreatePlan={(date) => openPlanDialog(date)} />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Swipe indicator dots */}
+      <div className="flex justify-center gap-1.5 pb-2">
+        {TABS.map((tab, i) => (
+          <div
+            key={tab.id}
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-200",
+              activeIndex === i
+                ? "w-4 bg-primary"
+                : "w-1.5 bg-muted-foreground/30"
+            )}
+          />
+        ))}
+      </div>
 
       <CreatePlanDialog
         open={planDialogOpen}

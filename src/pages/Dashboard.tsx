@@ -3,8 +3,6 @@ import { Loader2 } from 'lucide-react';
 
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
-import { WeekOverview } from '@/components/dashboard/WeekOverview';
-import { UpcomingPlans } from '@/components/dashboard/UpcomingPlans';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendsAndPodWidget } from '@/components/dashboard/FriendsAndPodWidget';
 
@@ -32,12 +30,6 @@ export default function Dashboard() {
 
       {/* Vibe */}
       <VibeSelector />
-
-      {/* Upcoming Plans */}
-      <UpcomingPlans />
-
-      {/* Week Overview */}
-      <WeekOverview />
 
       {/* Friends & Pod Combined */}
       <FriendsAndPodWidget />

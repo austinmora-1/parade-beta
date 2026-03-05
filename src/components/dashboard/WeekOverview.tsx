@@ -19,7 +19,7 @@ const TIME_SLOT_ORDER: TimeSlot[] = [
   'late-night',
 ];
 
-export function WeekOverview() {
+export function WeekOverview({ standalone = false }: { standalone?: boolean } = {}) {
   const { plans, availabilityMap, homeAddress } = usePlannerStore();
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -151,12 +151,8 @@ export function WeekOverview() {
     </div>
   );
 
-  return (
-    <CollapsibleWidget
-      title="Week Overview"
-      icon={<CalendarIcon className="h-4 w-4 text-primary" />}
-      headerRight={editButton}
-    >
+  const content = (
+    <>
       <div className="flex items-center mb-3">
         {weekNav}
       </div>
@@ -284,6 +280,20 @@ export function WeekOverview() {
           );
         })}
       </div>
+    </>
+  );
+
+  if (standalone) {
+    return <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">{content}</div>;
+  }
+
+  return (
+    <CollapsibleWidget
+      title="Week Overview"
+      icon={<CalendarIcon className="h-4 w-4 text-primary" />}
+      headerRight={editButton}
+    >
+      {content}
     </CollapsibleWidget>
   );
 }
