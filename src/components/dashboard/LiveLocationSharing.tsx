@@ -116,7 +116,7 @@ export function LiveLocationSharing() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs" disabled={isLoading}>
                 {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <MapPin className="h-3 w-3" />}
-                Share Location
+                Share
                 <ChevronDown className="h-3 w-3" />
               </Button>
             </PopoverTrigger>
