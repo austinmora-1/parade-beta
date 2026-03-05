@@ -27,9 +27,8 @@ export function VibeSelector() {
 
   const handleVibeSelect = (value: string) => {
     if (value === 'custom') {
+      setVibe({ type: 'custom', gifUrl: currentVibe?.gifUrl, customTags: currentVibe?.customTags });
       setShowCustomInput(true);
-    } else if (value === 'gif') {
-      // handled by GifPicker
     } else {
       setVibe({ type: value as VibeType, gifUrl: currentVibe?.gifUrl });
       setShowCustomInput(false);
