@@ -23,12 +23,6 @@ export default function Dashboard() {
       <EllyWalkthrough />
       <PushNotificationPrompt />
 
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-base font-bold md:text-lg">Welcome back! 👋</h1>
-        <p className="mt-1 text-sm text-muted-foreground md:text-base">Here's what's happening this week</p>
-      </div>
-
       {/* Vibe */}
       <VibeSelector />
 
