@@ -4,8 +4,8 @@ import { Loader2 } from 'lucide-react';
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
-import { FeedView } from '@/components/feed/FeedView';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
+import { HomeTabs } from '@/components/dashboard/HomeTabs';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
@@ -29,8 +29,8 @@ export default function Dashboard() {
       {/* Vibe */}
       <VibeSelector />
 
-      {/* Feed */}
-      <FeedView />
+      {/* Upcoming Plans & Feed */}
+      <HomeTabs />
     </div>
   );
 }

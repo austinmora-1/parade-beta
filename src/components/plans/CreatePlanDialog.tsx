@@ -248,6 +248,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   // Determine if this is a shared plan edit with time/date changes
   const isSharedPlan = editPlan && editPlan.participants.length > 0;
   const isOwner = editPlan && (!editPlan.userId || editPlan.userId === userId);
+  const isParticipantEditor = editPlan && !isOwner;
   const hasTimeChanges = editPlan && (
     format(date, 'yyyy-MM-dd') !== format(editPlan.date, 'yyyy-MM-dd') ||
     timeSlot !== editPlan.timeSlot ||
@@ -316,19 +317,18 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
         changes.duration = parseInt(duration);
       }
 
-      // Apply non-time changes directly if owner (title, activity, location, notes, participants)
-      if (isOwner) {
-        const directUpdates: Partial<Plan> = {};
-        if (title !== editPlan.title) directUpdates.title = title;
-        if (activity !== editPlan.activity) directUpdates.activity = activity;
-        if ((locationName || '') !== (editPlan.location?.name || '')) {
-          directUpdates.location = locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined;
-        }
-        if (notes !== (editPlan.notes || '')) directUpdates.notes = notes;
+      // Apply non-time changes directly (both owner and participants can do this)
+      const directUpdates: Partial<Plan> = {};
+      if (title !== editPlan.title) directUpdates.title = title;
+      if (activity !== editPlan.activity) directUpdates.activity = activity;
+      if ((locationName || '') !== (editPlan.location?.name || '')) {
+        directUpdates.location = locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined;
+      }
+      if (notes !== (editPlan.notes || '')) directUpdates.notes = notes;
+      if (feedVisibility !== (editPlan.feedVisibility || 'private')) directUpdates.feedVisibility = feedVisibility;
 
-        if (Object.keys(directUpdates).length > 0) {
-          await updatePlan(editPlan.id, directUpdates);
-        }
+      if (Object.keys(directUpdates).length > 0) {
+        await updatePlan(editPlan.id, directUpdates);
       }
 
       const success = await proposeChange(editPlan.id, changes, respondentUserIds);
@@ -342,6 +342,25 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       } else {
         toast.error('Failed to propose change. Please try again.');
       }
+      return;
+    }
+
+    // Participant editing non-time fields only (no proposal needed)
+    if (editPlan && isParticipantEditor) {
+      const directUpdates: Partial<Plan> = {};
+      if (title !== editPlan.title) directUpdates.title = title;
+      if (activity !== editPlan.activity) directUpdates.activity = activity;
+      if ((locationName || '') !== (editPlan.location?.name || '')) {
+        directUpdates.location = locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined;
+      }
+      if (notes !== (editPlan.notes || '')) directUpdates.notes = notes;
+      if (feedVisibility !== (editPlan.feedVisibility || 'private')) directUpdates.feedVisibility = feedVisibility;
+
+      if (Object.keys(directUpdates).length > 0) {
+        await updatePlan(editPlan.id, directUpdates);
+      }
+      onOpenChange(false);
+      resetForm();
       return;
     }
 
@@ -483,7 +502,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
           </div>
 
           {/* Quick Time Presets */}
-          {!isMultiDay && (
+          {!isMultiDay && !isParticipantEditor && (
           <div className="space-y-1">
             <Label className="text-xs">Quick Set</Label>
             <div className="flex flex-wrap gap-1.5">
@@ -521,7 +540,9 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
           </div>
           )}
 
-          {/* Date & Time Slot */}
+          {/* Date, Time & Duration - hidden for participant editors */}
+          {!isParticipantEditor && (
+          <>
           <div className={cn("grid gap-2", isMultiDay ? "grid-cols-1" : "grid-cols-2")}>
             <div className="space-y-1">
               <Label className="text-xs">{isMultiDay ? 'Start Date' : 'Date'}</Label>
@@ -546,7 +567,6 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                     onSelect={(d) => {
                       if (d) {
                         setDate(d);
-                        // If end date is before start, reset it
                         if (endDate && d > endDate) setEndDate(undefined);
                       }
                     }}
@@ -623,7 +643,6 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             )}
           </div>
 
-
           {/* Start & End Time + Duration */}
           {!isMultiDay && (
           <div className="grid grid-cols-3 gap-2">
@@ -674,8 +693,18 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             </div>
           </div>
           )}
+          </>
+          )}
 
-          {/* Status */}
+          {/* Info banner for participant editors */}
+          {isParticipantEditor && (
+            <div className="rounded-lg bg-muted/50 border border-border px-3 py-2 text-xs text-muted-foreground">
+              ✏️ You can edit the title, activity, location, notes, and visibility. To change the date or time, use the change request flow.
+            </div>
+          )}
+
+          {/* Status - owner only */}
+          {!isParticipantEditor && (
           <div className="space-y-1">
             <Label className="text-xs">Status</Label>
             <Select value={planStatus} onValueChange={(v) => setPlanStatus(v as PlanStatus)}>
@@ -691,6 +720,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               <p className="text-[10px] text-muted-foreground">Tentative plans won't block your availability</p>
             )}
           </div>
+          )}
 
           {/* Location */}
           <div className="space-y-1">
@@ -731,8 +761,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             </div>
           </div>
 
-          {/* Friends - compact */}
-          {(() => {
+          {/* Friends - compact (owner only) */}
+          {!isParticipantEditor && (() => {
             const connectedFriends = friends.filter((f) => f.status === 'connected');
             if (connectedFriends.length === 0) return null;
 
