@@ -80,9 +80,7 @@ export function FriendVibeStrip() {
         const isCustom = currentVibe === 'custom';
         const vibeLabel = isCustom && customVibeTags?.length
           ? `#${customVibeTags[0]}`
-          : vibeInfo?.emoji
-            ? `${vibeInfo.emoji}`
-            : null;
+          : vibeInfo?.label || null;
 
         return (
           <button
