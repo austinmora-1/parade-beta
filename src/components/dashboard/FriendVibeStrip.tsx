@@ -2,11 +2,14 @@ import { useMemo, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Friend, VIBE_CONFIG as PLANNER_VIBE_CONFIG, VibeType } from '@/types/planner';
+import { Friend, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { SignedImage } from '@/components/ui/SignedImage';
+import { X } from 'lucide-react';
 
 interface FriendVibe {
   friend: Friend;
@@ -14,6 +17,7 @@ interface FriendVibe {
   customVibeTags: string[] | null;
   vibeGifUrl: string | null;
   isAvailableToday: boolean;
+  availableSlots: TimeSlot[];
 }
 
 const VIBE_LABELS: Record<string, { emoji: string; label: string }> = {
@@ -23,6 +27,15 @@ const VIBE_LABELS: Record<string, { emoji: string; label: string }> = {
   productive: { emoji: '⚡', label: 'Productive' },
   custom: { emoji: '✨', label: 'Custom' },
 };
+
+const SLOT_KEYS: { key: string; slot: TimeSlot }[] = [
+  { key: 'early_morning', slot: 'early-morning' },
+  { key: 'late_morning', slot: 'late-morning' },
+  { key: 'early_afternoon', slot: 'early-afternoon' },
+  { key: 'late_afternoon', slot: 'late-afternoon' },
+  { key: 'evening', slot: 'evening' },
+  { key: 'late_night', slot: 'late-night' },
+];
 
 export function FriendVibeStrip() {
   const { friends } = usePlannerStore();
@@ -62,19 +75,24 @@ export function FriendVibeStrip() {
       const vibes: FriendVibe[] = connectedFriends.map(friend => {
         const profile = profileMap.get(friend.friendUserId!);
         const avail = availMap.get(friend.friendUserId!);
-        const hasAnyFreeSlot = avail
-          ? !!(avail.early_morning || avail.late_morning || avail.early_afternoon || avail.late_afternoon || avail.evening || avail.late_night)
-          : false;
+
+        const availableSlots: TimeSlot[] = [];
+        if (avail) {
+          for (const { key, slot } of SLOT_KEYS) {
+            if ((avail as any)[key]) availableSlots.push(slot);
+          }
+        }
+
         return {
           friend,
           currentVibe: profile?.current_vibe || null,
           customVibeTags: profile?.custom_vibe_tags || null,
           vibeGifUrl: profile?.vibe_gif_url || null,
-          isAvailableToday: hasAnyFreeSlot,
+          isAvailableToday: availableSlots.length > 0,
+          availableSlots,
         };
       });
 
-      // Sort: available first, then those with a vibe
       vibes.sort((a, b) => {
         const aScore = (a.isAvailableToday ? 2 : 0) + (a.currentVibe ? 1 : 0);
         const bScore = (b.isAvailableToday ? 2 : 0) + (b.currentVibe ? 1 : 0);
@@ -91,55 +109,123 @@ export function FriendVibeStrip() {
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-      {friendVibes.map(({ friend, currentVibe, customVibeTags, isAvailableToday }) => {
-        const vibeInfo = currentVibe ? VIBE_LABELS[currentVibe] : null;
-        const isCustom = currentVibe === 'custom';
-        const vibeLabel = isCustom && customVibeTags?.length
-          ? `#${customVibeTags[0]}`
-          : vibeInfo?.label || null;
-
-        return (
-          <button
-            key={friend.id}
-            onClick={() => {
-              if (friend.friendUserId) navigate(`/friend/${friend.friendUserId}`);
-            }}
-            className="flex flex-col items-center gap-1 shrink-0 w-16 group"
-          >
-            {/* Avatar */}
-            <div className="relative h-12 w-12">
-              <div className={cn(
-                "h-12 w-12 rounded-full ring-1 ring-border overflow-hidden",
-                currentVibe && "ring-2 ring-primary/40"
-              )}>
-                <img
-                  src={friend.avatar || getElephantAvatar(friend.name)}
-                  alt={friend.name}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              {/* Availability indicator dot */}
-              <span className={cn(
-                "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
-                isAvailableToday ? "bg-green-500" : "bg-muted-foreground/30"
-              )} />
-            </div>
-
-            {/* Name */}
-            <span className="text-[11px] font-medium text-foreground truncate w-full text-center leading-tight">
-              {friend.name.split(' ')[0]}
-            </span>
-
-            {/* Vibe */}
-            <span className={cn(
-              "text-[10px] truncate w-full text-center leading-tight -mt-0.5",
-              currentVibe ? "text-primary font-medium" : "text-muted-foreground/50"
-            )}>
-              {vibeLabel || '—'}
-            </span>
-          </button>
-        );
-      })}
+      {friendVibes.map((fv) => (
+        <FriendVibeItem key={fv.friend.id} data={fv} onNavigate={() => {
+          if (fv.friend.friendUserId) navigate(`/friend/${fv.friend.friendUserId}`);
+        }} />
+      ))}
     </div>
+  );
+}
+
+function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: () => void }) {
+  const { friend, currentVibe, customVibeTags, vibeGifUrl, isAvailableToday, availableSlots } = data;
+  const [open, setOpen] = useState(false);
+
+  const vibeInfo = currentVibe ? VIBE_LABELS[currentVibe] : null;
+  const isCustom = currentVibe === 'custom';
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="flex flex-col items-center gap-1 shrink-0 w-16 group">
+          {/* Avatar */}
+          <div className="relative h-12 w-12">
+            <div className={cn(
+              "h-12 w-12 rounded-full ring-1 ring-border overflow-hidden",
+              currentVibe && "ring-2 ring-primary/40"
+            )}>
+              <img
+                src={friend.avatar || getElephantAvatar(friend.name)}
+                alt={friend.name}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <span className={cn(
+              "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
+              isAvailableToday ? "bg-green-500" : "bg-muted-foreground/30"
+            )} />
+          </div>
+
+          {/* Name */}
+          <span className="text-[11px] font-medium text-foreground truncate w-full text-center leading-tight">
+            {friend.name.split(' ')[0]}
+          </span>
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        className="w-64 p-0 rounded-xl shadow-lg border border-border"
+        side="bottom"
+        align="center"
+        sideOffset={8}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 p-3 border-b border-border">
+          <div className="h-10 w-10 rounded-full overflow-hidden ring-1 ring-border shrink-0">
+            <img
+              src={friend.avatar || getElephantAvatar(friend.name)}
+              alt={friend.name}
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">{friend.name}</p>
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onNavigate(); }}
+              className="text-[11px] text-primary hover:underline"
+            >
+              View profile →
+            </button>
+          </div>
+        </div>
+
+        {/* Vibe Section */}
+        <div className="p-3 space-y-2">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Current Vibe</p>
+          {currentVibe ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-sm">
+                  {vibeInfo?.emoji} {isCustom && customVibeTags?.length
+                    ? customVibeTags.map(t => `#${t}`).join(' ')
+                    : vibeInfo?.label}
+                </span>
+              </div>
+              {vibeGifUrl && (
+                <div className="rounded-lg overflow-hidden border border-border">
+                  <SignedImage
+                    src={vibeGifUrl}
+                    alt="Vibe GIF"
+                    className="w-full h-28 object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No vibe set</p>
+          )}
+        </div>
+
+        {/* Availability Section */}
+        <div className="p-3 pt-0 space-y-2">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Available Today</p>
+          {availableSlots.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {availableSlots.map(slot => (
+                <span
+                  key={slot}
+                  className="inline-flex items-center gap-1 rounded-full bg-green-500/10 text-green-700 dark:text-green-400 px-2 py-0.5 text-[11px] font-medium"
+                >
+                  {TIME_SLOT_LABELS[slot].time}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Not available today</p>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
