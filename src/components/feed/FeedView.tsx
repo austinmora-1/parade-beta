@@ -455,8 +455,24 @@ function PlanFeedCard({
             </div>
           </div>
 
+          {/* Participants */}
+          {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1" onClick={e => e.stopPropagation()}>
+              <Users className="h-3 w-3 shrink-0" />
+              <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
+            </div>
+          )}
+
+          {/* Location */}
+          {plan.location && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{plan.location.name}</span>
+            </div>
+          )}
+
           {/* Time & Date */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {plan.startTime
@@ -470,22 +486,6 @@ function PlanFeedCard({
                 : format(plan.date, 'EEE, MMM d')}
             </span>
           </div>
-
-          {/* Location */}
-          {plan.location && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate">{plan.location.name}</span>
-            </div>
-          )}
-
-          {/* Participants */}
-          {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5" onClick={e => e.stopPropagation()}>
-              <Users className="h-3 w-3 shrink-0" />
-              <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
-            </div>
-          )}
         </div>
       </div>
       </div>
