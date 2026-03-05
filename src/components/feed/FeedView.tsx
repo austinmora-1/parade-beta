@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, VIBE_CONFIG, VibeType, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock, Users, Zap, CalendarCheck, MessageCircle } from 'lucide-react';
+import { MapPin, Clock, Users, Zap, CalendarCheck, Camera } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { SignedImage } from '@/components/ui/SignedImage';
@@ -15,6 +15,7 @@ import { VibeReactions, VibeReaction } from '@/components/vibes/VibeReactions';
 import { VibeDetailDialog } from '@/components/vibes/VibeDetailDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSignedUrl } from '@/lib/storage';
 
 type FeedItem =
   | { type: 'vibe'; data: VibeSend; timestamp: Date }
@@ -138,6 +139,44 @@ export function FeedView() {
     return items;
   }, [receivedVibes, sentVibes, plans]);
 
+  // Fetch plan photos for feed plans
+  const [planPhotos, setPlanPhotos] = useState<Record<string, string[]>>({});
+  const feedPlanIds = useMemo(() => feedItems.filter(i => i.type === 'plan').map(i => (i.data as any).id), [feedItems]);
+
+  useEffect(() => {
+    if (feedPlanIds.length === 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from('plan_photos')
+        .select('plan_id, file_path')
+        .in('plan_id', feedPlanIds)
+        .order('created_at', { ascending: false });
+      if (!data || data.length === 0) return;
+
+      // Group by plan_id and resolve signed URLs
+      const grouped: Record<string, string[]> = {};
+      for (const p of data) {
+        if (!grouped[p.plan_id]) grouped[p.plan_id] = [];
+        grouped[p.plan_id].push(p.file_path);
+      }
+
+      const resolved: Record<string, string[]> = {};
+      for (const [planId, paths] of Object.entries(grouped)) {
+        const urls = await Promise.all(
+          paths.slice(0, 4).map(fp => {
+            if (fp.startsWith('storage:')) {
+              const parts = fp.split(':');
+              return getSignedUrl(parts[1], parts.slice(2).join(':'));
+            }
+            return getSignedUrl('plan-photos', fp);
+          })
+        );
+        resolved[planId] = urls;
+      }
+      setPlanPhotos(resolved);
+    })();
+  }, [feedPlanIds.join(',')]);
+
   const allReactions = [...vibeReactions, ...sentVibeReactions];
 
   if (vibesLoading) {
@@ -185,6 +224,7 @@ export function FeedView() {
                 <PlanFeedCard
                   plan={item.data as any}
                   onClick={() => navigate(`/plan/${(item.data as any).id}`)}
+                  photos={planPhotos[(item.data as any).id] || []}
                 />
               )}
             </motion.div>
@@ -339,25 +379,55 @@ function VibeFeedCard({
 function PlanFeedCard({
   plan,
   onClick,
+  photos,
 }: {
   plan: any;
   onClick: () => void;
+  photos: string[];
 }) {
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
   const displayTitle = getPlanDisplayTitle(plan);
   const planIsPast = isPast(plan.endDate || plan.date) && !isSameDay(plan.endDate || plan.date, new Date());
+  const hasPhotos = photos.length > 0;
 
   return (
     <div
       onClick={onClick}
       className={cn(
-        "rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-md active:scale-[0.98]",
+        "rounded-2xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.98] overflow-hidden",
         planIsPast
           ? "border-border bg-muted/30"
           : "border-primary/15 bg-card/50"
       )}
     >
+      {/* Photo banner */}
+      {hasPhotos && (
+        <div className={cn(
+          "w-full",
+          photos.length === 1 ? "h-48" : "h-40 grid gap-0.5",
+          photos.length === 2 && "grid-cols-2",
+          photos.length === 3 && "grid-cols-3",
+          photos.length >= 4 && "grid-cols-2 grid-rows-2 h-56"
+        )}>
+          {photos.slice(0, 4).map((url, i) => (
+            <img
+              key={i}
+              src={url}
+              alt="Plan photo"
+              className="w-full h-full object-cover"
+            />
+          ))}
+          {photos.length > 4 && (
+            <div className="absolute bottom-2 right-2 rounded-full bg-background/80 backdrop-blur px-2 py-0.5 text-xs font-medium text-foreground flex items-center gap-1">
+              <Camera className="h-3 w-3" />
+              +{photos.length - 4}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="p-4">
       <div className="flex items-start gap-3">
         {/* Activity icon */}
         <div
@@ -417,6 +487,7 @@ function PlanFeedCard({
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
