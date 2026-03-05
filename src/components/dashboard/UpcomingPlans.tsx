@@ -199,6 +199,96 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
       .slice(0, 8);
   }, [plans, friendUpcomingPlans, userTimezone]);
 
+  const myPlans = upcomingPlans.filter(p => !p.isFriendPlan);
+  const friendPlans = upcomingPlans.filter(p => p.isFriendPlan);
+
+  const renderPlanCard = (plan: any) => {
+    const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
+    const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
+    const displayTitle = getPlanDisplayTitle(plan);
+    const timeStatus = getPlanTimeStatus(plan, userTimezone);
+    const isInProgress = timeStatus === 'in-progress';
+
+    return (
+      <div
+        key={plan.id}
+        onClick={() => navigate(`/plan/${plan.id}`)}
+        className={cn(
+          "rounded-lg border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer",
+          isInProgress
+            ? "bg-primary/10 hover:bg-primary/15"
+            : "bg-muted/30 hover:bg-muted/50",
+        )}
+        style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <ActivityIcon config={activityConfig} size={18} />
+              <span className="text-sm font-medium truncate">{displayTitle}</span>
+            </div>
+            {plan.isFriendPlan && plan.ownerName && (
+              <div className="text-[10px] text-muted-foreground ml-[26px]">
+                {plan.ownerName}'s plan
+              </div>
+            )}
+            <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
+              <span className="flex items-center gap-0.5 shrink-0">
+                <Clock className="h-3 w-3" />
+                {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
+              </span>
+            </div>
+            {plan.location && (
+              <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[140px]">{plan.location.name}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {isSameDay(plan.date, new Date())
+                ? (plan.endDate ? `Today – ${format(plan.endDate, 'MMM d')}` : 'Today')
+                : (plan.endDate
+                  ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
+                  : format(plan.date, 'EEE, MMM d'))}
+            </span>
+            {(() => {
+              const visibleParticipants = plan.participants.filter(p => p.role !== 'subscriber');
+              if (visibleParticipants.length === 0) return null;
+              const shown = visibleParticipants.slice(0, 4);
+              const extra = visibleParticipants.length - shown.length;
+              return (
+                <div className="flex items-center -space-x-1.5">
+                  {shown.map((p, i) => (
+                    <Avatar key={p.friendUserId || i} className="h-5 w-5 border-[1.5px] border-card">
+                      {p.avatar ? (
+                        <AvatarImage src={p.avatar} alt={p.name} className="object-cover" />
+                      ) : null}
+                      <AvatarFallback className="text-[8px] bg-muted">
+                        {p.name?.charAt(0)?.toUpperCase() || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {extra > 0 && (
+                    <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-[1.5px] border-card text-[8px] font-medium text-muted-foreground">
+                      +{extra}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+            {isInProgress && (
+              <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
+                In Progress
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const content = upcomingPlans.length === 0 ? (
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <div className="mb-3 text-4xl">📅</div>
@@ -206,93 +296,26 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
       <p className="text-sm text-muted-foreground">Create a new plan or chat with Elly!</p>
     </div>
   ) : (
-    <div className="space-y-1.5">
-      {upcomingPlans.map((plan) => {
-        const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
-        const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
-        const displayTitle = getPlanDisplayTitle(plan);
-        const timeStatus = getPlanTimeStatus(plan, userTimezone);
-        const isInProgress = timeStatus === 'in-progress';
-        
-        return (
-          <div
-            key={plan.id}
-            onClick={() => navigate(`/plan/${plan.id}`)}
-            className={cn(
-              "rounded-lg border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer",
-              isInProgress
-                ? "bg-primary/10 hover:bg-primary/15"
-                : "bg-muted/30 hover:bg-muted/50",
-            )}
-            style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <ActivityIcon config={activityConfig} size={18} />
-                  <span className="text-sm font-medium truncate">{displayTitle}</span>
-                </div>
-                {plan.isFriendPlan && plan.ownerName && (
-                  <div className="text-[10px] text-muted-foreground ml-[26px]">
-                    {plan.ownerName}'s plan
-                  </div>
-                )}
-                <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
-                  <span className="flex items-center gap-0.5 shrink-0">
-                    <Clock className="h-3 w-3" />
-                    {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
-                  </span>
-                </div>
-                {plan.location && (
-                  <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="truncate max-w-[140px]">{plan.location.name}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {isSameDay(plan.date, new Date())
-                    ? (plan.endDate ? `Today – ${format(plan.endDate, 'MMM d')}` : 'Today')
-                    : (plan.endDate
-                      ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
-                      : format(plan.date, 'EEE, MMM d'))}
-                </span>
-                {(() => {
-                  const visibleParticipants = plan.participants.filter(p => p.role !== 'subscriber');
-                  if (visibleParticipants.length === 0) return null;
-                  const shown = visibleParticipants.slice(0, 4);
-                  const extra = visibleParticipants.length - shown.length;
-                  return (
-                    <div className="flex items-center -space-x-1.5">
-                      {shown.map((p, i) => (
-                        <Avatar key={p.friendUserId || i} className="h-5 w-5 border-[1.5px] border-card">
-                          {p.avatar ? (
-                            <AvatarImage src={p.avatar} alt={p.name} className="object-cover" />
-                          ) : null}
-                          <AvatarFallback className="text-[8px] bg-muted">
-                            {p.name?.charAt(0)?.toUpperCase() || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
-                      {extra > 0 && (
-                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-[1.5px] border-card text-[8px] font-medium text-muted-foreground">
-                          +{extra}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
-                {isInProgress && (
-                  <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
-                    In Progress
-                  </span>
-                )}
-              </div>
-            </div>
+    <div className="space-y-4">
+      {myPlans.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Your Plans</h4>
+          <div className="space-y-1.5">
+            {myPlans.map(renderPlanCard)}
           </div>
-        );
-      })}
+        </div>
+      )}
+      {friendPlans.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            Friends' Plans
+          </h4>
+          <div className="space-y-1.5">
+            {friendPlans.map(renderPlanCard)}
+          </div>
+        </div>
+      )}
     </div>
   );
 
