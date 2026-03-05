@@ -3,10 +3,12 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { PlanCard } from '@/components/plans/PlanCard';
 import { CalendarView } from '@/components/plans/CalendarView';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { RecurringPlansList } from '@/components/plans/RecurringPlansList';
 import { Button } from '@/components/ui/button';
 import { Plus, LayoutList, CalendarDays } from 'lucide-react';
 import { Plan } from '@/types/planner';
 import { cn } from '@/lib/utils';
+import { useRecurringPlans } from '@/hooks/useRecurringPlans';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +25,7 @@ import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 export default function Plans() {
   const { plans, deletePlan, userId } = usePlannerStore();
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
+  const { recurringPlans, pauseRecurringPlan, resumeRecurringPlan, deleteRecurringPlan } = useRecurringPlans();
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -142,6 +145,14 @@ export default function Plans() {
           Calendar
         </button>
       </div>
+
+      {/* Recurring Plans */}
+      <RecurringPlansList
+        recurringPlans={recurringPlans}
+        onPause={pauseRecurringPlan}
+        onResume={resumeRecurringPlan}
+        onDelete={deleteRecurringPlan}
+      />
 
       {/* Content */}
       {view === 'list' ? (

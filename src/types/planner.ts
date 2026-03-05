@@ -87,6 +87,7 @@ export interface Plan {
   feedVisibility?: FeedVisibility;
   createdAt: Date;
   myRole?: ParticipantRole; // role of the current user (for participated plans)
+  recurringPlanId?: string; // linked to a recurring plan template
 }
 
 export interface Vibe {

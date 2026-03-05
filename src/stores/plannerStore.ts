@@ -368,6 +368,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             role: (pp.role as 'participant' | 'subscriber') || 'participant',
           })),
           myRole,
+          recurringPlanId: (p as any).recurring_plan_id || undefined,
           createdAt: new Date(p.created_at),
         };
       });

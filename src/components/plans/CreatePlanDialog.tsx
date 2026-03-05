@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Clock, Search, Loader2, AlertTriangle, Eye, Globe, Lock } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { usePods } from '@/hooks/usePods';
+import { useRecurringPlans } from '@/hooks/useRecurringPlans';
 import { toast } from 'sonner';
 
 interface PlaceSuggestion {
@@ -86,7 +87,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const { addPlan, updatePlan, friends, userId, plans } = usePlannerStore();
   const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
   const { pods } = usePods();
-  
+  const { createRecurringPlan } = useRecurringPlans();
   const [title, setTitle] = useState('');
   const [selectedVibe, setSelectedVibe] = useState<VibeType>('social');
   const [activity, setActivity] = useState<ActivityType | string>('drinks');
@@ -104,6 +105,9 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [notes, setNotes] = useState('');
   const [planStatus, setPlanStatus] = useState<PlanStatus>('confirmed');
   const [feedVisibility, setFeedVisibility] = useState<FeedVisibility>('private');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<'weekly' | 'biweekly' | 'monthly'>('weekly');
+  const [recurrenceWeekOfMonth, setRecurrenceWeekOfMonth] = useState<number>(1);
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -287,6 +291,34 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   }, [date, timeSlot, isSharedPlan, hasTimeChanges]);
 
   const handleSubmit = async () => {
+    // Handle recurring plan creation
+    if (isRecurring && !editPlan) {
+      try {
+        await createRecurringPlan({
+          title,
+          activity,
+          timeSlot,
+          duration: parseInt(duration) || 60,
+          startTime: startTime || undefined,
+          endTime: endTime || undefined,
+          location: locationName || undefined,
+          notes: notes || undefined,
+          frequency: recurrenceFrequency,
+          dayOfWeek: date.getDay(),
+          weekOfMonth: recurrenceFrequency === 'monthly' ? recurrenceWeekOfMonth : undefined,
+          startsOn: format(date, 'yyyy-MM-dd'),
+          feedVisibility,
+        });
+        toast.success(`Recurring plan created! 🔄 ${title} will repeat ${recurrenceFrequency === 'weekly' ? 'every week' : recurrenceFrequency === 'biweekly' ? 'every other week' : 'monthly'}.`);
+        onOpenChange(false);
+        resetForm();
+        return;
+      } catch (err) {
+        toast.error('Failed to create recurring plan');
+        return;
+      }
+    }
+
     if (needsProposal) {
       // Propose the change instead of direct update
       setIsProposing(true);
@@ -415,6 +447,9 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     setNotes('');
     setPlanStatus('confirmed');
     setFeedVisibility('private');
+    setIsRecurring(false);
+    setRecurrenceFrequency('weekly');
+    setRecurrenceWeekOfMonth(1);
     setParticipantAvailability([]);
   };
 
@@ -605,6 +640,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                 onChange={(e) => {
                   setIsMultiDay(e.target.checked);
                   if (!e.target.checked) setEndDate(undefined);
+                  if (e.target.checked) setIsRecurring(false);
                 }}
                 className="rounded border-border"
               />
@@ -642,6 +678,64 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               </div>
             )}
           </div>
+
+          {/* Recurring toggle */}
+          {!editPlan && !isMultiDay && (
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+                className="rounded border-border"
+              />
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Repeat className="h-3 w-3" />
+                Make recurring
+              </span>
+            </label>
+
+            {isRecurring && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 space-y-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Frequency</Label>
+                  <Select value={recurrenceFrequency} onValueChange={(v) => setRecurrenceFrequency(v as any)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weekly" className="text-xs">Every week</SelectItem>
+                      <SelectItem value="biweekly" className="text-xs">Every other week</SelectItem>
+                      <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {recurrenceFrequency === 'monthly' && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Which week?</Label>
+                    <Select value={recurrenceWeekOfMonth.toString()} onValueChange={(v) => setRecurrenceWeekOfMonth(parseInt(v))}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1" className="text-xs">1st week</SelectItem>
+                        <SelectItem value="2" className="text-xs">2nd week</SelectItem>
+                        <SelectItem value="3" className="text-xs">3rd week</SelectItem>
+                        <SelectItem value="4" className="text-xs">4th week</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-muted-foreground">
+                  📅 Will repeat on {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]}s
+                  {recurrenceFrequency === 'monthly' && ` (${['', '1st', '2nd', '3rd', '4th'][recurrenceWeekOfMonth]} week)`}
+                </p>
+              </div>
+            )}
+          </div>
+          )}
 
           {/* Start & End Time + Duration */}
           {!isMultiDay && (
