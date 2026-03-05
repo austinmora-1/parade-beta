@@ -105,7 +105,7 @@ export function FriendVibeStrip() {
   if (connectedFriends.length === 0) return null;
 
   return (
-    <div className="flex gap-1.5 overflow-x-auto pt-1 pb-1 -mx-1 px-1 scrollbar-hide">
+    <div className="flex gap-0.5 overflow-x-auto pt-1 pb-1 -mx-1 px-1 scrollbar-hide">
       {friendVibes.map((fv) => (
         <FriendVibeItem key={fv.friend.id} data={fv} onNavigate={() => {
           if (fv.friend.friendUserId) navigate(`/friend/${fv.friend.friendUserId}`);
@@ -192,7 +192,7 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <button className="flex flex-col items-center gap-1 shrink-0 w-[4.5rem] group">
+        <button className="flex flex-col items-center gap-1 shrink-0 w-[3.75rem] group">
           {/* Avatar */}
           <div className="relative h-12 w-12">
             <div className={cn(
