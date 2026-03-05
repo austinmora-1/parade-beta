@@ -10,12 +10,10 @@ import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { UpcomingPlans } from '@/components/dashboard/UpcomingPlans';
 import { WeekOverview } from '@/components/dashboard/WeekOverview';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TABS = [
-  { id: 'upcoming', label: 'Upcoming' },
   { id: 'grid', label: 'Daily' },
   { id: 'overview', label: 'Weekly' },
 ] as const;
@@ -28,7 +26,7 @@ export default function Availability() {
   const loadAllData = usePlannerStore((s) => s.loadAllData);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
-  const [activeTab, setActiveTab] = useState<TabId>('upcoming');
+  const [activeTab, setActiveTab] = useState<TabId>('grid');
   const [direction, setDirection] = useState(0);
 
   // Swipe handling
@@ -195,9 +193,8 @@ export default function Availability() {
             exit="exit"
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
-            {activeTab === 'upcoming' && <UpcomingPlans standalone />}
-            {activeTab === 'overview' && <WeekOverview standalone />}
             {activeTab === 'grid' && <AvailabilityGrid onCreatePlan={(date) => openPlanDialog(date)} />}
+            {activeTab === 'overview' && <WeekOverview standalone />}
           </motion.div>
         </AnimatePresence>
       </div>
