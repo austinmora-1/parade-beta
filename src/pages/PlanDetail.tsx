@@ -257,116 +257,121 @@ export default function PlanDetail() {
       )}
 
       {/* Main card */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-soft space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex gap-4 items-start">
-            <div
-              className="flex h-16 w-16 items-center justify-center rounded-xl text-3xl shrink-0"
-              style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
-            >
-              <ActivityIcon config={activityConfig} size={32} />
-            </div>
-            <div>
-              <h1 className="font-display text-2xl font-bold">{displayTitle}</h1>
-              <p className="text-sm text-muted-foreground">{activityConfig.label}</p>
-              {displayPlan.status === 'tentative' && (
-                <span className="inline-block mt-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                  Tentative
-                </span>
-              )}
-            </div>
+      <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden space-y-0">
+        {/* Photos - prominent at top */}
+        {plan && (
+          <div className="-mb-0">
+            <PlanPhotos planId={plan.id} />
           </div>
-        </div>
+        )}
 
-        {/* Details */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 text-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>
-              {format(displayPlan.date, 'EEEE, MMMM d, yyyy')}
-              {displayPlan.endDate && ` – ${format(displayPlan.endDate, 'EEEE, MMMM d, yyyy')}`}
-            </span>
+        <div className="p-5 space-y-5">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex gap-3 items-start">
+              <div
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-xl shrink-0"
+                style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
+              >
+                <ActivityIcon config={activityConfig} size={22} />
+              </div>
+              <div>
+                <h1 className="font-display text-lg font-bold leading-snug">{displayTitle}</h1>
+                <p className="text-xs text-muted-foreground">{activityConfig.label}</p>
+                {displayPlan.status === 'tentative' && (
+                  <span className="inline-block mt-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                    Tentative
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>
-              {displayPlan.startTime || displayPlan.endTime ? (
-                <>
-                  {displayPlan.startTime && formatTime12(displayPlan.startTime)}
-                  {displayPlan.startTime && displayPlan.endTime && ' – '}
-                  {displayPlan.endTime && formatTime12(displayPlan.endTime)}
-                  {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
-                </>
-              ) : timeSlotConfig ? (
-                <>
-                  {timeSlotConfig.label} ({timeSlotConfig.time})
-                </>
-              ) : null}
-              {displayPlan.duration && !displayPlan.startTime && !displayPlan.endTime && (
-                <span className="text-muted-foreground">
-                  {' · '}
-                  {displayPlan.duration >= 60
-                    ? `${Math.floor(displayPlan.duration / 60)}h${displayPlan.duration % 60 > 0 ? ` ${displayPlan.duration % 60}m` : ''}`
-                    : `${displayPlan.duration}m`}
-                </span>
-              )}
-            </span>
-          </div>
-          {displayPlan.location && (
+
+          {/* Details */}
+          <div className="space-y-2.5">
             <div className="flex items-center gap-3 text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>{displayPlan.location.name}</span>
+              <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>
+                {format(displayPlan.date, 'EEEE, MMMM d, yyyy')}
+                {displayPlan.endDate && ` – ${format(displayPlan.endDate, 'EEEE, MMMM d, yyyy')}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>
+                {displayPlan.startTime || displayPlan.endTime ? (
+                  <>
+                    {displayPlan.startTime && formatTime12(displayPlan.startTime)}
+                    {displayPlan.startTime && displayPlan.endTime && ' – '}
+                    {displayPlan.endTime && formatTime12(displayPlan.endTime)}
+                    {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
+                  </>
+                ) : timeSlotConfig ? (
+                  <>
+                    {timeSlotConfig.label} ({timeSlotConfig.time})
+                  </>
+                ) : null}
+                {displayPlan.duration && !displayPlan.startTime && !displayPlan.endTime && (
+                  <span className="text-muted-foreground">
+                    {' · '}
+                    {displayPlan.duration >= 60
+                      ? `${Math.floor(displayPlan.duration / 60)}h${displayPlan.duration % 60 > 0 ? ` ${displayPlan.duration % 60}m` : ''}`
+                      : `${displayPlan.duration}m`}
+                  </span>
+                )}
+              </span>
+            </div>
+            {displayPlan.location && (
+              <div className="flex items-center gap-3 text-sm">
+                <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span>{displayPlan.location.name}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Participants */}
+          {participants.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Participants</h3>
+              <div className="flex flex-wrap gap-2">
+                {participants.map(p => (
+                  <div key={p.id} className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    <FriendLink userId={p.friendUserId}>
+                      <span className="text-sm hover:underline">{p.name}</span>
+                    </FriendLink>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Participants */}
-        {participants.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Participants</h3>
-            <div className="flex flex-wrap gap-2">
-              {participants.map(p => (
-                <div key={p.id} className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  <FriendLink userId={p.friendUserId}>
-                    <span className="text-sm hover:underline">{p.name}</span>
-                  </FriendLink>
-                </div>
-              ))}
+          {/* Subscribers */}
+          {subscribers.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Subscribers</h3>
+              <div className="flex flex-wrap gap-2">
+                {subscribers.map(p => (
+                  <div key={p.id} className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-2">
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                    <FriendLink userId={p.friendUserId}>
+                      <span className="text-sm text-muted-foreground hover:underline">{p.name}</span>
+                    </FriendLink>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Subscribers */}
-        {subscribers.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Subscribers</h3>
-            <div className="flex flex-wrap gap-2">
-              {subscribers.map(p => (
-                <div key={p.id} className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-2">
-                  <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                  <FriendLink userId={p.friendUserId}>
-                    <span className="text-sm text-muted-foreground hover:underline">{p.name}</span>
-                  </FriendLink>
-                </div>
-              ))}
+          {/* Notes */}
+          {displayPlan.notes && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</h3>
+              <p className="text-sm bg-muted/30 rounded-lg p-3">{displayPlan.notes}</p>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Notes */}
-        {displayPlan.notes && (
-          <div className="space-y-2">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</h3>
-            <p className="text-sm bg-muted/30 rounded-lg p-3">{displayPlan.notes}</p>
-          </div>
-        )}
-
-        {/* Photos */}
-        {plan && <PlanPhotos planId={plan.id} />}
-
-        {/* Change request */}
+          {/* Change request */}
         {changeRequest && (
           <PlanChangeRequestBadge
             changeRequest={changeRequest}
@@ -419,6 +424,7 @@ export default function PlanDetail() {
             </Button>
           </div>
         )}
+        </div>
       </div>
 
       {/* Edit dialog */}
