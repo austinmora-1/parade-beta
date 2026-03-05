@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +26,9 @@ import { PlanPhotos } from '@/components/plans/PlanPhotos';
 import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
 import { SuggestFriendDialog } from '@/components/plans/SuggestFriendDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +53,7 @@ export default function PlanDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plans, deletePlan, updatePlan, userId, loadAllData } = usePlannerStore();
+  const { plans, deletePlan, updatePlan, userId, loadAllData, friends: allFriends } = usePlannerStore();
   const { createGroup, createDM } = useConversations();
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const { pods } = usePods();
@@ -64,12 +68,33 @@ export default function PlanDetail() {
   const [acceptingInvite, setAcceptingInvite] = useState(false);
   const [inviteAccepted, setInviteAccepted] = useState(false);
   const [isUpdatingRsvp, setIsUpdatingRsvp] = useState(false);
+  const [addFriendOpen, setAddFriendOpen] = useState(false);
+  const [friendSearch, setFriendSearch] = useState('');
+  const [isAddingFriend, setIsAddingFriend] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [planId]);
 
   const plan = useMemo(() => plans.find(p => p.id === planId), [plans, planId]);
+
+  // Inline add friend logic (hooks must be before early returns)
+  const existingParticipantIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (plan) {
+      if (plan.userId) ids.add(plan.userId);
+      for (const p of plan.participants) {
+        if (p.friendUserId) ids.add(p.friendUserId);
+      }
+    }
+    return ids;
+  }, [plan]);
+
+  const availableFriends = useMemo(() => {
+    return allFriends
+      .filter(f => f.status === 'connected' && f.friendUserId && !existingParticipantIds.has(f.friendUserId!))
+      .filter(f => !friendSearch || f.name.toLowerCase().includes(friendSearch.toLowerCase()));
+  }, [allFriends, existingParticipantIds, friendSearch]);
 
   const handleAcceptInvite = async () => {
     if (!inviteToken) return;
@@ -259,6 +284,25 @@ export default function PlanDetail() {
     if (success) toast.info('Change declined.');
   };
 
+  const handleAddFriend = async (friendUserId: string) => {
+    if (!plan) return;
+    setIsAddingFriend(true);
+    try {
+      const { error } = await supabase
+        .from('plan_participants')
+        .insert({ plan_id: plan.id, friend_id: friendUserId, status: 'accepted', role: 'participant' });
+      if (error) throw error;
+      toast.success('Friend added to plan!');
+      setFriendSearch('');
+      setAddFriendOpen(false);
+      await loadAllData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add friend');
+    } finally {
+      setIsAddingFriend(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in space-y-6 max-w-2xl mx-auto">
       {/* Back button */}
@@ -364,11 +408,60 @@ export default function PlanDetail() {
             )}
           </div>
 
-          {/* Participants with RSVP status */}
-          {participants.length > 0 && (
-            <div className="space-y-2">
+          {/* Participants with avatars and RSVP status */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Participants</h3>
-              <div className="flex flex-col gap-2">
+              {plan && !isPast && canEdit && (
+                <Popover open={addFriendOpen} onOpenChange={(open) => { setAddFriendOpen(open); if (!open) setFriendSearch(''); }}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs text-primary px-2">
+                      <Plus className="h-3 w-3" /> Add
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-2" align="end">
+                    <div className="relative mb-2">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Search friends..."
+                        value={friendSearch}
+                        onChange={(e) => setFriendSearch(e.target.value)}
+                        className="h-8 pl-7 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-0.5">
+                      {availableFriends.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-3">
+                          {friendSearch ? 'No matching friends' : 'All friends already added'}
+                        </p>
+                      ) : (
+                        availableFriends.slice(0, 10).map(f => (
+                          <button
+                            key={f.friendUserId}
+                            className="flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left hover:bg-muted/60 transition-colors"
+                            onClick={() => handleAddFriend(f.friendUserId!)}
+                            disabled={isAddingFriend}
+                          >
+                            <Avatar className="h-6 w-6 ring-1 ring-border">
+                              {f.avatar ? (
+                                <AvatarImage src={f.avatar} alt={f.name} className="object-cover" />
+                              ) : (
+                                <AvatarImage src={getElephantAvatar(f.friendUserId || f.name)} alt={f.name} />
+                              )}
+                              <AvatarFallback className="text-[9px]">{f.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm truncate">{f.name}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+            {participants.length > 0 ? (
+              <div className="flex flex-col gap-1.5">
                 {participants.map((p: any) => {
                   const rsvpLabel = p.rsvpStatus === 'accepted' ? 'Going' 
                     : p.rsvpStatus === 'maybe' ? 'Maybe'
@@ -378,27 +471,28 @@ export default function PlanDetail() {
                     : p.rsvpStatus === 'maybe' ? 'text-amber-500'
                     : p.rsvpStatus === 'declined' ? 'text-destructive'
                     : 'text-muted-foreground';
-                  const timeAgo = p.respondedAt 
-                    ? formatDistanceToNow(new Date(p.respondedAt), { addSuffix: true })
-                    : null;
                   return (
                     <div key={p.id} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                        <FriendLink userId={p.friendUserId}>
-                          <span className="text-sm hover:underline">{p.name}</span>
-                        </FriendLink>
-                      </div>
-                      <span className={`text-xs ${rsvpColor}`}>
-                        {rsvpLabel}
-                        {timeAgo && <span className="text-muted-foreground"> · {timeAgo}</span>}
-                      </span>
+                      <FriendLink userId={p.friendUserId} className="flex items-center gap-2.5">
+                        <Avatar className="h-7 w-7 ring-1 ring-border">
+                          {p.avatar ? (
+                            <AvatarImage src={p.avatar} alt={p.name} className="object-cover" />
+                          ) : (
+                            <AvatarImage src={getElephantAvatar(p.friendUserId || p.name)} alt={p.name} />
+                          )}
+                          <AvatarFallback className="text-[10px]">{p.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm hover:underline">{p.name}</span>
+                      </FriendLink>
+                      <span className={`text-xs ${rsvpColor}`}>{rsvpLabel}</span>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-muted-foreground">No participants yet</p>
+            )}
+          </div>
 
           {/* Subscribers */}
           {subscribers.length > 0 && (
@@ -406,12 +500,17 @@ export default function PlanDetail() {
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Subscribers</h3>
               <div className="flex flex-wrap gap-2">
                 {subscribers.map(p => (
-                  <div key={p.id} className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-2">
-                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                    <FriendLink userId={p.friendUserId}>
-                      <span className="text-sm text-muted-foreground hover:underline">{p.name}</span>
-                    </FriendLink>
-                  </div>
+                  <FriendLink key={p.id} userId={p.friendUserId} className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-2">
+                    <Avatar className="h-6 w-6 ring-1 ring-border">
+                      {(p as any).avatar ? (
+                        <AvatarImage src={(p as any).avatar} alt={p.name} className="object-cover" />
+                      ) : (
+                        <AvatarImage src={getElephantAvatar(p.friendUserId || p.name)} alt={p.name} />
+                      )}
+                      <AvatarFallback className="text-[9px]">{p.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-muted-foreground hover:underline">{p.name}</span>
+                  </FriendLink>
                 ))}
               </div>
             </div>
@@ -425,9 +524,9 @@ export default function PlanDetail() {
             </div>
           )}
 
-          {/* Visibility */}
+          {/* Visibility - compact inline */}
           {plan && isOwner && (
-            <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Visibility</h3>
               <Select
                 value={plan.feedVisibility || 'private'}
@@ -436,19 +535,19 @@ export default function PlanDetail() {
                   toast.success('Visibility updated');
                 }}
               >
-                <SelectTrigger className="w-full max-w-xs">
+                <SelectTrigger className="w-auto h-7 text-xs gap-1.5 px-2.5 border-none bg-muted/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="private">
-                    <span className="flex items-center gap-2"><Lock className="h-3.5 w-3.5" /> Private</span>
+                    <span className="flex items-center gap-1.5"><Lock className="h-3 w-3" /> Private</span>
                   </SelectItem>
                   <SelectItem value="friends">
-                    <span className="flex items-center gap-2"><Globe className="h-3.5 w-3.5" /> All Friends</span>
+                    <span className="flex items-center gap-1.5"><Globe className="h-3 w-3" /> All Friends</span>
                   </SelectItem>
                   {pods.map(pod => (
                     <SelectItem key={pod.id} value={`pod:${pod.id}`}>
-                      <span className="flex items-center gap-2">{pod.emoji} {pod.name}</span>
+                      <span className="flex items-center gap-1.5">{pod.emoji} {pod.name}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
