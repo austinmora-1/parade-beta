@@ -109,7 +109,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
             onSelect={handleDateSelect}
             disabled={(date) => {
               const today = new Date();
-              const maxDate = addWeeks(today, 4);
+              const maxDate = addWeeks(today, 26);
               return date < startOfWeek(today, { weekStartsOn: 1 }) || date > maxDate;
             }}
             initialFocus
@@ -134,7 +134,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
         size="icon"
         className="h-7 w-7"
         onClick={() => setWeekOffset(prev => prev + 1)}
-        disabled={weekOffset >= 4}
+        disabled={weekOffset >= 26}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
@@ -143,9 +143,21 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
 
   const content = (
     <>
-      <div className="flex items-center mb-3">
+      <div className="flex items-center mb-1">
         {weekNav}
       </div>
+      {!isCurrentWeek && (
+        <div className="flex justify-center mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-primary h-6 px-2"
+            onClick={() => setWeekOffset(0)}
+          >
+            ← This week
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
         {weekDays.map((day) => {
@@ -281,18 +293,6 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
           );
         })}
       </div>
-      {!isCurrentWeek && (
-        <div className="flex justify-center mt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-primary h-6 px-2"
-            onClick={() => setWeekOffset(0)}
-          >
-            ← This week
-          </Button>
-        </div>
-      )}
     </>
   );
 
