@@ -160,6 +160,8 @@ export default function PlanDetail() {
   const activityConfig = ACTIVITY_CONFIG[displayPlan.activity as keyof typeof ACTIVITY_CONFIG] || { label: 'Activity', icon: '✨', color: 'activity-misc', vibeType: 'social' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[displayPlan.timeSlot as keyof typeof TIME_SLOT_LABELS];
   const isOwner = plan ? (!plan.userId || plan.userId === userId) : false;
+  const isParticipant = plan ? plan.participants.some(p => p.friendUserId === userId) : false;
+  const canEdit = isOwner || isParticipant;
   const isInvitePreview = !plan && !!invitePreview;
   const isPast = displayPlan ? (displayPlan.endDate || displayPlan.date) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
   const changeRequest = plan ? changeRequests.find(cr => cr.planId === plan.id) : undefined;
@@ -424,7 +426,7 @@ export default function PlanDetail() {
         {/* Actions - only show when user has access to the plan (not invite preview) */}
         {plan && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-            {isOwner && !isPast && (
+            {canEdit && !isPast && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setEditDialogOpen(true)}>
                 <Edit className="h-4 w-4" /> Edit Plan
               </Button>
