@@ -149,15 +149,15 @@ Deno.serve(async (req) => {
       tripMap.get(a.user_id)!.push({ date: a.date, location: a.trip_location.toLowerCase().trim() });
     }
 
-    // Get friend profiles' home addresses and away locations for overlap detection
+    // Get friend profiles' home base locations for overlap detection
     const { data: allProfilesFull } = await admin
       .from('profiles')
       .select('user_id, display_name, home_address, location_status');
 
-    const homeAddressMap = new Map<string, string>();
+    const homeBaseMap = new Map<string, string>();
     for (const p of (allProfilesFull || [])) {
       if (p.home_address) {
-        homeAddressMap.set(p.user_id, p.home_address.toLowerCase().trim());
+        homeBaseMap.set(p.user_id, p.home_address.toLowerCase().trim());
       }
     }
 
@@ -320,13 +320,13 @@ Deno.serve(async (req) => {
 
         // Find friends in that location (home address or also traveling there)
         for (const friend of friends) {
-          const friendHome = homeAddressMap.get(friend.friendUserId);
+          const friendHomeBase = homeBaseMap.get(friend.friendUserId);
           const friendTrips = tripMap.get(friend.friendUserId) || [];
 
           let friendInLocation = false;
 
-          // Check if friend's home is in the trip location
-          if (friendHome && citiesMatch(trip.location, friendHome)) {
+          // Check if friend's home base is in the trip location
+          if (friendHomeBase && citiesMatch(trip.location, friendHomeBase)) {
             friendInLocation = true;
           }
 
