@@ -13,6 +13,7 @@ interface FriendVibe {
   currentVibe: string | null;
   customVibeTags: string[] | null;
   vibeGifUrl: string | null;
+  isAvailableToday: boolean;
 }
 
 const VIBE_LABELS: Record<string, { emoji: string; label: string }> = {
@@ -41,28 +42,43 @@ export function FriendVibeStrip() {
 
     const fetchVibes = async () => {
       const friendUserIds = connectedFriends.map(f => f.friendUserId!);
-      const { data } = await supabase
-        .from('profiles')
-        .select('user_id, current_vibe, custom_vibe_tags, vibe_gif_url')
-        .in('user_id', friendUserIds);
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
 
-      const profileMap = new Map((data || []).map(p => [p.user_id, p]));
+      const [{ data: profileData }, { data: availData }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('user_id, current_vibe, custom_vibe_tags, vibe_gif_url')
+          .in('user_id', friendUserIds),
+        supabase
+          .from('availability')
+          .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+          .in('user_id', friendUserIds)
+          .eq('date', todayStr),
+      ]);
+
+      const profileMap = new Map((profileData || []).map(p => [p.user_id, p]));
+      const availMap = new Map((availData || []).map(a => [a.user_id, a]));
 
       const vibes: FriendVibe[] = connectedFriends.map(friend => {
         const profile = profileMap.get(friend.friendUserId!);
+        const avail = availMap.get(friend.friendUserId!);
+        const hasAnyFreeSlot = avail
+          ? !!(avail.early_morning || avail.late_morning || avail.early_afternoon || avail.late_afternoon || avail.evening || avail.late_night)
+          : false;
         return {
           friend,
           currentVibe: profile?.current_vibe || null,
           customVibeTags: profile?.custom_vibe_tags || null,
           vibeGifUrl: profile?.vibe_gif_url || null,
+          isAvailableToday: hasAnyFreeSlot,
         };
       });
 
-      // Sort: friends with a vibe first
+      // Sort: available first, then those with a vibe
       vibes.sort((a, b) => {
-        const aHas = a.currentVibe ? 1 : 0;
-        const bHas = b.currentVibe ? 1 : 0;
-        return bHas - aHas;
+        const aScore = (a.isAvailableToday ? 2 : 0) + (a.currentVibe ? 1 : 0);
+        const bScore = (b.isAvailableToday ? 2 : 0) + (b.currentVibe ? 1 : 0);
+        return bScore - aScore;
       });
 
       setFriendVibes(vibes);
@@ -75,7 +91,7 @@ export function FriendVibeStrip() {
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-      {friendVibes.map(({ friend, currentVibe, customVibeTags }) => {
+      {friendVibes.map(({ friend, currentVibe, customVibeTags, isAvailableToday }) => {
         const vibeInfo = currentVibe ? VIBE_LABELS[currentVibe] : null;
         const isCustom = currentVibe === 'custom';
         const vibeLabel = isCustom && customVibeTags?.length
@@ -95,19 +111,16 @@ export function FriendVibeStrip() {
               "relative h-12 w-12 rounded-full ring-1 ring-border overflow-hidden",
               currentVibe && "ring-2 ring-primary/40"
             )}>
-              {friend.avatar ? (
-                <img
-                  src={friend.avatar}
-                  alt={friend.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <img
-                  src={getElephantAvatar(friend.name)}
-                  alt={friend.name}
-                  className="h-full w-full object-cover"
-                />
-              )}
+              <img
+                src={friend.avatar || getElephantAvatar(friend.name)}
+                alt={friend.name}
+                className="h-full w-full object-cover"
+              />
+              {/* Availability indicator dot */}
+              <span className={cn(
+                "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
+                isAvailableToday ? "bg-green-500" : "bg-muted-foreground/30"
+              )} />
             </div>
 
             {/* Name */}
