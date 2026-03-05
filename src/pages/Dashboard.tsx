@@ -6,6 +6,7 @@ import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationP
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
+import { SmartNudges } from '@/components/dashboard/SmartNudges';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
@@ -28,6 +29,9 @@ export default function Dashboard() {
 
       {/* Vibe */}
       <VibeSelector />
+
+      {/* Smart Nudges */}
+      <SmartNudges />
 
       {/* Upcoming Plans & Feed */}
       <HomeTabs />
