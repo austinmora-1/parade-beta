@@ -75,50 +75,80 @@ export function VibeSelector() {
         icon={<Sparkles className="h-4 w-4 text-primary" />}
       >
         <div className="flex items-center gap-2">
-          {/* Vibe dropdown */}
-          <Select
-            value={currentVibe?.type || ''}
-            onValueChange={handleVibeSelect}
-          >
-            <SelectTrigger className="flex-1 h-9 text-sm">
-              <SelectValue placeholder="Pick a vibe...">
-                {selectedConfig && (
-                  <span className="flex items-center gap-2">
-                    <span>{selectedConfig.icon}</span>
-                    <span>{selectedConfig.label}</span>
-                    {currentVibe?.type === 'custom' && currentVibe.customTags?.length ? (
-                      <span className="text-muted-foreground">
-                        · #{currentVibe.customTags[0]}
-                        {currentVibe.customTags.length > 1 && ` +${currentVibe.customTags.length - 1}`}
-                      </span>
-                    ) : null}
-                  </span>
-                )}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {vibeTypes.map((type) => {
-                const config = VIBE_CONFIG[type];
-                return (
-                  <SelectItem key={type} value={type}>
+          {showCustomInput ? (
+            <div className="flex-1 flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 h-9">
+              <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
+              <input
+                autoFocus
+                placeholder="type a vibe..."
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCustomSubmit();
+                  if (e.key === 'Escape') {
+                    setShowCustomInput(false);
+                    setCustomText('');
+                  }
+                }}
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+              />
+              <button
+                onClick={() => {
+                  if (customText.trim()) handleCustomSubmit();
+                  else {
+                    setShowCustomInput(false);
+                    setCustomText('');
+                  }
+                }}
+                className="text-xs font-medium text-primary hover:text-primary/80"
+              >
+                {customText.trim() ? 'Add' : '✕'}
+              </button>
+            </div>
+          ) : (
+            <Select
+              value={currentVibe?.type || ''}
+              onValueChange={handleVibeSelect}
+            >
+              <SelectTrigger className="flex-1 h-9 text-sm">
+                <SelectValue placeholder="Pick a vibe...">
+                  {selectedConfig && (
                     <span className="flex items-center gap-2">
-                      <span>{config.icon}</span>
-                      <span>{config.label}</span>
-                      <span className="text-muted-foreground text-xs ml-1">{config.description}</span>
+                      <span>{selectedConfig.icon}</span>
+                      <span>{selectedConfig.label}</span>
+                      {currentVibe?.type === 'custom' && currentVibe.customTags?.length ? (
+                        <span className="text-muted-foreground">
+                          · #{currentVibe.customTags[0]}
+                          {currentVibe.customTags.length > 1 && ` +${currentVibe.customTags.length - 1}`}
+                        </span>
+                      ) : null}
                     </span>
-                  </SelectItem>
-                );
-              })}
-              <SelectItem value="custom">
-                <span className="flex items-center gap-2">
-                  <span>{VIBE_CONFIG.custom.icon}</span>
-                  <span>Custom</span>
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {vibeTypes.map((type) => {
+                  const config = VIBE_CONFIG[type];
+                  return (
+                    <SelectItem key={type} value={type}>
+                      <span className="flex items-center gap-2">
+                        <span>{config.icon}</span>
+                        <span>{config.label}</span>
+                        <span className="text-muted-foreground text-xs ml-1">{config.description}</span>
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+                <SelectItem value="custom">
+                  <span className="flex items-center gap-2">
+                    <span>{VIBE_CONFIG.custom.icon}</span>
+                    <span>Custom</span>
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
 
-          {/* GIF button */}
           <GifPicker onGifSelect={handleGifSelect}>
             <button
               className={cn(
@@ -132,40 +162,6 @@ export function VibeSelector() {
             </button>
           </GifPicker>
         </div>
-
-        {/* Custom input */}
-        <AnimatePresence>
-          {showCustomInput && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="mt-2 overflow-hidden"
-            >
-              <div className="flex items-center gap-2 rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-1.5">
-                <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
-                <input
-                  autoFocus
-                  placeholder="type a vibe..."
-                  value={customText}
-                  onChange={(e) => setCustomText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCustomSubmit();
-                    if (e.key === 'Escape') {
-                      setShowCustomInput(false);
-                      setCustomText('');
-                    }
-                  }}
-                  onBlur={() => {
-                    if (customText.trim()) handleCustomSubmit();
-                    else setShowCustomInput(false);
-                  }}
-                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Current GIF preview */}
         <AnimatePresence>
