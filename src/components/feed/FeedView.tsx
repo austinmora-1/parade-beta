@@ -118,11 +118,12 @@ export function FeedView() {
       });
     });
 
-    // Add plans from the last 7 days and upcoming 7 days
-    const sevenDaysAgo = subDays(new Date(), 7);
+    // Add only past plans (already happened)
+    const now = new Date();
+    const sevenDaysAgo = subDays(now, 7);
     plans.forEach((plan) => {
       const planDate = new Date(plan.date);
-      if (planDate >= sevenDaysAgo) {
+      if (planDate >= sevenDaysAgo && planDate < now) {
         items.push({
           type: 'plan',
           data: plan,
