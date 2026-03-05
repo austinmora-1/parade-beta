@@ -9,7 +9,10 @@ import { useNavigate } from 'react-router-dom';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SignedImage } from '@/components/ui/SignedImage';
-import { X } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 
 interface FriendVibe {
   friend: Friend;
@@ -120,13 +123,80 @@ export function FriendVibeStrip() {
 
 function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: () => void }) {
   const { friend, currentVibe, customVibeTags, vibeGifUrl, isAvailableToday, availableSlots } = data;
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [hangSlot, setHangSlot] = useState<TimeSlot | null>(null);
+  const [hangMessage, setHangMessage] = useState('');
+  const [sending, setSending] = useState(false);
 
   const vibeInfo = currentVibe ? VIBE_LABELS[currentVibe] : null;
   const isCustom = currentVibe === 'custom';
 
+  const handleSlotClick = (slot: TimeSlot) => {
+    if (hangSlot === slot) {
+      setHangSlot(null);
+    } else {
+      setHangSlot(slot);
+    }
+  };
+
+  const handleSendHangRequest = async () => {
+    if (!hangSlot || !user || !friend.friendUserId) return;
+
+    setSending(true);
+    try {
+      const [{ data: friendProfile }, { data: myProfile }] = await Promise.all([
+        supabase.from('profiles').select('share_code').eq('user_id', friend.friendUserId).single(),
+        supabase.from('profiles').select('display_name').eq('user_id', user.id).single(),
+      ]);
+
+      if (!friendProfile?.share_code) {
+        toast.error("Could not find friend's profile");
+        setSending(false);
+        return;
+      }
+
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const todayLabel = 'Today';
+
+      const { error } = await supabase.functions.invoke('send-hang-request', {
+        body: {
+          shareCode: friendProfile.share_code,
+          requesterName: myProfile?.display_name || user.email,
+          requesterEmail: user.email,
+          requesterUserId: user.id,
+          message: hangMessage || undefined,
+          selectedDay: todayStr,
+          selectedDayLabel: todayLabel,
+          selectedSlot: hangSlot,
+          selectedSlotLabel: TIME_SLOT_LABELS[hangSlot]?.label || hangSlot,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Hang request sent to ${friend.name}!`);
+      setHangSlot(null);
+      setHangMessage('');
+      setOpen(false);
+    } catch (err: any) {
+      console.error('Error sending hang request:', err);
+      toast.error(err.message || 'Failed to send hang request');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleOpenChange = (v: boolean) => {
+    setOpen(v);
+    if (!v) {
+      setHangSlot(null);
+      setHangMessage('');
+    }
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button className="flex flex-col items-center gap-1 shrink-0 w-16 group">
           {/* Avatar */}
@@ -211,20 +281,63 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
         <div className="p-3 pt-0 space-y-2">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Available Today</p>
           {availableSlots.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {availableSlots.map(slot => (
-                <span
-                  key={slot}
-                  className="inline-flex items-center gap-1 rounded-full bg-green-500/10 text-green-700 dark:text-green-400 px-2 py-0.5 text-[11px] font-medium"
-                >
-                  {TIME_SLOT_LABELS[slot].time}
-                </span>
-              ))}
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap gap-1">
+                {availableSlots.map(slot => {
+                  const isSelected = hangSlot === slot;
+                  return (
+                    <button
+                      key={slot}
+                      onClick={() => handleSlotClick(slot)}
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-all",
+                        isSelected
+                          ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+                          : "bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20 cursor-pointer"
+                      )}
+                    >
+                      {TIME_SLOT_LABELS[slot].time}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Tap a slot to send a hang request
+              </p>
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">Not available today</p>
           )}
         </div>
+
+        {/* Hang Request Form (when slot selected) */}
+        {hangSlot && (
+          <div className="p-3 pt-0 space-y-2 animate-fade-in">
+            <Textarea
+              placeholder="Add a message (optional)"
+              value={hangMessage}
+              onChange={e => setHangMessage(e.target.value)}
+              className="resize-none text-sm min-h-[40px]"
+              rows={2}
+            />
+            <Button
+              onClick={handleSendHangRequest}
+              disabled={sending}
+              className="w-full gap-2"
+              size="sm"
+            >
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Send Hang Request
+              <span className="text-xs opacity-80">
+                · {TIME_SLOT_LABELS[hangSlot].time}
+              </span>
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
