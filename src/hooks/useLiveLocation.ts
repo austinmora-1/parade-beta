@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { addDays, isAfter, isBefore, startOfDay } from 'date-fns';
+import { addDays, addHours, isAfter, isBefore, startOfDay } from 'date-fns';
 
 export interface LiveLocation {
   user_id: string;
@@ -21,6 +21,16 @@ export function useLiveLocation() {
   const [isLoading, setIsLoading] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const { plans, friends } = usePlannerStore();
+
+  // Check if user has any plan starting within the next 1 hour
+  const hasUpcomingPlanSoon = useMemo(() => {
+    const now = new Date();
+    const oneHourOut = addHours(now, 1);
+    return plans.some(plan => {
+      const planDate = new Date(plan.date);
+      return !isBefore(planDate, now) && !isAfter(planDate, oneHourOut);
+    });
+  }, [plans]);
 
   // Suggest friends from upcoming shared plans (next 2 days)
   const suggestedFriendIds = useMemo(() => {
@@ -165,6 +175,6 @@ export function useLiveLocation() {
 
   return {
     isSharing, isLoading, sharedWith, friendLocations,
-    suggestedFriendIds, startSharing, stopSharing, updateSharedWith,
+    suggestedFriendIds, hasUpcomingPlanSoon, startSharing, stopSharing, updateSharedWith,
   };
 }
