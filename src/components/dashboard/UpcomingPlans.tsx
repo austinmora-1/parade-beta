@@ -7,9 +7,9 @@ import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
-import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { getCurrentTimeInTimezone } from '@/lib/timezone';
 
 function formatTime12(time: string): string {
@@ -163,12 +163,31 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
                       ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
                       : format(plan.date, 'EEE, MMM d'))}
                 </span>
-                {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-                  <span className="flex items-center gap-0.5 text-xs text-muted-foreground" data-stop-card-click onClick={e => e.stopPropagation()}>
-                    <Users className="h-3 w-3 shrink-0" />
-                    <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} compact />
-                  </span>
-                )}
+                {(() => {
+                  const visibleParticipants = plan.participants.filter(p => p.role !== 'subscriber');
+                  if (visibleParticipants.length === 0) return null;
+                  const shown = visibleParticipants.slice(0, 4);
+                  const extra = visibleParticipants.length - shown.length;
+                  return (
+                    <div className="flex items-center -space-x-1.5">
+                      {shown.map((p, i) => (
+                        <Avatar key={p.friendUserId || i} className="h-5 w-5 border-[1.5px] border-card">
+                          {p.avatar ? (
+                            <AvatarImage src={p.avatar} alt={p.name} className="object-cover" />
+                          ) : null}
+                          <AvatarFallback className="text-[8px] bg-muted">
+                            {p.name?.charAt(0)?.toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {extra > 0 && (
+                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-[1.5px] border-card text-[8px] font-medium text-muted-foreground">
+                          +{extra}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 {isInProgress && (
                   <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
                     In Progress
