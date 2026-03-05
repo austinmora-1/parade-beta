@@ -12,8 +12,8 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/availability', icon: Clock, label: 'Availability' },
-  { path: '/chat', icon: MessageCircle, label: 'Chat' },
   { path: '/friends', icon: Users, label: 'Friends' },
+  { path: '/chat', icon: MessageCircle, label: 'Chat' },
 ];
 
 export function MobileNav() {
