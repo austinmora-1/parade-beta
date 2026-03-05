@@ -6,6 +6,7 @@ import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationP
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendsAndPodWidget } from '@/components/dashboard/FriendsAndPodWidget';
 import { FeedView } from '@/components/feed/FeedView';
+import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
@@ -22,6 +23,9 @@ export default function Dashboard() {
     <div className="animate-fade-in space-y-6 md:space-y-8">
       <EllyWalkthrough />
       <PushNotificationPrompt />
+
+      {/* Friend Vibes */}
+      <FriendVibeStrip />
 
       {/* Vibe */}
       <VibeSelector />

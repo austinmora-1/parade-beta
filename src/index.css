@@ -417,3 +417,13 @@
   40%, 60% { transform: translateX(var(--marquee-distance)); }
   90%, 100% { transform: translateX(0); }
 }
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
