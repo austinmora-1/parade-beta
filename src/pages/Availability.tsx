@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const TABS = [
   { id: 'upcoming', label: 'Upcoming' },
-  { id: 'grid', label: 'Grid' },
+  { id: 'grid', label: 'Daily' },
   { id: 'overview', label: 'Weekly' },
 ] as const;
 
