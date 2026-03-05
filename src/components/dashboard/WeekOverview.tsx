@@ -138,26 +138,24 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
+      {!isCurrentWeek && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-primary h-6 px-2"
+          onClick={() => setWeekOffset(0)}
+        >
+          ← This week
+        </Button>
+      )}
     </div>
   );
 
   const content = (
     <>
-      <div className="flex items-center mb-1">
+      <div className="flex items-center mb-2">
         {weekNav}
       </div>
-      {!isCurrentWeek && (
-        <div className="flex justify-center mb-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-primary h-6 px-2"
-            onClick={() => setWeekOffset(0)}
-          >
-            ← This week
-          </Button>
-        </div>
-      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
         {weekDays.map((day) => {
