@@ -2,12 +2,18 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { X, Plus, Sparkles, Zap, ImageIcon } from 'lucide-react';
+import { X, Plus, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
-import { Button } from '@/components/ui/button';
 import { GifPicker } from '@/components/chat/GifPicker';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export function VibeSelector() {
   const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
@@ -17,11 +23,15 @@ export function VibeSelector() {
   const [addMoreText, setAddMoreText] = useState('');
   const [sendVibeOpen, setSendVibeOpen] = useState(false);
 
-  const handleVibeSelect = (type: VibeType) => {
-    if (type === 'custom') {
+  const vibeTypes = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
+
+  const handleVibeSelect = (value: string) => {
+    if (value === 'custom') {
       setShowCustomInput(true);
+    } else if (value === 'gif') {
+      // handled by GifPicker
     } else {
-      setVibe({ type, gifUrl: currentVibe?.gifUrl });
+      setVibe({ type: value as VibeType, gifUrl: currentVibe?.gifUrl });
       setShowCustomInput(false);
     }
   };
@@ -57,202 +67,188 @@ export function VibeSelector() {
     }
   };
 
-  const vibeTypes = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
-
-  const vibeColors: Record<string, string> = {
-    social: 'hsl(var(--vibe-social))',
-    chill: 'hsl(var(--vibe-chill))',
-    athletic: 'hsl(var(--vibe-athletic))',
-    productive: 'hsl(var(--vibe-productive))',
-    custom: 'hsl(var(--primary))',
-  };
+  const selectedConfig = currentVibe?.type ? VIBE_CONFIG[currentVibe.type] : null;
 
   return (
     <>
-    <CollapsibleWidget
-      title="What's your vibe?"
-      icon={<Sparkles className="h-4 w-4 text-primary" />}
-    >
+      <CollapsibleWidget
+        title="What's your vibe?"
+        icon={<Sparkles className="h-4 w-4 text-primary" />}
+      >
+        <div className="flex items-center gap-2">
+          {/* Vibe dropdown */}
+          <Select
+            value={currentVibe?.type || ''}
+            onValueChange={handleVibeSelect}
+          >
+            <SelectTrigger className="flex-1 h-9 text-sm">
+              <SelectValue placeholder="Pick a vibe...">
+                {selectedConfig && (
+                  <span className="flex items-center gap-2">
+                    <span>{selectedConfig.icon}</span>
+                    <span>{selectedConfig.label}</span>
+                    {currentVibe?.type === 'custom' && currentVibe.customTags?.length ? (
+                      <span className="text-muted-foreground">
+                        · #{currentVibe.customTags[0]}
+                        {currentVibe.customTags.length > 1 && ` +${currentVibe.customTags.length - 1}`}
+                      </span>
+                    ) : null}
+                  </span>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {vibeTypes.map((type) => {
+                const config = VIBE_CONFIG[type];
+                return (
+                  <SelectItem key={type} value={type}>
+                    <span className="flex items-center gap-2">
+                      <span>{config.icon}</span>
+                      <span>{config.label}</span>
+                      <span className="text-muted-foreground text-xs ml-1">{config.description}</span>
+                    </span>
+                  </SelectItem>
+                );
+              })}
+              <SelectItem value="custom">
+                <span className="flex items-center gap-2">
+                  <span>{VIBE_CONFIG.custom.icon}</span>
+                  <span>Custom</span>
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
 
-      {/* Vibe pills */}
-      <div className="flex flex-wrap gap-1.5">
-        {vibeTypes.map((type) => {
-          const config = VIBE_CONFIG[type];
-          const isSelected = currentVibe?.type === type;
-
-          return (
-            <motion.button
-              key={type}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleVibeSelect(type)}
+          {/* GIF button */}
+          <GifPicker onGifSelect={handleGifSelect}>
+            <button
               className={cn(
-                "relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200",
-                isSelected
-                  ? "text-primary-foreground shadow-md"
-                  : "bg-muted/60 text-muted-foreground hover:bg-muted"
-              )}
-              style={isSelected ? { backgroundColor: vibeColors[type] } : undefined}
-            >
-              <span className="text-sm">{config.icon}</span>
-              <span>{config.label}</span>
-              {isSelected && (
-                <motion.div
-                  layoutId="vibe-glow"
-                  className="absolute inset-0 rounded-full"
-                  style={{ boxShadow: `0 0 16px ${vibeColors[type]}40` }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                />
-              )}
-            </motion.button>
-          );
-        })}
-
-        {/* Custom vibe button / input */}
-        <AnimatePresence mode="wait">
-          {showCustomInput ? (
-            <motion.div
-              key="input"
-              initial={{ width: 40, opacity: 0.5 }}
-              animate={{ width: 'auto', opacity: 1 }}
-              exit={{ width: 40, opacity: 0 }}
-              className="flex items-center gap-1 rounded-full border-2 border-primary/40 bg-primary/5 px-2.5 py-0.5"
-            >
-              <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
-              <input
-                autoFocus
-                placeholder="type a vibe..."
-                value={customText}
-                onChange={(e) => setCustomText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCustomSubmit();
-                  if (e.key === 'Escape') {
-                    setShowCustomInput(false);
-                    setCustomText('');
-                  }
-                }}
-                onBlur={() => {
-                  if (customText.trim()) handleCustomSubmit();
-                  else setShowCustomInput(false);
-                }}
-                className="w-24 bg-transparent text-xs font-medium outline-none placeholder:text-muted-foreground/60"
-              />
-            </motion.div>
-          ) : (
-            <motion.button
-              key="button"
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleVibeSelect('custom')}
-              className={cn(
-                "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200 border-2 border-dashed",
-                currentVibe?.type === 'custom'
+                "shrink-0 rounded-lg px-3 h-9 text-xs font-medium transition-all duration-200 border",
+                currentVibe?.gifUrl
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
               )}
             >
-              
-              <span>Custom</span>
-            </motion.button>
+              GIF
+            </button>
+          </GifPicker>
+        </div>
+
+        {/* Custom input */}
+        <AnimatePresence>
+          {showCustomInput && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mt-2 overflow-hidden"
+            >
+              <div className="flex items-center gap-2 rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-1.5">
+                <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
+                <input
+                  autoFocus
+                  placeholder="type a vibe..."
+                  value={customText}
+                  onChange={(e) => setCustomText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCustomSubmit();
+                    if (e.key === 'Escape') {
+                      setShowCustomInput(false);
+                      setCustomText('');
+                    }
+                  }}
+                  onBlur={() => {
+                    if (customText.trim()) handleCustomSubmit();
+                    else setShowCustomInput(false);
+                  }}
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                />
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
 
-        {/* GIF button */}
-        <GifPicker onGifSelect={handleGifSelect}>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            className={cn(
-              "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-200 border-2 border-dashed",
-              currentVibe?.gifUrl
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-muted-foreground/30 text-muted-foreground hover:border-primary/50 hover:text-primary"
-            )}
-          >
-            
-            <span>GIF</span>
-          </motion.button>
-        </GifPicker>
-      </div>
-
-      {/* Current GIF preview */}
-      <AnimatePresence>
-        {currentVibe?.gifUrl && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="mt-3 overflow-hidden"
-          >
-            <div className="relative inline-block rounded-xl overflow-hidden border border-border">
-              <img
-                src={currentVibe.gifUrl}
-                alt="Vibe GIF"
-                className="h-24 max-w-full object-cover rounded-xl"
-              />
-              <button
-                onClick={handleRemoveGif}
-                className="absolute top-1 right-1 rounded-full bg-background/80 backdrop-blur-sm p-0.5 hover:bg-background transition-colors"
-              >
-                <X className="h-3.5 w-3.5 text-foreground" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Custom tags */}
-      <AnimatePresence>
-        {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="mt-3 flex flex-wrap items-center gap-1.5 overflow-hidden"
-          >
-            {currentVibe.customTags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-              >
-                #{tag}
+        {/* Current GIF preview */}
+        <AnimatePresence>
+          {currentVibe?.gifUrl && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mt-2 overflow-hidden"
+            >
+              <div className="relative inline-block rounded-xl overflow-hidden border border-border">
+                <img
+                  src={currentVibe.gifUrl}
+                  alt="Vibe GIF"
+                  className="h-24 max-w-full object-cover rounded-xl"
+                />
                 <button
-                  onClick={() => removeCustomVibe(tag)}
-                  className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                  onClick={handleRemoveGif}
+                  className="absolute top-1 right-1 rounded-full bg-background/80 backdrop-blur-sm p-0.5 hover:bg-background transition-colors"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3.5 w-3.5 text-foreground" />
                 </button>
-              </span>
-            ))}
-            {showAddMoreInput ? (
-              <input
-                autoFocus
-                placeholder="vibe"
-                value={addMoreText}
-                onChange={(e) => setAddMoreText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddMoreSubmit();
-                  if (e.key === 'Escape') {
-                    setShowAddMoreInput(false);
-                    setAddMoreText('');
-                  }
-                }}
-                onBlur={() => {
-                  if (addMoreText.trim()) handleAddMoreSubmit();
-                  else setShowAddMoreInput(false);
-                }}
-                className="h-6 w-20 rounded-full bg-muted px-2.5 text-xs outline-none focus:ring-1 focus:ring-primary/50"
-              />
-            ) : (
-              <button
-                onClick={() => setShowAddMoreInput(true)}
-                className="inline-flex items-center justify-center rounded-full bg-muted h-6 w-6 text-muted-foreground hover:bg-muted/80 transition-colors"
-              >
-                <Plus className="h-3 w-3" />
-              </button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </CollapsibleWidget>
-    <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Custom tags */}
+        <AnimatePresence>
+          {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mt-2 flex flex-wrap items-center gap-1.5 overflow-hidden"
+            >
+              {currentVibe.customTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                >
+                  #{tag}
+                  <button
+                    onClick={() => removeCustomVibe(tag)}
+                    className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+              {showAddMoreInput ? (
+                <input
+                  autoFocus
+                  placeholder="vibe"
+                  value={addMoreText}
+                  onChange={(e) => setAddMoreText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddMoreSubmit();
+                    if (e.key === 'Escape') {
+                      setShowAddMoreInput(false);
+                      setAddMoreText('');
+                    }
+                  }}
+                  onBlur={() => {
+                    if (addMoreText.trim()) handleAddMoreSubmit();
+                    else setShowAddMoreInput(false);
+                  }}
+                  className="h-6 w-20 rounded-full bg-muted px-2.5 text-xs outline-none focus:ring-1 focus:ring-primary/50"
+                />
+              ) : (
+                <button
+                  onClick={() => setShowAddMoreInput(true)}
+                  className="inline-flex items-center justify-center rounded-full bg-muted h-6 w-6 text-muted-foreground hover:bg-muted/80 transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CollapsibleWidget>
+      <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
     </>
   );
 }
