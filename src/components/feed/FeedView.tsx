@@ -480,14 +480,6 @@ function PlanFeedCard({
             )}
           </div>
 
-          {/* Location */}
-          {plan.location && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate">{plan.location.name}</span>
-            </div>
-          )}
-
           {/* Date */}
           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
             <CalendarCheck className="h-3 w-3" />
@@ -495,6 +487,14 @@ function PlanFeedCard({
               ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
               : format(plan.date, 'EEE, MMM d')}
           </div>
+
+          {/* Location */}
+          {plan.location && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{plan.location.name}</span>
+            </div>
+          )}
         </div>
       </div>
       </div>
