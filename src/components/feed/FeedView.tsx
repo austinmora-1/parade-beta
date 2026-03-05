@@ -404,11 +404,11 @@ function PlanFeedCard({
       {/* Photo banner */}
       {hasPhotos && (
         <div className={cn(
-          "w-full",
-          photos.length === 1 ? "h-48" : "h-40 grid gap-0.5",
-          photos.length === 2 && "grid-cols-2",
-          photos.length === 3 && "grid-cols-3",
-          photos.length >= 4 && "grid-cols-2 grid-rows-2 h-56"
+          "w-full relative",
+          photos.length === 1 && "h-48",
+          photos.length === 2 && "h-40 grid grid-cols-2 gap-0.5",
+          photos.length === 3 && "h-40 grid grid-cols-3 gap-0.5",
+          photos.length >= 4 && "h-56 grid grid-cols-2 grid-rows-2 gap-0.5"
         )}>
           {photos.slice(0, 4).map((url, i) => (
             <img
@@ -428,7 +428,7 @@ function PlanFeedCard({
       )}
 
       <div className="p-4">
-      <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3">
         {/* Activity icon */}
         <div
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
