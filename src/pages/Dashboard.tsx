@@ -4,7 +4,6 @@ import { Loader2 } from 'lucide-react';
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
-import { FriendsAndPodWidget } from '@/components/dashboard/FriendsAndPodWidget';
 import { FeedView } from '@/components/feed/FeedView';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 
@@ -29,9 +28,6 @@ export default function Dashboard() {
 
       {/* Vibe */}
       <VibeSelector />
-
-      {/* Friends & Pod Combined */}
-      <FriendsAndPodWidget />
 
       {/* Feed */}
       <FeedView />
