@@ -145,7 +145,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
           className="text-xs text-primary h-6 px-2"
           onClick={() => setWeekOffset(0)}
         >
-          ← Back to this week
+          ← This week
         </Button>
       )}
     </div>
