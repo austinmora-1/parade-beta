@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock } from 'lucide-react';
+import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
@@ -63,6 +63,7 @@ export default function PlanDetail() {
   const [suggestDialogOpen, setSuggestDialogOpen] = useState(false);
   const [acceptingInvite, setAcceptingInvite] = useState(false);
   const [inviteAccepted, setInviteAccepted] = useState(false);
+  const [isUpdatingRsvp, setIsUpdatingRsvp] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -167,6 +168,28 @@ export default function PlanDetail() {
   const changeRequest = plan ? changeRequests.find(cr => cr.planId === plan.id) : undefined;
   const participants = (displayPlan.participants || []).filter((p: any) => p.role !== 'subscriber');
   const subscribers = (displayPlan.participants || []).filter((p: any) => p.role === 'subscriber');
+  const myParticipation = plan ? plan.participants.find(p => p.friendUserId === userId) : undefined;
+  const myRsvpStatus = myParticipation?.rsvpStatus || (isOwner ? 'accepted' : undefined);
+
+
+  const handleRsvpChange = async (newStatus: string) => {
+    if (!plan || !userId || isOwner) return;
+    setIsUpdatingRsvp(true);
+    try {
+      const { error } = await supabase
+        .from('plan_participants')
+        .update({ status: newStatus, responded_at: new Date().toISOString() })
+        .eq('plan_id', plan.id)
+        .eq('friend_id', userId);
+      if (error) throw error;
+      toast.success(newStatus === 'accepted' ? "You're going!" : newStatus === 'maybe' ? 'Marked as maybe' : 'Declined');
+      await loadAllData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update RSVP');
+    } finally {
+      setIsUpdatingRsvp(false);
+    }
+  };
 
   const displayTitle = plan ? getPlanDisplayTitle(plan) : displayPlan.title;
 
@@ -430,6 +453,42 @@ export default function PlanDetail() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {/* RSVP buttons for non-owner participants */}
+          {plan && isParticipant && !isOwner && !isPast && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your RSVP</h3>
+              <div className="flex gap-2">
+                <Button
+                  variant={myRsvpStatus === 'accepted' ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={isUpdatingRsvp}
+                  onClick={() => handleRsvpChange('accepted')}
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Going
+                </Button>
+                <Button
+                  variant={myRsvpStatus === 'maybe' ? 'default' : 'outline'}
+                  size="sm"
+                  className={`gap-1.5 ${myRsvpStatus === 'maybe' ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
+                  disabled={isUpdatingRsvp}
+                  onClick={() => handleRsvpChange('maybe')}
+                >
+                  <HelpCircle className="h-4 w-4" /> Maybe
+                </Button>
+                <Button
+                  variant={myRsvpStatus === 'declined' ? 'default' : 'outline'}
+                  size="sm"
+                  className={`gap-1.5 ${myRsvpStatus === 'declined' ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' : ''}`}
+                  disabled={isUpdatingRsvp}
+                  onClick={() => handleRsvpChange('declined')}
+                >
+                  <XCircle className="h-4 w-4" /> Can't Go
+                </Button>
+              </div>
             </div>
           )}
 
