@@ -181,6 +181,21 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
     toast.success('Photo deleted');
   };
 
+  const addPhotoOverlay = (
+    <button
+      onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+      disabled={uploading}
+      className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-white hover:bg-black/70 transition-colors"
+    >
+      {uploading ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <ImagePlus className="h-3.5 w-3.5" />
+      )}
+      Add Photo
+    </button>
+  );
+
   return (
     <div>
       {loading ? (
@@ -190,16 +205,16 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
       ) : photos.length === 0 ? (
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border-b border-border py-10 flex flex-col items-center gap-2 text-muted-foreground hover:bg-muted/30 transition-colors"
+          className="w-full border-b border-border py-12 flex flex-col items-center gap-2 text-muted-foreground hover:bg-muted/30 transition-colors"
         >
           <Camera className="h-8 w-8" />
           <span className="text-sm">Add photos to this plan</span>
         </button>
       ) : photos.length === 1 ? (
-        <div>
+        <div className="relative">
           <button
             onClick={() => setSelectedPhoto(photos[0])}
-            className="relative w-full aspect-[16/9] overflow-hidden bg-muted group"
+            className="relative w-full aspect-[4/3] overflow-hidden bg-muted group"
           >
             <img
               src={getPhotoUrl(photos[0].file_path)}
@@ -208,77 +223,66 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
               loading="lazy"
             />
           </button>
+          {addPhotoOverlay}
         </div>
       ) : photos.length === 2 ? (
-        <div className="grid grid-cols-2 gap-0.5">
-          {photos.map(photo => (
-            <button
-              key={photo.id}
-              onClick={() => setSelectedPhoto(photo)}
-              className="relative aspect-square overflow-hidden bg-muted group"
-            >
-              <img
-                src={getPhotoUrl(photo.file_path)}
-                alt="Plan photo"
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                loading="lazy"
-              />
-            </button>
-          ))}
+        <div className="relative">
+          <div className="grid grid-cols-2 gap-0.5">
+            {photos.map(photo => (
+              <button
+                key={photo.id}
+                onClick={() => setSelectedPhoto(photo)}
+                className="relative aspect-[3/4] overflow-hidden bg-muted group"
+              >
+                <img
+                  src={getPhotoUrl(photo.file_path)}
+                  alt="Plan photo"
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  loading="lazy"
+                />
+              </button>
+            ))}
+          </div>
+          {addPhotoOverlay}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-0.5">
-          {/* First photo spans 2 cols */}
-          <button
-            onClick={() => setSelectedPhoto(photos[0])}
-            className="relative col-span-2 row-span-2 aspect-square overflow-hidden bg-muted group"
-          >
-            <img
-              src={getPhotoUrl(photos[0].file_path)}
-              alt="Plan photo"
-              className="w-full h-full object-cover transition-transform group-hover:scale-105"
-              loading="lazy"
-            />
-          </button>
-          {photos.slice(1, 3).map((photo, i) => (
+        <div className="relative">
+          <div className="grid grid-cols-3 gap-0.5" style={{ gridTemplateRows: 'auto auto' }}>
             <button
-              key={photo.id}
-              onClick={() => setSelectedPhoto(photo)}
-              className="relative aspect-square overflow-hidden bg-muted group"
+              onClick={() => setSelectedPhoto(photos[0])}
+              className="relative col-span-2 row-span-2 overflow-hidden bg-muted group"
+              style={{ aspectRatio: '1' }}
             >
               <img
-                src={getPhotoUrl(photo.file_path)}
+                src={getPhotoUrl(photos[0].file_path)}
                 alt="Plan photo"
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 loading="lazy"
               />
-              {i === 1 && photos.length > 3 && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">+{photos.length - 3}</span>
-                </div>
-              )}
             </button>
-          ))}
+            {photos.slice(1, 3).map((photo, i) => (
+              <button
+                key={photo.id}
+                onClick={() => setSelectedPhoto(photo)}
+                className="relative aspect-square overflow-hidden bg-muted group"
+              >
+                <img
+                  src={getPhotoUrl(photo.file_path)}
+                  alt="Plan photo"
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  loading="lazy"
+                />
+                {i === 1 && photos.length > 3 && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <span className="text-white font-semibold text-lg">+{photos.length - 3}</span>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          {addPhotoOverlay}
         </div>
       )}
-
-      {/* Add Photo button below photos */}
-      <div className="px-5 pt-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 h-7 text-xs"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <ImagePlus className="h-3.5 w-3.5" />
-          )}
-          Add Photo
-        </Button>
-      </div>
 
       <input
         ref={fileInputRef}
