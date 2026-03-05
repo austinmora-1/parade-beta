@@ -605,7 +605,7 @@ export default function PlanDetail() {
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
             {canEdit && !isPast && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setEditDialogOpen(true)}>
-                <Edit className="h-4 w-4" /> Edit Plan
+                <Edit className="h-4 w-4" /> Edit
               </Button>
             )}
 
