@@ -156,21 +156,26 @@ export default function Availability() {
         </div>
       </div>
 
-      {/* Tab dots */}
-      <div className="flex justify-center gap-2">
-        {TABS.map((tab, i) => (
-          <button
-            key={tab.id}
-            onClick={() => goToTab(tab.id)}
-            className={cn(
-              "rounded-full transition-all duration-200",
-              activeIndex === i
-                ? "h-2.5 w-6 bg-primary"
-                : "h-2.5 w-2.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-            )}
-            aria-label={tab.label}
-          />
-        ))}
+      {/* Tab labels + dots */}
+      <div className="flex flex-col items-center gap-1">
+        <h2 className="font-display text-sm font-semibold">
+          {TABS[activeIndex].label}
+        </h2>
+        <div className="flex gap-2">
+          {TABS.map((tab, i) => (
+            <button
+              key={tab.id}
+              onClick={() => goToTab(tab.id)}
+              className={cn(
+                "rounded-full transition-all duration-200",
+                activeIndex === i
+                  ? "h-2.5 w-6 bg-primary"
+                  : "h-2.5 w-2.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+              )}
+              aria-label={tab.label}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Swipeable content */}
