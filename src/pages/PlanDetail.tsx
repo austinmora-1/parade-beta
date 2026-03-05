@@ -78,17 +78,89 @@ export default function PlanDetail() {
 
   const plan = useMemo(() => plans.find(p => p.id === planId), [plans, planId]);
 
+  // Fetch shared plan from DB if not in local store (e.g. friend's public plan from feed)
+  const [sharedPlan, setSharedPlan] = useState<any>(null);
+  const [loadingShared, setLoadingShared] = useState(false);
+
+  useEffect(() => {
+    if (plan || !planId || !user?.id) return;
+    setLoadingShared(true);
+    (async () => {
+      try {
+        const { data: planData } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('id', planId)
+          .single();
+        if (!planData) { setLoadingShared(false); return; }
+
+        // Fetch participants
+        const { data: pData } = await supabase
+          .from('plan_participants')
+          .select('friend_id, status, role')
+          .eq('plan_id', planId);
+
+        // Fetch profiles for owner + participants
+        const allIds = new Set([planData.user_id, ...(pData || []).map((p: any) => p.friend_id)]);
+        const { data: profiles } = await supabase
+          .from('public_profiles')
+          .select('user_id, display_name, avatar_url')
+          .in('user_id', Array.from(allIds));
+        const profileMap: Record<string, { name: string; avatar?: string }> = {};
+        for (const p of (profiles || [])) {
+          if (p.user_id) profileMap[p.user_id] = { name: p.display_name || 'Friend', avatar: p.avatar_url || undefined };
+        }
+
+        const planDate = new Date(planData.date);
+        const endDate = planData.end_date ? new Date(planData.end_date) : undefined;
+        setSharedPlan({
+          id: planData.id,
+          userId: planData.user_id,
+          title: planData.title,
+          activity: planData.activity,
+          date: new Date(planDate.getUTCFullYear(), planDate.getUTCMonth(), planDate.getUTCDate()),
+          endDate: endDate ? new Date(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()) : undefined,
+          timeSlot: planData.time_slot,
+          duration: planData.duration,
+          startTime: planData.start_time || undefined,
+          endTime: planData.end_time || undefined,
+          location: planData.location ? { id: planData.id, name: planData.location, address: '' } : undefined,
+          notes: planData.notes || undefined,
+          status: planData.status,
+          feedVisibility: planData.feed_visibility || 'private',
+          participants: [
+            { id: planData.user_id, name: profileMap[planData.user_id]?.name || 'Someone', avatar: profileMap[planData.user_id]?.avatar, friendUserId: planData.user_id, status: 'connected', role: 'participant' },
+            ...(pData || []).map((pp: any) => ({
+              id: pp.friend_id,
+              name: profileMap[pp.friend_id]?.name || 'Friend',
+              avatar: profileMap[pp.friend_id]?.avatar,
+              friendUserId: pp.friend_id,
+              status: pp.status,
+              role: pp.role || 'participant',
+            })),
+          ],
+        });
+      } catch (err) {
+        console.error('Failed to fetch shared plan:', err);
+      } finally {
+        setLoadingShared(false);
+      }
+    })();
+  }, [plan, planId, user?.id]);
+
   // Inline add friend logic (hooks must be before early returns)
+  const effectivePlan = plan || sharedPlan;
+
   const existingParticipantIds = useMemo(() => {
     const ids = new Set<string>();
-    if (plan) {
-      if (plan.userId) ids.add(plan.userId);
-      for (const p of plan.participants) {
+    if (effectivePlan) {
+      if (effectivePlan.userId) ids.add(effectivePlan.userId);
+      for (const p of effectivePlan.participants) {
         if (p.friendUserId) ids.add(p.friendUserId);
       }
     }
     return ids;
-  }, [plan]);
+  }, [effectivePlan]);
 
   const availableFriends = useMemo(() => {
     return allFriends
@@ -104,10 +176,8 @@ export default function PlanDetail() {
       if (error) throw error;
       toast.success("You've joined the plan!");
       setInviteAccepted(true);
-      // Remove token from URL
       searchParams.delete('invite_token');
       setSearchParams(searchParams, { replace: true });
-      // Reload data so the plan appears in the user's list
       await loadAllData();
     } catch (err: any) {
       if (err.message?.includes('Already a participant')) {
@@ -128,7 +198,7 @@ export default function PlanDetail() {
   const [loadingPreview, setLoadingPreview] = useState(!!inviteToken);
 
   useEffect(() => {
-    if (plan || !inviteToken || inviteAccepted) {
+    if (effectivePlan || !inviteToken || inviteAccepted) {
       setLoadingPreview(false);
       return;
     }
@@ -140,9 +210,9 @@ export default function PlanDetail() {
       setLoadingPreview(false);
     };
     fetchPreview();
-  }, [plan, inviteToken, inviteAccepted]);
+  }, [effectivePlan, inviteToken, inviteAccepted]);
 
-  if (loadingPreview) {
+  if (loadingPreview || loadingShared) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -150,8 +220,8 @@ export default function PlanDetail() {
     );
   }
 
-  // Build a display plan from either the store plan or the invite preview
-  const displayPlan = plan || (invitePreview ? {
+  // Build a display plan from either the store plan, shared plan, or invite preview
+  const displayPlan = effectivePlan || (invitePreview ? {
     id: invitePreview.plan_id,
     title: invitePreview.plan_title,
     activity: invitePreview.plan_activity,
@@ -188,7 +258,7 @@ export default function PlanDetail() {
   const isOwner = plan ? (!plan.userId || plan.userId === userId) : false;
   const isParticipant = plan ? plan.participants.some(p => p.friendUserId === userId) : false;
   const canEdit = isOwner || isParticipant;
-  const isInvitePreview = !plan && !!invitePreview;
+  const isInvitePreview = !effectivePlan && !!invitePreview;
   const isPast = displayPlan ? (displayPlan.endDate || displayPlan.date) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
   const changeRequest = plan ? changeRequests.find(cr => cr.planId === plan.id) : undefined;
   const participants = (displayPlan.participants || []).filter((p: any) => p.role !== 'subscriber');
