@@ -5,10 +5,12 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { ACTIVITY_CONFIG, VIBE_CONFIG, VibeType, TIME_SLOT_LABELS } from '@/types/planner';
+import { ACTIVITY_CONFIG, VIBE_CONFIG, VibeType, TIME_SLOT_LABELS, FeedVisibility } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock, Users, Zap, CalendarCheck, Camera, Globe } from 'lucide-react';
+import { MapPin, Clock, Users, Zap, CalendarCheck, Camera, Globe, Lock, ChevronDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { usePods } from '@/hooks/usePods';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { SignedImage } from '@/components/ui/SignedImage';
@@ -345,6 +347,7 @@ export function FeedView() {
                   plan={item.data as any}
                   onClick={() => navigate(`/plan/${(item.data as any).id}`)}
                   photos={planPhotos[(item.data as any).id] || []}
+                  currentUserId={currentUserId}
                 />
               )}
             </motion.div>
@@ -501,16 +504,38 @@ function PlanFeedCard({
   plan,
   onClick,
   photos,
+  currentUserId,
 }: {
   plan: any;
   onClick: () => void;
   photos: string[];
+  currentUserId: string;
 }) {
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
   const displayTitle = getPlanDisplayTitle(plan);
   const planIsPast = isPast(plan.endDate || plan.date) && !isSameDay(plan.endDate || plan.date, new Date());
   const hasPhotos = photos.length > 0;
+  const isOwner = plan.userId === currentUserId;
+  const { updatePlan } = usePlannerStore();
+  const { pods } = usePods();
+  const [visPopoverOpen, setVisPopoverOpen] = useState(false);
+
+  const currentVisibility = plan.feedVisibility || 'private';
+
+  const visibilityLabel = currentVisibility === 'private'
+    ? { icon: <Lock className="h-3 w-3" />, text: 'Private' }
+    : currentVisibility === 'friends'
+    ? { icon: <Globe className="h-3 w-3" />, text: 'Friends' }
+    : currentVisibility.startsWith('pod:')
+    ? { icon: <Users className="h-3 w-3" />, text: pods.find(p => `pod:${p.id}` === currentVisibility)?.name || 'Pod' }
+    : { icon: <Lock className="h-3 w-3" />, text: 'Private' };
+
+  const handleVisibilityChange = async (value: string) => {
+    await updatePlan(plan.id, { feedVisibility: value as FeedVisibility });
+    plan.feedVisibility = value; // optimistic update on local object
+    setVisPopoverOpen(false);
+  };
 
   return (
     <div
@@ -563,15 +588,6 @@ function PlanFeedCard({
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-semibold truncate">{displayTitle}</span>
             <div className="flex items-center gap-1.5 shrink-0">
-              {plan.feedVisibility && plan.feedVisibility !== 'private' && (
-                <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
-                  {plan.feedVisibility === 'friends' ? (
-                    <><Globe className="h-2.5 w-2.5" /> Friends</>
-                  ) : plan.feedVisibility?.startsWith('pod:') ? (
-                    <><Users className="h-2.5 w-2.5" /> Pod</>
-                  ) : null}
-                </span>
-              )}
               {isSameDay(plan.date, new Date()) && (
                 <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
                   Today
@@ -632,7 +648,45 @@ function PlanFeedCard({
             </div>
           )}
         </div>
-      </div>
+        </div>
+
+        {/* Bottom row: Visibility toggle */}
+        {isOwner && (
+          <div className="mt-2.5 pt-2 border-t border-border/50" onClick={e => e.stopPropagation()}>
+            <Popover open={visPopoverOpen} onOpenChange={setVisPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1.5 rounded-full bg-muted/60 hover:bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors">
+                  {visibilityLabel.icon}
+                  <span>{visibilityLabel.text}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-44 p-1" side="top" align="start" sideOffset={4}>
+                <button
+                  onClick={() => handleVisibilityChange('private')}
+                  className={cn("flex items-center gap-2 w-full rounded-md px-2.5 py-1.5 text-xs hover:bg-muted transition-colors", currentVisibility === 'private' && "bg-muted font-medium")}
+                >
+                  <Lock className="h-3.5 w-3.5" /> Private
+                </button>
+                <button
+                  onClick={() => handleVisibilityChange('friends')}
+                  className={cn("flex items-center gap-2 w-full rounded-md px-2.5 py-1.5 text-xs hover:bg-muted transition-colors", currentVisibility === 'friends' && "bg-muted font-medium")}
+                >
+                  <Globe className="h-3.5 w-3.5" /> All Friends
+                </button>
+                {pods.map(pod => (
+                  <button
+                    key={pod.id}
+                    onClick={() => handleVisibilityChange(`pod:${pod.id}`)}
+                    className={cn("flex items-center gap-2 w-full rounded-md px-2.5 py-1.5 text-xs hover:bg-muted transition-colors", currentVisibility === `pod:${pod.id}` && "bg-muted font-medium")}
+                  >
+                    <span>{pod.emoji}</span> {pod.name}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
       </div>
     </div>
   );
