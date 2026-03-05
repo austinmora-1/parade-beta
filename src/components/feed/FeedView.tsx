@@ -112,10 +112,11 @@ export function FeedView() {
     })();
   }, [user, searchParams]);
 
-  // Fetch friends' public plans (feed_visibility != 'private')
+  // Fetch friends' public plans (feed_visibility != 'private') - only past plans for history
   useEffect(() => {
     if (!user?.id) return;
     const sevenDaysAgo = subDays(new Date(), 7);
+    const now = new Date();
     (async () => {
       // This query will return plans where the user is a friend AND the plan is shared
       // The RLS policies handle the access control
@@ -125,6 +126,7 @@ export function FeedView() {
         .neq('feed_visibility', 'private')
         .neq('user_id', user.id)
         .gte('date', sevenDaysAgo.toISOString())
+        .lt('date', now.toISOString())
         .order('date', { ascending: false })
         .limit(50);
       
@@ -225,16 +227,16 @@ export function FeedView() {
       });
     });
 
-    // Add user's own plans (past, with participants)
+    // Add user's own past plans
     const now = new Date();
     const sevenDaysAgo = subDays(now, 7);
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
     plans.forEach((plan) => {
       const planDate = new Date(plan.date);
-      if (planDate >= sevenDaysAgo) {
-        // Show own plans that are past with participants, OR shared to feed
-        const isPast = planDate < now;
-        const isShared = plan.feedVisibility && plan.feedVisibility !== 'private';
-        if ((isPast && plan.participants && plan.participants.length > 0) || isShared) {
+      if (planDate >= sevenDaysAgo && planDate < todayStart) {
+        // Only show past plans in history
+        if (plan.participants && plan.participants.length > 0) {
           items.push({
             type: 'plan',
             data: plan,
@@ -244,10 +246,10 @@ export function FeedView() {
       }
     });
 
-    // Add friends' public plans
+    // Add friends' past public plans
     const ownPlanIds = new Set(plans.map(p => p.id));
     friendPublicPlans.forEach((plan) => {
-      if (ownPlanIds.has(plan.id)) return; // skip if already in own plans
+      if (ownPlanIds.has(plan.id)) return;
       items.push({
         type: 'plan',
         data: plan,
