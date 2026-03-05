@@ -182,6 +182,7 @@ export function FeedView() {
             location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
             notes: p.notes || undefined,
             status: p.status,
+            feedVisibility: p.feed_visibility || 'private',
             participants: [
               { id: p.user_id, name: ownerProfile?.name || 'Someone', avatar: ownerProfile?.avatar, friendUserId: p.user_id, status: 'connected', role: 'participant' },
               ...pps.map((pp: any) => ({
