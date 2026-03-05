@@ -110,10 +110,10 @@ export function VibeSelector() {
               value={currentVibe?.type || ''}
               onValueChange={handleVibeSelect}
             >
-              <SelectTrigger className="flex-1 h-9 text-sm">
+              <SelectTrigger className="flex-1 h-9 text-sm [&>span]:line-clamp-none">
                 <SelectValue placeholder="Pick a vibe...">
                   {selectedConfig && (
-                    <span className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
                       <span>{selectedConfig.icon}</span>
                       <span>{selectedConfig.label}</span>
                     </span>
