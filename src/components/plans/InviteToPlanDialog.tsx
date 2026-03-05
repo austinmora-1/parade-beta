@@ -144,112 +144,78 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">Invite to Plan</DialogTitle>
-          <DialogDescription>
-            Invite anyone to join "{planTitle}" — even if they don't have an account yet
-          </DialogDescription>
+      <DialogContent className="sm:max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogHeader className="pb-0">
+          <DialogTitle className="font-display text-base">Invite to "{planTitle}"</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Email Invite */}
-          <div className="space-y-3">
-            <Label htmlFor="invite-email" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Invite by Email
-            </Label>
-            <div className="flex gap-2">
+        <div className="space-y-3 pt-2">
+          {/* Email */}
+          <div className="flex gap-1.5">
+            <div className="relative flex-1">
+              <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                id="invite-email"
                 type="email"
                 placeholder="friend@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendEmailInvite()}
+                className="h-8 pl-8 text-sm"
               />
             </div>
             <Button
               onClick={handleSendEmailInvite}
               disabled={!email.trim() || isSending}
-              className="w-full"
+              size="sm"
+              className="h-8 px-3 text-xs shrink-0"
             >
-              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Email Invite'}
+              {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Send'}
             </Button>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or</span>
-            </div>
-          </div>
-
-          {/* SMS Invite */}
-          <div className="space-y-3">
-            <Label htmlFor="invite-phone" className="flex items-center gap-2">
-              <Phone className="h-4 w-4" />
-              Invite by Text Message
-            </Label>
-            <div className="flex gap-2">
+          {/* SMS */}
+          <div className="flex gap-1.5">
+            <div className="relative flex-1">
+              <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                id="invite-phone"
                 type="tel"
                 placeholder="+1 (555) 123-4567"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendSmsInvite()}
+                className="h-8 pl-8 text-sm"
               />
             </div>
             <Button
               onClick={handleSendSmsInvite}
               disabled={!phone.trim() || isSendingSms}
-              className="w-full"
+              size="sm"
+              className="h-8 px-3 text-xs shrink-0"
             >
-              {isSendingSms ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Text Invite'}
+              {isSendingSms ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Text'}
             </Button>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or</span>
-            </div>
-          </div>
-
-          {/* Share Link */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2">
-              <Link2 className="h-4 w-4" />
-              Share Invite Link
-            </Label>
-            {generatedLink ? (
-              <div className="flex gap-2">
-                <Input value={displayLink || ''} readOnly className="bg-muted/50 text-xs" />
-                <Button variant="outline" onClick={handleCopyLink} size="icon">
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={handleGenerateLink}
-                disabled={isGeneratingLink}
-                className="w-full"
-              >
-                {isGeneratingLink ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Link2 className="h-4 w-4 mr-2" />
-                )}
-                Generate Invite Link
+          {/* Link */}
+          {generatedLink ? (
+            <div className="flex gap-1.5">
+              <Input value={displayLink || ''} readOnly className="h-8 bg-muted/50 text-xs flex-1" />
+              <Button variant="outline" onClick={handleCopyLink} size="sm" className="h-8 px-2.5 shrink-0">
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={handleGenerateLink}
+              disabled={isGeneratingLink}
+              size="sm"
+              className="w-full h-8 text-xs gap-1.5"
+            >
+              {isGeneratingLink ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+              Generate Link
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
