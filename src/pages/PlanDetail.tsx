@@ -630,7 +630,7 @@ export default function PlanDetail() {
                 disabled={isCreatingChat}
               >
                 <MessageCircle className="h-4 w-4" />
-                {isCreatingChat ? 'Creating...' : 'Chat with Participants'}
+                {isCreatingChat ? 'Creating...' : 'Chat'}
               </Button>
             )}
 
