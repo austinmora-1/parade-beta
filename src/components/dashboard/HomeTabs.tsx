@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { UpcomingPlans } from './UpcomingPlans';
 import { FeedView } from '@/components/feed/FeedView';
 
-const TABS = ['Upcoming', 'Feed'] as const;
+const TABS = ['Upcoming', 'History'] as const;
 
 export function HomeTabs() {
   const [activeTab, setActiveTab] = useState<number>(0);
