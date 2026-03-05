@@ -295,12 +295,18 @@ function VibeFeedCard({
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Vibe icon */}
+        {/* Sender avatar */}
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg"
+          className="h-10 w-10 shrink-0 rounded-full ring-1 ring-border overflow-hidden"
           style={{ backgroundColor: `${vibeColors[vibe.vibe_type] || vibeColors.social}20` }}
         >
-          {config.icon}
+          {vibe.sender_avatar ? (
+            <img src={vibe.sender_avatar} alt={vibe.sender_name || ''} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-lg">
+              {config.icon}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
