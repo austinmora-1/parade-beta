@@ -212,6 +212,7 @@ export function FriendsAndPodWidget() {
       <CollapsibleWidget
         title="Friends"
         icon={<Users className="h-4 w-4 text-primary" />}
+        defaultOpen={false}
       >
         <div className="flex flex-col items-center justify-center py-6 text-center">
           <div className="mb-3 rounded-full bg-muted p-3">
@@ -248,6 +249,7 @@ export function FriendsAndPodWidget() {
     <CollapsibleWidget
       title="Friends"
       icon={<Users className="h-4 w-4 text-primary" />}
+      defaultOpen={false}
       badge={
         availableCount > 0 ? (
           <span className="rounded-full bg-availability-available/10 px-2 py-0.5 text-xs font-medium text-availability-available">
