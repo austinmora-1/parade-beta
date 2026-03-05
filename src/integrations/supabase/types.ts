@@ -924,6 +924,48 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_nudges: {
+        Row: {
+          acted_on_at: string | null
+          created_at: string
+          dismissed_at: string | null
+          expires_at: string | null
+          friend_user_id: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          nudge_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          acted_on_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          expires_at?: string | null
+          friend_user_id?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          nudge_type: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          acted_on_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          expires_at?: string | null
+          friend_user_id?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          nudge_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vibe_comments: {
         Row: {
           content: string | null

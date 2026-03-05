@@ -75,3 +75,5 @@ verify_jwt = false
 [functions.send-sms-invite]
 verify_jwt = false
 
+[functions.smart-nudges]
+verify_jwt = false
