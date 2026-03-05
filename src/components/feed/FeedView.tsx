@@ -304,41 +304,41 @@ function VibeFeedCard({
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* Header */}
+          {/* Row 1: Name + Timestamp */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-sm font-semibold truncate">{vibe.sender_name}</span>
               <Zap className="h-3 w-3 text-primary shrink-0" />
-              {isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 ? (
-                vibe.custom_tags.slice(0, 2).map((tag) => (
-                  <span key={tag} className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary bg-primary/15">
-                    #{tag}
-                  </span>
-                ))
-              ) : (
-                <span
-                  className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground"
-                  style={{ backgroundColor: vibeColors[vibe.vibe_type] || vibeColors.social }}
-                >
-                  {config.label}
-                </span>
-              )}
             </div>
             <span className="text-[10px] text-muted-foreground shrink-0">
               {formatDistanceToNow(new Date(vibe.created_at), { addSuffix: true })}
             </span>
           </div>
 
-          {/* Tags for non-custom with custom tags */}
-          {!isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {vibe.custom_tags.map(tag => (
-                <span key={tag} className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
+          {/* Row 2: Vibe badge + tags */}
+          <div className="flex flex-wrap items-center gap-1 mt-1.5">
+            {isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 ? (
+              vibe.custom_tags.map((tag) => (
+                <span key={tag} className="rounded-full px-2 py-0.5 text-[10px] font-medium text-primary bg-primary/15">
                   #{tag}
                 </span>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px] font-medium text-primary-foreground"
+                style={{ backgroundColor: vibeColors[vibe.vibe_type] || vibeColors.social }}
+              >
+                {config.label}
+              </span>
+            )}
+            {!isCustom && vibe.custom_tags && vibe.custom_tags.length > 0 && (
+              vibe.custom_tags.map(tag => (
+                <span key={tag} className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                  #{tag}
+                </span>
+              ))
+            )}
+          </div>
 
           {/* Message */}
           {vibe.message && (
