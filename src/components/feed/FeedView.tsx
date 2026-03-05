@@ -8,7 +8,7 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ACTIVITY_CONFIG, VIBE_CONFIG, VibeType, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock, Users, Zap, CalendarCheck, Camera } from 'lucide-react';
+import { MapPin, Clock, Users, Zap, CalendarCheck, Camera, Globe } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { SignedImage } from '@/components/ui/SignedImage';
@@ -557,6 +557,15 @@ function PlanFeedCard({
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-semibold truncate">{displayTitle}</span>
             <div className="flex items-center gap-1.5 shrink-0">
+              {plan.feedVisibility && plan.feedVisibility !== 'private' && (
+                <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground flex items-center gap-0.5">
+                  {plan.feedVisibility === 'friends' ? (
+                    <><Globe className="h-2.5 w-2.5" /> Friends</>
+                  ) : plan.feedVisibility?.startsWith('pod:') ? (
+                    <><Users className="h-2.5 w-2.5" /> Pod</>
+                  ) : null}
+                </span>
+              )}
               {isSameDay(plan.date, new Date()) && (
                 <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
                   Today
