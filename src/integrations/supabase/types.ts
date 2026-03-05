@@ -645,6 +645,7 @@ export type Database = {
           duration: number
           end_date: string | null
           end_time: string | null
+          feed_visibility: string
           id: string
           location: string | null
           notes: string | null
@@ -665,6 +666,7 @@ export type Database = {
           duration?: number
           end_date?: string | null
           end_time?: string | null
+          feed_visibility?: string
           id?: string
           location?: string | null
           notes?: string | null
@@ -685,6 +687,7 @@ export type Database = {
           duration?: number
           end_date?: string | null
           end_time?: string | null
+          feed_visibility?: string
           id?: string
           location?: string | null
           notes?: string | null

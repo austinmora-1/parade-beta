@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Clock, Search, Loader2, AlertTriangle, Eye } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Clock, Search, Loader2, AlertTriangle, Eye, Globe, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
@@ -38,11 +38,13 @@ import {
   TimeSlot, 
   Plan,
   PlanStatus,
+  FeedVisibility,
   getActivitiesByVibe,
   getAllVibes
 } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
+import { usePods } from '@/hooks/usePods';
 import { toast } from 'sonner';
 
 interface PlaceSuggestion {
@@ -83,6 +85,7 @@ interface CreatePlanDialogProps {
 export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, onChangeProposed }: CreatePlanDialogProps) {
   const { addPlan, updatePlan, friends, userId, plans } = usePlannerStore();
   const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
+  const { pods } = usePods();
   
   const [title, setTitle] = useState('');
   const [selectedVibe, setSelectedVibe] = useState<VibeType>('social');
@@ -100,6 +103,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [friendSearch, setFriendSearch] = useState('');
   const [notes, setNotes] = useState('');
   const [planStatus, setPlanStatus] = useState<PlanStatus>('confirmed');
+  const [feedVisibility, setFeedVisibility] = useState<FeedVisibility>('private');
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -210,6 +214,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setSubscriberFriends(matchedSubscriberIds);
       setNotes(editPlan.notes || '');
       setPlanStatus(editPlan.status || 'confirmed');
+      setFeedVisibility(editPlan.feedVisibility || 'private');
     } else if (open && !editPlan) {
       // Reset for new plan
       setTitle('');
@@ -228,6 +233,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setFriendSearch('');
       setNotes('');
       setPlanStatus('confirmed');
+      setFeedVisibility('private');
     }
   }, [open, editPlan, defaultDate]);
 
@@ -357,6 +363,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       participants: allParticipants,
       notes,
       status: planStatus,
+      feedVisibility,
     };
 
     if (editPlan) {
@@ -388,6 +395,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     setFriendSearch('');
     setNotes('');
     setPlanStatus('confirmed');
+    setFeedVisibility('private');
     setParticipantAvailability([]);
   };
 
@@ -861,6 +869,41 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               Checking participant availability...
             </div>
           )}
+
+          {/* Feed Visibility */}
+          <div className="space-y-1">
+            <Label className="text-xs flex items-center gap-1.5">
+              <Eye className="h-3 w-3" />
+              Share to Feed
+            </Label>
+            <Select value={feedVisibility} onValueChange={(v) => setFeedVisibility(v as FeedVisibility)}>
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">
+                  <span className="flex items-center gap-1.5">
+                    <Lock className="h-3 w-3" />
+                    Private — Only me & participants
+                  </span>
+                </SelectItem>
+                <SelectItem value="friends">
+                  <span className="flex items-center gap-1.5">
+                    <Globe className="h-3 w-3" />
+                    All Friends
+                  </span>
+                </SelectItem>
+                {pods.map(pod => (
+                  <SelectItem key={pod.id} value={`pod:${pod.id}`}>
+                    <span className="flex items-center gap-1.5">
+                      <span>{pod.emoji}</span>
+                      {pod.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Notes - smaller */}
           <div className="space-y-1">

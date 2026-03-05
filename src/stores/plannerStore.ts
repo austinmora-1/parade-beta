@@ -358,6 +358,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
           notes: p.notes || undefined,
           status: (p as any).status as PlanStatus || 'confirmed',
+          feedVisibility: (p as any).feed_visibility || 'private',
           participants: pps.map(pp => ({
             id: pp.friend_id,
             name: profilesMap[pp.friend_id] || 'Friend',
@@ -553,6 +554,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         notes: plan.notes,
         status: plan.status || 'confirmed',
         source_timezone: userTimezone,
+        feed_visibility: plan.feedVisibility || 'private',
       } as any)
       .select()
       .single();
@@ -579,6 +581,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       location: data.location ? { id: data.id, name: data.location, address: '' } : undefined,
       notes: data.notes || undefined,
       status: (data as any).status as PlanStatus || 'confirmed',
+      feedVisibility: (data as any).feed_visibility || 'private',
       participants: plan.participants || [],
       createdAt: new Date(data.created_at),
     };
@@ -675,6 +678,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (updates.location !== undefined) dbUpdates.location = updates.location?.name || null;
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
     if (updates.status) dbUpdates.status = updates.status;
+    if (updates.feedVisibility !== undefined) dbUpdates.feed_visibility = updates.feedVisibility;
     
     const { error } = await supabase
       .from('plans')
