@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat, ChevronDown, Clock } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'; // kept for potential future use
 import {
   Collapsible,
   CollapsibleContent,
@@ -126,7 +126,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
-  const [showCustomTime, setShowCustomTime] = useState(false);
+  const [_showCustomTime, _setShowCustomTime] = useState(false); // kept for edit sync
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   
   // Shared plan change request state
@@ -210,7 +210,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       setPlanStatus(editPlan.status || 'confirmed');
       setFeedVisibility(editPlan.feedVisibility || 'private');
       setShowMoreOptions(true); // Show all options when editing
-      setShowCustomTime(!!(editPlan.startTime || editPlan.endTime));
+      // showCustomTime no longer needed in new UI
     } else if (open && !editPlan) {
       resetForm();
       setDate(defaultDate || new Date());
@@ -395,7 +395,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     setRecurrenceWeekOfMonth(1);
     setParticipantAvailability([]);
     setShowMoreOptions(false);
-    setShowCustomTime(false);
+    // showCustomTime removed from new UI
   };
 
   const toggleFriend = (friendId: string) => {
@@ -425,16 +425,14 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const isDateSelected = (d: Date) => format(date, 'yyyy-MM-dd') === format(d, 'yyyy-MM-dd');
 
   // Active time preset
-  const activePreset = TIME_PRESETS.find(p => startTime === p.start && endTime === p.end && timeSlot === p.slot);
+  // activePreset no longer displayed separately
 
   // Count of extras configured
   const extrasCount = [
-    locationName,
-    selectedFriends.length > 0 || subscriberFriends.length > 0,
     notes,
     feedVisibility !== 'private',
     isRecurring,
-    planStatus !== 'confirmed',
+    isMultiDay,
   ].filter(Boolean).length;
 
   return (
@@ -447,160 +445,143 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
         </DialogHeader>
 
         <div className="space-y-3">
-          {/* ── Activity Picker (Primary action) ── */}
-          <div className="space-y-1.5">
-            <Tabs 
-              value={selectedVibe} 
-              onValueChange={(v) => setSelectedVibe(v as VibeType)}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-4 h-8">
-                {getAllVibes().map((vibe) => (
-                  <TabsTrigger key={vibe} value={vibe} className="gap-1 text-xs py-1 px-1">
-                    <span>{VIBE_CONFIG[vibe].icon}</span>
-                    <span className="hidden sm:inline">{VIBE_CONFIG[vibe].label}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-
-            <div className="grid grid-cols-4 gap-1">
-              {vibeActivities.map((type) => {
-                const config = ACTIVITY_CONFIG[type];
-                return (
-                  <button
-                    key={type}
-                    onClick={() => setActivity(type)}
-                    className={cn(
-                      "flex flex-col items-center justify-center gap-0.5 rounded-lg border p-1.5 transition-all",
-                      activity === type
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                        : "border-transparent bg-muted/50 hover:bg-muted"
-                    )}
-                  >
-                    <ActivityIcon config={config} size={20} />
-                    <span className="text-[9px] font-medium leading-tight text-center line-clamp-1">{config.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Title (with auto-fill hint) ── */}
+          {/* ── Title ── */}
           <Input
             placeholder={`${getAutoTitle()} (or type a custom title)`}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="h-9 text-sm"
+            className="h-10 text-sm"
           />
 
-          {/* ── Date Quick Pick ── */}
+          {/* ── Activity Dropdown ── */}
+          <div className="space-y-1">
+            <Label className="text-xs">Activity</Label>
+            <Select
+              value={activity}
+              onValueChange={(v) => {
+                setActivity(v);
+                const config = ACTIVITY_CONFIG[v as ActivityType];
+                if (config) setSelectedVibe(config.vibeType);
+              }}
+            >
+              <SelectTrigger className="h-10 text-sm">
+                <SelectValue>
+                  {(() => {
+                    const config = ACTIVITY_CONFIG[activity as ActivityType];
+                    if (!config) return activity;
+                    return (
+                      <span className="flex items-center gap-2">
+                        <ActivityIcon config={config} size={16} />
+                        {config.label}
+                      </span>
+                    );
+                  })()}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="max-h-64">
+                {getAllVibes().map((vibe) => {
+                  const vibeConfig = VIBE_CONFIG[vibe];
+                  const activities = getActivitiesByVibe(vibe);
+                  return (
+                    <div key={vibe}>
+                      <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <span>{vibeConfig.icon}</span>
+                        {vibeConfig.label}
+                      </div>
+                      {activities.map((type) => {
+                        const config = ACTIVITY_CONFIG[type];
+                        return (
+                          <SelectItem key={type} value={type} className="text-sm">
+                            <span className="flex items-center gap-2">
+                              <ActivityIcon config={config} size={14} />
+                              {config.label}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* ── Date (Calendar Popover) ── */}
           {!isParticipantEditor && (
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              {[today, tomorrow, dayAfter].map((d) => (
-                <button
-                  key={d.toISOString()}
-                  onClick={() => {
-                    setDate(d);
-                    if (endDate && d > endDate) setEndDate(undefined);
+          <div className="space-y-1">
+            <Label className="text-xs">Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-10 text-sm")}>
+                  <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                  {isToday(date) ? 'Today' : isTomorrow(date) ? 'Tomorrow' : format(date, 'EEE, MMM d, yyyy')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => {
+                    if (d) {
+                      setDate(d);
+                      if (endDate && d > endDate) setEndDate(undefined);
+                    }
                   }}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-medium transition-all border",
-                    isDateSelected(d)
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {formatDateChip(d)}
-                </button>
-              ))}
-              <Popover>
-                <PopoverTrigger asChild>
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          )}
+
+          {/* ── Time: Presets + Start/End pickers ── */}
+          {!isMultiDay && !isParticipantEditor && (
+          <div className="space-y-2">
+            <Label className="text-xs">Time</Label>
+            {/* Quick presets */}
+            <div className="flex flex-wrap gap-1.5">
+              {TIME_PRESETS.map((preset) => {
+                const isActive = startTime === preset.start && endTime === preset.end && timeSlot === preset.slot;
+                return (
                   <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      setTimeSlot(preset.slot);
+                      setStartTime(preset.start);
+                      setEndTime(preset.end);
+                      setDuration(preset.dur);
+                    }}
                     className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium transition-all border flex items-center gap-1",
-                      !isDateSelected(today) && !isDateSelected(tomorrow) && !isDateSelected(dayAfter)
+                      "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all border",
+                      isActive
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+                        : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    <CalendarIcon className="h-3 w-3" />
-                    {!isDateSelected(today) && !isDateSelected(tomorrow) && !isDateSelected(dayAfter)
-                      ? format(date, 'MMM d')
-                      : 'Other'}
+                    {preset.label}
                   </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(d) => {
-                      if (d) {
-                        setDate(d);
-                        if (endDate && d > endDate) setEndDate(undefined);
-                      }
-                    }}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+                );
+              })}
             </div>
-          </div>
-          )}
-
-          {/* ── Time Presets (single tap) ── */}
-          {!isMultiDay && !isParticipantEditor && (
-          <div className="flex flex-wrap gap-1.5">
-            {TIME_PRESETS.map((preset) => {
-              const isActive = startTime === preset.start && endTime === preset.end && timeSlot === preset.slot;
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => {
-                    setTimeSlot(preset.slot);
-                    setStartTime(preset.start);
-                    setEndTime(preset.end);
-                    setDuration(preset.dur);
-                    setShowCustomTime(false);
-                  }}
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all border",
-                    isActive
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              onClick={() => setShowCustomTime(!showCustomTime)}
-              className={cn(
-                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all border flex items-center gap-1",
-                showCustomTime && !activePreset
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <Clock className="h-3 w-3" />
-              Custom
-            </button>
-          </div>
-          )}
-
-          {/* ── Custom Time (expandable) ── */}
-          {showCustomTime && !isMultiDay && !isParticipantEditor && (
-            <div className="grid grid-cols-3 gap-2 rounded-lg border border-border bg-muted/30 p-2">
+            {/* Start / End time selects */}
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-[10px]">Start</Label>
-                <Select value={startTime} onValueChange={setStartTime}>
-                  <SelectTrigger className="h-8 text-xs px-2">
-                    <SelectValue placeholder="Start" />
+                <Label className="text-[10px] text-muted-foreground">Start</Label>
+                <Select value={startTime} onValueChange={(v) => {
+                  setStartTime(v);
+                  // Auto-set time slot based on hour
+                  const hour = parseInt(v.split(':')[0]);
+                  if (hour < 9) setTimeSlot('early-morning');
+                  else if (hour < 12) setTimeSlot('late-morning');
+                  else if (hour < 15) setTimeSlot('early-afternoon');
+                  else if (hour < 18) setTimeSlot('late-afternoon');
+                  else if (hour < 22) setTimeSlot('evening');
+                  else setTimeSlot('late-night');
+                }}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Start time" />
                   </SelectTrigger>
                   <SelectContent className="max-h-48">
                     {generateTimeOptions().map((t) => (
@@ -610,10 +591,10 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px]">End</Label>
+                <Label className="text-[10px] text-muted-foreground">End</Label>
                 <Select value={endTime} onValueChange={setEndTime}>
-                  <SelectTrigger className="h-8 text-xs px-2">
-                    <SelectValue placeholder="End" />
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="End time" />
                   </SelectTrigger>
                   <SelectContent className="max-h-48">
                     {generateTimeOptions().map((t) => (
@@ -622,22 +603,44 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <Label className="text-[10px]">Duration</Label>
-                <Select value={duration} onValueChange={setDuration}>
-                  <SelectTrigger className="h-8 text-xs px-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30" className="text-xs">30m</SelectItem>
-                    <SelectItem value="60" className="text-xs">1h</SelectItem>
-                    <SelectItem value="90" className="text-xs">1.5h</SelectItem>
-                    <SelectItem value="120" className="text-xs">2h</SelectItem>
-                    <SelectItem value="180" className="text-xs">3h</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+          </div>
+          )}
+
+          {/* ── Status ── */}
+          {!isParticipantEditor && (
+          <div className="space-y-1">
+            <Label className="text-xs">Status</Label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPlanStatus('confirmed')}
+                className={cn(
+                  "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
+                  planStatus === 'confirmed'
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+                )}
+              >
+                ✅ Confirmed
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanStatus('tentative')}
+                className={cn(
+                  "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
+                  planStatus === 'tentative'
+                    ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+                )}
+              >
+                🤔 Tentative
+              </button>
+            </div>
+            {planStatus === 'tentative' && (
+              <p className="text-[10px] text-muted-foreground">Tentative plans won't block your availability</p>
+            )}
+          </div>
           )}
 
           {/* Info banner for participant editors */}
@@ -646,6 +649,169 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               ✏️ You can edit the title, activity, location, notes, and visibility. To change the date or time, use the change request flow.
             </div>
           )}
+
+          {/* ── Location (Optional) ── */}
+          <div className="space-y-1">
+            <Label htmlFor="location" className="text-xs flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              Location
+              <span className="text-muted-foreground font-normal">(Optional)</span>
+            </Label>
+            <div className="relative">
+              <Input
+                id="location"
+                placeholder="Search for a place..."
+                value={locationName}
+                onChange={(e) => handleLocationChange(e.target.value)}
+                onFocus={() => locationSuggestions.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                className="h-9 pr-8 text-sm"
+              />
+              {isSearchingLocation ? (
+                <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+              ) : (
+                <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              )}
+              {showSuggestions && locationSuggestions.length > 0 && (
+                <div className="absolute z-50 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                  {locationSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => selectLocation(suggestion)}
+                      className="flex w-full items-start gap-2 px-2 py-1.5 text-left text-xs hover:bg-muted transition-colors"
+                    >
+                      <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span className="line-clamp-1">{suggestion.display_name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Friends (Optional) ── */}
+          {!isParticipantEditor && (() => {
+            const connectedFriends = friends.filter((f) => f.status === 'connected');
+            if (connectedFriends.length === 0) return null;
+
+            const friendPlanCounts = new Map<string, number>();
+            for (const plan of plans) {
+              for (const p of plan.participants) {
+                const matchedFriend = connectedFriends.find(f => f.friendUserId === p.friendUserId || f.id === p.id);
+                if (matchedFriend) {
+                  friendPlanCounts.set(matchedFriend.id, (friendPlanCounts.get(matchedFriend.id) || 0) + 1);
+                }
+              }
+            }
+
+            const suggestedFriends = [...connectedFriends]
+              .sort((a, b) => (friendPlanCounts.get(b.id) || 0) - (friendPlanCounts.get(a.id) || 0))
+              .slice(0, 5);
+
+            const searchLower = friendSearch.toLowerCase();
+            const filteredFriends = searchLower
+              ? connectedFriends.filter(f => f.name.toLowerCase().includes(searchLower))
+              : [];
+
+            const selectedConnected = connectedFriends.filter(f => selectedFriends.includes(f.id) || subscriberFriends.includes(f.id));
+
+            return (
+              <div className="space-y-2">
+                <Label className="text-xs flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  Friends
+                  <span className="text-muted-foreground font-normal">(Optional)</span>
+                </Label>
+
+                {selectedConnected.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedConnected.map((friend) => {
+                      const isParticipant = selectedFriends.includes(friend.id);
+                      const isSubscriber = subscriberFriends.includes(friend.id);
+                      return (
+                        <button
+                          key={friend.id}
+                          onClick={() => toggleFriend(friend.id)}
+                          className={cn(
+                            "rounded-full px-2.5 py-1 text-xs font-medium transition-all flex items-center gap-1",
+                            isParticipant && "bg-primary text-primary-foreground",
+                            isSubscriber && "bg-accent text-accent-foreground border border-border",
+                          )}
+                        >
+                          {isSubscriber && <Eye className="h-3 w-3" />}
+                          {friend.name}
+                          <span className="ml-0.5 opacity-60">×</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="relative">
+                  <Input
+                    placeholder="Search friends..."
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    className="h-8 text-xs pl-7"
+                  />
+                  <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                </div>
+
+                {friendSearch && (
+                  <div className="max-h-28 overflow-y-auto rounded-lg border border-border bg-popover">
+                    {filteredFriends.length === 0 ? (
+                      <p className="px-2.5 py-2 text-xs text-muted-foreground">No friends found</p>
+                    ) : (
+                      filteredFriends.map((friend) => {
+                        const isParticipant = selectedFriends.includes(friend.id);
+                        const isSubscriber = subscriberFriends.includes(friend.id);
+                        const isSelected = isParticipant || isSubscriber;
+                        return (
+                          <button
+                            key={friend.id}
+                            onClick={() => { toggleFriend(friend.id); setFriendSearch(''); }}
+                            className={cn(
+                              "flex w-full items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-muted transition-colors",
+                              isSelected && "opacity-50"
+                            )}
+                          >
+                            <Users className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span>{friend.name}</span>
+                            {isParticipant && <span className="ml-auto text-[10px] text-primary">Invited</span>}
+                            {isSubscriber && <span className="ml-auto text-[10px] text-accent-foreground">Subscribed</span>}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+
+                {!friendSearch && suggestedFriends.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-muted-foreground font-medium">Suggested</span>
+                    <div className="flex flex-wrap gap-1">
+                      {suggestedFriends
+                        .filter(f => !selectedFriends.includes(f.id) && !subscriberFriends.includes(f.id))
+                        .map((friend) => (
+                          <button
+                            key={friend.id}
+                            onClick={() => toggleFriend(friend.id)}
+                            className="rounded-full px-2.5 py-1 text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-all"
+                          >
+                            + {friend.name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-muted-foreground">
+                  Tap to invite · Tap again: subscribe (view only) · Again: remove
+                </p>
+              </div>
+            );
+          })()}
 
           {/* ── More Options (Collapsible) ── */}
           <Collapsible open={showMoreOptions} onOpenChange={setShowMoreOptions}>
@@ -659,186 +825,6 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showMoreOptions && "rotate-180")} />
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
-              {/* Location */}
-              <div className="space-y-1">
-                <Label htmlFor="location" className="text-xs flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  Location
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="location"
-                    placeholder="Search for a place..."
-                    value={locationName}
-                    onChange={(e) => handleLocationChange(e.target.value)}
-                    onFocus={() => locationSuggestions.length > 0 && setShowSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    className="h-9 pr-8 text-sm"
-                  />
-                  {isSearchingLocation ? (
-                    <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
-                  ) : (
-                    <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  )}
-                  {showSuggestions && locationSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
-                      {locationSuggestions.map((suggestion, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => selectLocation(suggestion)}
-                          className="flex w-full items-start gap-2 px-2 py-1.5 text-left text-xs hover:bg-muted transition-colors"
-                        >
-                          <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
-                          <span className="line-clamp-1">{suggestion.display_name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Friends */}
-              {!isParticipantEditor && (() => {
-                const connectedFriends = friends.filter((f) => f.status === 'connected');
-                if (connectedFriends.length === 0) return null;
-
-                const friendPlanCounts = new Map<string, number>();
-                for (const plan of plans) {
-                  for (const p of plan.participants) {
-                    const matchedFriend = connectedFriends.find(f => f.friendUserId === p.friendUserId || f.id === p.id);
-                    if (matchedFriend) {
-                      friendPlanCounts.set(matchedFriend.id, (friendPlanCounts.get(matchedFriend.id) || 0) + 1);
-                    }
-                  }
-                }
-
-                const suggestedFriends = [...connectedFriends]
-                  .sort((a, b) => (friendPlanCounts.get(b.id) || 0) - (friendPlanCounts.get(a.id) || 0))
-                  .slice(0, 5);
-
-                const searchLower = friendSearch.toLowerCase();
-                const filteredFriends = searchLower
-                  ? connectedFriends.filter(f => f.name.toLowerCase().includes(searchLower))
-                  : [];
-
-                const selectedConnected = connectedFriends.filter(f => selectedFriends.includes(f.id) || subscriberFriends.includes(f.id));
-
-                return (
-                  <div className="space-y-2">
-                    <Label className="text-xs flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      Friends
-                    </Label>
-
-                    {selectedConnected.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {selectedConnected.map((friend) => {
-                          const isParticipant = selectedFriends.includes(friend.id);
-                          const isSubscriber = subscriberFriends.includes(friend.id);
-                          return (
-                            <button
-                              key={friend.id}
-                              onClick={() => toggleFriend(friend.id)}
-                              className={cn(
-                                "rounded-full px-2.5 py-1 text-xs font-medium transition-all flex items-center gap-1",
-                                isParticipant && "bg-primary text-primary-foreground",
-                                isSubscriber && "bg-accent text-accent-foreground border border-border",
-                              )}
-                            >
-                              {isSubscriber && <Eye className="h-3 w-3" />}
-                              {friend.name}
-                              <span className="ml-0.5 opacity-60">×</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <div className="relative">
-                      <Input
-                        placeholder="Search friends..."
-                        value={friendSearch}
-                        onChange={(e) => setFriendSearch(e.target.value)}
-                        className="h-8 text-xs pl-7"
-                      />
-                      <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                    </div>
-
-                    {friendSearch && (
-                      <div className="max-h-28 overflow-y-auto rounded-lg border border-border bg-popover">
-                        {filteredFriends.length === 0 ? (
-                          <p className="px-2.5 py-2 text-xs text-muted-foreground">No friends found</p>
-                        ) : (
-                          filteredFriends.map((friend) => {
-                            const isParticipant = selectedFriends.includes(friend.id);
-                            const isSubscriber = subscriberFriends.includes(friend.id);
-                            const isSelected = isParticipant || isSubscriber;
-                            return (
-                              <button
-                                key={friend.id}
-                                onClick={() => { toggleFriend(friend.id); setFriendSearch(''); }}
-                                className={cn(
-                                  "flex w-full items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-muted transition-colors",
-                                  isSelected && "opacity-50"
-                                )}
-                              >
-                                <Users className="h-3 w-3 shrink-0 text-muted-foreground" />
-                                <span>{friend.name}</span>
-                                {isParticipant && <span className="ml-auto text-[10px] text-primary">Invited</span>}
-                                {isSubscriber && <span className="ml-auto text-[10px] text-accent-foreground">Subscribed</span>}
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    )}
-
-                    {!friendSearch && suggestedFriends.length > 0 && (
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-muted-foreground font-medium">Suggested</span>
-                        <div className="flex flex-wrap gap-1">
-                          {suggestedFriends
-                            .filter(f => !selectedFriends.includes(f.id) && !subscriberFriends.includes(f.id))
-                            .map((friend) => (
-                              <button
-                                key={friend.id}
-                                onClick={() => toggleFriend(friend.id)}
-                                className="rounded-full px-2.5 py-1 text-xs font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-all"
-                              >
-                                + {friend.name}
-                              </button>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="text-[10px] text-muted-foreground">
-                      Tap to invite · Tap again: subscribe (view only) · Again: remove
-                    </p>
-                  </div>
-                );
-              })()}
-
-              {/* Status */}
-              {!isParticipantEditor && (
-              <div className="space-y-1">
-                <Label className="text-xs">Status</Label>
-                <Select value={planStatus} onValueChange={(v) => setPlanStatus(v as PlanStatus)}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="confirmed" className="text-xs">✅ Confirmed</SelectItem>
-                    <SelectItem value="tentative" className="text-xs">🤔 Tentative</SelectItem>
-                  </SelectContent>
-                </Select>
-                {planStatus === 'tentative' && (
-                  <p className="text-[10px] text-muted-foreground">Tentative plans won't block your availability</p>
-                )}
-              </div>
-              )}
-
               {/* Feed Visibility */}
               <div className="space-y-1">
                 <Label className="text-xs flex items-center gap-1.5">
