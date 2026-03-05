@@ -228,12 +228,17 @@ export function FeedView() {
     const sevenDaysAgo = subDays(now, 7);
     plans.forEach((plan) => {
       const planDate = new Date(plan.date);
-      if (planDate >= sevenDaysAgo && planDate < now && plan.participants && plan.participants.length > 0) {
-        items.push({
-          type: 'plan',
-          data: plan,
-          timestamp: planDate,
-        });
+      if (planDate >= sevenDaysAgo) {
+        // Show own plans that are past with participants, OR shared to feed
+        const isPast = planDate < now;
+        const isShared = plan.feedVisibility && plan.feedVisibility !== 'private';
+        if ((isPast && plan.participants && plan.participants.length > 0) || isShared) {
+          items.push({
+            type: 'plan',
+            data: plan,
+            timestamp: planDate,
+          });
+        }
       }
     });
 
