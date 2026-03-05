@@ -107,15 +107,17 @@ export function FriendVibeStrip() {
             className="flex flex-col items-center gap-1 shrink-0 w-16 group"
           >
             {/* Avatar */}
-            <div className={cn(
-              "relative h-12 w-12 rounded-full ring-1 ring-border overflow-hidden",
-              currentVibe && "ring-2 ring-primary/40"
-            )}>
-              <img
-                src={friend.avatar || getElephantAvatar(friend.name)}
-                alt={friend.name}
-                className="h-full w-full object-cover"
-              />
+            <div className="relative h-12 w-12">
+              <div className={cn(
+                "h-12 w-12 rounded-full ring-1 ring-border overflow-hidden",
+                currentVibe && "ring-2 ring-primary/40"
+              )}>
+                <img
+                  src={friend.avatar || getElephantAvatar(friend.name)}
+                  alt={friend.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
               {/* Availability indicator dot */}
               <span className={cn(
                 "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
