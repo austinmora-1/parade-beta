@@ -116,12 +116,6 @@ export function VibeSelector() {
                     <span className="flex items-center gap-2">
                       <span>{selectedConfig.icon}</span>
                       <span>{selectedConfig.label}</span>
-                      {currentVibe?.type === 'custom' && currentVibe.customTags?.length ? (
-                        <span className="text-muted-foreground">
-                          · #{currentVibe.customTags[0]}
-                          {currentVibe.customTags.length > 1 && ` +${currentVibe.customTags.length - 1}`}
-                        </span>
-                      ) : null}
                     </span>
                   )}
                 </SelectValue>
