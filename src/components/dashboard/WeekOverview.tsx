@@ -95,7 +95,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
   );
 
   const weekNav = (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0">
       <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -120,7 +120,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7"
+        className="h-6 w-6"
         onClick={() => setWeekOffset(prev => prev - 1)}
         disabled={weekOffset <= 0}
       >
@@ -132,7 +132,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7"
+        className="h-6 w-6"
         onClick={() => setWeekOffset(prev => prev + 1)}
         disabled={weekOffset >= 26}
       >
