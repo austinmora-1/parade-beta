@@ -246,17 +246,17 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       
       // Load plan participants (third wave - depends on merged plan list)
       const planIds = (plansData || []).map(p => p.id);
-      let participantsMap: Record<string, { friend_id: string; status: string; role: string }[]> = {};
+      let participantsMap: Record<string, { friend_id: string; status: string; role: string; responded_at: string | null }[]> = {};
       
       if (planIds.length > 0) {
         const { data: participantsData } = await supabase
           .from('plan_participants')
-          .select('plan_id, friend_id, status, role')
+          .select('plan_id, friend_id, status, role, responded_at')
           .in('plan_id', planIds);
         
         for (const pp of (participantsData || [])) {
           if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
-          participantsMap[pp.plan_id].push({ friend_id: pp.friend_id, status: pp.status, role: pp.role });
+          participantsMap[pp.plan_id].push({ friend_id: pp.friend_id, status: pp.status, role: pp.role, responded_at: pp.responded_at });
         }
       }
       
@@ -303,7 +303,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         const rawPps = allPps.filter(pp => pp.friend_id !== userId);
         const pps = [...rawPps];
         if (p.user_id !== userId && !pps.some(pp => pp.friend_id === p.user_id)) {
-          pps.push({ friend_id: p.user_id, status: 'accepted', role: 'participant' });
+          pps.push({ friend_id: p.user_id, status: 'accepted', role: 'participant', responded_at: null });
         }
         const planDateRaw = new Date(p.date);
         const planYear = planDateRaw.getUTCFullYear();
@@ -366,6 +366,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             friendUserId: pp.friend_id,
             status: 'connected' as const,
             role: (pp.role as 'participant' | 'subscriber') || 'participant',
+            rsvpStatus: pp.status as string || 'invited',
+            respondedAt: pp.responded_at ? new Date(pp.responded_at) : undefined,
           })),
           myRole,
           recurringPlanId: (p as any).recurring_plan_id || undefined,
@@ -741,7 +743,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       // Non-owner: update participation status to 'declined'
       const { error } = await supabase
         .from('plan_participants')
-        .update({ status: 'declined' })
+        .update({ status: 'declined', responded_at: new Date().toISOString() })
         .eq('plan_id', id)
         .eq('friend_id', userId!);
       

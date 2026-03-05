@@ -67,6 +67,8 @@ export interface Friend {
   isIncoming?: boolean;
   role?: ParticipantRole;
   isPodMember?: boolean;
+  rsvpStatus?: string; // 'accepted' | 'declined' | 'maybe' | 'invited'
+  respondedAt?: Date;
 }
 
 export interface Plan {

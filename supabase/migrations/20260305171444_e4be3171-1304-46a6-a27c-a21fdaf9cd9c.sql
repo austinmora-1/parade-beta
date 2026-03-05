@@ -1,0 +1,1 @@
+ALTER TABLE public.plan_participants ADD COLUMN responded_at timestamptz;
