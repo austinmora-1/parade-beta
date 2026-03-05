@@ -404,7 +404,7 @@ function PlanFeedCard({
       {/* Photo banner */}
       {hasPhotos && (
         <div className={cn(
-          "w-full relative",
+          "w-full relative overflow-hidden",
           photos.length === 1 && "h-48",
           photos.length === 2 && "h-40 grid grid-cols-2 gap-0.5",
           photos.length === 3 && "h-40 grid grid-cols-3 gap-0.5",
@@ -415,7 +415,7 @@ function PlanFeedCard({
               key={i}
               src={url}
               alt="Plan photo"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover min-h-0"
             />
           ))}
           {photos.length > 4 && (
