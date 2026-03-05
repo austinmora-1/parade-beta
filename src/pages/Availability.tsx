@@ -16,8 +16,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const TABS = [
   { id: 'upcoming', label: 'Upcoming' },
-  { id: 'overview', label: 'Overview' },
   { id: 'grid', label: 'Grid' },
+  { id: 'overview', label: 'Overview' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
