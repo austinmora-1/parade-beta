@@ -270,14 +270,18 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       }
       
       let profilesMap: Record<string, string> = {};
+      let profileAvatarsMap: Record<string, string | null> = {};
       if (participantUserIds.size > 0) {
         const { data: profiles } = await supabase
           .from('public_profiles')
-          .select('user_id, display_name')
+          .select('user_id, display_name, avatar_url')
           .in('user_id', Array.from(participantUserIds));
         
         for (const p of (profiles || [])) {
-          if (p.user_id) profilesMap[p.user_id] = p.display_name || 'Friend';
+          if (p.user_id) {
+            profilesMap[p.user_id] = p.display_name || 'Friend';
+            profileAvatarsMap[p.user_id] = p.avatar_url;
+          }
         }
       }
       
@@ -357,6 +361,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           participants: pps.map(pp => ({
             id: pp.friend_id,
             name: profilesMap[pp.friend_id] || 'Friend',
+            avatar: profileAvatarsMap[pp.friend_id] || undefined,
             friendUserId: pp.friend_id,
             status: 'connected' as const,
             role: (pp.role as 'participant' | 'subscriber') || 'participant',
