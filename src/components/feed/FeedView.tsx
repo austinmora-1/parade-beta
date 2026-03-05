@@ -440,10 +440,10 @@ function PlanFeedCard({
         <div className="flex items-start gap-3">
         {/* Activity icon */}
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
           style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
         >
-          <ActivityIcon config={activityConfig} size={20} />
+          <ActivityIcon config={activityConfig} size={16} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -464,12 +464,20 @@ function PlanFeedCard({
             </div>
           </div>
 
-          {/* Time */}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-            <Clock className="h-3 w-3" />
-            {plan.startTime
-              ? formatTimeRange(plan.startTime, plan.endTime)
-              : timeSlotConfig.time}
+          {/* Time & Participants */}
+          <div className="flex items-center justify-between mt-1">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {plan.startTime
+                ? formatTimeRange(plan.startTime, plan.endTime)
+                : timeSlotConfig.time}
+            </span>
+            {plan.participants.filter((p: any) => p.role !== 'subscriber').length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground" onClick={e => e.stopPropagation()}>
+                <Users className="h-3 w-3 shrink-0" />
+                <ParticipantsList participants={plan.participants.filter((p: any) => p.role !== 'subscriber')} compact />
+              </div>
+            )}
           </div>
 
           {/* Location */}
@@ -480,20 +488,12 @@ function PlanFeedCard({
             </div>
           )}
 
-          {/* Date (left) & Participants (right) */}
-          <div className="flex items-center justify-between mt-2">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <CalendarCheck className="h-3 w-3" />
-              {plan.endDate
-                ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
-                : format(plan.date, 'EEE, MMM d')}
-            </span>
-            {plan.participants.filter((p: any) => p.role !== 'subscriber').length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground" onClick={e => e.stopPropagation()}>
-                <Users className="h-3 w-3 shrink-0" />
-                <ParticipantsList participants={plan.participants.filter((p: any) => p.role !== 'subscriber')} compact />
-              </div>
-            )}
+          {/* Date */}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+            <CalendarCheck className="h-3 w-3" />
+            {plan.endDate
+              ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
+              : format(plan.date, 'EEE, MMM d')}
           </div>
         </div>
       </div>
