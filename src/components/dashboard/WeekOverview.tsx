@@ -95,60 +95,64 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
   );
 
   const weekNav = (
-    <div className="flex items-center gap-1">
-      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
-            <CalendarIcon className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-card border border-border shadow-lg z-50" align="start">
-          <Calendar
-            mode="single"
-            selected={weekDays[0]}
-            onSelect={handleDateSelect}
-            disabled={(date) => {
-              const today = new Date();
-              const maxDate = addWeeks(today, 4);
-              return date < startOfWeek(today, { weekStartsOn: 1 }) || date > maxDate;
-            }}
-            initialFocus
-            className={cn("p-3 pointer-events-auto")}
-          />
-        </PopoverContent>
-      </Popover>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
-        onClick={() => setWeekOffset(prev => prev - 1)}
-        disabled={weekOffset <= 0}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <span className="text-xs font-medium text-center text-muted-foreground whitespace-nowrap">
-        {getWeekLabel()}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
-        onClick={() => setWeekOffset(prev => prev + 1)}
-        disabled={weekOffset >= 4}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-      {!isCurrentWeek && (
+    <>
+      <div className="flex items-center gap-1">
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7">
+              <CalendarIcon className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 bg-card border border-border shadow-lg z-50" align="start">
+            <Calendar
+              mode="single"
+              selected={weekDays[0]}
+              onSelect={handleDateSelect}
+              disabled={(date) => {
+                const today = new Date();
+                const maxDate = addWeeks(today, 4);
+                return date < startOfWeek(today, { weekStartsOn: 1 }) || date > maxDate;
+              }}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
         <Button
           variant="ghost"
-          size="sm"
-          className="text-xs text-primary h-6 px-2"
-          onClick={() => setWeekOffset(0)}
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => setWeekOffset(prev => prev - 1)}
+          disabled={weekOffset <= 0}
         >
-          ← This week
+          <ChevronLeft className="h-4 w-4" />
         </Button>
+        <span className="text-xs font-medium text-center text-muted-foreground whitespace-nowrap">
+          {getWeekLabel()}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => setWeekOffset(prev => prev + 1)}
+          disabled={weekOffset >= 4}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+      {!isCurrentWeek && (
+        <div className="flex justify-center -mt-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-primary h-6 px-2"
+            onClick={() => setWeekOffset(0)}
+          >
+            ← This week
+          </Button>
+        </div>
       )}
-    </div>
+    </>
   );
 
   const content = (
