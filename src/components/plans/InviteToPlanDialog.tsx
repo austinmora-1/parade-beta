@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [smsConsent, setSmsConsent] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState(false);
@@ -174,26 +176,40 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
           </div>
 
           {/* SMS */}
-          <div className="flex gap-1.5">
-            <div className="relative flex-1">
-              <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendSmsInvite()}
-                className="h-8 pl-8 text-sm"
-              />
+          <div className="space-y-1.5">
+            <div className="flex gap-1.5">
+              <div className="relative flex-1">
+                <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && smsConsent && handleSendSmsInvite()}
+                  className="h-8 pl-8 text-sm"
+                />
+              </div>
+              <Button
+                onClick={handleSendSmsInvite}
+                disabled={!phone.trim() || isSendingSms || !smsConsent}
+                size="sm"
+                className="h-8 px-3 text-xs shrink-0"
+              >
+                {isSendingSms ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Text'}
+              </Button>
             </div>
-            <Button
-              onClick={handleSendSmsInvite}
-              disabled={!phone.trim() || isSendingSms}
-              size="sm"
-              className="h-8 px-3 text-xs shrink-0"
-            >
-              {isSendingSms ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Text'}
-            </Button>
+            {phone.trim() && (
+              <label className="flex items-start gap-2 cursor-pointer">
+                <Checkbox
+                  checked={smsConsent}
+                  onCheckedChange={(v) => setSmsConsent(v === true)}
+                  className="mt-0.5"
+                />
+                <span className="text-[11px] leading-tight text-muted-foreground">
+                  I confirm the recipient has consented to receive this text message. Standard messaging rates may apply.
+                </span>
+              </label>
+            )}
           </div>
 
           {/* Link */}
