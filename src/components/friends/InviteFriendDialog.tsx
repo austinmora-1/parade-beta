@@ -86,22 +86,16 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">Invite Friends</DialogTitle>
-          <DialogDescription>
-            Invite friends to connect and share plans together
-          </DialogDescription>
+      <DialogContent className="sm:max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogHeader className="pb-0">
+          <DialogTitle className="font-display text-base">Invite Friends</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Email Invite */}
-          <div className="space-y-3">
-            <Label htmlFor="email" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Invite by Email
-            </Label>
-            <div className="flex gap-2">
+        <div className="space-y-3 pt-2">
+          {/* Email */}
+          <div className="flex gap-1.5">
+            <div className="relative flex-1">
+              <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
@@ -109,17 +103,15 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendInvite()}
+                className="h-8 pl-8 text-sm"
               />
             </div>
           </div>
 
-          {/* Phone Invite */}
-          <div className="space-y-3">
-            <Label htmlFor="phone" className="flex items-center gap-2">
-              <Phone className="h-4 w-4" />
-              Invite by Phone
-            </Label>
-            <div className="flex gap-2">
+          {/* Phone */}
+          <div className="flex gap-1.5">
+            <div className="relative flex-1">
+              <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 id="phone"
                 type="tel"
@@ -127,12 +119,13 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendInvite()}
+                className="h-8 pl-8 text-sm"
               />
             </div>
           </div>
 
-          <Button onClick={handleSendInvite} disabled={(!email.trim() && !phone.trim()) || isSending} className="w-full">
-            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Invite'}
+          <Button onClick={handleSendInvite} disabled={(!email.trim() && !phone.trim()) || isSending} size="sm" className="w-full h-8 text-xs">
+            {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Send Invite'}
           </Button>
 
           <div className="relative">
@@ -145,21 +138,11 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
           </div>
 
           {/* Share Link */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2">
-              <Copy className="h-4 w-4" />
-              Share Invite Link
-            </Label>
-            <div className="flex gap-2">
-              <Input value={inviteLink} readOnly className="bg-muted/50" />
-              <Button variant="outline" onClick={handleCopyLink}>
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+          <div className="flex gap-1.5">
+            <Input value={inviteLink} readOnly className="h-8 bg-muted/50 text-xs flex-1" />
+            <Button variant="outline" onClick={handleCopyLink} size="sm" className="h-8 px-2.5 shrink-0">
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
           </div>
         </div>
       </DialogContent>
