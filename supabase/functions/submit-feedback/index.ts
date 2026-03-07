@@ -67,7 +67,7 @@ async function getOrCreateLabel(
   // Also check workspace-level labels (no team filter)
   const wsRes = await fetch("https://api.linear.app/graphql", {
     method: "POST",
-    headers: { Authorization: apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: authHeader(apiKey), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `{ issueLabels(filter: { name: { eq: "${labelName}" }, team: { null: true } }) { nodes { id name } } }`,
     }),
