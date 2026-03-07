@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Copy, Check, Loader2, Phone, Search, UserPlus } from 'lucide-react';
+import { Mail, Copy, Check, Loader2, Phone, Search, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
