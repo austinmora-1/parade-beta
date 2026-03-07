@@ -82,14 +82,22 @@ export function SmartNudges() {
                 <X className="h-2.5 w-2.5 text-muted-foreground" />
               </button>
 
-              <Avatar className="h-10 w-10">
+              <div className="h-10 w-10 rounded-full ring-1 ring-border overflow-hidden shrink-0">
                 {friend?.avatar ? (
-                  <AvatarImage src={friend.avatar} alt={name} />
-                ) : null}
-                <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                  {getInitials(name)}
-                </AvatarFallback>
-              </Avatar>
+                  <SignedImage
+                    path={friend.avatar}
+                    alt={name}
+                    className="h-full w-full object-cover"
+                    fallbackSrc={getElephantAvatar(name)}
+                  />
+                ) : (
+                  <img
+                    src={getElephantAvatar(name)}
+                    alt={name}
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
 
               <p className="text-[11px] font-medium text-center leading-tight truncate w-full">
                 {friend?.name?.split(' ')[0] || name}
