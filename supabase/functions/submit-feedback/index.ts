@@ -79,7 +79,7 @@ async function getOrCreateLabel(
   // Create label on the team
   const createRes = await fetch("https://api.linear.app/graphql", {
     method: "POST",
-    headers: { Authorization: apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: authHeader(apiKey), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `mutation { issueLabelCreate(input: { name: "${labelName}", teamId: "${teamId}" }) { issueLabel { id } } }`,
     }),
