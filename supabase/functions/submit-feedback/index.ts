@@ -29,7 +29,6 @@ function authHeader(apiKey: string): string {
 }
 
 async function getLinearTeamId(apiKey: string): Promise<string> {
-  console.log(`LINEAR_API_KEY length: ${apiKey.length}, starts with: ${apiKey.substring(0, 8)}`);
   const res = await fetch("https://api.linear.app/graphql", {
     method: "POST",
     headers: {
