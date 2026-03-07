@@ -19,11 +19,21 @@ const TITLE_PREFIX: Record<string, string> = {
   general: "💬 Feedback",
 };
 
+function authHeader(apiKey: string): string {
+  // Linear personal API keys (lin_api_...) don't need Bearer prefix
+  // but we add it if not already present for compatibility
+  if (apiKey.startsWith("lin_api_") || apiKey.startsWith("Bearer ")) {
+    return apiKey;
+  }
+  return `Bearer ${apiKey}`;
+}
+
 async function getLinearTeamId(apiKey: string): Promise<string> {
+  console.log(`LINEAR_API_KEY length: ${apiKey.length}, starts with: ${apiKey.substring(0, 8)}`);
   const res = await fetch("https://api.linear.app/graphql", {
     method: "POST",
     headers: {
-      Authorization: apiKey,
+      Authorization: authHeader(apiKey),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
