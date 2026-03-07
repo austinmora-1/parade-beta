@@ -19,11 +19,20 @@ const TITLE_PREFIX: Record<string, string> = {
   general: "💬 Feedback",
 };
 
+function authHeader(apiKey: string): string {
+  // Linear personal API keys (lin_api_...) don't need Bearer prefix
+  // but we add it if not already present for compatibility
+  if (apiKey.startsWith("lin_api_") || apiKey.startsWith("Bearer ")) {
+    return apiKey;
+  }
+  return `Bearer ${apiKey}`;
+}
+
 async function getLinearTeamId(apiKey: string): Promise<string> {
   const res = await fetch("https://api.linear.app/graphql", {
     method: "POST",
     headers: {
-      Authorization: apiKey,
+      Authorization: authHeader(apiKey),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -45,7 +54,7 @@ async function getOrCreateLabel(
   // Search for existing label
   const searchRes = await fetch("https://api.linear.app/graphql", {
     method: "POST",
-    headers: { Authorization: apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: authHeader(apiKey), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `{ issueLabels(filter: { name: { eq: "${labelName}" }, team: { id: { eq: "${teamId}" } } }) { nodes { id name } } }`,
     }),
@@ -57,7 +66,7 @@ async function getOrCreateLabel(
   // Also check workspace-level labels (no team filter)
   const wsRes = await fetch("https://api.linear.app/graphql", {
     method: "POST",
-    headers: { Authorization: apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: authHeader(apiKey), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `{ issueLabels(filter: { name: { eq: "${labelName}" }, team: { null: true } }) { nodes { id name } } }`,
     }),
@@ -69,7 +78,7 @@ async function getOrCreateLabel(
   // Create label on the team
   const createRes = await fetch("https://api.linear.app/graphql", {
     method: "POST",
-    headers: { Authorization: apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: authHeader(apiKey), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `mutation { issueLabelCreate(input: { name: "${labelName}", teamId: "${teamId}" }) { issueLabel { id } } }`,
     }),
@@ -91,7 +100,7 @@ async function createLinearIssue(
 ): Promise<{ id: string; identifier: string; url: string }> {
   const res = await fetch("https://api.linear.app/graphql", {
     method: "POST",
-    headers: { Authorization: apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: authHeader(apiKey), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `mutation CreateIssue($input: IssueCreateInput!) {
         issueCreate(input: $input) {
