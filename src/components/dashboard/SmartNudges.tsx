@@ -85,10 +85,10 @@ export function SmartNudges() {
               <div className="h-10 w-10 rounded-full ring-1 ring-border overflow-hidden shrink-0">
                 {friend?.avatar ? (
                   <SignedImage
-                    path={friend.avatar}
+                    src={friend.avatar}
                     alt={name}
                     className="h-full w-full object-cover"
-                    fallbackSrc={getElephantAvatar(name)}
+                    onError={(e) => { (e.target as HTMLImageElement).src = getElephantAvatar(name); }}
                   />
                 ) : (
                   <img
