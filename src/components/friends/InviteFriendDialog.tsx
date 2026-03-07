@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Copy, Check, Loader2, Phone, Search, UserPlus } from 'lucide-react';
+import { Mail, Copy, Check, Loader2, Phone, Search, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -46,9 +46,20 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
   const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
   const inviteLink = `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
 
-  // Existing friend user IDs to filter out
-  const existingFriendUserIds = new Set(
-    friends.filter(f => f.friendUserId).map(f => f.friendUserId!)
+  // Memoize to prevent infinite re-render loop
+  const existingFriendUserIds = useMemo(
+    () => new Set(friends.filter(f => f.friendUserId).map(f => f.friendUserId!)),
+    [friends]
+  );
+
+  const connectedFriendUserIds = useMemo(
+    () => new Set(friends.filter(f => f.status === 'connected' && f.friendUserId).map(f => f.friendUserId!)),
+    [friends]
+  );
+
+  const pendingFriendUserIds = useMemo(
+    () => new Set(friends.filter(f => f.status === 'pending' && f.friendUserId).map(f => f.friendUserId!)),
+    [friends]
   );
 
   const searchUsers = useCallback(async (query: string) => {
@@ -70,10 +81,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
         const { data } = await supabase.rpc('search_users_by_email_prefix', { p_query: query });
         results = (data as SearchResult[]) || [];
       } else {
-        // Search by email prefix as a name-like search
         const { data: emailResults } = await supabase.rpc('search_users_by_email_prefix', { p_query: query });
-        
-        // Also search public profiles by display name
         const { data: nameResults } = await supabase
           .from('public_profiles')
           .select('user_id, display_name, avatar_url, bio')
@@ -91,15 +99,15 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
         results = Array.from(merged.values());
       }
 
-      // Filter out self and existing friends
-      results = results.filter(r => r.user_id !== user?.id && !existingFriendUserIds.has(r.user_id));
+      // Filter out self only — keep existing friends so we can show their status
+      results = results.filter(r => r.user_id !== user?.id);
       setSearchResults(results);
     } catch (err) {
       console.error('Search error:', err);
     } finally {
       setSearching(false);
     }
-  }, [user?.id, existingFriendUserIds]);
+  }, [user?.id]);
 
   // Debounced search
   useEffect(() => {
@@ -250,6 +258,8 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
               )}
 
               {searchResults.map(result => {
+                const isConnected = connectedFriendUserIds.has(result.user_id);
+                const isPending = pendingFriendUserIds.has(result.user_id);
                 const isSent = sentIds.has(result.user_id);
                 const isSending = sendingTo === result.user_id;
                 return (
@@ -271,27 +281,34 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
                         )}
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={isSent ? 'ghost' : 'outline'}
-                      disabled={isSending || isSent}
-                      onClick={() => handleSendFriendRequest(result)}
-                      className="gap-1 shrink-0 h-8 text-xs ml-2"
-                    >
-                      {isSending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : isSent ? (
-                        <>
-                          <Check className="h-3 w-3" />
-                          Sent
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-3 w-3" />
-                          Add
-                        </>
-                      )}
-                    </Button>
+                    {isConnected ? (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-2">
+                        <Users className="h-3 w-3" />
+                        Connected
+                      </span>
+                    ) : isPending || isSent ? (
+                      <Button size="sm" variant="ghost" disabled className="gap-1 shrink-0 h-8 text-xs ml-2">
+                        <Check className="h-3 w-3" />
+                        {isPending ? 'Pending' : 'Sent'}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isSending}
+                        onClick={() => handleSendFriendRequest(result)}
+                        className="gap-1 shrink-0 h-8 text-xs ml-2"
+                      >
+                        {isSending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <UserPlus className="h-3 w-3" />
+                            Add
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 );
               })}
