@@ -1,114 +1,104 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSmartNudges } from '@/hooks/useSmartNudges';
-import { X, MessageCircle, Users, CalendarPlus, Sparkles, Plane } from 'lucide-react';
+import { useLastHungOut } from '@/hooks/useLastHungOut';
+import { usePlannerStore } from '@/stores/plannerStore';
+import { X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-
-const NUDGE_ICONS: Record<string, React.ReactNode> = {
-  fading_friendship: <MessageCircle className="h-4 w-4" />,
-  friends_available: <Users className="h-4 w-4" />,
-  trip_overlap: <Plane className="h-4 w-4" />,
-  reconnect: <Sparkles className="h-4 w-4" />,
-};
-
-const NUDGE_COLORS: Record<string, string> = {
-  fading_friendship: 'border-l-amber-400 dark:border-l-amber-500',
-  friends_available: 'border-l-emerald-400 dark:border-l-emerald-500',
-  trip_overlap: 'border-l-orange-400 dark:border-l-orange-500',
-  reconnect: 'border-l-violet-400 dark:border-l-violet-500',
-};
-
-const URGENCY_BG: Record<string, string> = {
-  high: 'bg-amber-50/80 dark:bg-amber-950/30',
-  medium: 'bg-muted/50',
-  low: 'bg-muted/30',
-};
+import { formatDistanceToNow } from 'date-fns';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 export function SmartNudges() {
   const { nudges, dismissNudge, markActedOn } = useSmartNudges();
+  const { friends } = usePlannerStore();
   const navigate = useNavigate();
+
+  // Get friend user IDs from nudges
+  const friendUserIds = useMemo(
+    () => nudges.map(n => n.friend_user_id).filter((id): id is string => !!id),
+    [nudges]
+  );
+
+  const lastDates = useLastHungOut(friendUserIds);
+
+  // Build a lookup from friendUserId -> friend data
+  const friendMap = useMemo(() => {
+    const map: Record<string, { name: string; avatar?: string }> = {};
+    for (const f of friends) {
+      if (f.friendUserId) {
+        map[f.friendUserId] = { name: f.name, avatar: f.avatar };
+      }
+    }
+    return map;
+  }, [friends]);
 
   if (nudges.length === 0) return null;
 
   const handleAction = (nudge: typeof nudges[0]) => {
     markActedOn(nudge.id);
-    if ((nudge.nudge_type === 'fading_friendship' || nudge.nudge_type === 'trip_overlap') && nudge.friend_user_id) {
+    if (nudge.friend_user_id) {
       navigate(`/friend/${nudge.friend_user_id}`);
-    } else if (nudge.nudge_type === 'friends_available') {
-      navigate('/plans');
     } else {
       navigate('/friends');
     }
+  };
+
+  const getInitials = (name: string) =>
+    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const getLastHungLabel = (friendUserId: string | null) => {
+    if (!friendUserId) return null;
+    const d = lastDates[friendUserId];
+    if (!d) return 'Never hung out';
+    return formatDistanceToNow(d, { addSuffix: true });
   };
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold">For You</h3>
+        <h3 className="text-sm font-semibold">Suggested</h3>
       </div>
-      <div className="space-y-2">
-        {nudges.slice(0, 3).map((nudge) => {
-          const urgency = (nudge.metadata?.urgency as string) || 'low';
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        {nudges.slice(0, 5).map((nudge) => {
+          const friend = nudge.friend_user_id ? friendMap[nudge.friend_user_id] : null;
+          const name = friend?.name || nudge.title;
+          const lastHung = getLastHungLabel(nudge.friend_user_id);
+
           return (
             <div
               key={nudge.id}
-              className={cn(
-                "relative rounded-lg border-l-[3px] px-3 py-2.5 transition-all cursor-pointer group",
-                NUDGE_COLORS[nudge.nudge_type] || 'border-l-primary',
-                URGENCY_BG[urgency] || 'bg-muted/30',
-                "hover:shadow-sm"
-              )}
+              className="relative flex flex-col items-center gap-1.5 rounded-xl border border-border bg-background p-3 transition-all cursor-pointer group hover:border-primary/20 hover:shadow-soft min-w-[80px] w-[80px] shrink-0"
               onClick={() => handleAction(nudge)}
             >
               <button
-                className="absolute top-1.5 right-1.5 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted"
+                className="absolute top-1 right-1 p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted z-10"
                 onClick={(e) => {
                   e.stopPropagation();
                   dismissNudge(nudge.id);
                 }}
               >
-                <X className="h-3 w-3 text-muted-foreground" />
+                <X className="h-2.5 w-2.5 text-muted-foreground" />
               </button>
 
-              <div className="flex items-start gap-2.5 pr-6">
-                <div className="mt-0.5 shrink-0 text-muted-foreground">
-                  {NUDGE_ICONS[nudge.nudge_type] || <Sparkles className="h-4 w-4" />}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium leading-tight">{nudge.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{nudge.message}</p>
-                </div>
-              </div>
+              <Avatar className="h-10 w-10">
+                {friend?.avatar ? (
+                  <AvatarImage src={friend.avatar} alt={name} />
+                ) : null}
+                <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                  {getInitials(name)}
+                </AvatarFallback>
+              </Avatar>
 
-              <div className="flex gap-2 mt-2 ml-[26px]">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-7 text-xs px-3"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAction(nudge);
-                  }}
-                >
-                  {nudge.nudge_type === 'fading_friendship' ? (
-                    <>
-                      <CalendarPlus className="h-3 w-3 mr-1" />
-                      Reach out
-                    </>
-                  ) : nudge.nudge_type === 'trip_overlap' ? (
-                    <>
-                      <Plane className="h-3 w-3 mr-1" />
-                      Connect
-                    </>
-                  ) : (
-                    <>
-                      <CalendarPlus className="h-3 w-3 mr-1" />
-                      Make plans
-                    </>
-                  )}
-                </Button>
-              </div>
+              <p className="text-[11px] font-medium text-center leading-tight truncate w-full">
+                {friend?.name?.split(' ')[0] || name}
+              </p>
+
+              {lastHung && (
+                <p className="text-[10px] text-muted-foreground text-center leading-tight">
+                  {lastHung}
+                </p>
+              )}
             </div>
           );
         })}
