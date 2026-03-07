@@ -46,9 +46,20 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
   const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
   const inviteLink = `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
 
-  // Existing friend user IDs to filter out
-  const existingFriendUserIds = new Set(
-    friends.filter(f => f.friendUserId).map(f => f.friendUserId!)
+  // Memoize to prevent infinite re-render loop
+  const existingFriendUserIds = useMemo(
+    () => new Set(friends.filter(f => f.friendUserId).map(f => f.friendUserId!)),
+    [friends]
+  );
+
+  const connectedFriendUserIds = useMemo(
+    () => new Set(friends.filter(f => f.status === 'connected' && f.friendUserId).map(f => f.friendUserId!)),
+    [friends]
+  );
+
+  const pendingFriendUserIds = useMemo(
+    () => new Set(friends.filter(f => f.status === 'pending' && f.friendUserId).map(f => f.friendUserId!)),
+    [friends]
   );
 
   const searchUsers = useCallback(async (query: string) => {
@@ -70,10 +81,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
         const { data } = await supabase.rpc('search_users_by_email_prefix', { p_query: query });
         results = (data as SearchResult[]) || [];
       } else {
-        // Search by email prefix as a name-like search
         const { data: emailResults } = await supabase.rpc('search_users_by_email_prefix', { p_query: query });
-        
-        // Also search public profiles by display name
         const { data: nameResults } = await supabase
           .from('public_profiles')
           .select('user_id, display_name, avatar_url, bio')
@@ -91,15 +99,15 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
         results = Array.from(merged.values());
       }
 
-      // Filter out self and existing friends
-      results = results.filter(r => r.user_id !== user?.id && !existingFriendUserIds.has(r.user_id));
+      // Filter out self only — keep existing friends so we can show their status
+      results = results.filter(r => r.user_id !== user?.id);
       setSearchResults(results);
     } catch (err) {
       console.error('Search error:', err);
     } finally {
       setSearching(false);
     }
-  }, [user?.id, existingFriendUserIds]);
+  }, [user?.id]);
 
   // Debounced search
   useEffect(() => {
