@@ -258,6 +258,8 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
               )}
 
               {searchResults.map(result => {
+                const isConnected = connectedFriendUserIds.has(result.user_id);
+                const isPending = pendingFriendUserIds.has(result.user_id);
                 const isSent = sentIds.has(result.user_id);
                 const isSending = sendingTo === result.user_id;
                 return (
@@ -279,27 +281,34 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
                         )}
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={isSent ? 'ghost' : 'outline'}
-                      disabled={isSending || isSent}
-                      onClick={() => handleSendFriendRequest(result)}
-                      className="gap-1 shrink-0 h-8 text-xs ml-2"
-                    >
-                      {isSending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : isSent ? (
-                        <>
-                          <Check className="h-3 w-3" />
-                          Sent
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="h-3 w-3" />
-                          Add
-                        </>
-                      )}
-                    </Button>
+                    {isConnected ? (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-2">
+                        <Users className="h-3 w-3" />
+                        Connected
+                      </span>
+                    ) : isPending || isSent ? (
+                      <Button size="sm" variant="ghost" disabled className="gap-1 shrink-0 h-8 text-xs ml-2">
+                        <Check className="h-3 w-3" />
+                        {isPending ? 'Pending' : 'Sent'}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isSending}
+                        onClick={() => handleSendFriendRequest(result)}
+                        className="gap-1 shrink-0 h-8 text-xs ml-2"
+                      >
+                        {isSending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <UserPlus className="h-3 w-3" />
+                            Add
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 );
               })}
