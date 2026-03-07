@@ -101,7 +101,7 @@ async function createLinearIssue(
 ): Promise<{ id: string; identifier: string; url: string }> {
   const res = await fetch("https://api.linear.app/graphql", {
     method: "POST",
-    headers: { Authorization: apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: authHeader(apiKey), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `mutation CreateIssue($input: IssueCreateInput!) {
         issueCreate(input: $input) {
