@@ -55,7 +55,7 @@ async function getOrCreateLabel(
   // Search for existing label
   const searchRes = await fetch("https://api.linear.app/graphql", {
     method: "POST",
-    headers: { Authorization: apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: authHeader(apiKey), "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `{ issueLabels(filter: { name: { eq: "${labelName}" }, team: { id: { eq: "${teamId}" } } }) { nodes { id name } } }`,
     }),
