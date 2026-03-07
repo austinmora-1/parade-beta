@@ -6,7 +6,8 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
+import { SignedImage } from '@/components/ui/SignedImage';
 
 export function SmartNudges() {
   const { nudges, dismissNudge, markActedOn } = useSmartNudges();
