@@ -1338,6 +1338,20 @@ export type Database = {
         Returns: string
       }
       generate_share_code: { Args: { length?: number }; Returns: string }
+      get_availability_by_share_code: {
+        Args: { p_end_date: string; p_share_code: string; p_start_date: string }
+        Returns: {
+          date: string
+          early_afternoon: boolean
+          early_morning: boolean
+          evening: boolean
+          late_afternoon: boolean
+          late_morning: boolean
+          late_night: boolean
+          location_status: string
+          trip_location: string
+        }[]
+      }
       get_calendar_tokens: {
         Args: { p_provider: string; p_user_id: string }
         Returns: {
@@ -1373,6 +1387,18 @@ export type Database = {
           plan_start_time: string
           plan_time_slot: string
           plan_title: string
+        }[]
+      }
+      get_plans_by_share_code: {
+        Args: { p_end_date: string; p_share_code: string; p_start_date: string }
+        Returns: {
+          activity: string
+          date: string
+          duration: number
+          id: string
+          location: string
+          time_slot: string
+          title: string
         }[]
       }
       get_profile_by_share_code: {
