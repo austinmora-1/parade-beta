@@ -1,82 +1,59 @@
 project_id = "womtzaraskisayzskafe"
 
-[functions.chat-with-elly]
-verify_jwt = false
-
-[functions.google-calendar-auth]
-verify_jwt = false
-
-[functions.google-calendar-callback]
-verify_jwt = false
-
-[functions.google-calendar-events]
-verify_jwt = false
-
-[functions.google-calendar-disconnect]
-verify_jwt = false
-
-[functions.send-hang-request]
-verify_jwt = false
-
-[functions.google-calendar-sync]
-verify_jwt = false
-
-[functions.nylas-auth]
-verify_jwt = false
-
-[functions.nylas-callback]
-verify_jwt = false
-
-[functions.nylas-events]
-verify_jwt = false
-
-[functions.nylas-sync]
-verify_jwt = false
-
-[functions.nylas-disconnect]
-verify_jwt = false
-
-[functions.elly-conversation-assist]
-verify_jwt = false
-
-[functions.ical-connect]
-verify_jwt = false
-
-[functions.ical-disconnect]
-verify_jwt = false
-
-[functions.ical-sync]
-verify_jwt = false
-
-[functions.calendar-sync-all]
-verify_jwt = false
-
-[functions.calendar-sync-worker]
-verify_jwt = false
-
-[functions.plan-reminders]
-verify_jwt = false
-
-[functions.push-subscribe]
-verify_jwt = false
-
-[functions.send-push-notification]
-verify_jwt = false
-
-[functions.submit-feedback]
-verify_jwt = false
-
-[functions.og-image]
-verify_jwt = false
-
-[functions.og-invite-image]
-verify_jwt = false
-
-[functions.send-sms-invite]
-verify_jwt = false
-
-[functions.smart-nudges]
-verify_jwt = false
-
-[functions.generate-recurring-plans]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.calendar-sync-all]
+    verify_jwt = false
+  [functions.calendar-sync-worker]
+    verify_jwt = false
+  [functions.chat-with-elly]
+    verify_jwt = false
+  [functions.elly-conversation-assist]
+    verify_jwt = false
+  [functions.generate-recurring-plans]
+    verify_jwt = false
+  [functions.google-calendar-auth]
+    verify_jwt = false
+  [functions.google-calendar-callback]
+    verify_jwt = false
+  [functions.google-calendar-disconnect]
+    verify_jwt = false
+  [functions.google-calendar-events]
+    verify_jwt = false
+  [functions.google-calendar-sync]
+    verify_jwt = false
+  [functions.ical-connect]
+    verify_jwt = false
+  [functions.ical-disconnect]
+    verify_jwt = false
+  [functions.ical-sync]
+    verify_jwt = false
+  [functions.nylas-auth]
+    verify_jwt = false
+  [functions.nylas-callback]
+    verify_jwt = false
+  [functions.nylas-disconnect]
+    verify_jwt = false
+  [functions.nylas-events]
+    verify_jwt = false
+  [functions.nylas-sync]
+    verify_jwt = false
+  [functions.og-image]
+    verify_jwt = false
+  [functions.og-invite-image]
+    verify_jwt = false
+  [functions.plan-reminders]
+    verify_jwt = false
+  [functions.push-subscribe]
+    verify_jwt = false
+  [functions.send-hang-request]
+    verify_jwt = false
+  [functions.send-push-notification]
+    verify_jwt = false
+  [functions.send-sms-invite]
+    verify_jwt = false
+  [functions.smart-nudges]
+    verify_jwt = false
+  [functions.submit-feedback]
+    verify_jwt = false
