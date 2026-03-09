@@ -114,11 +114,29 @@ export default function Availability() {
     <div className="animate-fade-in space-y-4 md:space-y-6">
       {/* Header */}
       <div>
-        <div className="min-w-0">
-          <h1 className="font-display text-lg font-bold md:text-2xl">Availability</h1>
-          <p className="hidden text-muted-foreground md:block">
-            Set when you're free and share with friends
-          </p>
+        <div className="flex items-center justify-between">
+          <div className="min-w-0">
+            <h1 className="font-display text-lg font-bold md:text-2xl">Availability</h1>
+            <p className="hidden text-muted-foreground md:block">
+              Set when you're free and share with friends
+            </p>
+          </div>
+          {isConnected && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 gap-2"
+              onClick={handleSync}
+              disabled={isSyncing}
+            >
+              {isSyncing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync'}</span>
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           <Button
@@ -139,22 +157,6 @@ export default function Availability() {
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Plan</span>
           </Button>
-          {isConnected && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-2"
-              onClick={handleSync}
-              disabled={isSyncing}
-            >
-              {isSyncing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync Calendar'}</span>
-            </Button>
-          )}
           <ShareDialog
             trigger={
               <Button size="sm" variant="outline" className="shrink-0 gap-2">
