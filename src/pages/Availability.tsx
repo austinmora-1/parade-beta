@@ -127,7 +127,10 @@ export default function Availability() {
             className="shrink-0 gap-2"
             onClick={() => setTripDialogOpen(true)}
           >
-            <Plane className="h-4 w-4" />
+            <div className="relative">
+              <PlaneTakeoff className="h-4 w-4" />
+              <Plus className="h-2 w-2 absolute -top-0.5 -right-1 stroke-[3]" />
+            </div>
             <span className="hidden sm:inline">Add Trip</span>
           </Button>
           <Button
