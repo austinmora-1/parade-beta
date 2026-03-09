@@ -26,6 +26,10 @@ interface ProfileData {
   current_vibe: string | null;
   custom_vibe_tags: string[] | null;
   location_status: string | null;
+  default_work_days: string[] | null;
+  default_work_start_hour: number | null;
+  default_work_end_hour: number | null;
+  default_availability_status: string | null;
 }
 
 interface AvailabilityData {
