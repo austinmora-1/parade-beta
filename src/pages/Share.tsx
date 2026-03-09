@@ -142,16 +142,16 @@ export default function Share() {
 
         setProfile(profileData);
 
-        // Fetch availability for the week
+        // Fetch availability for the week using security definer function
         const startDate = format(weekDays[0], 'yyyy-MM-dd');
         const endDate = format(weekDays[6], 'yyyy-MM-dd');
 
         const { data: availData } = await supabase
-          .from('availability')
-          .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
-          .eq('user_id', profileData.user_id)
-          .gte('date', startDate)
-          .lte('date', endDate);
+          .rpc('get_availability_by_share_code', {
+            p_share_code: shareCode,
+            p_start_date: startDate,
+            p_end_date: endDate,
+          });
 
         setAvailability(availData || []);
 
@@ -166,13 +166,13 @@ export default function Share() {
           setMyAvailability(myAvailData || []);
         }
 
-        // Fetch plans for the week
+        // Fetch plans for the week using security definer function
         const { data: plansData } = await supabase
-          .from('plans')
-          .select('id, title, activity, date, time_slot, duration, location')
-          .eq('user_id', profileData.user_id)
-          .gte('date', weekDays[0].toISOString())
-          .lte('date', weekDays[6].toISOString())
+          .rpc('get_plans_by_share_code', {
+            p_share_code: shareCode,
+            p_start_date: weekDays[0].toISOString(),
+            p_end_date: weekDays[6].toISOString(),
+          });
           .order('date', { ascending: true });
 
         setPlans(plansData || []);
