@@ -173,7 +173,6 @@ export default function Share() {
             p_start_date: weekDays[0].toISOString(),
             p_end_date: weekDays[6].toISOString(),
           });
-          .order('date', { ascending: true });
 
         setPlans(plansData || []);
       } catch (err) {
