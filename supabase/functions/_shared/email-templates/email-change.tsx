@@ -12,6 +12,7 @@ import {
   Img,
   Link,
   Preview,
+  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
@@ -32,32 +33,36 @@ export const EmailChangeEmail = ({
     <Head />
     <Preview>Confirm your new email for Parade</Preview>
     <Body style={main}>
-      <Container style={container}>
-        <Img
-          src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-wordmark.png"
-          alt="Parade"
-          width="120"
-          height="auto"
-          style={logo}
-        />
-        <Heading style={h1}>Confirm your new email</Heading>
-        <Text style={text}>
-          Hey! You asked to change your Parade email from{' '}
-          <Link href={`mailto:${email}`} style={link}>
-            {email}
-          </Link>{' '}
-          to{' '}
-          <Link href={`mailto:${newEmail}`} style={link}>
-            {newEmail}
-          </Link>
-          . Tap below to confirm:
-        </Text>
-        <Button style={button} href={confirmationUrl}>
-          Confirm Email Change
-        </Button>
-        <Text style={footer}>
-          If you didn't request this, please secure your account right away.
-        </Text>
+      <Container style={outerContainer}>
+        <Section style={header}>
+          <Img
+            src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-wordmark.png"
+            alt="Parade"
+            width="140"
+            height="auto"
+            style={headerLogo}
+          />
+        </Section>
+        <Section style={body}>
+          <Heading style={h1}>Confirm your new email</Heading>
+          <Text style={text}>
+            Hey! You asked to change your Parade email from{' '}
+            <Link href={`mailto:${email}`} style={link}>
+              {email}
+            </Link>{' '}
+            to{' '}
+            <Link href={`mailto:${newEmail}`} style={link}>
+              {newEmail}
+            </Link>
+            . Tap below to confirm:
+          </Text>
+          <Button style={button} href={confirmationUrl}>
+            Confirm Email Change
+          </Button>
+          <Text style={footer}>
+            If you didn't request this, please secure your account right away.
+          </Text>
+        </Section>
       </Container>
     </Body>
   </Html>
@@ -66,8 +71,14 @@ export const EmailChangeEmail = ({
 export default EmailChangeEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
-const container = { padding: '40px 25px', maxWidth: '480px', margin: '0 auto' }
-const logo = { marginBottom: '24px' }
+const outerContainer = { maxWidth: '480px', margin: '0 auto', overflow: 'hidden' as const }
+const header = {
+  backgroundColor: '#111E16',
+  padding: '32px 25px',
+  textAlign: 'center' as const,
+}
+const headerLogo = { margin: '0 auto' }
+const body = { padding: '32px 25px' }
 const h1 = {
   fontSize: '24px',
   fontWeight: 'bold' as const,
