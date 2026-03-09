@@ -556,29 +556,34 @@ export default function Profile() {
           ) : (
             <div className="h-full w-full bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
           )}
-          <div className="absolute right-3 bottom-3 z-10 flex items-center gap-1.5 opacity-100 md:opacity-0 transition-opacity group-hover/cover:opacity-100">
-            <button
-              onClick={() => coverInputRef.current?.click()}
-              disabled={isUploadingCover}
-              className="flex items-center gap-1.5 rounded-lg bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 disabled:cursor-not-allowed"
-            >
-              {isUploadingCover ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Camera className="h-3.5 w-3.5" />
-              )}
-              {profile?.cover_photo_url ? 'Change' : 'Add Cover'}
-            </button>
-            {profile?.cover_photo_url && (
-              <button
-                onClick={handleRemoveCover}
-                disabled={isUploadingCover}
-                className="flex items-center gap-1.5 rounded-lg bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-red-600/80 disabled:cursor-not-allowed"
-              >
-                <X className="h-3.5 w-3.5" />
-                Remove
-              </button>
-            )}
+          <div className="absolute right-3 bottom-3 z-10 opacity-100 md:opacity-0 transition-opacity group-hover/cover:opacity-100">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  disabled={isUploadingCover}
+                  className="flex items-center gap-1.5 rounded-lg bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 disabled:cursor-not-allowed"
+                >
+                  {isUploadingCover ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Camera className="h-3.5 w-3.5" />
+                  )}
+                  Edit
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[140px]">
+                <DropdownMenuItem onClick={() => coverInputRef.current?.click()}>
+                  <Camera className="h-4 w-4 mr-2" />
+                  {profile?.cover_photo_url ? 'Change Photo' : 'Add Photo'}
+                </DropdownMenuItem>
+                {profile?.cover_photo_url && (
+                  <DropdownMenuItem onClick={handleRemoveCover} className="text-destructive focus:text-destructive">
+                    <X className="h-4 w-4 mr-2" />
+                    Remove
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         
