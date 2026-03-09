@@ -1,191 +1,92 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ChevronDown, CheckCircle2, Loader2 } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { ConfettiBackground } from '@/components/landing/ConfettiBackground';
 import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
 
-type AuthView = 'auth' | 'forgot-password' | 'reset-password';
-
-function AuthSection() {
+function BetaSignupForm() {
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [view, setView] = useState<AuthView>('auth');
-  const { signIn, signUp, resetPassword, updatePassword, session } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupName, setSignupName] = useState('');
-  const [resetEmail, setResetEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
 
-  useEffect(() => {
-    if (searchParams.get('reset') === 'true' && session) {
-      setView('reset-password');
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('loops-subscribe', {
+        body: { email: email.trim(), firstName: firstName.trim() || undefined },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Something went wrong');
+
+      setIsSubmitted(true);
+      toast.success(data.alreadySubscribed ? "You're already on the list!" : "You're in! We'll be in touch.");
+    } catch (err) {
+      console.error('Signup error:', err);
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-  }, [searchParams, session]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    const { error } = await signIn(loginEmail, loginPassword);
-    if (error) toast.error(error.message);
-    else { toast.success('Welcome back!'); navigate('/'); }
-    setIsLoading(false);
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
-    if (error) toast.error(error.message);
-    else { toast.success("Account created! Let's get you set up."); navigate('/onboarding'); }
-    setIsLoading(false);
-  };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    const { error } = await resetPassword(resetEmail);
-    if (error) toast.error(error.message);
-    else { toast.success('Check your email for a password reset link!'); setView('auth'); }
-    setIsLoading(false);
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return; }
-    if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
-    setIsLoading(true);
-    const { error } = await updatePassword(newPassword);
-    if (error) toast.error(error.message);
-    else { toast.success('Password updated successfully!'); navigate('/'); }
-    setIsLoading(false);
-  };
+  if (isSubmitted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center py-8"
+      >
+        <CheckCircle2 className="h-12 w-12 text-primary mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-foreground" style={{ fontFamily: "'Bungee', system-ui" }}>
+          You're on the list!
+        </h3>
+        <p className="text-muted-foreground mt-2 text-sm">
+          We'll let you know when Parade is ready for you.
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
-    <Card className="border-border/50 shadow-xl backdrop-blur-sm bg-card/95">
-      {view === 'auth' && (
-        <>
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl">Get Started</CardTitle>
-            <CardDescription>Sign in or create a new account</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="signup" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                <TabsTrigger value="login">Login</TabsTrigger>
-              </TabsList>
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Display Name</Label>
-                    <Input id="signup-name" type="text" placeholder="Your name" value={signupName} onChange={(e) => setSignupName(e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input id="signup-email" type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input id="signup-password" type="password" placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={6} />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Creating account...' : 'Create Account'}
-                  </Button>
-                </form>
-              </TabsContent>
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input id="login-email" type="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Password</Label>
-                    <Input id="login-password" type="password" placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                  <button type="button" onClick={() => setView('forgot-password')} className="w-full text-sm text-muted-foreground hover:text-primary transition-colors">
-                    Forgot your password?
-                  </button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </>
-      )}
-
-      {view === 'forgot-password' && (
-        <>
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl">Reset Password</CardTitle>
-            <CardDescription>Enter your email and we'll send you a reset link</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="reset-email">Email</Label>
-                <Input id="reset-email" type="email" placeholder="you@example.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Sending...' : 'Send Reset Link'}
-              </Button>
-              <button type="button" onClick={() => setView('auth')} className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                <ArrowLeft className="h-4 w-4" /> Back to login
-              </button>
-            </form>
-          </CardContent>
-        </>
-      )}
-
-      {view === 'reset-password' && (
-        <>
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl">Set New Password</CardTitle>
-            <CardDescription>Enter your new password below</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleUpdatePassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input id="new-password" type="password" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input id="confirm-password" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Updating...' : 'Update Password'}
-              </Button>
-            </form>
-          </CardContent>
-        </>
-      )}
-    </Card>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <Input
+        type="text"
+        placeholder="First name (optional)"
+        value={firstName}
+        onChange={(e) => setFirstName(e.target.value)}
+        className="bg-background/80 border-border/50"
+        maxLength={100}
+      />
+      <Input
+        type="email"
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className="bg-background/80 border-border/50"
+        maxLength={255}
+      />
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Joining...</> : 'Join the Waitlist'}
+      </Button>
+    </form>
   );
 }
 
 export default function Landing() {
-  const authRef = useRef<HTMLDivElement>(null);
+  const signupRef = useRef<HTMLDivElement>(null);
 
-  const scrollToAuth = () => {
-    authRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToSignup = () => {
+    signupRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -213,12 +114,9 @@ export default function Landing() {
             <p className="mt-3 text-white/80 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
               Endless group chats, 'are you around?' texts, and memes sent, but still find plans always seem to fall through? Parade brings order to the chaos: a simple, seamless platform that connects your existing calendars to show you who's free, who's in town, and what your plans are, making it easy to turn a "TBD" into a "hell yeah".
             </p>
-            <div className="mt-5 flex flex-row gap-3 justify-center w-full items-center">
-              <Button onClick={scrollToAuth} className="text-sm sm:text-base px-5 py-4 sm:px-6 sm:py-5">
-                Get Started
-              </Button>
-              <Button variant="outline" onClick={scrollToAuth} className="text-sm sm:text-base px-5 py-4 sm:px-6 sm:py-5 border-white/30 text-white hover:bg-white/10 bg-white/5">
-                Sign In
+            <div className="mt-5">
+              <Button onClick={scrollToSignup} className="text-sm sm:text-base px-6 py-5">
+                Join the Waitlist
               </Button>
             </div>
           </motion.div>
@@ -233,20 +131,17 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA + Auth Section */}
-      <section ref={authRef} className="relative py-20 px-6 bg-card/90">
+      {/* Beta Signup Section */}
+      <section ref={signupRef} className="relative py-20 px-6 bg-card/90">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <img src="/icon-192.png" alt="Parade" className="h-20 w-20 rounded-2xl mx-auto mb-4 object-cover" />
             <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Bungee', system-ui" }}>Join the Parade</h2>
-            <p className="text-muted-foreground mt-2">Create your account and start planning.</p>
+            <p className="text-muted-foreground mt-2">Sign up for early access to the beta.</p>
           </div>
-          <AuthSection />
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            By continuing, you agree to our{' '}
-            <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
-            {' '}and{' '}
-            <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>.
+          <BetaSignupForm />
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            We'll never spam you. Unsubscribe anytime.
           </p>
         </div>
       </section>
