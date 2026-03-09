@@ -143,19 +143,19 @@ export default function Availability() {
             size="sm"
             variant="outline"
             className="shrink-0 gap-2"
-            onClick={() => setTripDialogOpen(true)}
+            onClick={() => openPlanDialog()}
           >
-            <PlaneTakeoff className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Trip</span>
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Plan</span>
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="shrink-0 gap-2"
-            onClick={() => openPlanDialog()}
+            onClick={() => setTripDialogOpen(true)}
           >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Plan</span>
+            <PlaneTakeoff className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Trip</span>
           </Button>
           <ShareDialog
             trigger={
