@@ -67,6 +67,16 @@ const LOCATION_CONFIG = {
   traveling: { label: 'Traveling', icon: Car, color: 'text-orange-500' },
 };
 
+// Map time slots to hour ranges for default work schedule calculation
+const TIME_SLOT_HOURS: Record<TimeSlot, { start: number; end: number }> = {
+  'early-morning': { start: 6, end: 9 },
+  'late-morning': { start: 9, end: 12 },
+  'early-afternoon': { start: 12, end: 15 },
+  'late-afternoon': { start: 15, end: 18 },
+  'evening': { start: 18, end: 21 },
+  'late-night': { start: 21, end: 24 },
+};
+
 export default function Share() {
   const { shareCode } = useParams<{ shareCode: string }>();
   const { user } = useAuth();
