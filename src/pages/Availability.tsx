@@ -5,7 +5,7 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
-import { RefreshCw, Loader2, Plus, Plane } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, PlaneTakeoff } from 'lucide-react';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -127,7 +127,10 @@ export default function Availability() {
             className="shrink-0 gap-2"
             onClick={() => setTripDialogOpen(true)}
           >
-            <Plane className="h-4 w-4" />
+            <div className="relative">
+              <PlaneTakeoff className="h-4 w-4" />
+              <Plus className="h-2 w-2 absolute -top-0.5 -right-1 stroke-[3]" />
+            </div>
             <span className="hidden sm:inline">Add Trip</span>
           </Button>
           <Button
