@@ -7,39 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, ChevronDown, LayoutDashboard, CalendarClock, CalendarPlus, Users, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { ConfettiBackground } from '@/components/landing/ConfettiBackground';
 import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
-
-const FEATURES = [
-  {
-    title: 'Your Social Home Base',
-    description: 'See everything at a glance — upcoming plans, your vibe for the day, incoming vibes from friends, and what\'s happening this week. Parade keeps your social life organized without the effort.',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Share Your Availability',
-    description: 'Let friends know when you\'re free without the back-and-forth texting. Set your weekly schedule, toggle between home and away, and sync your calendar so availability updates automatically.',
-    icon: CalendarClock,
-  },
-  {
-    title: 'Make Plans in Seconds',
-    description: 'Create plans with a tap — pick an activity, invite friends, and find a time that works for everyone. Calendar sync means you\'ll never double-book, and friends get notified instantly.',
-    icon: CalendarPlus,
-  },
-  {
-    title: 'Your Friends, Your Pod',
-    description: 'Group your closest friends into pods for easy scheduling. See who\'s available, send hang requests, and coordinate group plans without the chaos of group chats.',
-    icon: Users,
-  },
-  {
-    title: 'Chat & Send Vibes',
-    description: 'Message friends directly about plans, send vibes to share your mood, and let Elly — your AI planning assistant — help suggest the perfect hangout. All your social coordination in one place.',
-    icon: MessageCircle,
-  },
-];
 
 type AuthView = 'auth' | 'forgot-password' | 'reset-password';
 
@@ -222,7 +194,7 @@ export default function Landing() {
         <ConfettiBackground count={100} />
       </div>
       {/* Hero Section */}
-      <section className="relative h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#1A2B22' }}>
+      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#1A2B22' }}>
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)' }}
@@ -239,7 +211,7 @@ export default function Landing() {
               Designed for Fun
             </p>
             <p className="mt-3 text-white/80 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
-              Your social life, all in one place. Connect your calendars, see when friends are free, share your vibes, and make plans faster. Parade makes it easy to have more fun.
+              Endless group chats, "are you around?" texts, and memes sent, but still find plans always seem to fall through? Parade brings order to the chaos: a simple, seamless platform that connects your existing calendars to show you who's free, who's in town, what your plans are, and makes it easy to turn a "TBD" into a "hell yeah".
             </p>
             <div className="mt-5 flex flex-row gap-3 justify-center w-full items-center">
               <Button onClick={scrollToAuth} className="text-sm sm:text-base px-5 py-4 sm:px-6 sm:py-5">
@@ -260,50 +232,6 @@ export default function Landing() {
           </motion.div>
         </div>
       </section>
-
-      {/* Feature Sections — alternating layout */}
-      {FEATURES.map((feature, i) => {
-        const isReversed = i % 2 === 1;
-        return (
-          <section
-            key={feature.title}
-            className={`relative py-20 px-6 ${i % 2 === 0 ? 'bg-card/90' : 'bg-background/90'}`}
-          >
-            <div
-              className={`max-w-5xl mx-auto flex flex-col ${isReversed ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-12 md:gap-16`}
-            >
-              {/* Text */}
-              <motion.div
-                className="flex-1 text-center md:text-left"
-                initial={{ opacity: 0, x: isReversed ? 30 : -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                  {feature.title}
-                </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  {feature.description}
-                </p>
-              </motion.div>
-
-              {/* Icon */}
-              <motion.div
-                className="flex-shrink-0"
-                initial={{ opacity: 0, x: isReversed ? -30 : 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="w-[200px] h-[200px] md:w-[240px] md:h-[240px] rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-2xl">
-                  <feature.icon className="w-20 h-20 md:w-24 md:h-24 text-primary" strokeWidth={1.2} />
-                </div>
-              </motion.div>
-            </div>
-          </section>
-        );
-      })}
 
       {/* CTA + Auth Section */}
       <section ref={authRef} className="relative py-20 px-6 bg-card/90">
