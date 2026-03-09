@@ -132,6 +132,7 @@ export default function Availability() {
           </Button>
           <Button
             size="sm"
+            variant="outline"
             className="shrink-0 gap-2"
             onClick={() => openPlanDialog()}
           >
