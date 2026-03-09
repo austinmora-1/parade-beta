@@ -1383,6 +1383,10 @@ export type Database = {
           avatar_url: string
           current_vibe: string
           custom_vibe_tags: string[]
+          default_availability_status: string
+          default_work_days: string[]
+          default_work_end_hour: number
+          default_work_start_hour: number
           display_name: string
           location_status: string
           show_availability: boolean
