@@ -211,7 +211,7 @@ export default function Landing() {
               Designed for Fun
             </p>
             <p className="mt-3 text-white/80 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
-              Endless group chats, "are you around?" texts, and memes sent, but still find plans always seem to fall through? Parade brings order to the chaos: a simple, seamless platform that connects your existing calendars to show you who's free, who's in town, what your plans are, and makes it easy to turn a "TBD" into a "hell yeah".
+              Endless group chats, 'are you around?' texts, and memes sent, but still find plans always seem to fall through? Parade brings order to the chaos: a simple, seamless platform that connects your existing calendars to show you who's free, who's in town, and what your plans are, making it easy to turn a "TBD" into a "hell yeah".
             </p>
             <div className="mt-5 flex flex-row gap-3 justify-center w-full items-center">
               <Button onClick={scrollToAuth} className="text-sm sm:text-base px-5 py-4 sm:px-6 sm:py-5">
