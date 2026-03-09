@@ -14,6 +14,7 @@ import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
 
 type AuthView = 'auth' | 'forgot-password' | 'reset-password';
+
 function AuthSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<AuthView>('auth');
@@ -193,7 +194,7 @@ export default function Landing() {
         <ConfettiBackground count={100} />
       </div>
       {/* Hero Section */}
-      <section className="relative h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#1A2B22' }}>
+      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#1A2B22' }}>
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)' }}
@@ -231,50 +232,6 @@ export default function Landing() {
           </motion.div>
         </div>
       </section>
-
-      {/* Feature Sections — alternating layout */}
-      {FEATURES.map((feature, i) => {
-        const isReversed = i % 2 === 1;
-        return (
-          <section
-            key={feature.title}
-            className={`relative py-20 px-6 ${i % 2 === 0 ? 'bg-card/90' : 'bg-background/90'}`}
-          >
-            <div
-              className={`max-w-5xl mx-auto flex flex-col ${isReversed ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-12 md:gap-16`}
-            >
-              {/* Text */}
-              <motion.div
-                className="flex-1 text-center md:text-left"
-                initial={{ opacity: 0, x: isReversed ? 30 : -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                  {feature.title}
-                </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  {feature.description}
-                </p>
-              </motion.div>
-
-              {/* Icon */}
-              <motion.div
-                className="flex-shrink-0"
-                initial={{ opacity: 0, x: isReversed ? -30 : 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="w-[200px] h-[200px] md:w-[240px] md:h-[240px] rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-2xl">
-                  <feature.icon className="w-20 h-20 md:w-24 md:h-24 text-primary" strokeWidth={1.2} />
-                </div>
-              </motion.div>
-            </div>
-          </section>
-        );
-      })}
 
       {/* CTA + Auth Section */}
       <section ref={authRef} className="relative py-20 px-6 bg-card/90">
