@@ -7,42 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, ChevronDown, LayoutDashboard, CalendarClock, CalendarPlus, Users, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { ConfettiBackground } from '@/components/landing/ConfettiBackground';
 import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
 
-const FEATURES = [
-  {
-    title: 'Your Social Home Base',
-    description: 'See everything at a glance — upcoming plans, your vibe for the day, incoming vibes from friends, and what\'s happening this week. Parade keeps your social life organized without the effort.',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Share Your Availability',
-    description: 'Let friends know when you\'re free without the back-and-forth texting. Set your weekly schedule, toggle between home and away, and sync your calendar so availability updates automatically.',
-    icon: CalendarClock,
-  },
-  {
-    title: 'Make Plans in Seconds',
-    description: 'Create plans with a tap — pick an activity, invite friends, and find a time that works for everyone. Calendar sync means you\'ll never double-book, and friends get notified instantly.',
-    icon: CalendarPlus,
-  },
-  {
-    title: 'Your Friends, Your Pod',
-    description: 'Group your closest friends into pods for easy scheduling. See who\'s available, send hang requests, and coordinate group plans without the chaos of group chats.',
-    icon: Users,
-  },
-  {
-    title: 'Chat & Send Vibes',
-    description: 'Message friends directly about plans, send vibes to share your mood, and let Elly — your AI planning assistant — help suggest the perfect hangout. All your social coordination in one place.',
-    icon: MessageCircle,
-  },
-];
-
 type AuthView = 'auth' | 'forgot-password' | 'reset-password';
-
 function AuthSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<AuthView>('auth');
