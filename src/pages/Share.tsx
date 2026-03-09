@@ -187,6 +187,22 @@ export default function Share() {
     fetchData();
   }, [shareCode, weekDays]);
 
+  // Check if a slot is busy based on work schedule defaults
+  const isDefaultBusy = (date: Date, slot: TimeSlot): boolean => {
+    if (!profile) return false;
+    const workDays = profile.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+    const isWorkDay = workDays.includes(dayOfWeek);
+    
+    if (!isWorkDay) return false;
+    
+    const workStart = profile.default_work_start_hour ?? 9;
+    const workEnd = profile.default_work_end_hour ?? 17;
+    const hours = TIME_SLOT_HOURS[slot];
+    
+    return hours.start < workEnd && hours.end > workStart;
+  };
+
   const getSlotStatus = (date: Date, slot: TimeSlot): 'available' | 'busy' | 'plan' => {
     // Check if there's a plan during this slot
     const hasPlan = plans.some(
@@ -199,7 +215,12 @@ export default function Share() {
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayAvail = availability.find((a) => a.date === dateStr);
     
-    if (!dayAvail) return 'available'; // Default to available
+    if (!dayAvail) {
+      // No explicit availability row — apply work schedule defaults
+      const defaultFree = profile?.default_availability_status !== 'unavailable';
+      if (!defaultFree) return 'busy';
+      return isDefaultBusy(date, slot) ? 'busy' : 'available';
+    }
     
     const slotMap: Record<TimeSlot, keyof AvailabilityData> = {
       'early-morning': 'early_morning',
