@@ -60,9 +60,10 @@ function BetaSignupForm() {
     <form onSubmit={handleSubmit} className="space-y-3">
       <Input
         type="text"
-        placeholder="First name (optional)"
+        placeholder="Full name"
         value={firstName}
         onChange={(e) => setFirstName(e.target.value)}
+        required
         className="bg-background/80 border-border/50"
         maxLength={100}
       />
