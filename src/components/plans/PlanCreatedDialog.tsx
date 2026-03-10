@@ -69,7 +69,7 @@ export function PlanCreatedDialog({ open, onOpenChange, plan }: PlanCreatedDialo
           {/* Title & Activity */}
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-              <ActivityIcon activity={plan.activity} className="h-5 w-5 text-primary" />
+              {activityConfig && <ActivityIcon config={activityConfig} className="h-5 w-5 text-primary" />}
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-foreground truncate">{plan.title}</p>
