@@ -5,7 +5,8 @@ import { CalendarView } from '@/components/plans/CalendarView';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { RecurringPlansList } from '@/components/plans/RecurringPlansList';
 import { Button } from '@/components/ui/button';
-import { Plus, LayoutList, CalendarDays } from 'lucide-react';
+import { Plus, LayoutList, CalendarDays, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Plan } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { useRecurringPlans } from '@/hooks/useRecurringPlans';
@@ -196,18 +197,30 @@ export default function Plans() {
             <>
               {/* Upcoming */}
               {futurePlans.length > 0 && (
-                <div className="space-y-1">
-                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-0.5">Upcoming</h2>
-                  {futurePlans.map(renderPlanCard)}
-                </div>
+                <Collapsible defaultOpen={false} className="group/upcoming space-y-1">
+                  <CollapsibleTrigger className="flex w-full items-center gap-1.5 px-0.5">
+                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming</h2>
+                    <span className="text-[10px] text-muted-foreground/60">({futurePlans.length})</span>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]/upcoming:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1">
+                    {futurePlans.map(renderPlanCard)}
+                  </CollapsibleContent>
+                </Collapsible>
               )}
 
               {/* Past */}
               {pastPlans.length > 0 && (
-                <div className="space-y-1">
-                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-0.5">Past</h2>
-                  {pastPlans.map(renderPlanCard)}
-                </div>
+                <Collapsible defaultOpen={false} className="group/past space-y-1">
+                  <CollapsibleTrigger className="flex w-full items-center gap-1.5 px-0.5">
+                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Past</h2>
+                    <span className="text-[10px] text-muted-foreground/60">({pastPlans.length})</span>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto transition-transform duration-200 group-data-[state=open]/past:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1">
+                    {pastPlans.map(renderPlanCard)}
+                  </CollapsibleContent>
+                </Collapsible>
               )}
             </>
           )}
