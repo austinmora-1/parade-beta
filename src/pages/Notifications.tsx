@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
 import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG } from '@/types/planner';
+import { SwipeableDismiss } from '@/components/ui/SwipeableDismiss';
+import { AnimatePresence } from 'framer-motion';
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
