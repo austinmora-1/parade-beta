@@ -402,6 +402,7 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
           </Button>
         </div>
       )}
+      </CollapsibleContent>
 
       <CreatePlanDialog
         open={createPlanOpen}
@@ -409,5 +410,6 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
         defaultDate={selectedSlot?.date}
       />
     </div>
+    </Collapsible>
   );
 }
