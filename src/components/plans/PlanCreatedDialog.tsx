@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { ACTIVITY_CONFIG, ActivityType, TIME_SLOT_LABELS, TimeSlot, Friend } from '@/types/planner';
+import { ACTIVITY_CONFIG, ActivityType, TIME_SLOT_LABELS, TimeSlot, Friend, type ActivityConfig } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface PlanSummary {
