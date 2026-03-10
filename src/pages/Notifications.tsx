@@ -611,48 +611,49 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visibleParticipantRequests.map((req) => (
-                <div
-                  key={req.id}
-                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground">
-                        Add <span className="text-primary">{req.friend_name}</span> to {req.plan_title}?
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Suggested by {req.requester_name}
-                      </p>
+                <SwipeableDismiss key={req.id} onDismiss={() => dismiss(`participant-req-${req.id}`)}>
+                  <div
+                    className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground">
+                          Add <span className="text-primary">{req.friend_name}</span> to {req.plan_title}?
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Suggested by {req.requester_name}
+                        </p>
+                      </div>
+                      <DismissButton id={`participant-req-${req.id}`} />
                     </div>
-                    <DismissButton id={`participant-req-${req.id}`} />
-                  </div>
 
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => handleApproveParticipantRequest(req.id)}
-                      disabled={updating === req.id}
-                      className="flex-1 gap-1"
-                    >
-                      {updating === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDenyParticipantRequest(req.id)}
-                      disabled={updating === req.id}
-                      className="flex-1 gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Deny
-                    </Button>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproveParticipantRequest(req.id)}
+                        disabled={updating === req.id}
+                        className="flex-1 gap-1"
+                      >
+                        {updating === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDenyParticipantRequest(req.id)}
+                        disabled={updating === req.id}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Deny
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
