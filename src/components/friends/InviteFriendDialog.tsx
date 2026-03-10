@@ -44,7 +44,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
 
   const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
-  const inviteLink = `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
+  const inviteLink = `https://helloparade.app/invite.html?ref=${encodeURIComponent(inviterName)}`;
 
   // Memoize to prevent infinite re-render loop
   const existingFriendUserIds = useMemo(

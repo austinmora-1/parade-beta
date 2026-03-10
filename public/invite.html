@@ -31,8 +31,13 @@
 <script>
   var params = new URLSearchParams(window.location.search);
   var token = params.get('t');
+  var ref = params.get('ref');
   if (token) {
     window.location.replace('/plan-invite/' + encodeURIComponent(token));
+  } else if (ref) {
+    window.location.replace('/invite?ref=' + encodeURIComponent(ref));
+  } else {
+    window.location.replace('/invite');
   }
 </script>
 </head>
