@@ -96,9 +96,9 @@ export default function Plans() {
     'late-afternoon': 3, 'evening': 4, 'late-night': 5,
   };
   const sortedPlans = [...plans].sort((a, b) => {
-    const dateDiff = a.date.getTime() - b.date.getTime();
+    const dateDiff = b.date.getTime() - a.date.getTime();
     if (dateDiff !== 0) return dateDiff;
-    return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
+    return (timeSlotOrder[b.timeSlot] ?? 0) - (timeSlotOrder[a.timeSlot] ?? 0);
   });
 
   return (
