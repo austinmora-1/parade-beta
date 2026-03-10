@@ -52,6 +52,7 @@ import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { usePods } from '@/hooks/usePods';
 import { useRecurringPlans } from '@/hooks/useRecurringPlans';
 import { toast } from 'sonner';
+import { PlanCreatedDialog } from '@/components/plans/PlanCreatedDialog';
 
 interface PlaceSuggestion {
   place_id: string;
@@ -126,6 +127,11 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [createdPlanSummary, setCreatedPlanSummary] = useState<{
+    title: string; activity: string; date: Date; endDate?: Date; timeSlot: TimeSlot;
+    startTime?: string; endTime?: string; duration: number; location?: string;
+    participants: typeof friends; status: string;
+  } | null>(null);
   const [_showCustomTime, _setShowCustomTime] = useState(false); // kept for edit sync
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   
@@ -366,6 +372,20 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       updatePlan(editPlan.id, planData);
     } else {
       addPlan(planData);
+      // Show post-creation summary
+      setCreatedPlanSummary({
+        title: effectiveTitle,
+        activity,
+        date,
+        endDate: isMultiDay && endDate ? endDate : undefined,
+        timeSlot,
+        startTime: startTime || undefined,
+        endTime: endTime || undefined,
+        duration: parseInt(duration) || 60,
+        location: locationName || undefined,
+        participants: allParticipants,
+        status: planStatus,
+      });
     }
 
     onOpenChange(false);
@@ -436,6 +456,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   ].filter(Boolean).length;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md p-4">
         <DialogHeader className="pb-1">
@@ -1023,5 +1044,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
         </div>
       </DialogContent>
     </Dialog>
+
+    <PlanCreatedDialog
+      open={!!createdPlanSummary}
+      onOpenChange={(open) => { if (!open) setCreatedPlanSummary(null); }}
+      plan={createdPlanSummary}
+    />
+    </>
   );
 }
