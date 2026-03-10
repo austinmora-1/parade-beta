@@ -58,6 +58,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
   const [createDefaultSlot, setCreateDefaultSlot] = useState<TimeSlot | undefined>();
 
   const locationStatus = getLocationStatusForDate(selectedDate);
+  const dayVibe = getVibeForDate(selectedDate);
   
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
