@@ -456,6 +456,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   ].filter(Boolean).length;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md p-4">
         <DialogHeader className="pb-1">
