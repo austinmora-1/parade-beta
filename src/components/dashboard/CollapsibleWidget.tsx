@@ -10,6 +10,7 @@ interface CollapsibleWidgetProps {
   badge?: ReactNode;
   headerRight?: ReactNode;
   defaultOpen?: boolean;
+  compact?: boolean;
   children: ReactNode;
   className?: string;
 }
