@@ -5,7 +5,7 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
-import { RefreshCw, Loader2, Plus, PlaneTakeoff, CalendarDays } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, PlaneTakeoff, LayoutList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
