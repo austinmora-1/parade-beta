@@ -23,6 +23,7 @@ const TABS = [
 type TabId = typeof TABS[number]['id'];
 
 export default function Availability() {
+  const navigate = useNavigate();
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadAllData = usePlannerStore((s) => s.loadAllData);
