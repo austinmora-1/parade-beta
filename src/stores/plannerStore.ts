@@ -1066,19 +1066,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     const dateStr = format(date, 'yyyy-MM-dd');
     
-    const { error } = await supabase
-      .from('availability')
-      .upsert({
-        user_id: userId,
-        date: dateStr,
-        vibe: vibe,
-      } as any, { onConflict: 'user_id,date' });
-    
-    if (error) {
-      console.error('Error setting vibe for date:', error);
-      return;
-    }
-    
+    // Optimistic update — update state immediately
     const existing = availabilityMap[dateStr];
     
     if (existing) {
@@ -1101,6 +1089,20 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     } else if (dateStr === todayStr && !vibe) {
       set({ currentVibe: null });
     }
+    
+    // Persist to database in the background
+    const { error } = await supabase
+      .from('availability')
+      .upsert({
+        user_id: userId,
+        date: dateStr,
+        vibe: vibe,
+      } as any, { onConflict: 'user_id,date' });
+    
+    if (error) {
+      console.error('Error setting vibe for date:', error);
+    }
+  },
   },
   
   setVibe: async (vibe) => {
