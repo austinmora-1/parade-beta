@@ -165,7 +165,7 @@ export default function Availability() {
             className="shrink-0 gap-2"
             onClick={() => navigate('/plans')}
           >
-            <CalendarDays className="h-4 w-4" />
+            <LayoutList className="h-4 w-4" />
             <span className="hidden sm:inline">Plans</span>
           </Button>
           <ShareDialog
