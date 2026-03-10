@@ -31,7 +31,7 @@ const NotFound = () => {
 
           {/* Mouse scurrying in from the left */}
           <motion.div
-            className="absolute bottom-6 text-2xl select-none"
+            className="absolute bottom-3 text-2xl select-none leading-none"
             initial={{ left: "-10%", opacity: 0 }}
             animate={{
               left: ["−10%", "38%", "42%", "40%", "42%"],
