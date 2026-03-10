@@ -34,7 +34,7 @@ export function FloatingFeedbackButton() {
         <DropdownMenuContent align="end" side="top" className="w-48 mb-2">
           <DropdownMenuItem onClick={() => setCreatePlanOpen(true)} className="gap-2">
             <CalendarPlus className="h-4 w-4" />
-            Create a Plan
+            Make a Plan
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setSendVibeOpen(true)} className="gap-2">
             <Zap className="h-4 w-4" />

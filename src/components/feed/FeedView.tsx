@@ -317,7 +317,7 @@ export function FeedView() {
         <div className="mb-3 text-4xl">🎪</div>
         <p className="text-muted-foreground font-medium">Your feed is empty</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Send a vibe or create a plan to get started!
+          Send a vibe or make a plan to get started!
         </p>
       </div>
     );
