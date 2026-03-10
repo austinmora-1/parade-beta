@@ -31,7 +31,7 @@ const NotFound = () => {
 
           {/* Mouse scurrying in from the left */}
           <motion.div
-            className="absolute bottom-6 text-2xl select-none"
+            className="absolute bottom-3 text-2xl select-none leading-none"
             initial={{ left: "-10%", opacity: 0 }}
             animate={{
               left: ["−10%", "38%", "42%", "40%", "42%"],
@@ -50,7 +50,7 @@ const NotFound = () => {
 
           {/* Elephant — jumps up in fear */}
           <motion.div
-            className="absolute bottom-6 right-[15%] text-6xl sm:text-7xl select-none origin-bottom"
+            className="absolute bottom-3 right-[15%] text-6xl sm:text-7xl select-none origin-bottom leading-none"
             initial={{ y: 0, rotate: 0 }}
             animate={{
               y: [0, 0, -40, -35, -40, -38],
