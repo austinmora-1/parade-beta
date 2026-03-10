@@ -72,7 +72,7 @@ export function CollapsibleWidget({
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 md:px-5 md:pb-5">
+            <div className={compact ? "px-3 pb-3" : "px-4 pb-4 md:px-5 md:pb-5"}>
               {children}
             </div>
           </motion.div>
