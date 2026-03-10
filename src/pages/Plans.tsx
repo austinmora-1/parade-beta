@@ -156,7 +156,7 @@ export default function Plans() {
 
       {/* Content */}
       {view === 'list' ? (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {sortedPlans.length > 0 ? (
             sortedPlans.map((plan) => (
               <PlanCard
