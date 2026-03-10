@@ -28,7 +28,7 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
           src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-header-banner.png"
           alt="Parade"
           width="600"
-          height="100"
+          height="auto"
           style={headerImg}
         />
       </Section>
