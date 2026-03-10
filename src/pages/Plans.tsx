@@ -131,11 +131,16 @@ export default function Plans() {
     <div className="animate-fade-in space-y-4 md:space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="font-display text-lg font-bold md:text-2xl">Plans</h1>
-          <p className="hidden text-muted-foreground md:block">
-            Manage and organize your upcoming activities
-          </p>
+        <div className="flex items-center gap-2 min-w-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate('/availability')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0">
+            <h1 className="font-display text-lg font-bold md:text-2xl">Plans</h1>
+            <p className="hidden text-muted-foreground md:block">
+              Manage and organize your upcoming activities
+            </p>
+          </div>
         </div>
         <Button onClick={() => setDialogOpen(true)} size="sm" className="shrink-0 gap-2">
           <Plus className="h-4 w-4" />
