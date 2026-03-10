@@ -21,6 +21,7 @@ export function CollapsibleWidget({
   badge,
   headerRight,
   defaultOpen = true,
+  compact = false,
   children,
   className,
 }: CollapsibleWidgetProps) {
