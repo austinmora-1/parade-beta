@@ -372,6 +372,20 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
       updatePlan(editPlan.id, planData);
     } else {
       addPlan(planData);
+      // Show post-creation summary
+      setCreatedPlanSummary({
+        title: effectiveTitle,
+        activity,
+        date,
+        endDate: isMultiDay && endDate ? endDate : undefined,
+        timeSlot,
+        startTime: startTime || undefined,
+        endTime: endTime || undefined,
+        duration: parseInt(duration) || 60,
+        location: locationName || undefined,
+        participants: allParticipants,
+        status: planStatus,
+      });
     }
 
     onOpenChange(false);
