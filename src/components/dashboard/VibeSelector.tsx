@@ -72,7 +72,8 @@ export function VibeSelector() {
     <>
       <CollapsibleWidget
         title="What's your vibe?"
-        icon={<Sparkles className="h-4 w-4 text-primary" />}
+        icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
+        compact
       >
         <div className="flex items-center gap-2">
           {showCustomInput ? (

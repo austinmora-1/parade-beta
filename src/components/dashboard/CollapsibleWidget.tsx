@@ -10,6 +10,7 @@ interface CollapsibleWidgetProps {
   badge?: ReactNode;
   headerRight?: ReactNode;
   defaultOpen?: boolean;
+  compact?: boolean;
   children: ReactNode;
   className?: string;
 }
@@ -20,6 +21,7 @@ export function CollapsibleWidget({
   badge,
   headerRight,
   defaultOpen = true,
+  compact = false,
   children,
   className,
 }: CollapsibleWidgetProps) {
@@ -36,12 +38,14 @@ export function CollapsibleWidget({
           "flex w-full items-center justify-between text-left",
           isArcade
             ? "px-3 py-1.5 min-h-[32px]"
-            : "px-4 py-3 md:px-5 md:py-3.5 min-h-[44px] md:min-h-[48px]"
+            : compact
+              ? "px-3 py-2 min-h-[36px]"
+              : "px-4 py-3 md:px-5 md:py-3.5 min-h-[44px] md:min-h-[48px]"
         )}
       >
         <div className="flex items-center gap-2 min-w-0">
           {icon}
-          <h3 className={cn("font-display font-semibold", isArcade ? "text-[10px]" : "text-base")}>{title}</h3>
+          <h3 className={cn("font-display font-semibold", isArcade ? "text-[10px]" : compact ? "text-sm" : "text-base")}>{title}</h3>
           {badge}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -68,7 +72,7 @@ export function CollapsibleWidget({
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 md:px-5 md:pb-5">
+            <div className={compact ? "px-3 pb-3" : "px-4 pb-4 md:px-5 md:pb-5"}>
               {children}
             </div>
           </motion.div>
