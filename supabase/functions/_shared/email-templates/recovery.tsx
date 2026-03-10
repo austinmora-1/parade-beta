@@ -28,8 +28,8 @@ export const RecoveryEmail = ({
     <Head />
     <Preview>Reset your Parade password</Preview>
     <Body style={main}>
-      <Container style={outerContainer}>
-        <Section style={header}>
+      <Section style={headerBanner}>
+        <Container style={headerContainer}>
           <Img
             src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-wordmark.png"
             alt="Parade"
@@ -37,7 +37,9 @@ export const RecoveryEmail = ({
             height="auto"
             style={headerLogo}
           />
-        </Section>
+        </Container>
+      </Section>
+      <Container style={outerContainer}>
         <Section style={body}>
           <Heading style={h1}>Reset your password</Heading>
           <Text style={text}>
@@ -46,7 +48,7 @@ export const RecoveryEmail = ({
           <Button style={button} href={confirmationUrl}>
             Reset My Password
           </Button>
-          <Text style={footer}>
+          <Text style={footerText}>
             If you didn't request this, no action needed — your password stays the same.
           </Text>
         </Section>
@@ -58,13 +60,15 @@ export const RecoveryEmail = ({
 export default RecoveryEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
-const outerContainer = { maxWidth: '480px', margin: '0 auto', overflow: 'hidden' as const }
-const header = {
+const headerBanner = {
   backgroundColor: '#111E16',
-  padding: '32px 25px',
+  padding: '32px 0',
   textAlign: 'center' as const,
+  width: '100%',
 }
+const headerContainer = { maxWidth: '480px', margin: '0 auto' }
 const headerLogo = { margin: '0 auto' }
+const outerContainer = { maxWidth: '480px', margin: '0 auto', overflow: 'hidden' as const }
 const body = { padding: '32px 25px' }
 const h1 = {
   fontSize: '24px',
@@ -88,4 +92,4 @@ const button = {
   textDecoration: 'none',
   display: 'inline-block' as const,
 }
-const footer = { fontSize: '12px', color: '#8a9b92', margin: '32px 0 0' }
+const footerText = { fontSize: '12px', color: '#8a9b92', margin: '32px 0 0' }
