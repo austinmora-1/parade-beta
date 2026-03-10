@@ -1041,43 +1041,44 @@ export default function Notifications() {
           </h2>
 
           {visibleIncomingRequests.length > 0 ? (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visibleIncomingRequests.map((friend) => (
-                <div
-                  key={friend.id}
-                  className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={friend.avatar} />
-                      <AvatarFallback className={getAvatarColor(friend.name)}>
-                        {getInitials(friend.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{friend.name}</p>
-                      <p className="text-sm text-muted-foreground">wants to connect with you</p>
+                <SwipeableDismiss key={friend.id} onDismiss={() => dismiss(`friend-${friend.id}`)}>
+                  <div
+                    className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={friend.avatar} />
+                        <AvatarFallback className={getAvatarColor(friend.name)}>
+                          {getInitials(friend.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{friend.name}</p>
+                        <p className="text-sm text-muted-foreground">wants to connect with you</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDecline(friend.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Decline
+                      </Button>
+                      <Button size="sm" onClick={() => handleAccept(friend.id)}>
+                        <Check className="h-4 w-4 mr-1" />
+                        Accept
+                      </Button>
+                      <DismissButton id={`friend-${friend.id}`} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDecline(friend.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Decline
-                    </Button>
-                    <Button size="sm" onClick={() => handleAccept(friend.id)}>
-                      <Check className="h-4 w-4 mr-1" />
-                      Accept
-                    </Button>
-                    <DismissButton id={`friend-${friend.id}`} />
-                  </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           ) : dismissedFriendRequestCount > 0 ? (
             <div className="rounded-xl border border-border bg-card p-4 text-center shadow-soft">
               <p className="text-sm text-muted-foreground">
