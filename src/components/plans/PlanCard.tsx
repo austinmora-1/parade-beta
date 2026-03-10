@@ -81,7 +81,7 @@ export function PlanCard({
         }
       }}
       className={cn(
-        "group rounded-2xl border bg-card p-5 shadow-soft transition-all duration-200 hover:shadow-glow cursor-pointer touch-manipulation",
+        "group rounded-xl border bg-card px-3 py-2.5 shadow-soft transition-all duration-200 hover:shadow-glow cursor-pointer touch-manipulation",
         isTentative 
           ? "border-dashed border-border/60 opacity-70" 
           : "border-border",
@@ -89,33 +89,52 @@ export function PlanCard({
       )}
     >
       <div className="flex items-start justify-between">
-        <div className="flex gap-4">
+        <div className="flex gap-2.5 items-center">
           <div
-            className="flex h-14 w-14 items-center justify-center rounded-xl text-3xl"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg shrink-0"
             style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
           >
-            <ActivityIcon config={activityConfig} size={28} />
+            <ActivityIcon config={activityConfig} size={18} />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h3 className="font-display text-lg font-semibold">{displayTitle}</h3>
+              <h3 className="font-display text-sm font-semibold truncate">{displayTitle}</h3>
               {plan.recurringPlanId && (
-                <span title="Recurring plan"><Repeat className="h-3.5 w-3.5 text-muted-foreground" /></span>
+                <span title="Recurring plan"><Repeat className="h-3 w-3 text-muted-foreground shrink-0" /></span>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{activityConfig.label}</p>
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {plan.endDate
+                  ? `${format(plan.date, 'EEE, MMM d')} – ${format(plan.endDate, 'MMM d')}`
+                  : format(plan.date, 'EEE, MMM d')}
+                {plan.startTime || plan.endTime ? (
+                  <> • {plan.startTime && formatTimeDisplay(plan.startTime)}{plan.startTime && plan.endTime && '–'}{plan.endTime && formatTimeDisplay(plan.endTime)}</>
+                ) : (
+                  <> • {timeSlotConfig.time}</>
+                )}
+              </span>
+              {plan.duration && !plan.startTime && !plan.endTime && (
+                <span>
+                  {plan.duration >= 60
+                    ? `${Math.floor(plan.duration / 60)}h${plan.duration % 60 > 0 ? ` ${plan.duration % 60}m` : ''}`
+                    : `${plan.duration}m`}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-1 shrink-0" data-stop-card-click onClick={e => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
+                className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
               >
-                <MoreVertical className="h-4 w-4" />
+                <MoreVertical className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -131,51 +150,27 @@ export function PlanCard({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <Clock className="h-4 w-4" />
-          <span>
-            {plan.endDate
-              ? `${format(plan.date, 'EEE, MMM d')} – ${format(plan.endDate, 'EEE, MMM d')}`
-              : format(plan.date, 'EEE, MMM d')}
-            {plan.startTime || plan.endTime ? (
-              <> • {plan.startTime && formatTimeDisplay(plan.startTime)}{plan.startTime && plan.endTime && ' – '}{plan.endTime && formatTimeDisplay(plan.endTime)}</>
-            ) : (
-              <> • {timeSlotConfig.time}</>
-            )}
-          </span>
-        </div>
-        
-        {plan.duration && !plan.startTime && !plan.endTime && (
-          <span className="text-muted-foreground">
-            {plan.duration >= 60
-              ? `${Math.floor(plan.duration / 60)}h ${plan.duration % 60 > 0 ? `${plan.duration % 60}m` : ''}`
-              : `${plan.duration}m`}
-          </span>
-        )}
-      </div>
-
-      {(plan.participants.length > 0 || plan.location) && (
-        <div className="mt-3 flex flex-wrap gap-3">
+      {(plan.participants.filter(p => p.role !== 'subscriber').length > 0 || plan.location) && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pl-[46px]">
           {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5" data-stop-card-click onClick={e => e.stopPropagation()}>
-              <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
+              <Users className="h-3 w-3" />
               <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} />
             </div>
           )}
 
           {plan.participants.filter(p => p.role === 'subscriber').length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-1.5" data-stop-card-click onClick={e => e.stopPropagation()}>
-              <Eye className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
+              <Eye className="h-3 w-3" />
               <ParticipantsList participants={plan.participants.filter(p => p.role === 'subscriber')} />
             </div>
           )}
           
           {plan.location && (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{plan.location.name}</span>
-            </div>
+            <span className="flex items-center gap-1 truncate">
+              <MapPin className="h-3 w-3 shrink-0" />
+              {plan.location.name}
+            </span>
           )}
         </div>
       )}
