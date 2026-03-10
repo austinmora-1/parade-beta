@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { format, addDays, addWeeks, startOfWeek, isSameDay, isToday, isSameWeek } from 'date-fns';
 import { Sparkles, Calendar, Home, Building2, Car, Loader2, Clock, MapPin, Send, X, ChevronLeft, ChevronRight, ChevronDown, Plane } from 'lucide-react';
 import { cn } from '@/lib/utils';
