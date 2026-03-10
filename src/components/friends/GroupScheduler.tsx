@@ -206,7 +206,7 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
   const showSearchDropdown = isSearchFocused && searchQuery.trim().length > 0 && searchResults.length > 0;
 
   return (
-    <Collapsible defaultOpen={false}>
+    <Collapsible defaultOpen={false} className="group/hang">
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft md:p-4">
       <CollapsibleTrigger className="flex w-full items-center justify-between">
         <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
