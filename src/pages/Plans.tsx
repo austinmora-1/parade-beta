@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 
 export default function Plans() {
+  const navigate = useNavigate();
   const { plans, deletePlan, userId } = usePlannerStore();
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const { recurringPlans, pauseRecurringPlan, resumeRecurringPlan, deleteRecurringPlan } = useRecurringPlans();
