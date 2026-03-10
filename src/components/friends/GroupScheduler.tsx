@@ -206,11 +206,17 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
   const showSearchDropdown = isSearchFocused && searchQuery.trim().length > 0 && searchResults.length > 0;
 
   return (
+    <Collapsible defaultOpen={false}>
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft md:p-4">
-      <h2 className="mb-2.5 flex items-center gap-2 font-display text-sm font-semibold">
-        <Users className="h-4 w-4 text-primary" />
-        Schedule a Hang
-      </h2>
+      <CollapsibleTrigger className="flex w-full items-center justify-between">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
+          <Users className="h-4 w-4 text-primary" />
+          Schedule a Hang
+        </h2>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>*>&]:rotate-180" />
+      </CollapsibleTrigger>
+
+      <CollapsibleContent className="mt-2.5">
 
       {/* Selected friends chips */}
       {selectedFriends.length > 0 && (
