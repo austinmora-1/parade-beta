@@ -29,15 +29,13 @@ export const RecoveryEmail = ({
     <Preview>Reset your Parade password</Preview>
     <Body style={main}>
       <Section style={headerBanner}>
-        <Container style={headerContainer}>
-          <Img
-            src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-wordmark.png"
-            alt="Parade"
-            width="140"
-            height="auto"
-            style={headerLogo}
-          />
-        </Container>
+        <Img
+          src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-header-banner.png"
+          alt="Parade"
+          width="600"
+          height="auto"
+          style={headerImg}
+        />
       </Section>
       <Container style={outerContainer}>
         <Section style={body}>
@@ -61,13 +59,17 @@ export default RecoveryEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
 const headerBanner = {
-  backgroundColor: '#111E16',
-  padding: '32px 0',
-  textAlign: 'center' as const,
   width: '100%',
+  textAlign: 'center' as const,
+  padding: '0',
+  margin: '0',
 }
-const headerContainer = { maxWidth: '480px', margin: '0 auto' }
-const headerLogo = { margin: '0 auto' }
+const headerImg = {
+  width: '100%',
+  maxWidth: '100%',
+  display: 'block' as const,
+  margin: '0',
+}
 const outerContainer = { maxWidth: '480px', margin: '0 auto', overflow: 'hidden' as const }
 const body = { padding: '32px 25px' }
 const h1 = {
