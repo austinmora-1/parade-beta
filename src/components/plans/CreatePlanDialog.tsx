@@ -1043,5 +1043,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
         </div>
       </DialogContent>
     </Dialog>
+
+    <PlanCreatedDialog
+      open={!!createdPlanSummary}
+      onOpenChange={(open) => { if (!open) setCreatedPlanSummary(null); }}
+      plan={createdPlanSummary}
+    />
+    </>
   );
 }
