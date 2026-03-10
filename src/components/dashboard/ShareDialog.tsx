@@ -278,22 +278,6 @@ export function ShareDialog({ trigger, open: controlledOpen, onOpenChange }: Sha
               </div>
             </button>
             
-            {/* Share Screenshot */}
-            <button
-              onClick={handleShareScreenshot}
-              disabled={isCapturing}
-              className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-2.5 text-left transition-all hover:bg-muted/50 disabled:opacity-50"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/10">
-                <Image className="h-4 w-4 text-secondary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-medium text-sm truncate">
-                  {isCapturing ? 'Capturing...' : 'Share Screenshot'}
-                </h3>
-                <p className="text-xs text-muted-foreground truncate">Capture and share an image</p>
-              </div>
-            </button>
             
             {/* Copy Link */}
             <div className="relative">
