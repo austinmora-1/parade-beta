@@ -28,16 +28,16 @@ export const MagicLinkEmail = ({
     <Head />
     <Preview>Your Parade login link ✨</Preview>
     <Body style={main}>
+      <Section style={headerBanner}>
+        <Img
+          src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-header-banner.png"
+          alt="Parade"
+          width="600"
+          height="auto"
+          style={headerImg}
+        />
+      </Section>
       <Container style={outerContainer}>
-        <Section style={header}>
-          <Img
-            src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-wordmark.png"
-            alt="Parade"
-            width="140"
-            height="auto"
-            style={headerLogo}
-          />
-        </Section>
         <Section style={body}>
           <Heading style={h1}>Your login link</Heading>
           <Text style={text}>
@@ -46,7 +46,7 @@ export const MagicLinkEmail = ({
           <Button style={button} href={confirmationUrl}>
             Log In to Parade
           </Button>
-          <Text style={footer}>
+          <Text style={footerText}>
             If you didn't request this link, you can safely ignore this email.
           </Text>
         </Section>
@@ -58,13 +58,19 @@ export const MagicLinkEmail = ({
 export default MagicLinkEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
-const outerContainer = { maxWidth: '480px', margin: '0 auto', overflow: 'hidden' as const }
-const header = {
-  backgroundColor: '#111E16',
-  padding: '32px 25px',
+const headerBanner = {
+  width: '100%',
   textAlign: 'center' as const,
+  padding: '0',
+  margin: '0',
 }
-const headerLogo = { margin: '0 auto' }
+const headerImg = {
+  width: '100%',
+  maxWidth: '100%',
+  display: 'block' as const,
+  margin: '0',
+}
+const outerContainer = { maxWidth: '480px', margin: '0 auto', overflow: 'hidden' as const }
 const body = { padding: '32px 25px' }
 const h1 = {
   fontSize: '24px',
@@ -88,4 +94,4 @@ const button = {
   textDecoration: 'none',
   display: 'inline-block' as const,
 }
-const footer = { fontSize: '12px', color: '#8a9b92', margin: '32px 0 0' }
+const footerText = { fontSize: '12px', color: '#8a9b92', margin: '32px 0 0' }
