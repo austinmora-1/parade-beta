@@ -52,6 +52,7 @@ import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { usePods } from '@/hooks/usePods';
 import { useRecurringPlans } from '@/hooks/useRecurringPlans';
 import { toast } from 'sonner';
+import { PlanCreatedDialog } from '@/components/plans/PlanCreatedDialog';
 
 interface PlaceSuggestion {
   place_id: string;
