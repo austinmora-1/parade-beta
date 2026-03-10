@@ -33,7 +33,7 @@ export const RecoveryEmail = ({
           src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/email-assets/email-header-banner.png"
           alt="Parade"
           width="600"
-          height="auto"
+          height="100"
           style={headerImg}
         />
       </Section>
