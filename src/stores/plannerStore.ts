@@ -49,6 +49,8 @@ interface PlannerState {
   setAvailability: (date: Date, slot: TimeSlot, available: boolean) => Promise<void>;
   setLocationStatus: (status: LocationStatus, date?: Date) => Promise<void>;
   getLocationStatusForDate: (date: Date) => LocationStatus;
+  setVibeForDate: (date: Date, vibe: VibeType | null) => Promise<void>;
+  getVibeForDate: (date: Date) => VibeType | null;
   setVibe: (vibe: Vibe | null) => Promise<void>;
   addCustomVibe: (tag: string) => Promise<void>;
   removeCustomVibe: (tag: string) => Promise<void>;
