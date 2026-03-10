@@ -213,7 +213,7 @@ export function GroupScheduler({ friends }: GroupSchedulerProps) {
           <Users className="h-4 w-4 text-primary" />
           Schedule a Hang
         </h2>
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>*>&]:rotate-180" />
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/hang:rotate-180" />
       </CollapsibleTrigger>
 
       <CollapsibleContent className="mt-2.5">
