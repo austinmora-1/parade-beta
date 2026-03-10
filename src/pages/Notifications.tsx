@@ -822,69 +822,70 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visiblePendingChanges.map((change) => (
-                <div
-                  key={change.id}
-                  className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3 shadow-soft"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-foreground truncate">{change.plan_title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {change.proposed_by_name} proposed a change
-                      </p>
+                <SwipeableDismiss key={change.id} onDismiss={() => dismiss(`change-${change.id}`)}>
+                  <div
+                    className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground truncate">{change.plan_title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {change.proposed_by_name} proposed a change
+                        </p>
+                      </div>
+                      <DismissButton id={`change-${change.id}`} />
                     </div>
-                    <DismissButton id={`change-${change.id}`} />
-                  </div>
 
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    {change.proposed_date && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        New date: {formatPlanDate(change.proposed_date)}
-                      </span>
-                    )}
-                    {change.proposed_time_slot && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        New time: {formatTimeSlot(change.proposed_time_slot)}
-                      </span>
-                    )}
-                    {change.proposed_duration && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        Duration: {change.proposed_duration >= 60
-                          ? `${Math.floor(change.proposed_duration / 60)}h${change.proposed_duration % 60 > 0 ? ` ${change.proposed_duration % 60}m` : ''}`
-                          : `${change.proposed_duration}m`}
-                      </span>
-                    )}
-                  </div>
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      {change.proposed_date && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          New date: {formatPlanDate(change.proposed_date)}
+                        </span>
+                      )}
+                      {change.proposed_time_slot && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          New time: {formatTimeSlot(change.proposed_time_slot)}
+                        </span>
+                      )}
+                      {change.proposed_duration && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          Duration: {change.proposed_duration >= 60
+                            ? `${Math.floor(change.proposed_duration / 60)}h${change.proposed_duration % 60 > 0 ? ` ${change.proposed_duration % 60}m` : ''}`
+                            : `${change.proposed_duration}m`}
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => respondToChangeRequest(change.change_request_id, change.id, 'accepted')}
-                      disabled={updating === change.id}
-                      className="flex-1 gap-1"
-                    >
-                      {updating === change.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => respondToChangeRequest(change.change_request_id, change.id, 'declined')}
-                      disabled={updating === change.id}
-                      className="flex-1 gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Decline
-                    </Button>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => respondToChangeRequest(change.change_request_id, change.id, 'accepted')}
+                        disabled={updating === change.id}
+                        className="flex-1 gap-1"
+                      >
+                        {updating === change.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => respondToChangeRequest(change.change_request_id, change.id, 'declined')}
+                        disabled={updating === change.id}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
