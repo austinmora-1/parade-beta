@@ -499,6 +499,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             },
             locationStatus: (existing.location_status as LocationStatus) || 'home',
             tripLocation: existing.trip_location || undefined,
+            vibe: (existing as any).vibe as VibeType | null || null,
           };
         }
         return createDefaultAvailability(date, defaultSettings);
