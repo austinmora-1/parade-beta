@@ -5,7 +5,8 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
-import { RefreshCw, Loader2, Plus, PlaneTakeoff } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, PlaneTakeoff, CalendarDays } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -22,6 +23,7 @@ const TABS = [
 type TabId = typeof TABS[number]['id'];
 
 export default function Availability() {
+  const navigate = useNavigate();
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadAllData = usePlannerStore((s) => s.loadAllData);
@@ -156,6 +158,15 @@ export default function Availability() {
           >
             <PlaneTakeoff className="h-4 w-4" />
             <span className="hidden sm:inline">Add Trip</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 gap-2"
+            onClick={() => navigate('/plans')}
+          >
+            <CalendarDays className="h-4 w-4" />
+            <span className="hidden sm:inline">Plans</span>
           </Button>
           <ShareDialog
             trigger={
