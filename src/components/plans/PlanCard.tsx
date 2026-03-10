@@ -81,99 +81,74 @@ export function PlanCard({
         }
       }}
       className={cn(
-        "group rounded-xl border bg-card px-3 py-2.5 shadow-soft transition-all duration-200 hover:shadow-glow cursor-pointer touch-manipulation",
-        isTentative 
-          ? "border-dashed border-border/60 opacity-70" 
-          : "border-border",
+        "group flex items-center gap-2 rounded-md border border-border/50 bg-background/80 px-2 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation",
+        isTentative && "border-dashed border-border/60 opacity-70",
         changeRequest && "border-amber-500/30"
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex gap-2.5 items-center">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg shrink-0"
-            style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
-          >
-            <ActivityIcon config={activityConfig} size={18} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h3 className="font-display text-sm font-semibold truncate">{displayTitle}</h3>
-              {plan.recurringPlanId && (
-                <span title="Recurring plan"><Repeat className="h-3 w-3 text-muted-foreground shrink-0" /></span>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {plan.endDate
-                  ? `${format(plan.date, 'EEE, MMM d')} – ${format(plan.endDate, 'MMM d')}`
-                  : format(plan.date, 'EEE, MMM d')}
-                {plan.startTime || plan.endTime ? (
-                  <> • {plan.startTime && formatTimeDisplay(plan.startTime)}{plan.startTime && plan.endTime && '–'}{plan.endTime && formatTimeDisplay(plan.endTime)}</>
-                ) : (
-                  <> • {timeSlotConfig.time}</>
-                )}
-              </span>
-              {plan.duration && !plan.startTime && !plan.endTime && (
-                <span>
-                  {plan.duration >= 60
-                    ? `${Math.floor(plan.duration / 60)}h${plan.duration % 60 > 0 ? ` ${plan.duration % 60}m` : ''}`
-                    : `${plan.duration}m`}
-                </span>
-              )}
-            </div>
-          </div>
+      {/* Activity icon */}
+      <ActivityIcon config={activityConfig} size={14} className="shrink-0" />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {/* Title row */}
+        <div className="flex items-center gap-1">
+          <p className="text-xs font-medium truncate">{displayTitle}</p>
+          {plan.recurringPlanId && (
+            <Repeat className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+          )}
+          {isTentative && (
+            <span className="text-[8px] text-muted-foreground">tentative</span>
+          )}
         </div>
 
-        <div className="flex items-center gap-1 shrink-0" data-stop-card-click onClick={e => e.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
-              >
-                <MoreVertical className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => onDelete?.(plan.id)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {/* Date & time row */}
+        <p className="text-[10px] text-muted-foreground">
+          {plan.endDate
+            ? `${format(plan.date, 'EEE, MMM d')} – ${format(plan.endDate, 'MMM d')}`
+            : format(plan.date, 'EEE, MMM d')}
+          {plan.startTime || plan.endTime ? (
+            <> · {plan.startTime && formatTimeDisplay(plan.startTime)}{plan.startTime && plan.endTime && ' – '}{plan.endTime && formatTimeDisplay(plan.endTime)}</>
+          ) : (
+            <> · {timeSlotConfig.time}</>
+          )}
+        </p>
+
+        {/* Participants row */}
+        {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
+          <p className="text-[10px] text-muted-foreground truncate">
+            w/ {plan.participants.filter(p => p.role !== 'subscriber').map(p => p.name).join(', ')}
+          </p>
+        )}
+
+        {/* Location row */}
+        {plan.location && (
+          <p className="text-[10px] text-muted-foreground truncate flex items-center gap-0.5">
+            <MapPin className="h-2.5 w-2.5 shrink-0" />
+            {plan.location.name}
+          </p>
+        )}
       </div>
 
-      {(plan.participants.filter(p => p.role !== 'subscriber').length > 0 || plan.location) && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pl-[46px]">
-          {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-            <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
-              <Users className="h-3 w-3" />
-              <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} />
-            </div>
-          )}
-
-          {plan.participants.filter(p => p.role === 'subscriber').length > 0 && (
-            <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
-              <Eye className="h-3 w-3" />
-              <ParticipantsList participants={plan.participants.filter(p => p.role === 'subscriber')} />
-            </div>
-          )}
-          
-          {plan.location && (
-            <span className="flex items-center gap-1 truncate">
-              <MapPin className="h-3 w-3 shrink-0" />
-              {plan.location.name}
-            </span>
-          )}
-        </div>
-      )}
+      {/* Actions */}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" data-stop-card-click onClick={e => e.stopPropagation()}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-6 w-6">
+              <MoreVertical className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => onDelete?.(plan.id)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Pending change request */}
       {changeRequest && onAcceptChange && onDeclineChange && (
