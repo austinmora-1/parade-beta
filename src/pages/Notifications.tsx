@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
 import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG } from '@/types/planner';
+import { SwipeableDismiss } from '@/components/ui/SwipeableDismiss';
+import { AnimatePresence } from 'framer-motion';
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
@@ -609,48 +611,49 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visibleParticipantRequests.map((req) => (
-                <div
-                  key={req.id}
-                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground">
-                        Add <span className="text-primary">{req.friend_name}</span> to {req.plan_title}?
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Suggested by {req.requester_name}
-                      </p>
+                <SwipeableDismiss key={req.id} onDismiss={() => dismiss(`participant-req-${req.id}`)}>
+                  <div
+                    className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground">
+                          Add <span className="text-primary">{req.friend_name}</span> to {req.plan_title}?
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Suggested by {req.requester_name}
+                        </p>
+                      </div>
+                      <DismissButton id={`participant-req-${req.id}`} />
                     </div>
-                    <DismissButton id={`participant-req-${req.id}`} />
-                  </div>
 
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => handleApproveParticipantRequest(req.id)}
-                      disabled={updating === req.id}
-                      className="flex-1 gap-1"
-                    >
-                      {updating === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDenyParticipantRequest(req.id)}
-                      disabled={updating === req.id}
-                      className="flex-1 gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Deny
-                    </Button>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproveParticipantRequest(req.id)}
+                        disabled={updating === req.id}
+                        className="flex-1 gap-1"
+                      >
+                        {updating === req.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDenyParticipantRequest(req.id)}
+                        disabled={updating === req.id}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Deny
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
@@ -673,48 +676,49 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visibleVibes.map((vibe) => {
                 const vibeConfig = VIBE_CONFIG[vibe.vibe_type as keyof typeof VIBE_CONFIG];
                 return (
-                  <div
-                    key={vibe.id}
-                    className="rounded-2xl border border-border bg-card p-4 shadow-soft cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => { handleDismissVibe(vibe.id); navigate(`/?vibe=${vibe.vibe_send_id}`); }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={vibe.sender_avatar || undefined} />
-                          <AvatarFallback className={getAvatarColor(vibe.sender_name)}>
-                            {getInitials(vibe.sender_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm">
-                            <span className="text-primary">{vibe.sender_name}</span> sent you a vibe
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-sm">{vibeConfig?.icon || '✨'}</span>
-                            <span className="text-xs text-muted-foreground capitalize">{vibeConfig?.label || vibe.vibe_type}</span>
-                            {vibe.message && (
-                              <span className="text-xs text-muted-foreground truncate">· {vibe.message}</span>
-                            )}
+                  <SwipeableDismiss key={vibe.id} onDismiss={() => handleDismissVibe(vibe.id)}>
+                    <div
+                      className="rounded-2xl border border-border bg-card p-4 shadow-soft cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => { handleDismissVibe(vibe.id); navigate(`/?vibe=${vibe.vibe_send_id}`); }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={vibe.sender_avatar || undefined} />
+                            <AvatarFallback className={getAvatarColor(vibe.sender_name)}>
+                              {getInitials(vibe.sender_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm">
+                              <span className="text-primary">{vibe.sender_name}</span> sent you a vibe
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-sm">{vibeConfig?.icon || '✨'}</span>
+                              <span className="text-xs text-muted-foreground capitalize">{vibeConfig?.label || vibe.vibe_type}</span>
+                              {vibe.message && (
+                                <span className="text-xs text-muted-foreground truncate">· {vibe.message}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDismissVibe(vibe.id); }}
+                          className="rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted transition-colors"
+                          aria-label="Dismiss vibe"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDismissVibe(vibe.id); }}
-                        className="rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted transition-colors"
-                        aria-label="Dismiss vibe"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
                     </div>
-                  </div>
+                  </SwipeableDismiss>
                 );
               })}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
@@ -736,65 +740,66 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visiblePlanInvitations.map((invite) => (
-                <div
-                  key={invite.id}
-                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground truncate">{invite.plan_title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {invite.organizer_name} invited you
-                      </p>
+                <SwipeableDismiss key={invite.id} onDismiss={() => dismiss(`invite-${invite.id}`)}>
+                  <div
+                    className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground truncate">{invite.plan_title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {invite.organizer_name} invited you
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="shrink-0">New</Badge>
+                        <DismissButton id={`invite-${invite.id}`} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="secondary" className="shrink-0">New</Badge>
-                      <DismissButton id={`invite-${invite.id}`} />
-                    </div>
-                  </div>
 
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {formatPlanDate(invite.plan_date)}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {formatTimeSlot(invite.plan_time_slot)}
-                    </span>
-                    {invite.plan_location && (
+                    <div className="flex flex-wrap gap-2 text-sm">
                       <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                        📍 {invite.plan_location}
+                        <Calendar className="h-3 w-3" />
+                        {formatPlanDate(invite.plan_date)}
                       </span>
-                    )}
-                  </div>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {formatTimeSlot(invite.plan_time_slot)}
+                      </span>
+                      {invite.plan_location && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                          📍 {invite.plan_location}
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => respondToPlanInvite(invite.id, 'accepted')}
-                      disabled={updating === invite.id}
-                      className="flex-1 gap-1"
-                    >
-                      {updating === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => respondToPlanInvite(invite.id, 'declined')}
-                      disabled={updating === invite.id}
-                      className="flex-1 gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Decline
-                    </Button>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => respondToPlanInvite(invite.id, 'accepted')}
+                        disabled={updating === invite.id}
+                        className="flex-1 gap-1"
+                      >
+                        {updating === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => respondToPlanInvite(invite.id, 'declined')}
+                        disabled={updating === invite.id}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
@@ -817,69 +822,70 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visiblePendingChanges.map((change) => (
-                <div
-                  key={change.id}
-                  className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3 shadow-soft"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-foreground truncate">{change.plan_title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {change.proposed_by_name} proposed a change
-                      </p>
+                <SwipeableDismiss key={change.id} onDismiss={() => dismiss(`change-${change.id}`)}>
+                  <div
+                    className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground truncate">{change.plan_title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {change.proposed_by_name} proposed a change
+                        </p>
+                      </div>
+                      <DismissButton id={`change-${change.id}`} />
                     </div>
-                    <DismissButton id={`change-${change.id}`} />
-                  </div>
 
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    {change.proposed_date && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        New date: {formatPlanDate(change.proposed_date)}
-                      </span>
-                    )}
-                    {change.proposed_time_slot && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        New time: {formatTimeSlot(change.proposed_time_slot)}
-                      </span>
-                    )}
-                    {change.proposed_duration && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        Duration: {change.proposed_duration >= 60
-                          ? `${Math.floor(change.proposed_duration / 60)}h${change.proposed_duration % 60 > 0 ? ` ${change.proposed_duration % 60}m` : ''}`
-                          : `${change.proposed_duration}m`}
-                      </span>
-                    )}
-                  </div>
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      {change.proposed_date && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          New date: {formatPlanDate(change.proposed_date)}
+                        </span>
+                      )}
+                      {change.proposed_time_slot && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          New time: {formatTimeSlot(change.proposed_time_slot)}
+                        </span>
+                      )}
+                      {change.proposed_duration && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          Duration: {change.proposed_duration >= 60
+                            ? `${Math.floor(change.proposed_duration / 60)}h${change.proposed_duration % 60 > 0 ? ` ${change.proposed_duration % 60}m` : ''}`
+                            : `${change.proposed_duration}m`}
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => respondToChangeRequest(change.change_request_id, change.id, 'accepted')}
-                      disabled={updating === change.id}
-                      className="flex-1 gap-1"
-                    >
-                      {updating === change.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => respondToChangeRequest(change.change_request_id, change.id, 'declined')}
-                      disabled={updating === change.id}
-                      className="flex-1 gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Decline
-                    </Button>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => respondToChangeRequest(change.change_request_id, change.id, 'accepted')}
+                        disabled={updating === change.id}
+                        className="flex-1 gap-1"
+                      >
+                        {updating === change.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => respondToChangeRequest(change.change_request_id, change.id, 'declined')}
+                        disabled={updating === change.id}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
@@ -902,71 +908,72 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visibleHangRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground truncate">{request.requester_name}</p>
-                      {request.requester_email && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
-                          <Mail className="h-3 w-3 shrink-0" />
-                          {request.requester_email}
-                        </p>
-                      )}
-                      <p className="text-sm text-muted-foreground">wants to hang out</p>
+                <SwipeableDismiss key={request.id} onDismiss={() => dismiss(`hang-${request.id}`)}>
+                  <div
+                    className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground truncate">{request.requester_name}</p>
+                        {request.requester_email && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            {request.requester_email}
+                          </p>
+                        )}
+                        <p className="text-sm text-muted-foreground">wants to hang out</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="shrink-0">New</Badge>
+                        <DismissButton id={`hang-${request.id}`} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="secondary" className="shrink-0">New</Badge>
-                      <DismissButton id={`hang-${request.id}`} />
+
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        {format(parseISO(request.selected_day), 'EEE, MMM d')}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {HANG_SLOT_LABELS[request.selected_slot] || request.selected_slot}
+                      </span>
+                    </div>
+
+                    {request.message && (
+                      <div className="flex items-start gap-2 rounded-lg bg-background p-3">
+                        <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
+                        <p className="text-sm text-foreground">{request.message}</p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => updateHangStatus(request.id, 'accepted')}
+                        disabled={updating === request.id}
+                        className="flex-1 gap-1"
+                      >
+                        {updating === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateHangStatus(request.id, 'declined')}
+                        disabled={updating === request.id}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Decline
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {format(parseISO(request.selected_day), 'EEE, MMM d')}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {HANG_SLOT_LABELS[request.selected_slot] || request.selected_slot}
-                    </span>
-                  </div>
-
-                  {request.message && (
-                    <div className="flex items-start gap-2 rounded-lg bg-background p-3">
-                      <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                      <p className="text-sm text-foreground">{request.message}</p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => updateHangStatus(request.id, 'accepted')}
-                      disabled={updating === request.id}
-                      className="flex-1 gap-1"
-                    >
-                      {updating === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateHangStatus(request.id, 'declined')}
-                      disabled={updating === request.id}
-                      className="flex-1 gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Decline
-                    </Button>
-                  </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
@@ -989,32 +996,33 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-2">
+            <AnimatePresence>
               {visibleRecentPhotos.map((photo) => (
-                <div
-                  key={photo.id}
-                  className="rounded-xl border border-border bg-card p-3 flex items-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors shadow-soft"
-                >
+                <SwipeableDismiss key={photo.id} onDismiss={() => dismiss(`photo-${photo.id}`)}>
                   <div
-                    className="flex items-center gap-3 min-w-0 flex-1"
-                    onClick={() => navigate(`/plan/${photo.plan_id}`)}
+                    className="rounded-xl border border-border bg-card p-3 flex items-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors shadow-soft"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                      <Camera className="h-5 w-5 text-primary" />
+                    <div
+                      className="flex items-center gap-3 min-w-0 flex-1"
+                      onClick={() => navigate(`/plan/${photo.plan_id}`)}
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                        <Camera className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">
+                          {photo.uploader_name} added a photo to <span className="text-primary">{photo.plan_title}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(parseISO(photo.created_at), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">
-                        {photo.uploader_name} added a photo to <span className="text-primary">{photo.plan_title}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(parseISO(photo.created_at), 'MMM d, h:mm a')}
-                      </p>
-                    </div>
+                    <DismissButton id={`photo-${photo.id}`} />
                   </div>
-                  <DismissButton id={`photo-${photo.id}`} />
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
@@ -1033,43 +1041,44 @@ export default function Notifications() {
           </h2>
 
           {visibleIncomingRequests.length > 0 ? (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visibleIncomingRequests.map((friend) => (
-                <div
-                  key={friend.id}
-                  className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={friend.avatar} />
-                      <AvatarFallback className={getAvatarColor(friend.name)}>
-                        {getInitials(friend.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{friend.name}</p>
-                      <p className="text-sm text-muted-foreground">wants to connect with you</p>
+                <SwipeableDismiss key={friend.id} onDismiss={() => dismiss(`friend-${friend.id}`)}>
+                  <div
+                    className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-soft"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={friend.avatar} />
+                        <AvatarFallback className={getAvatarColor(friend.name)}>
+                          {getInitials(friend.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{friend.name}</p>
+                        <p className="text-sm text-muted-foreground">wants to connect with you</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDecline(friend.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Decline
+                      </Button>
+                      <Button size="sm" onClick={() => handleAccept(friend.id)}>
+                        <Check className="h-4 w-4 mr-1" />
+                        Accept
+                      </Button>
+                      <DismissButton id={`friend-${friend.id}`} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDecline(friend.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Decline
-                    </Button>
-                    <Button size="sm" onClick={() => handleAccept(friend.id)}>
-                      <Check className="h-4 w-4 mr-1" />
-                      Accept
-                    </Button>
-                    <DismissButton id={`friend-${friend.id}`} />
-                  </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           ) : dismissedFriendRequestCount > 0 ? (
             <div className="rounded-xl border border-border bg-card p-4 text-center shadow-soft">
               <p className="text-sm text-muted-foreground">
