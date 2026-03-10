@@ -127,6 +127,11 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [createdPlanSummary, setCreatedPlanSummary] = useState<{
+    title: string; activity: string; date: Date; endDate?: Date; timeSlot: TimeSlot;
+    startTime?: string; endTime?: string; duration: number; location?: string;
+    participants: typeof friends; status: string;
+  } | null>(null);
   const [_showCustomTime, _setShowCustomTime] = useState(false); // kept for edit sync
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   
