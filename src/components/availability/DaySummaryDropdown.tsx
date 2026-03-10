@@ -44,11 +44,11 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
   const { 
     plans, 
     availabilityMap,
-    currentVibe, 
+    getVibeForDate,
+    setVibeForDate,
     getLocationStatusForDate, 
     setLocationStatus,
     setAvailability,
-    setVibe,
     deletePlan
   } = usePlannerStore();
 
