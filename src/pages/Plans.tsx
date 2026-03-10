@@ -5,9 +5,10 @@ import { CalendarView } from '@/components/plans/CalendarView';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { RecurringPlansList } from '@/components/plans/RecurringPlansList';
 import { Button } from '@/components/ui/button';
-import { Plus, LayoutList, CalendarDays, ChevronDown } from 'lucide-react';
+import { Plus, LayoutList, CalendarDays, ChevronDown, ArrowLeft } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Plan } from '@/types/planner';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useRecurringPlans } from '@/hooks/useRecurringPlans';
 import {
