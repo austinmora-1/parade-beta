@@ -95,7 +95,7 @@ export function PlanCreatedDialog({ open, onOpenChange, plan }: PlanCreatedDialo
             </div>
             <div className="flex items-center gap-2.5 text-sm">
               <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="text-foreground">{timeLabel}</span>
+              <span className="text-foreground">{typeof timeLabel === 'string' ? timeLabel : timeLabel.label}</span>
             </div>
             {plan.location && (
               <div className="flex items-center gap-2.5 text-sm">
