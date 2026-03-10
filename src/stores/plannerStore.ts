@@ -1103,7 +1103,6 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       console.error('Error setting vibe for date:', error);
     }
   },
-  },
   
   setVibe: async (vibe) => {
     const { userId } = get();
