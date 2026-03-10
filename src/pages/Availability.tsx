@@ -159,6 +159,15 @@ export default function Availability() {
             <PlaneTakeoff className="h-4 w-4" />
             <span className="hidden sm:inline">Add Trip</span>
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 gap-2"
+            onClick={() => navigate('/plans')}
+          >
+            <CalendarDays className="h-4 w-4" />
+            <span className="hidden sm:inline">Plans</span>
+          </Button>
           <ShareDialog
             trigger={
               <Button size="sm" variant="outline" className="shrink-0 gap-2">
