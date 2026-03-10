@@ -676,48 +676,49 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visibleVibes.map((vibe) => {
                 const vibeConfig = VIBE_CONFIG[vibe.vibe_type as keyof typeof VIBE_CONFIG];
                 return (
-                  <div
-                    key={vibe.id}
-                    className="rounded-2xl border border-border bg-card p-4 shadow-soft cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => { handleDismissVibe(vibe.id); navigate(`/?vibe=${vibe.vibe_send_id}`); }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={vibe.sender_avatar || undefined} />
-                          <AvatarFallback className={getAvatarColor(vibe.sender_name)}>
-                            {getInitials(vibe.sender_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm">
-                            <span className="text-primary">{vibe.sender_name}</span> sent you a vibe
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-sm">{vibeConfig?.icon || '✨'}</span>
-                            <span className="text-xs text-muted-foreground capitalize">{vibeConfig?.label || vibe.vibe_type}</span>
-                            {vibe.message && (
-                              <span className="text-xs text-muted-foreground truncate">· {vibe.message}</span>
-                            )}
+                  <SwipeableDismiss key={vibe.id} onDismiss={() => handleDismissVibe(vibe.id)}>
+                    <div
+                      className="rounded-2xl border border-border bg-card p-4 shadow-soft cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => { handleDismissVibe(vibe.id); navigate(`/?vibe=${vibe.vibe_send_id}`); }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={vibe.sender_avatar || undefined} />
+                            <AvatarFallback className={getAvatarColor(vibe.sender_name)}>
+                              {getInitials(vibe.sender_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm">
+                              <span className="text-primary">{vibe.sender_name}</span> sent you a vibe
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-sm">{vibeConfig?.icon || '✨'}</span>
+                              <span className="text-xs text-muted-foreground capitalize">{vibeConfig?.label || vibe.vibe_type}</span>
+                              {vibe.message && (
+                                <span className="text-xs text-muted-foreground truncate">· {vibe.message}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDismissVibe(vibe.id); }}
+                          className="rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted transition-colors"
+                          aria-label="Dismiss vibe"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDismissVibe(vibe.id); }}
-                        className="rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted transition-colors"
-                        aria-label="Dismiss vibe"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
                     </div>
-                  </div>
+                  </SwipeableDismiss>
                 );
               })}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
