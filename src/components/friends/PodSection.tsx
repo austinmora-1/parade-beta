@@ -171,7 +171,7 @@ export function PodSection({
         <>
           {/* Pod selector dropdown */}
           <Select value={selectedPodId} onValueChange={setSelectedPodId}>
-            <SelectTrigger className="h-9 text-xs">
+            <SelectTrigger className="h-9 text-xs [&>span]:line-clamp-none [&>span]:truncate">
               <SelectValue placeholder="Select a pod" />
             </SelectTrigger>
             <SelectContent>
