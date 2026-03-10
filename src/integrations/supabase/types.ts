@@ -29,6 +29,7 @@ export type Database = {
           trip_location: string | null
           updated_at: string
           user_id: string
+          vibe: string | null
         }
         Insert: {
           created_at?: string
@@ -44,6 +45,7 @@ export type Database = {
           trip_location?: string | null
           updated_at?: string
           user_id: string
+          vibe?: string | null
         }
         Update: {
           created_at?: string
@@ -59,6 +61,7 @@ export type Database = {
           trip_location?: string | null
           updated_at?: string
           user_id?: string
+          vibe?: string | null
         }
         Relationships: []
       }

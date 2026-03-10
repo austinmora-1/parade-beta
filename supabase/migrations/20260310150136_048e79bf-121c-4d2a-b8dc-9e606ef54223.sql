@@ -1,0 +1,1 @@
+ALTER TABLE public.availability ADD COLUMN IF NOT EXISTS vibe text DEFAULT NULL;

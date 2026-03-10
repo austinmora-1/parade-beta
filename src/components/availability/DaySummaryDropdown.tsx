@@ -44,11 +44,11 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
   const { 
     plans, 
     availabilityMap,
-    currentVibe, 
+    getVibeForDate,
+    setVibeForDate,
     getLocationStatusForDate, 
     setLocationStatus,
     setAvailability,
-    setVibe,
     deletePlan
   } = usePlannerStore();
 
@@ -58,6 +58,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
   const [createDefaultSlot, setCreateDefaultSlot] = useState<TimeSlot | undefined>();
 
   const locationStatus = getLocationStatusForDate(selectedDate);
+  const dayVibe = getVibeForDate(selectedDate);
   
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
@@ -142,11 +143,11 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
         <div className="flex-1 rounded-lg border border-border bg-background p-2">
           <div className="flex gap-1">
             {vibeOptions.map(([type, config]) => {
-              const isSelected = currentVibe?.type === type;
+              const isSelected = dayVibe === type;
               return (
                 <button
                   key={type}
-                  onClick={() => setVibe(isSelected ? null : { type: type as any })}
+                  onClick={() => setVibeForDate(selectedDate, isSelected ? null : type as any)}
                   className={cn(
                     "flex-1 flex items-center justify-center rounded py-1 text-sm transition-all",
                     isSelected

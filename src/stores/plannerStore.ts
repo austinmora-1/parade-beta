@@ -49,6 +49,8 @@ interface PlannerState {
   setAvailability: (date: Date, slot: TimeSlot, available: boolean) => Promise<void>;
   setLocationStatus: (status: LocationStatus, date?: Date) => Promise<void>;
   getLocationStatusForDate: (date: Date) => LocationStatus;
+  setVibeForDate: (date: Date, vibe: VibeType | null) => Promise<void>;
+  getVibeForDate: (date: Date) => VibeType | null;
   setVibe: (vibe: Vibe | null) => Promise<void>;
   addCustomVibe: (tag: string) => Promise<void>;
   removeCustomVibe: (tag: string) => Promise<void>;
@@ -497,6 +499,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             },
             locationStatus: (existing.location_status as LocationStatus) || 'home',
             tripLocation: existing.trip_location || undefined,
+            vibe: (existing as any).vibe as VibeType | null || null,
           };
         }
         return createDefaultAvailability(date, defaultSettings);
@@ -1048,6 +1051,56 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayAvail = availabilityMap[dateStr];
     return dayAvail?.locationStatus || 'home';
+  },
+  
+  getVibeForDate: (date) => {
+    const { availabilityMap } = get();
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayAvail = availabilityMap[dateStr];
+    return dayAvail?.vibe || null;
+  },
+
+  setVibeForDate: async (date, vibe) => {
+    const { userId, availability, availabilityMap, defaultSettings } = get();
+    if (!userId) return;
+    
+    const dateStr = format(date, 'yyyy-MM-dd');
+    
+    const { error } = await supabase
+      .from('availability')
+      .upsert({
+        user_id: userId,
+        date: dateStr,
+        vibe: vibe,
+      } as any, { onConflict: 'user_id,date' });
+    
+    if (error) {
+      console.error('Error setting vibe for date:', error);
+      return;
+    }
+    
+    const existing = availabilityMap[dateStr];
+    
+    if (existing) {
+      const updatedEntry = { ...existing, vibe };
+      const updated = availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
+      set({ availability: updated, availabilityMap: { ...availabilityMap, [dateStr]: updatedEntry } });
+    } else {
+      const newAvailability = createDefaultAvailability(date, defaultSettings);
+      newAvailability.vibe = vibe;
+      set({ 
+        availability: [...availability, newAvailability],
+        availabilityMap: { ...availabilityMap, [dateStr]: newAvailability },
+      });
+    }
+    
+    // If updating today, also update the global vibe
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    if (dateStr === todayStr && vibe) {
+      set({ currentVibe: { type: vibe } });
+    } else if (dateStr === todayStr && !vibe) {
+      set({ currentVibe: null });
+    }
   },
   
   setVibe: async (vibe) => {

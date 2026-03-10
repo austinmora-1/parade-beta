@@ -107,6 +107,7 @@ export interface DayAvailability {
   locationStatus: LocationStatus;
   customLocation?: Location;
   tripLocation?: string;
+  vibe?: VibeType | null;
 }
 
 export interface UserProfile {
