@@ -116,7 +116,7 @@ export function PlanCreatedDialog({ open, onOpenChange, plan }: PlanCreatedDialo
                 {activeParticipants.map((p) => (
                   <div key={p.id} className="flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1">
                     <Avatar className="h-5 w-5">
-                      <AvatarImage src={p.avatarUrl} />
+                      <AvatarImage src={p.avatar} />
                       <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
                         {p.name?.charAt(0)?.toUpperCase() || '?'}
                       </AvatarFallback>
