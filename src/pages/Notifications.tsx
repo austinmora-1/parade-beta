@@ -996,32 +996,33 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-2">
+            <AnimatePresence>
               {visibleRecentPhotos.map((photo) => (
-                <div
-                  key={photo.id}
-                  className="rounded-xl border border-border bg-card p-3 flex items-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors shadow-soft"
-                >
+                <SwipeableDismiss key={photo.id} onDismiss={() => dismiss(`photo-${photo.id}`)}>
                   <div
-                    className="flex items-center gap-3 min-w-0 flex-1"
-                    onClick={() => navigate(`/plan/${photo.plan_id}`)}
+                    className="rounded-xl border border-border bg-card p-3 flex items-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors shadow-soft"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                      <Camera className="h-5 w-5 text-primary" />
+                    <div
+                      className="flex items-center gap-3 min-w-0 flex-1"
+                      onClick={() => navigate(`/plan/${photo.plan_id}`)}
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                        <Camera className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">
+                          {photo.uploader_name} added a photo to <span className="text-primary">{photo.plan_title}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(parseISO(photo.created_at), 'MMM d, h:mm a')}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">
-                        {photo.uploader_name} added a photo to <span className="text-primary">{photo.plan_title}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(parseISO(photo.created_at), 'MMM d, h:mm a')}
-                      </p>
-                    </div>
+                    <DismissButton id={`photo-${photo.id}`} />
                   </div>
-                  <DismissButton id={`photo-${photo.id}`} />
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
