@@ -908,71 +908,72 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visibleHangRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground truncate">{request.requester_name}</p>
-                      {request.requester_email && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
-                          <Mail className="h-3 w-3 shrink-0" />
-                          {request.requester_email}
-                        </p>
-                      )}
-                      <p className="text-sm text-muted-foreground">wants to hang out</p>
+                <SwipeableDismiss key={request.id} onDismiss={() => dismiss(`hang-${request.id}`)}>
+                  <div
+                    className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground truncate">{request.requester_name}</p>
+                        {request.requester_email && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            {request.requester_email}
+                          </p>
+                        )}
+                        <p className="text-sm text-muted-foreground">wants to hang out</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="shrink-0">New</Badge>
+                        <DismissButton id={`hang-${request.id}`} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="secondary" className="shrink-0">New</Badge>
-                      <DismissButton id={`hang-${request.id}`} />
+
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        {format(parseISO(request.selected_day), 'EEE, MMM d')}
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {HANG_SLOT_LABELS[request.selected_slot] || request.selected_slot}
+                      </span>
+                    </div>
+
+                    {request.message && (
+                      <div className="flex items-start gap-2 rounded-lg bg-background p-3">
+                        <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
+                        <p className="text-sm text-foreground">{request.message}</p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => updateHangStatus(request.id, 'accepted')}
+                        disabled={updating === request.id}
+                        className="flex-1 gap-1"
+                      >
+                        {updating === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateHangStatus(request.id, 'declined')}
+                        disabled={updating === request.id}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Decline
+                      </Button>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {format(parseISO(request.selected_day), 'EEE, MMM d')}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {HANG_SLOT_LABELS[request.selected_slot] || request.selected_slot}
-                    </span>
-                  </div>
-
-                  {request.message && (
-                    <div className="flex items-start gap-2 rounded-lg bg-background p-3">
-                      <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                      <p className="text-sm text-foreground">{request.message}</p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => updateHangStatus(request.id, 'accepted')}
-                      disabled={updating === request.id}
-                      className="flex-1 gap-1"
-                    >
-                      {updating === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateHangStatus(request.id, 'declined')}
-                      disabled={updating === request.id}
-                      className="flex-1 gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Decline
-                    </Button>
-                  </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
