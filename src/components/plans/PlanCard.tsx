@@ -3,10 +3,8 @@ import { format } from 'date-fns';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock, MoreVertical, Trash2, Eye, Repeat } from 'lucide-react';
+import { MapPin, MoreVertical, Trash2, Repeat } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
-import { FriendLink } from '@/components/ui/FriendLink';
-import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import {
   DropdownMenu,
   DropdownMenuContent,
