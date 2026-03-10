@@ -239,26 +239,67 @@ Deno.serve(async (req) => {
 
     const TRIP_THRESHOLDS = [30, 21, 14, 7];
 
+    // Check when each user last received a fading_friendship nudge (weekly throttle)
+    const { data: recentFadingNudges } = await admin
+      .from('smart_nudges')
+      .select('user_id, created_at')
+      .eq('nudge_type', 'fading_friendship')
+      .gte('created_at', new Date(Date.now() - 7 * MS_PER_DAY).toISOString());
+
+    const lastFadingNudgeByUser = new Map<string, Date>();
+    for (const n of (recentFadingNudges || [])) {
+      const existing = lastFadingNudgeByUser.get(n.user_id);
+      const d = new Date(n.created_at);
+      if (!existing || d > existing) lastFadingNudgeByUser.set(n.user_id, d);
+    }
+
     // Process each user
     for (const [userId, friends] of friendshipMap) {
       const profile = profileMap.get(userId);
       if (!profile) continue;
 
       // ── FADING FRIENDSHIP NUDGES ──
-      for (const friend of friends) {
-        const key = `${userId}:${friend.friendUserId}`;
-        const lastDate = lastHungOut.get(key);
-        
-        let daysSince: number;
-        if (!lastDate) {
-          daysSince = 30;
-        } else {
-          daysSince = Math.floor((Date.now() - lastDate.getTime()) / MS_PER_DAY);
-        }
+      // Throttle: only send once per week per user
+      const lastFadingSent = lastFadingNudgeByUser.get(userId);
+      if (!lastFadingSent || (Date.now() - lastFadingSent.getTime()) >= 7 * MS_PER_DAY) {
+        const userHomeBase = homeBaseMap.get(userId);
 
-        if (daysSince >= 14) {
+        // Score and rank friends: prioritize same location, then by days since last hung out
+        const scoredFriends: Array<{
+          friend: typeof friends[0];
+          daysSince: number;
+          sameLocation: boolean;
+        }> = [];
+
+        for (const friend of friends) {
+          const key = `${userId}:${friend.friendUserId}`;
+          const lastDate = lastHungOut.get(key);
+          const daysSince = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / MS_PER_DAY) : 30;
+
+          if (daysSince < 14) continue; // Not fading yet
+
           const nudgeKey = `${userId}:fading_friendship:${friend.friendUserId}`;
           if (existingSet.has(nudgeKey)) continue;
+
+          // Check if friend is in the same home location
+          const friendHome = homeBaseMap.get(friend.friendUserId);
+          const sameLocation = !!(userHomeBase && friendHome && citiesMatch(userHomeBase, friendHome));
+
+          scoredFriends.push({ friend, daysSince, sameLocation });
+        }
+
+        // Sort: same location first, then by days since (descending = most overdue first)
+        scoredFriends.sort((a, b) => {
+          if (a.sameLocation !== b.sameLocation) return a.sameLocation ? -1 : 1;
+          return b.daysSince - a.daysSince;
+        });
+
+        // Only pick top 2 friends per week
+        const MAX_FADING_PER_WEEK = 2;
+        const picked = scoredFriends.slice(0, MAX_FADING_PER_WEEK);
+
+        for (const { friend, daysSince } of picked) {
+          const lastDate = lastHungOut.get(`${userId}:${friend.friendUserId}`);
 
           let title: string;
           let message: string;
