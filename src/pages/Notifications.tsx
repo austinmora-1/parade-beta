@@ -740,65 +740,66 @@ export default function Notifications() {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="space-y-3">
+            <AnimatePresence>
               {visiblePlanInvitations.map((invite) => (
-                <div
-                  key={invite.id}
-                  className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground truncate">{invite.plan_title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {invite.organizer_name} invited you
-                      </p>
+                <SwipeableDismiss key={invite.id} onDismiss={() => dismiss(`invite-${invite.id}`)}>
+                  <div
+                    className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground truncate">{invite.plan_title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {invite.organizer_name} invited you
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="shrink-0">New</Badge>
+                        <DismissButton id={`invite-${invite.id}`} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="secondary" className="shrink-0">New</Badge>
-                      <DismissButton id={`invite-${invite.id}`} />
-                    </div>
-                  </div>
 
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {formatPlanDate(invite.plan_date)}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {formatTimeSlot(invite.plan_time_slot)}
-                    </span>
-                    {invite.plan_location && (
+                    <div className="flex flex-wrap gap-2 text-sm">
                       <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
-                        📍 {invite.plan_location}
+                        <Calendar className="h-3 w-3" />
+                        {formatPlanDate(invite.plan_date)}
                       </span>
-                    )}
-                  </div>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {formatTimeSlot(invite.plan_time_slot)}
+                      </span>
+                      {invite.plan_location && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-muted-foreground">
+                          📍 {invite.plan_location}
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      onClick={() => respondToPlanInvite(invite.id, 'accepted')}
-                      disabled={updating === invite.id}
-                      className="flex-1 gap-1"
-                    >
-                      {updating === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => respondToPlanInvite(invite.id, 'declined')}
-                      disabled={updating === invite.id}
-                      className="flex-1 gap-1"
-                    >
-                      <X className="h-4 w-4" />
-                      Decline
-                    </Button>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => respondToPlanInvite(invite.id, 'accepted')}
+                        disabled={updating === invite.id}
+                        className="flex-1 gap-1"
+                      >
+                        {updating === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => respondToPlanInvite(invite.id, 'declined')}
+                        disabled={updating === invite.id}
+                        className="flex-1 gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </SwipeableDismiss>
               ))}
-            </div>
+            </AnimatePresence>
           )}
         </div>
       )}
