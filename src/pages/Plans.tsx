@@ -95,11 +95,34 @@ export default function Plans() {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
     'late-afternoon': 3, 'evening': 4, 'late-night': 5,
   };
-  const sortedPlans = [...plans].sort((a, b) => {
-    const dateDiff = b.date.getTime() - a.date.getTime();
-    if (dateDiff !== 0) return dateDiff;
-    return (timeSlotOrder[b.timeSlot] ?? 0) - (timeSlotOrder[a.timeSlot] ?? 0);
-  });
+  const today = new Date(new Date().setHours(0, 0, 0, 0));
+  const futurePlans = [...plans]
+    .filter(p => (p.endDate || p.date) >= today)
+    .sort((a, b) => {
+      const dateDiff = a.date.getTime() - b.date.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
+    });
+  const pastPlans = [...plans]
+    .filter(p => (p.endDate || p.date) < today)
+    .sort((a, b) => {
+      const dateDiff = b.date.getTime() - a.date.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return (timeSlotOrder[b.timeSlot] ?? 0) - (timeSlotOrder[a.timeSlot] ?? 0);
+    });
+
+  const renderPlanCard = (plan: Plan) => (
+    <PlanCard
+      key={plan.id}
+      plan={plan}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      changeRequest={changeRequests.find(cr => cr.planId === plan.id)}
+      onAcceptChange={handleAcceptChange}
+      onDeclineChange={handleDeclineChange}
+      isRespondingToChange={isRespondingToChange}
+    />
+  );
 
   return (
     <div className="animate-fade-in space-y-4 md:space-y-8">
@@ -156,21 +179,8 @@ export default function Plans() {
 
       {/* Content */}
       {view === 'list' ? (
-        <div className="space-y-1">
-          {sortedPlans.length > 0 ? (
-            sortedPlans.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                changeRequest={changeRequests.find(cr => cr.planId === plan.id)}
-                onAcceptChange={handleAcceptChange}
-                onDeclineChange={handleDeclineChange}
-                isRespondingToChange={isRespondingToChange}
-              />
-            ))
-          ) : (
+        <div className="space-y-4">
+          {futurePlans.length === 0 && pastPlans.length === 0 ? (
             <div className="rounded-2xl border border-border bg-card p-12 text-center shadow-soft">
               <div className="mx-auto mb-4 text-6xl">📅</div>
               <h3 className="font-display text-xl font-semibold">No plans yet</h3>
@@ -179,9 +189,27 @@ export default function Plans() {
               </p>
               <Button onClick={() => setDialogOpen(true)} className="mt-6 gap-2">
                 <Plus className="h-4 w-4" />
-                Create Your First Plan
+                Make Your First Plan
               </Button>
             </div>
+          ) : (
+            <>
+              {/* Upcoming */}
+              {futurePlans.length > 0 && (
+                <div className="space-y-1">
+                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-0.5">Upcoming</h2>
+                  {futurePlans.map(renderPlanCard)}
+                </div>
+              )}
+
+              {/* Past */}
+              {pastPlans.length > 0 && (
+                <div className="space-y-1">
+                  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-0.5">Past</h2>
+                  {pastPlans.map(renderPlanCard)}
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (
