@@ -22,7 +22,7 @@ export function MobileHeader() {
       <Link to="/" className="flex items-center justify-center leading-none">
         <ParadeWordmark size="md" className="leading-none" />
       </Link>
-      <div className="flex-1 flex items-center justify-end gap-1">
+      <div className="flex-1 flex items-center justify-end">
         <Link
           to="/notifications"
           className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
