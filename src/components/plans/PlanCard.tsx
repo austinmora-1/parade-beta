@@ -150,27 +150,27 @@ export function PlanCard({
         </div>
       </div>
 
-      {(plan.participants.length > 0 || plan.location) && (
-        <div className="mt-3 flex flex-wrap gap-3">
+      {(plan.participants.filter(p => p.role !== 'subscriber').length > 0 || plan.location) && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground pl-[46px]">
           {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5" data-stop-card-click onClick={e => e.stopPropagation()}>
-              <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
+              <Users className="h-3 w-3" />
               <ParticipantsList participants={plan.participants.filter(p => p.role !== 'subscriber')} />
             </div>
           )}
 
           {plan.participants.filter(p => p.role === 'subscriber').length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-1.5" data-stop-card-click onClick={e => e.stopPropagation()}>
-              <Eye className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
+              <Eye className="h-3 w-3" />
               <ParticipantsList participants={plan.participants.filter(p => p.role === 'subscriber')} />
             </div>
           )}
           
           {plan.location && (
-            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{plan.location.name}</span>
-            </div>
+            <span className="flex items-center gap-1 truncate">
+              <MapPin className="h-3 w-3 shrink-0" />
+              {plan.location.name}
+            </span>
           )}
         </div>
       )}
