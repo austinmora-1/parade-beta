@@ -144,6 +144,11 @@ export default function Landing() {
           <p className="text-center text-xs text-muted-foreground mt-6">
             We'll never spam you. Unsubscribe anytime.
           </p>
+          <div className="flex items-center justify-center gap-3 mt-4 text-xs text-muted-foreground">
+            <a href="/privacy" className="hover:text-foreground transition-colors underline underline-offset-2">Privacy Policy</a>
+            <span>·</span>
+            <a href="/terms" className="hover:text-foreground transition-colors underline underline-offset-2">Terms & Conditions</a>
+          </div>
         </div>
       </section>
     </div>
