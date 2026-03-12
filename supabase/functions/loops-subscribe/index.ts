@@ -44,6 +44,7 @@ serve(async (req) => {
         email: email.trim().toLowerCase(),
         firstName: firstName?.trim()?.slice(0, 100) || undefined,
         source: 'parade-landing-beta',
+        userGroup: 'extended-beta',
       }),
     });
 
