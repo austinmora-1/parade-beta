@@ -57,3 +57,5 @@ project_id = "womtzaraskisayzskafe"
     verify_jwt = false
   [functions.submit-feedback]
     verify_jwt = false
+  [functions.sync-user-to-loops]
+    verify_jwt = false
