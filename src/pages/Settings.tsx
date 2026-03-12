@@ -416,7 +416,7 @@ export default function Settings() {
   }, [session?.user]);
 
   // Debounced username availability check
-  const usernameTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const usernameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!displayName.trim() || displayName === originalUsername) {
       setUsernameError('');

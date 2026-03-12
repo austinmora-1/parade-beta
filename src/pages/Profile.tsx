@@ -78,8 +78,8 @@ export default function Profile() {
   const [nameValue, setNameValue] = useState('');
   const [nameSaveStatus, setNameSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const nameSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nameSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedBioRef = useRef<string>('');
   const lastSavedNameRef = useRef<string>('');
   const [cropDialogOpen, setCropDialogOpen] = useState(false);

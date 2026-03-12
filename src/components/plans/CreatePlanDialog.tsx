@@ -133,7 +133,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     participants: typeof friends; status: string;
   } | null>(null);
   const [_showCustomTime, _setShowCustomTime] = useState(false); // kept for edit sync
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   
   // Shared plan change request state
   const [participantAvailability, setParticipantAvailability] = useState<{ userId: string; name: string; available: boolean }[]>([]);
