@@ -33,7 +33,7 @@ export function CityAutocomplete({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Sync external value changes
   useEffect(() => {
