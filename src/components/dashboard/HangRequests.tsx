@@ -74,7 +74,7 @@ function markDeclinedAsSeen(ids: string[]) {
 }
 
 export function HangRequests() {
-  const { loadAllData } = usePlannerStore();
+  const { loadPlans } = usePlannerStore();
   const { user } = useAuth();
   const [requests, setRequests] = useState<HangRequest[]>([]);
   const [loading, setLoading] = useState(true);
