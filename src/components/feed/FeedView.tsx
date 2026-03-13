@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { format, isSameDay, formatDistanceToNow, isPast, subDays } from 'date-fns';
+import { format, isSameDay, formatDistanceToNow, isPast } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { useAuth } from '@/hooks/useAuth';
@@ -112,96 +112,119 @@ export function FeedView() {
     })();
   }, [user, searchParams]);
 
-  // Fetch friends' public plans (feed_visibility != 'private') - only past plans for history
+  // Fetch friends' public plans AND plans user participates in - full history
   useEffect(() => {
     if (!user?.id) return;
-    const sevenDaysAgo = subDays(new Date(), 7);
     const now = new Date();
     (async () => {
-      // This query will return plans where the user is a friend AND the plan is shared
-      // The RLS policies handle the access control
-      const { data } = await supabase
+      // 1) Friends' shared plans (past, non-private, not owned by user)
+      const { data: sharedData } = await supabase
         .from('plans')
         .select('*')
         .neq('feed_visibility', 'private')
         .neq('user_id', user.id)
-        .gte('date', sevenDaysAgo.toISOString())
         .lt('date', now.toISOString())
         .order('date', { ascending: false })
-        .limit(50);
-      
-      if (data) {
-        // Fetch participant info for these plans
-        const planIds = data.map(p => p.id);
-        let participantsMap: Record<string, any[]> = {};
-        if (planIds.length > 0) {
-          const { data: pData } = await supabase
-            .from('plan_participants')
-            .select('plan_id, friend_id, status, role')
-            .in('plan_id', planIds);
-          for (const pp of (pData || [])) {
-            if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
-            participantsMap[pp.plan_id].push(pp);
-          }
-        }
+        .limit(100);
 
-        // Fetch owner profiles
-        const ownerIds = [...new Set(data.map(p => p.user_id))];
-        const allUserIds = new Set([...ownerIds]);
-        for (const pps of Object.values(participantsMap)) {
-          for (const pp of pps) allUserIds.add(pp.friend_id);
-        }
-        
-        let profilesMap: Record<string, { name: string; avatar?: string }> = {};
-        if (allUserIds.size > 0) {
-          const { data: profiles } = await supabase
-            .from('public_profiles')
-            .select('user_id, display_name, avatar_url')
-            .in('user_id', Array.from(allUserIds));
-          for (const p of (profiles || [])) {
-            if (p.user_id) {
-              profilesMap[p.user_id] = { name: p.display_name || 'Friend', avatar: p.avatar_url || undefined };
-            }
-          }
-        }
+      // 2) Plans user participates in (not their own)
+      const { data: participatedPlanIds } = await supabase
+        .from('plan_participants')
+        .select('plan_id')
+        .eq('friend_id', user.id);
 
-        const mapped = data.map(p => {
-          const planDate = new Date(p.date);
-          const pps = (participantsMap[p.id] || []).filter((pp: any) => pp.friend_id !== user.id);
-          // Add owner as a participant for display
-          const ownerProfile = profilesMap[p.user_id];
-          return {
-            id: p.id,
-            userId: p.user_id,
-            ownerName: ownerProfile?.name || 'Someone',
-            ownerAvatar: ownerProfile?.avatar,
-            title: p.title,
-            activity: p.activity,
-            date: new Date(planDate.getUTCFullYear(), planDate.getUTCMonth(), planDate.getUTCDate()),
-            endDate: p.end_date ? (() => { const ed = new Date(p.end_date); return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate()); })() : undefined,
-            timeSlot: p.time_slot,
-            duration: p.duration,
-            startTime: p.start_time || undefined,
-            endTime: p.end_time || undefined,
-            location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
-            notes: p.notes || undefined,
-            status: p.status,
-            feedVisibility: p.feed_visibility || 'private',
-            participants: [
-              { id: p.user_id, name: ownerProfile?.name || 'Someone', avatar: ownerProfile?.avatar, friendUserId: p.user_id, status: 'connected', role: 'participant' },
-              ...pps.map((pp: any) => ({
-                id: pp.friend_id,
-                name: profilesMap[pp.friend_id]?.name || 'Friend',
-                avatar: profilesMap[pp.friend_id]?.avatar,
-                friendUserId: pp.friend_id,
-                status: 'connected',
-                role: pp.role || 'participant',
-              })),
-            ],
-          };
-        });
-        setFriendPublicPlans(mapped);
+      let participatedPlans: any[] = [];
+      if (participatedPlanIds && participatedPlanIds.length > 0) {
+        const ids = participatedPlanIds.map(p => p.plan_id);
+        const { data: pPlans } = await supabase
+          .from('plans')
+          .select('*')
+          .in('id', ids)
+          .neq('user_id', user.id)
+          .lt('date', now.toISOString())
+          .order('date', { ascending: false })
+          .limit(100);
+        participatedPlans = pPlans || [];
       }
+
+      // Merge and dedupe
+      const allPlans = [...(sharedData || []), ...participatedPlans];
+      const seen = new Set<string>();
+      const deduped = allPlans.filter(p => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      });
+
+      // Fetch participant info for these plans
+      const planIds = deduped.map(p => p.id);
+      let participantsMap: Record<string, any[]> = {};
+      if (planIds.length > 0) {
+        const { data: pData } = await supabase
+          .from('plan_participants')
+          .select('plan_id, friend_id, status, role')
+          .in('plan_id', planIds);
+        for (const pp of (pData || [])) {
+          if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
+          participantsMap[pp.plan_id].push(pp);
+        }
+      }
+
+      // Fetch owner + participant profiles
+      const ownerIds = [...new Set(deduped.map(p => p.user_id))];
+      const allUserIds = new Set([...ownerIds]);
+      for (const pps of Object.values(participantsMap)) {
+        for (const pp of pps) allUserIds.add(pp.friend_id);
+      }
+      
+      let profilesMap: Record<string, { name: string; avatar?: string }> = {};
+      if (allUserIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('public_profiles')
+          .select('user_id, display_name, avatar_url')
+          .in('user_id', Array.from(allUserIds));
+        for (const p of (profiles || [])) {
+          if (p.user_id) {
+            profilesMap[p.user_id] = { name: p.display_name || 'Friend', avatar: p.avatar_url || undefined };
+          }
+        }
+      }
+
+      const mapped = deduped.map(p => {
+        const planDate = new Date(p.date);
+        const pps = (participantsMap[p.id] || []).filter((pp: any) => pp.friend_id !== user.id);
+        const ownerProfile = profilesMap[p.user_id];
+        return {
+          id: p.id,
+          userId: p.user_id,
+          ownerName: ownerProfile?.name || 'Someone',
+          ownerAvatar: ownerProfile?.avatar,
+          title: p.title,
+          activity: p.activity,
+          date: new Date(planDate.getUTCFullYear(), planDate.getUTCMonth(), planDate.getUTCDate()),
+          endDate: p.end_date ? (() => { const ed = new Date(p.end_date); return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate()); })() : undefined,
+          timeSlot: p.time_slot,
+          duration: p.duration,
+          startTime: p.start_time || undefined,
+          endTime: p.end_time || undefined,
+          location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
+          notes: p.notes || undefined,
+          status: p.status,
+          feedVisibility: p.feed_visibility || 'private',
+          participants: [
+            { id: p.user_id, name: ownerProfile?.name || 'Someone', avatar: ownerProfile?.avatar, friendUserId: p.user_id, status: 'connected', role: 'participant' },
+            ...pps.map((pp: any) => ({
+              id: pp.friend_id,
+              name: profilesMap[pp.friend_id]?.name || 'Friend',
+              avatar: profilesMap[pp.friend_id]?.avatar,
+              friendUserId: pp.friend_id,
+              status: 'connected',
+              role: pp.role || 'participant',
+            })),
+          ],
+        };
+      });
+      setFriendPublicPlans(mapped);
     })();
   }, [user?.id]);
 
@@ -227,22 +250,18 @@ export function FeedView() {
       });
     });
 
-    // Add user's own past plans
+    // Add user's own past plans (all history, not just 7 days)
     const now = new Date();
-    const sevenDaysAgo = subDays(now, 7);
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
     plans.forEach((plan) => {
       const planDate = new Date(plan.date);
-      if (planDate >= sevenDaysAgo && planDate < todayStart) {
-        // Only show past plans in history
-        if (plan.participants && plan.participants.length > 0) {
-          items.push({
-            type: 'plan',
-            data: plan,
-            timestamp: planDate,
-          });
-        }
+      if (planDate < todayStart) {
+        items.push({
+          type: 'plan',
+          data: plan,
+          timestamp: planDate,
+        });
       }
     });
 
