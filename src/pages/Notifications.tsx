@@ -270,7 +270,7 @@ export default function Notifications() {
       setHangRequests(prev => prev.filter(r => r.id !== id));
       await refetchHangRequests();
       if (status === 'accepted') {
-        await loadAllData();
+        await loadPlans();
       }
     }
     setUpdating(null);
