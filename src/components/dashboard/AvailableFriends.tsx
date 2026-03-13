@@ -48,6 +48,10 @@ export function AvailableFriends() {
   const [friendAvail, setFriendAvail] = useState<FriendAvailDay[]>([]);
   const [loadingAvail, setLoadingAvail] = useState(false);
 
+  const connectedFriends = useMemo(() => {
+    return friends.filter(f => f.status === 'connected');
+  }, [friends]);
+
   // Track which friends are actually available today via useQuery
   const friendUserIds = useMemo(() => {
     return connectedFriends.map(f => f.friendUserId).filter((id): id is string => !!id);
