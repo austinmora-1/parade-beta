@@ -256,7 +256,7 @@ export function FeedView() {
     todayStart.setHours(0, 0, 0, 0);
     plans.forEach((plan) => {
       const planDate = new Date(plan.date);
-      if (planDate < todayStart) {
+      if (planDate < todayStart && plan.participants && plan.participants.length > 0) {
         items.push({
           type: 'plan',
           data: plan,
