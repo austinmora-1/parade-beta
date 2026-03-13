@@ -278,7 +278,7 @@ export default function PlanDetail() {
         .eq('friend_id', userId);
       if (error) throw error;
       toast.success(newStatus === 'accepted' ? "You're going!" : newStatus === 'maybe' ? 'Marked as maybe' : 'Declined');
-      await loadAllData();
+      await loadPlans();
     } catch (err: any) {
       toast.error(err.message || 'Failed to update RSVP');
     } finally {
