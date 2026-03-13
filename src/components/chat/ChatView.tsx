@@ -27,7 +27,7 @@ interface ChatViewProps {
 
 export function ChatView({ conversation, onBack }: ChatViewProps) {
   const { user } = useAuth();
-  const { loadAllData } = usePlannerStore();
+  const { loadPlans } = usePlannerStore();
   const { messages, loading, loadingMore, hasMore, loadMore, sendMessage, editMessage, deleteMessage, readReceipts, reactions, toggleReaction } = useChatMessages(conversation.id);
   const [input, setInput] = useState('');
   const [ellyLoading, setEllyLoading] = useState(false);
