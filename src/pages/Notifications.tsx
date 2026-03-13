@@ -488,7 +488,7 @@ export default function Notifications() {
       sonnerToast.success('Friend added to plan! 🎉');
       setParticipantRequests(prev => prev.filter(r => r.id !== requestId));
       await refetchParticipantRequests();
-      await loadAllData();
+      await loadPlans();
     }
     setUpdating(null);
   };
