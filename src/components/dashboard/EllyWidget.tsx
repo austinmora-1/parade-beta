@@ -34,7 +34,7 @@ export function EllyWidget() {
         </div>
       }
       headerRight={
-        <Link to="/chat?elly=true" onClick={(e) => e.stopPropagation()}>
+        <Link to="/interact?elly=true" onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
             Open Chat
             <ArrowRight className="h-3 w-3" />

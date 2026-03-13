@@ -423,7 +423,7 @@ export default function FriendProfile() {
           onClick={async () => {
             if (userId) {
               const id = await createDM(userId);
-              if (id) navigate('/chat');
+              if (id) navigate('/interact');
             }
           }}
         >
