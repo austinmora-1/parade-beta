@@ -58,7 +58,7 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
     const result = await icalSync();
     if (result.synced) {
       toast.success(result.message || 'Calendar synced successfully');
-      await loadAllData();
+      await Promise.all([loadPlans(), loadProfileAndAvailability()]);
     } else {
       toast.error(result.message || 'Failed to sync calendar');
     }

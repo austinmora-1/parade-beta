@@ -365,7 +365,7 @@ export default function PlanDetail() {
       toast.success('Friend added to plan!');
       setFriendSearch('');
       setAddFriendOpen(false);
-      await loadAllData();
+      await loadPlans();
     } catch (err: any) {
       toast.error(err.message || 'Failed to add friend');
     } finally {
