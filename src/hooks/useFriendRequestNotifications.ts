@@ -46,7 +46,7 @@ export function useFriendRequestNotifications() {
           });
 
           // Reload friends data to show the new request
-          loadAllData();
+          loadFriends();
         }
       )
       .subscribe((status) => {
