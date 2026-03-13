@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sparkles, MessageCircle, Zap } from 'lucide-react';
 import { useConversations } from '@/hooks/useChat';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatView } from '@/components/chat/ChatView';
 import { EllyChatView } from '@/components/chat/EllyChatView';
 import { NewChatDialog } from '@/components/chat/NewChatDialog';
+import { ReceivedVibes } from '@/components/dashboard/ReceivedVibes';
+import { SentVibes } from '@/components/dashboard/SentVibes';
+import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 
 export default function Chat() {
+  const [vibeDialogOpen, setVibeDialogOpen] = useState(false);
   const { conversations, loading, createDM, createGroup } = useConversations();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showElly, setShowElly] = useState(false);
@@ -94,17 +99,28 @@ export default function Chat() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 md:h-12 md:w-12 md:rounded-2xl">
-            <MessageCircle className="h-5 w-5 text-primary md:h-6 md:w-6" />
+            <Zap className="h-5 w-5 text-primary md:h-6 md:w-6" />
           </div>
           <div>
-            <h1 className="font-display text-lg font-bold md:text-xl">Messages</h1>
+            <h1 className="font-display text-lg font-bold md:text-xl">Interact</h1>
             <p className="text-xs text-muted-foreground md:text-sm">
-              Chat with your friends
+              Vibes & messages with your friends
             </p>
           </div>
         </div>
-        <NewChatDialog onCreateDM={handleCreateDM} onCreateGroup={handleCreateGroup} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={() => setVibeDialogOpen(true)}>
+            <Zap className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Send Vibe</span>
+          </Button>
+          <SendVibeDialog open={vibeDialogOpen} onOpenChange={setVibeDialogOpen} />
+          <NewChatDialog onCreateDM={handleCreateDM} onCreateGroup={handleCreateGroup} />
+        </div>
       </div>
+
+      {/* Vibes sections */}
+      <ReceivedVibes />
+      <SentVibes />
 
       {/* Elly pinned */}
       <button

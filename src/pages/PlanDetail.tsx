@@ -330,7 +330,7 @@ export default function PlanDetail() {
       }
 
       if (conversationId) {
-        navigate('/chat', { state: { conversationId } });
+        navigate('/interact', { state: { conversationId } });
       }
     } catch (err) {
       console.error('Failed to create chat:', err);
