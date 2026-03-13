@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 
 export default function Chat() {
+  const [vibeDialogOpen, setVibeDialogOpen] = useState(false);
   const { conversations, loading, createDM, createGroup } = useConversations();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showElly, setShowElly] = useState(false);
