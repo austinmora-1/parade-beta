@@ -34,10 +34,6 @@ export default function Dashboard() {
       {/* Live Location Sharing */}
       <LiveLocationSharing />
 
-      {/* Smart Nudges */}
-
-      {/* Smart Nudges */}
-      <SmartNudges />
 
       {/* Upcoming Plans & Feed */}
       <HomeTabs />
