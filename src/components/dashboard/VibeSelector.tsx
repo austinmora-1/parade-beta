@@ -7,13 +7,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { GifPicker } from '@/components/chat/GifPicker';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
+// Map vibe CSS variable names to inline colors for the chips
+const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  social:     { bg: 'hsl(350 80% 95%)', text: 'hsl(350 80% 42%)', border: 'hsl(350 80% 80%)' },
+  chill:      { bg: 'hsl(200 55% 93%)', text: 'hsl(200 55% 35%)', border: 'hsl(200 55% 75%)' },
+  athletic:   { bg: 'hsl(145 65% 92%)', text: 'hsl(145 65% 32%)', border: 'hsl(145 65% 70%)' },
+  productive: { bg: 'hsl(38 90% 93%)',  text: 'hsl(38 80% 36%)',  border: 'hsl(38 90% 72%)' },
+  custom:     { bg: 'hsl(270 40% 94%)', text: 'hsl(270 50% 45%)', border: 'hsl(270 40% 78%)' },
+};
 
 export function VibeSelector() {
   const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
@@ -75,88 +77,113 @@ export function VibeSelector() {
         icon={<Sparkles className="h-3.5 w-3.5 text-primary" />}
         compact
       >
-        <div className="flex items-center gap-2">
-          {showCustomInput ? (
-            <div className="flex-1 flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 h-9">
-              <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
-              <input
-                autoFocus
-                placeholder="type a vibe..."
-                value={customText}
-                onChange={(e) => setCustomText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCustomSubmit();
-                  if (e.key === 'Escape') {
-                    setShowCustomInput(false);
-                    setCustomText('');
-                  }
+        {/* Vibe chips row — one tap to select */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 scrollbar-hide">
+          {vibeTypes.map((type) => {
+            const config = VIBE_CONFIG[type];
+            const isSelected = currentVibe?.type === type;
+            const chipStyle = VIBE_CHIP_STYLES[type];
+            return (
+              <motion.button
+                key={type}
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                onClick={() => handleVibeSelect(type)}
+                className={cn(
+                  'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all duration-150',
+                )}
+                style={isSelected ? {
+                  backgroundColor: chipStyle.bg,
+                  color: chipStyle.text,
+                  borderColor: chipStyle.border,
+                  boxShadow: `0 0 0 2px ${chipStyle.border}`,
+                } : {
+                  backgroundColor: 'transparent',
+                  color: 'hsl(var(--muted-foreground))',
+                  borderColor: 'hsl(var(--border))',
                 }}
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-              />
-              <button
-                onClick={() => {
-                  if (customText.trim()) handleCustomSubmit();
-                  else {
-                    setShowCustomInput(false);
-                    setCustomText('');
-                  }
-                }}
-                className="text-xs font-medium text-primary hover:text-primary/80"
               >
-                {customText.trim() ? 'Add' : '✕'}
-              </button>
-            </div>
-          ) : (
-            <Select
-              value={currentVibe?.type || ''}
-              onValueChange={handleVibeSelect}
-            >
-              <SelectTrigger className="flex-1 h-9 text-sm [&>span]:line-clamp-none">
-                <SelectValue placeholder="Pick a vibe...">
-                  {selectedConfig && (
-                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                      <span>{selectedConfig.icon}</span>
-                      <span>{selectedConfig.label}</span>
-                    </span>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {vibeTypes.map((type) => {
-                  const config = VIBE_CONFIG[type];
-                  return (
-                    <SelectItem key={type} value={type}>
-                      <span className="flex items-center gap-2">
-                        <span>{config.icon}</span>
-                        <span>{config.label}</span>
-                        <span className="text-muted-foreground text-xs ml-1">{config.description}</span>
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-                <SelectItem value="custom">
-                  <span className="flex items-center gap-2">
-                    <span>{VIBE_CONFIG.custom.icon}</span>
-                    <span>Custom</span>
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+                <span>{config.icon}</span>
+                <span>{config.label}</span>
+              </motion.button>
+            );
+          })}
+
+          {/* Custom chip */}
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+            onClick={() => handleVibeSelect('custom')}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all duration-150"
+            style={currentVibe?.type === 'custom' ? {
+              backgroundColor: VIBE_CHIP_STYLES.custom.bg,
+              color: VIBE_CHIP_STYLES.custom.text,
+              borderColor: VIBE_CHIP_STYLES.custom.border,
+              boxShadow: `0 0 0 2px ${VIBE_CHIP_STYLES.custom.border}`,
+            } : {
+              backgroundColor: 'transparent',
+              color: 'hsl(var(--muted-foreground))',
+              borderColor: 'hsl(var(--border))',
+            }}
+          >
+            <span>{VIBE_CONFIG.custom.icon}</span>
+            <span>Custom</span>
+          </motion.button>
 
           <GifPicker onGifSelect={handleGifSelect}>
-            <button
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 25 }}
               className={cn(
-                "shrink-0 rounded-lg px-3 h-9 text-xs font-medium transition-all duration-200 border",
+                'flex shrink-0 items-center rounded-full border px-3 py-1.5 text-sm font-medium transition-all duration-150',
                 currentVibe?.gifUrl
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border text-muted-foreground hover:text-foreground'
               )}
             >
-              GIF
-            </button>
+              GIF {currentVibe?.gifUrl ? '✓' : ''}
+            </motion.button>
           </GifPicker>
         </div>
+
+        {/* Custom vibe text input */}
+        <AnimatePresence>
+          {showCustomInput && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 h-9 mt-2">
+                <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
+                <input
+                  autoFocus
+                  placeholder="type a vibe..."
+                  value={customText}
+                  onChange={(e) => setCustomText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCustomSubmit();
+                    if (e.key === 'Escape') {
+                      setShowCustomInput(false);
+                      setCustomText('');
+                    }
+                  }}
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                />
+                <button
+                  onClick={() => {
+                    if (customText.trim()) handleCustomSubmit();
+                    else { setShowCustomInput(false); setCustomText(''); }
+                  }}
+                  className="text-xs font-medium text-primary hover:text-primary/80"
+                >
+                  {customText.trim() ? 'Add' : '✕'}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Current GIF preview */}
         <AnimatePresence>
