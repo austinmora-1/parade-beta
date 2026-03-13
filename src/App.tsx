@@ -123,7 +123,8 @@ const AppRoutes = () => {
       <Route path="/plans" element={<Plans />} />
       <Route path="/availability" element={<Availability />} />
       <Route path="/friends" element={<Friends />} />
-      <Route path="/chat" element={<Chat />} />
+      <Route path="/interact" element={<Chat />} />
+      <Route path="/chat" element={<Navigate to="/interact" replace />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/friend/:userId" element={<FriendProfile />} />
