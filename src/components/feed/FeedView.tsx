@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { format, isSameDay, formatDistanceToNow, isPast, subDays } from 'date-fns';
+import { format, isSameDay, formatDistanceToNow, isPast } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useVibes, VibeSend } from '@/hooks/useVibes';
 import { useAuth } from '@/hooks/useAuth';
