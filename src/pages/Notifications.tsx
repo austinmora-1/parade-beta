@@ -422,7 +422,7 @@ export default function Notifications() {
       sonnerToast.success(response === 'accepted' ? 'Change accepted!' : 'Change declined');
       setPendingChanges(prev => prev.filter(c => c.id !== responseId));
       await refetchChangeRequests();
-      await loadAllData();
+      await loadPlans();
     }
     setUpdating(null);
   };
