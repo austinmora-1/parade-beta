@@ -243,6 +243,8 @@ export function useChatMessages(conversationId: string | null) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  // Tracks IDs of messages currently in view — used to scope the reaction channel
+  const [loadedMessageIds, setLoadedMessageIds] = useState<string[]>([]);
 
   const loadMore = useCallback(async () => {
     if (!conversationId || loadingMore || !hasMore || messages.length === 0) return;
@@ -260,6 +262,7 @@ export function useChatMessages(conversationId: string | null) {
     if (older.length < MESSAGES_PAGE_SIZE) setHasMore(false);
     if (older.length > 0) {
       setMessages(prev => [...older, ...prev]);
+      setLoadedMessageIds(prev => [...older.map(m => m.id), ...prev]);
       // Fetch reactions for older messages
       const { data: rxns } = await supabase
         .from('message_reactions')
@@ -279,6 +282,7 @@ export function useChatMessages(conversationId: string | null) {
       setReactions([]);
       setLoading(false);
       setHasMore(true);
+      setLoadedMessageIds([]);
       return;
     }
 
@@ -291,7 +295,9 @@ export function useChatMessages(conversationId: string | null) {
         .limit(MESSAGES_PAGE_SIZE);
 
       const msgs = ((data as ChatMessage[]) || []).reverse();
+      const ids = msgs.map(m => m.id);
       setMessages(msgs);
+      setLoadedMessageIds(ids);
       setHasMore(msgs.length >= MESSAGES_PAGE_SIZE);
       setLoading(false);
 
@@ -301,6 +307,15 @@ export function useChatMessages(conversationId: string | null) {
           .update({ last_read_at: new Date().toISOString() })
           .eq('conversation_id', conversationId)
           .eq('user_id', user.id);
+      }
+
+      // Fetch reactions for the loaded messages in one query
+      if (ids.length) {
+        const { data: rxns } = await supabase
+          .from('message_reactions')
+          .select('*')
+          .in('message_id', ids);
+        setReactions((rxns as MessageReaction[]) || []);
       }
     };
 
@@ -314,25 +329,8 @@ export function useChatMessages(conversationId: string | null) {
       }
     };
 
-    const fetchReactions = async () => {
-      // Get message IDs for this conversation first
-      const { data: msgs } = await supabase
-        .from('chat_messages')
-        .select('id')
-        .eq('conversation_id', conversationId);
-      
-      if (msgs?.length) {
-        const { data } = await supabase
-          .from('message_reactions')
-          .select('*')
-          .in('message_id', msgs.map(m => m.id));
-        setReactions((data as MessageReaction[]) || []);
-      }
-    };
-
     fetchMessages();
     fetchReadReceipts();
-    fetchReactions();
 
     const msgChannel = supabase
       .channel(`chat:${conversationId}`)
@@ -347,6 +345,7 @@ export function useChatMessages(conversationId: string | null) {
         (payload) => {
           const newMsg = payload.new as ChatMessage;
           setMessages(prev => [...prev, newMsg]);
+          setLoadedMessageIds(prev => [...prev, newMsg.id]);
 
           if (user) {
             supabase
@@ -408,19 +407,36 @@ export function useChatMessages(conversationId: string | null) {
       )
       .subscribe();
 
-    // Realtime for reactions
+    // FIX #5: Handle reaction events optimistically without a full refetch.
+    // Supabase postgres_changes doesn't support `IN` filters, so we can't
+    // scope the subscription server-side by message_id. Instead we subscribe
+    // to all reaction events and guard client-side: ignore any event whose
+    // message_id isn't currently loaded. This eliminates the full fetchReactions()
+    // refetch that was firing for every reaction from every conversation.
     const reactionChannel = supabase
       .channel(`reactions:${conversationId}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'message_reactions',
-        },
-        () => {
-          // Refetch all reactions for simplicity
-          fetchReactions();
+        { event: 'INSERT', schema: 'public', table: 'message_reactions' },
+        (payload) => {
+          const reaction = payload.new as MessageReaction;
+          setLoadedMessageIds(currentIds => {
+            if (!currentIds.includes(reaction.message_id)) return currentIds;
+            setReactions(prev => {
+              // Deduplicate — realtime can fire after our own optimistic insert
+              if (prev.some(r => r.id === reaction.id)) return prev;
+              return [...prev, reaction];
+            });
+            return currentIds;
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'message_reactions' },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          setReactions(prev => prev.filter(r => r.id !== deleted.id));
         }
       )
       .subscribe();
@@ -478,7 +494,7 @@ export function useChatMessages(conversationId: string | null) {
               user_id: p.user_id,
               title: `${senderName}`,
               body: messagePreview,
-              url: `/interact?conversation=${conversationId}`,
+              url: `/chat?conversation=${conversationId}`,
             }),
           }).catch(() => {}); // Fire and forget
         }
@@ -492,22 +508,48 @@ export function useChatMessages(conversationId: string | null) {
   const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!user) return;
 
-    // Check if reaction exists
     const existing = reactions.find(
       r => r.message_id === messageId && r.user_id === user.id && r.emoji === emoji
     );
 
     if (existing) {
-      await supabase.from('message_reactions').delete().eq('id', existing.id);
+      // Optimistic removal
       setReactions(prev => prev.filter(r => r.id !== existing.id));
+      const { error } = await supabase.from('message_reactions').delete().eq('id', existing.id);
+      if (error) {
+        // Rollback
+        setReactions(prev => [...prev, existing]);
+        toast.error('Failed to remove reaction');
+      }
     } else {
-      const { data } = await supabase
+      // Optimistic add with a temp ID — replaced with real ID once DB confirms
+      const tempId = `temp-${crypto.randomUUID()}`;
+      const optimistic: MessageReaction = {
+        id: tempId,
+        message_id: messageId,
+        user_id: user.id,
+        emoji,
+        created_at: new Date().toISOString(),
+      };
+      setReactions(prev => [...prev, optimistic]);
+
+      const { data, error } = await supabase
         .from('message_reactions')
         .insert({ message_id: messageId, user_id: user.id, emoji })
         .select()
         .single();
-      if (data) {
-        setReactions(prev => [...prev, data as MessageReaction]);
+
+      if (error) {
+        // Rollback
+        setReactions(prev => prev.filter(r => r.id !== tempId));
+        toast.error('Failed to add reaction');
+      } else if (data) {
+        // Swap temp record for real one (realtime INSERT may have already done this)
+        setReactions(prev => {
+          const withoutTemp = prev.filter(r => r.id !== tempId);
+          if (withoutTemp.some(r => r.id === (data as MessageReaction).id)) return withoutTemp;
+          return [...withoutTemp, data as MessageReaction];
+        });
       }
     }
   }, [user, reactions]);
