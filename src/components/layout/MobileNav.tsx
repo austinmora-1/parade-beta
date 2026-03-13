@@ -1,24 +1,23 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  MessageCircle, 
-  Clock
-} from 'lucide-react';
+import { LayoutDashboard, Users, MessageCircle, Clock, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { motion, LayoutGroup } from 'framer-motion';
+import { useState } from 'react';
+import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
-  { path: '/availability', icon: Clock, label: 'Availability' },
+  { path: '/availability', icon: Clock, label: 'Avail' },
   { path: '/friends', icon: Users, label: 'Friends' },
-  { path: '/interact', icon: MessageCircle, label: 'Interact' },
+  { path: '/chat', icon: MessageCircle, label: 'Chat' },
 ];
 
 export function MobileNav() {
   const location = useLocation();
   const { profile } = useCurrentUserProfile();
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -28,48 +27,96 @@ export function MobileNav() {
   const isProfileActive = location.pathname === '/profile';
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden">
-      <div className="flex items-center justify-around px-4 py-2">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "relative flex flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-all duration-200",
-                isActive
-                  ? "text-sidebar-primary"
-                  : "text-sidebar-foreground/60"
-              )}
+    <>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden">
+        <div className="flex items-center justify-around px-2 py-1.5">
+          <LayoutGroup>
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className="relative flex flex-col items-center gap-0.5 px-3 py-1"
+                >
+                  <div className="relative flex h-9 w-9 items-center justify-center">
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-pill"
+                        className="absolute inset-0 rounded-xl bg-sidebar-accent"
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <item.icon
+                      className={cn(
+                        'relative h-5 w-5 transition-colors duration-150',
+                        isActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/50'
+                      )}
+                      strokeWidth={isActive ? 2.2 : 1.8}
+                    />
+                  </div>
+                  <span
+                    className={cn(
+                      'text-[10px] font-medium transition-colors duration-150',
+                      isActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/50'
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </LayoutGroup>
+
+          {/* FAB — create a plan from anywhere */}
+          <button
+            onClick={() => setCreatePlanOpen(true)}
+            className="relative flex flex-col items-center gap-0.5 px-3 py-1"
+            aria-label="Create plan"
+          >
+            <motion.div
+              whileTap={{ scale: 0.88 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-md"
             >
-              <div className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-xl transition-all",
-                isActive && "bg-sidebar-accent"
-              )}>
-                <item.icon className="h-5 w-5" />
-              </div>
-              <span className="text-[11px] font-medium">{item.label}</span>
-            </NavLink>
-          );
-        })}
-        
-        {/* Profile link with avatar */}
-        <NavLink
-          to="/profile"
-          className="relative flex flex-col items-center justify-center rounded-xl px-2 py-2 transition-all duration-200"
-        >
-          <Avatar className={cn(
-            "h-8 w-8 transition-all",
-            isProfileActive && "ring-2 ring-white ring-offset-2 ring-offset-primary"
-          )}>
-            <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
-            <AvatarFallback className="bg-primary/20 text-xs text-primary">
-              {getInitials(profile?.display_name)}
-            </AvatarFallback>
-          </Avatar>
-        </NavLink>
-      </div>
-    </nav>
+              <Plus className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
+            </motion.div>
+            <span className="text-[10px] font-medium text-sidebar-foreground/50">Plan</span>
+          </button>
+
+          {/* Profile */}
+          <NavLink
+            to="/profile"
+            className="flex flex-col items-center gap-0.5 px-3 py-1"
+          >
+            <motion.div
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              className="h-9 w-9 flex items-center justify-center"
+            >
+              <Avatar
+                className={cn(
+                  'h-7 w-7 transition-all duration-200',
+                  isProfileActive && 'ring-2 ring-sidebar-primary ring-offset-1 ring-offset-sidebar'
+                )}
+              >
+                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
+                <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
+                  {getInitials(profile?.display_name)}
+                </AvatarFallback>
+              </Avatar>
+            </motion.div>
+            <span className={cn(
+              'text-[10px] font-medium transition-colors duration-150',
+              isProfileActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/50'
+            )}>
+              Me
+            </span>
+          </NavLink>
+        </div>
+      </nav>
+
+      <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
+    </>
   );
 }

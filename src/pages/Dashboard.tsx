@@ -7,7 +7,6 @@ import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { SmartNudges } from '@/components/dashboard/SmartNudges';
-import { LiveLocationSharing } from '@/components/dashboard/LiveLocationSharing';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
@@ -25,15 +24,14 @@ export default function Dashboard() {
       <EllyWalkthrough />
       <PushNotificationPrompt />
 
-      {/* Friend Vibes */}
+      {/* Who's around — the social hook, first thing you see */}
       <FriendVibeStrip />
 
-      {/* Vibe */}
+      {/* Smart nudges — action prompts while friends are top of mind */}
+      <SmartNudges />
+
+      {/* Set your own vibe */}
       <VibeSelector />
-
-      {/* Live Location Sharing */}
-      <LiveLocationSharing />
-
 
       {/* Upcoming Plans & Feed */}
       <HomeTabs />
