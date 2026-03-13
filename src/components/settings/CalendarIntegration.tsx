@@ -17,7 +17,8 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
   const { session } = useAuth();
   const { isConnected: googleConnected, isLoading: googleLoading, isSyncing: googleSyncing, lastSyncResult: googleLastSync, connect: googleConnect, disconnect: googleDisconnect, syncCalendar: googleSync } = useGoogleCalendar();
   const { isConnected: icalConnected, isLoading: icalLoading, isSyncing: icalSyncing, isConnecting: icalConnecting, lastSyncResult: icalLastSync, connect: icalConnect, disconnect: icalDisconnect, syncCalendar: icalSync, error: icalError } = useAppleCalendar();
-  const loadAllData = usePlannerStore((s) => s.loadAllData);
+  const loadPlans = usePlannerStore((s) => s.loadPlans);
+  const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
   const [icalUrl, setIcalUrl] = useState('');
   const [showIcalInput, setShowIcalInput] = useState(false);
