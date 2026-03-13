@@ -250,22 +250,18 @@ export function FeedView() {
       });
     });
 
-    // Add user's own past plans
+    // Add user's own past plans (all history, not just 7 days)
     const now = new Date();
-    const sevenDaysAgo = subDays(now, 7);
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
     plans.forEach((plan) => {
       const planDate = new Date(plan.date);
-      if (planDate >= sevenDaysAgo && planDate < todayStart) {
-        // Only show past plans in history
-        if (plan.participants && plan.participants.length > 0) {
-          items.push({
-            type: 'plan',
-            data: plan,
-            timestamp: planDate,
-          });
-        }
+      if (planDate < todayStart) {
+        items.push({
+          type: 'plan',
+          data: plan,
+          timestamp: planDate,
+        });
       }
     });
 
