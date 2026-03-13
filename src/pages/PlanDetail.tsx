@@ -53,7 +53,7 @@ export default function PlanDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plans, deletePlan, updatePlan, userId, loadAllData, friends: allFriends } = usePlannerStore();
+  const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends } = usePlannerStore();
   const { createGroup, createDM } = useConversations();
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const { pods } = usePods();
