@@ -341,7 +341,7 @@ export default function Notifications() {
       sonnerToast.success(response === 'accepted' ? 'Plan accepted! 🎉' : 'Plan declined');
       setPlanInvitations(prev => prev.filter(i => i.id !== participantId));
       await refetchPlanInvites();
-      await loadAllData();
+      await loadPlans();
     }
     setUpdating(null);
   };
