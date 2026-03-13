@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { Sparkles, MessageCircle, Zap } from 'lucide-react';
 import { useConversations } from '@/hooks/useChat';
 import { ConversationList } from '@/components/chat/ConversationList';
