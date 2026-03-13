@@ -155,7 +155,7 @@ export function useEllyChat() {
 
       // If Elly performed any actions, reload data to reflect changes
       if (data.actions?.length > 0) {
-        await loadAllData();
+        await loadPlans();
         toast.success('Elly updated your plans! 🎉');
       }
     } catch (e: any) {
