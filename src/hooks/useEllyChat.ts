@@ -34,7 +34,7 @@ function persistMessages(messages: EllyMessage[]) {
 
 export function useEllyChat() {
   const { user, session } = useAuth();
-  const { plans, friends, availability, loadAllData } = usePlannerStore();
+  const { plans, friends, availability, loadPlans } = usePlannerStore();
   const [messages, setMessages] = useState<EllyMessage[]>(loadPersistedMessages);
   const [isLoading, setIsLoading] = useState(false);
 
