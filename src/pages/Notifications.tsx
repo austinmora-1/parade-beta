@@ -85,7 +85,7 @@ interface IncomingVibe {
 }
 
 export default function Notifications() {
-  const { friends, acceptFriendRequest, removeFriend, loadAllData } = usePlannerStore();
+  const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
