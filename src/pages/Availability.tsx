@@ -235,7 +235,7 @@ export default function Availability() {
       <AddTripDialog
         open={tripDialogOpen}
         onOpenChange={setTripDialogOpen}
-        onTripAdded={() => loadAllData()}
+        onTripAdded={() => loadProfileAndAvailability()}
       />
     </div>
   );
