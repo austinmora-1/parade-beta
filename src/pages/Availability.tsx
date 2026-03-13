@@ -62,7 +62,7 @@ export default function Availability() {
 
     if (anySynced) {
       toast.success(`Synced ${results.join(' & ')} successfully`);
-      await loadAllData();
+      await Promise.all([loadProfileAndAvailability(), loadPlans()]);
     } else {
       toast.error('Failed to sync calendar');
     }
