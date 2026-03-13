@@ -27,7 +27,7 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
     const result = await googleSync();
     if (result.synced) {
       toast.success(result.message || 'Calendar synced successfully');
-      await loadAllData();
+      await Promise.all([loadPlans(), loadProfileAndAvailability()]);
     } else {
       toast.error(result.message || 'Failed to sync calendar');
     }
@@ -47,7 +47,7 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
       const syncResult = await icalSync();
       if (syncResult.synced) {
         toast.success(syncResult.message || 'Calendar synced');
-        await loadAllData();
+        await Promise.all([loadPlans(), loadProfileAndAvailability()]);
       }
     } else {
       toast.error(result?.error || 'Failed to connect');
