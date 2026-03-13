@@ -7,7 +7,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 export function useFriendRequestNotifications() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { loadAllData } = usePlannerStore();
+  const { loadFriends } = usePlannerStore();
 
   useEffect(() => {
     if (!user?.id) return;
