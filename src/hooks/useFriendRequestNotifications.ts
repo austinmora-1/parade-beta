@@ -57,5 +57,5 @@ export function useFriendRequestNotifications() {
       console.log('Cleaning up friend request notifications');
       supabase.removeChannel(channel);
     };
-  }, [user?.id, toast, loadAllData]);
+  }, [user?.id, toast, loadFriends]);
 }

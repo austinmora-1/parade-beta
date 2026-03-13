@@ -30,7 +30,14 @@ import Terms from "./pages/Terms";
 import GoogleCallback from "./pages/GoogleCallback";
 import { usePostHogPageView } from "@/hooks/usePostHog";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

@@ -172,7 +172,7 @@ export function useEllyChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, user, session, buildContext, loadAllData]);
+  }, [messages, user, session, buildContext, loadPlans]);
 
   const clearHistory = useCallback(() => {
     setMessages([]);
