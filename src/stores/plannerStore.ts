@@ -701,20 +701,35 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     // Sync participants if provided
     if (updates.participants) {
-      // Delete existing participants and re-insert
-      await supabase.from('plan_participants').delete().eq('plan_id', id);
-      
-      const participantRows = updates.participants
-        .filter(p => p.friendUserId)
+      // Diff-based upsert: only insert new and delete removed, preserving existing RSVP status
+      const { data: existingParticipants } = await supabase
+        .from('plan_participants')
+        .select('id, friend_id, status, role, responded_at')
+        .eq('plan_id', id);
+
+      const existingMap = new Map((existingParticipants || []).map(p => [p.friend_id, p]));
+      const desiredIds = new Set(
+        updates.participants.filter(p => p.friendUserId).map(p => p.friendUserId!)
+      );
+
+      // Delete removed participants
+      const toDelete = (existingParticipants || []).filter(p => !desiredIds.has(p.friend_id));
+      if (toDelete.length > 0) {
+        await supabase.from('plan_participants').delete().in('id', toDelete.map(p => p.id));
+      }
+
+      // Insert only new participants
+      const toInsert = updates.participants
+        .filter(p => p.friendUserId && !existingMap.has(p.friendUserId))
         .map(p => ({
           plan_id: id,
           friend_id: p.friendUserId!,
           status: 'invited',
           role: p.role || 'participant',
         }));
-      
-      if (participantRows.length > 0) {
-        await supabase.from('plan_participants').insert(participantRows);
+
+      if (toInsert.length > 0) {
+        await supabase.from('plan_participants').insert(toInsert);
       }
     }
     
