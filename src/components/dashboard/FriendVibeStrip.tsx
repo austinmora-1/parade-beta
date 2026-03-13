@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -14,6 +13,7 @@ import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 interface FriendVibe {
   friend: Friend;
@@ -23,8 +23,6 @@ interface FriendVibe {
   isAvailableToday: boolean;
   availableSlots: TimeSlot[];
 }
-
-// Use canonical VIBE_CONFIG from planner.ts
 
 const SLOT_KEYS: { key: string; slot: TimeSlot }[] = [
   { key: 'early_morning', slot: 'early-morning' },
@@ -37,19 +35,23 @@ const SLOT_KEYS: { key: string; slot: TimeSlot }[] = [
 
 export function FriendVibeStrip() {
   const { friends } = usePlannerStore();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [friendVibes, setFriendVibes] = useState<FriendVibe[]>([]);
 
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected' && f.friendUserId);
   }, [friends]);
 
-  const friendUserIds = useMemo(() => connectedFriends.map(f => f.friendUserId!), [connectedFriends]);
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  useEffect(() => {
+    if (connectedFriends.length === 0) {
+      setFriendVibes([]);
+      return;
+    }
 
-  const { data: friendVibes = [] } = useQuery({
-    queryKey: ['friend-vibes', friendUserIds, todayStr],
-    queryFn: async () => {
-      if (friendUserIds.length === 0) return [];
+    const fetchVibes = async () => {
+      const friendUserIds = connectedFriends.map(f => f.friendUserId!);
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
 
       const [{ data: profileData }, { data: availData }] = await Promise.all([
         supabase
@@ -93,20 +95,33 @@ export function FriendVibeStrip() {
         return bScore - aScore;
       });
 
-      return vibes;
-    },
-    enabled: friendUserIds.length > 0,
-  });
+      setFriendVibes(vibes);
+    };
 
-  if (connectedFriends.length === 0) return null;
+    fetchVibes();
+  }, [connectedFriends]);
+
+  if (connectedFriends.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-1.5 py-5 text-center">
+        <span className="text-2xl">👋</span>
+        <p className="text-xs text-muted-foreground">Add friends to see their vibes</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex gap-0.5 overflow-x-auto pt-1 pb-1 -mx-1 px-1 scrollbar-hide">
-      {friendVibes.map((fv) => (
-        <FriendVibeItem key={fv.friend.id} data={fv} onNavigate={() => {
-          if (fv.friend.friendUserId) navigate(`/friend/${fv.friend.friendUserId}`);
-        }} />
-      ))}
+    <div className="space-y-2">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+        Who's around today
+      </p>
+      <div className="flex gap-3 overflow-x-auto pt-1 pb-1 -mx-1 px-1 scrollbar-hide">
+        {friendVibes.map((fv) => (
+          <FriendVibeItem key={fv.friend.id} data={fv} onNavigate={() => {
+            if (fv.friend.friendUserId) navigate(`/friend/${fv.friend.friendUserId}`);
+          }} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -165,7 +180,15 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
 
       if (error) throw error;
 
-      toast.success(`Hang request sent to ${friend.name}!`);
+      confetti({
+        particleCount: 80,
+        spread: 55,
+        origin: { y: 0.75 },
+        colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
+        scalar: 0.9,
+      });
+
+      toast.success(`Hang request sent to ${friend.name}! 🎉`);
       setHangSlot(null);
       setHangMessage('');
       setOpen(false);
@@ -188,26 +211,43 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <button className="flex flex-col items-center gap-1 shrink-0 w-[3.75rem] group">
-          {/* Avatar */}
+        <button className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group">
           <div className="relative h-12 w-12">
-            <div className={cn(
-              "h-12 w-12 rounded-full ring-1 ring-border overflow-hidden",
-              currentVibe && "ring-2 ring-primary/40"
-            )}>
+            <div
+              className={cn(
+                "h-12 w-12 rounded-full overflow-hidden transition-all duration-200",
+                currentVibe
+                  ? `ring-2 ring-offset-1 ring-offset-background`
+                  : "ring-1 ring-border"
+              )}
+              style={currentVibe && vibeConfig ? {
+                outline: `2px solid hsl(var(--${vibeConfig.color}))`,
+                outlineOffset: '2px',
+              } : undefined}
+            >
               <img
                 src={friend.avatar || getElephantAvatar(friend.name)}
                 alt={friend.name}
                 className="h-full w-full object-cover"
               />
             </div>
-            <span className={cn(
-              "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
-              isAvailableToday ? "bg-green-500" : "bg-muted-foreground/30"
-            )} />
+
+            {vibeConfig && (
+              <span className="absolute -bottom-0.5 -left-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-background text-[11px] shadow-sm">
+                {vibeConfig.icon}
+              </span>
+            )}
+
+            <span
+              className={cn(
+                "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
+                isAvailableToday
+                  ? "bg-green-500 animate-pulse-soft"
+                  : "bg-muted-foreground/25"
+              )}
+            />
           </div>
 
-          {/* Name */}
           <span className="text-[11px] font-medium text-foreground truncate w-full text-center leading-tight">
             {friend.name.split(' ')[0]}
           </span>
@@ -220,7 +260,6 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
         align="center"
         sideOffset={8}
       >
-        {/* Header */}
         <div className="flex items-center gap-3 p-3 border-b border-border">
           <div className="h-10 w-10 rounded-full overflow-hidden ring-1 ring-border shrink-0">
             <img
@@ -240,7 +279,6 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
           </div>
         </div>
 
-        {/* Vibe Section */}
         <div className="p-3 space-y-2">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Current Vibe</p>
           {currentVibe ? (
@@ -267,7 +305,6 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
           )}
         </div>
 
-        {/* Availability Section */}
         <div className="p-3 pt-0 space-y-2">
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Available Today</p>
           {availableSlots.length > 0 ? (
@@ -300,7 +337,6 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
           )}
         </div>
 
-        {/* Hang Request Form (when slot selected) */}
         {hangSlot && (
           <div className="p-3 pt-0 space-y-2 animate-fade-in">
             <Textarea

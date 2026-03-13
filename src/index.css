@@ -6,34 +6,34 @@
 
 @layer base {
   :root {
-    --background: 120 4% 95%;
-    --foreground: 150 20% 15%;
+    --background: 0 0% 100%;
+    --foreground: 150 20% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 150 20% 15%;
+    --card: 40 30% 99%;
+    --card-foreground: 150 20% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 150 20% 15%;
+    --popover-foreground: 150 20% 12%;
 
-    --primary: 150 40% 28%;
+    --primary: 150 45% 36%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 150 40% 55%;
+    --primary-glow: 150 45% 55%;
 
     --secondary: 200 40% 35%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 120 10% 96%;
-    --muted-foreground: 150 10% 45%;
+    --muted: 40 20% 96%;
+    --muted-foreground: 150 10% 42%;
 
-    --accent: 200 35% 88%;
-    --accent-foreground: 200 45% 25%;
+    --accent: 150 30% 92%;
+    --accent-foreground: 150 45% 28%;
 
     --destructive: 0 72% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 15% 88%;
-    --input: 150 15% 88%;
-    --ring: 150 35% 40%;
+    --border: 40 20% 90%;
+    --input: 40 20% 90%;
+    --ring: 150 40% 40%;
 
     --radius: 1rem;
 
@@ -54,25 +54,25 @@
     --activity-doctor: 0 60% 55%;
 
     /* Availability colors */
-    --available: 150 65% 45%;
-    --available-light: 150 60% 88%;
-    --partial: 45 90% 55%;
-    --partial-light: 45 85% 90%;
+    --available: 150 65% 42%;
+    --available-light: 150 55% 92%;
+    --partial: 38 90% 55%;
+    --partial-light: 38 85% 93%;
     --busy: 0 70% 60%;
-    --busy-light: 0 65% 92%;
+    --busy-light: 0 65% 94%;
     --today: 210 70% 35%;
 
     /* Vibe colors */
-    --vibe-social: 150 35% 45%;
-    --vibe-chill: 200 40% 50%;
-    --vibe-athletic: 145 65% 50%;
-    --vibe-productive: 35 85% 55%;
+    --vibe-social: 350 80% 58%;
+    --vibe-chill: 200 55% 52%;
+    --vibe-athletic: 145 65% 46%;
+    --vibe-productive: 38 90% 52%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(150 35% 40%), hsl(150 45% 50%));
+    --gradient-primary: linear-gradient(135deg, hsl(150 40% 34%), hsl(150 50% 46%));
     --gradient-secondary: linear-gradient(135deg, hsl(200 40% 35%), hsl(200 50% 45%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(120 10% 98%));
-    --gradient-hero: linear-gradient(160deg, hsl(150 35% 40%), hsl(170 40% 45%), hsl(200 40% 45%));
+    --gradient-card: linear-gradient(145deg, hsl(40 30% 99%), hsl(40 20% 97%));
+    --gradient-hero: linear-gradient(160deg, hsl(150 40% 36%), hsl(160 42% 44%), hsl(200 40% 45%));
     --gradient-wordmark: linear-gradient(
       135deg,
       hsl(0 75% 55%) 0%,
@@ -83,20 +83,21 @@
       hsl(270 60% 58%) 83%,
       hsl(330 90% 60%) 100%
     );
-    /* Shadows */
-    --shadow-sm: 0 2px 8px -2px hsl(150 20% 15% / 0.08);
-    --shadow-md: 0 8px 24px -8px hsl(150 20% 15% / 0.12);
-    --shadow-lg: 0 16px 48px -12px hsl(150 20% 15% / 0.15);
-    --shadow-glow: 0 0 40px hsl(150 35% 40% / 0.25);
+    /* Shadows — warm tint */
+    --shadow-sm: 0 2px 8px -2px hsl(30 30% 20% / 0.07);
+    --shadow-md: 0 8px 24px -8px hsl(30 30% 20% / 0.10);
+    --shadow-lg: 0 16px 48px -12px hsl(30 30% 20% / 0.13);
+    --shadow-glow: 0 0 40px hsl(150 40% 40% / 0.22);
 
-    --sidebar-background: 150 30% 30%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 0 0% 100%;
+    /* Light sidebar — warm cream instead of dark green */
+    --sidebar-background: 40 30% 97%;
+    --sidebar-foreground: 150 20% 18%;
+    --sidebar-primary: 150 45% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 15% 28%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 150 15% 28%;
-    --sidebar-ring: 150 35% 40%;
+    --sidebar-accent: 150 30% 90%;
+    --sidebar-accent-foreground: 150 45% 28%;
+    --sidebar-border: 40 20% 88%;
+    --sidebar-ring: 150 40% 40%;
   }
 
   .dark {
@@ -240,7 +241,7 @@
   }
 
   html {
-    font-size: 20px;
+    font-size: 16px;
   }
 
   body {
