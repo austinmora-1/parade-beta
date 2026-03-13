@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { usePlannerStore } from "@/stores/plannerStore";
 import Dashboard from "./pages/Dashboard";
 import Plans from "./pages/Plans";
@@ -29,15 +29,9 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import GoogleCallback from "./pages/GoogleCallback";
 import { usePostHogPageView } from "@/hooks/usePostHog";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -119,17 +113,17 @@ const AppRoutes = () => {
         </ProtectedRoute>
       }
     >
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/plans" element={<Plans />} />
-      <Route path="/availability" element={<Availability />} />
-      <Route path="/friends" element={<Friends />} />
-      <Route path="/interact" element={<Chat />} />
+      <Route path="/" element={<ErrorBoundary scope="Dashboard"><Dashboard /></ErrorBoundary>} />
+      <Route path="/plans" element={<ErrorBoundary scope="Plans"><Plans /></ErrorBoundary>} />
+      <Route path="/availability" element={<ErrorBoundary scope="Availability"><Availability /></ErrorBoundary>} />
+      <Route path="/friends" element={<ErrorBoundary scope="Friends"><Friends /></ErrorBoundary>} />
+      <Route path="/interact" element={<ErrorBoundary scope="Chat"><Chat /></ErrorBoundary>} />
       <Route path="/chat" element={<Navigate to="/interact" replace />} />
-      <Route path="/notifications" element={<Notifications />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/friend/:userId" element={<FriendProfile />} />
-      <Route path="/plan/:planId" element={<PlanDetail />} />
-      <Route path="/settings" element={<Settings />} />
+      <Route path="/notifications" element={<ErrorBoundary scope="Notifications"><Notifications /></ErrorBoundary>} />
+      <Route path="/profile" element={<ErrorBoundary scope="Profile"><Profile /></ErrorBoundary>} />
+      <Route path="/friend/:userId" element={<ErrorBoundary scope="FriendProfile"><FriendProfile /></ErrorBoundary>} />
+      <Route path="/plan/:planId" element={<ErrorBoundary scope="PlanDetail"><PlanDetail /></ErrorBoundary>} />
+      <Route path="/settings" element={<ErrorBoundary scope="Settings"><Settings /></ErrorBoundary>} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>
@@ -137,17 +131,21 @@ const AppRoutes = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={['light', 'dark', 'arcade']}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <ErrorBoundary scope="Root">
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={['light', 'dark', 'arcade']}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </AuthProvider>
+  </ErrorBoundary>
 );
 
 export default App;
