@@ -36,6 +36,9 @@ interface PlannerState {
   
   setUserId: (userId: string | null) => void;
   loadAllData: () => Promise<void>;
+  loadFriends: () => Promise<void>;
+  loadPlans: () => Promise<void>;
+  loadProfileAndAvailability: () => Promise<void>;
   
   addPlan: (plan: Omit<Plan, 'id' | 'createdAt'>) => Promise<void>;
   updatePlan: (id: string, updates: Partial<Plan>) => Promise<void>;
