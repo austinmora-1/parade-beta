@@ -7,7 +7,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 export function useFriendRequestNotifications() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { loadAllData } = usePlannerStore();
+  const { loadFriends } = usePlannerStore();
 
   useEffect(() => {
     if (!user?.id) return;
@@ -46,7 +46,7 @@ export function useFriendRequestNotifications() {
           });
 
           // Reload friends data to show the new request
-          loadAllData();
+          loadFriends();
         }
       )
       .subscribe((status) => {
@@ -57,5 +57,5 @@ export function useFriendRequestNotifications() {
       console.log('Cleaning up friend request notifications');
       supabase.removeChannel(channel);
     };
-  }, [user?.id, toast, loadAllData]);
+  }, [user?.id, toast, loadFriends]);
 }

@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Authenticate - accept either service role or user token
+    // Authenticate
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -32,7 +32,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify caller is authenticated
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -45,16 +44,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { user_id, title, body, url, image } = await req.json();
-    if (!user_id || !title) {
-      return new Response(JSON.stringify({ error: 'user_id and title required' }), {
+    const body = await req.json();
+    const { title, body: notifBody, url, image } = body;
+
+    // Support both single user_id and array of user_ids
+    let userIds: string[] = [];
+    if (body.user_ids && Array.isArray(body.user_ids)) {
+      userIds = body.user_ids;
+    } else if (body.user_id) {
+      userIds = [body.user_id];
+    }
+
+    if (userIds.length === 0 || !title) {
+      return new Response(JSON.stringify({ error: 'user_id(s) and title required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Don't send push to yourself
-    if (user_id === user.id) {
+    // Filter out self
+    userIds = userIds.filter(id => id !== user.id);
+    if (userIds.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -80,11 +90,11 @@ Deno.serve(async (req) => {
       config.vapid_private_key
     );
 
-    // Get all subscriptions for the target user
+    // Get all subscriptions for ALL target users in one query
     const { data: subscriptions } = await adminClient
       .from('push_subscriptions')
       .select('*')
-      .eq('user_id', user_id);
+      .in('user_id', userIds);
 
     if (!subscriptions || subscriptions.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), {
@@ -94,7 +104,7 @@ Deno.serve(async (req) => {
 
     const notifPayload: Record<string, string> = {
       title,
-      body: body || '',
+      body: notifBody || '',
       url: url || '/',
       icon: '/icon-192.png',
       badge: '/favicon.png',
@@ -105,9 +115,9 @@ Deno.serve(async (req) => {
     const payload = JSON.stringify(notifPayload);
 
     let sent = 0;
-    const staleEndpoints: string[] = [];
+    const staleEndpoints: { user_id: string; endpoint: string }[] = [];
 
-    for (const sub of subscriptions) {
+    await Promise.all(subscriptions.map(async (sub) => {
       try {
         await webpush.sendNotification(
           {
@@ -119,20 +129,18 @@ Deno.serve(async (req) => {
         sent++;
       } catch (err: any) {
         console.error('Push send error:', err.statusCode, err.message);
-        // 404 or 410 means subscription is expired
         if (err.statusCode === 404 || err.statusCode === 410) {
-          staleEndpoints.push(sub.endpoint);
+          staleEndpoints.push({ user_id: sub.user_id, endpoint: sub.endpoint });
         }
       }
-    }
+    }));
 
     // Clean up stale subscriptions
     if (staleEndpoints.length > 0) {
       await adminClient
         .from('push_subscriptions')
         .delete()
-        .eq('user_id', user_id)
-        .in('endpoint', staleEndpoints);
+        .in('endpoint', staleEndpoints.map(s => s.endpoint));
     }
 
     return new Response(JSON.stringify({ sent }), {

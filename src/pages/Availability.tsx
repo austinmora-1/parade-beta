@@ -26,7 +26,8 @@ export default function Availability() {
   const navigate = useNavigate();
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
-  const loadAllData = usePlannerStore((s) => s.loadAllData);
+  const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
+  const loadPlans = usePlannerStore((s) => s.loadPlans);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
   const [tripDialogOpen, setTripDialogOpen] = useState(false);
@@ -61,7 +62,7 @@ export default function Availability() {
 
     if (anySynced) {
       toast.success(`Synced ${results.join(' & ')} successfully`);
-      await loadAllData();
+      await Promise.all([loadProfileAndAvailability(), loadPlans()]);
     } else {
       toast.error('Failed to sync calendar');
     }
@@ -234,7 +235,7 @@ export default function Availability() {
       <AddTripDialog
         open={tripDialogOpen}
         onOpenChange={setTripDialogOpen}
-        onTripAdded={() => loadAllData()}
+        onTripAdded={() => loadProfileAndAvailability()}
       />
     </div>
   );

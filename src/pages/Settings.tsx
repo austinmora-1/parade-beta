@@ -494,9 +494,9 @@ export default function Settings() {
       // Apply work hours to availability for the next 30 days
       await applyWorkHoursToAvailability(session.user.id, workDays, workStartHour, workEndHour);
 
-      // Reload the planner store to reflect changes
-      const { loadAllData } = usePlannerStore.getState();
-      await loadAllData();
+      // Reload profile and availability to reflect changes
+      const { loadProfileAndAvailability } = usePlannerStore.getState();
+      await loadProfileAndAvailability();
 
       toast.success('Settings saved');
       setHasChanges(false);

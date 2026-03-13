@@ -74,7 +74,7 @@ function markDeclinedAsSeen(ids: string[]) {
 }
 
 export function HangRequests() {
-  const { loadAllData } = usePlannerStore();
+  const { loadPlans } = usePlannerStore();
   const { user } = useAuth();
   const [requests, setRequests] = useState<HangRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,7 +168,7 @@ export function HangRequests() {
       toast.success(status === 'accepted' ? 'Request accepted! A plan has been created 🎉' : 'Request declined');
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
       if (status === 'accepted') {
-        await loadAllData();
+        await loadPlans();
       }
     }
     setUpdating(null);

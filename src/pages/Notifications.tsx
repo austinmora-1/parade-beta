@@ -85,7 +85,7 @@ interface IncomingVibe {
 }
 
 export default function Notifications() {
-  const { friends, acceptFriendRequest, removeFriend, loadAllData } = usePlannerStore();
+  const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -270,7 +270,7 @@ export default function Notifications() {
       setHangRequests(prev => prev.filter(r => r.id !== id));
       await refetchHangRequests();
       if (status === 'accepted') {
-        await loadAllData();
+        await loadPlans();
       }
     }
     setUpdating(null);
@@ -341,7 +341,7 @@ export default function Notifications() {
       sonnerToast.success(response === 'accepted' ? 'Plan accepted! 🎉' : 'Plan declined');
       setPlanInvitations(prev => prev.filter(i => i.id !== participantId));
       await refetchPlanInvites();
-      await loadAllData();
+      await loadPlans();
     }
     setUpdating(null);
   };
@@ -422,7 +422,7 @@ export default function Notifications() {
       sonnerToast.success(response === 'accepted' ? 'Change accepted!' : 'Change declined');
       setPendingChanges(prev => prev.filter(c => c.id !== responseId));
       await refetchChangeRequests();
-      await loadAllData();
+      await loadPlans();
     }
     setUpdating(null);
   };
@@ -488,7 +488,7 @@ export default function Notifications() {
       sonnerToast.success('Friend added to plan! 🎉');
       setParticipantRequests(prev => prev.filter(r => r.id !== requestId));
       await refetchParticipantRequests();
-      await loadAllData();
+      await loadPlans();
     }
     setUpdating(null);
   };

@@ -36,6 +36,9 @@ interface PlannerState {
   
   setUserId: (userId: string | null) => void;
   loadAllData: () => Promise<void>;
+  loadFriends: () => Promise<void>;
+  loadPlans: () => Promise<void>;
+  loadProfileAndAvailability: () => Promise<void>;
   
   addPlan: (plan: Omit<Plan, 'id' | 'createdAt'>) => Promise<void>;
   updatePlan: (id: string, updates: Partial<Plan>) => Promise<void>;
@@ -606,7 +609,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       if (participantRows.length > 0) {
         await supabase.from('plan_participants').insert(participantRows);
 
-        // Send push notifications to invited participants
+        // Send push notifications to invited participants (single batch call)
         try {
           const { data: sessionData } = await supabase.auth.getSession();
           const token = sessionData?.session?.access_token;
@@ -614,18 +617,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', userId).single();
           const senderName = profile?.display_name || 'Someone';
 
-          for (const row of participantRows) {
-            fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                user_id: row.friend_id,
-                title: 'New Plan Invite! 📅',
-                body: `${senderName} invited you to "${plan.title}"`,
-                url: `/plan/${data.id}`,
-              }),
-            }).catch(() => {});
-          }
+          fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_ids: participantRows.map(r => r.friend_id),
+              title: 'New Plan Invite! 📅',
+              body: `${senderName} invited you to "${plan.title}"`,
+              url: `/plan/${data.id}`,
+            }),
+          }).catch(() => {});
         } catch (err) {
           console.error('Push notification error:', err);
         }
@@ -698,20 +699,35 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     // Sync participants if provided
     if (updates.participants) {
-      // Delete existing participants and re-insert
-      await supabase.from('plan_participants').delete().eq('plan_id', id);
-      
-      const participantRows = updates.participants
-        .filter(p => p.friendUserId)
+      // Diff-based upsert: only insert new and delete removed, preserving existing RSVP status
+      const { data: existingParticipants } = await supabase
+        .from('plan_participants')
+        .select('id, friend_id, status, role, responded_at')
+        .eq('plan_id', id);
+
+      const existingMap = new Map((existingParticipants || []).map(p => [p.friend_id, p]));
+      const desiredIds = new Set(
+        updates.participants.filter(p => p.friendUserId).map(p => p.friendUserId!)
+      );
+
+      // Delete removed participants
+      const toDelete = (existingParticipants || []).filter(p => !desiredIds.has(p.friend_id));
+      if (toDelete.length > 0) {
+        await supabase.from('plan_participants').delete().in('id', toDelete.map(p => p.id));
+      }
+
+      // Insert only new participants
+      const toInsert = updates.participants
+        .filter(p => p.friendUserId && !existingMap.has(p.friendUserId))
         .map(p => ({
           plan_id: id,
           friend_id: p.friendUserId!,
           status: 'invited',
           role: p.role || 'participant',
         }));
-      
-      if (participantRows.length > 0) {
-        await supabase.from('plan_participants').insert(participantRows);
+
+      if (toInsert.length > 0) {
+        await supabase.from('plan_participants').insert(toInsert);
       }
     }
     
@@ -1217,6 +1233,282 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       return;
     }
     
-    await get().loadAllData();
+     await get().loadAllData();
+  },
+
+  loadFriends: async () => {
+    const { userId } = get();
+    if (!userId) return;
+
+    const [outgoingResult, incomingResult] = await Promise.all([
+      supabase.from('friendships').select('*').eq('user_id', userId),
+      supabase.from('friendships_incoming' as any).select('*').eq('friend_user_id', userId),
+    ]);
+
+    const outgoingData = outgoingResult.data;
+    const incomingData = incomingResult.data;
+
+    const incomingUserIds = (incomingData || []).map((f: any) => f.user_id).filter(Boolean);
+    const outgoingUserIds = (outgoingData || []).map((f: any) => f.friend_user_id).filter(Boolean) as string[];
+
+    const [incomingProfilesResult, outgoingProfilesResult] = await Promise.all([
+      incomingUserIds.length > 0
+        ? supabase.rpc('get_display_names_for_users', { p_user_ids: incomingUserIds })
+        : Promise.resolve({ data: [] as any[] }),
+      outgoingUserIds.length > 0
+        ? supabase.from('public_profiles').select('user_id, avatar_url').in('user_id', outgoingUserIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const incomingProfilesMap = new Map((incomingProfilesResult.data || []).map((p: any) => [p.user_id, p]));
+    const outgoingAvatarMap = new Map<string, string | null>((outgoingProfilesResult.data || []).map((p: any) => [p.user_id, p.avatar_url]));
+
+    const outgoingFriends: Friend[] = (outgoingData || []).map((f) => ({
+      id: f.id,
+      name: f.friend_name,
+      email: f.friend_email || undefined,
+      avatar: f.friend_user_id ? (outgoingAvatarMap.get(f.friend_user_id) || undefined) : undefined,
+      friendUserId: f.friend_user_id || undefined,
+      status: f.status as 'connected' | 'pending' | 'invited',
+      isIncoming: false,
+      isPodMember: (f as any).is_pod_member || false,
+    }));
+
+    const incomingFriends: Friend[] = (incomingData || []).map((f: any) => {
+      const prof = incomingProfilesMap.get(f.user_id);
+      return {
+        id: f.id,
+        name: (prof as any)?.display_name || 'Someone',
+        avatar: (prof as any)?.avatar_url || undefined,
+        friendUserId: f.user_id,
+        status: f.status as 'connected' | 'pending' | 'invited',
+        isIncoming: true,
+      };
+    });
+
+    // Deduplicate
+    const statusPriority: Record<string, number> = { connected: 3, pending: 2, invited: 1 };
+    const globalByUserId = new Map<string, Friend>();
+    const noUserId: Friend[] = [];
+    for (const f of [...outgoingFriends, ...incomingFriends]) {
+      if (!f.friendUserId) { noUserId.push(f); continue; }
+      const existing = globalByUserId.get(f.friendUserId);
+      if (!existing || (statusPriority[f.status] || 0) > (statusPriority[existing.status] || 0)) {
+        if (existing && !f.isIncoming && existing.isIncoming) {
+          globalByUserId.set(f.friendUserId, { ...f });
+        } else if (existing && f.isIncoming && !existing.isIncoming) {
+          globalByUserId.set(f.friendUserId, { ...existing, status: f.status });
+        } else {
+          globalByUserId.set(f.friendUserId, f);
+        }
+      }
+    }
+    set({ friends: [...globalByUserId.values(), ...noUserId] });
+  },
+
+  loadPlans: async () => {
+    const { userId, userTimezone } = get();
+    if (!userId) return;
+
+    const [ownPlansResult, participatedPlanIdsResult] = await Promise.all([
+      supabase.from('plans').select('*').eq('user_id', userId).order('date', { ascending: true }).limit(200),
+      supabase.rpc('user_participated_plan_ids', { p_user_id: userId }),
+    ]);
+
+    const ownPlansData = ownPlansResult.data;
+    const participatedPlanIds = participatedPlanIdsResult.data;
+
+    const participatedPlansData = (participatedPlanIds && participatedPlanIds.length > 0)
+      ? (await supabase.from('plans').select('*').in('id', participatedPlanIds).order('date', { ascending: true }).limit(200)).data || []
+      : [];
+
+    const ownIds = new Set((ownPlansData || []).map(p => p.id));
+    const ownHangKeys = new Set(
+      (ownPlansData || []).filter(p => p.source === 'hang-request').map(p => `${p.date}|${p.time_slot}`)
+    );
+    const plansData = [
+      ...(ownPlansData || []),
+      ...participatedPlansData.filter(p => {
+        if (ownIds.has(p.id)) return false;
+        if (p.source === 'hang-request' && ownHangKeys.has(`${p.date}|${p.time_slot}`)) return false;
+        return true;
+      }),
+    ];
+
+    const planIds = plansData.map(p => p.id);
+    let participantsMap: Record<string, { friend_id: string; status: string; role: string; responded_at: string | null }[]> = {};
+    if (planIds.length > 0) {
+      const { data: participantsData } = await supabase.from('plan_participants').select('plan_id, friend_id, status, role, responded_at').in('plan_id', planIds);
+      for (const pp of (participantsData || [])) {
+        if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
+        participantsMap[pp.plan_id].push({ friend_id: pp.friend_id, status: pp.status, role: pp.role, responded_at: pp.responded_at });
+      }
+    }
+
+    const participantUserIds = new Set<string>();
+    for (const pps of Object.values(participantsMap)) {
+      for (const pp of pps) participantUserIds.add(pp.friend_id);
+    }
+    for (const p of plansData) {
+      if (p.user_id !== userId) participantUserIds.add(p.user_id);
+    }
+
+    let profilesMap: Record<string, string> = {};
+    let profileAvatarsMap: Record<string, string | null> = {};
+    if (participantUserIds.size > 0) {
+      const { data: profiles } = await supabase.from('public_profiles').select('user_id, display_name, avatar_url').in('user_id', Array.from(participantUserIds));
+      for (const p of (profiles || [])) {
+        if (p.user_id) {
+          profilesMap[p.user_id] = p.display_name || 'Friend';
+          profileAvatarsMap[p.user_id] = p.avatar_url;
+        }
+      }
+    }
+
+    const viewerTimezone = userTimezone;
+    const plans: Plan[] = plansData.map((p) => {
+      const allPps = participantsMap[p.id] || [];
+      const myParticipation = allPps.find(pp => pp.friend_id === userId);
+      const myRole = p.user_id === userId ? 'participant' : (myParticipation?.role as 'participant' | 'subscriber') || 'participant';
+      const rawPps = allPps.filter(pp => pp.friend_id !== userId);
+      const pps = [...rawPps];
+      if (p.user_id !== userId && !pps.some(pp => pp.friend_id === p.user_id)) {
+        pps.push({ friend_id: p.user_id, status: 'accepted', role: 'participant', responded_at: null });
+      }
+      const planDateRaw = new Date(p.date);
+      const planYear = planDateRaw.getUTCFullYear();
+      const planMonth = planDateRaw.getUTCMonth();
+      const planDay = planDateRaw.getUTCDate();
+      let normalizedPlanDate = new Date(planYear, planMonth, planDay);
+
+      let effectiveTimeSlot = p.time_slot as TimeSlot;
+      let effectiveStartTime: string | undefined = (p as any).start_time || undefined;
+      let effectiveEndTime: string | undefined = (p as any).end_time || undefined;
+
+      const sourceTimezone = (p as any).source_timezone;
+      if (sourceTimezone && sourceTimezone !== viewerTimezone && p.user_id !== userId) {
+        if (effectiveStartTime) {
+          const converted = convertTimeBetweenTimezones(effectiveStartTime, normalizedPlanDate, sourceTimezone, viewerTimezone);
+          effectiveStartTime = converted.time;
+          if (converted.dayOffset !== 0) normalizedPlanDate = addDays(normalizedPlanDate, converted.dayOffset);
+          effectiveTimeSlot = getTimeSlotForTime(converted.time) as TimeSlot;
+        } else {
+          const midpoint = getTimeSlotMidpoint(p.time_slot);
+          const converted = convertTimeBetweenTimezones(midpoint, normalizedPlanDate, sourceTimezone, viewerTimezone);
+          effectiveTimeSlot = getTimeSlotForTime(converted.time) as TimeSlot;
+          if (converted.dayOffset !== 0) normalizedPlanDate = addDays(normalizedPlanDate, converted.dayOffset);
+        }
+        if (effectiveEndTime) {
+          const convertedEnd = convertTimeBetweenTimezones(effectiveEndTime, new Date(planYear, planMonth, planDay), sourceTimezone, viewerTimezone);
+          effectiveEndTime = convertedEnd.time;
+        }
+      }
+
+      return {
+        id: p.id,
+        userId: p.user_id,
+        title: p.title,
+        activity: p.activity as ActivityType,
+        date: normalizedPlanDate,
+        endDate: (p as any).end_date ? (() => { const ed = new Date((p as any).end_date); return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate()); })() : undefined,
+        timeSlot: effectiveTimeSlot,
+        duration: p.duration,
+        startTime: effectiveStartTime,
+        endTime: effectiveEndTime,
+        location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
+        notes: p.notes || undefined,
+        status: (p as any).status as PlanStatus || 'confirmed',
+        feedVisibility: (p as any).feed_visibility || 'private',
+        participants: pps.map(pp => ({
+          id: pp.friend_id,
+          name: profilesMap[pp.friend_id] || 'Friend',
+          avatar: profileAvatarsMap[pp.friend_id] || undefined,
+          friendUserId: pp.friend_id,
+          status: 'connected' as const,
+          role: (pp.role as 'participant' | 'subscriber') || 'participant',
+          rsvpStatus: pp.status as string || 'invited',
+          respondedAt: pp.responded_at ? new Date(pp.responded_at) : undefined,
+        })),
+        myRole,
+        recurringPlanId: (p as any).recurring_plan_id || undefined,
+        createdAt: new Date(p.created_at),
+      };
+    });
+
+    set({ plans });
+  },
+
+  loadProfileAndAvailability: async () => {
+    const { userId } = get();
+    if (!userId) return;
+
+    const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const availStartDate = format(addDays(start, -183), 'yyyy-MM-dd');
+    const availEndDate = format(addDays(start, 183), 'yyyy-MM-dd');
+
+    const [availResult, profileResult] = await Promise.all([
+      supabase.from('availability').select('*').eq('user_id', userId).gte('date', availStartDate).lte('date', availEndDate),
+      supabase.from('profiles')
+        .select('current_vibe, location_status, custom_vibe_tags, vibe_gif_url, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address, timezone')
+        .eq('user_id', userId).single(),
+    ]);
+
+    const availData = availResult.data;
+    const profile = profileResult.data;
+
+    const defaultSettings: DefaultAvailabilitySettings = {
+      workDays: (profile as any)?.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+      workStartHour: (profile as any)?.default_work_start_hour ?? 9,
+      workEndHour: (profile as any)?.default_work_end_hour ?? 17,
+      defaultStatus: (profile as any)?.default_availability_status || 'free',
+      defaultVibes: (profile as any)?.default_vibes || [],
+    };
+
+    const availDataMap = new Map<string, any>();
+    if (availData) { for (const a of availData) availDataMap.set(a.date, a); }
+
+    const allDates = Array.from({ length: 366 }, (_, i) => format(addDays(start, i - 183), 'yyyy-MM-dd'));
+    const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
+      const existing = availDataMap.get(dateStr);
+      const date = addDays(start, i - 183);
+      if (existing) {
+        return {
+          date,
+          slots: {
+            'early-morning': existing.early_morning ?? true,
+            'late-morning': existing.late_morning ?? true,
+            'early-afternoon': existing.early_afternoon ?? true,
+            'late-afternoon': existing.late_afternoon ?? true,
+            'evening': existing.evening ?? true,
+            'late-night': existing.late_night ?? true,
+          },
+          locationStatus: (existing.location_status as LocationStatus) || 'home',
+          tripLocation: existing.trip_location || undefined,
+          vibe: (existing as any).vibe as VibeType | null || null,
+        };
+      }
+      return createDefaultAvailability(date, defaultSettings);
+    });
+
+    const availabilityMap = buildAvailabilityMap(availabilityWithDefaults);
+    const homeAddr = (profile as any)?.home_address || null;
+    const customTags = (profile as any)?.custom_vibe_tags || [];
+    const vibeGifUrl = (profile as any)?.vibe_gif_url || undefined;
+    const currentVibe = (profile as any)?.current_vibe
+      ? { type: (profile as any).current_vibe as VibeType, customTags: (profile as any).current_vibe === 'custom' ? customTags : undefined, gifUrl: vibeGifUrl }
+      : null;
+
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const todayAvail = availabilityMap[todayStr];
+    const todayLocationStatus = todayAvail?.locationStatus || 'home';
+
+    set({
+      availability: availabilityWithDefaults,
+      availabilityMap,
+      currentVibe,
+      locationStatus: todayLocationStatus,
+      defaultSettings,
+      homeAddress: homeAddr,
+    });
   },
 }));

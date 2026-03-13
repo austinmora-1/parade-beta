@@ -34,7 +34,7 @@ function persistMessages(messages: EllyMessage[]) {
 
 export function useEllyChat() {
   const { user, session } = useAuth();
-  const { plans, friends, availability, loadAllData } = usePlannerStore();
+  const { plans, friends, availability, loadPlans } = usePlannerStore();
   const [messages, setMessages] = useState<EllyMessage[]>(loadPersistedMessages);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -155,7 +155,7 @@ export function useEllyChat() {
 
       // If Elly performed any actions, reload data to reflect changes
       if (data.actions?.length > 0) {
-        await loadAllData();
+        await loadPlans();
         toast.success('Elly updated your plans! 🎉');
       }
     } catch (e: any) {
@@ -172,7 +172,7 @@ export function useEllyChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, user, session, buildContext, loadAllData]);
+  }, [messages, user, session, buildContext, loadPlans]);
 
   const clearHistory = useCallback(() => {
     setMessages([]);
