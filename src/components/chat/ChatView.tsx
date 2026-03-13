@@ -84,7 +84,7 @@ export function ChatView({ conversation, onBack }: ChatViewProps) {
         if (data?.error) throw new Error(data.error);
 
         if (data?.actions?.length > 0) {
-          await loadAllData();
+          await loadPlans();
           toast.success('Elly updated your plans! 🎉');
         }
       } catch (e: any) {
