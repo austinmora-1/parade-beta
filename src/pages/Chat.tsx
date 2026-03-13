@@ -108,7 +108,11 @@ export default function Chat() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <SendVibeDialog />
+          <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={() => setVibeDialogOpen(true)}>
+            <Zap className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Send Vibe</span>
+          </Button>
+          <SendVibeDialog open={vibeDialogOpen} onOpenChange={setVibeDialogOpen} />
           <NewChatDialog onCreateDM={handleCreateDM} onCreateGroup={handleCreateGroup} />
         </div>
       </div>
