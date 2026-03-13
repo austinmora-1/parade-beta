@@ -178,7 +178,7 @@ export default function PlanDetail() {
       setInviteAccepted(true);
       searchParams.delete('invite_token');
       setSearchParams(searchParams, { replace: true });
-      await loadAllData();
+      await Promise.all([loadPlans(), loadFriends()]);
     } catch (err: any) {
       if (err.message?.includes('Already a participant')) {
         toast.info("You're already part of this plan.");
