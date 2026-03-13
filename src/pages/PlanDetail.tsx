@@ -53,7 +53,7 @@ export default function PlanDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plans, deletePlan, updatePlan, userId, loadAllData, friends: allFriends } = usePlannerStore();
+  const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends } = usePlannerStore();
   const { createGroup, createDM } = useConversations();
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const { pods } = usePods();
@@ -178,7 +178,7 @@ export default function PlanDetail() {
       setInviteAccepted(true);
       searchParams.delete('invite_token');
       setSearchParams(searchParams, { replace: true });
-      await loadAllData();
+      await Promise.all([loadPlans(), loadFriends()]);
     } catch (err: any) {
       if (err.message?.includes('Already a participant')) {
         toast.info("You're already part of this plan.");
@@ -278,7 +278,7 @@ export default function PlanDetail() {
         .eq('friend_id', userId);
       if (error) throw error;
       toast.success(newStatus === 'accepted' ? "You're going!" : newStatus === 'maybe' ? 'Marked as maybe' : 'Declined');
-      await loadAllData();
+      await loadPlans();
     } catch (err: any) {
       toast.error(err.message || 'Failed to update RSVP');
     } finally {
@@ -365,7 +365,7 @@ export default function PlanDetail() {
       toast.success('Friend added to plan!');
       setFriendSearch('');
       setAddFriendOpen(false);
-      await loadAllData();
+      await loadPlans();
     } catch (err: any) {
       toast.error(err.message || 'Failed to add friend');
     } finally {

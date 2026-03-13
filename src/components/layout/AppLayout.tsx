@@ -15,14 +15,16 @@ export function AppLayout() {
   // Listen for real-time friend request notifications
   useFriendRequestNotifications();
   const queryClient = useQueryClient();
-  const loadAllData = usePlannerStore((s) => s.loadAllData);
+  const { loadFriends, loadPlans, loadProfileAndAvailability } = usePlannerStore();
 
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries(),
-      loadAllData(),
+      loadFriends(),
+      loadPlans(),
+      loadProfileAndAvailability(),
     ]);
-  }, [queryClient, loadAllData]);
+  }, [queryClient, loadFriends, loadPlans, loadProfileAndAvailability]);
   return (
     <FeedbackProvider>
       <div className="min-h-screen bg-background">

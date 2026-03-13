@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -36,23 +37,19 @@ const SLOT_KEYS: { key: string; slot: TimeSlot }[] = [
 
 export function FriendVibeStrip() {
   const { friends } = usePlannerStore();
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [friendVibes, setFriendVibes] = useState<FriendVibe[]>([]);
 
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected' && f.friendUserId);
   }, [friends]);
 
-  useEffect(() => {
-    if (connectedFriends.length === 0) {
-      setFriendVibes([]);
-      return;
-    }
+  const friendUserIds = useMemo(() => connectedFriends.map(f => f.friendUserId!), [connectedFriends]);
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
 
-    const fetchVibes = async () => {
-      const friendUserIds = connectedFriends.map(f => f.friendUserId!);
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const { data: friendVibes = [] } = useQuery({
+    queryKey: ['friend-vibes', friendUserIds, todayStr],
+    queryFn: async () => {
+      if (friendUserIds.length === 0) return [];
 
       const [{ data: profileData }, { data: availData }] = await Promise.all([
         supabase
@@ -96,11 +93,10 @@ export function FriendVibeStrip() {
         return bScore - aScore;
       });
 
-      setFriendVibes(vibes);
-    };
-
-    fetchVibes();
-  }, [connectedFriends]);
+      return vibes;
+    },
+    enabled: friendUserIds.length > 0,
+  });
 
   if (connectedFriends.length === 0) return null;
 

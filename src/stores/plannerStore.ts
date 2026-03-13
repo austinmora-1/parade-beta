@@ -1233,7 +1233,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       return;
     }
     
-     await get().loadAllData();
+     await get().loadProfileAndAvailability();
   },
 
   loadFriends: async () => {

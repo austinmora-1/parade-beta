@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSmartNudges } from '@/hooks/useSmartNudges';
 import { useLastHungOut } from '@/hooks/useLastHungOut';

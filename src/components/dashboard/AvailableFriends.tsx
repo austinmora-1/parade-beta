@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { isSameDay, format, addDays, startOfWeek } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -47,93 +48,66 @@ export function AvailableFriends() {
   const [friendAvail, setFriendAvail] = useState<FriendAvailDay[]>([]);
   const [loadingAvail, setLoadingAvail] = useState(false);
 
-  // Track which friends are actually available today
-  const [todayAvailableFriendIds, setTodayAvailableFriendIds] = useState<Set<string>>(new Set());
-  const [loadingTodayAvail, setLoadingTodayAvail] = useState(true);
-
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected');
   }, [friends]);
 
-  // Fetch today's availability for all connected friends
-  useEffect(() => {
-    if (connectedFriends.length === 0) {
-      setTodayAvailableFriendIds(new Set());
-      setLoadingTodayAvail(false);
-      return;
-    }
+  // Track which friends are actually available today via useQuery
+  const friendUserIds = useMemo(() => {
+    return connectedFriends.map(f => f.friendUserId).filter((id): id is string => !!id);
+  }, [connectedFriends]);
 
-    const friendUserIds = connectedFriends
-      .map(f => f.friendUserId)
-      .filter((id): id is string => !!id);
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
 
-    if (friendUserIds.length === 0) {
-      setTodayAvailableFriendIds(new Set());
-      setLoadingTodayAvail(false);
-      return;
-    }
+  const { data: todayAvailableFriendIds = new Set<string>(), isLoading: loadingTodayAvail } = useQuery({
+    queryKey: ['available-friends-today', friendUserIds, todayStr],
+    queryFn: async () => {
+      if (friendUserIds.length === 0) return new Set<string>();
 
-    const fetchTodayAvail = async () => {
-      setLoadingTodayAvail(true);
-      const today = format(new Date(), 'yyyy-MM-dd');
-
-      // Fetch availability AND plans for today in parallel
       const [availResult, plansResult] = await Promise.all([
         supabase
           .from('availability')
           .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
           .in('user_id', friendUserIds)
-          .eq('date', today),
+          .eq('date', todayStr),
         supabase
           .from('plans')
           .select('user_id, time_slot')
           .in('user_id', friendUserIds)
-          .gte('date', `${today}T00:00:00`)
-          .lte('date', `${today}T23:59:59`),
+          .gte('date', `${todayStr}T00:00:00`)
+          .lte('date', `${todayStr}T23:59:59`),
       ]);
 
       if (availResult.error) {
         console.error('Error fetching friend availability:', availResult.error);
-        setTodayAvailableFriendIds(new Set(friendUserIds));
-        setLoadingTodayAvail(false);
-        return;
+        return new Set<string>(friendUserIds);
       }
 
-      // Build a map of friend -> busy time slots from plans
       const friendBusySlots = new Map<string, Set<string>>();
       for (const plan of (plansResult.data || [])) {
         if (!friendBusySlots.has(plan.user_id)) {
           friendBusySlots.set(plan.user_id, new Set());
         }
-        // Normalize underscored DB format to hyphenated app format
         friendBusySlots.get(plan.user_id)!.add(plan.time_slot.replace('_', '-'));
       }
 
       const availableIds = new Set<string>();
-
       for (const friendUserId of friendUserIds) {
         const row = availResult.data?.find(r => r.user_id === friendUserId);
         const busySlots = friendBusySlots.get(friendUserId) || new Set();
-        
-        // Check if at least one slot is free (not unavailable AND not busy with a plan)
         const hasAnyFree = TIME_SLOT_ORDER.some(slot => {
           if (busySlots.has(slot)) return false;
-          if (!row) return true; // No availability record = default available
+          if (!row) return true;
           const col = SLOT_TO_DB_COL[slot];
           return (row as any)[col] !== false;
         });
-        
-        if (hasAnyFree) {
-          availableIds.add(friendUserId);
-        }
+        if (hasAnyFree) availableIds.add(friendUserId);
       }
 
-      setTodayAvailableFriendIds(availableIds);
-      setLoadingTodayAvail(false);
-    };
-
-    fetchTodayAvail();
-  }, [connectedFriends]);
+      return availableIds;
+    },
+    enabled: friendUserIds.length > 0,
+  });
 
   const availableFriends = useMemo(() => {
     return connectedFriends

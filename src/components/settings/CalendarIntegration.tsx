@@ -17,7 +17,8 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
   const { session } = useAuth();
   const { isConnected: googleConnected, isLoading: googleLoading, isSyncing: googleSyncing, lastSyncResult: googleLastSync, connect: googleConnect, disconnect: googleDisconnect, syncCalendar: googleSync } = useGoogleCalendar();
   const { isConnected: icalConnected, isLoading: icalLoading, isSyncing: icalSyncing, isConnecting: icalConnecting, lastSyncResult: icalLastSync, connect: icalConnect, disconnect: icalDisconnect, syncCalendar: icalSync, error: icalError } = useAppleCalendar();
-  const loadAllData = usePlannerStore((s) => s.loadAllData);
+  const loadPlans = usePlannerStore((s) => s.loadPlans);
+  const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
   const [icalUrl, setIcalUrl] = useState('');
   const [showIcalInput, setShowIcalInput] = useState(false);
@@ -26,7 +27,7 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
     const result = await googleSync();
     if (result.synced) {
       toast.success(result.message || 'Calendar synced successfully');
-      await loadAllData();
+      await Promise.all([loadPlans(), loadProfileAndAvailability()]);
     } else {
       toast.error(result.message || 'Failed to sync calendar');
     }
@@ -46,7 +47,7 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
       const syncResult = await icalSync();
       if (syncResult.synced) {
         toast.success(syncResult.message || 'Calendar synced');
-        await loadAllData();
+        await Promise.all([loadPlans(), loadProfileAndAvailability()]);
       }
     } else {
       toast.error(result?.error || 'Failed to connect');
@@ -57,7 +58,7 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
     const result = await icalSync();
     if (result.synced) {
       toast.success(result.message || 'Calendar synced successfully');
-      await loadAllData();
+      await Promise.all([loadPlans(), loadProfileAndAvailability()]);
     } else {
       toast.error(result.message || 'Failed to sync calendar');
     }
