@@ -84,12 +84,6 @@ export function FriendListRow({
         {isAvailableToday && (
           <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card bg-availability-available animate-pulse" />
         )}
-        {/* Vibe emoji badge */}
-        {vibeIcon && (
-          <span className="absolute -bottom-0.5 -left-0.5 text-[10px] leading-none bg-card rounded-full border border-border px-0.5">
-            {vibeIcon}
-          </span>
-        )}
       </div>
 
       {/* Center: Name + subtitle */}
