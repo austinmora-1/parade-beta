@@ -448,6 +448,14 @@ export function QuickPlanSheet({
           </div>
 
           <DrawerFooter className="pt-2">
+            {hasFriend && (
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400 mb-1">
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 font-medium">
+                  💡 Status: Proposed
+                </span>
+                <span className="text-muted-foreground">— confirmed when they accept</span>
+              </div>
+            )}
             <Button
               onClick={handleSubmit}
               disabled={!canSubmit || sending}
