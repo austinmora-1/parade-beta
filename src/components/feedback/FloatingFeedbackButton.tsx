@@ -22,7 +22,7 @@ export function FloatingFeedbackButton() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/30 backdrop-blur-[2px] border-2 border-primary shadow-[0_4px_20px_hsl(150_40%_45%/0.3)] transition-all duration-300 hover:scale-110 hover:bg-primary/40 hover:shadow-[0_6px_28px_hsl(150_40%_45%/0.45)] active:scale-95 md:bottom-6 md:right-6 group outline-none focus:outline-none focus-visible:outline-none [-webkit-tap-highlight-color:transparent] select-none"
+            className="fixed bottom-6 right-6 z-40 hidden md:flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/30 backdrop-blur-[2px] border-2 border-primary shadow-[0_4px_20px_hsl(150_40%_45%/0.3)] transition-all duration-300 hover:scale-110 hover:bg-primary/40 hover:shadow-[0_6px_28px_hsl(150_40%_45%/0.45)] active:scale-95 group outline-none focus:outline-none focus-visible:outline-none [-webkit-tap-highlight-color:transparent] select-none"
             aria-label="Quick actions"
           >
             <Plus className="h-6 w-6 stroke-[2.5] text-primary transition-transform duration-300 group-hover:rotate-90" />
