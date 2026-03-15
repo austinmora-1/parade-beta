@@ -54,7 +54,7 @@ export interface Location {
 }
 
 export type ParticipantRole = 'participant' | 'subscriber';
-export type PlanStatus = 'confirmed' | 'tentative';
+export type PlanStatus = 'confirmed' | 'tentative' | 'cancelled' | 'proposed';
 export type FeedVisibility = 'private' | 'friends' | string; // string for 'pod:<id>'
 
 export interface Friend {
