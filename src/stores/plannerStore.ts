@@ -376,6 +376,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           })),
           myRole,
           recurringPlanId: (p as any).recurring_plan_id || undefined,
+          proposedBy: (p as any).proposed_by || undefined,
           createdAt: new Date(p.created_at),
         };
       });
