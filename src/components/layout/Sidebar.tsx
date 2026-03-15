@@ -19,8 +19,7 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 
 const navItems = [
   { path: '/',             icon: LayoutDashboard, label: 'Home'         },
-  { path: '/plans',        icon: CalendarDays,    label: 'Plans'        },
-  { path: '/availability', icon: Clock,           label: 'Availability' },
+  { path: '/availability', icon: CalendarDays,    label: 'Plans'        },
   { path: '/friends',      icon: Users,           label: 'Friends'      },
   { path: '/inbox',        icon: Inbox,           label: 'Inbox'        },
 ];
