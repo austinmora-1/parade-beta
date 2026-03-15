@@ -43,6 +43,7 @@ const SLOT_ORDER: TimeSlot[] = [
 
 export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySummaryDropdownProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { 
     plans, 
     availabilityMap,
@@ -51,7 +52,8 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
     getLocationStatusForDate, 
     setLocationStatus,
     setAvailability,
-    deletePlan
+    deletePlan,
+    userId
   } = usePlannerStore();
 
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
