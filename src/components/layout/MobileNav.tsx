@@ -30,9 +30,10 @@ const leftItems  = navItems.slice(0, 2);
 const rightItems = navItems.slice(2);
 
 const fabActions = [
-  { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',  color: 'bg-primary' },
-  { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',   color: 'bg-secondary' },
-  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',    color: 'bg-accent-foreground' },
+  { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',         color: 'bg-primary' },
+  { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',          color: 'bg-secondary' },
+  { id: 'share',      icon: Share2,            label: 'Share Availability', color: 'bg-accent-foreground' },
+  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',           color: 'bg-muted-foreground' },
 ] as const;
 
 type FabAction = typeof fabActions[number]['id'];
