@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 function BetaSignupForm() {
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -23,7 +24,7 @@ function BetaSignupForm() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('loops-subscribe', {
-        body: { email: email.trim(), firstName: firstName.trim() || undefined },
+        body: { email: email.trim(), firstName: firstName.trim() || undefined, lastName: lastName.trim() || undefined },
       });
 
       if (error) throw error;
@@ -59,15 +60,26 @@ function BetaSignupForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <Input
-        type="text"
-        placeholder="Full name"
-        value={firstName}
-        onChange={(e) => setFirstName(e.target.value)}
-        required
-        className="bg-background/80 border-border/50"
-        maxLength={100}
-      />
+      <div className="flex gap-2">
+        <Input
+          type="text"
+          placeholder="First name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          required
+          className="bg-background/80 border-border/50"
+          maxLength={50}
+        />
+        <Input
+          type="text"
+          placeholder="Last name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          required
+          className="bg-background/80 border-border/50"
+          maxLength={50}
+        />
+      </div>
       <Input
         type="email"
         placeholder="you@example.com"
