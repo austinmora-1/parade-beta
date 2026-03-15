@@ -135,7 +135,6 @@ export default function Notifications() {
 
   useEffect(() => {
     if (user) {
-      fetchHangRequests();
       fetchPlanInvitations();
       fetchPendingChanges();
       fetchRecentPhotos();
