@@ -9,11 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SignedImage } from '@/components/ui/SignedImage';
-import { Send, Loader2 } from 'lucide-react';
+import { CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
-import confetti from 'canvas-confetti';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 interface FriendVibe {
   friend: Friend;
@@ -128,243 +126,153 @@ export function FriendVibeStrip() {
 
 function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: () => void }) {
   const { friend, currentVibe, customVibeTags, vibeGifUrl, isAvailableToday, availableSlots } = data;
-  const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [hangSlot, setHangSlot] = useState<TimeSlot | null>(null);
-  const [hangMessage, setHangMessage] = useState('');
-  const [sending, setSending] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
   const vibeConfig = currentVibe ? VIBE_CONFIG[currentVibe as VibeType] : null;
   const isCustom = currentVibe === 'custom';
 
-  const handleSlotClick = (slot: TimeSlot) => {
-    if (hangSlot === slot) {
-      setHangSlot(null);
-    } else {
-      setHangSlot(slot);
-    }
-  };
-
-  const handleSendHangRequest = async () => {
-    if (!hangSlot || !user || !friend.friendUserId) return;
-
-    setSending(true);
-    try {
-      const [{ data: friendProfile }, { data: myProfile }] = await Promise.all([
-        supabase.from('profiles').select('share_code').eq('user_id', friend.friendUserId).single(),
-        supabase.from('profiles').select('display_name').eq('user_id', user.id).single(),
-      ]);
-
-      if (!friendProfile?.share_code) {
-        toast.error("Could not find friend's profile");
-        setSending(false);
-        return;
-      }
-
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const todayLabel = 'Today';
-
-      const { error } = await supabase.functions.invoke('send-hang-request', {
-        body: {
-          shareCode: friendProfile.share_code,
-          requesterName: myProfile?.display_name || user.email,
-          requesterEmail: user.email,
-          requesterUserId: user.id,
-          message: hangMessage || undefined,
-          selectedDay: todayStr,
-          selectedDayLabel: todayLabel,
-          selectedSlot: hangSlot,
-          selectedSlotLabel: TIME_SLOT_LABELS[hangSlot]?.label || hangSlot,
-        },
-      });
-
-      if (error) throw error;
-
-      confetti({
-        particleCount: 80,
-        spread: 55,
-        origin: { y: 0.75 },
-        colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
-        scalar: 0.9,
-      });
-
-      toast.success(`Hang request sent to ${friend.name}! 🎉`);
-      setHangSlot(null);
-      setHangMessage('');
-      setOpen(false);
-    } catch (err: any) {
-      console.error('Error sending hang request:', err);
-      toast.error(err.message || 'Failed to send hang request');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleOpenChange = (v: boolean) => {
-    setOpen(v);
-    if (!v) {
-      setHangSlot(null);
-      setHangMessage('');
-    }
-  };
-
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <button className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group">
-          <div className="relative h-12 w-12">
-            <div
-              className={cn(
-                "h-12 w-12 rounded-full overflow-hidden transition-all duration-200",
-                currentVibe
-                  ? `ring-2 ring-offset-1 ring-offset-background`
-                  : "ring-1 ring-border"
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group">
+            <div className="relative h-12 w-12">
+              <div
+                className={cn(
+                  "h-12 w-12 rounded-full overflow-hidden transition-all duration-200",
+                  currentVibe
+                    ? `ring-2 ring-offset-1 ring-offset-background`
+                    : "ring-1 ring-border"
+                )}
+                style={currentVibe && vibeConfig ? {
+                  outline: `2px solid hsl(var(--${vibeConfig.color}))`,
+                  outlineOffset: '2px',
+                } : undefined}
+              >
+                <img
+                  src={friend.avatar || getElephantAvatar(friend.name)}
+                  alt={friend.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
+              {vibeConfig && (
+                <span className="absolute -bottom-0.5 -left-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-background text-[11px] shadow-sm">
+                  {vibeConfig.icon}
+                </span>
               )}
-              style={currentVibe && vibeConfig ? {
-                outline: `2px solid hsl(var(--${vibeConfig.color}))`,
-                outlineOffset: '2px',
-              } : undefined}
-            >
+
+              <span
+                className={cn(
+                  "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
+                  isAvailableToday
+                    ? "bg-green-500 animate-pulse-soft"
+                    : "bg-muted-foreground/25"
+                )}
+              />
+            </div>
+
+            <span className="text-[11px] font-medium text-foreground truncate w-full text-center leading-tight">
+              {friend.name.split(' ')[0]}
+            </span>
+          </button>
+        </PopoverTrigger>
+
+        <PopoverContent
+          className="w-64 p-0 rounded-xl shadow-lg border border-border"
+          side="bottom"
+          align="center"
+          sideOffset={8}
+        >
+          <div className="flex items-center gap-3 p-3 border-b border-border">
+            <div className="h-10 w-10 rounded-full overflow-hidden ring-1 ring-border shrink-0">
               <img
                 src={friend.avatar || getElephantAvatar(friend.name)}
                 alt={friend.name}
                 className="h-full w-full object-cover"
               />
             </div>
-
-            {vibeConfig && (
-              <span className="absolute -bottom-0.5 -left-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-background text-[11px] shadow-sm">
-                {vibeConfig.icon}
-              </span>
-            )}
-
-            <span
-              className={cn(
-                "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
-                isAvailableToday
-                  ? "bg-green-500 animate-pulse-soft"
-                  : "bg-muted-foreground/25"
-              )}
-            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground truncate">{friend.name}</p>
+              <button
+                onClick={(e) => { e.stopPropagation(); setOpen(false); onNavigate(); }}
+                className="text-[11px] text-primary hover:underline"
+              >
+                View profile →
+              </button>
+            </div>
           </div>
 
-          <span className="text-[11px] font-medium text-foreground truncate w-full text-center leading-tight">
-            {friend.name.split(' ')[0]}
-          </span>
-        </button>
-      </PopoverTrigger>
-
-      <PopoverContent
-        className="w-64 p-0 rounded-xl shadow-lg border border-border"
-        side="bottom"
-        align="center"
-        sideOffset={8}
-      >
-        <div className="flex items-center gap-3 p-3 border-b border-border">
-          <div className="h-10 w-10 rounded-full overflow-hidden ring-1 ring-border shrink-0">
-            <img
-              src={friend.avatar || getElephantAvatar(friend.name)}
-              alt={friend.name}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">{friend.name}</p>
-            <button
-              onClick={(e) => { e.stopPropagation(); setOpen(false); onNavigate(); }}
-              className="text-[11px] text-primary hover:underline"
-            >
-              View profile →
-            </button>
-          </div>
-        </div>
-
-        <div className="p-3 space-y-2">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Current Vibe</p>
-          {currentVibe ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-sm">
-                  {vibeConfig?.icon} {isCustom && customVibeTags?.length
-                    ? customVibeTags.map(t => `#${t}`).join(' ')
-                    : vibeConfig?.label}
-                </span>
-              </div>
-              {vibeGifUrl && (
-                <div className="rounded-lg overflow-hidden border border-border">
-                  <SignedImage
-                    src={vibeGifUrl}
-                    alt="Vibe GIF"
-                    className="w-full h-28 object-cover"
-                  />
+          <div className="p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Current Vibe</p>
+            {currentVibe ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-sm">
+                    {vibeConfig?.icon} {isCustom && customVibeTags?.length
+                      ? customVibeTags.map(t => `#${t}`).join(' ')
+                      : vibeConfig?.label}
+                  </span>
                 </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">No vibe set</p>
-          )}
-        </div>
-
-        <div className="p-3 pt-0 space-y-2">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Available Today</p>
-          {availableSlots.length > 0 ? (
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap gap-1">
-                {availableSlots.map(slot => {
-                  const isSelected = hangSlot === slot;
-                  return (
-                    <button
-                      key={slot}
-                      onClick={() => handleSlotClick(slot)}
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-all",
-                        isSelected
-                          ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
-                          : "bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20 cursor-pointer"
-                      )}
-                    >
-                      {TIME_SLOT_LABELS[slot].time}
-                    </button>
-                  );
-                })}
+                {vibeGifUrl && (
+                  <div className="rounded-lg overflow-hidden border border-border">
+                    <SignedImage
+                      src={vibeGifUrl}
+                      alt="Vibe GIF"
+                      className="w-full h-28 object-cover"
+                    />
+                  </div>
+                )}
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                Tap a slot to send a hang request
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">Not available today</p>
-          )}
-        </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No vibe set</p>
+            )}
+          </div>
 
-        {hangSlot && (
-          <div className="p-3 pt-0 space-y-2 animate-fade-in">
-            <Textarea
-              placeholder="Add a message (optional)"
-              value={hangMessage}
-              onChange={e => setHangMessage(e.target.value)}
-              className="resize-none text-sm min-h-[40px]"
-              rows={2}
-            />
+          <div className="p-3 pt-0 space-y-2">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Available Today</p>
+            {availableSlots.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {availableSlots.map(slot => (
+                  <span
+                    key={slot}
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-green-500/10 text-green-700 dark:text-green-400"
+                  >
+                    {TIME_SLOT_LABELS[slot].time}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Not available today</p>
+            )}
+          </div>
+
+          <div className="p-3 pt-0">
             <Button
-              onClick={handleSendHangRequest}
-              disabled={sending}
-              className="w-full gap-2"
               size="sm"
+              className="w-full gap-2"
+              onClick={() => {
+                setOpen(false);
+                setQuickPlanOpen(true);
+              }}
             >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              Send Hang Request
-              <span className="text-xs opacity-80">
-                · {TIME_SLOT_LABELS[hangSlot].time}
-              </span>
+              <CalendarPlus className="h-4 w-4" />
+              Suggest a plan
             </Button>
           </div>
-        )}
-      </PopoverContent>
-    </Popover>
+        </PopoverContent>
+      </Popover>
+
+      <QuickPlanSheet
+        open={quickPlanOpen}
+        onOpenChange={setQuickPlanOpen}
+        preSelectedFriend={{
+          userId: friend.friendUserId!,
+          name: friend.name,
+          avatar: friend.avatar,
+        }}
+      />
+    </>
   );
 }
