@@ -10,6 +10,8 @@ import { VIBE_CONFIG, ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
+import { useAuth } from '@/hooks/useAuth';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
