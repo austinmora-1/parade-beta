@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, Plus, MoreHorizontal, Pencil, Trash2, UserPlus, X, Check, Search } from 'lucide-react';
+import { Heart, Plus, MoreHorizontal, Pencil, Trash2, UserPlus, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
