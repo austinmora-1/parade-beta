@@ -456,6 +456,22 @@ export default function Friends() {
         open={panelOpen}
         onOpenChange={setPanelOpen}
       />
+
+      {/* Pod Panel */}
+      <PodPanel
+        pod={activePod}
+        open={podPanelOpen}
+        onOpenChange={setPodPanelOpen}
+        friends={friends}
+        onUpdatePod={(podId, updates) => {
+          podsHook.refetch();
+        }}
+        onRemoveFriend={removeFriend}
+        onOpenFriend={(friendUserId) => {
+          setPodPanelOpen(false);
+          handleOpenFriend(friendUserId);
+        }}
+      />
     </div>
   );
 }
