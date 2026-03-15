@@ -88,7 +88,6 @@ function PodPanelContent({
     setActiveTab(tab);
     onTabChange?.(tab);
   };
-  const [activeTab, setActiveTab] = useState<'members' | 'chat'>('members');
   const { conversations } = useConversations();
   const [conversationId, setConversationId] = useState<string | null>(pod.conversationId || null);
 
