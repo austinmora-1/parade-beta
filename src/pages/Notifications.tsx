@@ -643,9 +643,10 @@ export default function Notifications() {
   const visibleRecentPhotos = recentPhotos.filter(p => !dismissedIds.has(`photo-${p.id}`));
   const visibleParticipantRequests = participantRequests.filter(r => !dismissedIds.has(`participant-req-${r.id}`));
   const visibleVibes = incomingVibes.filter(v => !dismissedIds.has(`vibe-${v.id}`));
+  const visibleProposedPlans = proposedPlans.filter(p => !dismissedIds.has(`proposal-${p.planId}`));
 
-  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length;
-  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading;
+  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length + visibleProposedPlans.length;
+  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && !proposedLoading;
 
   const clearAll = () => {
     visibleHangRequests.forEach(r => dismiss(`hang-${r.id}`));
