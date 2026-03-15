@@ -22,6 +22,7 @@ import {
   TIME_SLOT_LABELS,
   ActivityType,
   TimeSlot,
+  PlanStatus,
   Friend,
 } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
