@@ -16,7 +16,7 @@ serve(async (req) => {
       throw new Error('LOOPS_API_KEY is not configured');
     }
 
-    const { email, firstName } = await req.json();
+    const { email, firstName, lastName } = await req.json();
 
     if (!email || typeof email !== 'string' || email.length > 255) {
       return new Response(
