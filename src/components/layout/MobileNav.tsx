@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { motion, LayoutGroup } from 'framer-motion';
 import { useState } from 'react';
-import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
@@ -17,7 +17,7 @@ const navItems = [
 export function MobileNav() {
   const location = useLocation();
   const { profile } = useCurrentUserProfile();
-  const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -70,7 +70,7 @@ export function MobileNav() {
 
           {/* FAB — create a plan from anywhere */}
           <button
-            onClick={() => setCreatePlanOpen(true)}
+            onClick={() => setQuickPlanOpen(true)}
             className="relative flex flex-col items-center gap-0.5 px-3 py-1"
             aria-label="Create plan"
           >
@@ -116,7 +116,7 @@ export function MobileNav() {
         </div>
       </nav>
 
-      <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
+      <QuickPlanSheet open={quickPlanOpen} onOpenChange={setQuickPlanOpen} />
     </>
   );
 }

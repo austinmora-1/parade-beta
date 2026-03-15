@@ -694,6 +694,7 @@ export type Database = {
           id: string
           location: string | null
           notes: string | null
+          proposed_by: string | null
           recurring_plan_id: string | null
           source: string | null
           source_event_id: string | null
@@ -716,6 +717,7 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          proposed_by?: string | null
           recurring_plan_id?: string | null
           source?: string | null
           source_event_id?: string | null
@@ -738,6 +740,7 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          proposed_by?: string | null
           recurring_plan_id?: string | null
           source?: string | null
           source_event_id?: string | null

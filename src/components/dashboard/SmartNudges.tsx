@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSmartNudges } from '@/hooks/useSmartNudges';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
@@ -8,11 +8,13 @@ import { formatDistanceToNow } from 'date-fns';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { SignedImage } from '@/components/ui/SignedImage';
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 export function SmartNudges() {
   const { nudges, dismissNudge, markActedOn } = useSmartNudges();
   const { friends } = usePlannerStore();
   const navigate = useNavigate();
+  const [quickPlanFriend, setQuickPlanFriend] = useState<{ userId: string; name: string; avatar?: string } | null>(null);
 
   const friendUserIds = useMemo(
     () => nudges.map(n => n.friend_user_id).filter((id): id is string => !!id),
@@ -42,6 +44,12 @@ export function SmartNudges() {
     }
   };
 
+  const handleSuggestPlan = (nudge: typeof nudges[0]) => {
+    const friend = nudge.friend_user_id ? friendMap[nudge.friend_user_id] : null;
+    if (!friend || !nudge.friend_user_id) return;
+    setQuickPlanFriend({ userId: nudge.friend_user_id, name: friend.name, avatar: friend.avatar });
+  };
+
   const getLastHungLabel = (friendUserId: string | null) => {
     if (!friendUserId) return null;
     const d = lastDates[friendUserId];
@@ -65,10 +73,17 @@ export function SmartNudges() {
               getLastHungLabel={getLastHungLabel}
               onAction={handleAction}
               onDismiss={dismissNudge}
+              onSuggestPlan={handleSuggestPlan}
             />
           ))}
         </AnimatePresence>
       </div>
+
+      <QuickPlanSheet
+        open={!!quickPlanFriend}
+        onOpenChange={(open) => { if (!open) setQuickPlanFriend(null); }}
+        preSelectedFriend={quickPlanFriend || undefined}
+      />
     </div>
   );
 }
@@ -79,12 +94,14 @@ function SwipeableNudgeCard({
   getLastHungLabel,
   onAction,
   onDismiss,
+  onSuggestPlan,
 }: {
   nudge: { id: string; friend_user_id: string | null; title: string };
   friendMap: Record<string, { name: string; avatar?: string }>;
   getLastHungLabel: (id: string | null) => string | null;
   onAction: (nudge: any) => void;
   onDismiss: (id: string) => void;
+  onSuggestPlan: (nudge: any) => void;
 }) {
   const y = useMotionValue(0);
   const opacity = useTransform(y, [-60, -30, 0], [0, 0.5, 1]);
@@ -130,6 +147,16 @@ function SwipeableNudgeCard({
       <p className="text-[11px] font-medium text-center leading-tight truncate w-full pointer-events-none">
         {friend?.name?.split(' ')[0] || name}
       </p>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onSuggestPlan(nudge);
+        }}
+        className="text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+      >
+        Suggest a plan →
+      </button>
 
       {lastHung && (
         <p className="text-[10px] text-muted-foreground text-center leading-tight pointer-events-none">

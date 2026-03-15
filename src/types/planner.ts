@@ -54,7 +54,7 @@ export interface Location {
 }
 
 export type ParticipantRole = 'participant' | 'subscriber';
-export type PlanStatus = 'confirmed' | 'tentative';
+export type PlanStatus = 'confirmed' | 'tentative' | 'cancelled' | 'proposed';
 export type FeedVisibility = 'private' | 'friends' | string; // string for 'pod:<id>'
 
 export interface Friend {
@@ -90,6 +90,7 @@ export interface Plan {
   createdAt: Date;
   myRole?: ParticipantRole; // role of the current user (for participated plans)
   recurringPlanId?: string; // linked to a recurring plan template
+  proposedBy?: string; // user_id of the proposer; undefined for self-created plans
 }
 
 export interface Vibe {

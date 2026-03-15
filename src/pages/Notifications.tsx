@@ -7,13 +7,16 @@ import { useNotifications, dismissNotification } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, Sparkles } from 'lucide-react';
+import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, Sparkles, MapPin, CalendarPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
-import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG } from '@/types/planner';
+import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
 import { SwipeableDismiss } from '@/components/ui/SwipeableDismiss';
 import { AnimatePresence } from 'framer-motion';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import confetti from 'canvas-confetti';
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
@@ -84,8 +87,22 @@ interface IncomingVibe {
   created_at: string;
 }
 
+interface ProposedPlan {
+  planId: string;
+  participantRowId: string;
+  title: string;
+  activity: string;
+  date: string;
+  timeSlot: string;
+  location: string | null;
+  notes: string | null;
+  proposerName: string;
+  proposerAvatar: string | null;
+  proposerUserId: string | null;
+}
+
 export default function Notifications() {
-  const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans } = usePlannerStore();
+  const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans, respondToProposal } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -110,6 +127,10 @@ export default function Notifications() {
   const [incomingVibes, setIncomingVibes] = useState<IncomingVibe[]>([]);
   const [vibesLoading, setVibesLoading] = useState(true);
 
+  const [proposedPlans, setProposedPlans] = useState<ProposedPlan[]>([]);
+  const [proposedLoading, setProposedLoading] = useState(true);
+  const [counterProposal, setCounterProposal] = useState<ProposedPlan | null>(null);
+
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
   const visibleIncomingRequests = incomingRequests.filter(f => !dismissedIds.has(`friend-${f.id}`));
   const dismissedFriendRequestCount = incomingRequests.length - visibleIncomingRequests.length;
@@ -133,8 +154,69 @@ export default function Notifications() {
       fetchRecentPhotos();
       fetchParticipantRequestsData();
       fetchIncomingVibes();
+      fetchProposedPlans();
     }
   }, [user]);
+
+  const fetchProposedPlans = async () => {
+    if (!user) { setProposedLoading(false); return; }
+    const { data: participantRows } = await supabase
+      .from('plan_participants')
+      .select('id, plan_id, status')
+      .eq('friend_id', user.id)
+      .eq('status', 'invited');
+
+    if (!participantRows?.length) { setProposedPlans([]); setProposedLoading(false); return; }
+
+    const planIds = participantRows.map(r => r.plan_id);
+    const { data: plans } = await supabase
+      .from('plans')
+      .select('id, title, activity, date, time_slot, location, notes, status, proposed_by')
+      .in('id', planIds)
+      .eq('status', 'proposed');
+
+    if (!plans?.length) { setProposedPlans([]); setProposedLoading(false); return; }
+
+    const proposerIds = [...new Set(plans.map(p => (p as any).proposed_by).filter(Boolean))];
+    const { data: profiles } = await supabase
+      .from('public_profiles')
+      .select('user_id, display_name, avatar_url')
+      .in('user_id', proposerIds);
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
+    setProposedPlans(plans.map(plan => {
+      const participantRow = participantRows.find(r => r.plan_id === plan.id);
+      const proposer = (plan as any).proposed_by ? profileMap.get((plan as any).proposed_by) : null;
+      return {
+        planId: plan.id,
+        participantRowId: participantRow!.id,
+        title: plan.title,
+        activity: plan.activity,
+        date: plan.date,
+        timeSlot: plan.time_slot,
+        location: plan.location,
+        notes: plan.notes,
+        proposerName: proposer?.display_name || 'Someone',
+        proposerAvatar: proposer?.avatar_url || null,
+        proposerUserId: (plan as any).proposed_by,
+      };
+    }));
+    setProposedLoading(false);
+  };
+
+  const respondToProposedPlan = async (planId: string, participantRowId: string, response: 'accepted' | 'declined') => {
+    setUpdating(participantRowId);
+    await respondToProposal(planId, participantRowId, response);
+    setProposedPlans(prev => prev.filter(p => p.participantRowId !== participantRowId));
+    if (response === 'accepted') {
+      confetti({ particleCount: 80, spread: 55, origin: { y: 0.75 },
+        colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'] });
+      sonnerToast.success('Plan accepted! It\'s on your calendar 🎉');
+    } else {
+      sonnerToast.success('Plan declined.');
+    }
+    setUpdating(null);
+  };
 
   const fetchIncomingVibes = async () => {
     if (!user) { setVibesLoading(false); return; }
@@ -561,9 +643,10 @@ export default function Notifications() {
   const visibleRecentPhotos = recentPhotos.filter(p => !dismissedIds.has(`photo-${p.id}`));
   const visibleParticipantRequests = participantRequests.filter(r => !dismissedIds.has(`participant-req-${r.id}`));
   const visibleVibes = incomingVibes.filter(v => !dismissedIds.has(`vibe-${v.id}`));
+  const visibleProposedPlans = proposedPlans.filter(p => !dismissedIds.has(`proposal-${p.planId}`));
 
-  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length;
-  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading;
+  const totalVisible = visibleIncomingRequests.length + visibleHangRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length + visibleProposedPlans.length;
+  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && !proposedLoading;
 
   const clearAll = () => {
     visibleHangRequests.forEach(r => dismiss(`hang-${r.id}`));
@@ -572,6 +655,7 @@ export default function Notifications() {
     visibleRecentPhotos.forEach(p => dismiss(`photo-${p.id}`));
     visibleParticipantRequests.forEach(r => dismiss(`participant-req-${r.id}`));
     visibleVibes.forEach(v => dismiss(`vibe-${v.id}`));
+    visibleProposedPlans.forEach(p => dismiss(`proposal-${p.planId}`));
     visibleIncomingRequests.forEach(f => dismiss(`friend-${f.id}`));
   };
 
@@ -592,6 +676,94 @@ export default function Notifications() {
           </Button>
         )}
       </div>
+
+      {/* Plan Suggestions (proposed plans) */}
+      {(visibleProposedPlans.length > 0 || proposedLoading) && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <CalendarPlus className="h-4 w-4 text-primary md:h-5 md:w-5" />
+            Plan Suggestions
+            {visibleProposedPlans.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
+                {visibleProposedPlans.length}
+              </span>
+            )}
+          </h2>
+
+          {proposedLoading ? (
+            <div className="flex h-20 items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <AnimatePresence>
+              {visibleProposedPlans.map((proposal) => (
+                <SwipeableDismiss key={proposal.planId} onDismiss={() => dismiss(`proposal-${proposal.planId}`)}>
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={proposal.proposerAvatar || undefined} />
+                        <AvatarFallback className="text-xs bg-primary/15 text-primary">
+                          {proposal.proposerName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-semibold">{proposal.proposerName}</p>
+                        <p className="text-xs text-muted-foreground">suggested a plan</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg bg-background border border-border p-3 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <ActivityIcon config={ACTIVITY_CONFIG[proposal.activity as ActivityType]} size={16} />
+                        <span className="text-sm font-medium">{proposal.title}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatPlanDate(proposal.date)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {TIME_SLOT_LABELS[proposal.timeSlot as TimeSlot]?.label || proposal.timeSlot}
+                        </span>
+                        {proposal.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {proposal.location}
+                          </span>
+                        )}
+                      </div>
+                      {proposal.notes && (
+                        <p className="text-xs text-foreground italic">"{proposal.notes}"</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1 gap-1"
+                        onClick={() => respondToProposedPlan(proposal.planId, proposal.participantRowId, 'accepted')}
+                        disabled={updating === proposal.participantRowId}>
+                        {updating === proposal.participantRowId
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <Check className="h-4 w-4" />}
+                        Accept
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1 gap-1"
+                        onClick={() => setCounterProposal(proposal)}>
+                        Counter
+                      </Button>
+                      <Button size="sm" variant="ghost"
+                        onClick={() => respondToProposedPlan(proposal.planId, proposal.participantRowId, 'declined')}
+                        disabled={updating === proposal.participantRowId}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </SwipeableDismiss>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
+      )}
 
       {/* Participant Requests Section (organizer approval) */}
       {(visibleParticipantRequests.length > 0 || participantReqLoading) && (
@@ -1117,6 +1289,17 @@ export default function Notifications() {
           </Button>
         </div>
       )}
+
+      {/* Counter proposal sheet */}
+      <QuickPlanSheet
+        open={!!counterProposal}
+        onOpenChange={(open) => { if (!open) setCounterProposal(null); }}
+        preSelectedFriend={counterProposal ? {
+          userId: counterProposal.proposerUserId || '',
+          name: counterProposal.proposerName,
+          avatar: counterProposal.proposerAvatar || undefined,
+        } : undefined}
+      />
     </div>
   );
 }
