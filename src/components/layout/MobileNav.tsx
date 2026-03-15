@@ -45,6 +45,7 @@ export function MobileNav() {
   const [fabOpen, setFabOpen] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   const [sendVibeOpen, setSendVibeOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const { totalNotifications } = useNotifications();
   const { conversations } = useConversations();
 
