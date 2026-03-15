@@ -1137,7 +1137,7 @@ export default function Notifications() {
       )}
 
       {/* Empty state */}
-      {isEmpty && !hangLoading && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && incomingRequests.length === 0 && (
+      {isEmpty && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && incomingRequests.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
           <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">🔔</div>
           <h3 className="font-display text-base font-semibold md:text-lg">No new notifications</h3>
