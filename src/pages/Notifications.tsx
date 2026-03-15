@@ -1289,6 +1289,17 @@ export default function Notifications() {
           </Button>
         </div>
       )}
+
+      {/* Counter proposal sheet */}
+      <QuickPlanSheet
+        open={!!counterProposal}
+        onOpenChange={(open) => { if (!open) setCounterProposal(null); }}
+        preSelectedFriend={counterProposal ? {
+          userId: counterProposal.proposerUserId || '',
+          name: counterProposal.proposerName,
+          avatar: counterProposal.proposerAvatar || undefined,
+        } : undefined}
+      />
     </div>
   );
 }
