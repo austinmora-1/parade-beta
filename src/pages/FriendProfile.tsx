@@ -757,12 +757,20 @@ export default function FriendProfile() {
 
       <QuickPlanSheet
         open={quickPlanOpen}
-        onOpenChange={setQuickPlanOpen}
+        onOpenChange={(open) => {
+          setQuickPlanOpen(open);
+          if (!open) {
+            setQuickPlanDate(undefined);
+            setQuickPlanSlot(undefined);
+          }
+        }}
         preSelectedFriend={userId ? {
           userId,
           name: profile?.display_name || 'Friend',
           avatar: profile?.avatar_url || undefined,
         } : undefined}
+        preSelectedDate={quickPlanDate}
+        preSelectedTimeSlot={quickPlanSlot}
       />
     </div>
   );
