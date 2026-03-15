@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface GroupSchedulerProps {
   friends: Friend[];
+  defaultSelectedFriendIds?: string[];
 }
 
 interface FriendAvailability {
