@@ -310,39 +310,7 @@ export default function Notifications() {
     setPhotosLoading(false);
   };
 
-  // --- Hang Requests ---
-  const fetchHangRequests = async () => {
-    const { data: reqs } = await supabase
-      .from('hang_requests')
-      .select('*')
-      .eq('status', 'pending')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    const { data: emails } = await supabase
-      .from('hang_request_emails')
-      .select('hang_request_id, requester_email');
-
-    const emailMap = new Map(emails?.map(e => [e.hang_request_id, e.requester_email]) || []);
-    setHangRequests((reqs || []).map(r => ({ ...r, requester_email: emailMap.get(r.id) || null })));
-    setHangLoading(false);
-  };
-
-  const updateHangStatus = async (id: string, status: 'accepted' | 'declined') => {
-    setUpdating(id);
-    const { error } = await supabase.from('hang_requests').update({ status }).eq('id', id);
-    if (error) {
-      sonnerToast.error('Failed to update request');
-    } else {
-      sonnerToast.success(status === 'accepted' ? 'Request accepted! A plan has been created 🎉' : 'Request declined');
-      setHangRequests(prev => prev.filter(r => r.id !== id));
-      await refetchHangRequests();
-      if (status === 'accepted') {
-        await loadPlans();
-      }
-    }
-    setUpdating(null);
-  };
+  // Hang requests removed — replaced by plan proposal system
 
   // --- Plan Invitations ---
   const fetchPlanInvitations = async () => {
