@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { motion, LayoutGroup } from 'framer-motion';
+import { useConversations } from '@/hooks/useChat';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
