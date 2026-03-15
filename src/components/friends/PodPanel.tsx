@@ -173,12 +173,13 @@ function PodPanelContent({
 
 export function PodPanel({ pod, open, onOpenChange, friends, onUpdatePod, onOpenFriend, onRemoveFriend }: PodPanelProps) {
   const isMobile = useIsMobile();
+  const [chatTabActive, setChatTabActive] = useState(false);
 
   if (!pod) return null;
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false} dismissible={!chatTabActive}>
         <DrawerContent className="max-h-[92dvh] flex flex-col">
           <PodPanelContent
             pod={pod}
@@ -187,6 +188,7 @@ export function PodPanel({ pod, open, onOpenChange, friends, onUpdatePod, onOpen
             onUpdatePod={onUpdatePod}
             onOpenFriend={onOpenFriend}
             onRemoveFriend={onRemoveFriend}
+            onTabChange={(tab) => setChatTabActive(tab === 'chat')}
           />
         </DrawerContent>
       </Drawer>
