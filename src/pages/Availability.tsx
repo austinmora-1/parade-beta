@@ -124,7 +124,7 @@ export default function Availability() {
               Set when you're free and share with friends
             </p>
           </div>
-          <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="flex flex-col items-end gap-2.5 shrink-0">
             {isConnected && (
               <Button
                 size="sm"
