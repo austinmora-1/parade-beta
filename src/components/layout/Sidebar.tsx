@@ -82,6 +82,11 @@ export function Sidebar() {
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
+                {item.path === '/friends' && totalUnreadDMs > 0 && (
+                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                    {totalUnreadDMs > 9 ? '9+' : totalUnreadDMs}
+                  </span>
+                )}
               </NavLink>
             );
           })}

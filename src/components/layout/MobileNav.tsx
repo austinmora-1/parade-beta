@@ -54,6 +54,11 @@ export function MobileNav() {
                       )}
                       strokeWidth={isActive ? 2.2 : 1.8}
                     />
+                    {item.path === '/friends' && totalUnreadDMs > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground">
+                        {totalUnreadDMs > 9 ? '9+' : totalUnreadDMs}
+                      </span>
+                    )}
                   </div>
                   <span
                     className={cn(
