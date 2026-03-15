@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat, ChevronDown } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat, ChevronDown, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
@@ -633,51 +633,32 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
           <div className="space-y-1">
             <Label className="text-xs">Status</Label>
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPlanStatus('confirmed')}
-                className={cn(
-                  "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
-                  planStatus === 'confirmed'
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
-                )}
-              >
-                ✅ Confirmed
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlanStatus('tentative')}
-                className={cn(
-                  "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
-                  planStatus === 'tentative'
-                    ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
-                )}
-              >
-                🤔 Tentative
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlanStatus('proposed')}
-                className={cn(
-                  "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
-                  planStatus === 'proposed'
-                    ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
-                )}
-              >
-                💡 Proposed
-              </button>
+              {([
+                { value: 'confirmed' as const, icon: CircleCheck, label: 'Confirmed', activeClass: 'border-primary bg-primary/10 text-primary' },
+                { value: 'tentative' as const, icon: CircleHelp, label: 'Tentative', activeClass: 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+                { value: 'proposed' as const, icon: Lightbulb, label: 'Proposed', activeClass: 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+              ]).map(s => {
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => setPlanStatus(s.value)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
+                      planStatus === s.value
+                        ? s.activeClass
+                        : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {s.label}
+                  </button>
+                );
+              })}
             </div>
-            {planStatus === 'tentative' && (
-              <p className="text-[10px] text-muted-foreground">Tentative plans won't block your availability</p>
-            )}
-            {planStatus === 'proposed' && (
-              <p className="text-[10px] text-muted-foreground">Proposed plans are ideas that haven't been committed to yet</p>
-            )}
             {selectedFriends.length > 0 && planStatus === 'confirmed' && (
-              <p className="text-[10px] text-muted-foreground">📋 Plans with friends will start as <strong>Proposed</strong> until participants accept</p>
+              <p className="text-[10px] text-muted-foreground">Plans with friends will start as Proposed until participants accept</p>
             )}
           </div>
           )}
