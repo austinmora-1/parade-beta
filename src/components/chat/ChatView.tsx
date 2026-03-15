@@ -26,7 +26,7 @@ interface ChatViewProps {
   inlineMode?: boolean;
 }
 
-export function ChatView({ conversation, onBack }: ChatViewProps) {
+export function ChatView({ conversation, onBack, inlineMode = false }: ChatViewProps) {
   const { user } = useAuth();
   const { loadPlans } = usePlannerStore();
   const { messages, loading, loadingMore, hasMore, loadMore, sendMessage, editMessage, deleteMessage, readReceipts, reactions, toggleReaction } = useChatMessages(conversation.id);
