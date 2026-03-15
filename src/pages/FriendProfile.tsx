@@ -741,6 +741,16 @@ export default function FriendProfile() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <QuickPlanSheet
+        open={quickPlanOpen}
+        onOpenChange={setQuickPlanOpen}
+        preSelectedFriend={userId ? {
+          userId,
+          name: profile?.display_name || 'Friend',
+          avatar: profile?.avatar_url || undefined,
+        } : undefined}
+      />
     </div>
   );
 }
