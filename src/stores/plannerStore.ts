@@ -918,7 +918,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
 
     await get().loadAllData();
   },
-  
+
+  addFriend: async (friend) => {
     const { userId } = get();
     if (!userId) return;
     
