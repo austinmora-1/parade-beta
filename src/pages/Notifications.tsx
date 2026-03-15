@@ -95,10 +95,8 @@ export default function Notifications() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { refetchHangRequests, refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchUnreadVibes, dismissedIds, dismissNotification: dismiss } = useNotifications();
+  const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchUnreadVibes, dismissedIds, dismissNotification: dismiss } = useNotifications();
 
-  const [hangRequests, setHangRequests] = useState<HangRequest[]>([]);
-  const [hangLoading, setHangLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
   const [planInvitations, setPlanInvitations] = useState<PlanInvitation[]>([]);
