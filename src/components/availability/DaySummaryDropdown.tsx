@@ -278,6 +278,19 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                           </button>
                         </div>
                       </div>
+                      {/* Inline RSVP for plans user is invited to */}
+                      {(() => {
+                        const isOwner = !plan.userId || plan.userId === userId;
+                        const myParticipation = plan.participants?.find((p: any) => p.friendUserId === userId);
+                        const myRsvp = myParticipation?.rsvpStatus;
+                        if (isOwner || !myParticipation || myRsvp === 'accepted') return null;
+                        if (!userId) return null;
+                        return (
+                          <div className="mt-1 ml-0" onClick={e => e.stopPropagation()}>
+                            <PlanRsvpButtons planId={plan.id} userId={userId} currentStatus={myRsvp} compact />
+                          </div>
+                        );
+                      })()}
                     );
                   })}
                 </div>

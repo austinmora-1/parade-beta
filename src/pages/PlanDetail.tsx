@@ -627,38 +627,14 @@ export default function PlanDetail() {
           )}
 
           {/* RSVP buttons for non-owner participants */}
-          {plan && isParticipant && !isOwner && !isPast && (
+          {plan && isParticipant && !isOwner && !isPast && userId && (
             <div className="space-y-2">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your RSVP</h3>
-              <div className="flex gap-2">
-                <Button
-                  variant={myRsvpStatus === 'accepted' ? 'default' : 'outline'}
-                  size="sm"
-                  className="gap-1.5"
-                  disabled={isUpdatingRsvp}
-                  onClick={() => handleRsvpChange('accepted')}
-                >
-                  <CheckCircle2 className="h-4 w-4" /> Going
-                </Button>
-                <Button
-                  variant={myRsvpStatus === 'maybe' ? 'default' : 'outline'}
-                  size="sm"
-                  className={`gap-1.5 ${myRsvpStatus === 'maybe' ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
-                  disabled={isUpdatingRsvp}
-                  onClick={() => handleRsvpChange('maybe')}
-                >
-                  <HelpCircle className="h-4 w-4" /> Maybe
-                </Button>
-                <Button
-                  variant={myRsvpStatus === 'declined' ? 'default' : 'outline'}
-                  size="sm"
-                  className={`gap-1.5 ${myRsvpStatus === 'declined' ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' : ''}`}
-                  disabled={isUpdatingRsvp}
-                  onClick={() => handleRsvpChange('declined')}
-                >
-                  <XCircle className="h-4 w-4" /> Can't Go
-                </Button>
-              </div>
+              <PlanRsvpButtons
+                planId={plan.id}
+                userId={userId}
+                currentStatus={myRsvpStatus}
+              />
             </div>
           )}
 
