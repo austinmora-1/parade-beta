@@ -27,17 +27,6 @@ const HANG_SLOT_LABELS: Record<string, string> = {
   late_night: 'Late Night (9pm+)',
 };
 
-interface HangRequest {
-  id: string;
-  requester_name: string;
-  requester_email: string | null;
-  message: string | null;
-  selected_day: string;
-  selected_slot: string;
-  status: string;
-  created_at: string;
-}
-
 interface PlanInvitation {
   id: string;
   plan_id: string;
