@@ -256,7 +256,7 @@ export function PodSection({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              </div>
+              </button>
             );
           })()}
         </>
