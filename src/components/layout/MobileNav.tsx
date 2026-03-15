@@ -65,22 +65,6 @@ export function MobileNav() {
             })}
           </LayoutGroup>
 
-          {/* FAB — create a plan from anywhere */}
-          <button
-            onClick={() => setQuickPlanOpen(true)}
-            className="relative flex flex-col items-center gap-0.5 px-3 py-1"
-            aria-label="Create plan"
-          >
-            <motion.div
-              whileTap={{ scale: 0.88 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-md"
-            >
-              <Plus className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
-            </motion.div>
-            <span className="text-[10px] font-medium text-sidebar-foreground/50">Plan</span>
-          </button>
-
           {/* Profile */}
           <NavLink
             to="/profile"
