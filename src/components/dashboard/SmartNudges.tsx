@@ -158,11 +158,6 @@ function SwipeableNudgeCard({
         Suggest a plan →
       </button>
 
-      {lastHung && (
-        <p className="text-[10px] text-muted-foreground text-center leading-tight pointer-events-none">
-          {lastHung}
-        </p>
-      )}
     </motion.div>
   );
 }
