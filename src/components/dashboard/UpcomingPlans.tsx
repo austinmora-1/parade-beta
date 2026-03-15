@@ -77,7 +77,7 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
 }
 
 export function UpcomingPlans({ standalone = false }: { standalone?: boolean } = {}) {
-  const { plans, userTimezone } = usePlannerStore();
+  const { plans, userTimezone, userId } = usePlannerStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
