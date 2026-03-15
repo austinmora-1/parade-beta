@@ -90,6 +90,7 @@ export interface Plan {
   createdAt: Date;
   myRole?: ParticipantRole; // role of the current user (for participated plans)
   recurringPlanId?: string; // linked to a recurring plan template
+  proposedBy?: string; // user_id of the proposer; undefined for self-created plans
 }
 
 export interface Vibe {
