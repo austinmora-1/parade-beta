@@ -256,7 +256,7 @@ export function QuickPlanSheet({
                     {filteredFriends.slice(0, 6).map(f => (
                       <button
                         key={f.id}
-                        onClick={() => setSelectedFriend({ userId: f.friendUserId!, name: f.name, avatar: f.avatar })}
+                        onClick={() => { setSelectedFriend({ userId: f.friendUserId!, name: f.name, avatar: f.avatar }); setPlanStatus('proposed'); }}
                         className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
                       >
                         <Avatar className="h-4 w-4">
