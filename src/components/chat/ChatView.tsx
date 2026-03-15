@@ -23,6 +23,7 @@ import { ChatMessage } from '@/hooks/useChat';
 interface ChatViewProps {
   conversation: Conversation;
   onBack: () => void;
+  inlineMode?: boolean;
 }
 
 export function ChatView({ conversation, onBack }: ChatViewProps) {
