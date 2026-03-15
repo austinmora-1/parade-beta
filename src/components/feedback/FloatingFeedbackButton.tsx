@@ -1,23 +1,20 @@
 import { useState } from 'react';
-import { Plus, CalendarPlus, CalendarArrowUp, UserPlus, Send, Zap } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Plus, CalendarPlus, CalendarArrowUp, UserPlus, Zap } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
-import { NewHangRequestDialog } from '@/components/dashboard/NewHangRequestDialog';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 export function FloatingFeedbackButton() {
-  const [createPlanOpen, setCreatePlanOpen] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   const [inviteFriendOpen, setInviteFriendOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [hangRequestOpen, setHangRequestOpen] = useState(false);
   const [sendVibeOpen, setSendVibeOpen] = useState(false);
 
   return (
@@ -32,7 +29,7 @@ export function FloatingFeedbackButton() {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="top" className="w-48 mb-2">
-          <DropdownMenuItem onClick={() => setCreatePlanOpen(true)} className="gap-2">
+          <DropdownMenuItem onClick={() => setQuickPlanOpen(true)} className="gap-2">
             <CalendarPlus className="h-4 w-4" />
             Make a Plan
           </DropdownMenuItem>
@@ -44,10 +41,6 @@ export function FloatingFeedbackButton() {
             <CalendarArrowUp className="h-4 w-4" />
             Share Availability
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setHangRequestOpen(true)} className="gap-2">
-            <Send className="h-4 w-4" />
-            Send Hang Request
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setInviteFriendOpen(true)} className="gap-2">
             <UserPlus className="h-4 w-4" />
             Add Friends
@@ -55,10 +48,9 @@ export function FloatingFeedbackButton() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
+      <QuickPlanSheet open={quickPlanOpen} onOpenChange={setQuickPlanOpen} />
       <InviteFriendDialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen} />
       <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
-      <NewHangRequestDialog open={hangRequestOpen} onOpenChange={setHangRequestOpen} />
       <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
     </>
   );
