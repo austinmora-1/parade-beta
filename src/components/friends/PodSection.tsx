@@ -193,7 +193,10 @@ export function PodSection({
           {selectedPod && (() => {
             const podFriends = getPodFriends(selectedPod);
             return (
-              <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
+              <button
+                onClick={() => onOpenPod?.(selectedPod)}
+                className="w-full rounded-xl border border-border bg-card p-3 shadow-soft text-left hover:bg-accent/50 transition-colors"
+              >
                 {podFriends.length > 0 ? (
                   <FriendAvatarGrid
                     friends={podFriends}
