@@ -77,6 +77,7 @@ export default function FriendProfile() {
   const [upcomingOpen, setUpcomingOpen] = useState(true);
   const [previousOpen, setPreviousOpen] = useState(false);
   const [showAvatarLightbox, setShowAvatarLightbox] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
   const friendIds = useMemo(() => userId ? [userId] : [], [userId]);
   const lastHungOut = useLastHungOut(friendIds);
