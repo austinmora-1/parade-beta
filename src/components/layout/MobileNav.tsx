@@ -1,11 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
+  House,
   CalendarDays,
   Users,
   Inbox,
   Plus,
 } from 'lucide-react';
-import { ElephantIcon } from '@/components/ui/ElephantIcon';
 import { cn } from '@/lib/utils';
 import { motion, LayoutGroup } from 'framer-motion';
 import { useState } from 'react';
@@ -15,7 +15,7 @@ import { useConversations } from '@/hooks/useChat';
 
 // Five primary destinations — consistent with desktop sidebar labels
 const navItems = [
-  { path: '/',             icon: ElephantIcon,    label: 'Home'    },
+  { path: '/',             icon: House,           label: 'Home'    },
   { path: '/availability', icon: CalendarDays,    label: 'Plans'   },
   // + FAB sits in the center slot (index 2) — not a nav item
   { path: '/friends',      icon: Users,           label: 'Friends' },
