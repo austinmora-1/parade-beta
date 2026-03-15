@@ -96,13 +96,20 @@ function PanelContent({
   initialConversationId,
   onClose,
   defaultTab = 'profile',
+  onTabChange,
 }: {
   friendUserId: string;
   initialConversationId?: string | null;
   onClose: () => void;
   defaultTab?: 'profile' | 'chat';
+  onTabChange?: (tab: 'profile' | 'chat') => void;
 }) {
   const [activeTab, setActiveTab] = useState<'profile' | 'chat'>(defaultTab);
+
+  const handleTabChange = (tab: 'profile' | 'chat') => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
   const { conversations } = useConversations();
   const { user } = useAuth();
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
@@ -127,7 +134,7 @@ function PanelContent({
           {(['profile', 'chat'] as const).map(tab => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(tab)}
               className={cn(
                 "px-3 py-1 rounded-md text-xs font-medium transition-colors",
                 activeTab === tab
@@ -151,7 +158,7 @@ function PanelContent({
             <FriendProfileContent
               userId={friendUserId}
               showBackButton={false}
-              onMessageClick={() => setActiveTab('chat')}
+              onMessageClick={() => handleTabChange('chat')}
             />
           </div>
         ) : activeConversation ? (
@@ -175,18 +182,20 @@ function PanelContent({
 
 export function FriendPanel({ friendUserId, initialConversationId, open, onOpenChange, defaultTab }: FriendPanelProps) {
   const isMobile = useIsMobile();
+  const [chatTabActive, setChatTabActive] = useState(defaultTab === 'chat');
 
   if (!friendUserId) return null;
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false} dismissible={!chatTabActive}>
         <DrawerContent className="max-h-[92dvh] flex flex-col">
           <PanelContent
             friendUserId={friendUserId}
             initialConversationId={initialConversationId}
             onClose={() => onOpenChange(false)}
             defaultTab={defaultTab}
+            onTabChange={(tab) => setChatTabActive(tab === 'chat')}
           />
         </DrawerContent>
       </Drawer>

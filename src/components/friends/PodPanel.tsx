@@ -72,6 +72,7 @@ function PodPanelContent({
   onUpdatePod,
   onOpenFriend,
   onRemoveFriend,
+  onTabChange,
 }: {
   pod: Pod;
   friends: Friend[];
@@ -79,8 +80,14 @@ function PodPanelContent({
   onUpdatePod?: (podId: string, updates: { conversation_id?: string }) => void;
   onOpenFriend?: (friendUserId: string) => void;
   onRemoveFriend?: (id: string) => void;
+  onTabChange?: (tab: 'members' | 'chat') => void;
 }) {
   const [activeTab, setActiveTab] = useState<'members' | 'chat'>('members');
+
+  const handleTabChange = (tab: 'members' | 'chat') => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
   const { conversations } = useConversations();
   const [conversationId, setConversationId] = useState<string | null>(pod.conversationId || null);
 
@@ -91,7 +98,7 @@ function PodPanelContent({
   const handleConversationCreated = (id: string) => {
     setConversationId(id);
     onUpdatePod?.(pod.id, { conversation_id: id });
-    setActiveTab('chat');
+    handleTabChange('chat');
   };
 
   return (
@@ -108,7 +115,7 @@ function PodPanelContent({
             {(['members', 'chat'] as const).map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => handleTabChange(tab)}
                 className={cn(
                   "px-3 py-1 rounded-md text-xs font-medium transition-colors",
                   activeTab === tab
@@ -166,12 +173,13 @@ function PodPanelContent({
 
 export function PodPanel({ pod, open, onOpenChange, friends, onUpdatePod, onOpenFriend, onRemoveFriend }: PodPanelProps) {
   const isMobile = useIsMobile();
+  const [chatTabActive, setChatTabActive] = useState(false);
 
   if (!pod) return null;
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false} dismissible={!chatTabActive}>
         <DrawerContent className="max-h-[92dvh] flex flex-col">
           <PodPanelContent
             pod={pod}
@@ -180,6 +188,7 @@ export function PodPanel({ pod, open, onOpenChange, friends, onUpdatePod, onOpen
             onUpdatePod={onUpdatePod}
             onOpenFriend={onOpenFriend}
             onRemoveFriend={onRemoveFriend}
+            onTabChange={(tab) => setChatTabActive(tab === 'chat')}
           />
         </DrawerContent>
       </Drawer>
