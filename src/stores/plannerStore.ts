@@ -43,6 +43,15 @@ interface PlannerState {
   addPlan: (plan: Omit<Plan, 'id' | 'createdAt'>) => Promise<void>;
   updatePlan: (id: string, updates: Partial<Plan>) => Promise<void>;
   deletePlan: (id: string) => Promise<void>;
+  proposePlan: (proposal: {
+    recipientFriendId: string;
+    activity: ActivityType | string;
+    date: Date;
+    timeSlot: TimeSlot;
+    location?: string;
+    note?: string;
+  }) => Promise<void>;
+  respondToProposal: (planId: string, participantRowId: string, response: 'accepted' | 'declined') => Promise<void>;
   
   addFriend: (friend: Omit<Friend, 'id'>) => Promise<void>;
   updateFriend: (id: string, updates: Partial<Friend>) => Promise<void>;
