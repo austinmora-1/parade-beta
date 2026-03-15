@@ -20,6 +20,7 @@ import { usePods } from '@/hooks/usePods';
 import { useConversations } from '@/hooks/useChat';
 import { format } from 'date-fns';
 import { TimeSlot, VIBE_CONFIG, VibeType } from '@/types/planner';
+import { Pod } from '@/hooks/usePods';
 
 interface PublicProfile {
   user_id: string;
