@@ -1,8 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, MessageCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { motion, LayoutGroup } from 'framer-motion';
 import { useConversations } from '@/hooks/useChat';
 
@@ -15,16 +13,8 @@ const navItems = [
 
 export function MobileNav() {
   const location = useLocation();
-  const { profile } = useCurrentUserProfile();
   const { conversations } = useConversations();
   const totalUnreadDMs = conversations.filter(c => c.unread_count > 0).length;
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  const isProfileActive = location.pathname === '/profile';
 
   return (
     <>
@@ -72,39 +62,8 @@ export function MobileNav() {
               );
             })}
           </LayoutGroup>
-
-          {/* Profile */}
-          <NavLink
-            to="/profile"
-            className="flex flex-col items-center gap-0.5 px-3 py-1"
-          >
-            <motion.div
-              whileTap={{ scale: 0.92 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-              className="h-9 w-9 flex items-center justify-center"
-            >
-              <Avatar
-                className={cn(
-                  'h-7 w-7 transition-all duration-200',
-                  isProfileActive && 'ring-2 ring-sidebar-primary ring-offset-1 ring-offset-sidebar'
-                )}
-              >
-                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
-                <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
-                  {getInitials(profile?.display_name)}
-                </AvatarFallback>
-              </Avatar>
-            </motion.div>
-            <span className={cn(
-              'text-[10px] font-medium transition-colors duration-150',
-              isProfileActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/50'
-            )}>
-              Me
-            </span>
-          </NavLink>
         </div>
       </nav>
-
     </>
   );
 }
