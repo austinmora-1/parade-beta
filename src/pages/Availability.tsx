@@ -5,7 +5,7 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
-import { RefreshCw, Loader2, Plus, PlaneTakeoff, LayoutList } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, PlaneTakeoff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
@@ -124,22 +124,30 @@ export default function Availability() {
               Set when you're free and share with friends
             </p>
           </div>
-          {isConnected && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-2"
-              onClick={handleSync}
-              disabled={isSyncing}
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            {isConnected && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 gap-2"
+                onClick={handleSync}
+                disabled={isSyncing}
+              >
+                {isSyncing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync'}</span>
+              </Button>
+            )}
+            <button
+              onClick={() => navigate('/plans')}
+              className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
             >
-              {isSyncing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync'}</span>
-            </Button>
-          )}
+              View Plan List →
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           <Button
@@ -159,15 +167,6 @@ export default function Availability() {
           >
             <PlaneTakeoff className="h-4 w-4" />
             <span className="hidden sm:inline">Add Trip</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0 gap-2"
-            onClick={() => navigate('/plans')}
-          >
-            <LayoutList className="h-4 w-4" />
-            <span className="hidden sm:inline">Plans</span>
           </Button>
           <ShareDialog
             trigger={

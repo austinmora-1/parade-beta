@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Users,
   Inbox,
-  Clock,
   Plus,
   Settings,
 } from 'lucide-react';
@@ -19,8 +18,7 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 
 const navItems = [
   { path: '/',             icon: LayoutDashboard, label: 'Home'         },
-  { path: '/plans',        icon: CalendarDays,    label: 'Plans'        },
-  { path: '/availability', icon: Clock,           label: 'Availability' },
+  { path: '/availability', icon: CalendarDays,    label: 'Plans'        },
   { path: '/friends',      icon: Users,           label: 'Friends'      },
   { path: '/inbox',        icon: Inbox,           label: 'Inbox'        },
 ];
@@ -41,10 +39,11 @@ export function Sidebar() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const isActive = (path: string) =>
-    path === '/'
-      ? location.pathname === '/'
-      : location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    if (path === '/availability') return location.pathname.startsWith('/availability') || location.pathname.startsWith('/plans');
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <>

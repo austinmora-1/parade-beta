@@ -15,11 +15,11 @@ import { useConversations } from '@/hooks/useChat';
 
 // Five primary destinations — consistent with desktop sidebar labels
 const navItems = [
-  { path: '/',            icon: LayoutDashboard, label: 'Home'    },
-  { path: '/plans',       icon: CalendarDays,    label: 'Plans'   },
+  { path: '/',             icon: LayoutDashboard, label: 'Home'    },
+  { path: '/availability', icon: CalendarDays,    label: 'Plans'   },
   // + FAB sits in the center slot (index 2) — not a nav item
-  { path: '/friends',     icon: Users,           label: 'Friends' },
-  { path: '/inbox',       icon: Inbox,           label: 'Inbox'   },
+  { path: '/friends',      icon: Users,           label: 'Friends' },
+  { path: '/inbox',        icon: Inbox,           label: 'Inbox'   },
 ];
 
 // Split into left pair and right pair so the FAB sits in the middle
@@ -35,10 +35,11 @@ export function MobileNav() {
   const unreadChats = conversations.filter(c => c.unread_count > 0).length;
   const inboxCount  = totalNotifications + unreadChats;
 
-  const isActive = (path: string) =>
-    path === '/'
-      ? location.pathname === '/'
-      : location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    if (path === '/availability') return location.pathname.startsWith('/availability') || location.pathname.startsWith('/plans');
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <>
