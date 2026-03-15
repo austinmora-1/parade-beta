@@ -86,13 +86,6 @@ export function PodSection({
   const [newPodName, setNewPodName] = useState('');
   const [newPodEmoji, setNewPodEmoji] = useState('💜');
   const [memberSearch, setMemberSearch] = useState('');
-  const [selectedPodId, setSelectedPodId] = useState<string>(pods[0]?.id ?? '');
-
-  // Keep selectedPodId in sync when pods change
-  const selectedPod = pods.find(p => p.id === selectedPodId) ?? pods[0] ?? null;
-  if (selectedPod && selectedPodId !== selectedPod.id) {
-    setSelectedPodId(selectedPod.id);
-  }
 
   const connectedFriends = friends.filter(f => f.status === 'connected' && f.friendUserId);
 
