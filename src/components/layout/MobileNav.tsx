@@ -225,6 +225,7 @@ export function MobileNav() {
 
       <QuickPlanSheet open={quickPlanOpen} onOpenChange={setQuickPlanOpen} />
       <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
+      <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
     </>
   );
 }
