@@ -7,13 +7,16 @@ import { useNotifications, dismissNotification } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, Sparkles } from 'lucide-react';
+import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, Sparkles, MapPin, CalendarPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
-import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG } from '@/types/planner';
+import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
 import { SwipeableDismiss } from '@/components/ui/SwipeableDismiss';
 import { AnimatePresence } from 'framer-motion';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import confetti from 'canvas-confetti';
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
