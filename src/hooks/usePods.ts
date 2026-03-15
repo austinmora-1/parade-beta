@@ -8,6 +8,7 @@ export interface Pod {
   emoji: string;
   sortOrder: number;
   memberUserIds: string[];
+  conversationId: string | null;
 }
 
 export function usePods() {
@@ -50,6 +51,7 @@ export function usePods() {
       emoji: p.emoji || '💜',
       sortOrder: p.sort_order,
       memberUserIds: membersByPod.get(p.id) || [],
+      conversationId: p.conversation_id || null,
     }));
 
     setPods(result);
@@ -69,7 +71,7 @@ export function usePods() {
       .select()
       .single();
     if (error) throw error;
-    setPods(prev => [...prev, { id: (data as any).id, name, emoji, sortOrder: maxOrder + 1, memberUserIds: [] }]);
+    setPods(prev => [...prev, { id: (data as any).id, name, emoji, sortOrder: maxOrder + 1, memberUserIds: [], conversationId: null }]);
     return (data as any).id as string;
   };
 

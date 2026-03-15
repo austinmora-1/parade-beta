@@ -1,0 +1,2 @@
+ALTER TABLE public.pods ADD COLUMN IF NOT EXISTS conversation_id UUID REFERENCES public.conversations(id) ON DELETE SET NULL;
+COMMENT ON COLUMN public.pods.conversation_id IS 'Group chat conversation for this pod. Created lazily on first message.';

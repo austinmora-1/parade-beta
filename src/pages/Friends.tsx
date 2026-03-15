@@ -5,6 +5,7 @@ import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
 import { FriendListRow } from '@/components/friends/FriendListRow';
 import { FriendPanel } from '@/components/friends/FriendPanel';
+import { PodPanel } from '@/components/friends/PodPanel';
 import { PodSection } from '@/components/friends/PodSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import { usePods } from '@/hooks/usePods';
 import { useConversations } from '@/hooks/useChat';
 import { format } from 'date-fns';
 import { TimeSlot, VIBE_CONFIG, VibeType } from '@/types/planner';
+import { Pod } from '@/hooks/usePods';
 
 interface PublicProfile {
   user_id: string;
@@ -100,6 +102,10 @@ export default function Friends() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeFriendId, setActiveFriendId] = useState<string | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+
+  // PodPanel state
+  const [podPanelOpen, setPodPanelOpen] = useState(false);
+  const [activePod, setActivePod] = useState<Pod | null>(null);
 
   // Vibe + availability data for list rows
   const [friendVibeMap, setFriendVibeMap] = useState<Record<string, { vibe: string | null; icon: string | null }>>({});
@@ -264,6 +270,11 @@ export default function Friends() {
     setPanelOpen(true);
   };
 
+  const handleOpenPod = (pod: Pod) => {
+    setActivePod(pod);
+    setPodPanelOpen(true);
+  };
+
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const getAvatarColor = (name: string) => {
     const colors = ['bg-availability-available/20 text-availability-available', 'bg-availability-partial/20 text-availability-partial', 'bg-primary/20 text-primary', 'bg-secondary text-secondary-foreground'];
@@ -371,6 +382,7 @@ export default function Friends() {
         onDeletePod={podsHook.deletePod}
         onAddMember={podsHook.addMember}
         onRemoveMember={podsHook.removeMember}
+        onOpenPod={handleOpenPod}
       />
 
       {/* Connected Friends — List View */}
@@ -443,6 +455,22 @@ export default function Friends() {
         initialConversationId={activeChatId}
         open={panelOpen}
         onOpenChange={setPanelOpen}
+      />
+
+      {/* Pod Panel */}
+      <PodPanel
+        pod={activePod}
+        open={podPanelOpen}
+        onOpenChange={setPodPanelOpen}
+        friends={friends}
+        onUpdatePod={(podId, updates) => {
+          podsHook.refetch();
+        }}
+        onRemoveFriend={removeFriend}
+        onOpenFriend={(friendUserId) => {
+          setPodPanelOpen(false);
+          handleOpenFriend(friendUserId);
+        }}
       />
     </div>
   );

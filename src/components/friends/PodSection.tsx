@@ -50,6 +50,7 @@ interface PodSectionProps {
   onDeletePod: (podId: string) => Promise<void>;
   onAddMember: (podId: string, friendUserId: string) => Promise<void>;
   onRemoveMember: (podId: string, friendUserId: string) => Promise<void>;
+  onOpenPod?: (pod: Pod) => void;
 }
 
 const EMOJI_OPTIONS = ['💜', '🔥', '⭐', '🎯', '🏠', '🎉', '💪', '🌿', '🎵', '☕', '🍻', '🧘'];
@@ -76,6 +77,7 @@ export function PodSection({
   onDeletePod,
   onAddMember,
   onRemoveMember,
+  onOpenPod,
 }: PodSectionProps) {
   const { toast } = useToast();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -191,7 +193,10 @@ export function PodSection({
           {selectedPod && (() => {
             const podFriends = getPodFriends(selectedPod);
             return (
-              <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
+              <button
+                onClick={() => onOpenPod?.(selectedPod)}
+                className="w-full rounded-xl border border-border bg-card p-3 shadow-soft text-left hover:bg-accent/50 transition-colors"
+              >
                 {podFriends.length > 0 ? (
                   <FriendAvatarGrid
                     friends={podFriends}
@@ -251,7 +256,7 @@ export function PodSection({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              </div>
+              </button>
             );
           })()}
         </>
