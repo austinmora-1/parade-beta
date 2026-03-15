@@ -48,6 +48,7 @@ export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) 
         sizeClasses[size],
         className
       )}
+      style={isLight ? { color: 'hsl(150 35% 40%)' } : undefined}
     >
       parade
     </span>
