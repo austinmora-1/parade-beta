@@ -244,53 +244,55 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                       <div
                         key={plan.id}
                         onClick={() => navigate(`/plan/${plan.id}`)}
-                        className="flex items-center gap-2 rounded-md bg-background/80 border border-border/50 px-2 py-1.5 group cursor-pointer hover:bg-muted/50 transition-colors"
+                        className="rounded-md bg-background/80 border border-border/50 px-2 py-1.5 group cursor-pointer hover:bg-muted/50 transition-colors"
                       >
-                        {activityConfig ? (
-                          <ActivityIcon config={activityConfig} size={14} />
-                        ) : (
-                          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{getPlanDisplayTitle(plan)}</p>
-                          {(plan.startTime || plan.endTime) && (
-                            <p className="text-[10px] text-muted-foreground">
-                              {plan.startTime && formatTime12(plan.startTime)}
-                              {plan.startTime && plan.endTime && ' – '}
-                              {plan.endTime && formatTime12(plan.endTime)}
-                            </p>
+                        <div className="flex items-center gap-2">
+                          {activityConfig ? (
+                            <ActivityIcon config={activityConfig} size={14} />
+                          ) : (
+                            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
-                          {plan.participants.length > 0 && (
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              w/ {plan.participants.map(p => p.name).join(', ')}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeletingPlan(plan);
-                            }}
-                            className="p-1 rounded hover:bg-destructive/10 transition-colors"
-                          >
-                            <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                          </button>
-                        </div>
-                      </div>
-                      {/* Inline RSVP for plans user is invited to */}
-                      {(() => {
-                        const isOwner = !plan.userId || plan.userId === userId;
-                        const myParticipation = plan.participants?.find((p: any) => p.friendUserId === userId);
-                        const myRsvp = myParticipation?.rsvpStatus;
-                        if (isOwner || !myParticipation || myRsvp === 'accepted') return null;
-                        if (!userId) return null;
-                        return (
-                          <div className="mt-1 ml-0" onClick={e => e.stopPropagation()}>
-                            <PlanRsvpButtons planId={plan.id} userId={userId} currentStatus={myRsvp} compact />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{getPlanDisplayTitle(plan)}</p>
+                            {(plan.startTime || plan.endTime) && (
+                              <p className="text-[10px] text-muted-foreground">
+                                {plan.startTime && formatTime12(plan.startTime)}
+                                {plan.startTime && plan.endTime && ' – '}
+                                {plan.endTime && formatTime12(plan.endTime)}
+                              </p>
+                            )}
+                            {plan.participants.length > 0 && (
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                w/ {plan.participants.map(p => p.name).join(', ')}
+                              </p>
+                            )}
                           </div>
-                        );
-                      })()}
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingPlan(plan);
+                              }}
+                              className="p-1 rounded hover:bg-destructive/10 transition-colors"
+                            >
+                              <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                            </button>
+                          </div>
+                        </div>
+                        {/* Inline RSVP for plans user is invited to */}
+                        {(() => {
+                          const isOwner = !plan.userId || plan.userId === userId;
+                          const myParticipation = plan.participants?.find((p: any) => p.friendUserId === userId);
+                          const myRsvp = myParticipation?.rsvpStatus;
+                          if (isOwner || !myParticipation || myRsvp === 'accepted') return null;
+                          if (!userId) return null;
+                          return (
+                            <div className="mt-1" onClick={e => e.stopPropagation()}>
+                              <PlanRsvpButtons planId={plan.id} userId={userId} currentStatus={myRsvp} compact />
+                            </div>
+                          );
+                        })()}
+                      </div>
                     );
                   })}
                 </div>
