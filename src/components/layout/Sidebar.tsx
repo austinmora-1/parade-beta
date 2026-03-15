@@ -24,6 +24,8 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const { totalNotifications } = useNotifications();
+  const { conversations } = useConversations();
+  const totalUnreadDMs = conversations.filter(c => c.unread_count > 0).length;
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-sidebar md:block">
