@@ -127,6 +127,10 @@ export default function Notifications() {
   const [incomingVibes, setIncomingVibes] = useState<IncomingVibe[]>([]);
   const [vibesLoading, setVibesLoading] = useState(true);
 
+  const [proposedPlans, setProposedPlans] = useState<ProposedPlan[]>([]);
+  const [proposedLoading, setProposedLoading] = useState(true);
+  const [counterProposal, setCounterProposal] = useState<ProposedPlan | null>(null);
+
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
   const visibleIncomingRequests = incomingRequests.filter(f => !dismissedIds.has(`friend-${f.id}`));
   const dismissedFriendRequestCount = incomingRequests.length - visibleIncomingRequests.length;
