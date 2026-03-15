@@ -103,6 +103,10 @@ export default function Friends() {
   const [activeFriendId, setActiveFriendId] = useState<string | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
+  // PodPanel state
+  const [podPanelOpen, setPodPanelOpen] = useState(false);
+  const [activePod, setActivePod] = useState<Pod | null>(null);
+
   // Vibe + availability data for list rows
   const [friendVibeMap, setFriendVibeMap] = useState<Record<string, { vibe: string | null; icon: string | null }>>({});
   const [friendAvailMap, setFriendAvailMap] = useState<Record<string, boolean>>({});
