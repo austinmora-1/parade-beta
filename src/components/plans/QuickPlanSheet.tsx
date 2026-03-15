@@ -132,6 +132,9 @@ export function QuickPlanSheet({
   const hasFriend = !!selectedFriend || !!preSelectedFriend;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
 
+  // Auto-set status to proposed when a friend is selected
+  const effectiveStatus = hasFriend ? 'proposed' as PlanStatus : planStatus;
+
   const handleLocationChange = (value: string) => {
     setLocation(value);
     if (locationTimeoutRef.current) clearTimeout(locationTimeoutRef.current);
