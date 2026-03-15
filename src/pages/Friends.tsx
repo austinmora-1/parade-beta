@@ -5,6 +5,7 @@ import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
 import { FriendListRow } from '@/components/friends/FriendListRow';
 import { FriendPanel } from '@/components/friends/FriendPanel';
+import { PodPanel } from '@/components/friends/PodPanel';
 import { PodSection } from '@/components/friends/PodSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
