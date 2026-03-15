@@ -673,6 +673,9 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             {planStatus === 'tentative' && (
               <p className="text-[10px] text-muted-foreground">Tentative plans won't block your availability</p>
             )}
+            {planStatus === 'proposed' && (
+              <p className="text-[10px] text-muted-foreground">Proposed plans are ideas that haven't been committed to yet</p>
+            )}
           </div>
           )}
 
