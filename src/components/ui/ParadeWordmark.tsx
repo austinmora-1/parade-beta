@@ -7,8 +7,9 @@ interface ParadeWordmarkProps {
 }
 
 export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) {
-  const { theme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const isArcade = theme === 'arcade';
+  const isLight = resolvedTheme === 'light';
 
   const sizeClasses = {
     sm: isArcade ? 'text-sm' : 'text-xl',
