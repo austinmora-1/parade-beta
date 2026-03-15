@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { format, addDays, addWeeks, startOfWeek, isSameDay, isToday, isSameWeek } from 'date-fns';
@@ -21,6 +22,7 @@ import {
 import { toast } from 'sonner';
 
 interface ProfileData {
+  user_id: string | null;
   display_name: string | null;
   avatar_url: string | null;
   current_vibe: string | null;
@@ -95,6 +97,7 @@ export default function Share() {
   const [requesterEmail, setRequesterEmail] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   
   // Week navigation state — max offset depends on view param
   const viewParam = searchParams.get('view') || '1w';
@@ -258,13 +261,25 @@ export default function Share() {
   };
 
   const handleSlotClick = (day: Date, slot: TimeSlot) => {
-    setSelectedSlot({
-      day,
-      dayLabel: format(day, 'EEEE, MMM d'),
-      slot,
-      slotLabel: TIME_SLOT_LABELS[slot].label,
-    });
-    setRequestDialogOpen(true);
+    if (user && profile?.user_id) {
+      // Logged-in user: open QuickPlanSheet
+      setSelectedSlot({
+        day,
+        dayLabel: format(day, 'EEEE, MMM d'),
+        slot,
+        slotLabel: TIME_SLOT_LABELS[slot].label,
+      });
+      setQuickPlanOpen(true);
+    } else {
+      // Non-logged-in: show the old request dialog
+      setSelectedSlot({
+        day,
+        dayLabel: format(day, 'EEEE, MMM d'),
+        slot,
+        slotLabel: TIME_SLOT_LABELS[slot].label,
+      });
+      setRequestDialogOpen(true);
+    }
   };
 
   const handleSendRequest = async () => {
@@ -782,6 +797,20 @@ export default function Share() {
         </DialogContent>
       </Dialog>
       {user && <MobileNav />}
+
+      {profile?.user_id && (
+        <QuickPlanSheet
+          open={quickPlanOpen}
+          onOpenChange={setQuickPlanOpen}
+          preSelectedFriend={{
+            userId: profile.user_id,
+            name: profile.display_name || 'Friend',
+            avatar: profile.avatar_url || undefined,
+          }}
+          preSelectedDate={selectedSlot?.day}
+          preSelectedTimeSlot={selectedSlot?.slot}
+        />
+      )}
     </div>
   );
 }

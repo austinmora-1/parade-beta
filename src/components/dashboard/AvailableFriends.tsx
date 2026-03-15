@@ -6,15 +6,12 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { Friend } from '@/types/planner';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Users, Send, ArrowRight, Loader2, User } from 'lucide-react';
+import { Users, ArrowRight, Loader2 } from 'lucide-react';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -41,12 +38,6 @@ export function AvailableFriends() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
-  const [selectedDay, setSelectedDay] = useState('');
-  const [selectedSlot, setSelectedSlot] = useState('');
-  const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
-  const [friendAvail, setFriendAvail] = useState<FriendAvailDay[]>([]);
-  const [loadingAvail, setLoadingAvail] = useState(false);
 
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected');
@@ -115,108 +106,7 @@ export function AvailableFriends() {
       .slice(0, 4);
   }, [connectedFriends, todayAvailableFriendIds]);
 
-  // Track friend's plans for the week
-  const [friendPlans, setFriendPlans] = useState<{ date: string; time_slot: string }[]>([]);
 
-  // Fetch friend's availability AND plans when dialog opens
-  useEffect(() => {
-    if (!selectedFriend?.friendUserId) {
-      setFriendAvail([]);
-      setFriendPlans([]);
-      return;
-    }
-
-    const fetchAvail = async () => {
-      setLoadingAvail(true);
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const weekOut = format(addDays(new Date(), 7), 'yyyy-MM-dd');
-
-      const [availResult, plansResult] = await Promise.all([
-        supabase
-          .from('availability')
-          .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
-          .eq('user_id', selectedFriend.friendUserId!)
-          .gte('date', today)
-          .lte('date', weekOut),
-        supabase
-          .from('plans')
-          .select('date, time_slot')
-          .eq('user_id', selectedFriend.friendUserId!)
-          .gte('date', `${today}T00:00:00`)
-          .lte('date', `${weekOut}T23:59:59`),
-      ]);
-
-      if (!availResult.error && availResult.data) {
-        const mapped: FriendAvailDay[] = availResult.data.map((row: any) => ({
-          date: row.date,
-          slots: Object.fromEntries(
-            TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot]] !== false])
-          ) as Record<TimeSlot, boolean>,
-        }));
-        setFriendAvail(mapped);
-      }
-      
-      if (!plansResult.error && plansResult.data) {
-        setFriendPlans(plansResult.data.map((p: any) => ({
-          date: format(new Date(p.date), 'yyyy-MM-dd'),
-          time_slot: p.time_slot.replace('_', '-'),
-        })));
-      }
-      
-      setLoadingAvail(false);
-    };
-
-    fetchAvail();
-  }, [selectedFriend]);
-
-  // Generate next 7 days for day picker
-  const nextDays = useMemo(() => {
-    const days: { value: string; label: string; date: Date }[] = [];
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(today, i);
-      days.push({
-        value: format(d, 'yyyy-MM-dd'),
-        label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : format(d, 'EEE, MMM d'),
-        date: d,
-      });
-    }
-    return days;
-  }, []);
-
-  // Filter days to only those with at least one available slot
-  const availableDays = useMemo(() => {
-    return nextDays.filter(d => {
-      const avail = friendAvail.find(a => a.date === d.value);
-      return TIME_SLOT_ORDER.some(slot => {
-        const hasPlan = friendPlans.some(p => p.date === d.value && p.time_slot === slot);
-        if (hasPlan) return false;
-        if (!avail) return true;
-        return avail.slots[slot];
-      });
-    });
-  }, [nextDays, friendAvail, friendPlans]);
-
-  // Filter slots for selected day
-  const availableSlots = useMemo(() => {
-    if (!selectedDay) return TIME_SLOT_ORDER;
-    const avail = friendAvail.find(a => a.date === selectedDay);
-    return TIME_SLOT_ORDER.filter(slot => {
-      // Exclude slots where the friend has a plan
-      const hasPlan = friendPlans.some(p => p.date === selectedDay && p.time_slot === slot);
-      if (hasPlan) return false;
-      // Exclude slots marked as unavailable
-      if (!avail) return true;
-      return avail.slots[slot];
-    });
-  }, [selectedDay, friendAvail, friendPlans]);
-
-  // Reset slot when day changes and slot is no longer available
-  useEffect(() => {
-    if (selectedSlot && !availableSlots.includes(selectedSlot as TimeSlot)) {
-      setSelectedSlot('');
-    }
-  }, [availableSlots, selectedSlot]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -234,61 +124,7 @@ export function AvailableFriends() {
     return colors[index];
   };
 
-  const handleSendHangRequest = async () => {
-    if (!selectedFriend || !selectedDay || !selectedSlot || !user) return;
-
-    setSending(true);
-    try {
-      // Look up friend's share code
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('share_code')
-        .eq('user_id', selectedFriend.friendUserId!)
-        .single();
-
-      if (!profile?.share_code) {
-        toast.error('Could not find friend\'s profile');
-        setSending(false);
-        return;
-      }
-
-      // Get current user's profile for name
-      const { data: myProfile } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('user_id', user.id)
-        .single();
-
-      const dayObj = nextDays.find(d => d.value === selectedDay);
-
-      const { error } = await supabase.functions.invoke('send-hang-request', {
-        body: {
-          shareCode: profile.share_code,
-          requesterName: myProfile?.display_name || user.email,
-          requesterEmail: user.email,
-          requesterUserId: user.id,
-          message: message || undefined,
-          selectedDay,
-          selectedDayLabel: dayObj?.label || selectedDay,
-          selectedSlot,
-          selectedSlotLabel: TIME_SLOT_LABELS[selectedSlot as TimeSlot]?.label || selectedSlot,
-        },
-      });
-
-      if (error) throw error;
-
-      toast.success(`Hang request sent to ${selectedFriend.name}!`);
-      setSelectedFriend(null);
-      setSelectedDay('');
-      setSelectedSlot('');
-      setMessage('');
-    } catch (err: any) {
-      console.error('Error sending hang request:', err);
-      toast.error(err.message || 'Failed to send hang request');
-    } finally {
-      setSending(false);
-    }
-  };
+  // Removed hang request logic - now using QuickPlanSheet
 
   const viewAllLink = (
     <Link to="/friends" onClick={(e) => e.stopPropagation()}>
@@ -387,7 +223,6 @@ export function AvailableFriends() {
                   <p className="truncate text-sm font-medium">{friend.name}</p>
                   <p className="text-xs text-availability-available">Free today</p>
                 </div>
-                <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
               </button>
             ))}
           </div>
@@ -404,81 +239,15 @@ export function AvailableFriends() {
       )}
     </CollapsibleWidget>
 
-      {/* Quick Hang Request Dialog */}
-      <Dialog open={!!selectedFriend} onOpenChange={(open) => !open && setSelectedFriend(null)}>
-        <DialogContent className="sm:max-w-[360px]">
-          <DialogHeader>
-            <DialogTitle className="text-base">
-              Hang with {selectedFriend?.name}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-3 pt-1">
-            {loadingAvail ? (
-              <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : availableDays.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                {selectedFriend?.name} has no availability this week
-              </p>
-            ) : (
-              <>
-                <Select value={selectedDay} onValueChange={setSelectedDay}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Pick a day" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableDays.map((d) => (
-                      <SelectItem key={d.value} value={d.value} className="text-sm">
-                        {d.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedSlot} onValueChange={setSelectedSlot} disabled={!selectedDay}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder={selectedDay ? "Pick a time" : "Select a day first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSlots.map((slot) => {
-                      const info = TIME_SLOT_LABELS[slot];
-                      return (
-                        <SelectItem key={slot} value={slot} className="text-sm">
-                          {info.label} ({info.time})
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-
-                <Textarea
-                  placeholder="Add a message (optional)"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="resize-none text-sm min-h-[60px]"
-                  rows={2}
-                />
-
-                <Button
-                  onClick={handleSendHangRequest}
-                  disabled={!selectedDay || !selectedSlot || sending}
-                  className="w-full gap-2"
-                  size="sm"
-                >
-                  {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  Send Hang Request
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QuickPlanSheet
+        open={!!selectedFriend}
+        onOpenChange={(open) => { if (!open) setSelectedFriend(null); }}
+        preSelectedFriend={selectedFriend?.friendUserId ? {
+          userId: selectedFriend.friendUserId,
+          name: selectedFriend.name,
+          avatar: selectedFriend.avatar,
+        } : undefined}
+      />
     </>
   );
 }

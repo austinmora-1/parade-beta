@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date-fns';
@@ -15,6 +15,7 @@ import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG,
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { SharedVibeHistory } from '@/components/friends/SharedVibeHistory';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -76,6 +77,7 @@ export default function FriendProfile() {
   const [upcomingOpen, setUpcomingOpen] = useState(true);
   const [previousOpen, setPreviousOpen] = useState(false);
   const [showAvatarLightbox, setShowAvatarLightbox] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
   const friendIds = useMemo(() => userId ? [userId] : [], [userId]);
   const lastHungOut = useLastHungOut(friendIds);
@@ -434,16 +436,10 @@ export default function FriendProfile() {
           variant="default"
           size="sm"
           className="gap-1.5 flex-1 text-xs h-8"
-          onClick={() => {
-            if (profile?.share_code) {
-              navigate(`/share/${profile.share_code}?hangTo=${userId}`);
-            } else {
-              toast.error('Unable to send hang request — share code not available');
-            }
-          }}
+          onClick={() => setQuickPlanOpen(true)}
         >
-          <HandHeart className="h-3.5 w-3.5" />
-          Hang Request
+          <CalendarPlus className="h-3.5 w-3.5" />
+          Suggest a Plan
         </Button>
       </div>
 
@@ -745,6 +741,16 @@ export default function FriendProfile() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <QuickPlanSheet
+        open={quickPlanOpen}
+        onOpenChange={setQuickPlanOpen}
+        preSelectedFriend={userId ? {
+          userId,
+          name: profile?.display_name || 'Friend',
+          avatar: profile?.avatar_url || undefined,
+        } : undefined}
+      />
     </div>
   );
 }
