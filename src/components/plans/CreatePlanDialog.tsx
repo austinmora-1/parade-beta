@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat, ChevronDown } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat, ChevronDown, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
