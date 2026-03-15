@@ -676,6 +676,9 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
             {planStatus === 'proposed' && (
               <p className="text-[10px] text-muted-foreground">Proposed plans are ideas that haven't been committed to yet</p>
             )}
+            {selectedFriends.length > 0 && planStatus === 'confirmed' && (
+              <p className="text-[10px] text-muted-foreground">📋 Plans with friends will start as <strong>Proposed</strong> until participants accept</p>
+            )}
           </div>
           )}
 
