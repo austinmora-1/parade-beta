@@ -34,10 +34,3 @@ export default function Dashboard() {
     </div>
   );
 }
-      <VibeSelector />
-
-      {/* Upcoming Plans & Feed */}
-      <HomeTabs />
-    </div>
-  );
-}
