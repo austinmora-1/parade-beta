@@ -647,8 +647,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     set((state) => ({ plans: [...state.plans, newPlan] }));
     
-    // Auto-block the availability slot for this plan (only for confirmed plans)
-    if ((plan.status || 'confirmed') === 'confirmed') {
+    // Auto-block the availability slot for this plan (only for confirmed plans, not proposed/tentative)
+    const effectiveStatus = (plan.participants && plan.participants.length > 0 && (!plan.status || plan.status === 'confirmed'))
+      ? 'proposed' : (plan.status || 'confirmed');
+    if (effectiveStatus === 'confirmed') {
       const slotColumn = plan.timeSlot.replace('-', '_');
       await supabase
         .from('availability')
