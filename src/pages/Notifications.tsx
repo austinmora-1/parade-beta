@@ -154,8 +154,69 @@ export default function Notifications() {
       fetchRecentPhotos();
       fetchParticipantRequestsData();
       fetchIncomingVibes();
+      fetchProposedPlans();
     }
   }, [user]);
+
+  const fetchProposedPlans = async () => {
+    if (!user) { setProposedLoading(false); return; }
+    const { data: participantRows } = await supabase
+      .from('plan_participants')
+      .select('id, plan_id, status')
+      .eq('friend_id', user.id)
+      .eq('status', 'invited');
+
+    if (!participantRows?.length) { setProposedPlans([]); setProposedLoading(false); return; }
+
+    const planIds = participantRows.map(r => r.plan_id);
+    const { data: plans } = await supabase
+      .from('plans')
+      .select('id, title, activity, date, time_slot, location, notes, status, proposed_by')
+      .in('id', planIds)
+      .eq('status', 'proposed');
+
+    if (!plans?.length) { setProposedPlans([]); setProposedLoading(false); return; }
+
+    const proposerIds = [...new Set(plans.map(p => (p as any).proposed_by).filter(Boolean))];
+    const { data: profiles } = await supabase
+      .from('public_profiles')
+      .select('user_id, display_name, avatar_url')
+      .in('user_id', proposerIds);
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
+    setProposedPlans(plans.map(plan => {
+      const participantRow = participantRows.find(r => r.plan_id === plan.id);
+      const proposer = (plan as any).proposed_by ? profileMap.get((plan as any).proposed_by) : null;
+      return {
+        planId: plan.id,
+        participantRowId: participantRow!.id,
+        title: plan.title,
+        activity: plan.activity,
+        date: plan.date,
+        timeSlot: plan.time_slot,
+        location: plan.location,
+        notes: plan.notes,
+        proposerName: proposer?.display_name || 'Someone',
+        proposerAvatar: proposer?.avatar_url || null,
+        proposerUserId: (plan as any).proposed_by,
+      };
+    }));
+    setProposedLoading(false);
+  };
+
+  const respondToProposedPlan = async (planId: string, participantRowId: string, response: 'accepted' | 'declined') => {
+    setUpdating(participantRowId);
+    await respondToProposal(planId, participantRowId, response);
+    setProposedPlans(prev => prev.filter(p => p.participantRowId !== participantRowId));
+    if (response === 'accepted') {
+      confetti({ particleCount: 80, spread: 55, origin: { y: 0.75 },
+        colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'] });
+      sonnerToast.success('Plan accepted! It\'s on your calendar 🎉');
+    } else {
+      sonnerToast.success('Plan declined.');
+    }
+    setUpdating(null);
+  };
 
   const fetchIncomingVibes = async () => {
     if (!user) { setVibesLoading(false); return; }
