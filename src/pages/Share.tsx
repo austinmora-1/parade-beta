@@ -97,6 +97,7 @@ export default function Share() {
   const [requesterEmail, setRequesterEmail] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   
   // Week navigation state — max offset depends on view param
   const viewParam = searchParams.get('view') || '1w';
