@@ -677,6 +677,94 @@ export default function Notifications() {
         )}
       </div>
 
+      {/* Plan Suggestions (proposed plans) */}
+      {(visibleProposedPlans.length > 0 || proposedLoading) && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <CalendarPlus className="h-4 w-4 text-primary md:h-5 md:w-5" />
+            Plan Suggestions
+            {visibleProposedPlans.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
+                {visibleProposedPlans.length}
+              </span>
+            )}
+          </h2>
+
+          {proposedLoading ? (
+            <div className="flex h-20 items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <AnimatePresence>
+              {visibleProposedPlans.map((proposal) => (
+                <SwipeableDismiss key={proposal.planId} onDismiss={() => dismiss(`proposal-${proposal.planId}`)}>
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={proposal.proposerAvatar || undefined} />
+                        <AvatarFallback className="text-xs bg-primary/15 text-primary">
+                          {proposal.proposerName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-semibold">{proposal.proposerName}</p>
+                        <p className="text-xs text-muted-foreground">suggested a plan</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg bg-background border border-border p-3 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <ActivityIcon config={ACTIVITY_CONFIG[proposal.activity as ActivityType]} size={16} />
+                        <span className="text-sm font-medium">{proposal.title}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatPlanDate(proposal.date)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {TIME_SLOT_LABELS[proposal.timeSlot as TimeSlot]?.label || proposal.timeSlot}
+                        </span>
+                        {proposal.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {proposal.location}
+                          </span>
+                        )}
+                      </div>
+                      {proposal.notes && (
+                        <p className="text-xs text-foreground italic">"{proposal.notes}"</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1 gap-1"
+                        onClick={() => respondToProposedPlan(proposal.planId, proposal.participantRowId, 'accepted')}
+                        disabled={updating === proposal.participantRowId}>
+                        {updating === proposal.participantRowId
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <Check className="h-4 w-4" />}
+                        Accept
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1 gap-1"
+                        onClick={() => setCounterProposal(proposal)}>
+                        Counter
+                      </Button>
+                      <Button size="sm" variant="ghost"
+                        onClick={() => respondToProposedPlan(proposal.planId, proposal.participantRowId, 'declined')}
+                        disabled={updating === proposal.participantRowId}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </SwipeableDismiss>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
+      )}
+
       {/* Participant Requests Section (organizer approval) */}
       {(visibleParticipantRequests.length > 0 || participantReqLoading) && (
         <div>
