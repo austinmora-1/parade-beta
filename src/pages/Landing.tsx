@@ -8,6 +8,7 @@ import { ConfettiBackground } from '@/components/landing/ConfettiBackground';
 import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 function BetaSignupForm() {
   const [email, setEmail] = useState('');
@@ -141,8 +142,9 @@ export default function Landing() {
             <p className="text-muted-foreground mt-2">Sign up for early access to the beta.</p>
           </div>
           <BetaSignupForm />
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            We'll never spam you. Unsubscribe anytime.
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
           </p>
           <div className="flex items-center justify-center gap-3 mt-4 text-xs text-muted-foreground">
             <a href="/privacy" className="hover:text-foreground transition-colors underline underline-offset-2">Privacy Policy</a>
