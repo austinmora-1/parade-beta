@@ -50,6 +50,7 @@ interface PodSectionProps {
   onDeletePod: (podId: string) => Promise<void>;
   onAddMember: (podId: string, friendUserId: string) => Promise<void>;
   onRemoveMember: (podId: string, friendUserId: string) => Promise<void>;
+  onOpenPod?: (pod: Pod) => void;
 }
 
 const EMOJI_OPTIONS = ['💜', '🔥', '⭐', '🎯', '🏠', '🎉', '💪', '🌿', '🎵', '☕', '🍻', '🧘'];
