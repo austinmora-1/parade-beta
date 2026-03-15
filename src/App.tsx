@@ -100,6 +100,14 @@ const AppRoutes = () => {
       }
     />
     <Route
+      path="/login"
+      element={
+        <PublicRoute>
+          <Login />
+        </PublicRoute>
+      }
+    />
+    <Route
       path="/onboarding"
       element={
         <ProtectedRoute>
