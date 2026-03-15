@@ -567,14 +567,22 @@ export default function FriendProfile() {
                             const status = getMutualStatus(day.dateStr, slot);
                             const slotInfo = TIME_SLOT_LABELS[slot];
                             return (
-                              <div
+                              <button
                                 key={slot}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (status !== 'both-busy') {
+                                    setQuickPlanDate(day.date);
+                                    setQuickPlanSlot(slot);
+                                    setQuickPlanOpen(true);
+                                  }
+                                }}
                                 className={cn(
-                                  "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors",
-                                  status === 'both-free' && "bg-availability-available/20 text-foreground",
-                                  status === 'friend-free' && "bg-availability-available/10 text-foreground",
-                                  status === 'me-free' && "bg-muted/30 text-muted-foreground",
-                                  status === 'both-busy' && "bg-muted/30 text-muted-foreground"
+                                   "w-full flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors text-left",
+                                   status === 'both-free' && "bg-availability-available/20 text-foreground hover:bg-availability-available/30 cursor-pointer",
+                                   status === 'friend-free' && "bg-availability-available/10 text-foreground hover:bg-availability-available/20 cursor-pointer",
+                                   status === 'me-free' && "bg-muted/30 text-muted-foreground hover:bg-muted/50 cursor-pointer",
+                                   status === 'both-busy' && "bg-muted/30 text-muted-foreground opacity-50 cursor-not-allowed"
                                 )}
                               >
                                 <span className={cn(
@@ -585,7 +593,10 @@ export default function FriendProfile() {
                                 )} />
                                 <span className="font-medium truncate">{slotInfo.label}</span>
                                 <span className="text-muted-foreground ml-auto text-[9px] shrink-0">{slotInfo.time}</span>
-                              </div>
+                                {status !== 'both-busy' && (
+                                  <CalendarPlus className="h-3 w-3 text-muted-foreground/50 shrink-0 ml-0.5" />
+                                )}
+                              </button>
                             );
                           })}
                         </div>
