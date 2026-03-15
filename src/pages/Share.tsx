@@ -797,6 +797,20 @@ export default function Share() {
         </DialogContent>
       </Dialog>
       {user && <MobileNav />}
+
+      {profile?.user_id && (
+        <QuickPlanSheet
+          open={quickPlanOpen}
+          onOpenChange={setQuickPlanOpen}
+          preSelectedFriend={{
+            userId: profile.user_id,
+            name: profile.display_name || 'Friend',
+            avatar: profile.avatar_url || undefined,
+          }}
+          preSelectedDate={selectedSlot?.day}
+          preSelectedTimeSlot={selectedSlot?.slot}
+        />
+      )}
     </div>
   );
 }
