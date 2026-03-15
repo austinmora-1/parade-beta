@@ -182,18 +182,20 @@ function PanelContent({
 
 export function FriendPanel({ friendUserId, initialConversationId, open, onOpenChange, defaultTab }: FriendPanelProps) {
   const isMobile = useIsMobile();
+  const [chatTabActive, setChatTabActive] = useState(defaultTab === 'chat');
 
   if (!friendUserId) return null;
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
+      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false} dismissible={!chatTabActive}>
         <DrawerContent className="max-h-[92dvh] flex flex-col">
           <PanelContent
             friendUserId={friendUserId}
             initialConversationId={initialConversationId}
             onClose={() => onOpenChange(false)}
             defaultTab={defaultTab}
+            onTabChange={(tab) => setChatTabActive(tab === 'chat')}
           />
         </DrawerContent>
       </Drawer>

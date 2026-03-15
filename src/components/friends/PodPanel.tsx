@@ -72,6 +72,7 @@ function PodPanelContent({
   onUpdatePod,
   onOpenFriend,
   onRemoveFriend,
+  onTabChange,
 }: {
   pod: Pod;
   friends: Friend[];
@@ -79,7 +80,14 @@ function PodPanelContent({
   onUpdatePod?: (podId: string, updates: { conversation_id?: string }) => void;
   onOpenFriend?: (friendUserId: string) => void;
   onRemoveFriend?: (id: string) => void;
+  onTabChange?: (tab: 'members' | 'chat') => void;
 }) {
+  const [activeTab, setActiveTab] = useState<'members' | 'chat'>('members');
+
+  const handleTabChange = (tab: 'members' | 'chat') => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
   const [activeTab, setActiveTab] = useState<'members' | 'chat'>('members');
   const { conversations } = useConversations();
   const [conversationId, setConversationId] = useState<string | null>(pod.conversationId || null);
