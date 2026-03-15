@@ -1,16 +1,15 @@
 import { useState } from 'react';
 import { Friend } from '@/types/planner';
 import { Pod } from '@/hooks/usePods';
-import { FriendAvatarGrid } from './FriendAvatarGrid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   Dialog,
   DialogContent,
