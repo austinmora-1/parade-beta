@@ -225,61 +225,7 @@ export function AvailableFriends() {
     return colors[index];
   };
 
-  const handleSendHangRequest = async () => {
-    if (!selectedFriend || !selectedDay || !selectedSlot || !user) return;
-
-    setSending(true);
-    try {
-      // Look up friend's share code
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('share_code')
-        .eq('user_id', selectedFriend.friendUserId!)
-        .single();
-
-      if (!profile?.share_code) {
-        toast.error('Could not find friend\'s profile');
-        setSending(false);
-        return;
-      }
-
-      // Get current user's profile for name
-      const { data: myProfile } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('user_id', user.id)
-        .single();
-
-      const dayObj = nextDays.find(d => d.value === selectedDay);
-
-      const { error } = await supabase.functions.invoke('send-hang-request', {
-        body: {
-          shareCode: profile.share_code,
-          requesterName: myProfile?.display_name || user.email,
-          requesterEmail: user.email,
-          requesterUserId: user.id,
-          message: message || undefined,
-          selectedDay,
-          selectedDayLabel: dayObj?.label || selectedDay,
-          selectedSlot,
-          selectedSlotLabel: TIME_SLOT_LABELS[selectedSlot as TimeSlot]?.label || selectedSlot,
-        },
-      });
-
-      if (error) throw error;
-
-      toast.success(`Hang request sent to ${selectedFriend.name}!`);
-      setSelectedFriend(null);
-      setSelectedDay('');
-      setSelectedSlot('');
-      setMessage('');
-    } catch (err: any) {
-      console.error('Error sending hang request:', err);
-      toast.error(err.message || 'Failed to send hang request');
-    } finally {
-      setSending(false);
-    }
-  };
+  // Removed hang request logic - now using QuickPlanSheet
 
   const viewAllLink = (
     <Link to="/friends" onClick={(e) => e.stopPropagation()}>
