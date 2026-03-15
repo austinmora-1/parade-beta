@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Users,
   Inbox,
-  Clock,
   Plus,
   Settings,
 } from 'lucide-react';
