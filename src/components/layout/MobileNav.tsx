@@ -5,6 +5,7 @@ import {
   Users,
   Inbox,
   Plus,
+  Share2,
   X,
   Zap,
   Sparkles,
