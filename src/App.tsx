@@ -15,6 +15,7 @@ import Friends from "./pages/Friends";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
+import Inbox from "./pages/Inbox";
 import Profile from "./pages/Profile";
 import FriendProfile from "./pages/FriendProfile";
 import Landing from "./pages/Landing";
@@ -28,7 +29,6 @@ import PlanInvite from "./pages/PlanInvite";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import GoogleCallback from "./pages/GoogleCallback";
-import Login from "./pages/Login";
 import { usePostHogPageView } from "@/hooks/usePostHog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -100,14 +100,6 @@ const AppRoutes = () => {
       }
     />
     <Route
-      path="/login"
-      element={
-        <PublicRoute>
-          <Login />
-        </PublicRoute>
-      }
-    />
-    <Route
       path="/onboarding"
       element={
         <ProtectedRoute>
@@ -126,8 +118,8 @@ const AppRoutes = () => {
       <Route path="/plans" element={<ErrorBoundary scope="Plans"><Plans /></ErrorBoundary>} />
       <Route path="/availability" element={<ErrorBoundary scope="Availability"><Availability /></ErrorBoundary>} />
       <Route path="/friends" element={<ErrorBoundary scope="Friends"><Friends /></ErrorBoundary>} />
-      <Route path="/interact" element={<ErrorBoundary scope="Chat"><Chat /></ErrorBoundary>} />
-      <Route path="/chat" element={<Navigate to="/interact" replace />} />
+      <Route path="/chat" element={<ErrorBoundary scope="Chat"><Chat /></ErrorBoundary>} />
+      <Route path="/inbox" element={<ErrorBoundary scope="Inbox"><Inbox /></ErrorBoundary>} />
       <Route path="/notifications" element={<ErrorBoundary scope="Notifications"><Notifications /></ErrorBoundary>} />
       <Route path="/profile" element={<ErrorBoundary scope="Profile"><Profile /></ErrorBoundary>} />
       <Route path="/friend/:userId" element={<ErrorBoundary scope="FriendProfile"><FriendProfile /></ErrorBoundary>} />
