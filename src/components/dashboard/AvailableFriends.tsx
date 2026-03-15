@@ -324,7 +324,6 @@ export function AvailableFriends() {
                   <p className="truncate text-sm font-medium">{friend.name}</p>
                   <p className="text-xs text-availability-available">Free today</p>
                 </div>
-                <Send className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
               </button>
             ))}
           </div>
@@ -341,81 +340,15 @@ export function AvailableFriends() {
       )}
     </CollapsibleWidget>
 
-      {/* Quick Hang Request Dialog */}
-      <Dialog open={!!selectedFriend} onOpenChange={(open) => !open && setSelectedFriend(null)}>
-        <DialogContent className="sm:max-w-[360px]">
-          <DialogHeader>
-            <DialogTitle className="text-base">
-              Hang with {selectedFriend?.name}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-3 pt-1">
-            {loadingAvail ? (
-              <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : availableDays.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                {selectedFriend?.name} has no availability this week
-              </p>
-            ) : (
-              <>
-                <Select value={selectedDay} onValueChange={setSelectedDay}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Pick a day" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableDays.map((d) => (
-                      <SelectItem key={d.value} value={d.value} className="text-sm">
-                        {d.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedSlot} onValueChange={setSelectedSlot} disabled={!selectedDay}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder={selectedDay ? "Pick a time" : "Select a day first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSlots.map((slot) => {
-                      const info = TIME_SLOT_LABELS[slot];
-                      return (
-                        <SelectItem key={slot} value={slot} className="text-sm">
-                          {info.label} ({info.time})
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-
-                <Textarea
-                  placeholder="Add a message (optional)"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="resize-none text-sm min-h-[60px]"
-                  rows={2}
-                />
-
-                <Button
-                  onClick={handleSendHangRequest}
-                  disabled={!selectedDay || !selectedSlot || sending}
-                  className="w-full gap-2"
-                  size="sm"
-                >
-                  {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  Send Hang Request
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QuickPlanSheet
+        open={!!selectedFriend}
+        onOpenChange={(open) => { if (!open) setSelectedFriend(null); }}
+        preSelectedFriend={selectedFriend?.friendUserId ? {
+          userId: selectedFriend.friendUserId,
+          name: selectedFriend.name,
+          avatar: selectedFriend.avatar,
+        } : undefined}
+      />
     </>
   );
 }
