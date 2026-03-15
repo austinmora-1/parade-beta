@@ -87,8 +87,22 @@ interface IncomingVibe {
   created_at: string;
 }
 
+interface ProposedPlan {
+  planId: string;
+  participantRowId: string;
+  title: string;
+  activity: string;
+  date: string;
+  timeSlot: string;
+  location: string | null;
+  notes: string | null;
+  proposerName: string;
+  proposerAvatar: string | null;
+  proposerUserId: string | null;
+}
+
 export default function Notifications() {
-  const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans } = usePlannerStore();
+  const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans, respondToProposal } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
