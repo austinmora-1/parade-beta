@@ -382,6 +382,7 @@ export default function Friends() {
         onDeletePod={podsHook.deletePod}
         onAddMember={podsHook.addMember}
         onRemoveMember={podsHook.removeMember}
+        onOpenPod={handleOpenPod}
       />
 
       {/* Connected Friends — List View */}
