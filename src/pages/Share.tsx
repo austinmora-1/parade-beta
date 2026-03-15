@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { format, addDays, addWeeks, startOfWeek, isSameDay, isToday, isSameWeek } from 'date-fns';
