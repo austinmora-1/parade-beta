@@ -177,9 +177,11 @@ export function ChatView({ conversation, onBack, inlineMode = false }: ChatViewP
     <div className="flex h-full min-h-0 flex-col">
       {/* Fixed Header */}
       <div className="z-20 shrink-0 bg-background flex items-center gap-3 border-b border-border pb-3 mb-3 min-w-0">
-        <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        {!inlineMode && (
+          <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <FriendLink userId={other?.user_id}>
           <Avatar className="h-9 w-9 shrink-0">
             {other?.avatar_url ? <AvatarImage src={other.avatar_url} /> : null}
