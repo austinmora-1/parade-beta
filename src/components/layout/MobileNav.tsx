@@ -15,7 +15,6 @@ const navItems = [
 export function MobileNav() {
   const location = useLocation();
   const { profile } = useCurrentUserProfile();
-  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
