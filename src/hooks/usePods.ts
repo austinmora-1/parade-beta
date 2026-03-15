@@ -51,6 +51,7 @@ export function usePods() {
       emoji: p.emoji || '💜',
       sortOrder: p.sort_order,
       memberUserIds: membersByPod.get(p.id) || [],
+      conversationId: p.conversation_id || null,
     }));
 
     setPods(result);
