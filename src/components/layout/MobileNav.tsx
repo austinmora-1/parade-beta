@@ -5,6 +5,7 @@ import {
   Users,
   Inbox,
   Plus,
+  Share2,
   X,
   Zap,
   Sparkles,
@@ -15,6 +16,7 @@ import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
 import { useState, useCallback } from 'react';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
+import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useConversations } from '@/hooks/useChat';
 
@@ -29,9 +31,10 @@ const leftItems  = navItems.slice(0, 2);
 const rightItems = navItems.slice(2);
 
 const fabActions = [
-  { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',  color: 'bg-primary' },
-  { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',   color: 'bg-secondary' },
-  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',    color: 'bg-accent-foreground' },
+  { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',         color: 'bg-primary' },
+  { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',          color: 'bg-secondary' },
+  { id: 'share',      icon: Share2,            label: 'Share Availability', color: 'bg-accent-foreground' },
+  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',           color: 'bg-muted-foreground' },
 ] as const;
 
 type FabAction = typeof fabActions[number]['id'];
@@ -42,6 +45,7 @@ export function MobileNav() {
   const [fabOpen, setFabOpen] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   const [sendVibeOpen, setSendVibeOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const { totalNotifications } = useNotifications();
   const { conversations } = useConversations();
 
@@ -64,6 +68,9 @@ export function MobileNav() {
           break;
         case 'send-vibe':
           setSendVibeOpen(true);
+          break;
+        case 'share':
+          setShareOpen(true);
           break;
         case 'new-chat':
           navigate('/inbox');
@@ -218,6 +225,7 @@ export function MobileNav() {
 
       <QuickPlanSheet open={quickPlanOpen} onOpenChange={setQuickPlanOpen} />
       <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
+      <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
     </>
   );
 }
