@@ -657,6 +657,18 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
               >
                 🤔 Tentative
               </button>
+              <button
+                type="button"
+                onClick={() => setPlanStatus('proposed')}
+                className={cn(
+                  "flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-all",
+                  planStatus === 'proposed'
+                    ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+                )}
+              >
+                💡 Proposed
+              </button>
             </div>
             {planStatus === 'tentative' && (
               <p className="text-[10px] text-muted-foreground">Tentative plans won't block your availability</p>
