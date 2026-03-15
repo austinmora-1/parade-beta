@@ -793,6 +793,7 @@ export type Database = {
       }
       pods: {
         Row: {
+          conversation_id: string | null
           created_at: string
           emoji: string | null
           id: string
@@ -802,6 +803,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          conversation_id?: string | null
           created_at?: string
           emoji?: string | null
           id?: string
@@ -811,6 +813,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          conversation_id?: string | null
           created_at?: string
           emoji?: string | null
           id?: string
@@ -819,7 +822,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pods_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
