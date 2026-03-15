@@ -1,11 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, MessageCircle, Clock, Plus } from 'lucide-react';
+import { LayoutDashboard, Users, MessageCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { motion, LayoutGroup } from 'framer-motion';
-import { useState } from 'react';
-import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
