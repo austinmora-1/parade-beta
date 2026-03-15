@@ -119,7 +119,7 @@ export default function Availability() {
       <div>
         <div className="flex items-center justify-between">
           <div className="min-w-0">
-            <h1 className="font-display text-lg font-bold md:text-2xl">Availability</h1>
+            <h1 className="font-display text-lg font-bold md:text-2xl">Plans</h1>
             <p className="hidden text-muted-foreground md:block">
               Set when you're free and share with friends
             </p>
