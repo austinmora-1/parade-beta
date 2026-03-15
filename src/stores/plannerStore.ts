@@ -571,7 +571,9 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         end_time: plan.endTime || null,
         location: locationStr,
         notes: plan.notes,
-        status: plan.status || 'confirmed',
+        status: (plan.participants && plan.participants.length > 0 && (!plan.status || plan.status === 'confirmed'))
+          ? 'proposed'
+          : (plan.status || 'confirmed'),
         source_timezone: userTimezone,
         feed_visibility: plan.feedVisibility || 'private',
       } as any)
