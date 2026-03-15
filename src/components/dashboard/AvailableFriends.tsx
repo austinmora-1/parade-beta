@@ -38,12 +38,6 @@ export function AvailableFriends() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
-  const [selectedDay, setSelectedDay] = useState('');
-  const [selectedSlot, setSelectedSlot] = useState('');
-  const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
-  const [friendAvail, setFriendAvail] = useState<FriendAvailDay[]>([]);
-  const [loadingAvail, setLoadingAvail] = useState(false);
 
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected');
