@@ -3,10 +3,12 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
 import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
+import { FriendListRow } from '@/components/friends/FriendListRow';
+import { FriendPanel } from '@/components/friends/FriendPanel';
 import { PodSection } from '@/components/friends/PodSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserPlus, Search, Users, Loader2, Heart } from 'lucide-react';
+import { UserPlus, Search, Users, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +16,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { usePods } from '@/hooks/usePods';
+import { useConversations } from '@/hooks/useChat';
+import { format } from 'date-fns';
+import { TimeSlot, VIBE_CONFIG, VibeType } from '@/types/planner';
 
 interface PublicProfile {
   user_id: string;
@@ -22,7 +27,7 @@ interface PublicProfile {
   bio: string | null;
 }
 
-// Simple fuzzy match: checks if all characters of the query appear in order in the target
+// Simple fuzzy match
 function fuzzyMatch(target: string, query: string): { match: boolean; score: number } {
   const t = target.toLowerCase();
   const q = query.toLowerCase();
@@ -70,22 +75,81 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 
+const SLOT_KEYS: { key: string; slot: TimeSlot }[] = [
+  { key: 'early_morning', slot: 'early-morning' },
+  { key: 'late_morning', slot: 'late-morning' },
+  { key: 'early_afternoon', slot: 'early-afternoon' },
+  { key: 'late_afternoon', slot: 'late-afternoon' },
+  { key: 'evening', slot: 'evening' },
+  { key: 'late_night', slot: 'late-night' },
+];
+
 export default function Friends() {
   const { friends, updateFriend, removeFriend, addFriend, acceptFriendRequest } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const podsHook = usePods();
+  const { conversations } = useConversations();
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<PublicProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
 
+  // FriendPanel state
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [activeFriendId, setActiveFriendId] = useState<string | null>(null);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+
+  // Vibe + availability data for list rows
+  const [friendVibeMap, setFriendVibeMap] = useState<Record<string, { vibe: string | null; icon: string | null }>>({});
+  const [friendAvailMap, setFriendAvailMap] = useState<Record<string, boolean>>({});
+
   const connectedFriendUserIds = useMemo(
     () => friends.filter(f => f.status === 'connected' && f.friendUserId).map(f => f.friendUserId!),
     [friends]
   );
   const lastHungOut = useLastHungOut(connectedFriendUserIds);
+
+  // Batch fetch vibes + availability
+  useEffect(() => {
+    if (connectedFriendUserIds.length === 0) return;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    Promise.all([
+      supabase.from('profiles').select('user_id, current_vibe, custom_vibe_tags').in('user_id', connectedFriendUserIds),
+      supabase.from('availability').select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night').in('user_id', connectedFriendUserIds).eq('date', todayStr),
+    ]).then(([profileRes, availRes]) => {
+      const vibeMap: Record<string, { vibe: string | null; icon: string | null }> = {};
+      for (const p of (profileRes.data || [])) {
+        const vibeConfig = p.current_vibe && p.current_vibe !== 'custom'
+          ? VIBE_CONFIG[p.current_vibe as VibeType]
+          : null;
+        vibeMap[p.user_id] = {
+          vibe: vibeConfig?.label || p.current_vibe || null,
+          icon: vibeConfig?.icon || null,
+        };
+      }
+      setFriendVibeMap(vibeMap);
+
+      const availMap: Record<string, boolean> = {};
+      for (const a of (availRes.data || [])) {
+        const isAvailable = SLOT_KEYS.some(({ key }) => (a as any)[key] === true);
+        availMap[a.user_id] = isAvailable;
+      }
+      setFriendAvailMap(availMap);
+    });
+  }, [connectedFriendUserIds]);
+
+  // DM conversation lookup
+  const dmByFriendUserId = useMemo(() => {
+    const map = new Map<string, typeof conversations[0]>();
+    for (const c of conversations) {
+      if (c.type !== 'dm') continue;
+      const other = c.participants.find(p => p.user_id !== user?.id);
+      if (other) map.set(other.user_id, c);
+    }
+    return map;
+  }, [conversations, user?.id]);
 
   // Search for users when query changes
   useEffect(() => {
@@ -169,11 +233,9 @@ export default function Friends() {
     const bId = b.friendUserId;
     const aDate = aId ? lastHungOut[aId] : undefined;
     const bDate = bId ? lastHungOut[bId] : undefined;
-    // Friends with no shared plans go to the top (haven't hung out yet = stand out)
     if (!aDate && !bDate) return 0;
     if (!aDate) return -1;
     if (!bDate) return 1;
-    // Most recent first
     return bDate.getTime() - aDate.getTime();
   });
   const incomingRequests = filteredFriends.filter(f => f.status === 'pending' && f.isIncoming);
@@ -194,6 +256,12 @@ export default function Friends() {
     const friend = friends.find(f => f.id === id);
     await removeFriend(id);
     toast({ title: 'Request declined', description: friend ? `Declined request from ${friend.name}` : 'Friend request declined' });
+  };
+
+  const handleOpenFriend = (friendUserId: string, conversationId?: string) => {
+    setActiveFriendId(friendUserId);
+    setActiveChatId(conversationId || null);
+    setPanelOpen(true);
   };
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -305,26 +373,40 @@ export default function Friends() {
         onRemoveMember={podsHook.removeMember}
       />
 
-      {/* Connected Friends */}
+      {/* Connected Friends — List View */}
       <div>
         <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
           <Users className="h-4 w-4 text-availability-available" />
           Connected ({connectedFriends.length})
         </h2>
         {connectedFriends.length > 0 ? (
-          <FriendAvatarGrid
-            friends={connectedFriends}
-            onRemove={removeFriend}
-            lastHungOut={lastHungOut}
-          />
+          <div className="space-y-0.5">
+            {connectedFriends.map(friend => {
+              const fuid = friend.friendUserId;
+              return (
+                <FriendListRow
+                  key={friend.id}
+                  friend={friend}
+                  conversation={fuid ? dmByFriendUserId.get(fuid) || null : null}
+                  isAvailableToday={fuid ? friendAvailMap[fuid] : false}
+                  currentVibe={fuid ? friendVibeMap[fuid]?.vibe : null}
+                  vibeIcon={fuid ? friendVibeMap[fuid]?.icon : null}
+                  lastHungOut={fuid ? lastHungOut[fuid] || null : null}
+                  onOpen={handleOpenFriend}
+                />
+              );
+            })}
+          </div>
         ) : (
-          <div className="rounded-xl border border-border bg-card p-5 text-center shadow-soft">
-            <div className="text-3xl mb-2">👥</div>
-            <h3 className="text-sm font-semibold">No friends yet</h3>
-            <p className="mt-1 text-xs text-muted-foreground">Search for friends above or invite them!</p>
-            <Button onClick={() => setInviteDialogOpen(true)} size="sm" className="mt-3 gap-1.5">
+          <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft space-y-3">
+            <p className="text-3xl">👥</p>
+            <h3 className="text-sm font-semibold">Your friends will appear here</h3>
+            <p className="text-xs text-muted-foreground">
+              When you connect with friends, you'll see their availability, vibes, and be able to message them right here.
+            </p>
+            <Button onClick={() => setInviteDialogOpen(true)} size="sm" className="gap-1.5">
               <UserPlus className="h-3.5 w-3.5" />
-              Invite Friends
+              Find or Invite Friends
             </Button>
           </div>
         )}
@@ -354,6 +436,14 @@ export default function Friends() {
       )}
 
       <InviteFriendDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} />
+
+      {/* Friend Panel */}
+      <FriendPanel
+        friendUserId={activeFriendId}
+        initialConversationId={activeChatId}
+        open={panelOpen}
+        onOpenChange={setPanelOpen}
+      />
     </div>
   );
 }
