@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
+import { useConversations } from '@/hooks/useChat';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
