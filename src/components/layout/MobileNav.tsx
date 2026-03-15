@@ -15,7 +15,7 @@ import { useConversations } from '@/hooks/useChat';
 
 // Five primary destinations — consistent with desktop sidebar labels
 const navItems = [
-  { path: '/',             icon: LayoutDashboard, label: 'Home'    },
+  { path: '/',             icon: ElephantIcon,    label: 'Home'    },
   { path: '/availability', icon: CalendarDays,    label: 'Plans'   },
   // + FAB sits in the center slot (index 2) — not a nav item
   { path: '/friends',      icon: Users,           label: 'Friends' },
