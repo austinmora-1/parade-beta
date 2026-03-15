@@ -71,7 +71,7 @@ export function usePods() {
       .select()
       .single();
     if (error) throw error;
-    setPods(prev => [...prev, { id: (data as any).id, name, emoji, sortOrder: maxOrder + 1, memberUserIds: [] }]);
+    setPods(prev => [...prev, { id: (data as any).id, name, emoji, sortOrder: maxOrder + 1, memberUserIds: [], conversationId: null }]);
     return (data as any).id as string;
   };
 

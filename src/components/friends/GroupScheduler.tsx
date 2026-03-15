@@ -63,9 +63,21 @@ function useSuggestedFriends(connectedFriends: Friend[]) {
   }, [user?.id, connectedFriends, plans]);
 }
 
-export function GroupScheduler({ friends }: GroupSchedulerProps) {
+export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSchedulerProps) {
   const connectedFriends = friends.filter(f => f.status === 'connected');
   const [selectedFriends, setSelectedFriends] = useState<Friend[]>([]);
+  const [defaultsApplied, setDefaultsApplied] = useState(false);
+
+  // Pre-populate selected friends from defaultSelectedFriendIds
+  useEffect(() => {
+    if (defaultSelectedFriendIds && defaultSelectedFriendIds.length > 0 && !defaultsApplied) {
+      const preSelected = connectedFriends.filter(f => f.friendUserId && defaultSelectedFriendIds.includes(f.friendUserId));
+      if (preSelected.length > 0) {
+        setSelectedFriends(preSelected);
+        setDefaultsApplied(true);
+      }
+    }
+  }, [defaultSelectedFriendIds, connectedFriends, defaultsApplied]);
   const [friendAvailabilities, setFriendAvailabilities] = useState<FriendAvailability[]>([]);
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
