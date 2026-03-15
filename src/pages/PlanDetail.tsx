@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
+import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
 import {
   AlertDialog,
   AlertDialogAction,
