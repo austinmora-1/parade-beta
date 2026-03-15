@@ -77,6 +77,7 @@ export function PodSection({
   onDeletePod,
   onAddMember,
   onRemoveMember,
+  onOpenPod,
 }: PodSectionProps) {
   const { toast } = useToast();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
