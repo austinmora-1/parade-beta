@@ -92,7 +92,7 @@ export function QuickPlanSheet({
   // Location search
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
-  const locationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const locationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset state when sheet opens
   useEffect(() => {
