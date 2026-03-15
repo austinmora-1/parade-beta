@@ -1,11 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard,
   CalendarDays,
   Users,
   Inbox,
   Plus,
 } from 'lucide-react';
+import { ElephantIcon } from '@/components/ui/ElephantIcon';
 import { cn } from '@/lib/utils';
 import { motion, LayoutGroup } from 'framer-motion';
 import { useState } from 'react';
