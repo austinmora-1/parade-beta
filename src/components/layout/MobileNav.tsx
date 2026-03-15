@@ -67,6 +67,10 @@ export function MobileNav() {
         case 'send-vibe':
           setSendVibeOpen(true);
           break;
+        case 'share':
+          navigate('/availability');
+          // Open the share dialog via the Availability page's ShareDialog
+          break;
         case 'new-chat':
           navigate('/inbox');
           break;
