@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { motion, LayoutGroup } from 'framer-motion';
+import { useConversations } from '@/hooks/useChat';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
@@ -15,6 +16,8 @@ const navItems = [
 export function MobileNav() {
   const location = useLocation();
   const { profile } = useCurrentUserProfile();
+  const { conversations } = useConversations();
+  const totalUnreadDMs = conversations.filter(c => c.unread_count > 0).length;
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -51,6 +54,11 @@ export function MobileNav() {
                       )}
                       strokeWidth={isActive ? 2.2 : 1.8}
                     />
+                    {item.path === '/friends' && totalUnreadDMs > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground">
+                        {totalUnreadDMs > 9 ? '9+' : totalUnreadDMs}
+                      </span>
+                    )}
                   </div>
                   <span
                     className={cn(

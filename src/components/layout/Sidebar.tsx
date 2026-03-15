@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useNotifications';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
+import { useConversations } from '@/hooks/useChat';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -23,6 +24,8 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const { totalNotifications } = useNotifications();
+  const { conversations } = useConversations();
+  const totalUnreadDMs = conversations.filter(c => c.unread_count > 0).length;
 
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-sidebar md:block">
@@ -79,6 +82,11 @@ export function Sidebar() {
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
+                {item.path === '/friends' && totalUnreadDMs > 0 && (
+                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                    {totalUnreadDMs > 9 ? '9+' : totalUnreadDMs}
+                  </span>
+                )}
               </NavLink>
             );
           })}
