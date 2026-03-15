@@ -35,10 +35,11 @@ export function MobileNav() {
   const unreadChats = conversations.filter(c => c.unread_count > 0).length;
   const inboxCount  = totalNotifications + unreadChats;
 
-  const isActive = (path: string) =>
-    path === '/'
-      ? location.pathname === '/'
-      : location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    if (path === '/availability') return location.pathname.startsWith('/availability') || location.pathname.startsWith('/plans');
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <>
