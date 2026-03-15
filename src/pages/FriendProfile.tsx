@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, HandHeart, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format, addDays, isSameDay, isPast, isToday as isDateToday } from 'date-fns';
@@ -15,6 +15,7 @@ import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG,
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { SharedVibeHistory } from '@/components/friends/SharedVibeHistory';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
