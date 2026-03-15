@@ -655,6 +655,7 @@ export default function Notifications() {
     visibleRecentPhotos.forEach(p => dismiss(`photo-${p.id}`));
     visibleParticipantRequests.forEach(r => dismiss(`participant-req-${r.id}`));
     visibleVibes.forEach(v => dismiss(`vibe-${v.id}`));
+    visibleProposedPlans.forEach(p => dismiss(`proposal-${p.planId}`));
     visibleIncomingRequests.forEach(f => dismiss(`friend-${f.id}`));
   };
 
