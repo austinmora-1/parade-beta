@@ -1,97 +1,147 @@
-import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  Calendar, 
-  LayoutDashboard, 
-  Users, 
-  MessageCircle, 
-  Clock, 
-  Bell,
-  Settings
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import {
+  CalendarDays,
+  LayoutDashboard,
+  Users,
+  Inbox,
+  Clock,
+  Plus,
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useNotifications';
-import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { useConversations } from '@/hooks/useChat';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState } from 'react';
+import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 
 const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/plans', icon: Calendar, label: 'Plans' },
-  { path: '/availability', icon: Clock, label: 'Availability' },
-  { path: '/friends', icon: Users, label: 'Friends' },
-  { path: '/interact', icon: MessageCircle, label: 'Interact' },
+  { path: '/',             icon: LayoutDashboard, label: 'Home'         },
+  { path: '/plans',        icon: CalendarDays,    label: 'Plans'        },
+  { path: '/availability', icon: Clock,           label: 'Availability' },
+  { path: '/friends',      icon: Users,           label: 'Friends'      },
+  { path: '/inbox',        icon: Inbox,           label: 'Inbox'        },
 ];
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { totalNotifications } = useNotifications();
   const { conversations } = useConversations();
-  const totalUnreadDMs = conversations.filter(c => c.unread_count > 0).length;
+  const { profile } = useCurrentUserProfile();
+  const [createPlanOpen, setCreatePlanOpen] = useState(false);
+
+  const unreadChats = conversations.filter(c => c.unread_count > 0).length;
+  const inboxCount  = totalNotifications + unreadChats;
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const isActive = (path: string) =>
+    path === '/'
+      ? location.pathname === '/'
+      : location.pathname.startsWith(path);
 
   return (
-    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-sidebar md:block">
-      <div className="flex h-full flex-col">
-        {/* Top Bar: Wordmark centered with icons on right */}
-        <div className="flex h-16 items-center border-b border-sidebar-border px-4">
-          <div className="flex-1" />
+    <>
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-56 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+
+        {/* ── Wordmark ── */}
+        <div className="flex h-14 shrink-0 items-center justify-center border-b border-sidebar-border px-4">
           <ParadeWordmark size="lg" />
-          <div className="flex-1 flex justify-end gap-1">
-            <NavLink
-              to="/notifications"
-              className={cn(
-                "relative flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-                location.pathname === '/notifications'
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Bell className="h-4 w-4" />
-              {totalNotifications > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {totalNotifications}
-                </span>
-              )}
-            </NavLink>
-            <NavLink
-              to="/settings"
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-                location.pathname === '/settings'
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <Settings className="h-4 w-4" />
-            </NavLink>
-          </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-4">
+        {/* ── Primary nav ── */}
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const active = isActive(item.path);
+            const isInbox = item.path === '/inbox';
             return (
               <NavLink
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-soft"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                  active
+                    ? 'bg-sidebar-accent text-sidebar-primary'
+                    : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                 )}
               >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-                {item.path === '/friends' && totalUnreadDMs > 0 && (
-                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                    {totalUnreadDMs > 9 ? '9+' : totalUnreadDMs}
+                {/* Left accent bar on active */}
+                {active && (
+                  <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-sidebar-primary" />
+                )}
+                <item.icon
+                  className="h-4 w-4 shrink-0"
+                  strokeWidth={active ? 2.2 : 1.8}
+                />
+                <span className="flex-1 truncate">{item.label}</span>
+
+                {/* Inbox badge */}
+                {isInbox && inboxCount > 0 && (
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                    {inboxCount > 99 ? '99+' : inboxCount}
                   </span>
                 )}
               </NavLink>
             );
           })}
         </nav>
-      </div>
-    </aside>
+
+        {/* ── New Plan CTA ── */}
+        <div className="shrink-0 px-3 pb-3">
+          <button
+            onClick={() => setCreatePlanOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+            New Plan
+          </button>
+        </div>
+
+        {/* ── Divider ── */}
+        <div className="mx-3 shrink-0 border-t border-sidebar-border" />
+
+        {/* ── Profile + settings row ── */}
+        <div className="shrink-0 flex items-center gap-2.5 px-3 py-3">
+          <button
+            onClick={() => navigate('/profile')}
+            className="flex flex-1 items-center gap-2.5 min-w-0 rounded-lg p-1 transition-colors hover:bg-sidebar-accent/50"
+          >
+            <Avatar className="h-8 w-8 shrink-0">
+              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
+              <AvatarFallback className="bg-primary/15 text-[11px] font-semibold text-primary">
+                {getInitials(profile?.display_name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 text-left">
+              <p className="truncate text-xs font-semibold text-sidebar-foreground leading-tight">
+                {profile?.display_name || 'My Profile'}
+              </p>
+              <p className="text-[10px] text-sidebar-foreground/50 leading-tight">View profile</p>
+            </div>
+          </button>
+
+          <NavLink
+            to="/settings"
+            className={cn(
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors',
+              location.pathname === '/settings'
+                ? 'bg-sidebar-accent text-sidebar-primary'
+                : 'text-sidebar-foreground/50 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+            )}
+            aria-label="Settings"
+          >
+            <Settings className="h-4 w-4" />
+          </NavLink>
+        </div>
+      </aside>
+
+      <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
+    </>
   );
 }
