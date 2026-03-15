@@ -16,6 +16,8 @@ const navItems = [
 export function MobileNav() {
   const location = useLocation();
   const { profile } = useCurrentUserProfile();
+  const { conversations } = useConversations();
+  const totalUnreadDMs = conversations.filter(c => c.unread_count > 0).length;
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
