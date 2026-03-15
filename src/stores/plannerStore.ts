@@ -817,8 +817,108 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       }
     }
   },
+
+  proposePlan: async (proposal) => {
+    const { userId, userTimezone } = get();
+    if (!userId) return;
+
+    const dateStr = format(proposal.date, 'yyyy-MM-dd');
+    const noonUtcDate = `${dateStr}T12:00:00+00:00`;
+
+    const activityConfig = (await import('@/types/planner')).ACTIVITY_CONFIG[proposal.activity as ActivityType];
+    const autoTitle = activityConfig ? activityConfig.label : proposal.activity;
+
+    const { data, error } = await supabase
+      .from('plans')
+      .insert({
+        user_id: userId,
+        title: autoTitle,
+        activity: proposal.activity,
+        date: noonUtcDate,
+        time_slot: proposal.timeSlot,
+        duration: 60,
+        location: proposal.location || null,
+        notes: proposal.note || null,
+        status: 'proposed',
+        proposed_by: userId,
+        feed_visibility: 'private',
+        source_timezone: userTimezone,
+      } as any)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('proposePlan error:', error);
+      const { toast } = await import('sonner');
+      toast.error('Could not send proposal. Try again.');
+      return;
+    }
+
+    // Insert participant row for the recipient
+    await supabase.from('plan_participants').insert({
+      plan_id: data.id,
+      friend_id: proposal.recipientFriendId,
+      status: 'invited',
+      role: 'participant',
+    });
+
+    // Push notification
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', userId)
+        .single();
+      const senderName = senderProfile?.display_name || 'Someone';
+      const { TIME_SLOT_LABELS: TSL } = await import('@/types/planner');
+      const timeLabel = TSL[proposal.timeSlot]?.label || proposal.timeSlot;
+      const dateLabel = format(proposal.date, 'EEE, MMM d');
+
+      fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: proposal.recipientFriendId,
+          title: `${senderName} wants to make plans 🎉`,
+          body: `${activityConfig?.label || proposal.activity} · ${dateLabel} · ${timeLabel}`,
+          url: `/notifications`,
+          icon: '/icon-192.png',
+        }),
+      }).catch(() => {});
+    } catch (e) {
+      console.error('Push notification error in proposePlan:', e);
+    }
+
+    // Reload local data so the new plan appears in the sender's plan list
+    await get().loadAllData();
+  },
+
+  respondToProposal: async (planId, participantRowId, response) => {
+    if (response === 'declined') {
+      await supabase
+        .from('plan_participants')
+        .update({ status: 'declined', responded_at: new Date().toISOString() })
+        .eq('id', participantRowId);
+      return;
+    }
+
+    // Accept: update plan status to confirmed, update participant status to accepted
+    await supabase
+      .from('plans')
+      .update({ status: 'confirmed' })
+      .eq('id', planId);
+
+    await supabase
+      .from('plan_participants')
+      .update({ status: 'accepted', responded_at: new Date().toISOString() })
+      .eq('id', participantRowId);
+
+    await get().loadAllData();
+  },
   
-  addFriend: async (friend) => {
     const { userId } = get();
     if (!userId) return;
     
