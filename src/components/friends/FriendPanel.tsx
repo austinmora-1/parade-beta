@@ -158,7 +158,7 @@ function PanelContent({
             <FriendProfileContent
               userId={friendUserId}
               showBackButton={false}
-              onMessageClick={() => setActiveTab('chat')}
+              onMessageClick={() => handleTabChange('chat')}
             />
           </div>
         ) : activeConversation ? (
