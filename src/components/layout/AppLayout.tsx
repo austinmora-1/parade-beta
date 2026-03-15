@@ -15,22 +15,20 @@ export function AppLayout() {
   // Listen for real-time friend request notifications
   useFriendRequestNotifications();
   const queryClient = useQueryClient();
-  const { loadFriends, loadPlans, loadProfileAndAvailability } = usePlannerStore();
+  const loadAllData = usePlannerStore((s) => s.loadAllData);
 
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries(),
-      loadFriends(),
-      loadPlans(),
-      loadProfileAndAvailability(),
+      loadAllData(),
     ]);
-  }, [queryClient, loadFriends, loadPlans, loadProfileAndAvailability]);
+  }, [queryClient, loadAllData]);
   return (
     <FeedbackProvider>
       <div className="min-h-screen bg-background">
         <Sidebar />
         <MobileHeader />
-        <main className="min-h-screen md:ml-64">
+        <main className="min-h-screen md:ml-56">
           <PullToRefresh onRefresh={handleRefresh}>
             <div className="p-4 pb-24 md:p-8 md:pb-8">
               <Outlet />
