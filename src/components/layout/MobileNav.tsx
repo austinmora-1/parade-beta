@@ -97,7 +97,6 @@ export function MobileNav() {
         </div>
       </nav>
 
-      <QuickPlanSheet open={quickPlanOpen} onOpenChange={setQuickPlanOpen} />
     </>
   );
 }
