@@ -259,13 +259,25 @@ export default function Share() {
   };
 
   const handleSlotClick = (day: Date, slot: TimeSlot) => {
-    setSelectedSlot({
-      day,
-      dayLabel: format(day, 'EEEE, MMM d'),
-      slot,
-      slotLabel: TIME_SLOT_LABELS[slot].label,
-    });
-    setRequestDialogOpen(true);
+    if (user && profile?.user_id) {
+      // Logged-in user: open QuickPlanSheet
+      setSelectedSlot({
+        day,
+        dayLabel: format(day, 'EEEE, MMM d'),
+        slot,
+        slotLabel: TIME_SLOT_LABELS[slot].label,
+      });
+      setQuickPlanOpen(true);
+    } else {
+      // Non-logged-in: show the old request dialog
+      setSelectedSlot({
+        day,
+        dayLabel: format(day, 'EEEE, MMM d'),
+        slot,
+        slotLabel: TIME_SLOT_LABELS[slot].label,
+      });
+      setRequestDialogOpen(true);
+    }
   };
 
   const handleSendRequest = async () => {
