@@ -232,7 +232,7 @@ export function QuickPlanSheet({
                 </Avatar>
                 <span className="text-sm font-medium">{(preSelectedFriend || selectedFriend)?.name.split(' ')[0]}</span>
                 {!preSelectedFriend && selectedFriend && (
-                  <button onClick={() => setSelectedFriend(null)} className="ml-auto p-1 text-muted-foreground hover:text-foreground">
+                  <button onClick={() => { setSelectedFriend(null); setPlanStatus('confirmed'); }} className="ml-auto p-1 text-muted-foreground hover:text-foreground">
                     <X className="h-3.5 w-3.5" />
                   </button>
                 )}
