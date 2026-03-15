@@ -16,6 +16,7 @@ import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
 import { useState, useCallback } from 'react';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
+import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useConversations } from '@/hooks/useChat';
 
