@@ -374,6 +374,36 @@ export function QuickPlanSheet({
               </button>
               {showDetails && (
                 <div className="mt-2 space-y-3 animate-fade-in">
+                  {/* Status selector */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
+                    <div className="flex gap-1.5">
+                      {([
+                        { value: 'confirmed' as PlanStatus, label: '✅ Confirmed', activeClass: 'bg-primary text-primary-foreground border-primary' },
+                        { value: 'tentative' as PlanStatus, label: '🤔 Tentative', activeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500' },
+                        { value: 'proposed' as PlanStatus, label: '💡 Proposed', activeClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500' },
+                      ]).map(s => (
+                        <button
+                          key={s.value}
+                          onClick={() => setPlanStatus(s.value)}
+                          className={cn(
+                            "flex-1 rounded-full border px-2 py-1.5 text-xs font-medium transition-colors",
+                            planStatus === s.value
+                              ? s.activeClass
+                              : "border-border text-muted-foreground hover:border-primary/30"
+                          )}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                    {planStatus === 'tentative' && (
+                      <p className="text-[10px] text-muted-foreground">Won't block your availability</p>
+                    )}
+                    {planStatus === 'proposed' && (
+                      <p className="text-[10px] text-muted-foreground">An idea not yet committed to</p>
+                    )}
+                  </div>
                   <div className="relative">
                     <Input
                       placeholder="Where?"
