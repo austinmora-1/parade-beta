@@ -16,7 +16,7 @@ serve(async (req) => {
       throw new Error('LOOPS_API_KEY is not configured');
     }
 
-    const { email, firstName } = await req.json();
+    const { email, firstName, lastName } = await req.json();
 
     if (!email || typeof email !== 'string' || email.length > 255) {
       return new Response(
@@ -42,7 +42,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         email: email.trim().toLowerCase(),
-        firstName: firstName?.trim()?.slice(0, 100) || undefined,
+        firstName: firstName?.trim()?.slice(0, 50) || undefined,
+        lastName: lastName?.trim()?.slice(0, 50) || undefined,
         source: 'parade-landing-beta',
         userGroup: 'extended-beta',
       }),
