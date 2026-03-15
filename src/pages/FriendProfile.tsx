@@ -435,16 +435,10 @@ export default function FriendProfile() {
           variant="default"
           size="sm"
           className="gap-1.5 flex-1 text-xs h-8"
-          onClick={() => {
-            if (profile?.share_code) {
-              navigate(`/share/${profile.share_code}?hangTo=${userId}`);
-            } else {
-              toast.error('Unable to send hang request — share code not available');
-            }
-          }}
+          onClick={() => setQuickPlanOpen(true)}
         >
-          <HandHeart className="h-3.5 w-3.5" />
-          Hang Request
+          <CalendarPlus className="h-3.5 w-3.5" />
+          Suggest a Plan
         </Button>
       </div>
 
