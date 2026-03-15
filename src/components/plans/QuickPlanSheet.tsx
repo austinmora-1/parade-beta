@@ -191,7 +191,7 @@ export function QuickPlanSheet({
         duration: 60,
         location: location ? { id: 'loc', name: location, address: '' } : undefined,
         notes: note || undefined,
-        status: 'confirmed',
+        status: planStatus,
         participants: [],
       });
       toast.success('Plan added!');
