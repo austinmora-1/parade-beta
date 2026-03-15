@@ -6,15 +6,12 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { Friend } from '@/types/planner';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Users, Send, ArrowRight, Loader2, User } from 'lucide-react';
+import { Users, ArrowRight, Loader2 } from 'lucide-react';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
