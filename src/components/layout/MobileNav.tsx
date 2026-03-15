@@ -152,7 +152,7 @@ export function MobileNav() {
                           delay: (fabActions.length - 1 - i) * 0.05,
                         }}
                         onClick={() => handleFabAction(action.id)}
-                        className="flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
+                        className="flex w-48 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
                       >
                         <div className={cn('flex h-8 w-8 items-center justify-center rounded-xl', action.color)}>
                           <action.icon className="h-4 w-4 text-primary-foreground" strokeWidth={2.2} />
