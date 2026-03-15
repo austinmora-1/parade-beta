@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { getCurrentTimeInTimezone } from '@/lib/timezone';
+import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -76,7 +77,7 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
 }
 
 export function UpcomingPlans({ standalone = false }: { standalone?: boolean } = {}) {
-  const { plans, userTimezone } = usePlannerStore();
+  const { plans, userTimezone, userId } = usePlannerStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
@@ -285,6 +286,24 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
             )}
           </div>
         </div>
+        {/* RSVP buttons for plans the user is invited to but hasn't accepted */}
+        {(() => {
+          const isOwner = !plan.userId || plan.userId === userId;
+          const myParticipation = plan.participants?.find((p: any) => p.friendUserId === userId);
+          const myRsvp = myParticipation?.rsvpStatus;
+          const needsRsvp = !isOwner && myParticipation && myRsvp !== 'accepted';
+          if (!needsRsvp || !userId) return null;
+          return (
+            <div className="mt-2 pt-2 border-t border-border/50">
+              <PlanRsvpButtons
+                planId={plan.id}
+                userId={userId}
+                currentStatus={myRsvp}
+                compact
+              />
+            </div>
+          );
+        })()}
       </div>
     );
   };
