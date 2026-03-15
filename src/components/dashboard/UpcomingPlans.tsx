@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { getCurrentTimeInTimezone } from '@/lib/timezone';
+import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
