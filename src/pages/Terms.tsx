@@ -112,7 +112,25 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">13. Contact Us</h2>
+            <h2 className="text-xl font-semibold mb-3">13. AI Services</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Parade uses artificial intelligence services to power certain features within the App, including but not limited to smart nudges, conversation assistance, and event suggestions. These AI-powered features are provided through third-party large language models (LLMs) and AI services, including models from Google (Gemini) and OpenAI (GPT). By using the App, you acknowledge and agree to the following:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-2 mt-2">
+              <li>AI-generated content is provided for informational and convenience purposes only and should not be relied upon as professional, legal, medical, or financial advice</li>
+              <li>AI responses may not always be accurate, complete, or up to date. Parade does not guarantee the correctness of any AI-generated output</li>
+              <li>Your interactions with AI-powered features may be processed by third-party AI providers. We do not send personally identifiable information to these providers beyond what is necessary to deliver the feature</li>
+              <li>AI models used by Parade may change over time as we improve our services. We reserve the right to update, replace, or discontinue AI providers without prior notice</li>
+              <li>You agree not to use AI-powered features to generate harmful, misleading, or unlawful content</li>
+              <li>Parade is not liable for any decisions made or actions taken based on AI-generated content within the App</li>
+            </ul>
+            <p className="text-muted-foreground leading-relaxed mt-3">
+              For more information on how third-party AI providers handle data, please refer to their respective privacy policies and terms of service.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-3">14. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
               If you have questions about these Terms, please contact us at{' '}
               <a href="mailto:support@helloparade.app" className="text-primary hover:underline">
