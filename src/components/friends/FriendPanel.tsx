@@ -96,13 +96,20 @@ function PanelContent({
   initialConversationId,
   onClose,
   defaultTab = 'profile',
+  onTabChange,
 }: {
   friendUserId: string;
   initialConversationId?: string | null;
   onClose: () => void;
   defaultTab?: 'profile' | 'chat';
+  onTabChange?: (tab: 'profile' | 'chat') => void;
 }) {
   const [activeTab, setActiveTab] = useState<'profile' | 'chat'>(defaultTab);
+
+  const handleTabChange = (tab: 'profile' | 'chat') => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
   const { conversations } = useConversations();
   const { user } = useAuth();
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
