@@ -270,6 +270,11 @@ export default function Friends() {
     setPanelOpen(true);
   };
 
+  const handleOpenPod = (pod: Pod) => {
+    setActivePod(pod);
+    setPodPanelOpen(true);
+  };
+
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   const getAvatarColor = (name: string) => {
     const colors = ['bg-availability-available/20 text-availability-available', 'bg-availability-partial/20 text-availability-partial', 'bg-primary/20 text-primary', 'bg-secondary text-secondary-foreground'];
