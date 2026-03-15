@@ -422,12 +422,32 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, on
     const isParticipant = selectedFriends.includes(friendId);
     const isSubscriber = subscriberFriends.includes(friendId);
     if (!isParticipant && !isSubscriber) {
-      setSelectedFriends(prev => [...prev, friendId]);
+      setSelectedFriends(prev => {
+        const next = [...prev, friendId];
+        // Auto-switch to proposed when first friend is added
+        if (next.length === 1 && planStatus === 'confirmed') {
+          setPlanStatus('proposed');
+        }
+        return next;
+      });
     } else if (isParticipant) {
-      setSelectedFriends(prev => prev.filter(id => id !== friendId));
+      setSelectedFriends(prev => {
+        const next = prev.filter(id => id !== friendId);
+        // Auto-switch back to confirmed when all friends removed
+        if (next.length === 0 && subscriberFriends.length === 0 && planStatus === 'proposed') {
+          setPlanStatus('confirmed');
+        }
+        return next;
+      });
       setSubscriberFriends(prev => [...prev, friendId]);
     } else {
-      setSubscriberFriends(prev => prev.filter(id => id !== friendId));
+      setSubscriberFriends(prev => {
+        const next = prev.filter(id => id !== friendId);
+        if (selectedFriends.length === 0 && next.length === 0 && planStatus === 'proposed') {
+          setPlanStatus('confirmed');
+        }
+        return next;
+      });
     }
   };
 
