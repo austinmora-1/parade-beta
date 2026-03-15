@@ -106,6 +106,7 @@ export function QuickPlanSheet({
       setLocation('');
       setNote('');
       setSending(false);
+      setPlanStatus('confirmed');
       setCalendarOpen(false);
       setSelectedFriend(preSelectedFriend || null);
       setFriendSearch('');
