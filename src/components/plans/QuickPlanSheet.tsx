@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { format, addDays, nextSaturday } from 'date-fns';
 import { motion } from 'framer-motion';
-import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X } from 'lucide-react';
+import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Drawer,
