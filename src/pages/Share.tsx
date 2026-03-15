@@ -21,6 +21,7 @@ import {
 import { toast } from 'sonner';
 
 interface ProfileData {
+  user_id: string | null;
   display_name: string | null;
   avatar_url: string | null;
   current_vibe: string | null;
