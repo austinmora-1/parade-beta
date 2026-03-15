@@ -28,6 +28,7 @@ import PlanInvite from "./pages/PlanInvite";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import GoogleCallback from "./pages/GoogleCallback";
+import Login from "./pages/Login";
 import { usePostHogPageView } from "@/hooks/usePostHog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
