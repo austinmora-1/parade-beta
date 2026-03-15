@@ -98,7 +98,7 @@ function PodPanelContent({
   const handleConversationCreated = (id: string) => {
     setConversationId(id);
     onUpdatePod?.(pod.id, { conversation_id: id });
-    setActiveTab('chat');
+    handleTabChange('chat');
   };
 
   return (
