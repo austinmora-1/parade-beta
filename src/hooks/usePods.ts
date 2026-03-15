@@ -8,6 +8,7 @@ export interface Pod {
   emoji: string;
   sortOrder: number;
   memberUserIds: string[];
+  conversationId: string | null;
 }
 
 export function usePods() {
