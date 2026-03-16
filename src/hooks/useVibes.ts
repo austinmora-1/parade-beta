@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -166,12 +166,21 @@ export function useVibes() {
     loadVibes();
   }, [loadVibes]);
 
-  // Realtime subscription for incoming vibes (new + dismissed)
+  // Debounced reload to prevent cascading refetches from multiple realtime events
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedReload = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => {
+      loadVibes();
+    }, 500);
+  }, [loadVibes]);
+
+  // Single consolidated realtime subscription for all vibe-related changes
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel('vibe-recipients')
+      .channel('vibes-all')
       .on(
         'postgres_changes',
         {
@@ -180,23 +189,8 @@ export function useVibes() {
           table: 'vibe_send_recipients',
           filter: `recipient_id=eq.${user.id}`,
         },
-        () => {
-          loadVibes();
-        }
+        debouncedReload
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, loadVibes]);
-
-  // Realtime subscription for sent vibes (auto-sync when user sends a new vibe)
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('vibe-sends-own')
       .on(
         'postgres_changes',
         {
@@ -205,23 +199,8 @@ export function useVibes() {
           table: 'vibe_sends',
           filter: `sender_id=eq.${user.id}`,
         },
-        () => {
-          loadVibes();
-        }
+        debouncedReload
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, loadVibes]);
-
-  // Realtime subscription for reactions on vibes
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('sent-vibe-reactions')
       .on(
         'postgres_changes',
         {
@@ -229,23 +208,8 @@ export function useVibes() {
           schema: 'public',
           table: 'vibe_reactions',
         },
-        () => {
-          loadVibes();
-        }
+        debouncedReload
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, loadVibes]);
-
-  // Realtime subscription for comments on vibes
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('vibe-comments-rt')
       .on(
         'postgres_changes',
         {
@@ -253,16 +217,15 @@ export function useVibes() {
           schema: 'public',
           table: 'vibe_comments',
         },
-        () => {
-          loadVibes();
-        }
+        debouncedReload
       )
       .subscribe();
 
     return () => {
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [user, loadVibes]);
+  }, [user, debouncedReload]);
 
   const sendVibe = async (payload: SendVibePayload) => {
     if (!user) return;
@@ -345,25 +308,28 @@ export function useVibes() {
           }
         }
 
-        for (const recipientId of recipientIds) {
-          fetch(
-            `https://${projectId}.supabase.co/functions/v1/send-push-notification`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                user_id: recipientId,
-                title: `${senderName} sent you a vibe`,
-                body: payload.message || `Feeling ${vibeLabel}`,
-                url: `/?vibe=${vibeSend.id}`,
-                image: imageUrl,
-              }),
-            }
-          ).catch(() => {}); // fire-and-forget
-        }
+        // Send push notifications in parallel (fire-and-forget)
+        Promise.all(
+          recipientIds.map(recipientId =>
+            fetch(
+              `https://${projectId}.supabase.co/functions/v1/send-push-notification`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  user_id: recipientId,
+                  title: `${senderName} sent you a vibe`,
+                  body: payload.message || `Feeling ${vibeLabel}`,
+                  url: `/?vibe=${vibeSend.id}`,
+                  image: imageUrl,
+                }),
+              }
+            ).catch(() => {})
+          )
+        ).catch(() => {});
       }
 
       toast.success(`Vibe sent to ${recipientIds.length} friend${recipientIds.length > 1 ? 's' : ''}!`);
