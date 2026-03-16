@@ -1416,6 +1416,7 @@ export type Database = {
           refresh_token: string
         }[]
       }
+      get_dashboard_data: { Args: { p_user_id: string }; Returns: Json }
       get_display_names_for_users: {
         Args: { p_user_ids: string[] }
         Returns: {

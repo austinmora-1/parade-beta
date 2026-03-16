@@ -4,6 +4,78 @@ import { addDays, startOfWeek, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserTimezone, convertTimeBetweenTimezones, getTimeSlotForTime, getTimeSlotMidpoint } from '@/lib/timezone';
 
+// Shape returned by the get_dashboard_data RPC
+interface DashboardData {
+  own_plans: any[];
+  participated_plans: any[];
+  plan_participants: Array<{
+    plan_id: string;
+    friend_id: string;
+    status: string;
+    role: string;
+    responded_at: string | null;
+  }>;
+  participant_profiles: Array<{
+    user_id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  }>;
+  outgoing_friendships: Array<{
+    id: string;
+    user_id: string;
+    friend_user_id: string | null;
+    friend_name: string;
+    friend_email: string | null;
+    status: string;
+    is_pod_member: boolean;
+    created_at: string;
+    updated_at: string;
+  }>;
+  outgoing_friend_profiles: Array<{
+    user_id: string;
+    avatar_url: string | null;
+  }>;
+  incoming_friendships: Array<{
+    id: string;
+    user_id: string;
+    friend_user_id: string | null;
+    friend_name: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  }>;
+  incoming_friend_profiles: Array<{
+    user_id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  }>;
+  availability: Array<{
+    date: string;
+    early_morning: boolean;
+    late_morning: boolean;
+    early_afternoon: boolean;
+    late_afternoon: boolean;
+    evening: boolean;
+    late_night: boolean;
+    location_status: string | null;
+    trip_location: string | null;
+    vibe: string | null;
+  }>;
+  profile: {
+    current_vibe: string | null;
+    location_status: string | null;
+    custom_vibe_tags: string[] | null;
+    vibe_gif_url: string | null;
+    default_work_days: string[] | null;
+    default_work_start_hour: number | null;
+    default_work_end_hour: number | null;
+    default_availability_status: string | null;
+    default_vibes: string[] | null;
+    home_address: string | null;
+    timezone: string | null;
+  } | null;
+}
+
 interface DefaultAvailabilitySettings {
   workDays: string[];
   workStartHour: number;
@@ -37,6 +109,7 @@ interface PlannerState {
   
   setUserId: (userId: string | null) => void;
   loadAllData: (force?: boolean) => Promise<void>;
+  forceRefresh: () => Promise<void>;
   loadFriends: () => Promise<void>;
   loadPlans: () => Promise<void>;
   loadProfileAndAvailability: () => Promise<void>;
@@ -151,176 +224,94 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set({ isLoading: true });
     
     try {
-      // Prepare date range for availability (today to +30 days on startup)
-      const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const availStartDate = format(start, 'yyyy-MM-dd');
-      const availEndDate = format(addDays(start, 30), 'yyyy-MM-dd');
+      // ── Single RPC call — replaces the 4-wave waterfall ──────────────────
+      const { data: rpcData, error } = await supabase.rpc('get_dashboard_data' as any, {
+        p_user_id: userId,
+      });
 
-      // Fire ALL independent queries in parallel
-      const [
-        ownPlansResult,
-        participatedPlanIdsResult,
-        outgoingResult,
-        incomingResult,
-        availResult,
-        profileResult,
-      ] = await Promise.all([
-        // 1. Own plans
-        supabase
-          .from('plans')
-          .select('*')
-          .eq('user_id', userId)
-          .order('date', { ascending: true })
-          .limit(200),
-        // 2. Participated plan IDs
-        supabase.rpc('user_participated_plan_ids', { p_user_id: userId }),
-        // 3. Outgoing friendships
-        supabase
-          .from('friendships')
-          .select('*')
-          .eq('user_id', userId),
-        // 4. Incoming friendships
-        supabase
-          .from('friendships_incoming' as any)
-          .select('*')
-          .eq('friend_user_id', userId),
-        // 5. Availability
-        supabase
-          .from('availability')
-          .select('*')
-          .eq('user_id', userId)
-          .gte('date', availStartDate)
-          .lte('date', availEndDate),
-        // 6. Profile
-        supabase
-          .from('profiles')
-          .select('current_vibe, location_status, custom_vibe_tags, vibe_gif_url, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address, timezone')
-          .eq('user_id', userId)
-          .single(),
-      ]);
+      if (error) {
+        console.error('get_dashboard_data error:', error);
+        set({ isLoading: false });
+        return;
+      }
 
-      const ownPlansData = ownPlansResult.data;
-      const participatedPlanIds = participatedPlanIdsResult.data;
-      const outgoingData = outgoingResult.data;
-      const incomingData = incomingResult.data;
-      const availData = availResult.data;
-      const profile = profileResult.data;
+      const d = rpcData as unknown as DashboardData;
 
-      // Second wave: fetch participated plans + incoming friend profiles in parallel
-      const participatedPlansPromise = (participatedPlanIds && participatedPlanIds.length > 0)
-        ? supabase
-            .from('plans')
-            .select('*')
-            .in('id', participatedPlanIds)
-            .order('date', { ascending: true })
-            .limit(200)
-        : Promise.resolve({ data: [] as typeof ownPlansData });
+      // ── Rebuild lookup maps (same logic as before, just from RPC data) ───
 
-      // Batch fetch incoming friend profiles using RPC (works even for non-discoverable users)
-      const incomingUserIds = (incomingData || []).map((f: any) => f.user_id).filter(Boolean);
-      const incomingProfilesPromise = incomingUserIds.length > 0
-        ? supabase.rpc('get_display_names_for_users', { p_user_ids: incomingUserIds })
-        : Promise.resolve({ data: [] as { user_id: string; display_name: string | null; avatar_url: string | null }[] });
+      // Plan participants map: plan_id → participant rows
+      const participantsMap: Record<string, { friend_id: string; status: string; role: string; responded_at: string | null }[]> = {};
+      for (const pp of (d.plan_participants || [])) {
+        if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
+        participantsMap[pp.plan_id].push({
+          friend_id: pp.friend_id,
+          status: pp.status,
+          role: pp.role,
+          responded_at: pp.responded_at,
+        });
+      }
 
-      // Batch fetch outgoing friend avatars
-      const outgoingUserIds = (outgoingData || []).map((f: any) => f.friend_user_id).filter(Boolean) as string[];
-      const outgoingProfilesPromise = outgoingUserIds.length > 0
-        ? supabase
-            .from('public_profiles')
-            .select('user_id, avatar_url')
-            .in('user_id', outgoingUserIds)
-        : Promise.resolve({ data: [] as { user_id: string; avatar_url: string | null }[] });
+      // Participant profiles map: user_id → { display_name, avatar_url }
+      const profilesMap: Record<string, string> = {};
+      const profileAvatarsMap: Record<string, string | null> = {};
+      for (const p of (d.participant_profiles || [])) {
+        if (p.user_id) {
+          profilesMap[p.user_id] = p.display_name || 'Friend';
+          profileAvatarsMap[p.user_id] = p.avatar_url;
+        }
+      }
 
-      const [participatedPlansResult, incomingProfilesResult, outgoingProfilesResult] = await Promise.all([
-        participatedPlansPromise,
-        incomingProfilesPromise,
-        outgoingProfilesPromise,
-      ]);
-
-      const participatedPlansData = participatedPlansResult.data || [];
-
-      // Build incoming profiles map
-      const incomingProfilesMap = new Map(
-        (incomingProfilesResult.data || []).map((p: any) => [p.user_id, p])
-      );
-
-      // Build outgoing avatar map
+      // Outgoing friend avatar map: user_id → avatar_url
       const outgoingAvatarMap = new Map<string, string | null>(
-        (outgoingProfilesResult.data || []).map((p: any) => [p.user_id, p.avatar_url])
+        (d.outgoing_friend_profiles || []).map(p => [p.user_id, p.avatar_url])
       );
-      
-      // Merge and dedupe plans
-      const ownIds = new Set((ownPlansData || []).map(p => p.id));
+
+      // Incoming friend profiles map: user_id → { display_name, avatar_url }
+      const incomingProfilesMap = new Map(
+        (d.incoming_friend_profiles || []).map(p => [p.user_id, p])
+      );
+
+      // ── Profile ──────────────────────────────────────────────────────────
+      const profile = d.profile;
+      const homeAddr = profile?.home_address || null;
+      const explicitTz = profile?.timezone || null;
+
+      // ── Availability data (30-day window from RPC) ───────────────────────
+      const availData = d.availability || [];
+
+      // Derive timezone from today's availability row (same logic as before)
+      const todayStrForTz = format(new Date(), 'yyyy-MM-dd');
+      const todayAvailRaw = availData.find(a => a.date === todayStrForTz);
+      const todayLocStatus = (todayAvailRaw?.location_status as LocationStatus) || 'home';
+      const todayTripLoc = todayAvailRaw?.trip_location || undefined;
+      const viewerTimezone = getUserTimezone(todayLocStatus, homeAddr, todayTripLoc, explicitTz);
+
+      // ── Merge own + participated plans and dedupe (same logic as before) ──
+      const ownPlansData = d.own_plans || [];
+      const participatedPlansData = d.participated_plans || [];
+
+      const ownIds = new Set(ownPlansData.map((p: any) => p.id));
       const ownHangKeys = new Set(
-        (ownPlansData || [])
-          .filter(p => p.source === 'hang-request')
-          .map(p => `${p.date}|${p.time_slot}`)
+        ownPlansData
+          .filter((p: any) => p.source === 'hang-request')
+          .map((p: any) => `${p.date}|${p.time_slot}`)
       );
       const plansData = [
-        ...(ownPlansData || []),
-        ...(participatedPlansData || []).filter(p => {
+        ...ownPlansData,
+        ...participatedPlansData.filter((p: any) => {
           if (ownIds.has(p.id)) return false;
           if (p.source === 'hang-request' && ownHangKeys.has(`${p.date}|${p.time_slot}`)) return false;
           return true;
         }),
       ];
-      
-      // Load plan participants (third wave - depends on merged plan list)
-      const planIds = (plansData || []).map(p => p.id);
-      let participantsMap: Record<string, { friend_id: string; status: string; role: string; responded_at: string | null }[]> = {};
-      
-      if (planIds.length > 0) {
-        const { data: participantsData } = await supabase
-          .from('plan_participants')
-          .select('plan_id, friend_id, status, role, responded_at')
-          .in('plan_id', planIds);
-        
-        for (const pp of (participantsData || [])) {
-          if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
-          participantsMap[pp.plan_id].push({ friend_id: pp.friend_id, status: pp.status, role: pp.role, responded_at: pp.responded_at });
-        }
-      }
-      
-      // Collect unique user IDs for profile resolution
-      const participantUserIds = new Set<string>();
-      for (const pps of Object.values(participantsMap)) {
-        for (const pp of pps) participantUserIds.add(pp.friend_id);
-      }
-      for (const p of (plansData || [])) {
-        if (p.user_id !== userId) participantUserIds.add(p.user_id);
-      }
-      
-      let profilesMap: Record<string, string> = {};
-      let profileAvatarsMap: Record<string, string | null> = {};
-      if (participantUserIds.size > 0) {
-        const { data: profiles } = await supabase
-          .from('public_profiles')
-          .select('user_id, display_name, avatar_url')
-          .in('user_id', Array.from(participantUserIds));
-        
-        for (const p of (profiles || [])) {
-          if (p.user_id) {
-            profilesMap[p.user_id] = p.display_name || 'Friend';
-            profileAvatarsMap[p.user_id] = p.avatar_url;
-          }
-        }
-      }
-      
-      // Derive viewer's timezone early so we can convert participated plan times
-      const homeAddr = (profile as any)?.home_address || null;
-      const explicitTz = (profile as any)?.timezone || null;
-      // We need availability map for today's location, but it's built later.
-      // Pre-compute today's location from raw avail data.
-      const todayStrForTz = format(new Date(), 'yyyy-MM-dd');
-      const todayAvailRaw = availData?.find(a => a.date === todayStrForTz);
-      const todayLocStatus = (todayAvailRaw?.location_status as LocationStatus) || 'home';
-      const todayTripLoc = todayAvailRaw?.trip_location || undefined;
-      const viewerTimezone = getUserTimezone(todayLocStatus, homeAddr, todayTripLoc, explicitTz);
 
-      const plans: Plan[] = (plansData || []).map((p) => {
+      // ── Map raw plan rows to Plan objects (same timezone conversion logic) ─
+      const plans: Plan[] = plansData.map((p: any) => {
         const allPps = participantsMap[p.id] || [];
         const myParticipation = allPps.find(pp => pp.friend_id === userId);
-        const myRole = p.user_id === userId ? 'participant' : (myParticipation?.role as 'participant' | 'subscriber') || 'participant';
+        const myRole = p.user_id === userId
+          ? 'participant'
+          : (myParticipation?.role as 'participant' | 'subscriber') || 'participant';
         const rawPps = allPps.filter(pp => pp.friend_id !== userId);
         const pps = [...rawPps];
         if (p.user_id !== userId && !pps.some(pp => pp.friend_id === p.user_id)) {
@@ -331,45 +322,38 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         const planMonth = planDateRaw.getUTCMonth();
         const planDay = planDateRaw.getUTCDate();
         let normalizedPlanDate = new Date(planYear, planMonth, planDay);
-        
+
         let effectiveTimeSlot = p.time_slot as TimeSlot;
-        let effectiveStartTime: string | undefined = (p as any).start_time || undefined;
-        let effectiveEndTime: string | undefined = (p as any).end_time || undefined;
-        
-        // Convert times for participated plans from other timezones
-        const sourceTimezone = (p as any).source_timezone;
+        let effectiveStartTime: string | undefined = p.start_time || undefined;
+        let effectiveEndTime: string | undefined = p.end_time || undefined;
+
+        const sourceTimezone = p.source_timezone;
         if (sourceTimezone && sourceTimezone !== viewerTimezone && p.user_id !== userId) {
           if (effectiveStartTime) {
             const converted = convertTimeBetweenTimezones(effectiveStartTime, normalizedPlanDate, sourceTimezone, viewerTimezone);
             effectiveStartTime = converted.time;
-            if (converted.dayOffset !== 0) {
-              normalizedPlanDate = addDays(normalizedPlanDate, converted.dayOffset);
-            }
-            // Derive time slot from converted start time
+            if (converted.dayOffset !== 0) normalizedPlanDate = addDays(normalizedPlanDate, converted.dayOffset);
             effectiveTimeSlot = getTimeSlotForTime(converted.time) as TimeSlot;
           } else {
-            // No specific time — convert the slot midpoint to get approximate slot
             const midpoint = getTimeSlotMidpoint(p.time_slot);
             const converted = convertTimeBetweenTimezones(midpoint, normalizedPlanDate, sourceTimezone, viewerTimezone);
             effectiveTimeSlot = getTimeSlotForTime(converted.time) as TimeSlot;
-            if (converted.dayOffset !== 0) {
-              normalizedPlanDate = addDays(normalizedPlanDate, converted.dayOffset);
-            }
+            if (converted.dayOffset !== 0) normalizedPlanDate = addDays(normalizedPlanDate, converted.dayOffset);
           }
           if (effectiveEndTime) {
             const convertedEnd = convertTimeBetweenTimezones(effectiveEndTime, new Date(planYear, planMonth, planDay), sourceTimezone, viewerTimezone);
             effectiveEndTime = convertedEnd.time;
           }
         }
-        
+
         return {
           id: p.id,
           userId: p.user_id,
           title: p.title,
           activity: p.activity as ActivityType,
           date: normalizedPlanDate,
-          endDate: (p as any).end_date ? (() => {
-            const ed = new Date((p as any).end_date);
+          endDate: p.end_date ? (() => {
+            const ed = new Date(p.end_date);
             return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate());
           })() : undefined,
           timeSlot: effectiveTimeSlot,
@@ -378,8 +362,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           endTime: effectiveEndTime,
           location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
           notes: p.notes || undefined,
-          status: (p as any).status as PlanStatus || 'confirmed',
-          feedVisibility: (p as any).feed_visibility || 'private',
+          status: p.status as PlanStatus || 'confirmed',
+          feedVisibility: p.feed_visibility || 'private',
           participants: pps.map(pp => ({
             id: pp.friend_id,
             name: profilesMap[pp.friend_id] || 'Friend',
@@ -391,14 +375,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             respondedAt: pp.responded_at ? new Date(pp.responded_at) : undefined,
           })),
           myRole,
-          recurringPlanId: (p as any).recurring_plan_id || undefined,
-          proposedBy: (p as any).proposed_by || undefined,
+          recurringPlanId: p.recurring_plan_id || undefined,
+          proposedBy: p.proposed_by || undefined,
           createdAt: new Date(p.created_at),
         };
       });
-      
-      // Process friendships
-      const outgoingFriends: Friend[] = (outgoingData || []).map((f) => ({
+
+      // ── Map friendships (same dedup logic as before) ──────────────────────
+      const outgoingFriends: Friend[] = (d.outgoing_friendships || []).map(f => ({
         id: f.id,
         name: f.friend_name,
         email: f.friend_email || undefined,
@@ -406,132 +390,117 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         friendUserId: f.friend_user_id || undefined,
         status: f.status as 'connected' | 'pending' | 'invited',
         isIncoming: false,
-        isPodMember: (f as any).is_pod_member || false,
+        isPodMember: f.is_pod_member || false,
       }));
-      
-      // Use batched profiles instead of N+1
-      const incomingFriends: Friend[] = (incomingData || []).map((f: any) => {
+
+      const incomingFriends: Friend[] = (d.incoming_friendships || []).map(f => {
         const prof = incomingProfilesMap.get(f.user_id);
         return {
           id: f.id,
-          name: (prof as any)?.display_name || 'Someone',
-          avatar: (prof as any)?.avatar_url || undefined,
+          name: prof?.display_name || 'Someone',
+          avatar: prof?.avatar_url || undefined,
           friendUserId: f.user_id,
           status: f.status as 'connected' | 'pending' | 'invited',
           isIncoming: true,
         };
       });
-      
-      // Deduplicate outgoing friends
+
+      // Dedup outgoing (same logic as before)
       const dedupeOutgoing = (list: Friend[]): Friend[] => {
         const byUserId = new Map<string, Friend>();
         const noUserId: Friend[] = [];
         const statusPriority: Record<string, number> = { connected: 3, pending: 2, invited: 1 };
-        
         for (const f of list) {
-          if (!f.friendUserId) {
-            noUserId.push(f);
-            continue;
-          }
+          if (!f.friendUserId) { noUserId.push(f); continue; }
           const existing = byUserId.get(f.friendUserId);
           if (!existing || (statusPriority[f.status] || 0) > (statusPriority[existing.status] || 0)) {
             byUserId.set(f.friendUserId, f);
           }
         }
-        
         return [...byUserId.values(), ...noUserId.filter(f => {
           if (f.status !== 'invited' || !f.email) return true;
           return !byUserId.size;
         })];
       };
-      
+
       const dedupedOutgoing = dedupeOutgoing(outgoingFriends);
-      
-      // Global dedup across outgoing + incoming by friendUserId, keeping highest priority status
+
+      // Global dedup across outgoing + incoming (same logic as before)
       const statusPriority: Record<string, number> = { connected: 3, pending: 2, invited: 1 };
       const globalByUserId = new Map<string, Friend>();
       const noUserId: Friend[] = [];
-      
       for (const f of [...dedupedOutgoing, ...incomingFriends]) {
-        if (!f.friendUserId) {
-          noUserId.push(f);
-          continue;
-        }
+        if (!f.friendUserId) { noUserId.push(f); continue; }
         const existing = globalByUserId.get(f.friendUserId);
         if (!existing || (statusPriority[f.status] || 0) > (statusPriority[existing.status] || 0)) {
-          // When merging, prefer the outgoing record's metadata (isPodMember, etc.)
           if (existing && !f.isIncoming && existing.isIncoming) {
             globalByUserId.set(f.friendUserId, { ...f });
           } else if (existing && f.isIncoming && !existing.isIncoming) {
-            // Keep outgoing record but upgrade status
             globalByUserId.set(f.friendUserId, { ...existing, status: f.status });
           } else {
             globalByUserId.set(f.friendUserId, f);
           }
         }
       }
-      
       const friends = [...globalByUserId.values(), ...noUserId];
-      
-      // Process availability with default settings from profile
-      const customTags = (profile as any)?.custom_vibe_tags || [];
-      const vibeGifUrl = (profile as any)?.vibe_gif_url || undefined;
-      const currentVibe = (profile as any)?.current_vibe 
-        ? { 
-            type: (profile as any).current_vibe as VibeType,
-            customTags: (profile as any).current_vibe === 'custom' ? customTags : undefined,
+
+      // ── Process availability with default settings (same logic as before) ─
+      const customTags = profile?.custom_vibe_tags || [];
+      const vibeGifUrl = profile?.vibe_gif_url || undefined;
+      const currentVibe = profile?.current_vibe
+        ? {
+            type: profile.current_vibe as VibeType,
+            customTags: profile.current_vibe === 'custom' ? customTags : undefined,
             gifUrl: vibeGifUrl,
-          } 
+          }
         : null;
-      
+
       const defaultSettings: DefaultAvailabilitySettings = {
-        workDays: (profile as any)?.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        workStartHour: (profile as any)?.default_work_start_hour ?? 9,
-        workEndHour: (profile as any)?.default_work_end_hour ?? 17,
-        defaultStatus: (profile as any)?.default_availability_status || 'free',
-        defaultVibes: (profile as any)?.default_vibes || [],
+        workDays: profile?.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        workStartHour: profile?.default_work_start_hour ?? 9,
+        workEndHour: profile?.default_work_end_hour ?? 17,
+        defaultStatus: (profile?.default_availability_status as 'free' | 'unavailable') || 'free',
+        defaultVibes: profile?.default_vibes || [],
       };
-      
-      // Build a lookup map from fetched availability data for O(1) access
-      const availDataMap = new Map<string, typeof availData extends (infer T)[] ? T : never>();
-      if (availData) {
-        for (const a of availData) {
-          availDataMap.set(a.date, a);
-        }
+
+      // Build availability map from the 30-day window
+      const availDataMap = new Map<string, typeof availData[0]>();
+      for (const a of availData) {
+        availDataMap.set(a.date, a);
       }
-      
-      // Generate dates array covering startup window (31 days: 0 to +30)
+
+      // Generate 30 days of DayAvailability objects, filling gaps with defaults
+      const start = startOfWeek(new Date(), { weekStartsOn: 1 });
       const allDates = Array.from({ length: 31 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
       const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
         const existing = availDataMap.get(dateStr);
         const date = addDays(start, i);
-        
         if (existing) {
           return {
             date,
             slots: {
-              'early-morning': existing.early_morning ?? true,
-              'late-morning': existing.late_morning ?? true,
-              'early-afternoon': existing.early_afternoon ?? true,
-              'late-afternoon': existing.late_afternoon ?? true,
-              'evening': existing.evening ?? true,
-              'late-night': existing.late_night ?? true,
+              'early-morning':    existing.early_morning  ?? true,
+              'late-morning':     existing.late_morning   ?? true,
+              'early-afternoon':  existing.early_afternoon ?? true,
+              'late-afternoon':   existing.late_afternoon  ?? true,
+              'evening':          existing.evening        ?? true,
+              'late-night':       existing.late_night     ?? true,
             },
             locationStatus: (existing.location_status as LocationStatus) || 'home',
-            tripLocation: existing.trip_location || undefined,
-            vibe: (existing as any).vibe as VibeType | null || null,
+            tripLocation:   existing.trip_location || undefined,
+            vibe:           existing.vibe as VibeType | null || null,
           };
         }
         return createDefaultAvailability(date, defaultSettings);
       });
-      
-      // Build the availability map for O(1) lookups by consumers
+
       const availabilityMap = buildAvailabilityMap(availabilityWithDefaults);
-      
+
       const todayStr = format(new Date(), 'yyyy-MM-dd');
       const todayAvail = availabilityMap[todayStr];
       const todayLocationStatus = todayAvail?.locationStatus || 'home';
-      
+
+      // ── Commit to store ───────────────────────────────────────────────────
       set({
         plans,
         friends,
@@ -545,10 +514,16 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         isLoading: false,
         lastFetchedAt: Date.now(),
       });
+
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('loadAllData error:', error);
       set({ isLoading: false });
     }
+  },
+
+  forceRefresh: async () => {
+    set({ lastFetchedAt: null });
+    await get().loadAllData();
   },
   
   addPlan: async (plan) => {
