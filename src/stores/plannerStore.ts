@@ -151,10 +151,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set({ isLoading: true });
     
     try {
-      // Prepare date range for availability (6 months to match calendar sync window)
+      // Prepare date range for availability (today to +30 days on startup)
       const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const availStartDate = format(addDays(start, -183), 'yyyy-MM-dd');
-      const availEndDate = format(addDays(start, 183), 'yyyy-MM-dd');
+      const availStartDate = format(start, 'yyyy-MM-dd');
+      const availEndDate = format(addDays(start, 30), 'yyyy-MM-dd');
 
       // Fire ALL independent queries in parallel
       const [
@@ -500,11 +500,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         }
       }
       
-      // Generate dates array covering the full availability window (366 days: -183 to +183)
-      const allDates = Array.from({ length: 366 }, (_, i) => format(addDays(start, i - 183), 'yyyy-MM-dd'));
+      // Generate dates array covering startup window (31 days: 0 to +30)
+      const allDates = Array.from({ length: 31 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
       const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
         const existing = availDataMap.get(dateStr);
-        const date = addDays(start, i - 183);
+        const date = addDays(start, i);
         
         if (existing) {
           return {
