@@ -495,7 +495,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                         isAway && !isPast && "bg-availability-away/10"
                       )}
                     >
-                      <div className={cn(isPast && "text-muted-foreground", !isPast && isAway && "text-orange-600")}>{format(day, 'EEE')}</div>
+                      <div className={cn(isPast && "text-muted-foreground", !isPast && isAway && "text-availability-away-foreground")}>{format(day, 'EEE')}</div>
                       <div
                         className={cn(
                           "mt-1 text-lg",
