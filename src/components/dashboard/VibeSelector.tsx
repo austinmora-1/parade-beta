@@ -129,21 +129,42 @@ export function VibeSelector() {
         <AnimatePresence>
           {menuOpen && (
             <div className="absolute left-0 right-0 top-full mt-2 flex flex-col items-center gap-2 z-50">
-              {/* GIF picker row */}
-              <GifPicker onGifSelect={(url) => { handleGifSelect(url); setMenuOpen(false); }}>
-                <motion.button
-                  initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 22, delay: 0 }}
-                  className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
-                >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-sm">
-                    🎬
-                  </div>
-                  <span className="text-sm font-medium text-foreground">Add a GIF</span>
-                </motion.button>
-              </GifPicker>
+              {/* Vibe options */}
+              {allVibes.map((type, i) => {
+                const config = VIBE_CONFIG[type as VibeType];
+                const style = VIBE_CHIP_STYLES[type];
+                const isSelected = currentVibe?.type === type;
+
+                return (
+                  <motion.button
+                    key={type}
+                    initial={{ opacity: 0, y: -10, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -5, scale: 0.9 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 22,
+                      delay: i * 0.04,
+                    }}
+                    onClick={() => handleVibeSelect(type)}
+                    className={cn(
+                      'flex w-56 items-center gap-2.5 rounded-2xl px-4 py-2.5 shadow-lg border',
+                      isSelected ? 'border-primary bg-primary/5' : 'border-border bg-card'
+                    )}
+                  >
+                    <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-white text-sm', style.iconBg)}>
+                      {config.icon}
+                    </div>
+                    <span className={cn('text-sm font-medium', isSelected ? 'text-primary' : 'text-foreground')}>
+                      {type === 'custom' ? 'Custom' : config.label}
+                    </span>
+                    {isSelected && (
+                      <span className="ml-auto text-primary text-xs">✓</span>
+                    )}
+                  </motion.button>
+                );
+              })}
 
               {/* Custom input (appears when custom is selected) */}
               <AnimatePresence>
@@ -184,42 +205,21 @@ export function VibeSelector() {
                 )}
               </AnimatePresence>
 
-              {/* Vibe options */}
-              {allVibes.map((type, i) => {
-                const config = VIBE_CONFIG[type as VibeType];
-                const style = VIBE_CHIP_STYLES[type];
-                const isSelected = currentVibe?.type === type;
-
-                return (
-                  <motion.button
-                    key={type}
-                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                    transition={{
-                      type: 'spring',
-                      stiffness: 400,
-                      damping: 22,
-                      delay: i * 0.04,
-                    }}
-                    onClick={() => handleVibeSelect(type)}
-                    className={cn(
-                      'flex w-56 items-center gap-2.5 rounded-2xl px-4 py-2.5 shadow-lg border',
-                      isSelected ? 'border-primary bg-primary/5' : 'border-border bg-card'
-                    )}
-                  >
-                    <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-white text-sm', style.iconBg)}>
-                      {config.icon}
-                    </div>
-                    <span className={cn('text-sm font-medium', isSelected ? 'text-primary' : 'text-foreground')}>
-                      {type === 'custom' ? 'Custom' : config.label}
-                    </span>
-                    {isSelected && (
-                      <span className="ml-auto text-primary text-xs">✓</span>
-                    )}
-                  </motion.button>
-                );
-              })}
+              {/* GIF picker row */}
+              <GifPicker onGifSelect={(url) => { handleGifSelect(url); setMenuOpen(false); }}>
+                <motion.button
+                  initial={{ opacity: 0, y: -10, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -5, scale: 0.9 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 22, delay: allVibes.length * 0.04 }}
+                  className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-sm">
+                    🎬
+                  </div>
+                  <span className="text-sm font-medium text-foreground">Add a GIF</span>
+                </motion.button>
+              </GifPicker>
             </div>
           )}
         </AnimatePresence>
