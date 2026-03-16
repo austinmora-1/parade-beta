@@ -360,8 +360,8 @@ export function LocationTimeline() {
                     isCurrentDay && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                     status === 'home' 
                       ? "bg-primary/10 text-primary hover:bg-primary/20" 
-                      : "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20",
-                    trip && "bg-orange-500/20 hover:bg-orange-500/30",
+                      : "bg-availability-away/10 text-availability-away-foreground hover:bg-availability-away/20",
+                    trip && "bg-availability-away/20 hover:bg-availability-away/30",
                     isUpdating && "opacity-50 cursor-wait"
                   )}
                 >
