@@ -96,6 +96,19 @@ export function QuickPlanSheet({
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const locationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const viewport = useVisualViewport();
+
+  // Scroll focused input into view when keyboard opens
+  const handleInputFocus = useCallback(() => {
+    // Small delay to let the keyboard finish animating
+    setTimeout(() => {
+      const activeEl = document.activeElement as HTMLElement;
+      if (activeEl && scrollContainerRef.current?.contains(activeEl)) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+  }, []);
 
   // Reset state when sheet opens
   useEffect(() => {
