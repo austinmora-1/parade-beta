@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,19 +18,20 @@ import Notifications from "./pages/Notifications";
 import Inbox from "./pages/Inbox";
 import Profile from "./pages/Profile";
 import FriendProfile from "./pages/FriendProfile";
-import Landing from "./pages/Landing";
-import PlanDetail from "./pages/PlanDetail";
+import PlanInvite from "./pages/PlanInvite";
 import NotFound from "./pages/NotFound";
 import Invite from "./pages/Invite";
 import Share from "./pages/Share";
 import ResetPassword from "./pages/ResetPassword";
-import Onboarding from "./pages/Onboarding";
-import PlanInvite from "./pages/PlanInvite";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import GoogleCallback from "./pages/GoogleCallback";
 import { usePostHogPageView } from "@/hooks/usePostHog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+const Landing = lazy(() => import("./pages/Landing"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const PlanDetail = lazy(() => import("./pages/PlanDetail"));
+const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
 
 const queryClient = new QueryClient();
 
