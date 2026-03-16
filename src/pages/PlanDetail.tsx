@@ -693,6 +693,11 @@ export default function PlanDetail() {
             </Button>
           </div>
         )}
+
+        {/* Comments section */}
+        {(plan || sharedPlan) && (
+          <PlanComments planId={displayPlan.id} />
+        )}
         </div>
       </div>
 

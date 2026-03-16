@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePods } from '@/hooks/usePods';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { PlanComments } from '@/components/plans/PlanComments';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { SignedImage } from '@/components/ui/SignedImage';
 import { VibeReactions, VibeReaction } from '@/components/vibes/VibeReactions';
