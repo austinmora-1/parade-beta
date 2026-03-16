@@ -23,6 +23,7 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
 import { PlanPhotos } from '@/components/plans/PlanPhotos';
+import { PlanComments } from '@/components/plans/PlanComments';
 import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
 import { SuggestFriendDialog } from '@/components/plans/SuggestFriendDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -691,6 +692,11 @@ export default function PlanDetail() {
               {isOwner ? 'Delete' : 'Decline'}
             </Button>
           </div>
+        )}
+
+        {/* Comments section */}
+        {(plan || sharedPlan) && (
+          <PlanComments planId={displayPlan.id} />
         )}
         </div>
       </div>

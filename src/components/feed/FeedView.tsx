@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePods } from '@/hooks/usePods';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { PlanComments } from '@/components/plans/PlanComments';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { SignedImage } from '@/components/ui/SignedImage';
 import { VibeReactions, VibeReaction } from '@/components/vibes/VibeReactions';
@@ -688,7 +689,7 @@ function PlanFeedCard({
 
         {/* Bottom row: Visibility toggle */}
         {isOwner && (
-          <div className="mt-2.5 pt-2 border-t border-border/50" onClick={e => e.stopPropagation()}>
+          <div className="mt-2.5 pt-2 border-t border-border/50 flex items-center justify-between" onClick={e => e.stopPropagation()}>
             <Popover open={visPopoverOpen} onOpenChange={setVisPopoverOpen}>
               <PopoverTrigger asChild>
                 <button className="flex items-center gap-1.5 rounded-full bg-muted/60 hover:bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors">
@@ -721,6 +722,12 @@ function PlanFeedCard({
                 ))}
               </PopoverContent>
             </Popover>
+            <PlanComments planId={plan.id} compact />
+          </div>
+        )}
+        {!isOwner && (
+          <div className="mt-2.5 pt-2 border-t border-border/50 flex justify-end" onClick={e => e.stopPropagation()}>
+            <PlanComments planId={plan.id} compact />
           </div>
         )}
       </div>
