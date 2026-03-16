@@ -266,7 +266,7 @@ export function VibeSelector() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && !menuOpen && (
+          {currentVibe?.customTags && currentVibe.customTags.length > 0 && !menuOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
