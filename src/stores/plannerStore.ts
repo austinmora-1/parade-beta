@@ -151,10 +151,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set({ isLoading: true });
     
     try {
-      // Prepare date range for availability (6 months to match calendar sync window)
+      // Prepare date range for availability (today to +30 days on startup)
       const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const availStartDate = format(addDays(start, -183), 'yyyy-MM-dd');
-      const availEndDate = format(addDays(start, 183), 'yyyy-MM-dd');
+      const availStartDate = format(start, 'yyyy-MM-dd');
+      const availEndDate = format(addDays(start, 30), 'yyyy-MM-dd');
 
       // Fire ALL independent queries in parallel
       const [
