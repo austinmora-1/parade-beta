@@ -66,7 +66,7 @@ interface SelectedSlot {
 const LOCATION_CONFIG = {
   home: { label: 'At Home', icon: Home, color: 'text-blue-500' },
   office: { label: 'At Office', icon: Building2, color: 'text-purple-500' },
-  traveling: { label: 'Traveling', icon: Car, color: 'text-orange-500' },
+  traveling: { label: 'Traveling', icon: Car, color: 'text-availability-away-foreground' },
 };
 
 // Map time slots to hour ranges for default work schedule calculation
