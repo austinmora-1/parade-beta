@@ -311,7 +311,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
               <Button 
                 onClick={handleSave} 
                 disabled={!startDate || !endDate || isLoading}
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-availability-away hover:bg-availability-away/90"
               >
                 {isLoading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Trip')}
               </Button>
