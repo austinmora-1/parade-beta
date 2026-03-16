@@ -300,7 +300,7 @@ export function LocationTimeline() {
               {trip.location && (
                 <span className="font-semibold text-availability-away-foreground">{trip.location}</span>
               )}
-              <span className={cn("font-medium", trip.location ? "text-orange-600" : "text-orange-700")}>
+              <span className={cn("font-medium", trip.location ? "text-availability-away-foreground" : "text-availability-away-foreground")}>
                 {format(trip.startDate, 'MMM d')} – {format(trip.endDate, 'MMM d')}
               </span>
               <span className="text-orange-600/70">
