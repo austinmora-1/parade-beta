@@ -174,7 +174,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                  className={cn(
                    "w-full text-left rounded-lg p-2 transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
                    isToday && !isAway && "bg-primary/10 ring-2 ring-primary/30",
-                   isAway && "bg-orange-500/10 ring-2 ring-orange-500/30"
+                   isAway && "bg-availability-away/10 ring-2 ring-availability-away/30"
                  )}
               >
                 <div className="flex items-center justify-between">
