@@ -1289,39 +1289,26 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     const existingTags = currentVibe?.customTags || [];
     const newTags = existingTags.filter(t => t !== tag);
-    
     const gifUrl = currentVibe?.gifUrl;
+    const vibeType = currentVibe?.type || 'custom';
     
     if (newTags.length === 0) {
-      // Keep the vibe if there's still a GIF attached
-      if (gifUrl) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ custom_vibe_tags: [] })
-          .eq('user_id', userId);
-        
-        if (error) {
-          console.error('Error removing custom vibe:', error);
-          return;
-        }
-        
-        set({ currentVibe: { type: 'custom', customTags: [], gifUrl } });
-      } else {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ 
-            current_vibe: null,
-            custom_vibe_tags: []
-          })
-          .eq('user_id', userId);
-        
-        if (error) {
-          console.error('Error removing custom vibe:', error);
-          return;
-        }
-        
-        set({ currentVibe: null });
+      // Clear custom tags but keep the vibe type if it's a standard one
+      const keepVibe = vibeType !== 'custom' || !!gifUrl;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          current_vibe: keepVibe ? vibeType : null,
+          custom_vibe_tags: []
+        })
+        .eq('user_id', userId);
+      
+      if (error) {
+        console.error('Error removing custom vibe:', error);
+        return;
       }
+      
+      set({ currentVibe: keepVibe ? { type: vibeType, customTags: [], gifUrl } : null });
     } else {
       const { error } = await supabase
         .from('profiles')
@@ -1333,8 +1320,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         return;
       }
       
-      const newVibe: Vibe = { type: 'custom', customTags: newTags, gifUrl };
-      set({ currentVibe: newVibe });
+      set({ currentVibe: { type: vibeType, customTags: newTags, gifUrl } });
     }
   },
   
