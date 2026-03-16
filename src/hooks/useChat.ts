@@ -88,21 +88,25 @@ export function useConversations() {
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-    // Batch-fetch last messages instead of N+1 queries
+    // Fetch only the latest message per conversation using parallel per-conversation queries
+    // This avoids fetching ALL messages across all conversations
     const lastMessages: Record<string, ChatMessage> = {};
-    const CONV_BATCH = 50;
+    const CONV_BATCH = 10;
     for (let i = 0; i < conversationIds.length; i += CONV_BATCH) {
       const batch = conversationIds.slice(i, i + CONV_BATCH);
-      const { data: allMsgs } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .in('conversation_id', batch)
-        .order('created_at', { ascending: false });
-      // Pick the latest message per conversation
-      for (const msg of (allMsgs || []) as ChatMessage[]) {
-        if (!lastMessages[msg.conversation_id]) {
-          lastMessages[msg.conversation_id] = msg;
-        }
+      const batchResults = await Promise.all(
+        batch.map(cid =>
+          supabase
+            .from('chat_messages')
+            .select('*')
+            .eq('conversation_id', cid)
+            .order('created_at', { ascending: false })
+            .limit(1)
+        )
+      );
+      for (const { data } of batchResults) {
+        const msg = (data as ChatMessage[] | null)?.[0];
+        if (msg) lastMessages[msg.conversation_id] = msg;
       }
     }
 
