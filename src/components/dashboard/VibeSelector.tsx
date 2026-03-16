@@ -23,16 +23,12 @@ export function VibeSelector() {
   const [sendVibeOpen, setSendVibeOpen] = useState(false);
 
   const vibeTypes = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
-  const allVibes = [...vibeTypes, 'custom' as const];
 
   const handleVibeSelect = useCallback((value: string) => {
-    if (value === 'custom') {
-      setVibe({ type: 'custom', gifUrl: currentVibe?.gifUrl, customTags: currentVibe?.customTags });
-      setShowCustomInput(true);
-      // Keep menu open for custom input
-      return;
-    }
-    setVibe({ type: value as VibeType, gifUrl: currentVibe?.gifUrl });
+    // Preserve existing custom tags and GIF when switching vibe types
+    const existingTags = currentVibe?.customTags;
+    const existingGif = currentVibe?.gifUrl;
+    setVibe({ type: value as VibeType, gifUrl: existingGif, customTags: existingTags });
     setMenuOpen(false);
     setShowCustomInput(false);
   }, [currentVibe, setVibe]);
@@ -103,12 +99,15 @@ export function VibeSelector() {
           </div>
           <div className="flex-1 text-left">
             {currentVibe?.type ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-sm font-semibold text-foreground">
-                  {currentVibe.type === 'custom'
-                    ? currentVibe.customTags?.map(t => `#${t}`).join(' ') || 'Custom'
-                    : selectedConfig?.label}
+                  {selectedConfig?.label || 'Custom'}
                 </span>
+                {currentVibe.customTags && currentVibe.customTags.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {currentVibe.customTags.map(t => `#${t}`).join(' ')}
+                  </span>
+                )}
                 {currentVibe.gifUrl && (
                   <span className="text-[10px] text-muted-foreground">+ GIF</span>
                 )}
@@ -130,8 +129,8 @@ export function VibeSelector() {
           {menuOpen && (
             <div className="absolute left-0 right-0 top-full mt-2 flex flex-col items-center gap-2 z-50">
               {/* Vibe options */}
-              {allVibes.map((type, i) => {
-                const config = VIBE_CONFIG[type as VibeType];
+              {vibeTypes.map((type, i) => {
+                const config = VIBE_CONFIG[type];
                 const style = VIBE_CHIP_STYLES[type];
                 const isSelected = currentVibe?.type === type;
 
@@ -157,7 +156,7 @@ export function VibeSelector() {
                       {config.icon}
                     </div>
                     <span className={cn('text-sm font-medium', isSelected ? 'text-primary' : 'text-foreground')}>
-                      {type === 'custom' ? 'Custom' : config.label}
+                      {config.label}
                     </span>
                     {isSelected && (
                       <span className="ml-auto text-primary text-xs">✓</span>
@@ -166,20 +165,21 @@ export function VibeSelector() {
                 );
               })}
 
-              {/* Custom input (appears when custom is selected) */}
-              <AnimatePresence>
-                {showCustomInput && (
+              {/* Add custom tag button / input */}
+              <AnimatePresence mode="wait">
+                {showCustomInput ? (
                   <motion.div
+                    key="input"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     className="w-56 overflow-hidden"
                   >
                     <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-2 shadow-lg border border-primary">
-                      <span className="text-sm">{VIBE_CONFIG.custom.icon}</span>
+                      <span className="text-sm">✏️</span>
                       <input
                         autoFocus
-                        placeholder="type a vibe..."
+                        placeholder="type a vibe tag..."
                         value={customText}
                         onChange={(e) => setCustomText(e.target.value)}
                         onKeyDown={(e) => {
@@ -202,6 +202,21 @@ export function VibeSelector() {
                       </button>
                     </div>
                   </motion.div>
+                ) : (
+                  <motion.button
+                    key="trigger"
+                    initial={{ opacity: 0, y: -10, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -5, scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 22, delay: vibeTypes.length * 0.04 }}
+                    onClick={() => setShowCustomInput(true)}
+                    className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
+                  >
+                    <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-white text-sm', VIBE_CHIP_STYLES.custom.iconBg)}>
+                      ✏️
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Add custom tag</span>
+                  </motion.button>
                 )}
               </AnimatePresence>
 
@@ -211,7 +226,7 @@ export function VibeSelector() {
                   initial={{ opacity: 0, y: -10, scale: 0.8 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -5, scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 22, delay: allVibes.length * 0.04 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 22, delay: (vibeTypes.length + 1) * 0.04 }}
                   className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-sm">
@@ -251,7 +266,7 @@ export function VibeSelector() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {currentVibe?.type === 'custom' && currentVibe.customTags && currentVibe.customTags.length > 0 && !menuOpen && (
+          {currentVibe?.customTags && currentVibe.customTags.length > 0 && !menuOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
