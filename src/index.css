@@ -175,13 +175,6 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', sans-serif;
   }
-
-  .arcade h1, .arcade h2, .arcade h3, .arcade h4, .arcade h5, .arcade h6 {
-    font-family: 'Press Start 2P', monospace;
-    letter-spacing: 0.05em;
-    line-height: 1.6;
-    font-size: 0.7em;
-  }
 }
 
 @layer utilities {
