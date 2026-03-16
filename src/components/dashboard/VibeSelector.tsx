@@ -128,7 +128,7 @@ export function VibeSelector() {
         {/* Pop-up menu */}
         <AnimatePresence>
           {menuOpen && (
-            <div className="absolute left-0 right-0 bottom-full mb-2 flex flex-col items-center gap-2 z-50">
+            <div className="absolute left-0 right-0 top-full mt-2 flex flex-col items-center gap-2 z-50">
               {/* GIF picker row */}
               <GifPicker onGifSelect={(url) => { handleGifSelect(url); setMenuOpen(false); }}>
                 <motion.button
