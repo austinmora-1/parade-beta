@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   format,
   startOfMonth,
@@ -28,10 +28,17 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: CalendarViewProps) {
-  const { plans, availabilityMap } = usePlannerStore();
+  const { plans, availabilityMap, loadAvailabilityForRange } = usePlannerStore();
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Load availability for the visible month range
+  useEffect(() => {
+    const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
+    const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
+    loadAvailabilityForRange(start, end);
+  }, [currentMonth, loadAvailabilityForRange]);
 
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
