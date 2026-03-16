@@ -135,10 +135,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   
   setUserId: (userId) => set({ userId }),
   
-  loadAllData: async () => {
-    const { userId } = get();
+  loadAllData: async (force) => {
+    const { userId, lastFetchedAt } = get();
     if (!userId) {
       set({ isLoading: false });
+      return;
+    }
+
+    // Skip if fetched less than 30s ago (unless forced)
+    if (!force && lastFetchedAt && Date.now() - lastFetchedAt < 30_000) {
       return;
     }
     
