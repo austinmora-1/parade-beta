@@ -1049,8 +1049,6 @@ export default function Settings() {
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-3">
             <AppearanceToggle />
-            <Separator className="my-2" />
-            <ArcadeModeToggle onChange={handleChange} />
           </AccordionContent>
         </AccordionItem>
 

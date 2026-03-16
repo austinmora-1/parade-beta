@@ -203,69 +203,8 @@
     color: hsl(150 50% 55%);
   }
 
-  :root:not(.dark):not(.arcade) .parade-wordmark {
+  :root:not(.dark) .parade-wordmark {
     color: hsl(0 0% 100%);
-  }
-
-  .arcade-wordmark {
-    font-family: 'Press Start 2P', monospace;
-    font-weight: 400;
-    background: var(--gradient-wordmark);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    filter: drop-shadow(0 0 8px hsl(180 100% 50% / 0.5));
-    animation: arcade-glow 2s ease-in-out infinite alternate;
-  }
-
-  @keyframes arcade-glow {
-    from { filter: drop-shadow(0 0 6px hsl(180 100% 50% / 0.4)); }
-    to { filter: drop-shadow(0 0 14px hsl(330 100% 60% / 0.6)); }
-  }
-
-  .arcade-letter-broken {
-    opacity: 0.15;
-    -webkit-text-fill-color: hsl(0 0% 50%);
-    animation: arcade-flicker 4s ease-in-out infinite;
-  }
-
-  @keyframes arcade-flicker {
-    0%, 100% { opacity: 0.12; }
-    4% { opacity: 0.28; }
-    6% { opacity: 0.1; }
-    8% { opacity: 0.32; }
-    9% { opacity: 0.1; }
-    50% { opacity: 0.12; }
-    54% { opacity: 0.25; }
-    56% { opacity: 0.08; }
-    80% { opacity: 0.12; }
-    84% { opacity: 0.35; }
-    85% { opacity: 0.1; }
-  }
-
-  .arcade-caret-insert {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0 -0.05em;
-    line-height: 1;
-  }
-
-  .arcade-caret-letter {
-    font-size: 0.7em;
-    line-height: 1;
-    -webkit-text-fill-color: hsl(180 100% 60%);
-    filter: drop-shadow(0 0 4px hsl(180 100% 50% / 0.6));
-    transform: translateY(-0.7em) rotate(8deg);
-  }
-
-  .arcade-caret-symbol {
-    font-size: 0.5em;
-    line-height: 0.6;
-    -webkit-text-fill-color: hsl(330 100% 60%);
-    transform: scaleY(-1) translateY(1.2em);
   }
 
   .shadow-soft {
