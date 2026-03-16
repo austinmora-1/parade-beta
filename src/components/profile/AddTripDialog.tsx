@@ -192,7 +192,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plane className="h-5 w-5 text-orange-600" />
+              <Plane className="h-5 w-5 text-availability-away-foreground" />
               {isEditing ? 'Edit Trip' : 'Add Trip'}
             </DialogTitle>
             <DialogDescription>
