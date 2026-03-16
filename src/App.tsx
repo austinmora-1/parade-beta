@@ -27,6 +27,7 @@ import { usePostHogPageView } from "@/hooks/usePostHog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const Landing = lazy(() => import("./pages/Landing"));
+const Login = lazy(() => import("./pages/Login"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -99,6 +100,14 @@ const AppRoutes = () => {
     <Route path="/privacy" element={<Privacy />} />
     <Route path="/terms" element={<Terms />} />
     <Route path="/google-callback" element={<GoogleCallback />} />
+    <Route
+      path="/login"
+      element={
+        <PublicRoute>
+          <Login />
+        </PublicRoute>
+      }
+    />
     <Route
       path="/landing"
       element={
