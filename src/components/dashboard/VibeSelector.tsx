@@ -23,16 +23,12 @@ export function VibeSelector() {
   const [sendVibeOpen, setSendVibeOpen] = useState(false);
 
   const vibeTypes = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
-  const allVibes = [...vibeTypes, 'custom' as const];
 
   const handleVibeSelect = useCallback((value: string) => {
-    if (value === 'custom') {
-      setVibe({ type: 'custom', gifUrl: currentVibe?.gifUrl, customTags: currentVibe?.customTags });
-      setShowCustomInput(true);
-      // Keep menu open for custom input
-      return;
-    }
-    setVibe({ type: value as VibeType, gifUrl: currentVibe?.gifUrl });
+    // Preserve existing custom tags and GIF when switching vibe types
+    const existingTags = currentVibe?.customTags;
+    const existingGif = currentVibe?.gifUrl;
+    setVibe({ type: value as VibeType, gifUrl: existingGif, customTags: existingTags });
     setMenuOpen(false);
     setShowCustomInput(false);
   }, [currentVibe, setVibe]);
