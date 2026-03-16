@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import {
   format,
@@ -32,7 +32,7 @@ interface AvailabilityGridProps {
 }
 
 export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
-  const { plans, availability, availabilityMap, setAvailability, homeAddress } = usePlannerStore();
+  const { plans, availability, availabilityMap, setAvailability, homeAddress, loadAvailabilityForRange } = usePlannerStore();
   const isMobile = useIsMobile();
   
   // View mode toggle
