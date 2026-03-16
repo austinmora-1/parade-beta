@@ -129,9 +129,9 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
 
   // Get background color based on availability, today status, away status, and past status
   const getDayBgColor = (availability: number, isSelected: boolean, isTodayDate: boolean, isAway: boolean, isPast: boolean): string => {
-    if (isSelected) return isAway ? 'bg-orange-500' : isPast ? 'bg-muted-foreground/50' : 'bg-primary';
+    if (isSelected) return isAway ? 'bg-availability-away' : isPast ? 'bg-muted-foreground/50' : 'bg-primary';
     if (isPast) return 'bg-muted/40';
-    if (isAway) return 'bg-orange-500/20';
+    if (isAway) return 'bg-availability-away/20';
     if (isTodayDate) return 'bg-availability-today';
     
     // Gray to green gradient based on availability
