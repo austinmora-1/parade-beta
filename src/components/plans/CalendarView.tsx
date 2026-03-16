@@ -132,6 +132,7 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const isToday = isDateToday(day);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
+            const isAway = isDayAway(day);
 
             return (
               <button
@@ -140,19 +141,27 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
                 className={cn(
                   "aspect-square relative flex items-center justify-center rounded-lg transition-all text-xs md:text-sm",
                   !isCurrentMonth && "opacity-30",
-                  getDayBgColor(dayPlans.length, !!isSelected, isToday),
-                  !isSelected && !isToday && "hover:bg-muted"
+                  getDayBgColor(dayPlans.length, !!isSelected, isToday, isAway),
+                  !isSelected && !isToday && !isAway && "hover:bg-muted"
                 )}
               >
-                <span className="font-medium">{format(day, 'd')}</span>
+                <span className={cn(
+                  "font-medium",
+                  !isSelected && isAway && "text-availability-away-foreground"
+                )}>{format(day, 'd')}</span>
+                {isAway && !isSelected && dayPlans.length === 0 && (
+                  <Plane className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-2.5 w-2.5 text-availability-away-foreground/60" />
+                )}
                 {dayPlans.length > 0 && (
                   <span className={cn(
                     "absolute top-1 right-1 md:top-1.5 md:right-1.5 min-w-[14px] md:min-w-[16px] h-[14px] md:h-[16px] flex items-center justify-center rounded-full text-[9px] md:text-[10px] font-medium",
                     isSelected 
                       ? "bg-primary-foreground/80 text-primary" 
-                      : isToday 
-                        ? "bg-white/70 text-availability-today" 
-                        : "bg-primary/70 text-primary-foreground"
+                      : isAway
+                        ? "bg-availability-away/70 text-white"
+                        : isToday 
+                          ? "bg-white/70 text-availability-today" 
+                          : "bg-primary/70 text-primary-foreground"
                   )}>
                     {dayPlans.length}
                   </span>
