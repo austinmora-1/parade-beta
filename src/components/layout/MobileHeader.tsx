@@ -10,6 +10,7 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { cn } from '@/lib/utils';
 
 export function MobileHeader() {
+  const { openFeedback } = useFeedback();
   const { totalNotifications } = useNotifications();
   const { conversations } = useConversations();
   const { profile } = useCurrentUserProfile();
