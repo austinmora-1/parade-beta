@@ -81,9 +81,16 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const LazyFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-pulse text-muted-foreground">Loading...</div>
+  </div>
+);
+
 const AppRoutes = () => {
   usePostHogPageView();
   return (
+  <Suspense fallback={<LazyFallback />}>
   <Routes>
     <Route path="/share/:shareCode" element={<Share />} />
     <Route path="/invite" element={<Invite />} />
@@ -129,6 +136,7 @@ const AppRoutes = () => {
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>
+  </Suspense>
   );
 };
 
