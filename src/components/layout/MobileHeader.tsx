@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { Bell, MessageSquarePlus } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
