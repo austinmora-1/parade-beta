@@ -57,9 +57,16 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
       .sort((a, b) => (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0));
   };
 
-  // Get background color based on plan count (0 = green/available, more plans = grayer)
-  const getDayBgColor = (planCount: number, isSelected: boolean, isToday: boolean): string => {
-    if (isSelected) return 'bg-primary text-primary-foreground';
+  const isDayAway = (date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayAvail = availabilityMap[dateStr];
+    return dayAvail?.locationStatus === 'away';
+  };
+
+  // Get background color based on plan count and away status
+  const getDayBgColor = (planCount: number, isSelected: boolean, isToday: boolean, isAway: boolean): string => {
+    if (isSelected) return isAway ? 'bg-availability-away text-white' : 'bg-primary text-primary-foreground';
+    if (isAway) return 'bg-availability-away/20';
     if (isToday) return 'bg-availability-today/80 text-white';
     if (planCount === 0) return 'bg-availability-available/30';
     if (planCount === 1) return 'bg-muted/40';
