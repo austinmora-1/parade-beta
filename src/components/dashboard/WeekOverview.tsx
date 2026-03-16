@@ -234,7 +234,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                   </span>
                   <div className={cn(
                     "flex items-center gap-0.5 text-[10px]",
-                    isAway ? "text-orange-600" : "text-muted-foreground"
+                    isAway ? "text-availability-away-foreground" : "text-muted-foreground"
                   )}>
                     {isAway ? (
                       <Plane className="h-2.5 w-2.5 shrink-0" />

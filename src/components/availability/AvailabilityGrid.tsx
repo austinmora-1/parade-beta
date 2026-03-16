@@ -509,7 +509,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                       {getLocationText(day) && (
                         <div className={cn(
                           "mt-0.5 text-[10px] font-medium truncate max-w-[90px]",
-                          isAway ? "text-orange-600" : "text-muted-foreground"
+                          isAway ? "text-availability-away-foreground" : "text-muted-foreground"
                         )}>
                           {getLocationText(day)}
                         </div>
