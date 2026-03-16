@@ -601,7 +601,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
           <span className="text-muted-foreground">Has plans</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-4 w-4 rounded bg-orange-500/20" />
+          <div className="h-4 w-4 rounded bg-availability-away/20" />
           <span className="text-muted-foreground">Away</span>
         </div>
       </div>

@@ -400,7 +400,7 @@ export function LocationTimeline() {
           </div>
           {trips.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="h-1 w-5 rounded-full bg-orange-400/50" />
+              <div className="h-1 w-5 rounded-full bg-availability-away/50" />
               <span>Trip</span>
             </div>
           )}
