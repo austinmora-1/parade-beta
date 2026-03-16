@@ -141,6 +141,7 @@ interface PlannerState {
   addCustomVibe: (tag: string) => Promise<void>;
   removeCustomVibe: (tag: string) => Promise<void>;
   
+  loadAvailabilityForRange: (startDate: Date, endDate: Date) => Promise<void>;
   initializeWeekAvailability: () => Promise<void>;
 }
 
