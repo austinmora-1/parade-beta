@@ -225,13 +225,35 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     
     try {
       // ── Single RPC call — replaces the 4-wave waterfall ──────────────────
-      const { data: rpcData, error } = await supabase.rpc('get_dashboard_data' as any, {
-        p_user_id: userId,
-      });
+      // Retry up to 2 times on network failures
+      let rpcData: any = null;
+      let lastError: any = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data, error } = await supabase.rpc('get_dashboard_data' as any, {
+          p_user_id: userId,
+        });
+        if (!error) {
+          rpcData = data;
+          break;
+        }
+        lastError = error;
+        console.warn(`get_dashboard_data attempt ${attempt + 1} failed:`, error.message);
+        if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
 
-      if (error) {
-        console.error('get_dashboard_data error:', error);
-        set({ isLoading: false });
+      if (!rpcData) {
+        console.error('get_dashboard_data failed after retries:', lastError);
+        // Fall back to individual loaders so partial data can still load
+        try {
+          await Promise.all([
+            get().loadFriends(),
+            get().loadPlans(),
+            get().loadProfileAndAvailability(),
+          ]);
+        } catch (fallbackErr) {
+          console.error('Fallback loaders also failed:', fallbackErr);
+        }
+        set({ isLoading: false, lastFetchedAt: Date.now() });
         return;
       }
 
