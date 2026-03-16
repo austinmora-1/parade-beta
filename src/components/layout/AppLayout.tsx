@@ -20,7 +20,7 @@ export function AppLayout() {
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries(),
-      loadAllData(),
+      loadAllData(true),
     ]);
   }, [queryClient, loadAllData]);
   return (

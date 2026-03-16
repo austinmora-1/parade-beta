@@ -30,12 +30,13 @@ interface PlannerState {
   locationStatus: LocationStatus;
   isLoading: boolean;
   userId: string | null;
+  lastFetchedAt: number | null;
   defaultSettings: DefaultAvailabilitySettings | null;
   homeAddress: string | null;
   userTimezone: string;
   
   setUserId: (userId: string | null) => void;
-  loadAllData: () => Promise<void>;
+  loadAllData: (force?: boolean) => Promise<void>;
   loadFriends: () => Promise<void>;
   loadPlans: () => Promise<void>;
   loadProfileAndAvailability: () => Promise<void>;
@@ -128,16 +129,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   locationStatus: 'home',
   isLoading: true,
   userId: null,
+  lastFetchedAt: null,
   defaultSettings: null,
   homeAddress: null,
   userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   
   setUserId: (userId) => set({ userId }),
   
-  loadAllData: async () => {
-    const { userId } = get();
+  loadAllData: async (force) => {
+    const { userId, lastFetchedAt } = get();
     if (!userId) {
       set({ isLoading: false });
+      return;
+    }
+
+    // Skip if fetched less than 30s ago (unless forced)
+    if (!force && lastFetchedAt && Date.now() - lastFetchedAt < 30_000) {
       return;
     }
     
@@ -536,6 +543,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         homeAddress: homeAddr,
         userTimezone: viewerTimezone,
         isLoading: false,
+        lastFetchedAt: Date.now(),
       });
     } catch (error) {
       console.error('Error loading data:', error);
