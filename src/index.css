@@ -61,6 +61,9 @@
     --busy: 0 70% 60%;
     --busy-light: 0 65% 94%;
     --today: 210 70% 35%;
+    --away: 25 95% 53%;
+    --away-light: 25 90% 93%;
+    --away-foreground: 25 80% 38%;
 
     /* Vibe colors */
     --vibe-social: 350 80% 58%;
@@ -134,6 +137,8 @@
     --available-light: 150 40% 18%;
     --partial-light: 45 50% 18%;
     --busy-light: 0 40% 18%;
+    --away-light: 25 50% 18%;
+    --away-foreground: 25 80% 60%;
 
     /* Dark mode shadows */
     --shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.3);

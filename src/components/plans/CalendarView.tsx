@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Plan } from '@/types/planner';
+import { Plane } from 'lucide-react';
 import { PlanCard } from './PlanCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -27,7 +28,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: CalendarViewProps) {
-  const { plans } = usePlannerStore();
+  const { plans, availabilityMap } = usePlannerStore();
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -56,9 +57,16 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
       .sort((a, b) => (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0));
   };
 
-  // Get background color based on plan count (0 = green/available, more plans = grayer)
-  const getDayBgColor = (planCount: number, isSelected: boolean, isToday: boolean): string => {
-    if (isSelected) return 'bg-primary text-primary-foreground';
+  const isDayAway = (date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayAvail = availabilityMap[dateStr];
+    return dayAvail?.locationStatus === 'away';
+  };
+
+  // Get background color based on plan count and away status
+  const getDayBgColor = (planCount: number, isSelected: boolean, isToday: boolean, isAway: boolean): string => {
+    if (isSelected) return isAway ? 'bg-availability-away text-white' : 'bg-primary text-primary-foreground';
+    if (isAway) return 'bg-availability-away/20';
     if (isToday) return 'bg-availability-today/80 text-white';
     if (planCount === 0) return 'bg-availability-available/30';
     if (planCount === 1) return 'bg-muted/40';
@@ -124,6 +132,7 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const isToday = isDateToday(day);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
+            const isAway = isDayAway(day);
 
             return (
               <button
@@ -132,19 +141,27 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
                 className={cn(
                   "aspect-square relative flex items-center justify-center rounded-lg transition-all text-xs md:text-sm",
                   !isCurrentMonth && "opacity-30",
-                  getDayBgColor(dayPlans.length, !!isSelected, isToday),
-                  !isSelected && !isToday && "hover:bg-muted"
+                  getDayBgColor(dayPlans.length, !!isSelected, isToday, isAway),
+                  !isSelected && !isToday && !isAway && "hover:bg-muted"
                 )}
               >
-                <span className="font-medium">{format(day, 'd')}</span>
+                <span className={cn(
+                  "font-medium",
+                  !isSelected && isAway && "text-availability-away-foreground"
+                )}>{format(day, 'd')}</span>
+                {isAway && !isSelected && dayPlans.length === 0 && (
+                  <Plane className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-2.5 w-2.5 text-availability-away-foreground/60" />
+                )}
                 {dayPlans.length > 0 && (
                   <span className={cn(
                     "absolute top-1 right-1 md:top-1.5 md:right-1.5 min-w-[14px] md:min-w-[16px] h-[14px] md:h-[16px] flex items-center justify-center rounded-full text-[9px] md:text-[10px] font-medium",
                     isSelected 
                       ? "bg-primary-foreground/80 text-primary" 
-                      : isToday 
-                        ? "bg-white/70 text-availability-today" 
-                        : "bg-primary/70 text-primary-foreground"
+                      : isAway
+                        ? "bg-availability-away/70 text-white"
+                        : isToday 
+                          ? "bg-white/70 text-availability-today" 
+                          : "bg-primary/70 text-primary-foreground"
                   )}>
                     {dayPlans.length}
                   </span>

@@ -129,9 +129,9 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
 
   // Get background color based on availability, today status, away status, and past status
   const getDayBgColor = (availability: number, isSelected: boolean, isTodayDate: boolean, isAway: boolean, isPast: boolean): string => {
-    if (isSelected) return isAway ? 'bg-orange-500' : isPast ? 'bg-muted-foreground/50' : 'bg-primary';
+    if (isSelected) return isAway ? 'bg-availability-away' : isPast ? 'bg-muted-foreground/50' : 'bg-primary';
     if (isPast) return 'bg-muted/40';
-    if (isAway) return 'bg-orange-500/20';
+    if (isAway) return 'bg-availability-away/20';
     if (isTodayDate) return 'bg-availability-today';
     
     // Gray to green gradient based on availability
@@ -188,7 +188,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                 getDayBgColor(dayAvail, isSelected, isTodayDate, isAway, isPast),
                 isSelected && "text-primary-foreground",
                 !isSelected && isPast && "text-muted-foreground/60",
-                !isSelected && !isPast && isAway && "text-orange-600",
+                !isSelected && !isPast && isAway && "text-availability-away-foreground",
                 isTodayDate && !isSelected && !isAway && "text-white",
                 !isSelected && !isTodayDate && !isPast && !isAway && dayAvail === 0 && "text-muted-foreground",
                 !isSelected && !isTodayDate && !isPast && !isAway && dayAvail > 0 && "text-foreground"
@@ -326,7 +326,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                   getDayBgColor(dayAvail, isSelected || false, isTodayDate, isAway, isPast),
                   isSelected && "text-primary-foreground",
                   !isSelected && isPast && "text-muted-foreground/60",
-                  !isSelected && !isPast && isAway && "text-orange-600",
+                  !isSelected && !isPast && isAway && "text-availability-away-foreground",
                   isTodayDate && !isSelected && !isAway && "text-white",
                   !isSelected && !isTodayDate && !isPast && !isAway && dayAvail === 0 && "text-muted-foreground",
                   !isSelected && !isTodayDate && !isPast && !isAway && dayAvail > 0 && "text-foreground"
@@ -492,15 +492,15 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                         "min-w-[100px] border-b border-border p-3 text-center text-sm font-medium",
                         isPast && "opacity-50",
                         isToday(day) && !isAway && "bg-primary/5",
-                        isAway && !isPast && "bg-orange-500/10"
+                        isAway && !isPast && "bg-availability-away/10"
                       )}
                     >
-                      <div className={cn(isPast && "text-muted-foreground", !isPast && isAway && "text-orange-600")}>{format(day, 'EEE')}</div>
+                      <div className={cn(isPast && "text-muted-foreground", !isPast && isAway && "text-availability-away-foreground")}>{format(day, 'EEE')}</div>
                       <div
                         className={cn(
                           "mt-1 text-lg",
                           isPast && "text-muted-foreground",
-                          !isPast && isAway && "text-orange-600 font-bold",
+                          !isPast && isAway && "text-availability-away-foreground font-bold",
                           isToday(day) && !isAway && "text-primary font-bold"
                         )}
                       >
@@ -509,7 +509,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                       {getLocationText(day) && (
                         <div className={cn(
                           "mt-0.5 text-[10px] font-medium truncate max-w-[90px]",
-                          isAway ? "text-orange-600" : "text-muted-foreground"
+                          isAway ? "text-availability-away-foreground" : "text-muted-foreground"
                         )}>
                           {getLocationText(day)}
                         </div>
@@ -601,7 +601,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
           <span className="text-muted-foreground">Has plans</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-4 w-4 rounded bg-orange-500/20" />
+          <div className="h-4 w-4 rounded bg-availability-away/20" />
           <span className="text-muted-foreground">Away</span>
         </div>
       </div>

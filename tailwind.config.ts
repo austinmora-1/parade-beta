@@ -86,6 +86,9 @@ export default {
           busy: "hsl(var(--busy))",
           "busy-light": "hsl(var(--busy-light))",
           today: "hsl(var(--today))",
+          away: "hsl(var(--away))",
+          "away-light": "hsl(var(--away-light))",
+          "away-foreground": "hsl(var(--away-foreground))",
         },
         vibe: {
           social: "hsl(var(--vibe-social))",

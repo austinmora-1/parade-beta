@@ -174,28 +174,28 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                  className={cn(
                    "w-full text-left rounded-lg p-2 transition-colors hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
                    isToday && !isAway && "bg-primary/10 ring-2 ring-primary/30",
-                   isAway && "bg-orange-500/10 ring-2 ring-orange-500/30"
+                   isAway && "bg-availability-away/10 ring-2 ring-availability-away/30"
                  )}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className={cn(
                       "text-xs font-semibold",
-                      isAway && "text-orange-600",
+                      isAway && "text-availability-away-foreground",
                       isToday && !isAway && "text-primary"
                     )}>
                       {format(day, 'EEE')}
                     </span>
                     <span className={cn(
                       "text-[11px]",
-                      isAway ? "text-orange-600" : "text-muted-foreground"
+                      isAway ? "text-availability-away-foreground" : "text-muted-foreground"
                     )}>
                       {format(day, 'd')}
                     </span>
                     {isToday && (
                       <span className={cn(
                         "text-[9px] px-1 py-0.5 rounded-full font-medium",
-                        isAway ? "bg-orange-500/10 text-orange-600" : "bg-primary/10 text-primary"
+                        isAway ? "bg-availability-away/10 text-availability-away-foreground" : "bg-primary/10 text-primary"
                       )}>
                         Today
                       </span>
@@ -227,14 +227,14 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                 <div className="mt-1 flex items-center justify-between">
                   <span className={cn(
                     "text-[10px] font-medium",
-                    isAway ? "text-orange-600" : score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
+                    isAway ? "text-availability-away-foreground" : score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                   )}>
                     {summary.available}/{summary.total} free
                     {summary.busy > 0 && ` · ${summary.busy} ${summary.busy === 1 ? 'plan' : 'plans'}`}
                   </span>
                   <div className={cn(
                     "flex items-center gap-0.5 text-[10px]",
-                    isAway ? "text-orange-600" : "text-muted-foreground"
+                    isAway ? "text-availability-away-foreground" : "text-muted-foreground"
                   )}>
                     {isAway ? (
                       <Plane className="h-2.5 w-2.5 shrink-0" />

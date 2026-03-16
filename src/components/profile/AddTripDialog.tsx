@@ -192,7 +192,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plane className="h-5 w-5 text-orange-600" />
+              <Plane className="h-5 w-5 text-availability-away-foreground" />
               {isEditing ? 'Edit Trip' : 'Add Trip'}
             </DialogTitle>
             <DialogDescription>
@@ -279,12 +279,12 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
 
             {/* Preview */}
             {startDate && endDate && (
-              <div className="rounded-lg bg-orange-500/10 p-3 text-sm">
-                <p className="font-medium text-orange-700">
+              <div className="rounded-lg bg-availability-away/10 p-3 text-sm">
+                <p className="font-medium text-availability-away-foreground">
                   {location.trim() && <span>{location.trim()} · </span>}
                   {format(startDate, 'MMM d')} – {format(endDate, 'MMM d, yyyy')}
                 </p>
-                <p className="text-orange-600/70">
+                <p className="text-availability-away-foreground/70">
                   {eachDayOfInterval({ start: startDate, end: endDate }).length} days will be marked as away
                 </p>
               </div>
@@ -311,7 +311,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
               <Button 
                 onClick={handleSave} 
                 disabled={!startDate || !endDate || isLoading}
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-availability-away hover:bg-availability-away/90"
               >
                 {isLoading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Trip')}
               </Button>

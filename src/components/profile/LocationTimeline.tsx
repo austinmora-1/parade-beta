@@ -294,16 +294,16 @@ export function LocationTimeline() {
             <button
               key={idx}
               onClick={() => handleEditTrip(trip)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs hover:bg-orange-500/20 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-availability-away/10 px-2.5 py-1 text-xs hover:bg-availability-away/20 transition-colors cursor-pointer"
             >
-              <Plane className="h-3.5 w-3.5 text-orange-600" />
+              <Plane className="h-3.5 w-3.5 text-availability-away-foreground" />
               {trip.location && (
-                <span className="font-semibold text-orange-700">{trip.location}</span>
+                <span className="font-semibold text-availability-away-foreground">{trip.location}</span>
               )}
-              <span className={cn("font-medium", trip.location ? "text-orange-600" : "text-orange-700")}>
+              <span className={cn("font-medium", trip.location ? "text-availability-away-foreground" : "text-availability-away-foreground")}>
                 {format(trip.startDate, 'MMM d')} – {format(trip.endDate, 'MMM d')}
               </span>
-              <span className="text-orange-600/70">
+              <span className="text-availability-away-foreground/70">
                 ({formatTripDuration(trip)})
               </span>
             </button>
@@ -341,7 +341,7 @@ export function LocationTimeline() {
                 {trip && (
                   <div 
                     className={cn(
-                      "absolute top-[18px] h-1 bg-orange-400/50",
+                      "absolute top-[18px] h-1 bg-availability-away/50",
                       isFirstOfTrip ? "left-1/2 right-0 rounded-l-full" : "left-0",
                       isLastOfTrip ? "right-1/2 left-0 rounded-r-full" : "right-0",
                       !isFirstOfTrip && !isLastOfTrip && "left-0 right-0"
@@ -360,8 +360,8 @@ export function LocationTimeline() {
                     isCurrentDay && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                     status === 'home' 
                       ? "bg-primary/10 text-primary hover:bg-primary/20" 
-                      : "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20",
-                    trip && "bg-orange-500/20 hover:bg-orange-500/30",
+                      : "bg-availability-away/10 text-availability-away-foreground hover:bg-availability-away/20",
+                    trip && "bg-availability-away/20 hover:bg-availability-away/30",
                     isUpdating && "opacity-50 cursor-wait"
                   )}
                 >
@@ -393,14 +393,14 @@ export function LocationTimeline() {
             <span>Home</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="flex h-5 w-5 items-center justify-center rounded bg-orange-500/10">
-              <Plane className="h-3 w-3 text-orange-600" />
+            <div className="flex h-5 w-5 items-center justify-center rounded bg-availability-away/10">
+              <Plane className="h-3 w-3 text-availability-away-foreground" />
             </div>
             <span>Away</span>
           </div>
           {trips.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <div className="h-1 w-5 rounded-full bg-orange-400/50" />
+              <div className="h-1 w-5 rounded-full bg-availability-away/50" />
               <span>Trip</span>
             </div>
           )}
