@@ -166,12 +166,21 @@ export function useVibes() {
     loadVibes();
   }, [loadVibes]);
 
-  // Realtime subscription for incoming vibes (new + dismissed)
+  // Debounced reload to prevent cascading refetches from multiple realtime events
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedReload = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => {
+      loadVibes();
+    }, 500);
+  }, [loadVibes]);
+
+  // Single consolidated realtime subscription for all vibe-related changes
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel('vibe-recipients')
+      .channel('vibes-all')
       .on(
         'postgres_changes',
         {
@@ -180,23 +189,8 @@ export function useVibes() {
           table: 'vibe_send_recipients',
           filter: `recipient_id=eq.${user.id}`,
         },
-        () => {
-          loadVibes();
-        }
+        debouncedReload
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, loadVibes]);
-
-  // Realtime subscription for sent vibes (auto-sync when user sends a new vibe)
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('vibe-sends-own')
       .on(
         'postgres_changes',
         {
@@ -205,23 +199,8 @@ export function useVibes() {
           table: 'vibe_sends',
           filter: `sender_id=eq.${user.id}`,
         },
-        () => {
-          loadVibes();
-        }
+        debouncedReload
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, loadVibes]);
-
-  // Realtime subscription for reactions on vibes
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('sent-vibe-reactions')
       .on(
         'postgres_changes',
         {
@@ -229,23 +208,8 @@ export function useVibes() {
           schema: 'public',
           table: 'vibe_reactions',
         },
-        () => {
-          loadVibes();
-        }
+        debouncedReload
       )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, loadVibes]);
-
-  // Realtime subscription for comments on vibes
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('vibe-comments-rt')
       .on(
         'postgres_changes',
         {
@@ -253,16 +217,15 @@ export function useVibes() {
           schema: 'public',
           table: 'vibe_comments',
         },
-        () => {
-          loadVibes();
-        }
+        debouncedReload
       )
       .subscribe();
 
     return () => {
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
       supabase.removeChannel(channel);
     };
-  }, [user, loadVibes]);
+  }, [user, debouncedReload]);
 
   const sendVibe = async (payload: SendVibePayload) => {
     if (!user) return;
