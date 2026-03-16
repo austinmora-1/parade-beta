@@ -227,7 +227,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                 <div className="mt-1 flex items-center justify-between">
                   <span className={cn(
                     "text-[10px] font-medium",
-                    isAway ? "text-orange-600" : score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
+                    isAway ? "text-availability-away-foreground" : score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                   )}>
                     {summary.available}/{summary.total} free
                     {summary.busy > 0 && ` · ${summary.busy} ${summary.busy === 1 ? 'plan' : 'plans'}`}
