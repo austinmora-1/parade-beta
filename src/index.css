@@ -156,83 +156,6 @@
     --sidebar-ring: 150 40% 45%;
   }
 
-  .arcade {
-    --background: 270 50% 8%;
-    --foreground: 180 100% 85%;
-
-    --card: 270 45% 12%;
-    --card-foreground: 180 100% 85%;
-
-    --popover: 270 45% 14%;
-    --popover-foreground: 180 100% 85%;
-
-    --primary: 270 60% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 280 70% 65%;
-
-    --secondary: 180 100% 45%;
-    --secondary-foreground: 270 50% 10%;
-
-    --muted: 270 40% 15%;
-    --muted-foreground: 270 20% 55%;
-
-    --accent: 330 85% 55%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 85% 55%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 270 40% 22%;
-    --input: 270 40% 18%;
-    --ring: 180 100% 50%;
-
-    --radius: 0.25rem;
-
-    /* Arcade availability colors */
-    --available: 180 100% 45%;
-    --available-light: 180 60% 15%;
-    --partial: 50 100% 55%;
-    --partial-light: 50 60% 15%;
-    --busy: 330 85% 55%;
-    --busy-light: 330 50% 15%;
-    --today: 270 60% 55%;
-
-    /* Arcade vibe colors */
-    --vibe-social: 180 100% 45%;
-    --vibe-chill: 270 60% 55%;
-    --vibe-athletic: 50 100% 55%;
-    --vibe-productive: 330 85% 55%;
-
-    /* Arcade shadows - neon glow */
-    --shadow-sm: 0 0 8px hsl(270 60% 55% / 0.3);
-    --shadow-md: 0 0 20px hsl(180 100% 50% / 0.2), 0 0 40px hsl(270 60% 55% / 0.15);
-    --shadow-lg: 0 0 40px hsl(180 100% 50% / 0.25), 0 0 80px hsl(270 60% 55% / 0.2);
-    --shadow-glow: 0 0 30px hsl(180 100% 50% / 0.4), 0 0 60px hsl(270 60% 55% / 0.3);
-
-    --gradient-primary: linear-gradient(135deg, hsl(270 60% 50%), hsl(330 85% 55%));
-    --gradient-secondary: linear-gradient(135deg, hsl(180 100% 40%), hsl(270 60% 50%));
-    --gradient-card: linear-gradient(145deg, hsl(270 45% 14%), hsl(270 50% 10%));
-    --gradient-hero: linear-gradient(160deg, hsl(270 60% 45%), hsl(330 85% 50%), hsl(180 100% 40%));
-    --gradient-wordmark: linear-gradient(
-      90deg,
-      hsl(0 100% 60%) 0%,
-      hsl(30 100% 55%) 16%,
-      hsl(50 100% 50%) 33%,
-      hsl(120 100% 45%) 50%,
-      hsl(180 100% 50%) 66%,
-      hsl(270 80% 60%) 83%,
-      hsl(330 100% 60%) 100%
-    );
-
-    --sidebar-background: 270 50% 10%;
-    --sidebar-foreground: 180 100% 85%;
-    --sidebar-primary: 270 60% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 270 40% 18%;
-    --sidebar-accent-foreground: 180 100% 80%;
-    --sidebar-border: 270 40% 18%;
-    --sidebar-ring: 180 100% 50%;
-  }
 }
 
 @layer base {
@@ -249,19 +172,8 @@
     font-family: 'DM Sans', sans-serif;
   }
 
-  .arcade body, body.arcade {
-    font-family: 'DM Sans', sans-serif;
-  }
-
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', sans-serif;
-  }
-
-  .arcade h1, .arcade h2, .arcade h3, .arcade h4, .arcade h5, .arcade h6 {
-    font-family: 'Press Start 2P', monospace;
-    letter-spacing: 0.05em;
-    line-height: 1.6;
-    font-size: 0.7em;
   }
 }
 
@@ -284,69 +196,8 @@
     color: hsl(150 50% 55%);
   }
 
-  :root:not(.dark):not(.arcade) .parade-wordmark {
+  :root:not(.dark) .parade-wordmark {
     color: hsl(0 0% 100%);
-  }
-
-  .arcade-wordmark {
-    font-family: 'Press Start 2P', monospace;
-    font-weight: 400;
-    background: var(--gradient-wordmark);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    filter: drop-shadow(0 0 8px hsl(180 100% 50% / 0.5));
-    animation: arcade-glow 2s ease-in-out infinite alternate;
-  }
-
-  @keyframes arcade-glow {
-    from { filter: drop-shadow(0 0 6px hsl(180 100% 50% / 0.4)); }
-    to { filter: drop-shadow(0 0 14px hsl(330 100% 60% / 0.6)); }
-  }
-
-  .arcade-letter-broken {
-    opacity: 0.15;
-    -webkit-text-fill-color: hsl(0 0% 50%);
-    animation: arcade-flicker 4s ease-in-out infinite;
-  }
-
-  @keyframes arcade-flicker {
-    0%, 100% { opacity: 0.12; }
-    4% { opacity: 0.28; }
-    6% { opacity: 0.1; }
-    8% { opacity: 0.32; }
-    9% { opacity: 0.1; }
-    50% { opacity: 0.12; }
-    54% { opacity: 0.25; }
-    56% { opacity: 0.08; }
-    80% { opacity: 0.12; }
-    84% { opacity: 0.35; }
-    85% { opacity: 0.1; }
-  }
-
-  .arcade-caret-insert {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0 -0.05em;
-    line-height: 1;
-  }
-
-  .arcade-caret-letter {
-    font-size: 0.7em;
-    line-height: 1;
-    -webkit-text-fill-color: hsl(180 100% 60%);
-    filter: drop-shadow(0 0 4px hsl(180 100% 50% / 0.6));
-    transform: translateY(-0.7em) rotate(8deg);
-  }
-
-  .arcade-caret-symbol {
-    font-size: 0.5em;
-    line-height: 0.6;
-    -webkit-text-fill-color: hsl(330 100% 60%);
-    transform: scaleY(-1) translateY(1.2em);
   }
 
   .shadow-soft {

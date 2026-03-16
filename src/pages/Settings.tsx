@@ -218,29 +218,9 @@ function TimezoneCombobox({ value, onChange, isAutoDetected }: { value: string; 
   );
 }
 
-function ArcadeModeToggle({ onChange }: { onChange: () => void }) {
-  const { theme, setTheme } = useTheme();
-  const isArcade = theme === 'arcade';
-
-  return (
-    <div className="flex items-center justify-between pt-1">
-      <div>
-        <p className="text-sm font-medium">🕹️ Retro Arcade Theme</p>
-        <p className="text-[10px] text-muted-foreground">Neon purple, pixel fonts, and 80s vibes</p>
-      </div>
-      <Switch
-        checked={isArcade}
-        onCheckedChange={(checked) => {
-          setTheme(checked ? 'arcade' : 'light');
-        }}
-      />
-    </div>
-  );
-}
-
 function AppearanceToggle() {
   const { theme, setTheme } = useTheme();
-  const isDark = theme === 'dark' || theme === 'arcade';
+  const isDark = theme === 'dark';
 
   return (
     <div className="flex items-center justify-between pt-1">
@@ -1069,8 +1049,6 @@ export default function Settings() {
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-3">
             <AppearanceToggle />
-            <Separator className="my-2" />
-            <ArcadeModeToggle onChange={handleChange} />
           </AccordionContent>
         </AccordionItem>
 
