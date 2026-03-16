@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { format, addDays, nextSaturday } from 'date-fns';
 import { motion } from 'framer-motion';
 import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
@@ -95,6 +96,19 @@ export function QuickPlanSheet({
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const locationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const viewport = useVisualViewport();
+
+  // Scroll focused input into view when keyboard opens
+  const handleInputFocus = useCallback(() => {
+    // Small delay to let the keyboard finish animating
+    setTimeout(() => {
+      const activeEl = document.activeElement as HTMLElement;
+      if (activeEl && scrollContainerRef.current?.contains(activeEl)) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+  }, []);
 
   // Reset state when sheet opens
   useEffect(() => {
@@ -213,14 +227,17 @@ export function QuickPlanSheet({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh]">
+        <DrawerContent 
+          className="max-h-[90vh]"
+          style={viewport ? { maxHeight: `${Math.min(viewport.height * 0.9, window.innerHeight * 0.9)}px` } : undefined}
+        >
           <DrawerHeader className="pb-2">
             <DrawerTitle className="text-center">
               {hasFriend ? 'Suggest a Plan' : 'Quick Plan'}
             </DrawerTitle>
           </DrawerHeader>
 
-          <div className="px-4 pb-2 space-y-4 overflow-y-auto max-h-[60vh]">
+          <div ref={scrollContainerRef} className="px-4 pb-2 space-y-4 overflow-y-auto flex-1 min-h-0" onFocus={handleInputFocus}>
             {/* Friend display */}
             {(preSelectedFriend || selectedFriend) && (
               <div className="flex items-center gap-2">
