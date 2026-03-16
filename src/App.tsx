@@ -101,6 +101,14 @@ const AppRoutes = () => {
     <Route path="/terms" element={<Terms />} />
     <Route path="/google-callback" element={<GoogleCallback />} />
     <Route
+      path="/login"
+      element={
+        <PublicRoute>
+          <Login />
+        </PublicRoute>
+      }
+    />
+    <Route
       path="/landing"
       element={
         <PublicRoute>
