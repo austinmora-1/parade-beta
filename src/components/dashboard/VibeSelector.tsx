@@ -78,7 +78,7 @@ export function VibeSelector() {
         compact
       >
         {/* Vibe chips row — one tap to select */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 scrollbar-hide">
+        <div className="flex flex-wrap gap-1.5">
           {vibeTypes.map((type) => {
             const config = VIBE_CONFIG[type];
             const isSelected = currentVibe?.type === type;
