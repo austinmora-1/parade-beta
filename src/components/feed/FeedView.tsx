@@ -383,10 +383,10 @@ export function FeedView() {
         </AnimatePresence>
 
         {hasMore && (
-          <div className="flex justify-center pt-2 pb-4">
-            <Button variant="outline" size="sm" onClick={handleLoadMore} className="rounded-full px-6">
-              Load more
-            </Button>
+          <div className="flex justify-center pt-3 pb-4">
+            <button onClick={handleLoadMore} className="text-xs text-muted-foreground hover:text-foreground transition-colors px-4 py-1.5">
+              Show more ↓
+            </button>
           </div>
         )}
       </div>
