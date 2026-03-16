@@ -128,6 +128,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   locationStatus: 'home',
   isLoading: true,
   userId: null,
+  lastFetchedAt: null,
   defaultSettings: null,
   homeAddress: null,
   userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
