@@ -195,7 +195,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                     {isToday && (
                       <span className={cn(
                         "text-[9px] px-1 py-0.5 rounded-full font-medium",
-                        isAway ? "bg-orange-500/10 text-orange-600" : "bg-primary/10 text-primary"
+                        isAway ? "bg-availability-away/10 text-availability-away-foreground" : "bg-primary/10 text-primary"
                       )}>
                         Today
                       </span>
