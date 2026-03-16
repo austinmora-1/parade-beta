@@ -227,14 +227,17 @@ export function QuickPlanSheet({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh]">
+        <DrawerContent 
+          className="max-h-[90vh]"
+          style={viewport ? { maxHeight: `${Math.min(viewport.height * 0.9, window.innerHeight * 0.9)}px` } : undefined}
+        >
           <DrawerHeader className="pb-2">
             <DrawerTitle className="text-center">
               {hasFriend ? 'Suggest a Plan' : 'Quick Plan'}
             </DrawerTitle>
           </DrawerHeader>
 
-          <div className="px-4 pb-2 space-y-4 overflow-y-auto max-h-[60vh]">
+          <div ref={scrollContainerRef} className="px-4 pb-2 space-y-4 overflow-y-auto flex-1 min-h-0" onFocus={handleInputFocus}>
             {/* Friend display */}
             {(preSelectedFriend || selectedFriend) && (
               <div className="flex items-center gap-2">
