@@ -48,19 +48,28 @@ export function MobileHeader() {
         </Link>
       </div>
 
-      {/* Right: inbox bell with combined badge */}
-      <Link
-        to="/notifications"
-        className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
-        aria-label="Inbox"
-      >
-        <Bell className="h-[18px] w-[18px]" />
-        {inboxCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-            {inboxCount > 9 ? '9+' : inboxCount}
-          </span>
-        )}
-      </Link>
+      {/* Right: feedback + inbox bell */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={openFeedback}
+          className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
+          aria-label="Send feedback"
+        >
+          <MessageSquarePlus className="h-[18px] w-[18px]" />
+        </button>
+        <Link
+          to="/notifications"
+          className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
+          aria-label="Inbox"
+        >
+          <Bell className="h-[18px] w-[18px]" />
+          {inboxCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+              {inboxCount > 9 ? '9+' : inboxCount}
+            </span>
+          )}
+        </Link>
+      </div>
     </header>
   );
 }
