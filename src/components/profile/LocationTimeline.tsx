@@ -393,8 +393,8 @@ export function LocationTimeline() {
             <span>Home</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="flex h-5 w-5 items-center justify-center rounded bg-orange-500/10">
-              <Plane className="h-3 w-3 text-orange-600" />
+            <div className="flex h-5 w-5 items-center justify-center rounded bg-availability-away/10">
+              <Plane className="h-3 w-3 text-availability-away-foreground" />
             </div>
             <span>Away</span>
           </div>
