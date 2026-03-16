@@ -35,7 +35,7 @@ interface PlannerState {
   userTimezone: string;
   
   setUserId: (userId: string | null) => void;
-  loadAllData: () => Promise<void>;
+  loadAllData: (force?: boolean) => Promise<void>;
   loadFriends: () => Promise<void>;
   loadPlans: () => Promise<void>;
   loadProfileAndAvailability: () => Promise<void>;
