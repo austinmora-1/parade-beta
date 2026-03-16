@@ -29,7 +29,7 @@ interface PlannerState {
   currentVibe: Vibe | null;
   locationStatus: LocationStatus;
   isLoading: boolean;
-  userId: string | null;
+  lastFetchedAt: number | null;
   defaultSettings: DefaultAvailabilitySettings | null;
   homeAddress: string | null;
   userTimezone: string;
