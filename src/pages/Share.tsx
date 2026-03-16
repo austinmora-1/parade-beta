@@ -547,6 +547,9 @@ export default function Share() {
               const isTodayDay = isToday(day);
               const isPastDay = day < new Date(new Date().setHours(0, 0, 0, 0));
               const dayPlans = getPlansForDay(day);
+              const dateStr = format(day, 'yyyy-MM-dd');
+              const dayAvail = availability.find(a => a.date === dateStr);
+              const isAway = dayAvail?.location_status === 'away';
               const summary = (() => {
                 const slots = Object.keys(TIME_SLOT_LABELS) as TimeSlot[];
                 const available = slots.filter(s => getSlotStatus(day, s) === 'available').length;
@@ -565,14 +568,15 @@ export default function Share() {
                       "w-full text-left rounded-lg p-2 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20",
                       !isPastDay && "hover:bg-muted/50",
                       isPastDay && "cursor-default",
-                      isTodayDay && "bg-primary/10 ring-2 ring-primary/30"
+                      isTodayDay && !isAway && "bg-primary/10 ring-2 ring-primary/30",
+                      isAway && "bg-availability-away/10 ring-2 ring-availability-away/30"
                     )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={cn(
                           "text-xs font-semibold",
-                          isTodayDay && "text-primary"
+                          isAway ? "text-availability-away" : isTodayDay && "text-primary"
                         )}>
                           {format(day, 'EEE')}
                         </span>
@@ -580,7 +584,10 @@ export default function Share() {
                           {format(day, 'd')}
                         </span>
                         {isTodayDay && (
-                          <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded-full font-medium">
+                          <span className={cn(
+                            "text-[9px] px-1 py-0.5 rounded-full font-medium",
+                            isAway ? "bg-availability-away/10 text-availability-away" : "bg-primary/10 text-primary"
+                          )}>
                             Today
                           </span>
                         )}
@@ -621,25 +628,21 @@ export default function Share() {
                         {summary.available}/{summary.total} free
                         {summary.planCount > 0 && ` · ${summary.planCount} ${summary.planCount === 1 ? 'plan' : 'plans'}`}
                       </span>
-                      {(() => {
-                        const dateStr = format(day, 'yyyy-MM-dd');
-                        const dayAvail = availability.find(a => a.date === dateStr);
-                        const isAway = dayAvail?.location_status === 'away';
-                        return (
-                          <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                            {isAway ? (
-                              <>
-                                <Plane className="h-2.5 w-2.5 shrink-0" />
-                                {dayAvail?.trip_location && (
-                                  <span className="truncate max-w-[60px]">{dayAvail.trip_location}</span>
-                                )}
-                              </>
-                            ) : (
-                              <Home className="h-2.5 w-2.5 shrink-0" />
+                      <div className={cn(
+                        "flex items-center gap-0.5 text-[10px]",
+                        isAway ? "text-availability-away font-medium" : "text-muted-foreground"
+                      )}>
+                        {isAway ? (
+                          <>
+                            <Plane className="h-2.5 w-2.5 shrink-0" />
+                            {dayAvail?.trip_location && (
+                              <span className="truncate max-w-[60px]">{dayAvail.trip_location}</span>
                             )}
-                          </div>
-                        );
-                      })()}
+                          </>
+                        ) : (
+                          <Home className="h-2.5 w-2.5 shrink-0" />
+                        )}
+                      </div>
                     </div>
                   </button>
 
