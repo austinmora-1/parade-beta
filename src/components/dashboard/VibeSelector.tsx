@@ -135,7 +135,7 @@ export function VibeSelector() {
                   initial={{ opacity: 0, y: 20, scale: 0.8 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 22, delay: allVibes.length * 0.04 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 22, delay: 0 }}
                   className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-sm">
