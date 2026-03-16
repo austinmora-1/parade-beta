@@ -543,6 +543,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         homeAddress: homeAddr,
         userTimezone: viewerTimezone,
         isLoading: false,
+        lastFetchedAt: Date.now(),
       });
     } catch (error) {
       console.error('Error loading data:', error);
