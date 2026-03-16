@@ -500,11 +500,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         }
       }
       
-      // Generate dates array covering the full availability window (366 days: -183 to +183)
-      const allDates = Array.from({ length: 366 }, (_, i) => format(addDays(start, i - 183), 'yyyy-MM-dd'));
+      // Generate dates array covering startup window (31 days: 0 to +30)
+      const allDates = Array.from({ length: 31 }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
       const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
         const existing = availDataMap.get(dateStr);
-        const date = addDays(start, i - 183);
+        const date = addDays(start, i);
         
         if (existing) {
           return {
