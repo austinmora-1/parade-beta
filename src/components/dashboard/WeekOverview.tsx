@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { format, addDays, startOfWeek, addWeeks, isSameDay, isSameWeek, differenceInWeeks } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -20,7 +20,7 @@ const TIME_SLOT_ORDER: TimeSlot[] = [
 ];
 
 export function WeekOverview({ standalone = false }: { standalone?: boolean } = {}) {
-  const { plans, availabilityMap, homeAddress } = usePlannerStore();
+  const { plans, availabilityMap, homeAddress, loadAvailabilityForRange } = usePlannerStore();
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
@@ -29,6 +29,13 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
     const start = startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 });
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, [weekOffset]);
+
+  // Load availability for the visible week
+  useEffect(() => {
+    if (weekDays.length > 0) {
+      loadAvailabilityForRange(weekDays[0], weekDays[weekDays.length - 1]);
+    }
+  }, [weekDays, loadAvailabilityForRange]);
 
   const isCurrentWeek = isSameWeek(weekDays[0], new Date(), { weekStartsOn: 1 });
 

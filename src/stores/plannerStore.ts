@@ -141,6 +141,7 @@ interface PlannerState {
   addCustomVibe: (tag: string) => Promise<void>;
   removeCustomVibe: (tag: string) => Promise<void>;
   
+  loadAvailabilityForRange: (startDate: Date, endDate: Date) => Promise<void>;
   initializeWeekAvailability: () => Promise<void>;
 }
 
@@ -485,18 +486,19 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         defaultVibes: profile?.default_vibes || [],
       };
 
-      // Build availability map from all available data
+      // Build availability map from RPC data (~42-day window)
       const availDataMap = new Map<string, typeof availData[0]>();
       for (const a of availData) {
         availDataMap.set(a.date, a);
       }
 
-      // Generate 366 days of DayAvailability objects (±6 months), filling gaps with defaults
-      const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const allDates = Array.from({ length: 366 }, (_, i) => format(addDays(start, i - 183), 'yyyy-MM-dd'));
+      // Generate availability for the RPC window only (~42 days: -7 to +35)
+      const start = addDays(new Date(), -7);
+      const windowDays = 42;
+      const allDates = Array.from({ length: windowDays }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
       const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
         const existing = availDataMap.get(dateStr);
-        const date = addDays(start, i - 183);
+        const date = addDays(start, i);
         if (existing) {
           return {
             date,
@@ -1329,6 +1331,69 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     }
   },
   
+  loadAvailabilityForRange: async (startDate: Date, endDate: Date) => {
+    const { userId, defaultSettings, availabilityMap: existingMap } = get();
+    if (!userId) return;
+
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
+
+    // Check if we already have data for the full range
+    let allCovered = true;
+    let checkDate = startDate;
+    while (checkDate <= endDate) {
+      if (!existingMap[format(checkDate, 'yyyy-MM-dd')]) { allCovered = false; break; }
+      checkDate = addDays(checkDate, 1);
+    }
+    if (allCovered) return;
+
+    const { data, error } = await supabase
+      .from('availability')
+      .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location, vibe')
+      .eq('user_id', userId)
+      .gte('date', startStr)
+      .lte('date', endStr);
+
+    if (error) {
+      console.error('Error loading availability range:', error);
+      return;
+    }
+
+    const fetchedMap = new Map<string, any>();
+    for (const row of (data || [])) {
+      fetchedMap.set(row.date, row);
+    }
+
+    const newMap = { ...existingMap };
+    const newAvail = [...get().availability];
+    let d = new Date(startDate);
+    while (d <= endDate) {
+      const dateStr = format(d, 'yyyy-MM-dd');
+      if (!newMap[dateStr]) {
+        const existing = fetchedMap.get(dateStr);
+        const dayAvail: DayAvailability = existing ? {
+          date: new Date(d),
+          slots: {
+            'early-morning':    existing.early_morning  ?? true,
+            'late-morning':     existing.late_morning   ?? true,
+            'early-afternoon':  existing.early_afternoon ?? true,
+            'late-afternoon':   existing.late_afternoon  ?? true,
+            'evening':          existing.evening        ?? true,
+            'late-night':       existing.late_night     ?? true,
+          },
+          locationStatus: (existing.location_status as LocationStatus) || 'home',
+          tripLocation:   existing.trip_location || undefined,
+          vibe:           existing.vibe as VibeType | null || null,
+        } : createDefaultAvailability(new Date(d), defaultSettings);
+        newMap[dateStr] = dayAvail;
+        newAvail.push(dayAvail);
+      }
+      d = addDays(d, 1);
+    }
+
+    set({ availability: newAvail, availabilityMap: newMap });
+  },
+
   initializeWeekAvailability: async () => {
     const { userId, defaultSettings } = get();
     if (!userId) {

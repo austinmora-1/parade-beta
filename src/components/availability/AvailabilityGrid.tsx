@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import {
   format,
@@ -32,7 +32,7 @@ interface AvailabilityGridProps {
 }
 
 export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
-  const { plans, availability, availabilityMap, setAvailability, homeAddress } = usePlannerStore();
+  const { plans, availability, availabilityMap, setAvailability, homeAddress, loadAvailabilityForRange } = usePlannerStore();
   const isMobile = useIsMobile();
   
   // View mode toggle
@@ -59,6 +59,15 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   }, [currentWeekStart]);
+
+  // Load availability for the visible range
+  useEffect(() => {
+    if (viewMode === 'week' && weekDays.length > 0) {
+      loadAvailabilityForRange(weekDays[0], weekDays[weekDays.length - 1]);
+    } else if (viewMode === 'month') {
+      loadAvailabilityForRange(startOfMonth(currentMonth), endOfMonth(currentMonth));
+    }
+  }, [viewMode, currentWeekStart, currentMonth, loadAvailabilityForRange]);
 
   // Month calendar days
 
