@@ -181,7 +181,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className={cn(
                       "text-xs font-semibold",
-                      isAway && "text-orange-600",
+                      isAway && "text-availability-away-foreground",
                       isToday && !isAway && "text-primary"
                     )}>
                       {format(day, 'EEE')}
