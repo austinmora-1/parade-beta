@@ -308,25 +308,28 @@ export function useVibes() {
           }
         }
 
-        for (const recipientId of recipientIds) {
-          fetch(
-            `https://${projectId}.supabase.co/functions/v1/send-push-notification`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                user_id: recipientId,
-                title: `${senderName} sent you a vibe`,
-                body: payload.message || `Feeling ${vibeLabel}`,
-                url: `/?vibe=${vibeSend.id}`,
-                image: imageUrl,
-              }),
-            }
-          ).catch(() => {}); // fire-and-forget
-        }
+        // Send push notifications in parallel (fire-and-forget)
+        Promise.all(
+          recipientIds.map(recipientId =>
+            fetch(
+              `https://${projectId}.supabase.co/functions/v1/send-push-notification`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  user_id: recipientId,
+                  title: `${senderName} sent you a vibe`,
+                  body: payload.message || `Feeling ${vibeLabel}`,
+                  url: `/?vibe=${vibeSend.id}`,
+                  image: imageUrl,
+                }),
+              }
+            ).catch(() => {})
+          )
+        ).catch(() => {});
       }
 
       toast.success(`Vibe sent to ${recipientIds.length} friend${recipientIds.length > 1 ? 's' : ''}!`);
