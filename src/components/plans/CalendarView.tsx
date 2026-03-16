@@ -28,7 +28,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: CalendarViewProps) {
-  const { plans } = usePlannerStore();
+  const { plans, availabilityMap } = usePlannerStore();
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
