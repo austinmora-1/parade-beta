@@ -294,7 +294,7 @@ export function LocationTimeline() {
             <button
               key={idx}
               onClick={() => handleEditTrip(trip)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-2.5 py-1 text-xs hover:bg-orange-500/20 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-availability-away/10 px-2.5 py-1 text-xs hover:bg-availability-away/20 transition-colors cursor-pointer"
             >
               <Plane className="h-3.5 w-3.5 text-orange-600" />
               {trip.location && (
