@@ -60,6 +60,15 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
     return Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   }, [currentWeekStart]);
 
+  // Load availability for the visible range
+  useEffect(() => {
+    if (viewMode === 'week' && weekDays.length > 0) {
+      loadAvailabilityForRange(weekDays[0], weekDays[weekDays.length - 1]);
+    } else if (viewMode === 'month') {
+      loadAvailabilityForRange(startOfMonth(currentMonth), endOfMonth(currentMonth));
+    }
+  }, [viewMode, currentWeekStart, currentMonth, loadAvailabilityForRange]);
+
   // Month calendar days
 
   // Month calendar days
