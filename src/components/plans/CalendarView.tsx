@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Plan } from '@/types/planner';
+import { Plane } from 'lucide-react';
 import { PlanCard } from './PlanCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 
