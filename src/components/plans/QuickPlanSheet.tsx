@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { format, addDays, nextSaturday } from 'date-fns';
 import { motion } from 'framer-motion';
 import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
