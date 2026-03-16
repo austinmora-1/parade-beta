@@ -1394,7 +1394,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set({ availability: newAvail, availabilityMap: newMap });
   },
 
-
+  initializeWeekAvailability: async () => {
     const { userId, defaultSettings } = get();
     if (!userId) {
       const start = startOfWeek(new Date(), { weekStartsOn: 1 });
