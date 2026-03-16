@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format, isSameDay, formatDistanceToNow, isPast } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -8,7 +8,8 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ACTIVITY_CONFIG, VIBE_CONFIG, VibeType, TIME_SLOT_LABELS, FeedVisibility } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock, Users, Zap, CalendarCheck, Camera, Globe, Lock, ChevronDown } from 'lucide-react';
+import { MapPin, Clock, Users, Zap, CalendarCheck, Camera, Globe, Lock, ChevronDown, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePods } from '@/hooks/usePods';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
@@ -322,6 +323,12 @@ export function FeedView() {
 
   const allReactions = [...vibeReactions, ...sentVibeReactions];
 
+  const PAGE_SIZE = 10;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const visibleItems = useMemo(() => feedItems.slice(0, visibleCount), [feedItems, visibleCount]);
+  const hasMore = visibleCount < feedItems.length;
+  const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
+
   if (vibesLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -346,7 +353,7 @@ export function FeedView() {
     <>
       <div className="space-y-3">
         <AnimatePresence initial={false}>
-          {feedItems.map((item, idx) => (
+          {visibleItems.map((item, idx) => (
             <motion.div
               key={item.type === 'vibe' ? `vibe-${item.data.id}` : `plan-${(item.data as any).id}`}
               initial={{ opacity: 0, y: 12 }}
@@ -374,6 +381,14 @@ export function FeedView() {
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {hasMore && (
+          <div className="flex justify-center pt-2 pb-4">
+            <Button variant="outline" size="sm" onClick={handleLoadMore} className="rounded-full px-6">
+              Load more
+            </Button>
+          </div>
+        )}
       </div>
 
       <VibeDetailDialog
