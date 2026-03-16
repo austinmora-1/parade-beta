@@ -486,18 +486,19 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         defaultVibes: profile?.default_vibes || [],
       };
 
-      // Build availability map from all available data
+      // Build availability map from RPC data (~42-day window)
       const availDataMap = new Map<string, typeof availData[0]>();
       for (const a of availData) {
         availDataMap.set(a.date, a);
       }
 
-      // Generate 366 days of DayAvailability objects (±6 months), filling gaps with defaults
-      const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const allDates = Array.from({ length: 366 }, (_, i) => format(addDays(start, i - 183), 'yyyy-MM-dd'));
+      // Generate availability for the RPC window only (~42 days: -7 to +35)
+      const start = addDays(new Date(), -7);
+      const windowDays = 42;
+      const allDates = Array.from({ length: windowDays }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
       const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
         const existing = availDataMap.get(dateStr);
-        const date = addDays(start, i - 183);
+        const date = addDays(start, i);
         if (existing) {
           return {
             date,
