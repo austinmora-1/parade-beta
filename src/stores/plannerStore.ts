@@ -1331,7 +1331,70 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     }
   },
   
-  initializeWeekAvailability: async () => {
+  loadAvailabilityForRange: async (startDate: Date, endDate: Date) => {
+    const { userId, defaultSettings, availabilityMap: existingMap } = get();
+    if (!userId) return;
+
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
+
+    // Check if we already have data for the full range
+    let allCovered = true;
+    let checkDate = startDate;
+    while (checkDate <= endDate) {
+      if (!existingMap[format(checkDate, 'yyyy-MM-dd')]) { allCovered = false; break; }
+      checkDate = addDays(checkDate, 1);
+    }
+    if (allCovered) return;
+
+    const { data, error } = await supabase
+      .from('availability')
+      .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location, vibe')
+      .eq('user_id', userId)
+      .gte('date', startStr)
+      .lte('date', endStr);
+
+    if (error) {
+      console.error('Error loading availability range:', error);
+      return;
+    }
+
+    const fetchedMap = new Map<string, any>();
+    for (const row of (data || [])) {
+      fetchedMap.set(row.date, row);
+    }
+
+    const newMap = { ...existingMap };
+    const newAvail = [...get().availability];
+    let d = new Date(startDate);
+    while (d <= endDate) {
+      const dateStr = format(d, 'yyyy-MM-dd');
+      if (!newMap[dateStr]) {
+        const existing = fetchedMap.get(dateStr);
+        const dayAvail: DayAvailability = existing ? {
+          date: new Date(d),
+          slots: {
+            'early-morning':    existing.early_morning  ?? true,
+            'late-morning':     existing.late_morning   ?? true,
+            'early-afternoon':  existing.early_afternoon ?? true,
+            'late-afternoon':   existing.late_afternoon  ?? true,
+            'evening':          existing.evening        ?? true,
+            'late-night':       existing.late_night     ?? true,
+          },
+          locationStatus: (existing.location_status as LocationStatus) || 'home',
+          tripLocation:   existing.trip_location || undefined,
+          vibe:           existing.vibe as VibeType | null || null,
+        } : createDefaultAvailability(new Date(d), defaultSettings);
+        newMap[dateStr] = dayAvail;
+        newAvail.push(dayAvail);
+      }
+      d = addDays(d, 1);
+    }
+
+    set({ availability: newAvail, availabilityMap: newMap });
+  },
+
+
     const { userId, defaultSettings } = get();
     if (!userId) {
       const start = startOfWeek(new Date(), { weekStartsOn: 1 });
