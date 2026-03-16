@@ -296,7 +296,7 @@ export function LocationTimeline() {
               onClick={() => handleEditTrip(trip)}
               className="inline-flex items-center gap-1.5 rounded-full bg-availability-away/10 px-2.5 py-1 text-xs hover:bg-availability-away/20 transition-colors cursor-pointer"
             >
-              <Plane className="h-3.5 w-3.5 text-orange-600" />
+              <Plane className="h-3.5 w-3.5 text-availability-away-foreground" />
               {trip.location && (
                 <span className="font-semibold text-orange-700">{trip.location}</span>
               )}
