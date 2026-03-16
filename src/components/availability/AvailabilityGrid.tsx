@@ -188,7 +188,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                 getDayBgColor(dayAvail, isSelected, isTodayDate, isAway, isPast),
                 isSelected && "text-primary-foreground",
                 !isSelected && isPast && "text-muted-foreground/60",
-                !isSelected && !isPast && isAway && "text-orange-600",
+                !isSelected && !isPast && isAway && "text-availability-away-foreground",
                 isTodayDate && !isSelected && !isAway && "text-white",
                 !isSelected && !isTodayDate && !isPast && !isAway && dayAvail === 0 && "text-muted-foreground",
                 !isSelected && !isTodayDate && !isPast && !isAway && dayAvail > 0 && "text-foreground"
