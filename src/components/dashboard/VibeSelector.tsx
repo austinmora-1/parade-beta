@@ -200,7 +200,7 @@ export function VibeSelector() {
                       type: 'spring',
                       stiffness: 400,
                       damping: 22,
-                      delay: (allVibes.length - 1 - i) * 0.04,
+                      delay: i * 0.04,
                     }}
                     onClick={() => handleVibeSelect(type)}
                     className={cn(
