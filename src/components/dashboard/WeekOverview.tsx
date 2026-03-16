@@ -188,7 +188,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                     </span>
                     <span className={cn(
                       "text-[11px]",
-                      isAway ? "text-orange-600" : "text-muted-foreground"
+                      isAway ? "text-availability-away-foreground" : "text-muted-foreground"
                     )}>
                       {format(day, 'd')}
                     </span>
