@@ -8,7 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { usePlannerStore } from "@/stores/plannerStore";
-import Dashboard from "./pages/Dashboard";
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 import Plans from "./pages/Plans";
 import Availability from "./pages/Availability";
 import Friends from "./pages/Friends";
