@@ -341,7 +341,7 @@ export function LocationTimeline() {
                 {trip && (
                   <div 
                     className={cn(
-                      "absolute top-[18px] h-1 bg-orange-400/50",
+                      "absolute top-[18px] h-1 bg-availability-away/50",
                       isFirstOfTrip ? "left-1/2 right-0 rounded-l-full" : "left-0",
                       isLastOfTrip ? "right-1/2 left-0 rounded-r-full" : "right-0",
                       !isFirstOfTrip && !isLastOfTrip && "left-0 right-0"
