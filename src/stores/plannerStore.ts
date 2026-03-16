@@ -1263,12 +1263,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (existingTags.includes(tag)) return;
     
     const newTags = [...existingTags, tag];
-    const newVibe: Vibe = { type: 'custom', customTags: newTags };
+    // Preserve the current vibe type (default to 'custom' if none set)
+    const vibeType = currentVibe?.type || 'custom';
+    const newVibe: Vibe = { type: vibeType, customTags: newTags, gifUrl: currentVibe?.gifUrl };
     
     const { error } = await supabase
       .from('profiles')
       .update({ 
-        current_vibe: 'custom',
+        current_vibe: vibeType,
         custom_vibe_tags: newTags
       })
       .eq('user_id', userId);
