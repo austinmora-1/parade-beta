@@ -62,14 +62,15 @@ export function PlanCard({
       <div
         className={cn(
           "rounded-lg p-2 text-xs",
-          isTentative && "border border-dashed border-border opacity-60"
+          (isTentative || isPendingRsvp) ? "border border-dashed border-border opacity-60" : ""
         )}
-        style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${isTentative ? '0.08' : '0.15'})` }}
+        style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${(isTentative || isPendingRsvp) ? '0.08' : '0.15'})` }}
       >
         <div className="flex items-center gap-1">
           <ActivityIcon config={activityConfig} size={14} />
           <span className="truncate font-medium">{displayTitle}</span>
-          {isTentative && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
+          {isTentative && !isPendingRsvp && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
+          {isPendingRsvp && <span className="text-[8px] text-amber-500 ml-auto">pending</span>}
         </div>
       </div>
     );
