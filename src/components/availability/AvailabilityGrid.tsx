@@ -32,7 +32,7 @@ interface AvailabilityGridProps {
 }
 
 export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
-  const { plans, availability, availabilityMap, setAvailability, homeAddress, loadAvailabilityForRange } = usePlannerStore();
+  const { plans, availability, availabilityMap, setAvailability, homeAddress, loadAvailabilityForRange, userId } = usePlannerStore();
   const isMobile = useIsMobile();
   
   // View mode toggle
@@ -113,6 +113,17 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
     if (dayAvail && !dayAvail.slots[slot]) return 'unavailable';
 
     return 'available';
+  };
+
+  const isPlanTentativeForViewer = (plan: (typeof plans)[number] | null) => {
+    if (!plan) return false;
+
+    const isOwner = !plan.userId || plan.userId === userId;
+    const myParticipation = plan.participants?.find((p) => p.friendUserId === userId);
+    const myRsvp = plan.myRsvpStatus ?? myParticipation?.rsvpStatus;
+    const isPendingRsvp = !isOwner && !!myRsvp && myRsvp !== 'accepted' && myRsvp !== 'declined';
+
+    return plan.status === 'tentative' || (plan.status === 'proposed' && isOwner) || isPendingRsvp;
   };
 
   // Get location text for a date
@@ -233,7 +244,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
         {slots.map((slot) => {
           const status = getSlotStatus(day, slot);
           const slotPlan = status === 'busy' ? plans.find((p) => isSameDay(p.date, day) && p.timeSlot === slot) : null;
-          const isTentative = slotPlan && (slotPlan.status === 'tentative' || slotPlan.status === 'proposed' || (slotPlan.myRsvpStatus && slotPlan.myRsvpStatus !== 'accepted' && slotPlan.myRsvpStatus !== 'declined'));
+          const isTentative = isPlanTentativeForViewer(slotPlan);
           return (
             <button
               key={slot}
@@ -561,7 +572,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                         >
                           {(() => {
                             const slotPlan = status === 'busy' ? plans.find((p) => isSameDay(p.date, day) && p.timeSlot === slot) : null;
-                            const isTentative = slotPlan && (slotPlan.status === 'tentative' || (slotPlan.myRsvpStatus && slotPlan.myRsvpStatus !== 'accepted' && slotPlan.myRsvpStatus !== 'declined'));
+                            const isTentative = isPlanTentativeForViewer(slotPlan);
                             return (
                               <button
                                 onClick={() => toggleSlot(day, slot)}
