@@ -90,7 +90,7 @@ export function PlanRsvpButtons({ planId, userId, currentStatus, compact = false
       <Button
         variant={currentStatus === 'accepted' ? 'default' : 'outline'}
         size="sm"
-        className="gap-1.5"
+        className={cn("gap-1.5", currentStatus === 'accepted' ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600' : 'text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950')}
         disabled={isUpdating}
         onClick={(e) => handleRsvp('accepted', e)}
       >
@@ -99,7 +99,7 @@ export function PlanRsvpButtons({ planId, userId, currentStatus, compact = false
       <Button
         variant={currentStatus === 'maybe' ? 'default' : 'outline'}
         size="sm"
-        className={`gap-1.5 ${currentStatus === 'maybe' ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}`}
+        className={cn("gap-1.5", currentStatus === 'maybe' ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500' : 'text-amber-500 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950')}
         disabled={isUpdating}
         onClick={(e) => handleRsvp('maybe', e)}
       >
@@ -108,7 +108,7 @@ export function PlanRsvpButtons({ planId, userId, currentStatus, compact = false
       <Button
         variant={currentStatus === 'declined' ? 'default' : 'outline'}
         size="sm"
-        className={`gap-1.5 ${currentStatus === 'declined' ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' : ''}`}
+        className={cn("gap-1.5", currentStatus === 'declined' ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : 'text-red-500 border-red-300 hover:bg-red-50 dark:hover:bg-red-950')}
         disabled={isUpdating}
         onClick={(e) => handleRsvp('declined', e)}
       >
