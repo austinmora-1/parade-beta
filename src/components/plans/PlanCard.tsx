@@ -14,6 +14,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
 import { PlanChangeRequest } from '@/hooks/usePlanChangeRequests';
+import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
+import { usePlannerStore } from '@/stores/plannerStore';
 
 // Format "14:30" -> "2:30pm"
 function formatTimeDisplay(time: string): string {
@@ -39,6 +41,7 @@ export function PlanCard({
   changeRequest, onAcceptChange, onDeclineChange, isRespondingToChange 
 }: PlanCardProps) {
   const navigate = useNavigate();
+  const { userId } = usePlannerStore();
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
 
@@ -46,6 +49,11 @@ export function PlanCard({
 
   const isTentative = plan.status === 'tentative';
   const isPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
+
+  // Show RSVP buttons when user is a participant (not owner) with a pending/invited status on a proposed plan
+  const isParticipant = plan.userId !== userId && userId;
+  const needsRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+  const showRsvp = isParticipant && !isPast;
 
   if (compact) {
     return (
@@ -79,13 +87,14 @@ export function PlanCard({
         }
       }}
       className={cn(
-        "group flex items-center gap-2 rounded-md border border-border/50 bg-background/80 px-2 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation",
+        "group flex items-start gap-2 rounded-md border border-border/50 bg-background/80 px-2 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation",
         isTentative && "border-dashed border-border/60 opacity-70",
-        changeRequest && "border-amber-500/30"
+        changeRequest && "border-amber-500/30",
+        needsRsvp && "border-primary/30 bg-primary/5"
       )}
     >
       {/* Activity icon */}
-      <ActivityIcon config={activityConfig} size={14} className="shrink-0" />
+      <ActivityIcon config={activityConfig} size={14} className="shrink-0 mt-0.5" />
 
       {/* Content */}
       <div className="flex-1 min-w-0">
@@ -130,6 +139,18 @@ export function PlanCard({
             <MapPin className="h-2.5 w-2.5 shrink-0" />
             {plan.location.name}
           </p>
+        )}
+
+        {/* Inline RSVP buttons for participated plans */}
+        {showRsvp && userId && (
+          <div className="mt-1">
+            <PlanRsvpButtons
+              planId={plan.id}
+              userId={userId}
+              currentStatus={plan.myRsvpStatus}
+              compact
+            />
+          </div>
         )}
       </div>
 

@@ -89,6 +89,7 @@ export interface Plan {
   feedVisibility?: FeedVisibility;
   createdAt: Date;
   myRole?: ParticipantRole; // role of the current user (for participated plans)
+  myRsvpStatus?: string; // current user's RSVP status: 'accepted' | 'maybe' | 'declined' | 'invited'
   recurringPlanId?: string; // linked to a recurring plan template
   proposedBy?: string; // user_id of the proposer; undefined for self-created plans
 }
