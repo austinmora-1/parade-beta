@@ -95,6 +95,12 @@ interface CreatePlanDialogProps {
   onOpenChange: (open: boolean) => void;
   editPlan?: Plan | null;
   defaultDate?: Date;
+  defaultActivity?: ActivityType | string;
+  defaultTimeSlot?: TimeSlot;
+  defaultLocation?: string;
+  defaultNotes?: string;
+  defaultStatus?: PlanStatus;
+  defaultFriendUserId?: string;
   onChangeProposed?: () => void;
 }
 
