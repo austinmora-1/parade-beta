@@ -181,17 +181,40 @@ export function QuickPlanSheet({
     if (!canSubmit) return;
     setSending(true);
 
-    const friend = selectedFriend || preSelectedFriend;
-
-    if (friend) {
+    if (hasFriends) {
+      // Propose plan with first friend as primary recipient, then add others as participants
+      const firstFriend = selectedFriends[0];
       await proposePlan({
-        recipientFriendId: friend.userId,
+        recipientFriendId: firstFriend.userId,
         activity: activity!,
         date: selectedDate!,
         timeSlot: timeSlot!,
         location: location || undefined,
         note: note || undefined,
       });
+
+      // If there are additional friends, add them as participants to the most recent plan
+      if (selectedFriends.length > 1) {
+        // Fetch the just-created plan
+        const { data: latestPlan } = await supabase
+          .from('plans')
+          .select('id')
+          .eq('user_id', userId || '')
+          .eq('status', 'proposed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestPlan) {
+          const additionalParticipants = selectedFriends.slice(1).map(f => ({
+            plan_id: latestPlan.id,
+            friend_id: f.userId,
+            status: 'invited',
+            role: 'participant',
+          }));
+          await supabase.from('plan_participants').insert(additionalParticipants);
+        }
+      }
 
       confetti({
         particleCount: 80,
@@ -200,7 +223,8 @@ export function QuickPlanSheet({
         colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
         scalar: 0.9,
       });
-      toast.success(`Plan suggestion sent to ${friend.name}! 🎉`);
+      const friendNames = selectedFriends.map(f => f.name.split(' ')[0]).join(', ');
+      toast.success(`Plan suggestion sent to ${friendNames}! 🎉`);
     } else {
       const activityConfig = ACTIVITY_CONFIG[activity! as ActivityType];
       await addPlan({
