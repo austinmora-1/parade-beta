@@ -88,7 +88,7 @@ export function QuickPlanSheet({
   const [sending, setSending] = useState(false);
   const [planStatus, setPlanStatus] = useState<PlanStatus>('confirmed');
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [selectedFriend, setSelectedFriend] = useState<{ userId: string; name: string; avatar?: string } | null>(null);
+  const [selectedFriends, setSelectedFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
