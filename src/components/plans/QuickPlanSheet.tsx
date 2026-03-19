@@ -498,6 +498,12 @@ export function QuickPlanSheet({
         open={showMoreOptions}
         onOpenChange={(v) => { if (!v) setShowMoreOptions(false); }}
         defaultDate={selectedDate || undefined}
+        defaultActivity={activity || undefined}
+        defaultTimeSlot={timeSlot || undefined}
+        defaultLocation={location || undefined}
+        defaultNotes={note || undefined}
+        defaultStatus={effectiveStatus}
+        defaultFriendUserId={(selectedFriend || preSelectedFriend)?.userId}
       />
     </>
   );
