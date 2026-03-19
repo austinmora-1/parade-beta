@@ -29,7 +29,7 @@ export function PlanChangeRequestBadge({
     <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
       <div className="flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-        <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
           {isProposer ? 'Change Proposed' : 'Time Change Requested'}
         </span>
         <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400 ml-auto">
