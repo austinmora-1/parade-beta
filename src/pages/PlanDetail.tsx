@@ -258,15 +258,15 @@ export default function PlanDetail() {
   const activityConfig = ACTIVITY_CONFIG[displayPlan.activity as keyof typeof ACTIVITY_CONFIG] || { label: 'Activity', icon: '✨', color: 'activity-misc', vibeType: 'social' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[displayPlan.timeSlot as keyof typeof TIME_SLOT_LABELS];
   const isOwner = plan ? (!plan.userId || plan.userId === userId) : false;
-  const isParticipant = plan ? plan.participants.some(p => p.friendUserId === userId) : false;
+  // The store filters the current user out of participants, so use myRsvpStatus/myRole instead
+  const isParticipant = plan ? (plan.myRsvpStatus !== undefined && !isOwner) : false;
   const canEdit = isOwner || isParticipant;
   const isInvitePreview = !effectivePlan && !!invitePreview;
   const isPast = displayPlan ? (displayPlan.endDate || displayPlan.date) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
   const changeRequest = plan ? changeRequests.find(cr => cr.planId === plan.id) : undefined;
   const participants = (displayPlan.participants || []).filter((p: any) => p.role !== 'subscriber');
   const subscribers = (displayPlan.participants || []).filter((p: any) => p.role === 'subscriber');
-  const myParticipation = plan ? plan.participants.find(p => p.friendUserId === userId) : undefined;
-  const myRsvpStatus = myParticipation?.rsvpStatus || (isOwner ? 'accepted' : undefined);
+  const myRsvpStatus = plan?.myRsvpStatus || (isOwner ? 'accepted' : undefined);
 
 
   const handleRsvpChange = async (newStatus: string) => {
