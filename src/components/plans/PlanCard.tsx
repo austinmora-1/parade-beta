@@ -105,10 +105,15 @@ export function PlanCard({
           {plan.recurringPlanId && (
             <Repeat className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
           )}
-          {isTentative && (
+          {isTentative && !isPendingRsvp && (
             <span className="text-[8px] text-muted-foreground">tentative</span>
           )}
-          {plan.status === 'proposed' && (
+          {isPendingRsvp && (
+            <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400">
+              Pending RSVP
+            </span>
+          )}
+          {plan.status === 'proposed' && !isPendingRsvp && (
             <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400">
               Awaiting response
             </span>
