@@ -233,7 +233,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
         {slots.map((slot) => {
           const status = getSlotStatus(day, slot);
           const slotPlan = status === 'busy' ? plans.find((p) => isSameDay(p.date, day) && p.timeSlot === slot) : null;
-          const isTentative = slotPlan && (slotPlan.status === 'tentative' || (slotPlan.myRsvpStatus && slotPlan.myRsvpStatus !== 'accepted' && slotPlan.myRsvpStatus !== 'declined'));
+          const isTentative = slotPlan && (slotPlan.status === 'tentative' || slotPlan.status === 'proposed' || (slotPlan.myRsvpStatus && slotPlan.myRsvpStatus !== 'accepted' && slotPlan.myRsvpStatus !== 'declined'));
           return (
             <button
               key={slot}
