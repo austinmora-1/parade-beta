@@ -100,7 +100,7 @@ interface CreatePlanDialogProps {
   defaultLocation?: string;
   defaultNotes?: string;
   defaultStatus?: PlanStatus;
-  defaultFriendUserId?: string;
+  defaultFriendUserIds?: string[];
   onChangeProposed?: () => void;
 }
 
