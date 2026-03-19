@@ -398,6 +398,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             respondedAt: pp.responded_at ? new Date(pp.responded_at) : undefined,
           })),
           myRole,
+          myRsvpStatus: p.user_id === userId ? undefined : (myParticipation?.status as string || 'invited'),
           recurringPlanId: p.recurring_plan_id || undefined,
           proposedBy: p.proposed_by || undefined,
           createdAt: new Date(p.created_at),
@@ -1603,6 +1604,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           respondedAt: pp.responded_at ? new Date(pp.responded_at) : undefined,
         })),
         myRole,
+        myRsvpStatus: p.user_id === userId ? undefined : (myParticipation?.status as string || 'invited'),
         recurringPlanId: (p as any).recurring_plan_id || undefined,
         createdAt: new Date(p.created_at),
       };
