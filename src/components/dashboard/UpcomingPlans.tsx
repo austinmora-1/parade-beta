@@ -209,6 +209,9 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     const displayTitle = getPlanDisplayTitle(plan);
     const timeStatus = getPlanTimeStatus(plan, userTimezone);
     const isInProgress = timeStatus === 'in-progress';
+    const isOwner = !plan.userId || plan.userId === userId;
+    const isPendingRsvp = !isOwner && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+    const isTentative = plan.status === 'tentative' || isPendingRsvp;
 
     return (
       <div
@@ -219,6 +222,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
           isInProgress
             ? "bg-primary/10 hover:bg-primary/15"
             : "bg-muted/30 hover:bg-muted/50",
+          isTentative && "border-dashed opacity-70",
         )}
         style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
       >
@@ -227,6 +231,11 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
             <div className="flex items-center gap-2">
               <ActivityIcon config={activityConfig} size={18} />
               <span className="text-sm font-medium truncate">{displayTitle}</span>
+              {isPendingRsvp && (
+                <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                  Pending RSVP
+                </span>
+              )}
             </div>
             {plan.isFriendPlan && plan.ownerName && (
               <div className="text-[10px] text-muted-foreground ml-[26px]">

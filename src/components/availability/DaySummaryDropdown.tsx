@@ -240,11 +240,17 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                 <div className="px-2.5 pb-1.5 space-y-1 ml-[52px]">
                   {slotPlans.map((plan) => {
                     const activityConfig = ACTIVITY_CONFIG[plan.activity];
+                    const isOwner = !plan.userId || plan.userId === userId;
+                    const isPendingRsvp = !isOwner && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+                    const isTentativePlan = plan.status === 'tentative' || isPendingRsvp;
                     return (
                       <div
                         key={plan.id}
                         onClick={() => navigate(`/plan/${plan.id}`)}
-                        className="rounded-md bg-background/80 border border-border/50 px-2 py-1.5 group cursor-pointer hover:bg-muted/50 transition-colors"
+                        className={cn(
+                          "rounded-md bg-background/80 border border-border/50 px-2 py-1.5 group cursor-pointer hover:bg-muted/50 transition-colors",
+                          isTentativePlan && "border-dashed opacity-70"
+                        )}
                       >
                         <div className="flex items-center gap-2">
                           {activityConfig ? (
