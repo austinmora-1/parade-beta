@@ -251,7 +251,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                         onClick={() => navigate(`/plan/${plan.id}`)}
                         className={cn(
                           "rounded-md bg-background/80 border border-border/50 px-2 py-1.5 group cursor-pointer hover:bg-muted/50 transition-colors",
-                          isTentativePlan && "border-2 border-dashed border-availability-away/70 bg-availability-away/15"
+                          isTentativePlan && "border-dashed opacity-60"
                         )}
                       >
                         <div className="flex items-center gap-2">
@@ -262,9 +262,9 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1">
-                              <p className={cn("text-xs font-medium truncate", isTentativePlan && "text-availability-away")}>{getPlanDisplayTitle(plan)}</p>
+                              <p className="text-xs font-medium truncate">{getPlanDisplayTitle(plan)}</p>
                               {isTentativePlan && (
-                                <span className="text-[8px] uppercase tracking-wider text-availability-away">tentative</span>
+                                <span className="text-[8px] uppercase tracking-wider text-muted-foreground">tentative</span>
                               )}
                             </div>
                             {(plan.startTime || plan.endTime) && (
