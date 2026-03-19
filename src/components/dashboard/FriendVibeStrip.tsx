@@ -110,7 +110,7 @@ export function FriendVibeStrip() {
 
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+      <p className="text-[11px] font-sans font-semibold uppercase tracking-wider text-muted-foreground px-1">
         Who's around today
       </p>
       <div className="flex gap-3 overflow-x-auto pt-1 pb-1 -mx-1 px-1 scrollbar-hide">

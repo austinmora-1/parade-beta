@@ -153,7 +153,7 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
                 )}
               >
                 <span className={cn(
-                  "font-medium",
+                  "font-sans font-medium",
                   !isSelected && isAway && "text-availability-away-foreground"
                 )}>{format(day, 'd')}</span>
                 {isAway && !isSelected && dayPlans.length === 0 && (
