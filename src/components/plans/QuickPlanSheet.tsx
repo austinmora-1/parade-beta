@@ -122,7 +122,7 @@ export function QuickPlanSheet({
       setSending(false);
       setPlanStatus(preSelectedFriend ? 'proposed' : 'confirmed');
       setCalendarOpen(false);
-      setSelectedFriend(preSelectedFriend || null);
+      setSelectedFriends(preSelectedFriend ? [preSelectedFriend] : []);
       setFriendSearch('');
       setLocationSuggestions([]);
     }
