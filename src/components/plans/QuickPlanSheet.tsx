@@ -550,7 +550,7 @@ export function QuickPlanSheet({
         defaultLocation={location || undefined}
         defaultNotes={note || undefined}
         defaultStatus={effectiveStatus}
-        defaultFriendUserId={(selectedFriend || preSelectedFriend)?.userId}
+        defaultFriendUserIds={selectedFriends.map(f => f.userId)}
       />
     </>
   );
