@@ -284,7 +284,9 @@ export function QuickPlanSheet({
                       {!preSelectedFriend && (
                         <button
                           onClick={() => {
-                            setSelectedFriends(prev => prev.filter(sf => sf.userId !== f.userId));
+                            const updated = selectedFriends.filter(sf => sf.userId !== f.userId);
+                            setSelectedFriends(updated);
+                            if (updated.length === 0) setPlanStatus('confirmed');
                           }}
                           className="ml-0.5 text-muted-foreground hover:text-foreground"
                         >
