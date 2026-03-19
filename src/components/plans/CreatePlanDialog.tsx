@@ -100,11 +100,11 @@ interface CreatePlanDialogProps {
   defaultLocation?: string;
   defaultNotes?: string;
   defaultStatus?: PlanStatus;
-  defaultFriendUserId?: string;
+  defaultFriendUserIds?: string[];
   onChangeProposed?: () => void;
 }
 
-export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, defaultActivity, defaultTimeSlot, defaultLocation, defaultNotes, defaultStatus, defaultFriendUserId, onChangeProposed }: CreatePlanDialogProps) {
+export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, defaultActivity, defaultTimeSlot, defaultLocation, defaultNotes, defaultStatus, defaultFriendUserIds, onChangeProposed }: CreatePlanDialogProps) {
   const { addPlan, updatePlan, friends, userId, plans } = usePlannerStore();
   const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
   const { pods } = usePods();
@@ -238,10 +238,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
       if (defaultLocation) setLocationName(defaultLocation);
       if (defaultNotes) setNotes(defaultNotes);
       if (defaultStatus) setPlanStatus(defaultStatus);
-      if (defaultFriendUserId) {
-        const matchedFriend = friends.find(f => f.status === 'connected' && f.friendUserId === defaultFriendUserId);
-        if (matchedFriend) {
-          setSelectedFriends([matchedFriend.id]);
+      if (defaultFriendUserIds && defaultFriendUserIds.length > 0) {
+        const matchedFriendIds = friends
+          .filter(f => f.status === 'connected' && defaultFriendUserIds.includes(f.friendUserId || ''))
+          .map(f => f.id);
+        if (matchedFriendIds.length > 0) {
+          setSelectedFriends(matchedFriendIds);
           if (!defaultStatus) setPlanStatus('proposed');
         }
       }

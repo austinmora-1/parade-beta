@@ -77,7 +77,7 @@ export function QuickPlanSheet({
   preSelectedDate,
   preSelectedTimeSlot,
 }: QuickPlanSheetProps) {
-  const { proposePlan, addPlan, friends } = usePlannerStore();
+  const { proposePlan, addPlan, friends, userId } = usePlannerStore();
 
   const [activity, setActivity] = useState<ActivityType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -88,7 +88,7 @@ export function QuickPlanSheet({
   const [sending, setSending] = useState(false);
   const [planStatus, setPlanStatus] = useState<PlanStatus>('confirmed');
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [selectedFriend, setSelectedFriend] = useState<{ userId: string; name: string; avatar?: string } | null>(null);
+  const [selectedFriends, setSelectedFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
@@ -122,7 +122,7 @@ export function QuickPlanSheet({
       setSending(false);
       setPlanStatus(preSelectedFriend ? 'proposed' : 'confirmed');
       setCalendarOpen(false);
-      setSelectedFriend(preSelectedFriend || null);
+      setSelectedFriends(preSelectedFriend ? [preSelectedFriend] : []);
       setFriendSearch('');
       setLocationSuggestions([]);
     }
@@ -139,15 +139,17 @@ export function QuickPlanSheet({
   ];
 
   const connectedFriends = friends.filter(f => f.status === 'connected' && f.friendUserId);
-  const filteredFriends = friendSearch
+  const selectedUserIds = new Set(selectedFriends.map(sf => sf.userId));
+  const filteredFriends = (friendSearch
     ? connectedFriends.filter(f => f.name.toLowerCase().includes(friendSearch.toLowerCase()))
-    : connectedFriends.slice(0, 5);
+    : connectedFriends.slice(0, 5)
+  ).filter(f => !selectedUserIds.has(f.friendUserId!));
 
-  const hasFriend = !!selectedFriend || !!preSelectedFriend;
+  const hasFriends = selectedFriends.length > 0;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
 
-  // Auto-set status to proposed when a friend is selected
-  const effectiveStatus = hasFriend ? 'proposed' as PlanStatus : planStatus;
+  // Auto-set status to proposed when friends are selected
+  const effectiveStatus = hasFriends ? 'proposed' as PlanStatus : planStatus;
 
   const handleLocationChange = (value: string) => {
     setLocation(value);
@@ -179,17 +181,40 @@ export function QuickPlanSheet({
     if (!canSubmit) return;
     setSending(true);
 
-    const friend = selectedFriend || preSelectedFriend;
-
-    if (friend) {
+    if (hasFriends) {
+      // Propose plan with first friend as primary recipient, then add others as participants
+      const firstFriend = selectedFriends[0];
       await proposePlan({
-        recipientFriendId: friend.userId,
+        recipientFriendId: firstFriend.userId,
         activity: activity!,
         date: selectedDate!,
         timeSlot: timeSlot!,
         location: location || undefined,
         note: note || undefined,
       });
+
+      // If there are additional friends, add them as participants to the most recent plan
+      if (selectedFriends.length > 1) {
+        // Fetch the just-created plan
+        const { data: latestPlan } = await supabase
+          .from('plans')
+          .select('id')
+          .eq('user_id', userId || '')
+          .eq('status', 'proposed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestPlan) {
+          const additionalParticipants = selectedFriends.slice(1).map(f => ({
+            plan_id: latestPlan.id,
+            friend_id: f.userId,
+            status: 'invited',
+            role: 'participant',
+          }));
+          await supabase.from('plan_participants').insert(additionalParticipants);
+        }
+      }
 
       confetti({
         particleCount: 80,
@@ -198,7 +223,8 @@ export function QuickPlanSheet({
         colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
         scalar: 0.9,
       });
-      toast.success(`Plan suggestion sent to ${friend.name}! 🎉`);
+      const friendNames = selectedFriends.map(f => f.name.split(' ')[0]).join(', ');
+      toast.success(`Plan suggestion sent to ${friendNames}! 🎉`);
     } else {
       const activityConfig = ACTIVITY_CONFIG[activity! as ActivityType];
       await addPlan({
@@ -233,35 +259,54 @@ export function QuickPlanSheet({
         >
           <DrawerHeader className="pb-2">
             <DrawerTitle className="text-center">
-              {hasFriend ? 'Suggest a Plan' : 'Quick Plan'}
+              {hasFriends ? 'Suggest a Plan' : 'Quick Plan'}
             </DrawerTitle>
           </DrawerHeader>
 
           <div ref={scrollContainerRef} className="px-4 pb-2 space-y-4 overflow-y-auto flex-1 min-h-0" onFocus={handleInputFocus}>
-            {/* Friend display */}
-            {(preSelectedFriend || selectedFriend) && (
-              <div className="flex items-center gap-2">
-                <Avatar className="h-7 w-7">
-                  <AvatarImage src={(preSelectedFriend || selectedFriend)?.avatar || getElephantAvatar((preSelectedFriend || selectedFriend)?.name || '')} />
-                  <AvatarFallback className="text-[10px] bg-primary/15 text-primary">
-                    {(preSelectedFriend || selectedFriend)?.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium">{(preSelectedFriend || selectedFriend)?.name.split(' ')[0]}</span>
-                {!preSelectedFriend && selectedFriend && (
-                  <button onClick={() => { setSelectedFriend(null); setPlanStatus('confirmed'); }} className="ml-auto p-1 text-muted-foreground hover:text-foreground">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+            {/* Selected friends display */}
+            {selectedFriends.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  With
+                </p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {selectedFriends.map(f => (
+                    <span
+                      key={f.userId}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-foreground"
+                    >
+                      <Avatar className="h-4 w-4">
+                        <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                        <AvatarFallback className="text-[6px]">{f.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      {f.name.split(' ')[0]}
+                      {!preSelectedFriend && (
+                        <button
+                          onClick={() => {
+                            const updated = selectedFriends.filter(sf => sf.userId !== f.userId);
+                            setSelectedFriends(updated);
+                            if (updated.length === 0) setPlanStatus('confirmed');
+                          }}
+                          className="ml-0.5 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Friend picker when no pre-selected friend */}
-            {!preSelectedFriend && !selectedFriend && (
+            {/* Friend picker */}
+            {!preSelectedFriend && (
               <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  With (optional)
-                </p>
+                {selectedFriends.length === 0 && (
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    With (optional)
+                  </p>
+                )}
                 <Input
                   placeholder="Search friends..."
                   value={friendSearch}
@@ -273,7 +318,11 @@ export function QuickPlanSheet({
                     {filteredFriends.slice(0, 6).map(f => (
                       <button
                         key={f.id}
-                        onClick={() => { setSelectedFriend({ userId: f.friendUserId!, name: f.name, avatar: f.avatar }); setPlanStatus('proposed'); }}
+                        onClick={() => {
+                          setSelectedFriends(prev => [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }]);
+                          setPlanStatus('proposed');
+                          setFriendSearch('');
+                        }}
                         className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
                       >
                         <Avatar className="h-4 w-4">
@@ -463,7 +512,7 @@ export function QuickPlanSheet({
           </div>
 
           <DrawerFooter className="pt-2">
-            {hasFriend && (
+            {hasFriends && (
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400 mb-1">
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 font-medium">
                   💡 Status: Proposed
@@ -481,7 +530,7 @@ export function QuickPlanSheet({
               ) : (
                 <CalendarPlus className="h-4 w-4" />
               )}
-              {hasFriend ? 'Send Plan Suggestion →' : 'Add to My Plans'}
+              {hasFriends ? 'Send Plan Suggestion →' : 'Add to My Plans'}
             </Button>
             <button
               onClick={handleMoreOptions}
@@ -503,7 +552,7 @@ export function QuickPlanSheet({
         defaultLocation={location || undefined}
         defaultNotes={note || undefined}
         defaultStatus={effectiveStatus}
-        defaultFriendUserId={(selectedFriend || preSelectedFriend)?.userId}
+        defaultFriendUserIds={selectedFriends.map(f => f.userId)}
       />
     </>
   );
