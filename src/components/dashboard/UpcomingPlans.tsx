@@ -286,15 +286,15 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
             )}
           </div>
         </div>
-        {/* RSVP buttons for plans the user is invited to but hasn't accepted */}
+        {/* RSVP buttons for plans the user is invited to */}
         {(() => {
           const isOwner = !plan.userId || plan.userId === userId;
-          const myParticipation = plan.participants?.find((p: any) => p.friendUserId === userId);
-          const myRsvp = myParticipation?.rsvpStatus;
-          const needsRsvp = !isOwner && myParticipation && myRsvp !== 'accepted';
-          if (!needsRsvp || !userId) return null;
+          const myRsvp = plan.myRsvpStatus;
+          const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
+          const showRsvp = !isOwner && userId && !planIsPast;
+          if (!showRsvp) return null;
           return (
-            <div className="mt-2 pt-2 border-t border-border/50">
+            <div className="mt-2 pt-2 border-t border-border/50" onClick={e => e.stopPropagation()}>
               <PlanRsvpButtons
                 planId={plan.id}
                 userId={userId}
