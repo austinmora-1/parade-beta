@@ -434,13 +434,13 @@ export default function PlanDetail() {
                     Tentative
                   </span>
                 )}
-                {isParticipant && myRsvpStatus && myRsvpStatus !== 'accepted' && myRsvpStatus !== 'declined' && (
-                  <span className="inline-block mt-1 text-xs bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
-                    Pending
-                  </span>
-                )}
               </div>
             </div>
+            {isParticipant && myRsvpStatus && myRsvpStatus !== 'accepted' && myRsvpStatus !== 'declined' && (
+              <span className="shrink-0 text-xs bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                Pending
+              </span>
+            )}
           </div>
 
           {/* Details */}
