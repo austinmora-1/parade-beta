@@ -226,6 +226,25 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
     } else if (open && !editPlan) {
       resetForm();
       setDate(defaultDate || new Date());
+      if (defaultActivity) {
+        setActivity(defaultActivity);
+        const config = ACTIVITY_CONFIG[defaultActivity as ActivityType];
+        if (config) {
+          setSelectedVibe(config.vibeType);
+          setTitle(config.label);
+        }
+      }
+      if (defaultTimeSlot) setTimeSlot(defaultTimeSlot);
+      if (defaultLocation) setLocationName(defaultLocation);
+      if (defaultNotes) setNotes(defaultNotes);
+      if (defaultStatus) setPlanStatus(defaultStatus);
+      if (defaultFriendUserId) {
+        const matchedFriend = friends.find(f => f.status === 'connected' && f.friendUserId === defaultFriendUserId);
+        if (matchedFriend) {
+          setSelectedFriends([matchedFriend.id]);
+          if (!defaultStatus) setPlanStatus('proposed');
+        }
+      }
     }
   }, [open, editPlan, defaultDate]);
 
