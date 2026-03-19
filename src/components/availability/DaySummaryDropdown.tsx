@@ -244,7 +244,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                     const myParticipation = plan.participants?.find((p: any) => p.friendUserId === userId);
                     const myRsvp = plan.myRsvpStatus ?? myParticipation?.rsvpStatus;
                     const isPendingRsvp = !isOwner && myRsvp && myRsvp !== 'accepted' && myRsvp !== 'declined';
-                    const isTentativePlan = plan.status === 'tentative' || plan.status === 'proposed' || isPendingRsvp;
+                    const isTentativePlan = plan.status === 'tentative' || (plan.status === 'proposed' && isOwner) || isPendingRsvp;
                     return (
                       <div
                         key={plan.id}
