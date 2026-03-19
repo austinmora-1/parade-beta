@@ -43,13 +43,13 @@ export function PlanRsvpButtons({ planId, userId, currentStatus, compact = false
 
   if (compact) {
     return (
-      <div className="flex items-center gap-1" data-stop-card-click onClick={e => e.stopPropagation()}>
-        {isUpdating && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+      <div className="flex items-center gap-1.5" data-stop-card-click onClick={e => e.stopPropagation()}>
+        {isUpdating && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
         <button
           onClick={(e) => handleRsvp('accepted', e)}
           disabled={isUpdating}
           className={cn(
-            "rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors",
+            "rounded-md px-3 py-1 text-xs font-medium transition-colors",
             currentStatus === 'accepted'
               ? "bg-emerald-600 text-white"
               : "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
@@ -61,7 +61,7 @@ export function PlanRsvpButtons({ planId, userId, currentStatus, compact = false
           onClick={(e) => handleRsvp('maybe', e)}
           disabled={isUpdating}
           className={cn(
-            "rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors",
+            "rounded-md px-3 py-1 text-xs font-medium transition-colors",
             currentStatus === 'maybe'
               ? "bg-amber-500 text-white"
               : "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
@@ -73,7 +73,7 @@ export function PlanRsvpButtons({ planId, userId, currentStatus, compact = false
           onClick={(e) => handleRsvp('declined', e)}
           disabled={isUpdating}
           className={cn(
-            "rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors",
+            "rounded-md px-3 py-1 text-xs font-medium transition-colors",
             currentStatus === 'declined'
               ? "bg-red-600 text-white"
               : "bg-red-500/10 text-red-500 hover:bg-red-500/20"
