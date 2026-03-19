@@ -290,7 +290,8 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
         {(() => {
           const isOwner = !plan.userId || plan.userId === userId;
           const myRsvp = plan.myRsvpStatus;
-          const showRsvp = !isOwner && userId && !isPast;
+          const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
+          const showRsvp = !isOwner && userId && !planIsPast;
           if (!showRsvp) return null;
           return (
             <div className="mt-2 pt-2 border-t border-border/50" onClick={e => e.stopPropagation()}>
