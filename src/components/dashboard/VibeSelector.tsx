@@ -100,7 +100,7 @@ export function VibeSelector() {
           <div className="flex-1 text-left">
             {currentVibe?.type ? (
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-medium text-foreground">
+                <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
                   {selectedConfig?.label || 'Custom'}
                 </span>
                 {currentVibe.customTags && currentVibe.customTags.length > 0 && (
