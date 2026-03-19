@@ -238,10 +238,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
       if (defaultLocation) setLocationName(defaultLocation);
       if (defaultNotes) setNotes(defaultNotes);
       if (defaultStatus) setPlanStatus(defaultStatus);
-      if (defaultFriendUserId) {
-        const matchedFriend = friends.find(f => f.status === 'connected' && f.friendUserId === defaultFriendUserId);
-        if (matchedFriend) {
-          setSelectedFriends([matchedFriend.id]);
+      if (defaultFriendUserIds && defaultFriendUserIds.length > 0) {
+        const matchedFriendIds = friends
+          .filter(f => f.status === 'connected' && defaultFriendUserIds.includes(f.friendUserId || ''))
+          .map(f => f.id);
+        if (matchedFriendIds.length > 0) {
+          setSelectedFriends(matchedFriendIds);
           if (!defaultStatus) setPlanStatus('proposed');
         }
       }
