@@ -139,15 +139,17 @@ export function QuickPlanSheet({
   ];
 
   const connectedFriends = friends.filter(f => f.status === 'connected' && f.friendUserId);
-  const filteredFriends = friendSearch
+  const selectedUserIds = new Set(selectedFriends.map(sf => sf.userId));
+  const filteredFriends = (friendSearch
     ? connectedFriends.filter(f => f.name.toLowerCase().includes(friendSearch.toLowerCase()))
-    : connectedFriends.slice(0, 5);
+    : connectedFriends.slice(0, 5)
+  ).filter(f => !selectedUserIds.has(f.friendUserId!));
 
-  const hasFriend = !!selectedFriend || !!preSelectedFriend;
+  const hasFriends = selectedFriends.length > 0;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
 
-  // Auto-set status to proposed when a friend is selected
-  const effectiveStatus = hasFriend ? 'proposed' as PlanStatus : planStatus;
+  // Auto-set status to proposed when friends are selected
+  const effectiveStatus = hasFriends ? 'proposed' as PlanStatus : planStatus;
 
   const handleLocationChange = (value: string) => {
     setLocation(value);
