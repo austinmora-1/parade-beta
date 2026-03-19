@@ -206,7 +206,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
               <span className="text-[10px] font-medium uppercase leading-none">
                 {format(day, 'EEE').charAt(0)}
               </span>
-              <span className="text-sm font-semibold leading-tight">
+              <span className="text-sm font-medium leading-tight">
                 {format(day, 'd')}
               </span>
             </button>
@@ -344,7 +344,7 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                 <span className="text-[10px] font-medium uppercase leading-none">
                   {format(day, 'EEE').charAt(0)}
                 </span>
-                <span className="text-sm font-semibold leading-tight">
+                <span className="text-sm font-medium leading-tight">
                   {format(day, 'd')}
                 </span>
                 {hasPlan && (
