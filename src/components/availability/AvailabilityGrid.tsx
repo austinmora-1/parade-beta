@@ -568,19 +568,22 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                               const slotPlan = plans.find(
                                 (p) => isSameDay(p.date, day) && p.timeSlot === slot
                               );
-                              return slotPlan ? (
+                              if (!slotPlan) return <span className="text-xs font-medium text-availability-busy">Busy</span>;
+                              const isTentative = slotPlan.status === 'tentative' || (slotPlan.myRsvpStatus && slotPlan.myRsvpStatus !== 'accepted' && slotPlan.myRsvpStatus !== 'declined');
+                              return (
                                 <>
-                                  <span className="text-xs font-medium text-availability-busy truncate max-w-[90px]">
+                                  <span className={cn("text-xs font-medium truncate max-w-[90px]", isTentative ? "text-availability-busy/60" : "text-availability-busy")}>
                                     {getPlanDisplayTitle(slotPlan)}
                                   </span>
-                                  {slotPlan.participants.length > 0 && (
+                                  {isTentative && (
+                                    <span className="text-[8px] text-amber-500/80 font-medium">tentative</span>
+                                  )}
+                                  {!isTentative && slotPlan.participants.length > 0 && (
                                     <span className="text-[10px] text-availability-busy/70 truncate max-w-[90px]">
                                       w/ {slotPlan.participants.map(p => p.name).join(', ')}
                                     </span>
                                   )}
                                 </>
-                              ) : (
-                                <span className="text-xs font-medium text-availability-busy">Busy</span>
                               );
                             })()}
                           </button>
