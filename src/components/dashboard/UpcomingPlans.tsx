@@ -209,6 +209,9 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     const displayTitle = getPlanDisplayTitle(plan);
     const timeStatus = getPlanTimeStatus(plan, userTimezone);
     const isInProgress = timeStatus === 'in-progress';
+    const isOwner = !plan.userId || plan.userId === userId;
+    const isPendingRsvp = !isOwner && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+    const isTentative = plan.status === 'tentative' || isPendingRsvp;
 
     return (
       <div
@@ -219,6 +222,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
           isInProgress
             ? "bg-primary/10 hover:bg-primary/15"
             : "bg-muted/30 hover:bg-muted/50",
+          isTentative && "border-dashed opacity-70",
         )}
         style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
       >
