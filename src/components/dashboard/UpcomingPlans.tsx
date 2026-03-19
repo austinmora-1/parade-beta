@@ -231,6 +231,11 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
             <div className="flex items-center gap-2">
               <ActivityIcon config={activityConfig} size={18} />
               <span className="text-sm font-medium truncate">{displayTitle}</span>
+              {isPendingRsvp && (
+                <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                  Pending RSVP
+                </span>
+              )}
             </div>
             {plan.isFriendPlan && plan.ownerName && (
               <div className="text-[10px] text-muted-foreground ml-[26px]">
