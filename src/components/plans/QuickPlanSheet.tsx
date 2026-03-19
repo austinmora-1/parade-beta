@@ -259,35 +259,52 @@ export function QuickPlanSheet({
         >
           <DrawerHeader className="pb-2">
             <DrawerTitle className="text-center">
-              {hasFriend ? 'Suggest a Plan' : 'Quick Plan'}
+              {hasFriends ? 'Suggest a Plan' : 'Quick Plan'}
             </DrawerTitle>
           </DrawerHeader>
 
           <div ref={scrollContainerRef} className="px-4 pb-2 space-y-4 overflow-y-auto flex-1 min-h-0" onFocus={handleInputFocus}>
-            {/* Friend display */}
-            {(preSelectedFriend || selectedFriend) && (
-              <div className="flex items-center gap-2">
-                <Avatar className="h-7 w-7">
-                  <AvatarImage src={(preSelectedFriend || selectedFriend)?.avatar || getElephantAvatar((preSelectedFriend || selectedFriend)?.name || '')} />
-                  <AvatarFallback className="text-[10px] bg-primary/15 text-primary">
-                    {(preSelectedFriend || selectedFriend)?.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium">{(preSelectedFriend || selectedFriend)?.name.split(' ')[0]}</span>
-                {!preSelectedFriend && selectedFriend && (
-                  <button onClick={() => { setSelectedFriend(null); setPlanStatus('confirmed'); }} className="ml-auto p-1 text-muted-foreground hover:text-foreground">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
+            {/* Selected friends display */}
+            {selectedFriends.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  With
+                </p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {selectedFriends.map(f => (
+                    <span
+                      key={f.userId}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-foreground"
+                    >
+                      <Avatar className="h-4 w-4">
+                        <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                        <AvatarFallback className="text-[6px]">{f.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      {f.name.split(' ')[0]}
+                      {!preSelectedFriend && (
+                        <button
+                          onClick={() => {
+                            setSelectedFriends(prev => prev.filter(sf => sf.userId !== f.userId));
+                          }}
+                          className="ml-0.5 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Friend picker when no pre-selected friend */}
-            {!preSelectedFriend && !selectedFriend && (
+            {/* Friend picker */}
+            {!preSelectedFriend && (
               <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  With (optional)
-                </p>
+                {selectedFriends.length === 0 && (
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    With (optional)
+                  </p>
+                )}
                 <Input
                   placeholder="Search friends..."
                   value={friendSearch}
@@ -299,7 +316,11 @@ export function QuickPlanSheet({
                     {filteredFriends.slice(0, 6).map(f => (
                       <button
                         key={f.id}
-                        onClick={() => { setSelectedFriend({ userId: f.friendUserId!, name: f.name, avatar: f.avatar }); setPlanStatus('proposed'); }}
+                        onClick={() => {
+                          setSelectedFriends(prev => [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }]);
+                          setPlanStatus('proposed');
+                          setFriendSearch('');
+                        }}
                         className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
                       >
                         <Avatar className="h-4 w-4">
@@ -308,6 +329,11 @@ export function QuickPlanSheet({
                         </Avatar>
                         {f.name.split(' ')[0]}
                       </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
                     ))}
                   </div>
                 )}
