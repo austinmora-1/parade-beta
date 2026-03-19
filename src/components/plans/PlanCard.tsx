@@ -89,9 +89,9 @@ export function PlanCard({
       }}
       className={cn(
         "group flex items-start gap-2 rounded-md border border-border/50 bg-background/80 px-2 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation",
-        isTentative && "border-dashed border-border/60 opacity-70",
+        (isTentative || isPendingRsvp) && "border-dashed border-border/60 opacity-70",
         changeRequest && "border-amber-500/30",
-        needsRsvp && "border-primary/30 bg-primary/5"
+        needsRsvp && !isTentative && "border-amber-500/30 bg-amber-500/5"
       )}
     >
       {/* Activity icon */}
