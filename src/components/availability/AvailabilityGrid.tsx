@@ -232,6 +232,8 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
       <div className="grid grid-cols-3 gap-1">
         {slots.map((slot) => {
           const status = getSlotStatus(day, slot);
+          const slotPlan = status === 'busy' ? plans.find((p) => isSameDay(p.date, day) && p.timeSlot === slot) : null;
+          const isTentative = slotPlan && (slotPlan.status === 'tentative' || (slotPlan.myRsvpStatus && slotPlan.myRsvpStatus !== 'accepted' && slotPlan.myRsvpStatus !== 'declined'));
           return (
             <button
               key={slot}
@@ -243,20 +245,26 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                   "bg-availability-available-light hover:bg-availability-available/30 active:scale-95",
                 status === 'unavailable' &&
                   "bg-muted/50 hover:bg-muted active:scale-95",
-                status === 'busy' &&
-                  "bg-availability-busy-light cursor-not-allowed opacity-60"
+                status === 'busy' && !isTentative &&
+                  "bg-availability-busy-light cursor-not-allowed opacity-60",
+                isTentative &&
+                  "border border-dashed border-amber-500/50 bg-amber-500/10 cursor-not-allowed"
               )}
             >
               <span className={cn(
                 "text-[11px] font-medium leading-tight",
                 status === 'available' && "text-availability-available",
                 status === 'unavailable' && "text-muted-foreground",
-                status === 'busy' && "text-availability-busy"
+                status === 'busy' && !isTentative && "text-availability-busy",
+                isTentative && "text-amber-600 dark:text-amber-400"
               )}>
                 {TIME_SLOT_LABELS[slot].label}
               </span>
-              <span className="text-[9px] text-muted-foreground leading-tight">
-                {TIME_SLOT_LABELS[slot].time}
+              <span className={cn(
+                "text-[9px] leading-tight",
+                isTentative ? "text-amber-500/70" : "text-muted-foreground"
+              )}>
+                {isTentative ? 'tentative' : TIME_SLOT_LABELS[slot].time}
               </span>
             </button>
           );
