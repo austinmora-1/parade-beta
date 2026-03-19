@@ -635,6 +635,7 @@ export default function PlanDetail() {
                 planId={plan.id}
                 userId={userId}
                 currentStatus={myRsvpStatus}
+                compact
               />
             </div>
           )}
