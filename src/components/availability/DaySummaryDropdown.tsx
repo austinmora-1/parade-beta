@@ -241,15 +241,17 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                   {slotPlans.map((plan) => {
                     const activityConfig = ACTIVITY_CONFIG[plan.activity];
                     const isOwner = !plan.userId || plan.userId === userId;
-                    const isPendingRsvp = !isOwner && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
-                    const isTentativePlan = plan.status === 'tentative' || isPendingRsvp;
+                    const myParticipation = plan.participants?.find((p: any) => p.friendUserId === userId);
+                    const myRsvp = plan.myRsvpStatus ?? myParticipation?.rsvpStatus;
+                    const isPendingRsvp = !isOwner && myRsvp && myRsvp !== 'accepted' && myRsvp !== 'declined';
+                    const isTentativePlan = plan.status === 'tentative' || plan.status === 'proposed' || isPendingRsvp;
                     return (
                       <div
                         key={plan.id}
                         onClick={() => navigate(`/plan/${plan.id}`)}
                         className={cn(
                           "rounded-md bg-background/80 border border-border/50 px-2 py-1.5 group cursor-pointer hover:bg-muted/50 transition-colors",
-                          isTentativePlan && "border-dashed opacity-70"
+                          isTentativePlan && "border-2 border-dashed border-availability-away/70 bg-availability-away/15"
                         )}
                       >
                         <div className="flex items-center gap-2">
@@ -259,7 +261,12 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                             <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate">{getPlanDisplayTitle(plan)}</p>
+                            <div className="flex items-center gap-1">
+                              <p className={cn("text-xs font-medium truncate", isTentativePlan && "text-availability-away")}>{getPlanDisplayTitle(plan)}</p>
+                              {isTentativePlan && (
+                                <span className="text-[8px] uppercase tracking-wider text-availability-away">tentative</span>
+                              )}
+                            </div>
                             {(plan.startTime || plan.endTime) && (
                               <p className="text-[10px] text-muted-foreground">
                                 {plan.startTime && formatTime12(plan.startTime)}
