@@ -77,7 +77,7 @@ export function QuickPlanSheet({
   preSelectedDate,
   preSelectedTimeSlot,
 }: QuickPlanSheetProps) {
-  const { proposePlan, addPlan, friends } = usePlannerStore();
+  const { proposePlan, addPlan, friends, userId } = usePlannerStore();
 
   const [activity, setActivity] = useState<ActivityType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
