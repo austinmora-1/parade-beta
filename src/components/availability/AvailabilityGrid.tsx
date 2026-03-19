@@ -551,42 +551,46 @@ export function AvailabilityGrid({ onCreatePlan }: AvailabilityGridProps) {
                             isToday(day) && "bg-primary/5"
                           )}
                         >
-                          <button
-                            onClick={() => toggleSlot(day, slot)}
-                            disabled={status === 'busy' || isPast}
-                            className={cn(
-                              "h-12 w-full rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5",
-                              status === 'available' &&
-                                "bg-availability-available-light hover:bg-availability-available/30",
-                              status === 'unavailable' &&
-                                "bg-muted/50 hover:bg-muted",
-                              status === 'busy' &&
-                                "bg-availability-busy-light cursor-not-allowed"
-                            )}
-                          >
-                            {status === 'busy' && (() => {
-                              const slotPlan = plans.find(
-                                (p) => isSameDay(p.date, day) && p.timeSlot === slot
-                              );
-                              if (!slotPlan) return <span className="text-xs font-medium text-availability-busy">Busy</span>;
-                              const isTentative = slotPlan.status === 'tentative' || (slotPlan.myRsvpStatus && slotPlan.myRsvpStatus !== 'accepted' && slotPlan.myRsvpStatus !== 'declined');
-                              return (
-                                <>
-                                  <span className={cn("text-xs font-medium truncate max-w-[90px]", isTentative ? "text-availability-busy/60" : "text-availability-busy")}>
-                                    {getPlanDisplayTitle(slotPlan)}
-                                  </span>
-                                  {isTentative && (
-                                    <span className="text-[8px] text-amber-500/80 font-medium">tentative</span>
-                                  )}
-                                  {!isTentative && slotPlan.participants.length > 0 && (
-                                    <span className="text-[10px] text-availability-busy/70 truncate max-w-[90px]">
-                                      w/ {slotPlan.participants.map(p => p.name).join(', ')}
-                                    </span>
-                                  )}
-                                </>
-                              );
-                            })()}
-                          </button>
+                          {(() => {
+                            const slotPlan = status === 'busy' ? plans.find((p) => isSameDay(p.date, day) && p.timeSlot === slot) : null;
+                            const isTentative = slotPlan && (slotPlan.status === 'tentative' || (slotPlan.myRsvpStatus && slotPlan.myRsvpStatus !== 'accepted' && slotPlan.myRsvpStatus !== 'declined'));
+                            return (
+                              <button
+                                onClick={() => toggleSlot(day, slot)}
+                                disabled={status === 'busy' || isPast}
+                                className={cn(
+                                  "h-12 w-full rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5",
+                                  status === 'available' &&
+                                    "bg-availability-available-light hover:bg-availability-available/30",
+                                  status === 'unavailable' &&
+                                    "bg-muted/50 hover:bg-muted",
+                                  status === 'busy' && !isTentative &&
+                                    "bg-availability-busy-light cursor-not-allowed",
+                                  isTentative &&
+                                    "border-2 border-dashed border-amber-500/40 bg-amber-500/10 cursor-not-allowed"
+                                )}
+                              >
+                                {status === 'busy' && (() => {
+                                  if (!slotPlan) return <span className="text-xs font-medium text-availability-busy">Busy</span>;
+                                  return (
+                                    <>
+                                      <span className={cn("text-xs font-medium truncate max-w-[90px]", isTentative ? "text-amber-600 dark:text-amber-400" : "text-availability-busy")}>
+                                        {getPlanDisplayTitle(slotPlan)}
+                                      </span>
+                                      {isTentative && (
+                                        <span className="text-[8px] text-amber-500 font-semibold uppercase tracking-wider">tentative</span>
+                                      )}
+                                      {!isTentative && slotPlan.participants.length > 0 && (
+                                        <span className="text-[10px] text-availability-busy/70 truncate max-w-[90px]">
+                                          w/ {slotPlan.participants.map(p => p.name).join(', ')}
+                                        </span>
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                              </button>
+                            );
+                          })()}
                         </td>
                       );
                     })}
