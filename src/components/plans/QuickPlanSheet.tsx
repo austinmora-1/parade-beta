@@ -334,11 +334,6 @@ export function QuickPlanSheet({
                 )}
               </div>
             )}
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Activity chips */}
             <div className="space-y-2">
