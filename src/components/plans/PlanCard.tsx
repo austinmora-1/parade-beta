@@ -53,6 +53,7 @@ export function PlanCard({
   // Show RSVP buttons when user is a participant (not owner) with a pending/invited status on a proposed plan
   const isParticipant = plan.userId !== userId && userId;
   const needsRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+  const isPendingRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted';
   const showRsvp = isParticipant && !isPast;
 
   if (compact) {
