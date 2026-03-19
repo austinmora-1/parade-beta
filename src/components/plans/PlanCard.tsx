@@ -53,6 +53,7 @@ export function PlanCard({
   // Show RSVP buttons when user is a participant (not owner) with a pending/invited status on a proposed plan
   const isParticipant = plan.userId !== userId && userId;
   const needsRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+  const isPendingRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted';
   const showRsvp = isParticipant && !isPast;
 
   if (compact) {
@@ -88,9 +89,9 @@ export function PlanCard({
       }}
       className={cn(
         "group flex items-start gap-2 rounded-md border border-border/50 bg-background/80 px-2 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation",
-        isTentative && "border-dashed border-border/60 opacity-70",
+        (isTentative || isPendingRsvp) && "border-dashed border-border/60 opacity-70",
         changeRequest && "border-amber-500/30",
-        needsRsvp && "border-primary/30 bg-primary/5"
+        needsRsvp && !isTentative && "border-amber-500/30 bg-amber-500/5"
       )}
     >
       {/* Activity icon */}
@@ -104,10 +105,15 @@ export function PlanCard({
           {plan.recurringPlanId && (
             <Repeat className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
           )}
-          {isTentative && (
+          {isTentative && !isPendingRsvp && (
             <span className="text-[8px] text-muted-foreground">tentative</span>
           )}
-          {plan.status === 'proposed' && (
+          {isPendingRsvp && (
+            <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400">
+              Pending RSVP
+            </span>
+          )}
+          {plan.status === 'proposed' && !isPendingRsvp && (
             <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400">
               Awaiting response
             </span>
