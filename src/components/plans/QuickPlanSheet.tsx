@@ -528,7 +528,7 @@ export function QuickPlanSheet({
               ) : (
                 <CalendarPlus className="h-4 w-4" />
               )}
-              {hasFriend ? 'Send Plan Suggestion →' : 'Add to My Plans'}
+              {hasFriends ? 'Send Plan Suggestion →' : 'Add to My Plans'}
             </Button>
             <button
               onClick={handleMoreOptions}
