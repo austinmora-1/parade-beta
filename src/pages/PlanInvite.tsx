@@ -78,7 +78,7 @@ export default function PlanInvite() {
     
     if (!user) {
       // Redirect to landing with return URL
-      navigate(`/landing?redirect=/plan-invite/${token}`);
+      navigate(`/login?redirect=/plan-invite/${token}`);
       return;
     }
 
