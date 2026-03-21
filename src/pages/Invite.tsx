@@ -182,7 +182,7 @@ const Invite = () => {
           <p className="text-xs text-center text-primary/50">
             Already have an account?{' '}
             <button
-              onClick={() => navigate("/landing")}
+              onClick={() => navigate("/login")}
               className="text-primary hover:underline font-medium"
             >
               Sign in
