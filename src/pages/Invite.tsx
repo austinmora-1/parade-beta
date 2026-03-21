@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -32,10 +33,14 @@ const Invite = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    const { data, error } = await signUp(signupEmail, signupPassword, signupName);
     if (error) {
       toast.error(error.message);
     } else {
+      // Fire-and-forget Loops sync
+      if (data?.user?.id) {
+        supabase.functions.invoke('sync-user-to-loops', { body: { user_id: data.user.id } }).catch(() => {});
+      }
       toast.success("Account created! Let's get you set up.");
       navigate("/onboarding");
     }
