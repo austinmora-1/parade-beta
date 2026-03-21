@@ -57,9 +57,12 @@ export default function PlanInvite() {
         const inviteData = (data as any[])[0] as PlanInviteData;
         setInvite(inviteData);
 
-        // If signed in, redirect to plan detail page with invite token
+        // If signed in, redirect to plan detail page
         if (!authLoading && user) {
           if (inviteData.invite_status === 'accepted') {
+            navigate(`/plan/${inviteData.plan_id}`, { replace: true });
+          } else if (inviteData.invite_status === 'linked') {
+            // User was auto-added as participant with pending RSVP
             navigate(`/plan/${inviteData.plan_id}`, { replace: true });
           } else {
             navigate(`/plan/${inviteData.plan_id}?invite_token=${token}`, { replace: true });
