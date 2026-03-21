@@ -54,10 +54,14 @@ export default function Login() {
     if (!email.trim() || !password.trim() || !displayName.trim()) return;
     setIsLoading(true);
     try {
-      const { error } = await signUp(email.trim(), password, displayName.trim());
+      const { data, error } = await signUp(email.trim(), password, displayName.trim());
       if (error) {
         toast.error(error.message || 'Could not create account');
       } else {
+        // Fire-and-forget Loops sync
+        if (data?.user?.id) {
+          supabase.functions.invoke('sync-user-to-loops', { body: { user_id: data.user.id } }).catch(() => {});
+        }
         toast.success('Account created! Check your email to verify, then sign in.');
         setIsSignUp(false);
       }
