@@ -130,7 +130,27 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">14. Contact Us</h2>
+            <h2 className="text-xl font-semibold mb-3">14. SMS & Text Messaging</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Parade may send you text messages (SMS) for the purpose of friend invitations, plan notifications, and account-related alerts. By providing your phone number and using features that trigger text messages (such as inviting a friend via SMS), you expressly consent to receive text messages from Parade. By using these features, you acknowledge and agree to the following:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-2 mt-2">
+              <li>Message frequency varies based on your usage of the App</li>
+              <li>Message and data rates may apply depending on your mobile carrier and plan</li>
+              <li>You can opt out of receiving text messages at any time by replying STOP to any message or by contacting us at <a href="mailto:support@helloparade.app" className="text-primary hover:underline">support@helloparade.app</a></li>
+              <li>For help, reply HELP to any message or contact <a href="mailto:support@helloparade.app" className="text-primary hover:underline">support@helloparade.app</a></li>
+              <li>Text messages are sent via third-party messaging providers. We do not guarantee delivery of text messages</li>
+              <li>You represent that you are the owner or authorized user of the phone number you provide and that you are authorized to consent to receiving text messages at that number</li>
+              <li>Consent to receive text messages is not a condition of purchasing any goods or services from Parade</li>
+            </ul>
+            <p className="text-muted-foreground leading-relaxed mt-3">
+              Supported carriers include major US carriers. For a full list of supported carriers, contact us at{' '}
+              <a href="mailto:support@helloparade.app" className="text-primary hover:underline">support@helloparade.app</a>.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-3">15. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
               If you have questions about these Terms, please contact us at{' '}
               <a href="mailto:support@helloparade.app" className="text-primary hover:underline">
