@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
-import { format, addDays, nextSaturday } from 'date-fns';
+import { format, addDays, nextSaturday, isSameDay } from 'date-fns';
 import { motion } from 'framer-motion';
 import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -164,6 +164,74 @@ export function QuickPlanSheet({
     }
     setFriendSearch('');
   };
+
+  // Fetch availability for selected friends on the selected date
+  const [friendSlotAvailability, setFriendSlotAvailability] = useState<Record<TimeSlot, { free: number; total: number }>>({} as any);
+
+  useEffect(() => {
+    if (selectedFriends.length === 0 || !selectedDate) {
+      setFriendSlotAvailability({} as any);
+      return;
+    }
+
+    const fetchAvail = async () => {
+      const userIds = selectedFriends.map(f => f.userId);
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+
+      const { data } = await supabase
+        .from('availability')
+        .select('*')
+        .in('user_id', userIds)
+        .eq('date', dateStr);
+
+      // Also check if friends have plans blocking slots
+      const { data: friendPlans } = await supabase
+        .from('plans')
+        .select('time_slot, user_id, date, status')
+        .in('user_id', userIds)
+        .eq('date', dateStr)
+        .in('status', ['confirmed', 'proposed']);
+
+      const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
+      const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+
+      for (const slot of allSlots) {
+        let freeCount = 0;
+        for (const uid of userIds) {
+          const row = (data || []).find(d => d.user_id === uid);
+          const colName = slot.replace(/-/g, '_') as keyof typeof row;
+          const isAvailable = row ? (row[colName] ?? true) : true;
+          const hasPlan = (friendPlans || []).some(p => p.user_id === uid && p.time_slot === slot);
+          if (isAvailable && !hasPlan) freeCount++;
+        }
+        slotMap[slot] = { free: freeCount, total: userIds.length };
+      }
+
+      setFriendSlotAvailability(slotMap);
+    };
+
+    fetchAvail();
+  }, [selectedFriends, selectedDate]);
+
+  // Also factor in my own availability
+  const { availabilityMap: myAvailabilityMap, plans: myPlans } = usePlannerStore();
+
+  const getSlotStatus = useCallback((slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | null => {
+    if (selectedFriends.length === 0 || !selectedDate) return null;
+    const avail = friendSlotAvailability[slot];
+    if (!avail) return null;
+
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const myDay = myAvailabilityMap[dateStr];
+    const myFree = myDay ? myDay.slots[slot] : true;
+    const myBusy = myPlans.some(p => isSameDay(p.date, selectedDate) && p.timeSlot === slot);
+    const iAmFree = myFree && !myBusy;
+
+    if (iAmFree && avail.free === avail.total) return 'all-free';
+    if (iAmFree && avail.free > 0) return 'some-free';
+    if (!iAmFree || avail.free === 0) return 'none-free';
+    return null;
+  }, [friendSlotAvailability, selectedDate, selectedFriends, myAvailabilityMap, myPlans]);
 
   const hasFriends = selectedFriends.length > 0;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
@@ -444,27 +512,54 @@ export function QuickPlanSheet({
               </div>
             </div>
 
-            {/* Time slot chips */}
             <div className="space-y-2">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Time</p>
               <div className="flex gap-1.5 flex-wrap">
-                {TIME_SLOTS.map(t => (
-                  <motion.button
-                    key={t.value}
-                    whileTap={{ scale: 0.92 }}
-                    transition={chipSpring}
-                    onClick={() => setTimeSlot(t.value)}
-                    className={cn(
-                      "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
-                      timeSlot === t.value
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:border-primary/30"
-                    )}
-                  >
-                    {t.label}
-                  </motion.button>
-                ))}
+                {TIME_SLOTS.map(t => {
+                  const status = getSlotStatus(t.value);
+                  return (
+                    <motion.button
+                      key={t.value}
+                      whileTap={{ scale: 0.92 }}
+                      transition={chipSpring}
+                      onClick={() => setTimeSlot(t.value)}
+                      className={cn(
+                        "rounded-full border px-3 py-2 text-sm font-medium transition-colors relative",
+                        timeSlot === t.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : status === 'none-free'
+                            ? "border-border text-muted-foreground/40 line-through"
+                            : "border-border text-muted-foreground hover:border-primary/30"
+                      )}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {status === 'all-free' && timeSlot !== t.value && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-availability-available inline-block" />
+                        )}
+                        {status === 'some-free' && timeSlot !== t.value && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-availability-partial inline-block" />
+                        )}
+                        {t.label}
+                      </span>
+                    </motion.button>
+                  );
+                })}
               </div>
+              {hasFriends && selectedDate && (
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-availability-available inline-block" />
+                    All free
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-availability-partial inline-block" />
+                    Some free
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="line-through">Busy</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Optional details */}
