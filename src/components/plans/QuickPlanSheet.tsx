@@ -140,12 +140,30 @@ export function QuickPlanSheet({
     { label: format(weekend, 'EEE d'), date: weekend },
   ];
 
+  const { pods } = usePods();
   const connectedFriends = friends.filter(f => f.status === 'connected' && f.friendUserId);
   const selectedUserIds = new Set(selectedFriends.map(sf => sf.userId));
   const filteredFriends = (friendSearch
     ? connectedFriends.filter(f => f.name.toLowerCase().includes(friendSearch.toLowerCase()))
     : connectedFriends.slice(0, 5)
   ).filter(f => !selectedUserIds.has(f.friendUserId!));
+
+  const handleAddPod = (pod: typeof pods[0]) => {
+    const newFriends: typeof selectedFriends = [];
+    for (const memberId of pod.memberUserIds) {
+      if (!selectedUserIds.has(memberId)) {
+        const friend = connectedFriends.find(f => f.friendUserId === memberId);
+        if (friend) {
+          newFriends.push({ userId: friend.friendUserId!, name: friend.name, avatar: friend.avatar });
+        }
+      }
+    }
+    if (newFriends.length > 0) {
+      setSelectedFriends(prev => [...prev, ...newFriends]);
+      setPlanStatus('proposed');
+    }
+    setFriendSearch('');
+  };
 
   const hasFriends = selectedFriends.length > 0;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
