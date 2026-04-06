@@ -287,6 +287,16 @@
   to { opacity: 1; }
 }
 
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; filter: brightness(1.05); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
 
 /* Safe area for mobile devices */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
