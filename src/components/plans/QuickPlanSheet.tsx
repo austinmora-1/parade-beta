@@ -233,6 +233,40 @@ export function QuickPlanSheet({
     return null;
   }, [friendSlotAvailability, selectedDate, selectedFriends, myAvailabilityMap, myPlans]);
 
+  // Auto-select best available time slot when friends + date are set
+  useEffect(() => {
+    if (selectedFriends.length === 0 || !selectedDate || Object.keys(friendSlotAvailability).length === 0) return;
+    // Don't override if user already picked a slot manually
+    if (timeSlot) return;
+
+    const slotPriority: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const myDay = myAvailabilityMap[dateStr];
+
+    // First pass: find "all-free" slot
+    for (const slot of slotPriority) {
+      const avail = friendSlotAvailability[slot];
+      if (!avail) continue;
+      const myFree = myDay ? myDay.slots[slot] : true;
+      const myBusy = myPlans.some(p => isSameDay(p.date, selectedDate) && p.timeSlot === slot);
+      if (myFree && !myBusy && avail.free === avail.total) {
+        setTimeSlot(slot);
+        return;
+      }
+    }
+    // Second pass: find "some-free" slot
+    for (const slot of slotPriority) {
+      const avail = friendSlotAvailability[slot];
+      if (!avail) continue;
+      const myFree = myDay ? myDay.slots[slot] : true;
+      const myBusy = myPlans.some(p => isSameDay(p.date, selectedDate) && p.timeSlot === slot);
+      if (myFree && !myBusy && avail.free > 0) {
+        setTimeSlot(slot);
+        return;
+      }
+    }
+  }, [friendSlotAvailability, selectedDate, selectedFriends]);
+
   const hasFriends = selectedFriends.length > 0;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
 
