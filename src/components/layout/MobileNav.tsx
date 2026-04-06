@@ -169,10 +169,10 @@ export function MobileNav() {
               {/* FAB button */}
               <motion.button
                 onClick={() => setFabOpen((o) => !o)}
-                animate={{ rotate: fabOpen ? 45 : 0 }}
+                animate={{ rotate: fabOpen ? 45 : 0, scale: fabOpen ? 1.05 : 1 }}
                 whileTap={{ scale: 0.88 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-md shadow-primary/25"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[hsl(160,50%,44%)] shadow-lg shadow-primary/30"
                 aria-label={fabOpen ? 'Close menu' : 'Create new'}
               >
                 <Plus className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
