@@ -151,6 +151,7 @@ export function QuickPlanSheet({
       setSelectedFriends(initialFriends);
       setFriendSearch('');
       setFriendPickerOpen(false);
+      setActivityPickerOpen(false);
       setLocationSuggestions([]);
     }
   }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
