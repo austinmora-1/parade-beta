@@ -140,6 +140,7 @@ export function QuickPlanSheet({
       setCalendarOpen(false);
       setSelectedFriends(initialFriends);
       setFriendSearch('');
+      setFriendPickerOpen(false);
       setLocationSuggestions([]);
     }
   }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
