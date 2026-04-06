@@ -351,7 +351,7 @@ export default function Notifications() {
         id: inv.id,
         plan_id: inv.plan_id,
         plan_title: plan?.title || 'Plan',
-        plan_activity: plan?.activity || 'other-events',
+        plan_activity: plan?.activity || 'hanging-out',
         plan_date: plan?.date || '',
         plan_time_slot: plan?.time_slot || '',
         plan_location: plan?.location || null,
