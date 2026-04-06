@@ -123,6 +123,7 @@ export function QuickPlanSheet({
   useEffect(() => {
     if (open) {
       setActivity(null);
+      setTitle('');
       setSelectedDate(preSelectedDate || null);
       setTimeSlot(preSelectedTimeSlot || null);
       setShowDetails(false);
