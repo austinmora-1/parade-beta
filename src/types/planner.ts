@@ -167,45 +167,59 @@ export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color:
   custom: { label: 'Custom', icon: '✨', color: 'primary', description: 'Your own vibe' },
 };
 
-import { Wine, Utensils, Coffee, PartyPopper, Clapperboard, Sparkles, Flower2, BookOpen, Tv, ChefHat, Home, Dumbbell, Brush, Footprints, ShoppingBag, Stethoscope, Plane, Theater, Music, Trophy, Dice1, PersonStanding, Waves, Mountain, Dribbble, GraduationCap, SprayCan, Briefcase, Heart } from 'lucide-react';
+import { Wine, Sparkles, Landmark, Compass, Utensils, Music, User, Umbrella, Smile, Eye, Megaphone, Ferris Wheel, Tent, Gamepad2, Video, Trophy, Sword, Drama, PartyPopper, Theater, Zap, Headphones, Clapperboard, TreePine, Tv, Flame, Film, BookOpen, Waves as WavesIcon, Footprints, Dumbbell, PersonStanding, Footprints as Run, Home, Droplets, Mountain, PawPrint, GlassWater, Dog, Heart, GlassWater as WineGlass, Disc3, Plane, ShoppingBag } from 'lucide-react';
 
 export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
-  // Social activities
-  'drinks': { label: 'Drinks', icon: '🍹', lucideIcon: Wine, color: 'activity-drinks', vibeType: 'social' },
-  'getting-food': { label: 'Getting Food', icon: '🍽️', lucideIcon: Utensils, color: 'activity-food', vibeType: 'social' },
-  'coffee': { label: 'Coffee', icon: '☕', lucideIcon: Coffee, color: 'activity-coffee', vibeType: 'social' },
-  'events': { label: 'Events', icon: '🎉', lucideIcon: PartyPopper, color: 'activity-events', vibeType: 'social' },
-  'movies': { label: 'Movies', icon: '🎬', lucideIcon: Clapperboard, color: 'activity-movies', vibeType: 'social' },
-  'show': { label: 'Seeing a Show', icon: '🎭', lucideIcon: Theater, color: 'activity-events', vibeType: 'social' },
+  // Social activities (ranked)
+  'drinks': { label: 'Getting Drinks', icon: '🍹', lucideIcon: Wine, color: 'activity-drinks', vibeType: 'social' },
+  'hanging-out': { label: 'Hanging Out', icon: '🤙', lucideIcon: Smile, color: 'activity-events', vibeType: 'social' },
+  'museum': { label: 'Going to a Museum', icon: '🏛️', lucideIcon: Landmark, color: 'activity-events', vibeType: 'social' },
+  'sightseeing': { label: 'Sightseeing', icon: '🧭', lucideIcon: Compass, color: 'activity-events', vibeType: 'social' },
+  'dinner': { label: 'Getting Dinner', icon: '🍽️', lucideIcon: Utensils, color: 'activity-food', vibeType: 'social' },
   'concert': { label: 'Concert', icon: '🎵', lucideIcon: Music, color: 'activity-events', vibeType: 'social' },
-  'sports-event': { label: 'Sports Game', icon: '🏟️', lucideIcon: Trophy, color: 'activity-events', vibeType: 'social' },
-  'game-night': { label: 'Game Night', icon: '🎲', lucideIcon: Dice1, color: 'activity-events', vibeType: 'social' },
-  'other-events': { label: 'Other Events', icon: '✨', lucideIcon: Sparkles, color: 'activity-misc', vibeType: 'social' },
-  // Chill activities
-  'me-time': { label: 'Me Time', icon: '🧘', lucideIcon: Flower2, color: 'activity-me-time', vibeType: 'chill' },
+  'one-on-one': { label: '1:1 Time', icon: '👥', lucideIcon: User, color: 'activity-events', vibeType: 'social' },
+  'beach': { label: 'Going to the Beach', icon: '🏖️', lucideIcon: Umbrella, color: 'activity-events', vibeType: 'social' },
+  'stand-up-comedy': { label: 'Stand-up Comedy', icon: '🎤', lucideIcon: Megaphone, color: 'activity-events', vibeType: 'social' },
+  'people-watching': { label: 'People Watching', icon: '👀', lucideIcon: Eye, color: 'activity-events', vibeType: 'social' },
+  'get-off-lawn': { label: 'Get Off My Lawn', icon: '🌿', lucideIcon: Megaphone, color: 'activity-events', vibeType: 'social' },
+  'theme-park': { label: 'Theme Park', icon: '🎢', lucideIcon: Zap, color: 'activity-events', vibeType: 'social' },
+  'camping': { label: 'Camping', icon: '⛺', lucideIcon: Tent, color: 'activity-events', vibeType: 'social' },
+  'video-games': { label: 'Video Games', icon: '🎮', lucideIcon: Gamepad2, color: 'activity-events', vibeType: 'social' },
+  'facetime': { label: 'Facetime', icon: '📱', lucideIcon: Video, color: 'activity-events', vibeType: 'social' },
+  'sports-event': { label: 'Going to a Game', icon: '🏟️', lucideIcon: Trophy, color: 'activity-events', vibeType: 'social' },
+  'larping': { label: 'LARPing', icon: '⚔️', lucideIcon: Sword, color: 'activity-events', vibeType: 'social' },
+  'ballet': { label: 'Ballet / Dance', icon: '🩰', lucideIcon: Drama, color: 'activity-events', vibeType: 'social' },
+  'dancing': { label: 'Dancing', icon: '💃', lucideIcon: PartyPopper, color: 'activity-events', vibeType: 'social' },
+  'opera': { label: 'Opera', icon: '🎭', lucideIcon: Theater, color: 'activity-events', vibeType: 'social' },
+  'comic-con': { label: 'Comic-Con', icon: '🦸', lucideIcon: Zap, color: 'activity-events', vibeType: 'social' },
+  // Chill activities (ranked)
+  'listening-music': { label: 'Listening to Music', icon: '🎧', lucideIcon: Headphones, color: 'activity-me-time', vibeType: 'chill' },
+  'watching-movie': { label: 'Watching a Movie', icon: '🎬', lucideIcon: Clapperboard, color: 'activity-movies', vibeType: 'chill' },
+  'park': { label: 'Going to the Park', icon: '🌳', lucideIcon: TreePine, color: 'activity-me-time', vibeType: 'chill' },
+  'watching-tv': { label: 'Watching TV', icon: '📺', lucideIcon: Tv, color: 'activity-watching', vibeType: 'chill' },
+  'grilling': { label: 'Grilling', icon: '🔥', lucideIcon: Flame, color: 'activity-food', vibeType: 'chill' },
+  'movies': { label: 'Going to the Movies', icon: '🎥', lucideIcon: Film, color: 'activity-movies', vibeType: 'chill' },
+  'black-hole': { label: 'In a Black Hole', icon: '🕳️', lucideIcon: Sparkles, color: 'activity-me-time', vibeType: 'chill' },
   'reading': { label: 'Reading', icon: '📚', lucideIcon: BookOpen, color: 'activity-reading', vibeType: 'chill' },
-  'watching': { label: 'Watching', icon: '📺', lucideIcon: Tv, color: 'activity-watching', vibeType: 'chill' },
-  'making-food': { label: 'Cooking', icon: '👨‍🍳', lucideIcon: ChefHat, color: 'activity-food', vibeType: 'chill' },
-  // Athletic activities
-  'workout-in': { label: 'Home Workout', icon: '🏠💪', lucideIcon: Home, color: 'activity-workout', vibeType: 'athletic' },
-  'workout-out': { label: 'Gym/Outdoor', icon: '🏋️', lucideIcon: Dumbbell, color: 'activity-workout', vibeType: 'athletic' },
+  // Athletic activities (ranked)
+  'surfing': { label: 'Surfing', icon: '🏄', lucideIcon: WavesIcon, color: 'activity-workout', vibeType: 'athletic' },
+  'jaywalking': { label: 'Jaywalking', icon: '🚶', lucideIcon: Footprints, color: 'activity-workout', vibeType: 'athletic' },
+  'gym': { label: 'Going to the Gym', icon: '🏋️', lucideIcon: Dumbbell, color: 'activity-workout', vibeType: 'athletic' },
   'yoga': { label: 'Yoga', icon: '🧘‍♀️', lucideIcon: PersonStanding, color: 'activity-workout', vibeType: 'athletic' },
-  'running': { label: 'Running', icon: '🏃‍♂️', lucideIcon: Footprints, color: 'activity-workout', vibeType: 'athletic' },
-  'swimming': { label: 'Swimming', icon: '🏊', lucideIcon: Waves, color: 'activity-workout', vibeType: 'athletic' },
+  'running': { label: 'Running', icon: '🏃‍♂️', lucideIcon: Run, color: 'activity-workout', vibeType: 'athletic' },
+  'workout-in': { label: 'Working Out at Home', icon: '🏠💪', lucideIcon: Home, color: 'activity-workout', vibeType: 'athletic' },
+  'swimming': { label: 'Swimming', icon: '🏊', lucideIcon: WavesIcon, color: 'activity-workout', vibeType: 'athletic' },
   'hiking': { label: 'Hiking', icon: '🥾', lucideIcon: Mountain, color: 'activity-workout', vibeType: 'athletic' },
-  'sports': { label: 'Playing Sports', icon: '⚽', lucideIcon: Dribbble, color: 'activity-workout', vibeType: 'athletic' },
-  // Productive activities
-  'chores': { label: 'Chores', icon: '🧹', lucideIcon: Brush, color: 'activity-chores', vibeType: 'productive' },
-  'errands': { label: 'Errands', icon: '🏃', lucideIcon: Footprints, color: 'activity-errands', vibeType: 'productive' },
-  'shopping': { label: 'Shopping', icon: '🛍️', lucideIcon: ShoppingBag, color: 'activity-shopping', vibeType: 'productive' },
-  'doctor': { label: 'Appointment', icon: '🏥', lucideIcon: Stethoscope, color: 'activity-doctor', vibeType: 'productive' },
-  'studying': { label: 'Studying', icon: '📖', lucideIcon: GraduationCap, color: 'activity-chores', vibeType: 'productive' },
-  'cleaning': { label: 'Cleaning', icon: '🧽', lucideIcon: SprayCan, color: 'activity-chores', vibeType: 'productive' },
-  'work': { label: 'Work', icon: '💼', lucideIcon: Briefcase, color: 'activity-errands', vibeType: 'productive' },
+  // Productive activities (ranked)
+  'feeding-pets': { label: 'Feeding the Pets', icon: '🐾', lucideIcon: PawPrint, color: 'activity-chores', vibeType: 'productive' },
+  'hydrating': { label: 'Hydrating', icon: '💧', lucideIcon: GlassWater, color: 'activity-chores', vibeType: 'productive' },
+  'walking-dog': { label: 'Walking the Dog', icon: '🐕', lucideIcon: Dog, color: 'activity-chores', vibeType: 'productive' },
   'volunteering': { label: 'Volunteering', icon: '🤝', lucideIcon: Heart, color: 'activity-errands', vibeType: 'productive' },
-  // Travel
-  'flight': { label: 'Flight', icon: '✈️', lucideIcon: Plane, color: 'activity-events', vibeType: 'social' },
-  // Custom placeholder (not used directly, for type safety)
+  'wine-tasting': { label: 'Wine Tasting', icon: '🍷', lucideIcon: Wine, color: 'activity-errands', vibeType: 'productive' },
+  'amateur-djing': { label: 'Amateur DJing', icon: '🎧', lucideIcon: Disc3, color: 'activity-errands', vibeType: 'productive' },
+  'flight': { label: 'Flight', icon: '✈️', lucideIcon: Plane, color: 'activity-events', vibeType: 'productive' },
+  'shopping': { label: 'Shopping', icon: '🛍️', lucideIcon: ShoppingBag, color: 'activity-shopping', vibeType: 'productive' },
+  // Custom placeholder
   'custom': { label: 'Custom', icon: '✨', lucideIcon: Sparkles, color: 'primary', vibeType: 'social' },
 };
 
