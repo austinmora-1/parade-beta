@@ -99,6 +99,7 @@ export function QuickPlanSheet({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
+  const [friendPickerOpen, setFriendPickerOpen] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Location search
@@ -139,6 +140,7 @@ export function QuickPlanSheet({
       setCalendarOpen(false);
       setSelectedFriends(initialFriends);
       setFriendSearch('');
+      setFriendPickerOpen(false);
       setLocationSuggestions([]);
     }
   }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
@@ -542,65 +544,68 @@ export function QuickPlanSheet({
                     placeholder="Search friends..."
                     value={friendSearch}
                     onChange={(e) => setFriendSearch(e.target.value)}
+                    onFocus={() => setFriendPickerOpen(true)}
                     className="h-8 text-sm pl-8"
                   />
                 </div>
 
-                {/* Dropdown list */}
-                <div className="max-h-36 overflow-y-auto rounded-lg border border-border bg-card">
-                  {/* Pod groups */}
-                  {pods.length > 0 && !friendSearch && (
-                    <>
-                      {pods.map(pod => (
-                        <button
-                          key={pod.id}
-                          onClick={() => handleAddPod(pod)}
-                          className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-accent transition-colors border-b border-border/50 last:border-b-0"
-                        >
-                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
-                            {pod.emoji}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <span className="font-medium text-foreground">{pod.name}</span>
-                            <span className="ml-1.5 text-muted-foreground">· {pod.memberUserIds.length}</span>
-                          </div>
-                          <Users className="h-3 w-3 text-muted-foreground" />
-                        </button>
-                      ))}
-                    </>
-                  )}
+                {/* Dropdown list — only visible when focused */}
+                {friendPickerOpen && (
+                  <div className="max-h-36 overflow-y-auto rounded-lg border border-border bg-card">
+                    {/* Pod groups */}
+                    {pods.length > 0 && !friendSearch && (
+                      <>
+                        {pods.map(pod => (
+                          <button
+                            key={pod.id}
+                            onClick={() => handleAddPod(pod)}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-accent transition-colors border-b border-border/50 last:border-b-0"
+                          >
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
+                              {pod.emoji}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium text-foreground">{pod.name}</span>
+                              <span className="ml-1.5 text-muted-foreground">· {pod.memberUserIds.length}</span>
+                            </div>
+                            <Users className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        ))}
+                      </>
+                    )}
 
-                  {/* Suggested label */}
-                  {!friendSearch && filteredFriends.length > 0 && (
-                    <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50">
-                      Suggested
-                    </div>
-                  )}
+                    {/* Suggested label */}
+                    {!friendSearch && filteredFriends.length > 0 && (
+                      <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50">
+                        Suggested
+                      </div>
+                    )}
 
-                  {/* Friend rows */}
-                  {filteredFriends.slice(0, friendSearch ? 10 : 5).map(f => (
-                    <button
-                      key={f.id}
-                      onClick={() => {
-                        setSelectedFriends(prev => [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }]);
-                        setPlanStatus('proposed');
-                        setFriendSearch('');
-                      }}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-accent transition-colors border-b border-border/50 last:border-b-0"
-                    >
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                        <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{f.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="flex-1 text-xs font-medium text-foreground truncate">{f.name}</span>
-                      <span className="text-[10px] text-primary font-medium">Add</span>
-                    </button>
-                  ))}
+                    {/* Friend rows */}
+                    {filteredFriends.slice(0, friendSearch ? 10 : 5).map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => {
+                          setSelectedFriends(prev => [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }]);
+                          setPlanStatus('proposed');
+                          setFriendSearch('');
+                        }}
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-accent transition-colors border-b border-border/50 last:border-b-0"
+                      >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                          <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{f.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="flex-1 text-xs font-medium text-foreground truncate">{f.name}</span>
+                        <span className="text-[10px] text-primary font-medium">Add</span>
+                      </button>
+                    ))}
 
-                  {friendSearch && filteredFriends.length === 0 && (
-                    <p className="px-3 py-3 text-xs text-muted-foreground text-center">No friends found</p>
-                  )}
-                </div>
+                    {friendSearch && filteredFriends.length === 0 && (
+                      <p className="px-3 py-3 text-xs text-muted-foreground text-center">No friends found</p>
+                    )}
+                  </div>
+                )}
               </div>
             ) : selectedFriends.length > 0 ? (
               <div className="space-y-1.5">
