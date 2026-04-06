@@ -121,7 +121,7 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
         {friendVibes.map((fv) => (
           <FriendVibeItem key={fv.friend.id} data={fv} onNavigate={() => {
             if (fv.friend.friendUserId) navigate(`/friend/${fv.friend.friendUserId}`);
-          }} />
+          }} onFriendTap={onFriendTap} />
         ))}
       </div>
     </div>
