@@ -456,7 +456,7 @@ export function QuickPlanSheet({
     } else {
       const activityConfig = ACTIVITY_CONFIG[activity! as ActivityType];
       await addPlan({
-        title: activityConfig?.label || activity!,
+        title: title.trim() || activityConfig?.label || activity!,
         activity: activity!,
         date: selectedDate!,
         timeSlot: timeSlot!,
