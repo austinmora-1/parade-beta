@@ -92,18 +92,24 @@ export function QuickPlanSheet({
   const [selectedFriends, setSelectedFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [friendPickerOpen, setFriendPickerOpen] = useState(false);
+  const [activityPickerOpen, setActivityPickerOpen] = useState(false);
   const friendPickerRef = useRef<HTMLDivElement>(null);
+  const activityPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!friendPickerOpen) return;
     const handler = (e: MouseEvent) => {
-      if (friendPickerRef.current && !friendPickerRef.current.contains(e.target as Node)) {
+      if (friendPickerOpen && friendPickerRef.current && !friendPickerRef.current.contains(e.target as Node)) {
         setFriendPickerOpen(false);
       }
+      if (activityPickerOpen && activityPickerRef.current && !activityPickerRef.current.contains(e.target as Node)) {
+        setActivityPickerOpen(false);
+      }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [friendPickerOpen]);
+    if (friendPickerOpen || activityPickerOpen) {
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }
+  }, [friendPickerOpen, activityPickerOpen]);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Location search
