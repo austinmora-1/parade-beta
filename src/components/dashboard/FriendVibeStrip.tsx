@@ -140,7 +140,18 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group">
+          <button
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('application/friend', JSON.stringify({
+                userId: friend.friendUserId,
+                name: friend.name,
+                avatar: friend.avatar,
+              }));
+              e.dataTransfer.effectAllowed = 'copy';
+            }}
+            className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group touch-manipulation"
+          >
             <div className="relative h-12 w-12">
               <div
                 className={cn(
