@@ -582,7 +582,7 @@ export function QuickPlanSheet({
                       Best times
                     </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="flex gap-1.5 flex-wrap">
                     {bestSlots.map((bs, i) => {
                       const isSelected = selectedDate && timeSlot &&
                         format(selectedDate, 'yyyy-MM-dd') === format(bs.date, 'yyyy-MM-dd') &&
@@ -590,46 +590,33 @@ export function QuickPlanSheet({
                       return (
                         <motion.button
                           key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.05 }}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: i * 0.03 }}
                           onClick={() => handleBestSlotClick(bs)}
                           className={cn(
-                            "flex flex-col items-center gap-0.5 rounded-xl border px-2 py-2 text-center transition-all",
+                            "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all",
                             isSelected
-                              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                              ? "bg-primary text-primary-foreground border-primary"
                               : bs.status === 'all-free'
-                                ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
-                                : "border-availability-partial/30 bg-availability-partial/5 hover:bg-availability-partial/10"
+                                ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10 text-foreground"
+                                : "border-availability-partial/30 bg-availability-partial/5 hover:bg-availability-partial/10 text-foreground"
                           )}
                         >
                           <span className={cn(
-                            "text-[11px] font-semibold",
-                            isSelected ? "text-primary-foreground" : "text-foreground"
-                          )}>
-                            {isSameDay(bs.date, new Date()) ? 'Today' : format(bs.date, 'EEE d')}
-                          </span>
+                            "h-1.5 w-1.5 rounded-full shrink-0",
+                            isSelected
+                              ? "bg-primary-foreground/60"
+                              : bs.status === 'all-free'
+                                ? "bg-availability-available"
+                                : "bg-availability-partial"
+                          )} />
+                          <span>{isSameDay(bs.date, new Date()) ? 'Today' : format(bs.date, 'EEE d')}</span>
                           <span className={cn(
                             "text-[10px]",
-                            isSelected ? "text-primary-foreground/80" : "text-muted-foreground"
+                            isSelected ? "text-primary-foreground/70" : "text-muted-foreground"
                           )}>
                             {slotLabelMap[bs.slot]}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span className={cn(
-                              "h-1.5 w-1.5 rounded-full inline-block",
-                              isSelected
-                                ? "bg-primary-foreground/60"
-                                : bs.status === 'all-free'
-                                  ? "bg-availability-available"
-                                  : "bg-availability-partial"
-                            )} />
-                            <span className={cn(
-                              "text-[9px]",
-                              isSelected ? "text-primary-foreground/70" : "text-muted-foreground"
-                            )}>
-                              {bs.status === 'all-free' ? 'All free' : `${bs.freeCount}/${bs.total}`}
-                            </span>
                           </span>
                         </motion.button>
                       );
