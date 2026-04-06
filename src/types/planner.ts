@@ -167,7 +167,7 @@ export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color:
   custom: { label: 'Custom', icon: '✨', color: 'primary', description: 'Your own vibe' },
 };
 
-import { Wine, Sparkles, Landmark, Compass, Utensils, Music, User, Umbrella, Smile, Eye, Megaphone, Ferris Wheel, Tent, Gamepad2, Video, Trophy, Sword, Drama, PartyPopper, Theater, Zap, Headphones, Clapperboard, TreePine, Tv, Flame, Film, BookOpen, Waves as WavesIcon, Footprints, Dumbbell, PersonStanding, Footprints as Run, Home, Droplets, Mountain, PawPrint, GlassWater, Dog, Heart, GlassWater as WineGlass, Disc3, Plane, ShoppingBag } from 'lucide-react';
+import { Wine, Sparkles, Landmark, Compass, Utensils, Music, User, Umbrella, Smile, Eye, Megaphone, Tent, Gamepad2, Video, Trophy, Sword, Drama, PartyPopper, Theater, Zap, Headphones, Clapperboard, TreePine, Tv, Flame, Film, BookOpen, Waves as WavesIcon, Footprints, Dumbbell, PersonStanding, Home, Mountain, PawPrint, GlassWater, Dog, Heart, Disc3, Plane, ShoppingBag } from 'lucide-react';
 
 export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   // Social activities (ranked)
