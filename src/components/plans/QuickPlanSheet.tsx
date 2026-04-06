@@ -81,6 +81,7 @@ export function QuickPlanSheet({
 
   const [activity, setActivity] = useState<ActivityType | null>(null);
   const [title, setTitle] = useState('');
+  const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
   const [showDetails, setShowDetails] = useState(false);
