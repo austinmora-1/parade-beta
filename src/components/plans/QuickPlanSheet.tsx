@@ -100,6 +100,18 @@ export function QuickPlanSheet({
   const [selectedFriends, setSelectedFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [friendPickerOpen, setFriendPickerOpen] = useState(false);
+  const friendPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!friendPickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (friendPickerRef.current && !friendPickerRef.current.contains(e.target as Node)) {
+        setFriendPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [friendPickerOpen]);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Location search
