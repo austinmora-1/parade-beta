@@ -31,10 +31,10 @@ const leftItems  = navItems.slice(0, 2);
 const rightItems = navItems.slice(2);
 
 const fabActions = [
-  { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',         iconBg: 'bg-[hsl(150_45%_36%)]',  iconColor: 'text-white' },
-  { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',          iconBg: 'bg-[hsl(38_90%_52%)]',   iconColor: 'text-white' },
-  { id: 'share',      icon: Share2,            label: 'Share Availability', iconBg: 'bg-[hsl(200_55%_50%)]',  iconColor: 'text-white' },
-  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',           iconBg: 'bg-[hsl(270_55%_58%)]',  iconColor: 'text-white' },
+  { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',         gradient: 'from-[hsl(150,45%,36%)] to-[hsl(160,50%,44%)]', iconColor: 'text-white' },
+  { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',          gradient: 'from-[hsl(38,90%,52%)] to-[hsl(28,85%,50%)]',   iconColor: 'text-white' },
+  { id: 'share',      icon: Share2,            label: 'Share Availability', gradient: 'from-[hsl(200,55%,50%)] to-[hsl(210,60%,45%)]', iconColor: 'text-white' },
+  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',           gradient: 'from-[hsl(270,55%,58%)] to-[hsl(280,50%,50%)]', iconColor: 'text-white' },
 ] as const;
 
 type FabAction = typeof fabActions[number]['id'];
