@@ -128,7 +128,7 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
   );
 }
 
-function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: () => void }) {
+function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; onNavigate: () => void; onFriendTap?: (friend: { userId: string; name: string; avatar?: string }) => void }) {
   const { friend, currentVibe, customVibeTags, vibeGifUrl, isAvailableToday, availableSlots } = data;
   const [open, setOpen] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
