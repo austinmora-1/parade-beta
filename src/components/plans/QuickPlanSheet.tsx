@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { format, addDays, nextSaturday, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb, Sparkles } from 'lucide-react';
+import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb, Sparkles, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Drawer,
@@ -500,12 +500,111 @@ export function QuickPlanSheet({
               className="h-9 text-sm"
             />
 
-            {/* Selected friends display */}
-            {selectedFriends.length > 0 && (
-              <div className="space-y-2">
+            {/* With — combined selected + picker */}
+            {!preSelectedFriend ? (
+              <div className="space-y-1.5">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  With
+                  With {selectedFriends.length > 0 ? '' : '(optional)'}
                 </p>
+
+                {/* Selected friends as removable chips */}
+                {selectedFriends.length > 0 && (
+                  <div className="flex gap-1.5 flex-wrap mb-1">
+                    {selectedFriends.map(f => (
+                      <span
+                        key={f.userId}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-foreground"
+                      >
+                        <Avatar className="h-4 w-4">
+                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                          <AvatarFallback className="text-[6px]">{f.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {f.name.split(' ')[0]}
+                        <button
+                          onClick={() => {
+                            const updated = selectedFriends.filter(sf => sf.userId !== f.userId);
+                            setSelectedFriends(updated);
+                            if (updated.length === 0) setPlanStatus('confirmed');
+                          }}
+                          className="ml-0.5 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Search input */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search friends..."
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    className="h-8 text-sm pl-8"
+                  />
+                </div>
+
+                {/* Dropdown list */}
+                <div className="max-h-36 overflow-y-auto rounded-lg border border-border bg-card">
+                  {/* Pod groups */}
+                  {pods.length > 0 && !friendSearch && (
+                    <>
+                      {pods.map(pod => (
+                        <button
+                          key={pod.id}
+                          onClick={() => handleAddPod(pod)}
+                          className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-accent transition-colors border-b border-border/50 last:border-b-0"
+                        >
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
+                            {pod.emoji}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium text-foreground">{pod.name}</span>
+                            <span className="ml-1.5 text-muted-foreground">· {pod.memberUserIds.length}</span>
+                          </div>
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Suggested label */}
+                  {!friendSearch && filteredFriends.length > 0 && (
+                    <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 border-b border-border/50">
+                      Suggested
+                    </div>
+                  )}
+
+                  {/* Friend rows */}
+                  {filteredFriends.slice(0, friendSearch ? 10 : 5).map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => {
+                        setSelectedFriends(prev => [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }]);
+                        setPlanStatus('proposed');
+                        setFriendSearch('');
+                      }}
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-accent transition-colors border-b border-border/50 last:border-b-0"
+                    >
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                        <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{f.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="flex-1 text-xs font-medium text-foreground truncate">{f.name}</span>
+                      <span className="text-[10px] text-primary font-medium">Add</span>
+                    </button>
+                  ))}
+
+                  {friendSearch && filteredFriends.length === 0 && (
+                    <p className="px-3 py-3 text-xs text-muted-foreground text-center">No friends found</p>
+                  )}
+                </div>
+              </div>
+            ) : selectedFriends.length > 0 ? (
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">With</p>
                 <div className="flex gap-1.5 flex-wrap">
                   {selectedFriends.map(f => (
                     <span
@@ -517,77 +616,11 @@ export function QuickPlanSheet({
                         <AvatarFallback className="text-[6px]">{f.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       {f.name.split(' ')[0]}
-                      {!preSelectedFriend && (
-                        <button
-                          onClick={() => {
-                            const updated = selectedFriends.filter(sf => sf.userId !== f.userId);
-                            setSelectedFriends(updated);
-                            if (updated.length === 0) setPlanStatus('confirmed');
-                          }}
-                          className="ml-0.5 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
                     </span>
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* Friend picker */}
-            {!preSelectedFriend && (
-              <div className="space-y-2">
-                {selectedFriends.length === 0 && (
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    With (optional)
-                  </p>
-                )}
-                <Input
-                  placeholder="Search friends..."
-                  value={friendSearch}
-                  onChange={(e) => setFriendSearch(e.target.value)}
-                  className="h-8 text-sm"
-                />
-                {/* Pod chips */}
-                {pods.length > 0 && !friendSearch && (
-                  <div className="flex gap-1.5 flex-wrap">
-                    {pods.map(pod => (
-                      <button
-                        key={pod.id}
-                        onClick={() => handleAddPod(pod)}
-                        className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
-                      >
-                        <Users className="h-3 w-3" />
-                        {pod.emoji} {pod.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {filteredFriends.length > 0 && (
-                  <div className="flex gap-1.5 flex-wrap">
-                    {filteredFriends.slice(0, 6).map(f => (
-                      <button
-                        key={f.id}
-                        onClick={() => {
-                          setSelectedFriends(prev => [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }]);
-                          setPlanStatus('proposed');
-                          setFriendSearch('');
-                        }}
-                        className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
-                      >
-                        <Avatar className="h-4 w-4">
-                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                          <AvatarFallback className="text-[6px]">{f.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        {f.name.split(' ')[0]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
+            ) : null}
 
             {/* Best time suggestions */}
             <AnimatePresence>
