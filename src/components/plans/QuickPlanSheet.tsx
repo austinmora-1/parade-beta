@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { format, addDays, nextSaturday, isSameDay } from 'date-fns';
-import { motion } from 'framer-motion';
-import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Drawer,
@@ -267,6 +267,98 @@ export function QuickPlanSheet({
     }
   }, [friendSlotAvailability, selectedDate, selectedFriends]);
 
+  // Best date+time suggestions across next 7 days
+  interface BestSlot {
+    date: Date;
+    slot: TimeSlot;
+    status: 'all-free' | 'some-free';
+    freeCount: number;
+    total: number;
+  }
+  const [bestSlots, setBestSlots] = useState<BestSlot[]>([]);
+  const [loadingBestSlots, setLoadingBestSlots] = useState(false);
+
+  useEffect(() => {
+    if (selectedFriends.length === 0) {
+      setBestSlots([]);
+      return;
+    }
+
+    const fetchBestSlots = async () => {
+      setLoadingBestSlots(true);
+      const userIds = selectedFriends.map(f => f.userId);
+      const scanDays = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
+      const startDate = format(scanDays[0], 'yyyy-MM-dd');
+      const endDate = format(scanDays[6], 'yyyy-MM-dd');
+
+      const [{ data: availData }, { data: plansData }] = await Promise.all([
+        supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
+        supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+      ]);
+
+      const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+      const results: BestSlot[] = [];
+
+      for (const day of scanDays) {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const myDay = myAvailabilityMap[dateStr];
+
+        for (const slot of allSlots) {
+          const myFree = myDay ? myDay.slots[slot] : true;
+          const myBusy = myPlans.some(p => isSameDay(p.date, day) && p.timeSlot === slot);
+          if (!myFree || myBusy) continue;
+
+          let freeCount = 0;
+          for (const uid of userIds) {
+            const row = (availData || []).find(d => d.user_id === uid && d.date === dateStr);
+            const colName = slot.replace(/-/g, '_') as string;
+            const isAvailable = row ? ((row as any)[colName] ?? true) : true;
+            const hasPlan = (plansData || []).some(p => p.user_id === uid && p.time_slot === slot && p.date?.startsWith(dateStr));
+            if (isAvailable && !hasPlan) freeCount++;
+          }
+
+          if (freeCount > 0) {
+            results.push({
+              date: day,
+              slot,
+              status: freeCount === userIds.length ? 'all-free' : 'some-free',
+              freeCount,
+              total: userIds.length,
+            });
+          }
+        }
+      }
+
+      // Sort: all-free first, then by date, then by slot order
+      const slotOrder: Record<string, number> = { 'late-morning': 0, 'early-afternoon': 1, 'late-afternoon': 2, 'evening': 3, 'late-night': 4 };
+      results.sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'all-free' ? -1 : 1;
+        const dateDiff = a.date.getTime() - b.date.getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return (slotOrder[a.slot] || 0) - (slotOrder[b.slot] || 0);
+      });
+
+      setBestSlots(results.slice(0, 6));
+      setLoadingBestSlots(false);
+    };
+
+    fetchBestSlots();
+  }, [selectedFriends, myAvailabilityMap, myPlans]);
+
+  const slotLabelMap: Record<string, string> = {
+    'late-morning': 'Morning',
+    'early-afternoon': 'Lunch',
+    'late-afternoon': 'Afternoon',
+    'evening': 'Evening',
+    'late-night': 'Late Night',
+  };
+
+  const handleBestSlotClick = (bs: BestSlot) => {
+    setSelectedDate(bs.date);
+    setTimeSlot(bs.slot);
+    setCalendarOpen(false);
+  };
+
   const hasFriends = selectedFriends.length > 0;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
 
@@ -475,6 +567,83 @@ export function QuickPlanSheet({
             )}
 
 
+            {/* Best time suggestions */}
+            <AnimatePresence>
+              {hasFriends && bestSlots.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2 overflow-hidden"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Best times
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {bestSlots.map((bs, i) => {
+                      const isSelected = selectedDate && timeSlot &&
+                        format(selectedDate, 'yyyy-MM-dd') === format(bs.date, 'yyyy-MM-dd') &&
+                        timeSlot === bs.slot;
+                      return (
+                        <motion.button
+                          key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          onClick={() => handleBestSlotClick(bs)}
+                          className={cn(
+                            "flex flex-col items-center gap-0.5 rounded-xl border px-2 py-2 text-center transition-all",
+                            isSelected
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                              : bs.status === 'all-free'
+                                ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
+                                : "border-availability-partial/30 bg-availability-partial/5 hover:bg-availability-partial/10"
+                          )}
+                        >
+                          <span className={cn(
+                            "text-[11px] font-semibold",
+                            isSelected ? "text-primary-foreground" : "text-foreground"
+                          )}>
+                            {isSameDay(bs.date, new Date()) ? 'Today' : format(bs.date, 'EEE d')}
+                          </span>
+                          <span className={cn(
+                            "text-[10px]",
+                            isSelected ? "text-primary-foreground/80" : "text-muted-foreground"
+                          )}>
+                            {slotLabelMap[bs.slot]}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className={cn(
+                              "h-1.5 w-1.5 rounded-full inline-block",
+                              isSelected
+                                ? "bg-primary-foreground/60"
+                                : bs.status === 'all-free'
+                                  ? "bg-availability-available"
+                                  : "bg-availability-partial"
+                            )} />
+                            <span className={cn(
+                              "text-[9px]",
+                              isSelected ? "text-primary-foreground/70" : "text-muted-foreground"
+                            )}>
+                              {bs.status === 'all-free' ? 'All free' : `${bs.freeCount}/${bs.total}`}
+                            </span>
+                          </span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {hasFriends && loadingBestSlots && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Finding best times...
+              </div>
+            )}
 
             {/* Date chips */}
             <div className="space-y-2">
