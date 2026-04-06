@@ -416,6 +416,7 @@ export function QuickPlanSheet({
         activity: activity!,
         date: selectedDate!,
         timeSlot: timeSlot!,
+        title: title.trim() || undefined,
         location: location || undefined,
         note: note || undefined,
       });
