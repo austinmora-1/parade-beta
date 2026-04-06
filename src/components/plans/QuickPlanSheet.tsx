@@ -541,7 +541,10 @@ export function QuickPlanSheet({
             <Input
               placeholder="Plan title (optional)"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setTitleManuallyEdited(e.target.value.length > 0);
+              }}
               className="h-9 text-sm"
             />
 
