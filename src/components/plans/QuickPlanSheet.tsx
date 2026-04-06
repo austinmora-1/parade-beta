@@ -516,7 +516,7 @@ export function QuickPlanSheet({
 
             {/* With — combined selected + picker */}
             {!preSelectedFriend ? (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" ref={friendPickerRef}>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   With {selectedFriends.length > 0 ? '' : '(optional)'}
                 </p>
