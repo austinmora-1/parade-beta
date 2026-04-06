@@ -251,6 +251,14 @@
   .animate-fade-in {
     animation: fade-in 0.3s ease-out;
   }
+
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .animate-breathe {
+    animation: breathe 3s ease-in-out infinite;
+  }
 }
 
 @keyframes float {
