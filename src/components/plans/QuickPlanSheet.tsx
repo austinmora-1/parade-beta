@@ -92,18 +92,24 @@ export function QuickPlanSheet({
   const [selectedFriends, setSelectedFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [friendPickerOpen, setFriendPickerOpen] = useState(false);
+  const [activityPickerOpen, setActivityPickerOpen] = useState(false);
   const friendPickerRef = useRef<HTMLDivElement>(null);
+  const activityPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!friendPickerOpen) return;
     const handler = (e: MouseEvent) => {
-      if (friendPickerRef.current && !friendPickerRef.current.contains(e.target as Node)) {
+      if (friendPickerOpen && friendPickerRef.current && !friendPickerRef.current.contains(e.target as Node)) {
         setFriendPickerOpen(false);
       }
+      if (activityPickerOpen && activityPickerRef.current && !activityPickerRef.current.contains(e.target as Node)) {
+        setActivityPickerOpen(false);
+      }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [friendPickerOpen]);
+    if (friendPickerOpen || activityPickerOpen) {
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }
+  }, [friendPickerOpen, activityPickerOpen]);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Location search
@@ -145,6 +151,7 @@ export function QuickPlanSheet({
       setSelectedFriends(initialFriends);
       setFriendSearch('');
       setFriendPickerOpen(false);
+      setActivityPickerOpen(false);
       setLocationSuggestions([]);
     }
   }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
@@ -520,6 +527,78 @@ export function QuickPlanSheet({
               className="h-9 text-sm"
             />
 
+            {/* Activity picker — dropdown style */}
+            <div className="space-y-1.5" ref={activityPickerRef}>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Activity {activity ? '' : '(optional)'}
+              </p>
+
+              {/* Selected activity chip */}
+              {activity && !activityPickerOpen && (
+                <div className="flex gap-1.5 flex-wrap">
+                  {(() => {
+                    const a = QUICK_ACTIVITIES.find(qa => qa.id === activity);
+                    return a ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-foreground">
+                        {a.emoji} {a.label}
+                        <button
+                          onClick={() => setActivity(null)}
+                          className="ml-0.5 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
+              )}
+
+              {/* Trigger button */}
+              <button
+                onClick={() => setActivityPickerOpen(o => !o)}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-lg border px-3 h-8 text-sm transition-colors",
+                  activityPickerOpen
+                    ? "border-primary/50 bg-accent/50"
+                    : "border-border text-muted-foreground hover:border-primary/30"
+                )}
+              >
+                <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground text-xs">
+                  {activity ? 'Change activity...' : 'Pick an activity...'}
+                </span>
+              </button>
+
+              {/* Dropdown list */}
+              {activityPickerOpen && (
+                <div className="max-h-36 overflow-y-auto rounded-lg border border-border bg-card">
+                  {QUICK_ACTIVITIES.map(a => (
+                    <button
+                      key={a.id}
+                      onClick={() => {
+                        setActivity(a.id);
+                        setActivityPickerOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors border-b border-border/50 last:border-b-0",
+                        activity === a.id
+                          ? "bg-primary/5"
+                          : "hover:bg-accent"
+                      )}
+                    >
+                      <span className="text-base">{a.emoji}</span>
+                      <span className="flex-1 text-xs font-medium text-foreground">{a.label}</span>
+                      {activity === a.id ? (
+                        <span className="text-[10px] text-primary font-medium">Selected</span>
+                      ) : (
+                        <span className="text-[10px] text-primary font-medium">Add</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* With — combined selected + picker */}
             {!preSelectedFriend ? (
               <div className="space-y-1.5" ref={friendPickerRef}>
@@ -735,28 +814,6 @@ export function QuickPlanSheet({
               </button>
               {showDetails && (
                 <div className="mt-2 space-y-3 animate-fade-in">
-                  {/* Activity chips */}
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Activity</p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {QUICK_ACTIVITIES.map(a => (
-                        <motion.button
-                          key={a.id}
-                          whileTap={{ scale: 0.92 }}
-                          transition={chipSpring}
-                          onClick={() => setActivity(a.id)}
-                          className={cn(
-                            "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
-                            activity === a.id
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "border-border text-muted-foreground hover:border-primary/30"
-                          )}
-                        >
-                          {a.emoji} {a.label}
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
                   {/* Status selector */}
                   <div className="space-y-1">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
