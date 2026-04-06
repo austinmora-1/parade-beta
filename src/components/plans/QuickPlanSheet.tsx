@@ -81,6 +81,7 @@ export function QuickPlanSheet({
   open,
   onOpenChange,
   preSelectedFriend,
+  preSelectedFriends,
   preSelectedDate,
   preSelectedTimeSlot,
 }: QuickPlanSheetProps) {
