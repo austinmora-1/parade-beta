@@ -156,14 +156,6 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                   {slotInfo.time}
                 </span>
 
-                {/* Status dot */}
-                <span className={cn(
-                  "h-1.5 w-1.5 shrink-0 rounded-full",
-                  isAvailable && "bg-availability-available",
-                  status === 'unavailable' && "bg-muted-foreground/40",
-                  isBusy && "bg-primary"
-                )} />
-
                 {/* Slot label */}
                 <span className={cn(
                   "text-xs font-medium flex-1",
