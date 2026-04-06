@@ -81,6 +81,7 @@ export function QuickPlanSheet({
 
   const [activity, setActivity] = useState<ActivityType | null>(null);
   const [title, setTitle] = useState('');
+  const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -135,6 +136,7 @@ export function QuickPlanSheet({
     if (open) {
       setActivity(null);
       setTitle('');
+      setTitleManuallyEdited(false);
       setSelectedDate(preSelectedDate || null);
       setTimeSlot(preSelectedTimeSlot || null);
       setShowDetails(false);
@@ -155,6 +157,22 @@ export function QuickPlanSheet({
       setLocationSuggestions([]);
     }
   }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
+
+  // Smart auto-title: "[Activity] with [friend names]"
+  useEffect(() => {
+    if (titleManuallyEdited) return;
+    const activityLabel = activity ? (QUICK_ACTIVITIES.find(a => a.id === activity)?.label || ACTIVITY_CONFIG[activity]?.label || '') : '';
+    const friendNames = selectedFriends.map(f => f.name.split(' ')[0]);
+    let autoTitle = '';
+    if (activityLabel && friendNames.length > 0) {
+      autoTitle = `${activityLabel} with ${friendNames.join(', ')}`;
+    } else if (activityLabel) {
+      autoTitle = activityLabel;
+    } else if (friendNames.length > 0) {
+      autoTitle = `Hang with ${friendNames.join(', ')}`;
+    }
+    setTitle(autoTitle);
+  }, [activity, selectedFriends, titleManuallyEdited]);
 
 
   const { pods } = usePods();
@@ -523,7 +541,10 @@ export function QuickPlanSheet({
             <Input
               placeholder="Plan title (optional)"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setTitleManuallyEdited(e.target.value.length > 0);
+              }}
               className="h-9 text-sm"
             />
 
