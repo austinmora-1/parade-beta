@@ -150,63 +150,63 @@ function formatTimeHHMM(date: Date, timezone?: string): string {
 // Classify a calendar event into a Parade activity type based on its title
 function classifyActivity(summary?: string, isFlight = false): string {
   if (isFlight) return 'flight'
-  if (!summary) return 'events'
+  if (!summary) return 'hanging-out'
   const s = summary.toLowerCase()
 
-  // Flights
+  // ── Flights ──
   if (/\bflight\b/.test(s)) return 'flight'
 
-  // Athletic
-  if (/\b(workout|gym|fitness|yoga|pilates|crossfit|run|running|jog|swim|cycling|bike|hike|hiking|basketball|soccer|football|tennis|climbing|boxing|martial arts|session workout|training|exercise|spin|peloton|lift|weights|stretch|barre)\b/.test(s)) {
-    return 'workout-out'
-  }
+  // ── Social ──
+  if (/\b(drinks|happy\s*hour|bar|cocktail|cocktails|beer|beers|pub|brewery|nightclub|club)\b/.test(s)) return 'drinks'
+  if (/\b(museum|exhibit|exhibition|gallery)\b/.test(s)) return 'museum'
+  if (/\b(sightsee|sightseeing|tourist|tour)\b/.test(s)) return 'sightseeing'
+  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|eating|supper|bistro|diner|sushi|pizza|ramen|taco|tapas|dim\s*sum|buffet)\b/.test(s)) return 'dinner'
+  if (/\b(concert|live\s*music|gig)\b/.test(s)) return 'concert'
+  if (/\b(1[:\s]*1|one[\s-]*on[\s-]*one|catch\s*up|coffee|cafe|café|tea|espresso|latte|matcha)\b/.test(s)) return 'one-on-one'
+  if (/\b(beach|shore|ocean|seaside)\b/.test(s)) return 'beach'
+  if (/\b(stand[\s-]*up|comedy|comic|improv)\b/.test(s)) return 'stand-up-comedy'
+  if (/\b(theme\s*park|amusement|roller\s*coaster|disney|six\s*flags|universal)\b/.test(s)) return 'theme-park'
+  if (/\b(camp|camping|campfire|campsite|glamping)\b/.test(s)) return 'camping'
+  if (/\b(video\s*game|gaming|game\s*night|board\s*game|xbox|playstation|nintendo|switch)\b/.test(s)) return 'video-games'
+  if (/\b(facetime|zoom|video\s*call|google\s*meet|teams\s*call)\b/.test(s)) return 'facetime'
+  if (/\b(game|match|stadium|arena|sports\s*event)\b/.test(s) && !/\bvideo\b/.test(s)) return 'sports-event'
+  if (/\b(larp|larping)\b/.test(s)) return 'larping'
+  if (/\b(ballet|dance\s*recital|dance\s*performance)\b/.test(s)) return 'ballet'
+  if (/\b(dancing|dance\s*class|salsa|swing\s*dance|line\s*dance)\b/.test(s)) return 'dancing'
+  if (/\b(opera)\b/.test(s)) return 'opera'
+  if (/\b(comic[\s-]*con|cosplay|convention|con\b|anime\s*expo)\b/.test(s)) return 'comic-con'
+  if (/\b(hang|hanging\s*out|get[\s-]*together|kickback|hangout)\b/.test(s)) return 'hanging-out'
 
-  // Food & Drinks
-  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|food|taco|sushi|pizza|bbq|barbecue|cookout|potluck)\b/.test(s)) {
-    return 'getting-food'
-  }
-  if (/\b(drinks|happy hour|bar|cocktail|beer|wine|pub|brewery)\b/.test(s)) {
-    return 'drinks'
-  }
-  if (/\b(coffee|cafe|café|tea|latte|espresso)\b/.test(s)) {
-    return 'coffee'
-  }
-  if (/\b(cook|cooking|bake|baking|recipe|meal prep)\b/.test(s)) {
-    return 'making-food'
-  }
+  // ── Chill ──
+  if (/\b(listen|music|playlist|spotify|vinyl|record)\b/.test(s) && !/\b(concert|live)\b/.test(s)) return 'listening-music'
+  if (/\b(movie|movies|cinema|film|screening)\b/.test(s)) return 'movies'
+  if (/\b(watch|tv|netflix|hulu|streaming|binge|show|series)\b/.test(s) && !/\b(sports|game|match)\b/.test(s)) return 'watching-tv'
+  if (/\b(park|picnic|garden|botanical)\b/.test(s)) return 'park'
+  if (/\b(grill|grilling|bbq|barbecue|cookout)\b/.test(s)) return 'grilling'
+  if (/\b(theater|theatre|play|musical|show|performance)\b/.test(s)) return 'movies'
+  if (/\b(read|reading|book\s*club|library)\b/.test(s)) return 'reading'
 
-  // Movies & Entertainment
-  if (/\b(movie|cinema|film|screening|theater|theatre|concert|show|gig|performance|comedy)\b/.test(s)) {
-    return 'movies'
-  }
+  // ── Athletic ──
+  if (/\b(surf|surfing|bodyboard)\b/.test(s)) return 'surfing'
+  if (/\b(gym|weight\s*lifting|weightlifting|lifting|crossfit|cross[\s-]?fit|strength|conditioning|bootcamp|boot\s*camp|f45|orangetheory|equinox)\b/.test(s)) return 'gym'
+  if (/\b(yoga|pilates|barre|stretching)\b/.test(s)) return 'yoga'
+  if (/\b(run|running|jog|jogging|marathon|5k|10k|half[\s-]?marathon|track|sprint)\b/.test(s)) return 'running'
+  if (/\b(workout|exercise|fitness|hiit|tabata|cardio|calisthenics|peloton|soulcycle)\b/.test(s) && /\b(home|indoor|living\s*room)\b/.test(s)) return 'workout-in'
+  if (/\b(swim|swimming|pool|laps)\b/.test(s)) return 'swimming'
+  if (/\b(hike|hiking|trail|mountain|backpack)\b/.test(s)) return 'hiking'
+  if (/\b(walk|walking|stroll|jaywalking)\b/.test(s)) return 'jaywalking'
+  if (/\b(workout|exercise|fitness|hiit|tabata|cardio|calisthenics|zumba|spin|spinning|rowing|cycling|bike|biking|boxing|kickboxing|martial\s*arts|karate|judo|jiu[\s-]?jitsu|mma|basketball|soccer|football|tennis|golf|volleyball|baseball|hockey|lacrosse|rugby|cricket|athletics|peloton|soulcycle|class\s*pass|classpass|spartan|triathlon|obstacle)\b/.test(s)) return 'gym'
 
-  // Chill / Me-time
-  if (/\b(meditation|spa|massage|self[- ]care|relax|nap|rest day|me time|journal)\b/.test(s)) {
-    return 'me-time'
-  }
-  if (/\b(read|book club|reading|library)\b/.test(s)) {
-    return 'reading'
-  }
-  if (/\b(watch|stream|netflix|hulu|disney|hbo|tv|series|binge)\b/.test(s)) {
-    return 'watching'
-  }
+  // ── Productive ──
+  if (/\b(pet|pets|feed|feeding|cat|fish\s*tank)\b/.test(s) && /\b(feed|care|sitting)\b/.test(s)) return 'feeding-pets'
+  if (/\b(dog\s*walk|walk\s*(the\s*)?dog|dog\s*park)\b/.test(s)) return 'walking-dog'
+  if (/\b(volunteer|volunteering|charity|fundraiser|community\s*service)\b/.test(s)) return 'volunteering'
+  if (/\b(wine\s*tasting|winery|vineyard|sommelier)\b/.test(s)) return 'wine-tasting'
+  if (/\b(dj|djing|turntable|mix|mixing\s*music)\b/.test(s)) return 'amateur-djing'
+  if (/\b(shop|shopping|grocery|groceries|market|mall|store|target|walmart|costco|trader|whole\s*foods)\b/.test(s)) return 'shopping'
 
-  // Productive
-  if (/\b(doctor|dentist|appointment|checkup|check-up|therapy|therapist|physio|physiotherapy|optometrist|dermatologist|medical|health visit|vet)\b/.test(s)) {
-    return 'doctor'
-  }
-  if (/\b(errand|post office|bank|dmv|pickup|drop off|dry clean|laundromat)\b/.test(s)) {
-    return 'errands'
-  }
-  if (/\b(shop|shopping|mall|store|market|grocery|groceries|costco|target|walmart|ikea)\b/.test(s)) {
-    return 'shopping'
-  }
-  if (/\b(clean|cleaning|chore|chores|laundry|organize|declutter|tidy)\b/.test(s)) {
-    return 'chores'
-  }
-
-  // Default to general events
-  return 'events'
+  // ── Fallback ──
+  return 'hanging-out'
 }
 
 // Check if a city name matches a home address
