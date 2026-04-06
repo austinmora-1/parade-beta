@@ -896,6 +896,7 @@ export function QuickPlanSheet({
         defaultNotes={note || undefined}
         defaultStatus={effectiveStatus}
         defaultFriendUserIds={selectedFriends.map(f => f.userId)}
+        defaultTitle={title.trim() || undefined}
       />
     </>
   );
