@@ -267,6 +267,98 @@ export function QuickPlanSheet({
     }
   }, [friendSlotAvailability, selectedDate, selectedFriends]);
 
+  // Best date+time suggestions across next 7 days
+  interface BestSlot {
+    date: Date;
+    slot: TimeSlot;
+    status: 'all-free' | 'some-free';
+    freeCount: number;
+    total: number;
+  }
+  const [bestSlots, setBestSlots] = useState<BestSlot[]>([]);
+  const [loadingBestSlots, setLoadingBestSlots] = useState(false);
+
+  useEffect(() => {
+    if (selectedFriends.length === 0) {
+      setBestSlots([]);
+      return;
+    }
+
+    const fetchBestSlots = async () => {
+      setLoadingBestSlots(true);
+      const userIds = selectedFriends.map(f => f.userId);
+      const scanDays = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
+      const startDate = format(scanDays[0], 'yyyy-MM-dd');
+      const endDate = format(scanDays[6], 'yyyy-MM-dd');
+
+      const [{ data: availData }, { data: plansData }] = await Promise.all([
+        supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
+        supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+      ]);
+
+      const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+      const results: BestSlot[] = [];
+
+      for (const day of scanDays) {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const myDay = myAvailabilityMap[dateStr];
+
+        for (const slot of allSlots) {
+          const myFree = myDay ? myDay.slots[slot] : true;
+          const myBusy = myPlans.some(p => isSameDay(p.date, day) && p.timeSlot === slot);
+          if (!myFree || myBusy) continue;
+
+          let freeCount = 0;
+          for (const uid of userIds) {
+            const row = (availData || []).find(d => d.user_id === uid && d.date === dateStr);
+            const colName = slot.replace(/-/g, '_') as string;
+            const isAvailable = row ? ((row as any)[colName] ?? true) : true;
+            const hasPlan = (plansData || []).some(p => p.user_id === uid && p.time_slot === slot && p.date?.startsWith(dateStr));
+            if (isAvailable && !hasPlan) freeCount++;
+          }
+
+          if (freeCount > 0) {
+            results.push({
+              date: day,
+              slot,
+              status: freeCount === userIds.length ? 'all-free' : 'some-free',
+              freeCount,
+              total: userIds.length,
+            });
+          }
+        }
+      }
+
+      // Sort: all-free first, then by date, then by slot order
+      const slotOrder: Record<string, number> = { 'late-morning': 0, 'early-afternoon': 1, 'late-afternoon': 2, 'evening': 3, 'late-night': 4 };
+      results.sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'all-free' ? -1 : 1;
+        const dateDiff = a.date.getTime() - b.date.getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return (slotOrder[a.slot] || 0) - (slotOrder[b.slot] || 0);
+      });
+
+      setBestSlots(results.slice(0, 6));
+      setLoadingBestSlots(false);
+    };
+
+    fetchBestSlots();
+  }, [selectedFriends, myAvailabilityMap, myPlans]);
+
+  const slotLabelMap: Record<string, string> = {
+    'late-morning': 'Morning',
+    'early-afternoon': 'Lunch',
+    'late-afternoon': 'Afternoon',
+    'evening': 'Evening',
+    'late-night': 'Late Night',
+  };
+
+  const handleBestSlotClick = (bs: BestSlot) => {
+    setSelectedDate(bs.date);
+    setTimeSlot(bs.slot);
+    setCalendarOpen(false);
+  };
+
   const hasFriends = selectedFriends.length > 0;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
 
