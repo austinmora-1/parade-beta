@@ -728,104 +728,19 @@ export function QuickPlanSheet({
               </div>
             )}
 
-            {/* Date chips */}
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">When</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {dateOptions.map(d => (
-                  <motion.button
-                    key={d.label}
-                    whileTap={{ scale: 0.92 }}
-                    transition={chipSpring}
-                    onClick={() => { setSelectedDate(d.date); setCalendarOpen(false); }}
-                    className={cn(
-                      "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
-                      selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(d.date, 'yyyy-MM-dd')
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:border-primary/30"
-                    )}
-                  >
-                    {d.label}
-                  </motion.button>
-                ))}
-                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <motion.button
-                      whileTap={{ scale: 0.92 }}
-                      transition={chipSpring}
-                      className={cn(
-                        "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
-                        selectedDate && !dateOptions.some(d => format(d.date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "border-border text-muted-foreground hover:border-primary/30"
-                      )}
-                    >
-                      {selectedDate && !dateOptions.some(d => format(d.date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
-                        ? format(selectedDate, 'EEE d')
-                        : 'Pick date ↗'}
-                    </motion.button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate || undefined}
-                      onSelect={(date) => { if (date) { setSelectedDate(date); setCalendarOpen(false); }}}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Time</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {TIME_SLOTS.map(t => {
-                  const status = getSlotStatus(t.value);
-                  return (
-                    <motion.button
-                      key={t.value}
-                      whileTap={{ scale: 0.92 }}
-                      transition={chipSpring}
-                      onClick={() => setTimeSlot(t.value)}
-                      className={cn(
-                        "rounded-full border px-3 py-2 text-sm font-medium transition-colors relative",
-                        timeSlot === t.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : status === 'none-free'
-                            ? "border-border text-muted-foreground/40 line-through"
-                            : "border-border text-muted-foreground hover:border-primary/30"
-                      )}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        {status === 'all-free' && timeSlot !== t.value && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-availability-available inline-block" />
-                        )}
-                        {status === 'some-free' && timeSlot !== t.value && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-availability-partial inline-block" />
-                        )}
-                        {t.label}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-              {hasFriends && selectedDate && (
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-availability-available inline-block" />
-                    All free
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-availability-partial inline-block" />
-                    Some free
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="line-through">Busy</span>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Scrolling availability calendar */}
+            <SlotCalendarPicker
+              selectedDate={selectedDate}
+              selectedSlot={timeSlot}
+              onSelect={(date, slot) => {
+                setSelectedDate(date);
+                setTimeSlot(slot);
+                setCalendarOpen(false);
+              }}
+              getSlotStatus={getSlotStatusForDate}
+              hasFriends={hasFriends}
+              days={14}
+            />
 
             {/* Optional details */}
             <div>
