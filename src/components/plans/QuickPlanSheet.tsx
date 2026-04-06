@@ -151,15 +151,6 @@ export function QuickPlanSheet({
     }
   }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
 
-  const today = new Date();
-  const tomorrow = addDays(today, 1);
-  const weekend = nextSaturday(today);
-
-  const dateOptions = [
-    { label: 'Today', date: today },
-    { label: 'Tomorrow', date: tomorrow },
-    { label: format(weekend, 'EEE d'), date: weekend },
-  ];
 
   const { pods } = usePods();
   const connectedFriends = friends.filter(f => f.status === 'connected' && f.friendUserId);
