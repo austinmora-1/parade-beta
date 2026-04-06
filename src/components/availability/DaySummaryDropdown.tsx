@@ -146,7 +146,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                 onClick={() => toggleSlot(slot)}
                 disabled={isBusy}
                 className={cn(
-                  "flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors rounded-lg",
+                  "flex w-full items-center gap-2 px-2.5 py-2.5 text-left transition-colors rounded-lg",
                   !isBusy && "hover:bg-muted/40 active:scale-[0.99]",
                   isBusy && "cursor-default"
                 )}
