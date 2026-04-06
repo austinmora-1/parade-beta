@@ -289,8 +289,8 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
               );
             })()}
             {isInProgress && (
-              <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
-                In Progress
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider animate-pulse-soft">
+                Live
               </span>
             )}
           </div>
