@@ -52,13 +52,13 @@ interface QuickPlanSheetProps {
 
 const QUICK_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
   { id: 'drinks', emoji: '🍹', label: 'Drinks' },
-  { id: 'getting-food', emoji: '🍽️', label: 'Food' },
-  { id: 'coffee', emoji: '☕', label: 'Coffee' },
-  { id: 'events', emoji: '🎉', label: 'Events' },
-  { id: 'movies', emoji: '🎬', label: 'Movies' },
-  { id: 'workout-out', emoji: '🏋️', label: 'Active' },
-  { id: 'game-night', emoji: '🎲', label: 'Games' },
-  { id: 'other-events', emoji: '✨', label: 'Hangout' },
+  { id: 'dinner', emoji: '🍽️', label: 'Dinner' },
+  { id: 'hanging-out', emoji: '🤙', label: 'Hangout' },
+  { id: 'concert', emoji: '🎵', label: 'Concert' },
+  { id: 'movies', emoji: '🎥', label: 'Movies' },
+  { id: 'gym', emoji: '🏋️', label: 'Gym' },
+  { id: 'video-games', emoji: '🎮', label: 'Games' },
+  { id: 'park', emoji: '🌳', label: 'Park' },
 ];
 
 

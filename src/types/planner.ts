@@ -262,9 +262,8 @@ export const ACTIVITY_CATEGORIES: Record<ActivityCategory, { label: string; icon
   'going-out': { label: 'Going Out', icon: '🚀' },
 };
 export const getActivitiesByCategory = (category: ActivityCategory): ActivityType[] => {
-  // Map old categories to vibes for backward compatibility
   if (category === 'staying-in') {
-    return [...getActivitiesByVibe('chill'), 'workout-in', 'chores'];
+    return [...getActivitiesByVibe('chill'), 'workout-in'];
   }
-  return [...getActivitiesByVibe('social'), 'workout-out', 'errands', 'shopping', 'doctor'];
+  return [...getActivitiesByVibe('social'), 'gym', 'shopping'];
 };
