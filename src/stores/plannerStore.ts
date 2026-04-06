@@ -122,6 +122,7 @@ interface PlannerState {
     activity: ActivityType | string;
     date: Date;
     timeSlot: TimeSlot;
+    title?: string;
     location?: string;
     note?: string;
   }) => Promise<void>;
