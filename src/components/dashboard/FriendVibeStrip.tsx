@@ -117,11 +117,18 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground px-1">
         Who's around today
       </p>
-      <div className="flex gap-3 overflow-x-auto pt-1 pb-1 -mx-1 px-1 scrollbar-hide">
-        {friendVibes.map((fv) => (
-          <FriendVibeItem key={fv.friend.id} data={fv} onNavigate={() => {
-            if (fv.friend.friendUserId) navigate(`/friend/${fv.friend.friendUserId}`);
-          }} onFriendTap={onFriendTap} />
+      <div className="flex gap-2 overflow-x-auto pt-1 pb-1 -mx-1 px-1 scrollbar-hide">
+        {friendVibes.map((fv, i) => (
+          <motion.div
+            key={fv.friend.id}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 25 }}
+          >
+            <FriendVibeItem data={fv} onNavigate={() => {
+              if (fv.friend.friendUserId) navigate(`/friend/${fv.friend.friendUserId}`);
+            }} onFriendTap={onFriendTap} />
+          </motion.div>
         ))}
       </div>
     </div>
