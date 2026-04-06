@@ -206,7 +206,7 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   'jaywalking': { label: 'Jaywalking', icon: '🚶', lucideIcon: Footprints, color: 'activity-workout', vibeType: 'athletic' },
   'gym': { label: 'Going to the Gym', icon: '🏋️', lucideIcon: Dumbbell, color: 'activity-workout', vibeType: 'athletic' },
   'yoga': { label: 'Yoga', icon: '🧘‍♀️', lucideIcon: PersonStanding, color: 'activity-workout', vibeType: 'athletic' },
-  'running': { label: 'Running', icon: '🏃‍♂️', lucideIcon: Run, color: 'activity-workout', vibeType: 'athletic' },
+  'running': { label: 'Running', icon: '🏃‍♂️', lucideIcon: Footprints, color: 'activity-workout', vibeType: 'athletic' },
   'workout-in': { label: 'Working Out at Home', icon: '🏠💪', lucideIcon: Home, color: 'activity-workout', vibeType: 'athletic' },
   'swimming': { label: 'Swimming', icon: '🏊', lucideIcon: WavesIcon, color: 'activity-workout', vibeType: 'athletic' },
   'hiking': { label: 'Hiking', icon: '🥾', lucideIcon: Mountain, color: 'activity-workout', vibeType: 'athletic' },
