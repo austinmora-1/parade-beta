@@ -333,6 +333,21 @@ export function QuickPlanSheet({
                   onChange={(e) => setFriendSearch(e.target.value)}
                   className="h-8 text-sm"
                 />
+                {/* Pod chips */}
+                {pods.length > 0 && !friendSearch && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {pods.map(pod => (
+                      <button
+                        key={pod.id}
+                        onClick={() => handleAddPod(pod)}
+                        className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
+                      >
+                        <Users className="h-3 w-3" />
+                        {pod.emoji} {pod.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {filteredFriends.length > 0 && (
                   <div className="flex gap-1.5 flex-wrap">
                     {filteredFriends.slice(0, 6).map(f => (
