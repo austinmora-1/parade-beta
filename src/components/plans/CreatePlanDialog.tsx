@@ -105,7 +105,7 @@ interface CreatePlanDialogProps {
   onChangeProposed?: () => void;
 }
 
-export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, defaultActivity, defaultTimeSlot, defaultLocation, defaultNotes, defaultStatus, defaultFriendUserIds, onChangeProposed }: CreatePlanDialogProps) {
+export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, defaultActivity, defaultTimeSlot, defaultLocation, defaultNotes, defaultStatus, defaultFriendUserIds, defaultTitle, onChangeProposed }: CreatePlanDialogProps) {
   const { addPlan, updatePlan, friends, userId, plans } = usePlannerStore();
   const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
   const { pods } = usePods();
