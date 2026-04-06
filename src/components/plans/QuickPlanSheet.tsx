@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
-import { format, addDays, nextSaturday, isSameDay } from 'date-fns';
+import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb, Sparkles, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,8 +14,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import {
@@ -32,6 +30,7 @@ import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { usePods } from '@/hooks/usePods';
+import { SlotCalendarPicker } from '@/components/plans/SlotCalendarPicker';
 import { Users } from 'lucide-react';
 
 interface QuickPlanSheetProps {
@@ -62,13 +61,6 @@ const QUICK_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
   { id: 'other-events', emoji: '✨', label: 'Hangout' },
 ];
 
-const TIME_SLOTS: { label: string; value: TimeSlot }[] = [
-  { label: 'Morning', value: 'late-morning' },
-  { label: 'Lunch', value: 'early-afternoon' },
-  { label: 'Afternoon', value: 'late-afternoon' },
-  { label: 'Evening', value: 'evening' },
-  { label: 'Late Night', value: 'late-night' },
-];
 
 const chipSpring = { type: 'spring' as const, stiffness: 500, damping: 25 };
 
@@ -157,15 +149,6 @@ export function QuickPlanSheet({
     }
   }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
 
-  const today = new Date();
-  const tomorrow = addDays(today, 1);
-  const weekend = nextSaturday(today);
-
-  const dateOptions = [
-    { label: 'Today', date: today },
-    { label: 'Tomorrow', date: tomorrow },
-    { label: format(weekend, 'EEE d'), date: weekend },
-  ];
 
   const { pods } = usePods();
   const connectedFriends = friends.filter(f => f.status === 'connected' && f.friendUserId);
@@ -192,56 +175,60 @@ export function QuickPlanSheet({
     setFriendSearch('');
   };
 
-  // Fetch availability for selected friends on the selected date
-  const [friendSlotAvailability, setFriendSlotAvailability] = useState<Record<TimeSlot, { free: number; total: number }>>({} as any);
+  // Fetch availability for selected friends across 14-day window
+  const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
 
   useEffect(() => {
-    if (selectedFriends.length === 0 || !selectedDate) {
-      setFriendSlotAvailability({} as any);
+    if (selectedFriends.length === 0) {
+      setFriendMultiDayAvail({});
       return;
     }
 
     const fetchAvail = async () => {
       const userIds = selectedFriends.map(f => f.userId);
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const startDate = format(new Date(), 'yyyy-MM-dd');
+      const endDate = format(addDays(new Date(), 13), 'yyyy-MM-dd');
 
-      const { data } = await supabase
-        .from('availability')
-        .select('*')
-        .in('user_id', userIds)
-        .eq('date', dateStr);
+      const [{ data }, { data: friendPlans }] = await Promise.all([
+        supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
+        supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+      ]);
 
-      // Also check if friends have plans blocking slots
-      const { data: friendPlans } = await supabase
-        .from('plans')
-        .select('time_slot, user_id, date, status')
-        .in('user_id', userIds)
-        .eq('date', dateStr)
-        .in('status', ['confirmed', 'proposed']);
-
-      const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
       const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+      const result: Record<string, Record<TimeSlot, { free: number; total: number }>> = {};
 
-      for (const slot of allSlots) {
-        let freeCount = 0;
-        for (const uid of userIds) {
-          const row = (data || []).find(d => d.user_id === uid);
-          const colName = slot.replace(/-/g, '_') as keyof typeof row;
-          const isAvailable = row ? (row[colName] ?? true) : true;
-          const hasPlan = (friendPlans || []).some(p => p.user_id === uid && p.time_slot === slot);
-          if (isAvailable && !hasPlan) freeCount++;
+      for (let i = 0; i < 14; i++) {
+        const day = addDays(new Date(), i);
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
+
+        for (const slot of allSlots) {
+          let freeCount = 0;
+          for (const uid of userIds) {
+            const row = (data || []).find(d => d.user_id === uid && d.date === dateStr);
+            const colName = slot.replace(/-/g, '_') as string;
+            const isAvailable = row ? ((row as any)[colName] ?? true) : true;
+            const hasPlan = (friendPlans || []).some(p => p.user_id === uid && p.time_slot === slot && p.date?.startsWith(dateStr));
+            if (isAvailable && !hasPlan) freeCount++;
+          }
+          slotMap[slot] = { free: freeCount, total: userIds.length };
         }
-        slotMap[slot] = { free: freeCount, total: userIds.length };
+        result[dateStr] = slotMap;
       }
 
-      setFriendSlotAvailability(slotMap);
+      setFriendMultiDayAvail(result);
     };
 
     fetchAvail();
-  }, [selectedFriends, selectedDate]);
+  }, [selectedFriends]);
 
   // Also factor in my own availability
   const { availabilityMap: myAvailabilityMap, plans: myPlans } = usePlannerStore();
+
+  // Backwards-compat: single-date availability for auto-select logic
+  const friendSlotAvailability = selectedDate
+    ? (friendMultiDayAvail[format(selectedDate, 'yyyy-MM-dd')] || {} as Record<TimeSlot, { free: number; total: number }>)
+    : ({} as Record<TimeSlot, { free: number; total: number }>);
 
   const getSlotStatus = useCallback((slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | null => {
     if (selectedFriends.length === 0 || !selectedDate) return null;
@@ -259,6 +246,25 @@ export function QuickPlanSheet({
     if (!iAmFree || avail.free === 0) return 'none-free';
     return null;
   }, [friendSlotAvailability, selectedDate, selectedFriends, myAvailabilityMap, myPlans]);
+
+  const getSlotStatusForDate = useCallback((date: Date, slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | null => {
+    if (selectedFriends.length === 0) return null;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayAvail = friendMultiDayAvail[dateStr];
+    if (!dayAvail) return null;
+    const avail = dayAvail[slot];
+    if (!avail) return null;
+
+    const myDay = myAvailabilityMap[dateStr];
+    const myFree = myDay ? myDay.slots[slot] : true;
+    const myBusy = myPlans.some(p => isSameDay(p.date, date) && p.timeSlot === slot);
+    const iAmFree = myFree && !myBusy;
+
+    if (iAmFree && avail.free === avail.total) return 'all-free';
+    if (iAmFree && avail.free > 0) return 'some-free';
+    if (!iAmFree || avail.free === 0) return 'none-free';
+    return null;
+  }, [friendMultiDayAvail, selectedFriends, myAvailabilityMap, myPlans]);
 
   // Auto-select best available time slot when friends + date are set
   useEffect(() => {
@@ -704,104 +710,19 @@ export function QuickPlanSheet({
               </div>
             )}
 
-            {/* Date chips */}
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">When</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {dateOptions.map(d => (
-                  <motion.button
-                    key={d.label}
-                    whileTap={{ scale: 0.92 }}
-                    transition={chipSpring}
-                    onClick={() => { setSelectedDate(d.date); setCalendarOpen(false); }}
-                    className={cn(
-                      "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
-                      selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(d.date, 'yyyy-MM-dd')
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:border-primary/30"
-                    )}
-                  >
-                    {d.label}
-                  </motion.button>
-                ))}
-                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <motion.button
-                      whileTap={{ scale: 0.92 }}
-                      transition={chipSpring}
-                      className={cn(
-                        "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
-                        selectedDate && !dateOptions.some(d => format(d.date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "border-border text-muted-foreground hover:border-primary/30"
-                      )}
-                    >
-                      {selectedDate && !dateOptions.some(d => format(d.date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'))
-                        ? format(selectedDate, 'EEE d')
-                        : 'Pick date ↗'}
-                    </motion.button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate || undefined}
-                      onSelect={(date) => { if (date) { setSelectedDate(date); setCalendarOpen(false); }}}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Time</p>
-              <div className="flex gap-1.5 flex-wrap">
-                {TIME_SLOTS.map(t => {
-                  const status = getSlotStatus(t.value);
-                  return (
-                    <motion.button
-                      key={t.value}
-                      whileTap={{ scale: 0.92 }}
-                      transition={chipSpring}
-                      onClick={() => setTimeSlot(t.value)}
-                      className={cn(
-                        "rounded-full border px-3 py-2 text-sm font-medium transition-colors relative",
-                        timeSlot === t.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : status === 'none-free'
-                            ? "border-border text-muted-foreground/40 line-through"
-                            : "border-border text-muted-foreground hover:border-primary/30"
-                      )}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        {status === 'all-free' && timeSlot !== t.value && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-availability-available inline-block" />
-                        )}
-                        {status === 'some-free' && timeSlot !== t.value && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-availability-partial inline-block" />
-                        )}
-                        {t.label}
-                      </span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-              {hasFriends && selectedDate && (
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-availability-available inline-block" />
-                    All free
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-availability-partial inline-block" />
-                    Some free
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="line-through">Busy</span>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Scrolling availability calendar */}
+            <SlotCalendarPicker
+              selectedDate={selectedDate}
+              selectedSlot={timeSlot}
+              onSelect={(date, slot) => {
+                setSelectedDate(date);
+                setTimeSlot(slot);
+                setCalendarOpen(false);
+              }}
+              getSlotStatus={getSlotStatusForDate}
+              hasFriends={hasFriends}
+              days={14}
+            />
 
             {/* Optional details */}
             <div>
