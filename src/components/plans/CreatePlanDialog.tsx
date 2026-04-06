@@ -101,10 +101,11 @@ interface CreatePlanDialogProps {
   defaultNotes?: string;
   defaultStatus?: PlanStatus;
   defaultFriendUserIds?: string[];
+  defaultTitle?: string;
   onChangeProposed?: () => void;
 }
 
-export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, defaultActivity, defaultTimeSlot, defaultLocation, defaultNotes, defaultStatus, defaultFriendUserIds, onChangeProposed }: CreatePlanDialogProps) {
+export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, defaultActivity, defaultTimeSlot, defaultLocation, defaultNotes, defaultStatus, defaultFriendUserIds, defaultTitle, onChangeProposed }: CreatePlanDialogProps) {
   const { addPlan, updatePlan, friends, userId, plans } = usePlannerStore();
   const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
   const { pods } = usePods();
@@ -231,9 +232,10 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
         const config = ACTIVITY_CONFIG[defaultActivity as ActivityType];
         if (config) {
           setSelectedVibe(config.vibeType);
-          setTitle(config.label);
+          if (!defaultTitle) setTitle(config.label);
         }
       }
+      if (defaultTitle) setTitle(defaultTitle);
       if (defaultTimeSlot) setTimeSlot(defaultTimeSlot);
       if (defaultLocation) setLocationName(defaultLocation);
       if (defaultNotes) setNotes(defaultNotes);

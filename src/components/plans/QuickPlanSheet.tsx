@@ -88,6 +88,7 @@ export function QuickPlanSheet({
   const { proposePlan, addPlan, friends, userId } = usePlannerStore();
 
   const [activity, setActivity] = useState<ActivityType | null>(null);
+  const [title, setTitle] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -122,6 +123,7 @@ export function QuickPlanSheet({
   useEffect(() => {
     if (open) {
       setActivity(null);
+      setTitle('');
       setSelectedDate(preSelectedDate || null);
       setTimeSlot(preSelectedTimeSlot || null);
       setShowDetails(false);
@@ -414,6 +416,7 @@ export function QuickPlanSheet({
         activity: activity!,
         date: selectedDate!,
         timeSlot: timeSlot!,
+        title: title.trim() || undefined,
         location: location || undefined,
         note: note || undefined,
       });
@@ -453,7 +456,7 @@ export function QuickPlanSheet({
     } else {
       const activityConfig = ACTIVITY_CONFIG[activity! as ActivityType];
       await addPlan({
-        title: activityConfig?.label || activity!,
+        title: title.trim() || activityConfig?.label || activity!,
         activity: activity!,
         date: selectedDate!,
         timeSlot: timeSlot!,
@@ -489,6 +492,14 @@ export function QuickPlanSheet({
           </DrawerHeader>
 
           <div ref={scrollContainerRef} className="px-4 pb-2 space-y-4 overflow-y-auto flex-1 min-h-0" onFocus={handleInputFocus}>
+            {/* Plan title */}
+            <Input
+              placeholder="Plan title (optional)"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="h-9 text-sm"
+            />
+
             {/* Selected friends display */}
             {selectedFriends.length > 0 && (
               <div className="space-y-2">
@@ -885,6 +896,7 @@ export function QuickPlanSheet({
         defaultNotes={note || undefined}
         defaultStatus={effectiveStatus}
         defaultFriendUserIds={selectedFriends.map(f => f.userId)}
+        defaultTitle={title.trim() || undefined}
       />
     </>
   );

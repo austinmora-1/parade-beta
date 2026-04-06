@@ -122,6 +122,7 @@ interface PlannerState {
     activity: ActivityType | string;
     date: Date;
     timeSlot: TimeSlot;
+    title?: string;
     location?: string;
     note?: string;
   }) => Promise<void>;
@@ -838,7 +839,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const noonUtcDate = `${dateStr}T12:00:00+00:00`;
 
     const activityConfig = (await import('@/types/planner')).ACTIVITY_CONFIG[proposal.activity as ActivityType];
-    const autoTitle = activityConfig ? activityConfig.label : proposal.activity;
+    const autoTitle = proposal.title || (activityConfig ? activityConfig.label : proposal.activity);
 
     const { data, error } = await supabase
       .from('plans')
