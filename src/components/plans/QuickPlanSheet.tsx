@@ -193,56 +193,60 @@ export function QuickPlanSheet({
     setFriendSearch('');
   };
 
-  // Fetch availability for selected friends on the selected date
-  const [friendSlotAvailability, setFriendSlotAvailability] = useState<Record<TimeSlot, { free: number; total: number }>>({} as any);
+  // Fetch availability for selected friends across 14-day window
+  const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
 
   useEffect(() => {
-    if (selectedFriends.length === 0 || !selectedDate) {
-      setFriendSlotAvailability({} as any);
+    if (selectedFriends.length === 0) {
+      setFriendMultiDayAvail({});
       return;
     }
 
     const fetchAvail = async () => {
       const userIds = selectedFriends.map(f => f.userId);
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const startDate = format(new Date(), 'yyyy-MM-dd');
+      const endDate = format(addDays(new Date(), 13), 'yyyy-MM-dd');
 
-      const { data } = await supabase
-        .from('availability')
-        .select('*')
-        .in('user_id', userIds)
-        .eq('date', dateStr);
+      const [{ data }, { data: friendPlans }] = await Promise.all([
+        supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
+        supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+      ]);
 
-      // Also check if friends have plans blocking slots
-      const { data: friendPlans } = await supabase
-        .from('plans')
-        .select('time_slot, user_id, date, status')
-        .in('user_id', userIds)
-        .eq('date', dateStr)
-        .in('status', ['confirmed', 'proposed']);
-
-      const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
       const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+      const result: Record<string, Record<TimeSlot, { free: number; total: number }>> = {};
 
-      for (const slot of allSlots) {
-        let freeCount = 0;
-        for (const uid of userIds) {
-          const row = (data || []).find(d => d.user_id === uid);
-          const colName = slot.replace(/-/g, '_') as keyof typeof row;
-          const isAvailable = row ? (row[colName] ?? true) : true;
-          const hasPlan = (friendPlans || []).some(p => p.user_id === uid && p.time_slot === slot);
-          if (isAvailable && !hasPlan) freeCount++;
+      for (let i = 0; i < 14; i++) {
+        const day = addDays(new Date(), i);
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
+
+        for (const slot of allSlots) {
+          let freeCount = 0;
+          for (const uid of userIds) {
+            const row = (data || []).find(d => d.user_id === uid && d.date === dateStr);
+            const colName = slot.replace(/-/g, '_') as string;
+            const isAvailable = row ? ((row as any)[colName] ?? true) : true;
+            const hasPlan = (friendPlans || []).some(p => p.user_id === uid && p.time_slot === slot && p.date?.startsWith(dateStr));
+            if (isAvailable && !hasPlan) freeCount++;
+          }
+          slotMap[slot] = { free: freeCount, total: userIds.length };
         }
-        slotMap[slot] = { free: freeCount, total: userIds.length };
+        result[dateStr] = slotMap;
       }
 
-      setFriendSlotAvailability(slotMap);
+      setFriendMultiDayAvail(result);
     };
 
     fetchAvail();
-  }, [selectedFriends, selectedDate]);
+  }, [selectedFriends]);
 
   // Also factor in my own availability
   const { availabilityMap: myAvailabilityMap, plans: myPlans } = usePlannerStore();
+
+  // Backwards-compat: single-date availability for auto-select logic
+  const friendSlotAvailability = selectedDate
+    ? (friendMultiDayAvail[format(selectedDate, 'yyyy-MM-dd')] || {} as Record<TimeSlot, { free: number; total: number }>)
+    : ({} as Record<TimeSlot, { free: number; total: number }>);
 
   const getSlotStatus = useCallback((slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | null => {
     if (selectedFriends.length === 0 || !selectedDate) return null;
@@ -260,6 +264,25 @@ export function QuickPlanSheet({
     if (!iAmFree || avail.free === 0) return 'none-free';
     return null;
   }, [friendSlotAvailability, selectedDate, selectedFriends, myAvailabilityMap, myPlans]);
+
+  const getSlotStatusForDate = useCallback((date: Date, slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | null => {
+    if (selectedFriends.length === 0) return null;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayAvail = friendMultiDayAvail[dateStr];
+    if (!dayAvail) return null;
+    const avail = dayAvail[slot];
+    if (!avail) return null;
+
+    const myDay = myAvailabilityMap[dateStr];
+    const myFree = myDay ? myDay.slots[slot] : true;
+    const myBusy = myPlans.some(p => isSameDay(p.date, date) && p.timeSlot === slot);
+    const iAmFree = myFree && !myBusy;
+
+    if (iAmFree && avail.free === avail.total) return 'all-free';
+    if (iAmFree && avail.free > 0) return 'some-free';
+    if (!iAmFree || avail.free === 0) return 'none-free';
+    return null;
+  }, [friendMultiDayAvail, selectedFriends, myAvailabilityMap, myPlans]);
 
   // Auto-select best available time slot when friends + date are set
   useEffect(() => {
