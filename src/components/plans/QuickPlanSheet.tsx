@@ -99,6 +99,7 @@ export function QuickPlanSheet({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
+  const [friendPickerOpen, setFriendPickerOpen] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Location search
