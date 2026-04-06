@@ -105,67 +105,21 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
 
   return (
     <div className="rounded-xl border border-border bg-card p-3 shadow-soft animate-fade-in space-y-3">
-      {/* Date Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{format(selectedDate, 'EEEE, MMM d')}</span>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-6 px-2 text-xs gap-1"
-          onClick={() => {
-            setCreateDefaultSlot(undefined);
-            setCreatePlanOpen(true);
-          }}
-        >
-          <Plus className="h-3 w-3" />
-          Add Plan
-        </Button>
-      </div>
-
-      {/* Location & Vibe Row — right below date */}
-      <div className="flex gap-2">
-        <div className="flex-1 rounded-lg border border-border bg-background p-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              {locationStatus === 'home' ? (
-                <Home className="h-3.5 w-3.5 text-availability-available" />
-              ) : (
-                <Plane className="h-3.5 w-3.5 text-primary" />
-              )}
-              <span className="text-xs font-medium">
-                {locationStatus === 'home' ? 'Home' : 'Away'}
-              </span>
-            </div>
-            <Switch
-              className="scale-75"
-              checked={locationStatus === 'home'}
-              onCheckedChange={(checked) => setLocationStatus(checked ? 'home' : 'away', selectedDate)}
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 rounded-lg border border-border bg-background p-2">
-          <div className="flex gap-1">
-            {vibeOptions.map(([type, config]) => {
-              const isSelected = dayVibe === type;
-              return (
-                <button
-                  key={type}
-                  onClick={() => setVibeForDate(selectedDate, isSelected ? null : type as any)}
-                  className={cn(
-                    "flex-1 flex items-center justify-center rounded py-1 text-sm transition-all",
-                    isSelected
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                  )}
-                  title={config.label}
-                >
-                  {config.icon}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      {/* Location toggle */}
+      <div className="flex items-center gap-1.5">
+        {locationStatus === 'home' ? (
+          <Home className="h-3.5 w-3.5 text-availability-available" />
+        ) : (
+          <Plane className="h-3.5 w-3.5 text-primary" />
+        )}
+        <span className="text-xs font-medium">
+          {locationStatus === 'home' ? 'Home' : 'Away'}
+        </span>
+        <Switch
+          className="scale-75"
+          checked={locationStatus === 'home'}
+          onCheckedChange={(checked) => setLocationStatus(checked ? 'home' : 'away', selectedDate)}
+        />
       </div>
 
       {/* Vertical Timeline Day View */}
