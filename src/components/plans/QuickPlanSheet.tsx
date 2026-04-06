@@ -32,6 +32,7 @@ import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { usePods } from '@/hooks/usePods';
+import { SlotCalendarPicker } from '@/components/plans/SlotCalendarPicker';
 import { Users } from 'lucide-react';
 
 interface QuickPlanSheetProps {
