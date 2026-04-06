@@ -232,9 +232,10 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
         const config = ACTIVITY_CONFIG[defaultActivity as ActivityType];
         if (config) {
           setSelectedVibe(config.vibeType);
-          setTitle(config.label);
+          if (!defaultTitle) setTitle(config.label);
         }
       }
+      if (defaultTitle) setTitle(defaultTitle);
       if (defaultTimeSlot) setTimeSlot(defaultTimeSlot);
       if (defaultLocation) setLocationName(defaultLocation);
       if (defaultNotes) setNotes(defaultNotes);
