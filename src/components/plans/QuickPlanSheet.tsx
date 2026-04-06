@@ -100,6 +100,18 @@ export function QuickPlanSheet({
   const [selectedFriends, setSelectedFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [friendPickerOpen, setFriendPickerOpen] = useState(false);
+  const friendPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!friendPickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (friendPickerRef.current && !friendPickerRef.current.contains(e.target as Node)) {
+        setFriendPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [friendPickerOpen]);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Location search
@@ -504,7 +516,7 @@ export function QuickPlanSheet({
 
             {/* With — combined selected + picker */}
             {!preSelectedFriend ? (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" ref={friendPickerRef}>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   With {selectedFriends.length > 0 ? '' : '(optional)'}
                 </p>
