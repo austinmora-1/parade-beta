@@ -42,6 +42,11 @@ interface QuickPlanSheetProps {
     name: string;
     avatar?: string;
   };
+  preSelectedFriends?: {
+    userId: string;
+    name: string;
+    avatar?: string;
+  }[];
   preSelectedDate?: Date;
   preSelectedTimeSlot?: TimeSlot;
 }
