@@ -1,13 +1,28 @@
 import { useState, useCallback } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
+import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
+
+const stagger = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
+  },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+};
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
@@ -37,26 +52,44 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="animate-fade-in space-y-6 md:space-y-8">
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      animate="show"
+      className="space-y-5 md:space-y-7"
+    >
       <EllyWalkthrough />
       <PushNotificationPrompt />
 
-      {/* Who's around — the social hook, first thing you see */}
-      <FriendVibeStrip onFriendTap={handleAddFriend} />
+      {/* Personalized greeting */}
+      <motion.div variants={fadeUp}>
+        <GreetingHeader />
+      </motion.div>
+
+      {/* Who's around — the social hook */}
+      <motion.div variants={fadeUp}>
+        <FriendVibeStrip onFriendTap={handleAddFriend} />
+      </motion.div>
 
       {/* Quick Plan drop zone */}
-      <QuickPlanDrop
-        stagedFriends={stagedFriends}
-        onAddFriend={handleAddFriend}
-        onRemoveFriend={handleRemoveFriend}
-        onClear={handleClear}
-      />
+      <motion.div variants={fadeUp}>
+        <QuickPlanDrop
+          stagedFriends={stagedFriends}
+          onAddFriend={handleAddFriend}
+          onRemoveFriend={handleRemoveFriend}
+          onClear={handleClear}
+        />
+      </motion.div>
 
       {/* Set your own vibe */}
-      <VibeSelector />
+      <motion.div variants={fadeUp}>
+        <VibeSelector />
+      </motion.div>
 
       {/* Upcoming Plans & Feed */}
-      <HomeTabs />
-    </div>
+      <motion.div variants={fadeUp}>
+        <HomeTabs />
+      </motion.div>
+    </motion.div>
   );
 }
