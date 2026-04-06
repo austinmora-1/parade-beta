@@ -63,13 +63,6 @@ const QUICK_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
   { id: 'other-events', emoji: '✨', label: 'Hangout' },
 ];
 
-const TIME_SLOTS: { label: string; value: TimeSlot }[] = [
-  { label: 'Morning', value: 'late-morning' },
-  { label: 'Lunch', value: 'early-afternoon' },
-  { label: 'Afternoon', value: 'late-afternoon' },
-  { label: 'Evening', value: 'evening' },
-  { label: 'Late Night', value: 'late-night' },
-];
 
 const chipSpring = { type: 'spring' as const, stiffness: 500, damping: 25 };
 
