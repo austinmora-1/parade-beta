@@ -16,7 +16,7 @@ function getContextMessage(planCount: number, friendCount: number, hour: number)
   if (planCount > 0) return planCount + (planCount > 1 ? ' plans' : ' plan') + ' on deck';
   if (friendCount > 0 && hour < 12) return 'What are we getting into today?';
   if (hour >= 17) return 'Any plans tonight?';
-  if (hour >= 12) return 'What's the move?';
+  if (hour >= 12) return "What's the move?";
   return 'Ready to make some plans?';
 }
 
