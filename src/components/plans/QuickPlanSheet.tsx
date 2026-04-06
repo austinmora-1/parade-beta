@@ -136,6 +136,7 @@ export function QuickPlanSheet({
     if (open) {
       setActivity(null);
       setTitle('');
+      setTitleManuallyEdited(false);
       setSelectedDate(preSelectedDate || null);
       setTimeSlot(preSelectedTimeSlot || null);
       setShowDetails(false);
@@ -156,6 +157,22 @@ export function QuickPlanSheet({
       setLocationSuggestions([]);
     }
   }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
+
+  // Smart auto-title: "[Activity] with [friend names]"
+  useEffect(() => {
+    if (titleManuallyEdited) return;
+    const activityLabel = activity ? (QUICK_ACTIVITIES.find(a => a.id === activity)?.label || ACTIVITY_CONFIG[activity]?.label || '') : '';
+    const friendNames = selectedFriends.map(f => f.name.split(' ')[0]);
+    let autoTitle = '';
+    if (activityLabel && friendNames.length > 0) {
+      autoTitle = `${activityLabel} with ${friendNames.join(', ')}`;
+    } else if (activityLabel) {
+      autoTitle = activityLabel;
+    } else if (friendNames.length > 0) {
+      autoTitle = `Hang with ${friendNames.join(', ')}`;
+    }
+    setTitle(autoTitle);
+  }, [activity, selectedFriends, titleManuallyEdited]);
 
 
   const { pods } = usePods();
