@@ -552,6 +552,28 @@ export function QuickPlanSheet({
               </button>
               {showDetails && (
                 <div className="mt-2 space-y-3 animate-fade-in">
+                  {/* Activity chips */}
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Activity</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {QUICK_ACTIVITIES.map(a => (
+                        <motion.button
+                          key={a.id}
+                          whileTap={{ scale: 0.92 }}
+                          transition={chipSpring}
+                          onClick={() => setActivity(a.id)}
+                          className={cn(
+                            "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
+                            activity === a.id
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border text-muted-foreground hover:border-primary/30"
+                          )}
+                        >
+                          {a.emoji} {a.label}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
                   {/* Status selector */}
                   <div className="space-y-1">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
