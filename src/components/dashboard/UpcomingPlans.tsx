@@ -218,9 +218,9 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
         key={plan.id}
         onClick={() => navigate(`/plan/${plan.id}`)}
         className={cn(
-          "rounded-lg border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer",
+          "rounded-xl border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer group",
           isInProgress
-            ? "bg-primary/10 hover:bg-primary/15"
+            ? "bg-primary/8 hover:bg-primary/12 shadow-sm"
             : "bg-muted/30 hover:bg-muted/50",
           isTentative && "border-dashed opacity-70",
         )}
