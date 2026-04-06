@@ -152,9 +152,9 @@ export function MobileNav() {
                           delay: (fabActions.length - 1 - i) * 0.05,
                         }}
                         onClick={() => handleFabAction(action.id)}
-                        className="flex w-48 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
+                        className="flex w-48 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border active:scale-95 transition-transform"
                       >
-                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-xl shadow-sm', action.iconBg)}>
+                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-xl shadow-sm bg-gradient-to-br', action.gradient)}>
                           <action.icon className={cn('h-4 w-4', action.iconColor)} strokeWidth={2.2} />
                         </div>
                         <span className="text-sm font-semibold text-foreground whitespace-nowrap">
