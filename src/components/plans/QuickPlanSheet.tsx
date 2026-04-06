@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { format, addDays, nextSaturday, isSameDay } from 'date-fns';
-import { motion } from 'framer-motion';
-import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CalendarPlus, MapPin, ChevronDown, Loader2, ArrowRight, X, CircleCheck, CircleHelp, Lightbulb, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Drawer,
