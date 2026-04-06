@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Loader2 } from 'lucide-react';
 
@@ -6,9 +7,26 @@ import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationP
 import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
+import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
+  const [stagedFriends, setStagedFriends] = useState<StagedFriend[]>([]);
+
+  const handleAddFriend = useCallback((friend: StagedFriend) => {
+    setStagedFriends(prev => {
+      if (prev.some(f => f.userId === friend.userId)) return prev;
+      return [...prev, friend];
+    });
+  }, []);
+
+  const handleRemoveFriend = useCallback((userId: string) => {
+    setStagedFriends(prev => prev.filter(f => f.userId !== userId));
+  }, []);
+
+  const handleClear = useCallback(() => {
+    setStagedFriends([]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -24,7 +42,15 @@ export default function Dashboard() {
       <PushNotificationPrompt />
 
       {/* Who's around — the social hook, first thing you see */}
-      <FriendVibeStrip />
+      <FriendVibeStrip onFriendTap={handleAddFriend} />
+
+      {/* Quick Plan drop zone */}
+      <QuickPlanDrop
+        stagedFriends={stagedFriends}
+        onAddFriend={handleAddFriend}
+        onRemoveFriend={handleRemoveFriend}
+        onClear={handleClear}
+      />
 
       {/* Set your own vibe */}
       <VibeSelector />
