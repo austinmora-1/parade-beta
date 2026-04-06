@@ -491,6 +491,14 @@ export function QuickPlanSheet({
           </DrawerHeader>
 
           <div ref={scrollContainerRef} className="px-4 pb-2 space-y-4 overflow-y-auto flex-1 min-h-0" onFocus={handleInputFocus}>
+            {/* Plan title */}
+            <Input
+              placeholder="Plan title (optional)"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="h-9 text-sm"
+            />
+
             {/* Selected friends display */}
             {selectedFriends.length > 0 && (
               <div className="space-y-2">
