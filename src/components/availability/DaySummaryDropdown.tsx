@@ -104,7 +104,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
   if (!isOpen) return null;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3 shadow-soft animate-fade-in space-y-3">
+    <div className="animate-fade-in space-y-3">
       {/* Location toggle */}
       <div className="flex items-center gap-1.5">
         {locationStatus === 'home' ? (
