@@ -31,6 +31,8 @@ import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { usePods } from '@/hooks/usePods';
+import { Users } from 'lucide-react';
 
 interface QuickPlanSheetProps {
   open: boolean;
@@ -138,12 +140,30 @@ export function QuickPlanSheet({
     { label: format(weekend, 'EEE d'), date: weekend },
   ];
 
+  const { pods } = usePods();
   const connectedFriends = friends.filter(f => f.status === 'connected' && f.friendUserId);
   const selectedUserIds = new Set(selectedFriends.map(sf => sf.userId));
   const filteredFriends = (friendSearch
     ? connectedFriends.filter(f => f.name.toLowerCase().includes(friendSearch.toLowerCase()))
     : connectedFriends.slice(0, 5)
   ).filter(f => !selectedUserIds.has(f.friendUserId!));
+
+  const handleAddPod = (pod: typeof pods[0]) => {
+    const newFriends: typeof selectedFriends = [];
+    for (const memberId of pod.memberUserIds) {
+      if (!selectedUserIds.has(memberId)) {
+        const friend = connectedFriends.find(f => f.friendUserId === memberId);
+        if (friend) {
+          newFriends.push({ userId: friend.friendUserId!, name: friend.name, avatar: friend.avatar });
+        }
+      }
+    }
+    if (newFriends.length > 0) {
+      setSelectedFriends(prev => [...prev, ...newFriends]);
+      setPlanStatus('proposed');
+    }
+    setFriendSearch('');
+  };
 
   const hasFriends = selectedFriends.length > 0;
   const canSubmit = !!activity && !!selectedDate && !!timeSlot;
@@ -313,6 +333,21 @@ export function QuickPlanSheet({
                   onChange={(e) => setFriendSearch(e.target.value)}
                   className="h-8 text-sm"
                 />
+                {/* Pod chips */}
+                {pods.length > 0 && !friendSearch && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {pods.map(pod => (
+                      <button
+                        key={pod.id}
+                        onClick={() => handleAddPod(pod)}
+                        className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
+                      >
+                        <Users className="h-3 w-3" />
+                        {pod.emoji} {pod.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {filteredFriends.length > 0 && (
                   <div className="flex gap-1.5 flex-wrap">
                     {filteredFriends.slice(0, 6).map(f => (
