@@ -512,27 +512,54 @@ export function QuickPlanSheet({
               </div>
             </div>
 
-            {/* Time slot chips */}
             <div className="space-y-2">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Time</p>
               <div className="flex gap-1.5 flex-wrap">
-                {TIME_SLOTS.map(t => (
-                  <motion.button
-                    key={t.value}
-                    whileTap={{ scale: 0.92 }}
-                    transition={chipSpring}
-                    onClick={() => setTimeSlot(t.value)}
-                    className={cn(
-                      "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
-                      timeSlot === t.value
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:border-primary/30"
-                    )}
-                  >
-                    {t.label}
-                  </motion.button>
-                ))}
+                {TIME_SLOTS.map(t => {
+                  const status = getSlotStatus(t.value);
+                  return (
+                    <motion.button
+                      key={t.value}
+                      whileTap={{ scale: 0.92 }}
+                      transition={chipSpring}
+                      onClick={() => setTimeSlot(t.value)}
+                      className={cn(
+                        "rounded-full border px-3 py-2 text-sm font-medium transition-colors relative",
+                        timeSlot === t.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : status === 'none-free'
+                            ? "border-border text-muted-foreground/40 line-through"
+                            : "border-border text-muted-foreground hover:border-primary/30"
+                      )}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {status === 'all-free' && timeSlot !== t.value && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-availability-available inline-block" />
+                        )}
+                        {status === 'some-free' && timeSlot !== t.value && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-availability-partial inline-block" />
+                        )}
+                        {t.label}
+                      </span>
+                    </motion.button>
+                  );
+                })}
               </div>
+              {hasFriends && selectedDate && (
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-availability-available inline-block" />
+                    All free
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-availability-partial inline-block" />
+                    Some free
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="line-through">Busy</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Optional details */}
