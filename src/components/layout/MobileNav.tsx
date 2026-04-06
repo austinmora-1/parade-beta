@@ -31,10 +31,10 @@ const leftItems  = navItems.slice(0, 2);
 const rightItems = navItems.slice(2);
 
 const fabActions = [
-  { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',         iconBg: 'bg-[hsl(150_45%_36%)]',  iconColor: 'text-white' },
-  { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',          iconBg: 'bg-[hsl(38_90%_52%)]',   iconColor: 'text-white' },
-  { id: 'share',      icon: Share2,            label: 'Share Availability', iconBg: 'bg-[hsl(200_55%_50%)]',  iconColor: 'text-white' },
-  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',           iconBg: 'bg-[hsl(270_55%_58%)]',  iconColor: 'text-white' },
+  { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',         gradient: 'from-[hsl(150,45%,36%)] to-[hsl(160,50%,44%)]', iconColor: 'text-white' },
+  { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',          gradient: 'from-[hsl(38,90%,52%)] to-[hsl(28,85%,50%)]',   iconColor: 'text-white' },
+  { id: 'share',      icon: Share2,            label: 'Share Availability', gradient: 'from-[hsl(200,55%,50%)] to-[hsl(210,60%,45%)]', iconColor: 'text-white' },
+  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',           gradient: 'from-[hsl(270,55%,58%)] to-[hsl(280,50%,50%)]', iconColor: 'text-white' },
 ] as const;
 
 type FabAction = typeof fabActions[number]['id'];
@@ -152,9 +152,9 @@ export function MobileNav() {
                           delay: (fabActions.length - 1 - i) * 0.05,
                         }}
                         onClick={() => handleFabAction(action.id)}
-                        className="flex w-48 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
+                        className="flex w-48 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border active:scale-95 transition-transform"
                       >
-                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-xl shadow-sm', action.iconBg)}>
+                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-xl shadow-sm bg-gradient-to-br', action.gradient)}>
                           <action.icon className={cn('h-4 w-4', action.iconColor)} strokeWidth={2.2} />
                         </div>
                         <span className="text-sm font-semibold text-foreground whitespace-nowrap">
@@ -169,10 +169,10 @@ export function MobileNav() {
               {/* FAB button */}
               <motion.button
                 onClick={() => setFabOpen((o) => !o)}
-                animate={{ rotate: fabOpen ? 45 : 0 }}
+                animate={{ rotate: fabOpen ? 45 : 0, scale: fabOpen ? 1.05 : 1 }}
                 whileTap={{ scale: 0.88 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-md shadow-primary/25"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[hsl(160,50%,44%)] shadow-lg shadow-primary/30"
                 aria-label={fabOpen ? 'Close menu' : 'Create new'}
               >
                 <Plus className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />

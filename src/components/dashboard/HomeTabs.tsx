@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 import { UpcomingPlans } from './UpcomingPlans';
 import { FeedView } from '@/components/feed/FeedView';
 
@@ -9,12 +10,10 @@ export function HomeTabs() {
   const [activeTab, setActiveTab] = useState<number>(0);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  const swiping = useRef(false);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
-    swiping.current = false;
   }, []);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
@@ -28,34 +27,51 @@ export function HomeTabs() {
 
   return (
     <div>
-      {/* Tab pills */}
-      <div className="flex gap-1 rounded-lg border border-border p-0.5 self-start mb-4 w-fit">
+      {/* Tab pills with animated indicator */}
+      <div className="relative flex gap-0.5 rounded-xl bg-muted/60 p-1 self-start mb-4 w-fit">
         {TABS.map((tab, i) => (
           <button
             key={tab}
             onClick={() => setActiveTab(i)}
             className={cn(
-              "rounded-md px-3 py-1.5 text-xs font-medium transition-all",
+              "relative rounded-lg px-3.5 py-1.5 text-xs font-medium transition-colors z-10",
               activeTab === i
-                ? "bg-primary text-primary-foreground"
+                ? "text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {tab}
+            {activeTab === i && (
+              <motion.div
+                layoutId="home-tab-pill"
+                className="absolute inset-0 rounded-lg bg-primary shadow-sm"
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative z-10">{tab}</span>
           </button>
         ))}
       </div>
 
-      {/* Content */}
+      {/* Content with crossfade */}
       <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {activeTab === 0 ? (
-          <UpcomingPlans standalone />
-        ) : (
-          <FeedView />
-        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: activeTab === 0 ? -12 : 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: activeTab === 0 ? 12 : -12 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {activeTab === 0 ? (
+              <UpcomingPlans standalone />
+            ) : (
+              <FeedView />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -251,6 +251,14 @@
   .animate-fade-in {
     animation: fade-in 0.3s ease-out;
   }
+
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .animate-breathe {
+    animation: breathe 3s ease-in-out infinite;
+  }
 }
 
 @keyframes float {
@@ -277,6 +285,16 @@
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; filter: brightness(1.05); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 
