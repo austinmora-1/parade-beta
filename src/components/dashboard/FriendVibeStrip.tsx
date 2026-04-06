@@ -31,7 +31,11 @@ const SLOT_KEYS: { key: string; slot: TimeSlot }[] = [
   { key: 'late_night', slot: 'late-night' },
 ];
 
-export function FriendVibeStrip() {
+interface FriendVibeStripProps {
+  onFriendTap?: (friend: { userId: string; name: string; avatar?: string }) => void;
+}
+
+export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
   const { friends } = usePlannerStore();
   const { user } = useAuth();
   const navigate = useNavigate();
