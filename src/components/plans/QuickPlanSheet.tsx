@@ -42,6 +42,11 @@ interface QuickPlanSheetProps {
     name: string;
     avatar?: string;
   };
+  preSelectedFriends?: {
+    userId: string;
+    name: string;
+    avatar?: string;
+  }[];
   preSelectedDate?: Date;
   preSelectedTimeSlot?: TimeSlot;
 }
@@ -76,6 +81,7 @@ export function QuickPlanSheet({
   open,
   onOpenChange,
   preSelectedFriend,
+  preSelectedFriends,
   preSelectedDate,
   preSelectedTimeSlot,
 }: QuickPlanSheetProps) {
@@ -122,13 +128,18 @@ export function QuickPlanSheet({
       setLocation('');
       setNote('');
       setSending(false);
-      setPlanStatus(preSelectedFriend ? 'proposed' : 'confirmed');
+      const initialFriends = preSelectedFriends?.length
+        ? preSelectedFriends
+        : preSelectedFriend
+          ? [preSelectedFriend]
+          : [];
+      setPlanStatus(initialFriends.length > 0 ? 'proposed' : 'confirmed');
       setCalendarOpen(false);
-      setSelectedFriends(preSelectedFriend ? [preSelectedFriend] : []);
+      setSelectedFriends(initialFriends);
       setFriendSearch('');
       setLocationSuggestions([]);
     }
-  }, [open, preSelectedFriend, preSelectedDate, preSelectedTimeSlot]);
+  }, [open, preSelectedFriend, preSelectedFriends, preSelectedDate, preSelectedTimeSlot]);
 
   const today = new Date();
   const tomorrow = addDays(today, 1);

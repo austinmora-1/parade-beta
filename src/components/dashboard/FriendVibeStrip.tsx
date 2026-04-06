@@ -31,7 +31,11 @@ const SLOT_KEYS: { key: string; slot: TimeSlot }[] = [
   { key: 'late_night', slot: 'late-night' },
 ];
 
-export function FriendVibeStrip() {
+interface FriendVibeStripProps {
+  onFriendTap?: (friend: { userId: string; name: string; avatar?: string }) => void;
+}
+
+export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
   const { friends } = usePlannerStore();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -117,14 +121,14 @@ export function FriendVibeStrip() {
         {friendVibes.map((fv) => (
           <FriendVibeItem key={fv.friend.id} data={fv} onNavigate={() => {
             if (fv.friend.friendUserId) navigate(`/friend/${fv.friend.friendUserId}`);
-          }} />
+          }} onFriendTap={onFriendTap} />
         ))}
       </div>
     </div>
   );
 }
 
-function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: () => void }) {
+function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; onNavigate: () => void; onFriendTap?: (friend: { userId: string; name: string; avatar?: string }) => void }) {
   const { friend, currentVibe, customVibeTags, vibeGifUrl, isAvailableToday, availableSlots } = data;
   const [open, setOpen] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
@@ -136,7 +140,18 @@ function FriendVibeItem({ data, onNavigate }: { data: FriendVibe; onNavigate: ()
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group">
+          <button
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('application/friend', JSON.stringify({
+                userId: friend.friendUserId,
+                name: friend.name,
+                avatar: friend.avatar,
+              }));
+              e.dataTransfer.effectAllowed = 'copy';
+            }}
+            className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group touch-manipulation"
+          >
             <div className="relative h-12 w-12">
               <div
                 className={cn(
