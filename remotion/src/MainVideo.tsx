@@ -127,7 +127,7 @@ export const MainVideo = () => {
         </div>
         <div style={{
           fontFamily: "'sans-serif'",
-          fontSize: 16,
+          fontSize: 24,
           color: "#55C78E",
           letterSpacing: 6,
           textTransform: "uppercase" as const,
