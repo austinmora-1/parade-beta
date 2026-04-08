@@ -67,7 +67,7 @@ export const MainVideo = () => {
   const subY = interpolate(frame, [30, 50], [10, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
-    <AbsoluteFill style={{ background: "linear-gradient(135deg, #0F1A14 0%, #24382D 100%)" }}>
+    <AbsoluteFill style={{ background: "transparent" }}>
       {/* Confetti */}
       {PIECES.map((p, i) => {
         const t = Math.max(0, frame - p.delay) / fps;
