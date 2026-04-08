@@ -116,7 +116,7 @@ export const MainVideo = () => {
       }}>
         <div style={{
           fontFamily,
-          fontSize: 96,
+          fontSize: 144,
           color: "#55C78E",
           letterSpacing: 4,
           transform: `scale(${wordmarkScale})`,
@@ -127,7 +127,7 @@ export const MainVideo = () => {
         </div>
         <div style={{
           fontFamily: "'sans-serif'",
-          fontSize: 16,
+          fontSize: 24,
           color: "#55C78E",
           letterSpacing: 6,
           textTransform: "uppercase" as const,
