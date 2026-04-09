@@ -42,7 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    return supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    // Always clear client state even if server-side session is already gone
+    setSession(null);
+    setUser(null);
+    return { error };
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
