@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarPlus, X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
