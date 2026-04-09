@@ -178,10 +178,19 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
   }, []);
 
   const handleClick = useCallback(() => {
-    if (!isMobile) {
+    if (isMobile) {
+      // On mobile viewport with mouse (e.g. preview), stage the friend
+      if (onFriendTap && friend.friendUserId) {
+        onFriendTap({
+          userId: friend.friendUserId,
+          name: friend.name,
+          avatar: friend.avatar,
+        });
+      }
+    } else {
       setOpen(prev => !prev);
     }
-  }, [isMobile]);
+  }, [isMobile, onFriendTap, friend]);
 
   return (
     <>
