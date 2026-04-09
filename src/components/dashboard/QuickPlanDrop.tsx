@@ -81,7 +81,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                 'text-sm transition-colors',
                 isDragOver ? 'text-primary font-medium' : 'text-muted-foreground/60'
               )}>
-                {isDragOver ? 'Drop to start a plan!' : 'Drag friends here to plan'}
+                {isDragOver ? 'Drop to start a plan!' : isMobile ? 'Tap friends above to plan' : 'Drag friends here to plan'}
               </span>
             </motion.div>
           ) : (
