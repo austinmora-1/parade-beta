@@ -178,10 +178,19 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
   }, []);
 
   const handleClick = useCallback(() => {
-    if (!isMobile) {
+    if (isMobile) {
+      // On mobile viewport with mouse (e.g. preview), stage the friend
+      if (onFriendTap && friend.friendUserId) {
+        onFriendTap({
+          userId: friend.friendUserId,
+          name: friend.name,
+          avatar: friend.avatar,
+        });
+      }
+    } else {
       setOpen(prev => !prev);
     }
-  }, [isMobile]);
+  }, [isMobile, onFriendTap, friend]);
 
   return (
     <>
@@ -204,13 +213,7 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
               handleTouchEnd();
             }}
             onTouchMove={handleTouchMove}
-            onClick={(e) => {
-              if (isMobile) {
-                e.preventDefault();
-                return;
-              }
-              handleClick();
-            }}
+            onClick={handleClick}
             className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group touch-manipulation"
           >
             <div className="relative h-12 w-12">
