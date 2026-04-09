@@ -100,20 +100,20 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                     initial={{ scale: 0, x: -10 }}
                     animate={{ scale: 1, x: 0 }}
                     transition={{ type: 'spring', stiffness: 500, damping: 25, delay: i * 0.05 }}
-                    className="relative group"
+                    className="relative group cursor-pointer"
+                    onClick={() => onRemoveFriend(friend.userId)}
                   >
-                    <Avatar className="h-8 w-8 border-2 border-background">
+                    {/* Avatar – hidden on hover */}
+                    <Avatar className="h-8 w-8 border-2 border-background group-hover:opacity-0 transition-opacity duration-150">
                       <AvatarImage src={friend.avatar || getElephantAvatar(friend.name)} />
                       <AvatarFallback className="text-[10px]">
                         {friend.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <button
-                      onClick={() => onRemoveFriend(friend.userId)}
-                      className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
+                    {/* X overlay – visible on hover */}
+                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <X className="h-3.5 w-3.5" />
+                    </div>
                   </motion.div>
                 ))}
                 {stagedFriends.length > 5 && (
