@@ -1,5 +1,6 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -140,17 +141,56 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
   const { friend, currentVibe, customVibeTags, vibeGifUrl, isAvailableToday, availableSlots } = data;
   const [open, setOpen] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
 
   const vibeConfig = currentVibe ? VIBE_CONFIG[currentVibe as VibeType] : null;
   const isCustom = currentVibe === 'custom';
+
+  const handleTouchStart = useCallback(() => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      setOpen(true);
+    }, 500);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    if (!didLongPress.current && isMobile && onFriendTap && friend.friendUserId) {
+      onFriendTap({
+        userId: friend.friendUserId,
+        name: friend.name,
+        avatar: friend.avatar,
+      });
+    }
+  }, [isMobile, onFriendTap, friend]);
+
+  const handleTouchMove = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleClick = useCallback(() => {
+    if (!isMobile) {
+      setOpen(prev => !prev);
+    }
+  }, [isMobile]);
 
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
-            draggable
+            draggable={!isMobile}
             onDragStart={(e) => {
+              if (isMobile) return;
               e.dataTransfer.setData('application/friend', JSON.stringify({
                 userId: friend.friendUserId,
                 name: friend.name,
@@ -158,6 +198,10 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
               }));
               e.dataTransfer.effectAllowed = 'copy';
             }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchMove}
+            onClick={handleClick}
             className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group touch-manipulation"
           >
             <div className="relative h-12 w-12">

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarPlus, X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
@@ -20,6 +21,7 @@ interface QuickPlanDropProps {
 }
 
 export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onClear }: QuickPlanDropProps) {
+  const isMobile = useIsMobile();
   const [isDragOver, setIsDragOver] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
@@ -79,7 +81,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                 'text-sm transition-colors',
                 isDragOver ? 'text-primary font-medium' : 'text-muted-foreground/60'
               )}>
-                {isDragOver ? 'Drop to start a plan!' : 'Drag friends here to plan'}
+                {isDragOver ? 'Drop to start a plan!' : isMobile ? 'Tap friends above to plan' : 'Drag friends here to plan'}
               </span>
             </motion.div>
           ) : (
