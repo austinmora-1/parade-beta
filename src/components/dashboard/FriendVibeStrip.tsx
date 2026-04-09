@@ -153,7 +153,7 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true;
       setOpen(true);
-    }, 500);
+    }, 700);
   }, []);
 
   const handleTouchEnd = useCallback(() => {
