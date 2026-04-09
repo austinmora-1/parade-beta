@@ -21,7 +21,9 @@ interface QuickPlanDropProps {
 }
 
 export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onClear }: QuickPlanDropProps) {
+  const isMobile = useIsMobile();
   const [isDragOver, setIsDragOver] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
