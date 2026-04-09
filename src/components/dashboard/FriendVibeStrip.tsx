@@ -185,7 +185,7 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(val) => { if (!isMobile) setOpen(val); }}>
         <PopoverTrigger asChild>
           <button
             draggable={!isMobile}
@@ -199,9 +199,18 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
               e.dataTransfer.effectAllowed = 'copy';
             }}
             onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleTouchEnd();
+            }}
             onTouchMove={handleTouchMove}
-            onClick={handleClick}
+            onClick={(e) => {
+              if (isMobile) {
+                e.preventDefault();
+                return;
+              }
+              handleClick();
+            }}
             className="flex flex-col items-center gap-1.5 shrink-0 w-[4rem] group touch-manipulation"
           >
             <div className="relative h-12 w-12">
