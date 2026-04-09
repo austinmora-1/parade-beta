@@ -24,7 +24,6 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
   const isMobile = useIsMobile();
   const [isDragOver, setIsDragOver] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
-  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
