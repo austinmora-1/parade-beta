@@ -247,6 +247,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                 </button>
               );
             })}
+          </div>
 
           {/* Day headers row */}
           <div className="flex gap-1 mb-2">
