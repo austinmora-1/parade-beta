@@ -8,6 +8,17 @@ interface InterestsActivitiesStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
 }
 
+const SOCIAL_GOALS = [
+  { id: 'stay_connected', emoji: '💛', label: 'Stay connected with close friends' },
+  { id: 'meet_new_people', emoji: '👋', label: 'Meet new people' },
+  { id: 'try_new_things', emoji: '✨', label: 'Try new activities & experiences' },
+  { id: 'be_more_social', emoji: '🎯', label: 'Be more intentional about socializing' },
+  { id: 'less_flaking', emoji: '📅', label: 'Follow through on plans more' },
+  { id: 'work_life_balance', emoji: '⚖️', label: 'Better work-life balance' },
+  { id: 'explore_city', emoji: '🏙️', label: 'Explore my city more' },
+  { id: 'deepen_friendships', emoji: '🤝', label: 'Deepen existing friendships' },
+];
+
 const VIBE_SECTIONS = [
   {
     vibe: 'Social',

@@ -36,6 +36,7 @@ export interface OnboardingData {
   preferredSocialDays: string[];
   preferredSocialTimes: string[];
   interests: string[];
+  socialGoals: string[];
   friendEmails: string[];
   // Step 5: Notifications & Privacy
   showAvailability: boolean;
