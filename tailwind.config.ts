@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Lexend', 'sans-serif'],
-        display: ['Space Grotesk', 'sans-serif'],
+        display: ['Cal Sans', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
