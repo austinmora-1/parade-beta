@@ -96,8 +96,12 @@ export function OnboardingWizard() {
 
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      const next = currentStep + 1;
+      localStorage.setItem('onboarding_step', String(next));
+      setCurrentStep(next);
     } else {
+      handleComplete();
+    }
       handleComplete();
     }
   };
