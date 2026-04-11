@@ -180,7 +180,7 @@ export function InterestsActivitiesStep({ data, updateData }: InterestsActivitie
                       )}>
                         {selected && <Check className="h-3 w-3" />}
                       </div>
-                      <span>{goal.emoji} {goal.label}</span>
+                      <span>{goal.label}</span>
                     </button>
                   );
                 })}
