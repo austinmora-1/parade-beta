@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, eachDayOfInterval, isAfter, isBefore, startOfDay } from 'date-fns';
-import { CalendarIcon, Plane, MapPin, Trash2, X, Users, Clock } from 'lucide-react';
+import { CalendarIcon, Plane, Trash2, X, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
