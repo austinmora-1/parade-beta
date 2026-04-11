@@ -263,7 +263,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                     key={day.id}
                     onClick={() => toggleEntireDay(day.id)}
                     className={cn(
-                      "py-1.5 text-[10px] font-semibold transition-all relative overflow-visible min-w-[36px]",
+                      "py-2 text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5",
                       isFullDay
                         ? "text-accent-foreground bg-accent/30"
                         : isActive
@@ -271,12 +271,14 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                           : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    {day.label}
-                    {isActive && !isFullDay && (
-                      <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[7px] font-bold text-primary-foreground">
-                        {dayTimeCount}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-0.5">
+                      {day.label}
+                      {isActive && !isFullDay && (
+                        <span className="inline-flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-bold text-primary-foreground">
+                          {dayTimeCount}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
               })}
