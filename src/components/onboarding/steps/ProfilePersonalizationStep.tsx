@@ -221,7 +221,7 @@ export function ProfilePersonalizationStep({ data, updateData }: ProfilePersonal
         imageSrc={imageToCrop}
         onCropComplete={handleCropComplete}
         aspect={cropMode === 'avatar' ? 1 : 3}
-        circularCrop={cropMode === 'avatar'}
+        circular={cropMode === 'avatar'}
       />
     </div>
   );
