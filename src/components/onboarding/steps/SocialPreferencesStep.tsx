@@ -273,7 +273,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                   >
                     {day.label}
                     {isActive && !isFullDay && (
-                      <span className="absolute -top-0.5 right-0 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-bold text-primary-foreground">
+                      <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[7px] font-bold text-primary-foreground">
                         {dayTimeCount}
                       </span>
                     )}
