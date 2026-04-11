@@ -897,6 +897,7 @@ export type Database = {
           last_name: string | null
           location_status: string | null
           neighborhood: string | null
+          onboarding_completed: boolean
           phone_number: string | null
           plan_invitations_notifications: boolean | null
           plan_reminders: boolean | null
@@ -939,6 +940,7 @@ export type Database = {
           last_name?: string | null
           location_status?: string | null
           neighborhood?: string | null
+          onboarding_completed?: boolean
           phone_number?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
@@ -981,6 +983,7 @@ export type Database = {
           last_name?: string | null
           location_status?: string | null
           neighborhood?: string | null
+          onboarding_completed?: boolean
           phone_number?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
