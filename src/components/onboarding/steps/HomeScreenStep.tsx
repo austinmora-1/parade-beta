@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Smartphone, Share, PlusSquare, MoreVertical, Download, Check } from 'lucide-react';
+import { Smartphone, Share, PlusSquare, MoreVertical, Download, Check, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import safariShareImg from '@/assets/onboarding/safari-share-button.jpg';
+import safariAddHomeImg from '@/assets/onboarding/safari-add-home.jpg';
+import chromeAddHomeImg from '@/assets/onboarding/chrome-add-home.jpg';
 
 type Platform = 'ios-safari' | 'ios-chrome' | 'android' | 'desktop' | 'unknown';
 
@@ -24,44 +27,139 @@ function isStandalone(): boolean {
   );
 }
 
-const instructions: Record<Platform, { title: string; steps: { icon: React.ReactNode; text: string }[] }> = {
+interface StepInfo {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  screenshot?: string;
+  screenshotAlt?: string;
+}
+
+interface PlatformInstructions {
+  title: string;
+  subtitle: string;
+  steps: StepInfo[];
+}
+
+const instructions: Record<Platform, PlatformInstructions> = {
   'ios-safari': {
-    title: 'Add to Home Screen on iPhone',
+    title: 'Add Parade to your Home Screen',
+    subtitle: 'Parade works best as a Home Screen app — it opens full-screen, loads faster, and you\'ll get notifications just like a native app.',
     steps: [
-      { icon: <Share className="h-5 w-5" />, text: 'Tap the Share button at the bottom of Safari' },
-      { icon: <PlusSquare className="h-5 w-5" />, text: 'Scroll down and tap "Add to Home Screen"' },
-      { icon: <Check className="h-5 w-5" />, text: 'Tap "Add" in the top right corner' },
+      {
+        icon: <Share className="h-5 w-5" />,
+        title: 'Tap the Share button',
+        description: 'Look for the square icon with an upward arrow (⬆) at the bottom of your Safari toolbar.',
+        screenshot: safariShareImg,
+        screenshotAlt: 'Safari toolbar showing the Share button at the bottom',
+      },
+      {
+        icon: <PlusSquare className="h-5 w-5" />,
+        title: 'Tap "Add to Home Screen"',
+        description: 'Scroll down in the share menu until you see the "Add to Home Screen" option with the ＋ icon. Tap it.',
+        screenshot: safariAddHomeImg,
+        screenshotAlt: 'Safari share sheet showing Add to Home Screen option',
+      },
+      {
+        icon: <Check className="h-5 w-5" />,
+        title: 'Tap "Add" to confirm',
+        description: 'The Parade icon will appear on your Home Screen. You can rename it if you like, then tap "Add" in the top right corner.',
+      },
     ],
   },
   'ios-chrome': {
-    title: 'Add to Home Screen on iPhone',
+    title: 'Add Parade to your Home Screen',
+    subtitle: 'To add Parade to your Home Screen on iPhone, you\'ll need to open it in Safari first — Chrome on iOS doesn\'t support this feature.',
     steps: [
-      { icon: <Share className="h-5 w-5" />, text: 'Open this page in Safari (Chrome doesn\'t support this)' },
-      { icon: <Share className="h-5 w-5" />, text: 'Tap the Share button at the bottom of Safari' },
-      { icon: <PlusSquare className="h-5 w-5" />, text: 'Tap "Add to Home Screen"' },
+      {
+        icon: <ExternalLink className="h-5 w-5" />,
+        title: 'Open Parade in Safari',
+        description: 'Copy the current URL and paste it into Safari, or tap the Safari icon on your Home Screen and navigate to parade.lovable.app.',
+      },
+      {
+        icon: <Share className="h-5 w-5" />,
+        title: 'Tap the Share button in Safari',
+        description: 'Look for the square icon with an upward arrow (⬆) at the bottom of Safari\'s toolbar.',
+        screenshot: safariShareImg,
+        screenshotAlt: 'Safari toolbar showing the Share button at the bottom',
+      },
+      {
+        icon: <PlusSquare className="h-5 w-5" />,
+        title: 'Tap "Add to Home Screen"',
+        description: 'Scroll down in the share menu and tap "Add to Home Screen" with the ＋ icon.',
+        screenshot: safariAddHomeImg,
+        screenshotAlt: 'Safari share sheet showing Add to Home Screen option',
+      },
+      {
+        icon: <Check className="h-5 w-5" />,
+        title: 'Tap "Add" to confirm',
+        description: 'The Parade icon will appear on your Home Screen — just like any other app!',
+      },
     ],
   },
   'android': {
-    title: 'Add to Home Screen on Android',
+    title: 'Add Parade to your Home Screen',
+    subtitle: 'Install Parade to your Home Screen for instant access, faster loading, and push notifications.',
     steps: [
-      { icon: <MoreVertical className="h-5 w-5" />, text: 'Tap the menu (⋮) in the top right of Chrome' },
-      { icon: <Download className="h-5 w-5" />, text: 'Tap "Add to Home screen" or "Install app"' },
-      { icon: <Check className="h-5 w-5" />, text: 'Tap "Add" to confirm' },
+      {
+        icon: <MoreVertical className="h-5 w-5" />,
+        title: 'Open the Chrome menu',
+        description: 'Tap the three-dot menu (⋮) in the top-right corner of Chrome.',
+        screenshot: chromeAddHomeImg,
+        screenshotAlt: 'Chrome menu showing Add to Home screen option',
+      },
+      {
+        icon: <Download className="h-5 w-5" />,
+        title: 'Tap "Add to Home screen" or "Install app"',
+        description: 'You\'ll see one of these options in the menu. Either one will add Parade to your Home Screen.',
+      },
+      {
+        icon: <Check className="h-5 w-5" />,
+        title: 'Confirm the install',
+        description: 'Tap "Add" or "Install" on the confirmation popup. Parade will appear on your Home Screen ready to go!',
+      },
     ],
   },
   'desktop': {
-    title: 'Add to your Dock or Home Screen',
+    title: 'Add Parade to your Home Screen',
+    subtitle: 'For the best experience, open Parade on your phone and add it to your Home Screen. You can also install it on your computer from Chrome.',
     steps: [
-      { icon: <Download className="h-5 w-5" />, text: 'Look for the install icon in your browser\'s address bar' },
-      { icon: <Check className="h-5 w-5" />, text: 'Click "Install" to add Parade as a desktop app' },
+      {
+        icon: <Smartphone className="h-5 w-5" />,
+        title: 'Open on your phone',
+        description: 'Visit parade.lovable.app in Safari (iPhone) or Chrome (Android) on your phone for the full mobile experience.',
+      },
+      {
+        icon: <Share className="h-5 w-5" />,
+        title: 'Add to your phone\'s Home Screen',
+        description: 'On iPhone, tap the Share button → "Add to Home Screen." On Android, tap the ⋮ menu → "Add to Home screen."',
+      },
+      {
+        icon: <Check className="h-5 w-5" />,
+        title: 'Launch it like an app',
+        description: 'Once added, Parade opens full-screen from your Home Screen — no browser chrome, just the app.',
+      },
     ],
   },
   'unknown': {
-    title: 'Add to Home Screen',
+    title: 'Add Parade to your Home Screen',
+    subtitle: 'Install Parade to your Home Screen for the fastest, most app-like experience.',
     steps: [
-      { icon: <MoreVertical className="h-5 w-5" />, text: 'Open your browser menu' },
-      { icon: <Download className="h-5 w-5" />, text: 'Look for "Add to Home Screen" or "Install"' },
-      { icon: <Check className="h-5 w-5" />, text: 'Confirm to add the app' },
+      {
+        icon: <MoreVertical className="h-5 w-5" />,
+        title: 'Open your browser menu',
+        description: 'Look for a menu icon (three dots, lines, or a share button) in your browser\'s toolbar.',
+      },
+      {
+        icon: <Download className="h-5 w-5" />,
+        title: 'Find "Add to Home Screen"',
+        description: 'Tap "Add to Home Screen," "Install app," or a similar option. The exact wording varies by browser.',
+      },
+      {
+        icon: <Check className="h-5 w-5" />,
+        title: 'Confirm and launch',
+        description: 'Tap "Add" or "Install" to put Parade on your Home Screen. Open it anytime — it runs just like a native app.',
+      },
     ],
   },
 };
@@ -78,59 +176,69 @@ export function HomeScreenStep() {
   const info = instructions[platform];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-          <Smartphone className="h-8 w-8 text-primary" />
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+          <Smartphone className="h-7 w-7 text-primary" />
         </div>
-        <h2 className="font-display text-2xl font-bold">Add to Home Screen</h2>
-        <p className="mt-2 text-muted-foreground">
-          Get the full app experience — launch Parade instantly from your home screen.
+        <h2 className="font-display text-xl font-bold">Add to Home Screen</h2>
+        <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+          {info.subtitle}
         </p>
       </div>
 
       {alreadyInstalled ? (
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Check className="h-6 w-6 text-primary" />
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-center">
+          <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+            <Check className="h-5 w-5 text-primary" />
           </div>
           <p className="font-medium text-primary">You're all set!</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Parade is already installed on your device.
+            Parade is already installed on your Home Screen.
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            {info.title}
-          </h3>
-          <div className="space-y-3">
-            {info.steps.map((step, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex items-start gap-4 rounded-xl border border-border bg-card p-4 shadow-soft"
-                )}
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <div className="space-y-3">
+          {info.steps.map((step, i) => (
+            <div
+              key={i}
+              className="rounded-xl border border-border bg-card overflow-hidden shadow-soft"
+            >
+              <div className="flex items-start gap-3 p-3.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   {step.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-0.5">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-muted-foreground">
                       {i + 1}
                     </span>
-                    <p className="text-sm">{step.text}</p>
+                    <p className="text-sm font-semibold">{step.title}</p>
                   </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed ml-7">
+                    {step.description}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+              {step.screenshot && (
+                <div className="px-3.5 pb-3.5">
+                  <img
+                    src={step.screenshot}
+                    alt={step.screenshotAlt || step.title}
+                    className="w-full rounded-lg border border-border"
+                    loading="lazy"
+                    width={512}
+                    height={512}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
       <p className="text-center text-xs text-muted-foreground">
-        You can always do this later from your browser menu.
+        You can always do this later from your browser's share or menu button.
       </p>
     </div>
   );
