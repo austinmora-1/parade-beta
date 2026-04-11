@@ -176,10 +176,10 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
             Max social activities per week: <span className="font-bold text-foreground">{data.socialCap || 'No limit'}</span>
           </p>
           <Slider
-            value={[data.socialCap || 42]}
-            onValueChange={([value]) => updateData({ socialCap: value >= 42 ? null : value })}
+            value={[data.socialCap || 21]}
+            onValueChange={([value]) => updateData({ socialCap: value >= 21 ? null : value })}
             min={1}
-            max={42}
+            max={21}
             step={1}
             className="w-full"
           />
