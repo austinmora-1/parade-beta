@@ -106,7 +106,9 @@ export function OnboardingWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      const prev = currentStep - 1;
+      localStorage.setItem('onboarding_step', String(prev));
+      setCurrentStep(prev);
     }
   };
 
