@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Unna', 'serif'],
+        sans: ['Lexend', 'sans-serif'],
         display: ['Space Grotesk', 'sans-serif'],
       },
       colors: {
