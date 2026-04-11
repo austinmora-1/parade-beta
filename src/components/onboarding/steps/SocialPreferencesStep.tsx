@@ -30,11 +30,16 @@ const TIME_SLOTS = [
 ];
 
 const INTEREST_OPTIONS = [
-  '🍸 Drinks', '🍽️ Dinner', '☕ Coffee', '🎬 Movies',
+  '🍸 Drinks', '🍽️ Dinner', '☕ Coffee', '🍳 Brunch',
+  '🎬 Movies', '📺 TV Nights', '🎵 Live Music', '🎤 Karaoke',
   '🏃 Running', '🧘 Yoga', '🏋️ Gym', '🥾 Hiking',
-  '🎮 Gaming', '🎵 Live Music', '🎨 Art', '📚 Book Club',
-  '🏖️ Beach', '🎳 Bowling', '🎤 Karaoke', '🛹 Skating',
-  '🍳 Brunch', '🎪 Events', '🐕 Dog Walks', '🧗 Climbing',
+  '🧗 Climbing', '🚴 Cycling', '🏊 Swimming', '🎾 Tennis',
+  '⚽ Soccer', '🏀 Basketball', '🏓 Ping Pong', '🛹 Skating',
+  '🎮 Gaming', '🎨 Art', '📚 Book Club', '🎪 Events',
+  '🏖️ Beach', '🎳 Bowling', '🐕 Dog Walks', '🛍️ Shopping',
+  '🧖 Spa Day', '🍷 Wine Tasting', '🎭 Theater', '🏕️ Camping',
+  '📸 Photography', '🎸 Jam Sessions', '🪴 Gardening', '🎲 Board Games',
+  '💃 Dancing', '🍕 Cooking', '✈️ Travel', '🧩 Puzzles',
 ];
 
 const formatTime = (decimalHour: number) => {
