@@ -47,28 +47,15 @@ export function GreetingHeader() {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="relative overflow-hidden rounded-2xl"
     >
-      {/* Ambient gradient background */}
       <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} rounded-2xl`} />
       
-      <div className="relative px-1 py-1">
-        <div className="flex items-center gap-2">
-          <motion.span
-            initial={{ scale: 0, rotate: -30 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.2 }}
-            className="text-xl"
-          >
-            {config.emoji}
-          </motion.span>
-          <div>
-            <h2 className="text-base font-display text-foreground">
-              {config.greeting}{config.firstName ? `, ${config.firstName}` : ''}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {config.context}
-            </p>
-          </div>
-        </div>
+      <div className="relative px-4 py-4">
+        <h2 className="text-lg font-display text-foreground">
+          {config.greeting}{config.firstName ? `, ${config.firstName}` : ''}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          {config.context}
+        </p>
       </div>
     </motion.div>
   );
