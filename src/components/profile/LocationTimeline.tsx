@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LocationStatus } from '@/types/planner';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AddTripDialog, TripData } from './AddTripDialog';
 import { toast } from 'sonner';
 import {
@@ -16,11 +17,20 @@ import {
 } from '@/components/ui/popover';
 
 interface Trip {
+  id?: string;
   startDate: Date;
   endDate: Date;
   startIndex: number;
   endIndex: number;
   location?: string;
+  availableSlots?: string[];
+  priorityFriendIds?: string[];
+}
+
+interface FriendProfile {
+  user_id: string;
+  display_name: string;
+  avatar_url: string;
 }
 
 export function LocationTimeline() {
@@ -32,13 +42,13 @@ export function LocationTimeline() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [updatingDate, setUpdatingDate] = useState<string | null>(null);
   const [homeAddress, setHomeAddress] = useState<string | null>(null);
+  const [tripRecords, setTripRecords] = useState<any[]>([]);
+  const [friendProfiles, setFriendProfiles] = useState<Map<string, FriendProfile>>(new Map());
 
-  // Get 31 days (next month) starting from today
   const days = useMemo(() => {
     return Array.from({ length: 31 }, (_, i) => addDays(new Date(), i));
   }, []);
 
-  // Fetch extended availability data for days beyond what's loaded in the store
   const fetchExtendedAvailability = useCallback(async () => {
     if (!session?.user) return;
 
@@ -62,7 +72,38 @@ export function LocationTimeline() {
     }
   }, [session?.user, days]);
 
-  // Fetch home address from profile
+  // Fetch trip records from trips table
+  const fetchTripRecords = useCallback(async () => {
+    if (!session?.user) return;
+
+    const startStr = format(days[0], 'yyyy-MM-dd');
+    const endStr = format(days[days.length - 1], 'yyyy-MM-dd');
+
+    const { data } = await supabase
+      .from('trips')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .gte('end_date', startStr)
+      .lte('start_date', endStr);
+
+    if (data) {
+      setTripRecords(data);
+
+      // Fetch profiles for priority friends
+      const allFriendIds = data.flatMap(t => t.priority_friend_ids || []);
+      const uniqueIds = [...new Set(allFriendIds)];
+      if (uniqueIds.length > 0) {
+        const { data: profiles } = await supabase
+          .rpc('get_display_names_for_users', { p_user_ids: uniqueIds });
+        if (profiles) {
+          const map = new Map<string, FriendProfile>();
+          profiles.forEach((p: any) => map.set(p.user_id, p));
+          setFriendProfiles(map);
+        }
+      }
+    }
+  }, [session?.user, days]);
+
   useEffect(() => {
     if (!session?.user) return;
     supabase
@@ -77,7 +118,8 @@ export function LocationTimeline() {
 
   useEffect(() => {
     fetchExtendedAvailability();
-  }, [fetchExtendedAvailability, refreshKey]);
+    fetchTripRecords();
+  }, [fetchExtendedAvailability, fetchTripRecords, refreshKey]);
 
   const handleTripAdded = () => {
     setRefreshKey(prev => prev + 1);
@@ -86,9 +128,12 @@ export function LocationTimeline() {
 
   const handleEditTrip = (trip: Trip) => {
     setEditingTrip({
+      id: trip.id,
       startDate: trip.startDate,
       endDate: trip.endDate,
       location: trip.location,
+      availableSlots: trip.availableSlots,
+      priorityFriendIds: trip.priorityFriendIds,
     });
     setAddTripDialogOpen(true);
   };
@@ -98,14 +143,11 @@ export function LocationTimeline() {
     setAddTripDialogOpen(true);
   };
 
-  // Check if a trip location matches the user's home address
   const isHomeLocation = useCallback((tripLocation?: string): boolean => {
     if (!tripLocation || !homeAddress) return false;
     const normTrip = tripLocation.toLowerCase().trim();
     const normHome = homeAddress.toLowerCase().trim();
-    // Direct substring match
     if (normHome.includes(normTrip) || normTrip.includes(normHome)) return true;
-    // Extract city portion (before comma) for comparison
     const tripCity = normTrip.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim();
     const homeCity = normHome.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim();
     if (tripCity && homeCity && (tripCity.includes(homeCity) || homeCity.includes(tripCity))) return true;
@@ -114,16 +156,13 @@ export function LocationTimeline() {
 
   const getDayLocation = (date: Date): LocationStatus => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    // First check extended availability (freshly fetched)
     if (extendedAvailability.has(dateStr)) {
       const entry = extendedAvailability.get(dateStr)!;
-      // If marked away but trip location matches home, treat as home
       if (entry.status === 'away' && isHomeLocation(entry.location)) {
         return 'home';
       }
       return entry.status;
     }
-    // Fallback to store data
     return getLocationStatusForDate(date);
   };
 
@@ -135,7 +174,6 @@ export function LocationTimeline() {
     return undefined;
   };
 
-  // Toggle location status for a specific day
   const toggleDayStatus = async (date: Date) => {
     if (!session?.user) return;
     
@@ -145,7 +183,6 @@ export function LocationTimeline() {
     
     setUpdatingDate(dateStr);
     
-    // Optimistically update UI
     const existingData = extendedAvailability.get(dateStr);
     setExtendedAvailability(prev => {
       const newMap = new Map(prev);
@@ -156,7 +193,6 @@ export function LocationTimeline() {
       return newMap;
     });
 
-    // If toggling today, also update the planner store's global locationStatus
     if (isDateToday(date)) {
       usePlannerStore.setState({ locationStatus: newStatus });
     }
@@ -177,7 +213,6 @@ export function LocationTimeline() {
       
       toast.success(`${format(date, 'MMM d')}: ${newStatus === 'home' ? 'Home' : 'Away'}`);
     } catch (error) {
-      // Revert on error
       setExtendedAvailability(prev => {
         const newMap = new Map(prev);
         newMap.set(dateStr, { status: currentStatus, location: existingData?.location });
@@ -192,23 +227,70 @@ export function LocationTimeline() {
     }
   };
 
-  // Detect consecutive away days as trips (with same location)
+  // Build trips from trip records + fallback to consecutive away days
   const trips = useMemo(() => {
     const tripsList: Trip[] = [];
+
+    // First, use explicit trip records
+    tripRecords.forEach(rec => {
+      const start = new Date(rec.start_date + 'T00:00:00');
+      const end = new Date(rec.end_date + 'T00:00:00');
+      const startIdx = days.findIndex(d => format(d, 'yyyy-MM-dd') === rec.start_date);
+      const endIdx = days.findIndex(d => format(d, 'yyyy-MM-dd') === rec.end_date);
+
+      if (startIdx >= 0 || endIdx >= 0) {
+        tripsList.push({
+          id: rec.id,
+          startDate: start,
+          endDate: end,
+          startIndex: Math.max(0, startIdx),
+          endIndex: endIdx >= 0 ? endIdx : days.length - 1,
+          location: rec.location || undefined,
+          availableSlots: rec.available_slots,
+          priorityFriendIds: rec.priority_friend_ids,
+        });
+      }
+    });
+
+    // Fallback: detect consecutive away days not covered by trip records
+    const coveredDates = new Set<string>();
+    tripsList.forEach(t => {
+      for (let i = t.startIndex; i <= t.endIndex; i++) {
+        coveredDates.add(format(days[i], 'yyyy-MM-dd'));
+      }
+    });
+
     let tripStart: number | null = null;
     let currentTripLocation: string | undefined = undefined;
 
     days.forEach((day, index) => {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      if (coveredDates.has(dateStr)) {
+        if (tripStart !== null) {
+          const tripLength = index - tripStart;
+          if (tripLength >= 2) {
+            tripsList.push({
+              startDate: days[tripStart],
+              endDate: days[index - 1],
+              startIndex: tripStart,
+              endIndex: index - 1,
+              location: currentTripLocation,
+            });
+          }
+          tripStart = null;
+          currentTripLocation = undefined;
+        }
+        return;
+      }
+
       const status = getDayLocation(day);
       const location = getDayTripLocation(day);
       
       if (status === 'away') {
-        // Check if this is a new trip or continuation of existing
         if (tripStart === null) {
           tripStart = index;
           currentTripLocation = location;
         } else if (location !== currentTripLocation) {
-          // Different location means end current trip and start new one
           const tripLength = index - tripStart;
           if (tripLength >= 2) {
             tripsList.push({
@@ -224,7 +306,6 @@ export function LocationTimeline() {
         }
       } else {
         if (tripStart !== null) {
-          // End of a trip - only count if 2+ days
           const tripLength = index - tripStart;
           if (tripLength >= 2) {
             tripsList.push({
@@ -241,7 +322,6 @@ export function LocationTimeline() {
       }
     });
 
-    // Check if trip extends to end
     if (tripStart !== null) {
       const tripLength = days.length - tripStart;
       if (tripLength >= 2) {
@@ -256,9 +336,8 @@ export function LocationTimeline() {
     }
 
     return tripsList;
-  }, [days, extendedAvailability]);
+  }, [days, extendedAvailability, tripRecords]);
 
-  // Check if a day is part of a trip
   const getTripForDay = (index: number): Trip | undefined => {
     return trips.find(trip => index >= trip.startIndex && index <= trip.endIndex);
   };
@@ -287,26 +366,51 @@ export function LocationTimeline() {
         </Popover>
       </div>
 
-      {/* Trip summaries - clickable to edit */}
+      {/* Trip summaries */}
       {trips.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-1.5">
+        <div className="mb-3 space-y-1.5">
           {trips.map((trip, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleEditTrip(trip)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-availability-away/10 px-2.5 py-1 text-xs hover:bg-availability-away/20 transition-colors cursor-pointer"
-            >
-              <Plane className="h-3.5 w-3.5 text-availability-away-foreground" />
-              {trip.location && (
-                <span className="font-semibold text-availability-away-foreground">{trip.location}</span>
+            <div key={trip.id || idx}>
+              <button
+                onClick={() => handleEditTrip(trip)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-availability-away/10 px-2.5 py-1 text-xs hover:bg-availability-away/20 transition-colors cursor-pointer"
+              >
+                <Plane className="h-3.5 w-3.5 text-availability-away-foreground" />
+                {trip.location && (
+                  <span className="font-semibold text-availability-away-foreground">{trip.location}</span>
+                )}
+                <span className="font-medium text-availability-away-foreground">
+                  {format(trip.startDate, 'MMM d')} – {format(trip.endDate, 'MMM d')}
+                </span>
+                <span className="text-availability-away-foreground/70">
+                  ({formatTripDuration(trip)})
+                </span>
+              </button>
+              {/* Priority friend avatars */}
+              {trip.priorityFriendIds && trip.priorityFriendIds.length > 0 && (
+                <div className="flex items-center gap-1 mt-1 ml-2">
+                  <span className="text-[10px] text-muted-foreground">Want to see:</span>
+                  <div className="flex -space-x-1">
+                    {trip.priorityFriendIds.slice(0, 5).map(friendId => {
+                      const profile = friendProfiles.get(friendId);
+                      return (
+                        <Avatar key={friendId} className="h-5 w-5 border border-background">
+                          <AvatarImage src={profile?.avatar_url} />
+                          <AvatarFallback className="text-[8px]">
+                            {profile?.display_name?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                      );
+                    })}
+                    {trip.priorityFriendIds.length > 5 && (
+                      <span className="text-[10px] text-muted-foreground ml-1">
+                        +{trip.priorityFriendIds.length - 5}
+                      </span>
+                    )}
+                  </div>
+                </div>
               )}
-              <span className={cn("font-medium", trip.location ? "text-availability-away-foreground" : "text-availability-away-foreground")}>
-                {format(trip.startDate, 'MMM d')} – {format(trip.endDate, 'MMM d')}
-              </span>
-              <span className="text-availability-away-foreground/70">
-                ({formatTripDuration(trip)})
-              </span>
-            </button>
+            </div>
           ))}
         </div>
       )}
@@ -322,13 +426,10 @@ export function LocationTimeline() {
             const isLastOfTrip = trip && trip.endIndex === index;
             const dateStr = format(day, 'yyyy-MM-dd');
             const isUpdating = updatingDate === dateStr;
-            
-            // Check if this is the first day of a new month
             const isFirstOfMonth = index === 0 || getMonth(day) !== getMonth(days[index - 1]);
 
             return (
               <div key={day.toISOString()} className="flex flex-col items-center relative">
-                {/* Month label */}
                 {isFirstOfMonth ? (
                   <div className="text-[10px] text-primary font-semibold mb-1 w-full text-center">
                     {format(day, 'MMM')}
@@ -337,7 +438,6 @@ export function LocationTimeline() {
                   <div className="h-[14px] mb-1" />
                 )}
 
-                {/* Trip connector bar */}
                 {trip && (
                   <div 
                     className={cn(
@@ -349,7 +449,6 @@ export function LocationTimeline() {
                   />
                 )}
 
-                {/* Day box - now clickable */}
                 <button
                   onClick={() => toggleDayStatus(day)}
                   disabled={isUpdating}
