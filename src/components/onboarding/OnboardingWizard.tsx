@@ -135,7 +135,8 @@ export function OnboardingWizard() {
           preferred_social_days: data.preferredSocialDays,
           preferred_social_times: data.preferredSocialTimes,
           interests: data.interests,
-        })
+          onboarding_completed: true,
+        } as any)
         .eq('user_id', session.user.id);
 
       if (error) throw error;
