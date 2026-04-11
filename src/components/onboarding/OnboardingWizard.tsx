@@ -36,6 +36,7 @@ export interface OnboardingData {
   preferredSocialDays: string[];
   preferredSocialTimes: string[];
   interests: string[];
+  socialGoals: string[];
   friendEmails: string[];
   // Step 5: Notifications & Privacy
   showAvailability: boolean;
@@ -81,6 +82,7 @@ export function OnboardingWizard() {
     preferredSocialDays: ['friday', 'saturday', 'sunday'],
     preferredSocialTimes: ['evening'],
     interests: [],
+    socialGoals: [],
     friendEmails: [],
     showAvailability: true,
     showLocation: true,
@@ -144,6 +146,7 @@ export function OnboardingWizard() {
           preferred_social_days: data.preferredSocialDays,
           preferred_social_times: data.preferredSocialTimes,
           interests: data.interests,
+          social_goals: data.socialGoals,
           onboarding_completed: true,
         } as any)
         .eq('user_id', session.user.id);

@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN social_goals text[] DEFAULT '{}'::text[];

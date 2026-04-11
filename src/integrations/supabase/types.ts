@@ -908,6 +908,7 @@ export type Database = {
           show_location: boolean | null
           show_vibe_status: boolean | null
           social_cap: number | null
+          social_goals: string[] | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -951,6 +952,7 @@ export type Database = {
           show_location?: boolean | null
           show_vibe_status?: boolean | null
           social_cap?: number | null
+          social_goals?: string[] | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -994,6 +996,7 @@ export type Database = {
           show_location?: boolean | null
           show_vibe_status?: boolean | null
           social_cap?: number | null
+          social_goals?: string[] | null
           timezone?: string | null
           updated_at?: string
           user_id?: string

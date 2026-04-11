@@ -8,6 +8,17 @@ interface InterestsActivitiesStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
 }
 
+const SOCIAL_GOALS = [
+  { id: 'stay_connected', emoji: '💛', label: 'Stay connected with close friends' },
+  { id: 'meet_new_people', emoji: '👋', label: 'Meet new people' },
+  { id: 'try_new_things', emoji: '✨', label: 'Try new activities & experiences' },
+  { id: 'be_more_social', emoji: '🎯', label: 'Be more intentional about socializing' },
+  { id: 'less_flaking', emoji: '📅', label: 'Follow through on plans more' },
+  { id: 'work_life_balance', emoji: '⚖️', label: 'Better work-life balance' },
+  { id: 'explore_city', emoji: '🏙️', label: 'Explore my city more' },
+  { id: 'deepen_friendships', emoji: '🤝', label: 'Deepen existing friendships' },
+];
+
 const VIBE_SECTIONS = [
   {
     vibe: 'Social',
@@ -69,6 +80,14 @@ export function InterestsActivitiesStep({ data, updateData }: InterestsActivitie
     updateData({ interests: newInterests });
   };
 
+  const toggleGoal = (goalId: string) => {
+    const current = data.socialGoals || [];
+    const updated = current.includes(goalId)
+      ? current.filter(g => g !== goalId)
+      : [...current, goalId];
+    updateData({ socialGoals: updated });
+  };
+
   const toggleVibeExpand = (vibe: string) => {
     setExpandedVibes(prev => {
       const next = new Set(prev);
@@ -105,6 +124,31 @@ export function InterestsActivitiesStep({ data, updateData }: InterestsActivitie
         )}
       </div>
 
+      {/* Social Goals Section */}
+      <div className="mb-6">
+        <h2 className="font-semibold text-sm mb-1 flex items-center gap-1.5">
+          <span>🎯</span> Social Goals
+        </h2>
+        <p className="text-xs text-muted-foreground mb-3">
+          What are you hoping to get out of Parade?
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {SOCIAL_GOALS.map((goal) => (
+            <button
+              key={goal.id}
+              onClick={() => toggleGoal(goal.id)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                (data.socialGoals || []).includes(goal.id)
+                  ? "bg-primary text-primary-foreground"
+                  : "ring-1 ring-border bg-muted/20 text-muted-foreground hover:bg-muted/40"
+              )}
+            >
+              {goal.emoji} {goal.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="space-y-3">
         {VIBE_SECTIONS.map((section) => {
           const isExpanded = expandedVibes.has(section.vibe);
