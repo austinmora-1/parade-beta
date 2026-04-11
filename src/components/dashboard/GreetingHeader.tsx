@@ -53,7 +53,7 @@ export function GreetingHeader() {
         <h2 className="text-lg font-display text-foreground">
           {config.greeting}{config.firstName ? `, ${config.firstName}` : ''}
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-muted-foreground mt-0">
           {config.context}
         </p>
       </div>
