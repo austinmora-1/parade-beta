@@ -17,7 +17,7 @@ const VIBE_SECTIONS = [
     activities: [
       '🍸 Drinks', '🍽️ Dinner', '☕ Coffee', '🍳 Brunch',
       '🎤 Karaoke', '💃 Dancing', '🍕 Cooking', '🍷 Wine Tasting',
-      '🎭 Theater', '🎪 Events', '🛍️ Shopping', '🎲 Board Games',
+      '🎭 Theater', '🎪 Events', '🛍️ Shopping',
       '🎵 Live Music',
     ],
   },
@@ -30,6 +30,7 @@ const VIBE_SECTIONS = [
       '🎬 Movies', '📺 TV Nights', '📚 Book Club',
       '🎮 Gaming', '🧩 Puzzles', '🧖 Spa Day', '🏖️ Beach',
       '🐕 Dog Walks', '🪴 Gardening', '📸 Photography', '🎸 Jam Sessions',
+      '🎲 Board Games',
     ],
   },
   {
