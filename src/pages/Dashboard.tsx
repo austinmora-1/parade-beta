@@ -1,7 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
@@ -26,7 +29,27 @@ const fadeUp = {
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const [stagedFriends, setStagedFriends] = useState<StagedFriend[]>([]);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+
+  useEffect(() => {
+    async function checkOnboarding() {
+      if (!session?.user) { setCheckingOnboarding(false); return; }
+      const { data } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('user_id', session.user.id)
+        .single();
+      if (data && !(data as any).onboarding_completed) {
+        navigate('/onboarding', { replace: true });
+        return;
+      }
+      setCheckingOnboarding(false);
+    }
+    checkOnboarding();
+  }, [session?.user, navigate]);
 
   const handleAddFriend = useCallback((friend: StagedFriend) => {
     setStagedFriends(prev => {
@@ -43,7 +66,7 @@ export default function Dashboard() {
     setStagedFriends([]);
   }, []);
 
-  if (isLoading) {
+  if (isLoading || checkingOnboarding) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
