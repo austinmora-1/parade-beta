@@ -97,7 +97,7 @@ export function CityAutocomplete({
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('google-places-search', {
-        body: { query: searchQuery, types: '(cities)' }
+        body: { query: searchQuery, types }
       });
 
       if (error) throw error;
