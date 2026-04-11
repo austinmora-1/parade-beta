@@ -160,6 +160,7 @@ export function OnboardingWizard() {
   };
 
   const handleSkip = () => {
+    localStorage.removeItem('onboarding_step');
     navigate('/');
   };
 
