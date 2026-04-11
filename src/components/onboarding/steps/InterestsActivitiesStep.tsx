@@ -127,7 +127,7 @@ export function InterestsActivitiesStep({ data, updateData }: InterestsActivitie
       <div className="text-center mb-6">
         <h1 className="font-display text-2xl font-bold mb-2">Social Goals & Interests</h1>
         <p className="text-muted-foreground">
-          Pick what you love to do — we'll use these to suggest plans.
+          Tell us what you want out of your social life, and let us help you make it happen.
         </p>
         {data.interests.length > 0 && (
           <p className="text-xs text-primary mt-1 font-medium">
