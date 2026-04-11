@@ -148,6 +148,7 @@ export function OnboardingWizard() {
 
       if (error) throw error;
 
+      localStorage.removeItem('onboarding_step');
       toast.success('Welcome to Parade! 🎉');
       navigate('/');
     } catch (error) {
