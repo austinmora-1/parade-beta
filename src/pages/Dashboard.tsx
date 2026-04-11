@@ -29,7 +29,27 @@ const fadeUp = {
 
 export default function Dashboard() {
   const { isLoading } = usePlannerStore();
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const [stagedFriends, setStagedFriends] = useState<StagedFriend[]>([]);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+
+  useEffect(() => {
+    async function checkOnboarding() {
+      if (!session?.user) { setCheckingOnboarding(false); return; }
+      const { data } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('user_id', session.user.id)
+        .single();
+      if (data && !(data as any).onboarding_completed) {
+        navigate('/onboarding', { replace: true });
+        return;
+      }
+      setCheckingOnboarding(false);
+    }
+    checkOnboarding();
+  }, [session?.user, navigate]);
 
   const handleAddFriend = useCallback((friend: StagedFriend) => {
     setStagedFriends(prev => {
