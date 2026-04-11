@@ -74,7 +74,7 @@ const instructions: Record<Platform, PlatformInstructions> = {
       {
         icon: <ExternalLink className="h-5 w-5" />,
         title: 'Open Parade in Safari',
-        description: 'Copy the current URL and paste it into Safari, or tap the Safari icon on your Home Screen and navigate to parade.lovable.app.',
+        description: 'Copy the current URL and paste it into Safari, or tap the Safari icon on your Home Screen and navigate to helloparade.app.',
       },
       {
         icon: <Share className="h-5 w-5" />,
@@ -127,7 +127,7 @@ const instructions: Record<Platform, PlatformInstructions> = {
       {
         icon: <Smartphone className="h-5 w-5" />,
         title: 'Open on your phone',
-        description: 'Visit parade.lovable.app in Safari (iPhone) or Chrome (Android) on your phone for the full mobile experience.',
+        description: 'Visit helloparade.app in Safari (iPhone) or Chrome (Android) on your phone for the full mobile experience.',
       },
       {
         icon: <Share className="h-5 w-5" />,
