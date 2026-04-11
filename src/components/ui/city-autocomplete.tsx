@@ -18,6 +18,7 @@ interface CityAutocompleteProps {
   placeholder?: string;
   className?: string;
   compact?: boolean;
+  types?: string;
 }
 
 export function CityAutocomplete({ 
