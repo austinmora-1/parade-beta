@@ -249,46 +249,37 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
             })}
           </div>
 
-          {/* Day headers row */}
-          <div className="flex gap-1 mb-2">
-            {DAYS.map((day) => {
-              const isActive = selectedDays.has(day.id);
-              const dayTimeCount = getTimesForDay(day.id).length;
-              const isFullDay = dayTimeCount === TIME_SLOTS.length;
-              return (
-                <button
-                  key={day.id}
-                  onClick={() => toggleEntireDay(day.id)}
-                  className={cn(
-                    "flex-1 py-2 rounded-lg text-xs font-medium transition-all relative",
-                    isFullDay
-                      ? "bg-accent text-accent-foreground ring-1 ring-accent"
-                      : isActive
-                        ? "bg-accent/50 text-accent-foreground"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {day.label}
-                  {isActive && !isFullDay && (
-                    <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
-                      {dayTimeCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Time slot grid per day */}
+          {/* Combined grid with day headers aligned to columns */}
           <div className="rounded-xl border border-border overflow-hidden">
-            {/* Column headers */}
-            <div className="grid grid-cols-[auto_repeat(7,1fr)] bg-muted/30">
-              <div className="p-1.5 text-[10px] font-medium text-muted-foreground" />
-              {DAYS.map(day => (
-                <div key={day.id} className="p-1.5 text-center text-[10px] font-medium text-muted-foreground">
-                  {day.label}
-                </div>
-              ))}
+            {/* Day header row */}
+            <div className="grid grid-cols-[60px_repeat(7,1fr)] bg-muted/20 border-b border-border">
+              <div />
+              {DAYS.map((day) => {
+                const isActive = selectedDays.has(day.id);
+                const dayTimeCount = getTimesForDay(day.id).length;
+                const isFullDay = dayTimeCount === TIME_SLOTS.length;
+                return (
+                  <button
+                    key={day.id}
+                    onClick={() => toggleEntireDay(day.id)}
+                    className={cn(
+                      "py-2 text-[11px] font-semibold transition-all relative",
+                      isFullDay
+                        ? "text-accent-foreground bg-accent/30"
+                        : isActive
+                          ? "text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {day.label}
+                    {isActive && !isFullDay && (
+                      <span className="absolute -top-0.5 right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-bold text-primary-foreground">
+                        {dayTimeCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Time rows */}
@@ -296,30 +287,29 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
               <div
                 key={slot.id}
                 className={cn(
-                  "grid grid-cols-[auto_repeat(7,1fr)] items-center",
-                  slotIdx < TIME_SLOTS.length - 1 && "border-b border-border/50"
+                  "grid grid-cols-[60px_repeat(7,1fr)] items-center",
+                  slotIdx < TIME_SLOTS.length - 1 && "border-b border-border/40"
                 )}
               >
-                <div className="px-2 py-2 min-w-[72px]">
-                  <div className="text-[11px] font-medium leading-tight">{slot.label}</div>
-                  <div className="text-[9px] text-muted-foreground leading-tight">{slot.sublabel}</div>
+                <div className="px-1.5 py-2">
+                  <div className="text-[10px] font-medium leading-tight truncate">{slot.label}</div>
+                  <div className="text-[8px] text-muted-foreground leading-tight">{slot.sublabel}</div>
                 </div>
-                {DAYS.map(day => {
+                {DAYS.map((day) => {
                   const isSelected = hasDayTime(data.preferredSocialTimes, day.id, slot.id);
                   return (
-                    <div key={day.id} className="flex justify-center p-1">
-                      <button
-                        onClick={() => toggleSocialDayTime(day.id, slot.id)}
-                        className={cn(
-                          "h-7 w-7 rounded-md transition-all flex items-center justify-center text-xs",
-                          isSelected
-                            ? "bg-accent text-accent-foreground shadow-sm"
-                            : "bg-muted/30 text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground"
-                        )}
-                      >
-                        {isSelected ? '✓' : ''}
-                      </button>
-                    </div>
+                    <button
+                      key={day.id}
+                      onClick={() => toggleSocialDayTime(day.id, slot.id)}
+                      className={cn(
+                        "flex items-center justify-center py-2.5 transition-all text-xs border-l border-border/20",
+                        isSelected
+                          ? "bg-accent/40 text-accent-foreground"
+                          : "text-muted-foreground/30 hover:bg-muted/50 hover:text-muted-foreground"
+                      )}
+                    >
+                      {isSelected ? '✓' : '·'}
+                    </button>
                   );
                 })}
               </div>
