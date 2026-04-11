@@ -263,7 +263,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                     key={day.id}
                     onClick={() => toggleEntireDay(day.id)}
                     className={cn(
-                      "py-1.5 text-[10px] font-semibold transition-all relative",
+                      "py-1.5 text-[10px] font-semibold transition-all relative overflow-visible min-w-[36px]",
                       isFullDay
                         ? "text-accent-foreground bg-accent/30"
                         : isActive
