@@ -1176,6 +1176,42 @@ export type Database = {
         }
         Relationships: []
       }
+      trips: {
+        Row: {
+          available_slots: string[]
+          created_at: string
+          end_date: string
+          id: string
+          location: string | null
+          priority_friend_ids: string[]
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_slots?: string[]
+          created_at?: string
+          end_date: string
+          id?: string
+          location?: string | null
+          priority_friend_ids?: string[]
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_slots?: string[]
+          created_at?: string
+          end_date?: string
+          id?: string
+          location?: string | null
+          priority_friend_ids?: string[]
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vibe_comments: {
         Row: {
           content: string | null
