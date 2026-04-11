@@ -302,7 +302,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                       key={day.id}
                       onClick={() => toggleSocialDayTime(day.id, slot.id)}
                       className={cn(
-                        "flex items-center justify-center py-2.5 transition-all text-xs border-l border-border/20",
+                        "flex items-center justify-center py-2 transition-all text-[11px] border-l border-border/20",
                         isSelected
                           ? "bg-accent/40 text-accent-foreground"
                           : "text-muted-foreground/30 hover:bg-muted/50 hover:text-muted-foreground"
