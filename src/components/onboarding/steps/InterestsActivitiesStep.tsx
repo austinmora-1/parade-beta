@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { OnboardingData } from '../OnboardingWizard';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 
 interface InterestsActivitiesStepProps {
   data: OnboardingData;
@@ -69,9 +69,21 @@ const VIBE_SECTIONS = [
 ];
 
 export function InterestsActivitiesStep({ data, updateData }: InterestsActivitiesStepProps) {
+  const [goalsOpen, setGoalsOpen] = useState(false);
+  const goalsRef = useRef<HTMLDivElement>(null);
   const [expandedVibes, setExpandedVibes] = useState<Set<string>>(
     new Set(VIBE_SECTIONS.map(v => v.vibe))
   );
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (goalsRef.current && !goalsRef.current.contains(e.target as Node)) {
+        setGoalsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleInterest = (interest: string) => {
     const newInterests = data.interests.includes(interest)
@@ -124,29 +136,57 @@ export function InterestsActivitiesStep({ data, updateData }: InterestsActivitie
         )}
       </div>
 
-      {/* Social Goals Section */}
-      <div className="mb-6">
+      {/* Social Goals Dropdown */}
+      <div className="mb-6" ref={goalsRef}>
         <h2 className="font-semibold text-sm mb-1 flex items-center gap-1.5">
           <span>🎯</span> Social Goals
         </h2>
-        <p className="text-xs text-muted-foreground mb-3">
+        <p className="text-xs text-muted-foreground mb-2">
           What are you hoping to get out of Parade?
         </p>
-        <div className="flex flex-wrap gap-2">
-          {SOCIAL_GOALS.map((goal) => (
-            <button
-              key={goal.id}
-              onClick={() => toggleGoal(goal.id)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                (data.socialGoals || []).includes(goal.id)
-                  ? "bg-primary text-primary-foreground"
-                  : "ring-1 ring-border bg-muted/20 text-muted-foreground hover:bg-muted/40"
-              )}
-            >
-              {goal.emoji} {goal.label}
-            </button>
-          ))}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setGoalsOpen(prev => !prev)}
+            className="w-full flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2.5 text-sm transition-colors hover:bg-muted/30"
+          >
+            <span className={cn(
+              "truncate",
+              (data.socialGoals || []).length === 0 && "text-muted-foreground"
+            )}>
+              {(data.socialGoals || []).length === 0
+                ? 'Select your goals...'
+                : `${(data.socialGoals || []).length} goal${(data.socialGoals || []).length !== 1 ? 's' : ''} selected`}
+            </span>
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", goalsOpen && "rotate-180")} />
+          </button>
+          {goalsOpen && (
+            <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-popover shadow-lg overflow-hidden">
+              <div className="max-h-56 overflow-y-auto py-1">
+                {SOCIAL_GOALS.map((goal) => {
+                  const selected = (data.socialGoals || []).includes(goal.id);
+                  return (
+                    <button
+                      key={goal.id}
+                      type="button"
+                      onClick={() => toggleGoal(goal.id)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/40 transition-colors text-left"
+                    >
+                      <div className={cn(
+                        "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border transition-colors",
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-muted-foreground/40"
+                      )}>
+                        {selected && <Check className="h-3 w-3" />}
+                      </div>
+                      <span>{goal.emoji} {goal.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div className="space-y-3">
