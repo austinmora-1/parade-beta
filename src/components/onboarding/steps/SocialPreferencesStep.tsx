@@ -22,11 +22,11 @@ const DAYS = [
   { id: 'sunday', label: 'Sun' },
 ];
 
-const TIME_PREFS = [
-  { id: 'morning', label: '🌅 Morning' },
-  { id: 'afternoon', label: '☀️ Afternoon' },
-  { id: 'evening', label: '🌙 Evening' },
-  { id: 'late-night', label: '🦉 Late Night' },
+const TIME_SLOTS = [
+  { id: 'morning', label: '🌅 Morning', sublabel: '6am–12pm' },
+  { id: 'afternoon', label: '☀️ Afternoon', sublabel: '12–5pm' },
+  { id: 'evening', label: '🌙 Evening', sublabel: '5–10pm' },
+  { id: 'late-night', label: '🦉 Late Night', sublabel: '10pm+' },
 ];
 
 const INTEREST_OPTIONS = [
@@ -46,8 +46,25 @@ const formatTime = (decimalHour: number) => {
   return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
 };
 
+/** Check if a day:time pair exists in the preferredSocialTimes array */
+function hasDayTime(times: string[], day: string, time: string) {
+  return times.includes(`${day}:${time}`);
+}
+
+/** Get the set of days that have any time selected */
+function getSelectedDays(times: string[]): Set<string> {
+  const days = new Set<string>();
+  for (const entry of times) {
+    const [day] = entry.split(':');
+    if (day) days.add(day);
+  }
+  return days;
+}
+
 export function SocialPreferencesStep({ data, updateData }: SocialPreferencesStepProps) {
   const [emailInput, setEmailInput] = useState('');
+
+  const selectedDays = getSelectedDays(data.preferredSocialTimes);
 
   const toggleDay = (dayId: string) => {
     const newDays = data.workDays.includes(dayId)
@@ -56,18 +73,30 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
     updateData({ workDays: newDays });
   };
 
-  const toggleSocialDay = (dayId: string) => {
-    const newDays = data.preferredSocialDays.includes(dayId)
-      ? data.preferredSocialDays.filter(d => d !== dayId)
-      : [...data.preferredSocialDays, dayId];
-    updateData({ preferredSocialDays: newDays });
+  const toggleSocialDayTime = (day: string, time: string) => {
+    const key = `${day}:${time}`;
+    const newTimes = data.preferredSocialTimes.includes(key)
+      ? data.preferredSocialTimes.filter(t => t !== key)
+      : [...data.preferredSocialTimes, key];
+    // Derive preferredSocialDays from the updated times
+    const newDays = Array.from(getSelectedDays(newTimes));
+    updateData({ preferredSocialTimes: newTimes, preferredSocialDays: newDays });
   };
 
-  const toggleSocialTime = (timeId: string) => {
-    const newTimes = data.preferredSocialTimes.includes(timeId)
-      ? data.preferredSocialTimes.filter(t => t !== timeId)
-      : [...data.preferredSocialTimes, timeId];
-    updateData({ preferredSocialTimes: newTimes });
+  const toggleEntireDay = (day: string) => {
+    const dayTimes = data.preferredSocialTimes.filter(t => t.startsWith(`${day}:`));
+    if (dayTimes.length > 0) {
+      // Remove all times for this day
+      const newTimes = data.preferredSocialTimes.filter(t => !t.startsWith(`${day}:`));
+      const newDays = Array.from(getSelectedDays(newTimes));
+      updateData({ preferredSocialTimes: newTimes, preferredSocialDays: newDays });
+    } else {
+      // Add all times for this day
+      const allDayTimes = TIME_SLOTS.map(s => `${day}:${s.id}`);
+      const newTimes = [...data.preferredSocialTimes, ...allDayTimes];
+      const newDays = Array.from(getSelectedDays(newTimes));
+      updateData({ preferredSocialTimes: newTimes, preferredSocialDays: newDays });
+    }
   };
 
   const toggleInterest = (interest: string) => {
@@ -87,6 +116,10 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
 
   const handleRemoveEmail = (email: string) => {
     updateData({ friendEmails: data.friendEmails.filter(e => e !== email) });
+  };
+
+  const getTimesForDay = (day: string) => {
+    return TIME_SLOTS.filter(slot => hasDayTime(data.preferredSocialTimes, day, slot.id));
   };
 
   return (
@@ -156,44 +189,87 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
           </div>
         </div>
 
-        {/* Preferred Social Days */}
+        {/* Preferred Social Days & Times (combined) */}
         <div>
-          <Label className="text-sm font-medium mb-2 block">Preferred Social Days</Label>
-          <div className="flex gap-2">
-            {DAYS.map((day) => (
-              <button
-                key={day.id}
-                onClick={() => toggleSocialDay(day.id)}
-                className={cn(
-                  "flex-1 py-2 rounded-lg text-xs font-medium transition-all",
-                  data.preferredSocialDays.includes(day.id)
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {day.label}
-              </button>
-            ))}
-          </div>
-        </div>
+          <Label className="text-sm font-medium mb-1 block">Preferred Social Times</Label>
+          <p className="text-xs text-muted-foreground mb-3">
+            Tap a day to select all times, or pick specific time slots for each day.
+          </p>
 
-        {/* Preferred Social Times */}
-        <div>
-          <Label className="text-sm font-medium mb-2 block">Preferred Times</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {TIME_PREFS.map((pref) => (
-              <button
-                key={pref.id}
-                onClick={() => toggleSocialTime(pref.id)}
+          {/* Day headers row */}
+          <div className="flex gap-1 mb-2">
+            {DAYS.map((day) => {
+              const isActive = selectedDays.has(day.id);
+              const dayTimeCount = getTimesForDay(day.id).length;
+              const isFullDay = dayTimeCount === TIME_SLOTS.length;
+              return (
+                <button
+                  key={day.id}
+                  onClick={() => toggleEntireDay(day.id)}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-xs font-medium transition-all relative",
+                    isFullDay
+                      ? "bg-accent text-accent-foreground ring-1 ring-accent"
+                      : isActive
+                        ? "bg-accent/50 text-accent-foreground"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {day.label}
+                  {isActive && !isFullDay && (
+                    <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
+                      {dayTimeCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Time slot grid per day */}
+          <div className="rounded-xl border border-border overflow-hidden">
+            {/* Column headers */}
+            <div className="grid grid-cols-[auto_repeat(7,1fr)] bg-muted/30">
+              <div className="p-1.5 text-[10px] font-medium text-muted-foreground" />
+              {DAYS.map(day => (
+                <div key={day.id} className="p-1.5 text-center text-[10px] font-medium text-muted-foreground">
+                  {day.label}
+                </div>
+              ))}
+            </div>
+
+            {/* Time rows */}
+            {TIME_SLOTS.map((slot, slotIdx) => (
+              <div
+                key={slot.id}
                 className={cn(
-                  "py-2.5 rounded-lg text-sm font-medium transition-all",
-                  data.preferredSocialTimes.includes(pref.id)
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  "grid grid-cols-[auto_repeat(7,1fr)] items-center",
+                  slotIdx < TIME_SLOTS.length - 1 && "border-b border-border/50"
                 )}
               >
-                {pref.label}
-              </button>
+                <div className="px-2 py-2 min-w-[72px]">
+                  <div className="text-[11px] font-medium leading-tight">{slot.label}</div>
+                  <div className="text-[9px] text-muted-foreground leading-tight">{slot.sublabel}</div>
+                </div>
+                {DAYS.map(day => {
+                  const isSelected = hasDayTime(data.preferredSocialTimes, day.id, slot.id);
+                  return (
+                    <div key={day.id} className="flex justify-center p-1">
+                      <button
+                        onClick={() => toggleSocialDayTime(day.id, slot.id)}
+                        className={cn(
+                          "h-7 w-7 rounded-md transition-all flex items-center justify-center text-xs",
+                          isSelected
+                            ? "bg-accent text-accent-foreground shadow-sm"
+                            : "bg-muted/30 text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground"
+                        )}
+                      >
+                        {isSelected ? '✓' : ''}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             ))}
           </div>
         </div>
