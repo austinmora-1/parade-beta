@@ -178,7 +178,7 @@
   select,
   textarea {
     @apply bg-background text-foreground antialiased;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Unna', serif;
   }
 
   button,
