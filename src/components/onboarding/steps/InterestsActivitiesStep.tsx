@@ -18,6 +18,7 @@ const VIBE_SECTIONS = [
       '🍸 Drinks', '🍽️ Dinner', '☕ Coffee', '🍳 Brunch',
       '🎤 Karaoke', '💃 Dancing', '🍕 Cooking', '🍷 Wine Tasting',
       '🎭 Theater', '🎪 Events', '🛍️ Shopping', '🎲 Board Games',
+      '🎵 Live Music',
     ],
   },
   {
@@ -26,7 +27,7 @@ const VIBE_SECTIONS = [
     color: 'bg-blue-500/10 text-blue-400 ring-blue-500/30',
     activeColor: 'bg-blue-500 text-white',
     activities: [
-      '🎬 Movies', '📺 TV Nights', '🎵 Live Music', '📚 Book Club',
+      '🎬 Movies', '📺 TV Nights', '📚 Book Club',
       '🎮 Gaming', '🧩 Puzzles', '🧖 Spa Day', '🏖️ Beach',
       '🐕 Dog Walks', '🪴 Gardening', '📸 Photography', '🎸 Jam Sessions',
     ],
