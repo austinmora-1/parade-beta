@@ -56,7 +56,10 @@ const STEPS = [
 export function OnboardingWizard() {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const saved = localStorage.getItem('onboarding_step');
+    return saved ? Math.min(parseInt(saved, 10), STEPS.length - 1) : 0;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [data, setData] = useState<OnboardingData>({
     firstName: '',
@@ -93,7 +96,9 @@ export function OnboardingWizard() {
 
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+      const next = currentStep + 1;
+      localStorage.setItem('onboarding_step', String(next));
+      setCurrentStep(next);
     } else {
       handleComplete();
     }
@@ -101,7 +106,9 @@ export function OnboardingWizard() {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+      const prev = currentStep - 1;
+      localStorage.setItem('onboarding_step', String(prev));
+      setCurrentStep(prev);
     }
   };
 
@@ -141,6 +148,7 @@ export function OnboardingWizard() {
 
       if (error) throw error;
 
+      localStorage.removeItem('onboarding_step');
       toast.success('Welcome to Parade! 🎉');
       navigate('/');
     } catch (error) {
@@ -152,6 +160,7 @@ export function OnboardingWizard() {
   };
 
   const handleSkip = () => {
+    localStorage.removeItem('onboarding_step');
     navigate('/');
   };
 
