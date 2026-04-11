@@ -325,15 +325,14 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
             <div className="grid gap-4 py-4">
               {/* Location */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5" />
+                <label className="text-sm font-medium">
                   Destination (optional)
                 </label>
-                <Input
-                  placeholder="e.g. Paris, Tokyo, New York..."
+                <CityAutocomplete
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full"
+                  onChange={setLocation}
+                  placeholder="e.g. Paris, Tokyo, New York..."
+                  compact
                 />
               </div>
 
