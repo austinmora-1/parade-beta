@@ -196,15 +196,15 @@ export function ProfilePersonalizationStep({ data, updateData }: ProfilePersonal
 
         {/* Neighborhood */}
         <div className="space-y-2">
-          <Label htmlFor="neighborhood" className="text-sm font-medium">
+          <Label className="text-sm font-medium">
             Neighborhood <span className="text-muted-foreground font-normal">(optional)</span>
           </Label>
-          <Input
-            id="neighborhood"
-            placeholder="e.g. Williamsburg, Mission District"
+          <CityAutocomplete
             value={data.neighborhood}
-            onChange={(e) => updateData({ neighborhood: e.target.value })}
-            className="h-11"
+            onChange={(val) => updateData({ neighborhood: val })}
+            placeholder="e.g. Williamsburg, Mission District"
+            className="[&_input]:h-11"
+            types="neighborhood|sublocality"
           />
         </div>
       </div>

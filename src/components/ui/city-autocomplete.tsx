@@ -18,6 +18,7 @@ interface CityAutocompleteProps {
   placeholder?: string;
   className?: string;
   compact?: boolean;
+  types?: string;
 }
 
 export function CityAutocomplete({ 
@@ -26,6 +27,7 @@ export function CityAutocomplete({
   placeholder = "Search for a city...",
   className,
   compact = false,
+  types = '(cities)',
 }: CityAutocompleteProps) {
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -95,7 +97,7 @@ export function CityAutocomplete({
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('google-places-search', {
-        body: { query: searchQuery, types: '(cities)' }
+        body: { query: searchQuery, types }
       });
 
       if (error) throw error;
