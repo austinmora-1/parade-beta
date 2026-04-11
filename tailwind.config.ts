@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['DM Sans', 'sans-serif'],
+        sans: ['Unna', 'serif'],
         display: ['Space Grotesk', 'sans-serif'],
       },
       colors: {
