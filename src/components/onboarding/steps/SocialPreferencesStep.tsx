@@ -287,7 +287,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
               <div
                 key={slot.id}
                 className={cn(
-                  "grid grid-cols-[52px_repeat(7,1fr)] items-center",
+                  "grid grid-cols-[74px_repeat(7,1fr)] items-center",
                   slotIdx < TIME_SLOTS.length - 1 && "border-b border-border/40"
                 )}
               >
