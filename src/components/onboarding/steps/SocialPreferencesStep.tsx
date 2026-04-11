@@ -148,7 +148,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                       : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   )}
                 >
-                  {day.label}
+                  {day.fullLabel}
                 </button>
               ))}
             </div>
