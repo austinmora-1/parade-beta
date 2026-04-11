@@ -56,7 +56,10 @@ const STEPS = [
 export function OnboardingWizard() {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    const saved = localStorage.getItem('onboarding_step');
+    return saved ? Math.min(parseInt(saved, 10), STEPS.length - 1) : 0;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [data, setData] = useState<OnboardingData>({
     firstName: '',
