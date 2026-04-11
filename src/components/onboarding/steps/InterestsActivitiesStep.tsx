@@ -149,6 +149,7 @@ export function InterestsActivitiesStep({ data, updateData }: InterestsActivitie
           ))}
         </div>
       </div>
+      <div className="space-y-3">
         {VIBE_SECTIONS.map((section) => {
           const isExpanded = expandedVibes.has(section.vibe);
           const count = getVibeCount(section.activities);
