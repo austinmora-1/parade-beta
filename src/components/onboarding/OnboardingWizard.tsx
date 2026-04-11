@@ -82,6 +82,7 @@ export function OnboardingWizard() {
     preferredSocialDays: ['friday', 'saturday', 'sunday'],
     preferredSocialTimes: ['evening'],
     interests: [],
+    socialGoals: [],
     friendEmails: [],
     showAvailability: true,
     showLocation: true,
