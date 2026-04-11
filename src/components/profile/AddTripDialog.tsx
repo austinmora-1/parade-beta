@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, eachDayOfInterval, isAfter, isBefore, startOfDay } from 'date-fns';
-import { CalendarIcon, Plane, Trash2, X, Users, Clock } from 'lucide-react';
+import { CalendarIcon, Plane, Trash2, X, Users, Clock, CheckSquare, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -62,12 +62,23 @@ interface AddTripDialogProps {
 
 const ALL_SLOTS: TimeSlot[] = ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
 
+// Per-day slots map: dateString -> Set<slotName>
+type DaySlotsMap = Map<string, Set<string>>;
+
+function buildDaySlotsMap(days: Date[], defaultSlots: string[] = ALL_SLOTS as string[]): DaySlotsMap {
+  const map: DaySlotsMap = new Map();
+  for (const day of days) {
+    map.set(format(day, 'yyyy-MM-dd'), new Set(defaultSlots));
+  }
+  return map;
+}
+
 export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: AddTripDialogProps) {
   const { session } = useAuth();
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [location, setLocation] = useState('');
-  const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set(ALL_SLOTS));
+  const [daySlots, setDaySlots] = useState<DaySlotsMap>(new Map());
   const [priorityFriendIds, setPriorityFriendIds] = useState<string[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -99,8 +110,28 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       .filter(Boolean) as FriendOption[];
   }, [priorityFriendIds, connectedFriends]);
 
+  const tripDays = useMemo(() => {
+    if (!startDate || !endDate) return [];
+    return eachDayOfInterval({ start: startDate, end: endDate });
+  }, [startDate, endDate]);
+
   const isEditing = !!editingTrip;
   const today = startOfDay(new Date());
+
+  // Rebuild daySlots when dates change
+  useEffect(() => {
+    if (tripDays.length > 0) {
+      setDaySlots(prev => {
+        const next: DaySlotsMap = new Map();
+        for (const day of tripDays) {
+          const key = format(day, 'yyyy-MM-dd');
+          // Preserve existing selections if the day was already configured
+          next.set(key, prev.get(key) ?? new Set(ALL_SLOTS));
+        }
+        return next;
+      });
+    }
+  }, [tripDays]);
 
   // Populate form when editing
   useEffect(() => {
@@ -108,29 +139,66 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       setStartDate(editingTrip.startDate);
       setEndDate(editingTrip.endDate);
       setLocation(editingTrip.location || '');
-      setSelectedSlots(new Set(editingTrip.availableSlots?.length ? editingTrip.availableSlots : ALL_SLOTS));
+      const days = eachDayOfInterval({ start: editingTrip.startDate, end: editingTrip.endDate });
+      const defaultSlots = editingTrip.availableSlots?.length ? editingTrip.availableSlots : ALL_SLOTS as string[];
+      setDaySlots(buildDaySlotsMap(days, defaultSlots));
       setPriorityFriendIds(editingTrip.priorityFriendIds || []);
     } else {
       setStartDate(undefined);
       setEndDate(undefined);
       setLocation('');
-      setSelectedSlots(new Set(ALL_SLOTS));
+      setDaySlots(new Map());
       setPriorityFriendIds([]);
     }
     setFriendSearch('');
   }, [editingTrip, open]);
 
-  const toggleSlot = (slot: string) => {
-    setSelectedSlots(prev => {
-      const next = new Set(prev);
-      if (next.has(slot)) {
-        next.delete(slot);
+  const toggleDaySlot = useCallback((dateKey: string, slot: string) => {
+    setDaySlots(prev => {
+      const next = new Map(prev);
+      const daySet = new Set(next.get(dateKey) ?? ALL_SLOTS);
+      if (daySet.has(slot)) {
+        daySet.delete(slot);
       } else {
-        next.add(slot);
+        daySet.add(slot);
+      }
+      next.set(dateKey, daySet);
+      return next;
+    });
+  }, []);
+
+  const toggleAllSlotsForDay = useCallback((dateKey: string) => {
+    setDaySlots(prev => {
+      const next = new Map(prev);
+      const daySet = next.get(dateKey) ?? new Set();
+      if (daySet.size === ALL_SLOTS.length) {
+        next.set(dateKey, new Set());
+      } else {
+        next.set(dateKey, new Set(ALL_SLOTS));
       }
       return next;
     });
-  };
+  }, []);
+
+  const selectAllDays = useCallback(() => {
+    setDaySlots(prev => {
+      const next = new Map(prev);
+      for (const [key] of next) {
+        next.set(key, new Set(ALL_SLOTS));
+      }
+      return next;
+    });
+  }, []);
+
+  const clearAllDays = useCallback(() => {
+    setDaySlots(prev => {
+      const next = new Map(prev);
+      for (const [key] of next) {
+        next.set(key, new Set());
+      }
+      return next;
+    });
+  }, []);
 
   const addFriend = (friendUserId: string) => {
     setPriorityFriendIds(prev => [...prev, friendUserId]);
@@ -140,6 +208,17 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   const removeFriend = (friendUserId: string) => {
     setPriorityFriendIds(prev => prev.filter(id => id !== friendUserId));
   };
+
+  // Count total selected slots across all days
+  const totalSelectedSlots = useMemo(() => {
+    let total = 0;
+    for (const [, set] of daySlots) {
+      total += set.size;
+    }
+    return total;
+  }, [daySlots]);
+
+  const totalPossibleSlots = tripDays.length * ALL_SLOTS.length;
 
   const handleSave = async () => {
     if (!session?.user || !startDate || !endDate) return;
@@ -152,8 +231,6 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
     setIsLoading(true);
 
     try {
-      const slotsArray = Array.from(selectedSlots);
-
       // If editing, first clear the old trip dates that are no longer in the new range
       if (editingTrip) {
         const oldDays = eachDayOfInterval({ start: editingTrip.startDate, end: editingTrip.endDate });
@@ -179,19 +256,23 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       // Get all days in the new range
       const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-      // Build availability rows with slot-level control
-      const upsertData = days.map(day => ({
-        user_id: session.user.id,
-        date: format(day, 'yyyy-MM-dd'),
-        location_status: 'away',
-        trip_location: location.trim() || null,
-        early_morning: selectedSlots.has('early-morning'),
-        late_morning: selectedSlots.has('late-morning'),
-        early_afternoon: selectedSlots.has('early-afternoon'),
-        late_afternoon: selectedSlots.has('late-afternoon'),
-        evening: selectedSlots.has('evening'),
-        late_night: selectedSlots.has('late-night'),
-      }));
+      // Build availability rows with per-day slot-level control
+      const upsertData = days.map(day => {
+        const dateKey = format(day, 'yyyy-MM-dd');
+        const slots = daySlots.get(dateKey) ?? new Set(ALL_SLOTS);
+        return {
+          user_id: session.user.id,
+          date: dateKey,
+          location_status: 'away',
+          trip_location: location.trim() || null,
+          early_morning: slots.has('early-morning'),
+          late_morning: slots.has('late-morning'),
+          early_afternoon: slots.has('early-afternoon'),
+          late_afternoon: slots.has('late-afternoon'),
+          evening: slots.has('evening'),
+          late_night: slots.has('late-night'),
+        };
+      });
 
       const { error: availError } = await supabase
         .from('availability')
@@ -199,13 +280,19 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
 
       if (availError) throw availError;
 
+      // Collect the union of all selected slots for the trips table summary
+      const allSelectedSlots = new Set<string>();
+      for (const [, set] of daySlots) {
+        for (const s of set) allSelectedSlots.add(s);
+      }
+
       // Upsert trip record
       const tripPayload = {
         user_id: session.user.id,
         location: location.trim() || null,
         start_date: format(startDate, 'yyyy-MM-dd'),
         end_date: format(endDate, 'yyyy-MM-dd'),
-        available_slots: slotsArray,
+        available_slots: Array.from(allSelectedSlots),
         priority_friend_ids: priorityFriendIds,
       };
 
@@ -276,7 +363,6 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       if (editingTrip.id) {
         await supabase.from('trips').delete().eq('id', editingTrip.id);
       } else {
-        // Try to find and delete by date range
         await supabase
           .from('trips')
           .delete()
@@ -395,35 +481,84 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                 </Popover>
               </div>
 
-              {/* Available Time Slots */}
-              {startDate && endDate && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" />
-                    Available time slots
-                  </label>
-                  <p className="text-xs text-muted-foreground">
-                    Which times are you free during this trip?
+              {/* Per-Day Available Time Slots */}
+              {tripDays.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      Available time slots
+                    </label>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={selectAllDays}
+                        className="text-[10px] font-medium text-primary hover:text-primary/80 transition-colors px-1.5 py-0.5 rounded hover:bg-primary/10"
+                      >
+                        All free
+                      </button>
+                      <span className="text-muted-foreground/40 text-[10px]">·</span>
+                      <button
+                        type="button"
+                        onClick={clearAllDays}
+                        className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    Tap slots per day to set when you're free
                   </p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {ALL_SLOTS.map(slot => {
-                      const info = TIME_SLOT_LABELS[slot];
-                      const isSelected = selectedSlots.has(slot);
+
+                  <div className="space-y-2">
+                    {tripDays.map(day => {
+                      const dateKey = format(day, 'yyyy-MM-dd');
+                      const slots = daySlots.get(dateKey) ?? new Set(ALL_SLOTS);
+                      const allSelected = slots.size === ALL_SLOTS.length;
+
                       return (
-                        <button
-                          key={slot}
-                          type="button"
-                          onClick={() => toggleSlot(slot)}
-                          className={cn(
-                            "rounded-lg px-3 py-2 text-left transition-colors border",
-                            isSelected
-                              ? "bg-availability-available-light border-availability-available text-foreground"
-                              : "bg-muted/30 border-transparent text-muted-foreground"
-                          )}
-                        >
-                          <span className="text-xs font-medium">{info.label}</span>
-                          <span className="text-[10px] ml-1 opacity-70">{info.time}</span>
-                        </button>
+                        <div key={dateKey} className="rounded-lg border border-border p-2.5 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold">
+                              {format(day, 'EEE, MMM d')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => toggleAllSlotsForDay(dateKey)}
+                              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {allSelected ? (
+                                <CheckSquare className="h-3 w-3" />
+                              ) : (
+                                <Square className="h-3 w-3" />
+                              )}
+                              {allSelected ? 'All' : 'None'}
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1">
+                            {ALL_SLOTS.map(slot => {
+                              const info = TIME_SLOT_LABELS[slot];
+                              const isSelected = slots.has(slot);
+                              return (
+                                <button
+                                  key={slot}
+                                  type="button"
+                                  onClick={() => toggleDaySlot(dateKey, slot)}
+                                  className={cn(
+                                    "rounded-md px-1.5 py-1 text-center transition-colors border",
+                                    isSelected
+                                      ? "bg-availability-available-light border-availability-available text-foreground"
+                                      : "bg-muted/30 border-transparent text-muted-foreground"
+                                  )}
+                                >
+                                  <span className="text-[10px] font-medium leading-tight block">{info.label}</span>
+                                  <span className="text-[8px] opacity-60 leading-tight block">{info.time}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
@@ -431,7 +566,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
               )}
 
               {/* Priority Friends */}
-              {startDate && endDate && (
+              {tripDays.length > 0 && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium flex items-center gap-1.5">
                     <Users className="h-3.5 w-3.5" />
@@ -508,7 +643,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                     {format(startDate, 'MMM d')} – {format(endDate, 'MMM d, yyyy')}
                   </p>
                   <p className="text-availability-away-foreground/70">
-                    {eachDayOfInterval({ start: startDate, end: endDate }).length} days · {selectedSlots.size} of 6 slots free
+                    {tripDays.length} days · {totalSelectedSlots}/{totalPossibleSlots} slots free
                     {priorityFriendIds.length > 0 && ` · ${priorityFriendIds.length} friend${priorityFriendIds.length > 1 ? 's' : ''} to see`}
                   </p>
                 </div>
