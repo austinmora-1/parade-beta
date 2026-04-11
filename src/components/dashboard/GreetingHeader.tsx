@@ -45,11 +45,11 @@ export function GreetingHeader() {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="relative overflow-hidden rounded-2xl w-fit"
+      className="relative overflow-hidden rounded-2xl w-full"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} rounded-2xl`} />
       
-      <div className="relative px-4 py-4">
+      <div className="relative px-4 py-2">
         <h2 className="text-lg font-display text-foreground">
           {config.greeting}{config.firstName ? `, ${config.firstName}` : ''}
         </h2>
