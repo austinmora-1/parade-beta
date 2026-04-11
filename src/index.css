@@ -2,7 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fonts loaded via index.html <link> tags for reliability */
+/* Fonts loaded via index.html <link> tags and CDN for reliability */
+
+/* Cal Sans - display/header font */
+@font-face {
+  font-family: 'Cal Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('https://cdn.jsdelivr.net/npm/cal-sans@1.0.1/fonts/webfonts/CalSans-SemiBold.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/npm/cal-sans@1.0.1/fonts/webfonts/CalSans-SemiBold.woff') format('woff');
+}
 
 @layer base {
   :root {
@@ -193,8 +203,8 @@
 
   h1, h2, h3, h4, h5, h6,
   .font-display {
-    font-family: 'Space Grotesk', sans-serif !important;
-    font-weight: 500;
+    font-family: 'Cal Sans', sans-serif !important;
+    font-weight: 600;
   }
 
   strong, b {
