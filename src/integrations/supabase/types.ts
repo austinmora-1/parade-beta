@@ -873,6 +873,7 @@ export type Database = {
       profiles: {
         Row: {
           allow_all_hang_requests: boolean | null
+          allow_elly_hangouts: boolean | null
           allowed_hang_request_friend_ids: string[] | null
           avatar_url: string | null
           bio: string | null
@@ -892,15 +893,20 @@ export type Database = {
           friend_requests_notifications: boolean | null
           home_address: string | null
           id: string
+          interests: string[] | null
           last_name: string | null
           location_status: string | null
+          neighborhood: string | null
           phone_number: string | null
           plan_invitations_notifications: boolean | null
           plan_reminders: boolean | null
+          preferred_social_days: string[] | null
+          preferred_social_times: string[] | null
           share_code: string
           show_availability: boolean | null
           show_location: boolean | null
           show_vibe_status: boolean | null
+          social_cap: number | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -909,6 +915,7 @@ export type Database = {
         }
         Insert: {
           allow_all_hang_requests?: boolean | null
+          allow_elly_hangouts?: boolean | null
           allowed_hang_request_friend_ids?: string[] | null
           avatar_url?: string | null
           bio?: string | null
@@ -928,15 +935,20 @@ export type Database = {
           friend_requests_notifications?: boolean | null
           home_address?: string | null
           id?: string
+          interests?: string[] | null
           last_name?: string | null
           location_status?: string | null
+          neighborhood?: string | null
           phone_number?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
+          preferred_social_days?: string[] | null
+          preferred_social_times?: string[] | null
           share_code?: string
           show_availability?: boolean | null
           show_location?: boolean | null
           show_vibe_status?: boolean | null
+          social_cap?: number | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -945,6 +957,7 @@ export type Database = {
         }
         Update: {
           allow_all_hang_requests?: boolean | null
+          allow_elly_hangouts?: boolean | null
           allowed_hang_request_friend_ids?: string[] | null
           avatar_url?: string | null
           bio?: string | null
@@ -964,15 +977,20 @@ export type Database = {
           friend_requests_notifications?: boolean | null
           home_address?: string | null
           id?: string
+          interests?: string[] | null
           last_name?: string | null
           location_status?: string | null
+          neighborhood?: string | null
           phone_number?: string | null
           plan_invitations_notifications?: boolean | null
           plan_reminders?: boolean | null
+          preferred_social_days?: string[] | null
+          preferred_social_times?: string[] | null
           share_code?: string
           show_availability?: boolean | null
           show_location?: boolean | null
           show_vibe_status?: boolean | null
+          social_cap?: number | null
           timezone?: string | null
           updated_at?: string
           user_id?: string
