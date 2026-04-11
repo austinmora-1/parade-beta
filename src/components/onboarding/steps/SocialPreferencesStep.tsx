@@ -13,20 +13,20 @@ interface SocialPreferencesStepProps {
 }
 
 const DAYS = [
-  { id: 'monday', label: 'Mon' },
-  { id: 'tuesday', label: 'Tue' },
-  { id: 'wednesday', label: 'Wed' },
-  { id: 'thursday', label: 'Thu' },
-  { id: 'friday', label: 'Fri' },
-  { id: 'saturday', label: 'Sat' },
-  { id: 'sunday', label: 'Sun' },
+  { id: 'monday', label: 'M', fullLabel: 'Mon' },
+  { id: 'tuesday', label: 'T', fullLabel: 'Tue' },
+  { id: 'wednesday', label: 'W', fullLabel: 'Wed' },
+  { id: 'thursday', label: 'Th', fullLabel: 'Thu' },
+  { id: 'friday', label: 'F', fullLabel: 'Fri' },
+  { id: 'saturday', label: 'Sa', fullLabel: 'Sat' },
+  { id: 'sunday', label: 'Su', fullLabel: 'Sun' },
 ];
 
 const TIME_SLOTS = [
-  { id: 'morning', label: '🌅 AM', sublabel: '6–12' },
-  { id: 'afternoon', label: '☀️ Noon', sublabel: '12–5' },
-  { id: 'evening', label: '🌙 PM', sublabel: '5–10' },
-  { id: 'late-night', label: '🦉 Late', sublabel: '10+' },
+  { id: 'morning', label: '🌅 Morning', sublabel: '6am–12pm' },
+  { id: 'afternoon', label: '☀️ Afternoon', sublabel: '12–5pm' },
+  { id: 'evening', label: '🌙 Evening', sublabel: '5–10pm' },
+  { id: 'late-night', label: '🦉 Late Night', sublabel: '10pm+' },
 ];
 
 const INTEREST_OPTIONS = [
