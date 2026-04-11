@@ -192,9 +192,62 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
         {/* Preferred Social Days & Times (combined) */}
         <div>
           <Label className="text-sm font-medium mb-1 block">Preferred Social Times</Label>
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-xs text-muted-foreground mb-2">
             Tap a day to select all times, or pick specific time slots for each day.
           </p>
+
+          {/* Quick-select presets */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {[
+              {
+                label: '🌃 Weekday evenings',
+                times: ['monday:evening', 'tuesday:evening', 'wednesday:evening', 'thursday:evening', 'friday:evening'],
+              },
+              {
+                label: '☀️ Weekend all day',
+                times: [
+                  'saturday:morning', 'saturday:afternoon', 'saturday:evening', 'saturday:late-night',
+                  'sunday:morning', 'sunday:afternoon', 'sunday:evening', 'sunday:late-night',
+                ],
+              },
+              {
+                label: '🍳 Weekend mornings',
+                times: ['saturday:morning', 'sunday:morning'],
+              },
+              {
+                label: '🌙 Every evening',
+                times: DAYS.map(d => `${d.id}:evening`),
+              },
+            ].map((preset) => {
+              const allSelected = preset.times.every(t => data.preferredSocialTimes.includes(t));
+              return (
+                <button
+                  key={preset.label}
+                  onClick={() => {
+                    let newTimes: string[];
+                    if (allSelected) {
+                      newTimes = data.preferredSocialTimes.filter(t => !preset.times.includes(t));
+                    } else {
+                      const toAdd = preset.times.filter(t => !data.preferredSocialTimes.includes(t));
+                      newTimes = [...data.preferredSocialTimes, ...toAdd];
+                    }
+                    updateData({
+                      preferredSocialTimes: newTimes,
+                      preferredSocialDays: Array.from(getSelectedDays(newTimes)),
+                    });
+                  }}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                    allSelected
+                      ? "bg-accent text-accent-foreground ring-1 ring-accent"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Day headers row */}
           <div className="flex gap-1 mb-2">
