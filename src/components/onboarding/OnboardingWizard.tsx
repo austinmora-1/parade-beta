@@ -52,7 +52,7 @@ const STEPS = [
   { id: 'profile', title: 'Profile' },
   { id: 'calendar', title: 'Calendar' },
   { id: 'social', title: 'Social' },
-  { id: 'interests', title: 'Interests' },
+  { id: 'interests', title: 'Goals & Interests' },
   { id: 'notifications', title: 'Settings' },
 ];
 

@@ -125,7 +125,7 @@ export function InterestsActivitiesStep({ data, updateData }: InterestsActivitie
   return (
     <div>
       <div className="text-center mb-6">
-        <h1 className="font-display text-2xl font-bold mb-2">Interests & Activities</h1>
+        <h1 className="font-display text-2xl font-bold mb-2">Social Goals & Interests</h1>
         <p className="text-muted-foreground">
           Pick what you love to do — we'll use these to suggest plans.
         </p>
