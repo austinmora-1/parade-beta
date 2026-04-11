@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,8 +32,8 @@ export function CityAutocomplete({
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Sync external value changes
@@ -42,51 +41,16 @@ export function CityAutocomplete({
     setQuery(value);
   }, [value]);
 
-  // Update dropdown position when showing suggestions
-  useEffect(() => {
-    if (showSuggestions && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  }, [showSuggestions, suggestions]);
-
   // Close suggestions when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      const dropdown = document.getElementById('city-autocomplete-dropdown');
-      if (
-        inputRef.current && 
-        !inputRef.current.contains(target) &&
-        dropdown && 
-        !dropdown.contains(target)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Close on scroll
-  useEffect(() => {
-    function handleScroll() {
-      if (showSuggestions && inputRef.current) {
-        const rect = inputRef.current.getBoundingClientRect();
-        setDropdownPosition({
-          top: rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-        });
-      }
-    }
-    window.addEventListener('scroll', handleScroll, true);
-    return () => window.removeEventListener('scroll', handleScroll, true);
-  }, [showSuggestions]);
 
   const searchPlaces = async (searchQuery: string) => {
     if (searchQuery.length < 2) {
@@ -158,56 +122,8 @@ export function CityAutocomplete({
     }, 200);
   };
 
-  const dropdown = showSuggestions && suggestions.length > 0 && createPortal(
-    <div
-      id="city-autocomplete-dropdown"
-      style={{
-        position: 'absolute',
-        top: dropdownPosition.top,
-        left: dropdownPosition.left,
-        width: dropdownPosition.width,
-        zIndex: 9999,
-      }}
-      className="rounded-lg border border-border bg-popover shadow-lg"
-    >
-      <ul className="max-h-60 overflow-y-auto py-1 overscroll-contain">
-        {suggestions.map((suggestion) => (
-          <li
-            key={suggestion.place_id}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSelectSuggestion(suggestion);
-            }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSelectSuggestion(suggestion);
-            }}
-            className={cn(
-              "flex cursor-pointer items-center gap-2 hover:bg-muted active:bg-muted transition-colors",
-              compact ? "px-2 py-2" : "px-3 py-3 gap-3"
-            )}
-          >
-            <MapPin className={cn("shrink-0 text-muted-foreground", compact ? "h-3 w-3" : "h-4 w-4")} />
-            <div className="min-w-0">
-              <p className={cn("font-medium truncate", compact && "text-sm")}>{suggestion.main_text}</p>
-              {suggestion.secondary_text && (
-                <p className={cn("text-muted-foreground truncate", compact ? "text-[10px]" : "text-sm")}>{suggestion.secondary_text}</p>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>,
-    document.body
-  );
-
   return (
-    <div className={cn("relative", className)}>
+    <div ref={wrapperRef} className={cn("relative", className)}>
       <div className="relative">
         <MapPin className={cn(
           "absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground",
@@ -231,7 +147,45 @@ export function CityAutocomplete({
           )} />
         )}
       </div>
-      {dropdown}
+      {showSuggestions && suggestions.length > 0 && (
+        <div
+          className="absolute left-0 right-0 top-full mt-1 rounded-lg border border-border bg-popover shadow-lg"
+          style={{ zIndex: 9999 }}
+        >
+          <ul className="max-h-60 overflow-y-auto py-1 overscroll-contain">
+            {suggestions.map((suggestion) => (
+              <li
+                key={suggestion.place_id}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSelectSuggestion(suggestion);
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSelectSuggestion(suggestion);
+                }}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 hover:bg-muted active:bg-muted transition-colors",
+                  compact ? "px-2 py-2" : "px-3 py-3 gap-3"
+                )}
+              >
+                <MapPin className={cn("shrink-0 text-muted-foreground", compact ? "h-3 w-3" : "h-4 w-4")} />
+                <div className="min-w-0">
+                  <p className={cn("font-medium truncate", compact && "text-sm")}>{suggestion.main_text}</p>
+                  {suggestion.secondary_text && (
+                    <p className={cn("text-muted-foreground truncate", compact ? "text-[10px]" : "text-sm")}>{suggestion.secondary_text}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
