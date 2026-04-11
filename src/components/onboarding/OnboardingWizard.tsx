@@ -102,8 +102,6 @@ export function OnboardingWizard() {
     } else {
       handleComplete();
     }
-      handleComplete();
-    }
   };
 
   const handleBack = () => {
