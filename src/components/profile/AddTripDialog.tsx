@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, eachDayOfInterval, isAfter, isBefore, startOfDay } from 'date-fns';
-import { CalendarIcon, Plane, MapPin, Trash2, X, Users, Clock } from 'lucide-react';
+import { CalendarIcon, Plane, Trash2, X, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -324,15 +325,14 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
             <div className="grid gap-4 py-4">
               {/* Location */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5" />
+                <label className="text-sm font-medium">
                   Destination (optional)
                 </label>
-                <Input
-                  placeholder="e.g. Paris, Tokyo, New York..."
+                <CityAutocomplete
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full"
+                  onChange={setLocation}
+                  placeholder="e.g. Paris, Tokyo, New York..."
+                  compact
                 />
               </div>
 
