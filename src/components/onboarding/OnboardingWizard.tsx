@@ -8,6 +8,7 @@ import { AccountCreationStep } from './steps/AccountCreationStep';
 import { ProfilePersonalizationStep } from './steps/ProfilePersonalizationStep';
 import { CalendarSyncStep } from './steps/CalendarSyncStep';
 import { SocialPreferencesStep } from './steps/SocialPreferencesStep';
+import { InterestsActivitiesStep } from './steps/InterestsActivitiesStep';
 import { NotificationsPrivacyStep } from './steps/NotificationsPrivacyStep';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,6 +51,7 @@ const STEPS = [
   { id: 'profile', title: 'Profile' },
   { id: 'calendar', title: 'Calendar' },
   { id: 'social', title: 'Social' },
+  { id: 'interests', title: 'Interests' },
   { id: 'notifications', title: 'Settings' },
 ];
 
@@ -174,6 +176,8 @@ export function OnboardingWizard() {
         return <CalendarSyncStep data={data} updateData={updateData} />;
       case 'social':
         return <SocialPreferencesStep data={data} updateData={updateData} />;
+      case 'interests':
+        return <InterestsActivitiesStep data={data} updateData={updateData} />;
       case 'notifications':
         return <NotificationsPrivacyStep data={data} updateData={updateData} />;
       default:

@@ -29,18 +29,6 @@ const TIME_SLOTS = [
   { id: 'late-night', label: '🦉 Late Night', sublabel: '10pm+' },
 ];
 
-const INTEREST_OPTIONS = [
-  '🍸 Drinks', '🍽️ Dinner', '☕ Coffee', '🍳 Brunch',
-  '🎬 Movies', '📺 TV Nights', '🎵 Live Music', '🎤 Karaoke',
-  '🏃 Running', '🧘 Yoga', '🏋️ Gym', '🥾 Hiking',
-  '🧗 Climbing', '🚴 Cycling', '🏊 Swimming', '🎾 Tennis',
-  '⚽ Soccer', '🏀 Basketball', '🏓 Ping Pong', '🛹 Skating',
-  '🎮 Gaming', '🎨 Art', '📚 Book Club', '🎪 Events',
-  '🏖️ Beach', '🎳 Bowling', '🐕 Dog Walks', '🛍️ Shopping',
-  '🧖 Spa Day', '🍷 Wine Tasting', '🎭 Theater', '🏕️ Camping',
-  '📸 Photography', '🎸 Jam Sessions', '🪴 Gardening', '🎲 Board Games',
-  '💃 Dancing', '🍕 Cooking', '✈️ Travel', '🧩 Puzzles',
-];
 
 const formatTime = (decimalHour: number) => {
   const hours = Math.floor(decimalHour);
@@ -104,12 +92,6 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
     }
   };
 
-  const toggleInterest = (interest: string) => {
-    const newInterests = data.interests.includes(interest)
-      ? data.interests.filter(i => i !== interest)
-      : [...data.interests, interest];
-    updateData({ interests: newInterests });
-  };
 
   const handleAddEmail = () => {
     const email = emailInput.trim().toLowerCase();
@@ -324,26 +306,6 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
           </div>
         </div>
 
-        {/* Interests */}
-        <div>
-          <Label className="text-sm font-medium mb-2 block">Interests & Activities</Label>
-          <div className="flex flex-wrap gap-2">
-            {INTEREST_OPTIONS.map((interest) => (
-              <button
-                key={interest}
-                onClick={() => toggleInterest(interest)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                  data.interests.includes(interest)
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {interest}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Close Friends / Invite */}
         <div>
