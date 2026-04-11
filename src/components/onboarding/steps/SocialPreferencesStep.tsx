@@ -252,7 +252,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
           {/* Combined grid with day headers aligned to columns */}
           <div className="rounded-xl border border-border overflow-hidden">
             {/* Day header row */}
-            <div className="grid grid-cols-[60px_repeat(7,1fr)] bg-muted/20 border-b border-border">
+            <div className="grid grid-cols-[52px_repeat(7,1fr)] bg-muted/20 border-b border-border">
               <div />
               {DAYS.map((day) => {
                 const isActive = selectedDays.has(day.id);
@@ -263,7 +263,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                     key={day.id}
                     onClick={() => toggleEntireDay(day.id)}
                     className={cn(
-                      "py-2 text-[11px] font-semibold transition-all relative",
+                      "py-1.5 text-[10px] font-semibold transition-all relative",
                       isFullDay
                         ? "text-accent-foreground bg-accent/30"
                         : isActive
@@ -273,7 +273,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
                   >
                     {day.label}
                     {isActive && !isFullDay && (
-                      <span className="absolute -top-0.5 right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-bold text-primary-foreground">
+                      <span className="absolute -top-0.5 right-0 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-bold text-primary-foreground">
                         {dayTimeCount}
                       </span>
                     )}
@@ -287,12 +287,12 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
               <div
                 key={slot.id}
                 className={cn(
-                  "grid grid-cols-[60px_repeat(7,1fr)] items-center",
+                  "grid grid-cols-[52px_repeat(7,1fr)] items-center",
                   slotIdx < TIME_SLOTS.length - 1 && "border-b border-border/40"
                 )}
               >
-                <div className="px-1.5 py-2">
-                  <div className="text-[10px] font-medium leading-tight truncate">{slot.label}</div>
+                <div className="px-1 py-1.5">
+                  <div className="text-[10px] font-medium leading-tight">{slot.label}</div>
                   <div className="text-[8px] text-muted-foreground leading-tight">{slot.sublabel}</div>
                 </div>
                 {DAYS.map((day) => {
