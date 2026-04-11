@@ -23,10 +23,10 @@ const DAYS = [
 ];
 
 const TIME_SLOTS = [
-  { id: 'morning', label: '🌅 Morning', sublabel: '6am–12pm' },
-  { id: 'afternoon', label: '☀️ Afternoon', sublabel: '12–5pm' },
-  { id: 'evening', label: '🌙 Evening', sublabel: '5–10pm' },
-  { id: 'late-night', label: '🦉 Late Night', sublabel: '10pm+' },
+  { id: 'morning', label: '🌅 AM', sublabel: '6–12' },
+  { id: 'afternoon', label: '☀️ Noon', sublabel: '12–5' },
+  { id: 'evening', label: '🌙 PM', sublabel: '5–10' },
+  { id: 'late-night', label: '🦉 Late', sublabel: '10+' },
 ];
 
 const INTEREST_OPTIONS = [
