@@ -252,7 +252,7 @@ export function SocialPreferencesStep({ data, updateData }: SocialPreferencesSte
           {/* Combined grid with day headers aligned to columns */}
           <div className="rounded-xl border border-border overflow-hidden">
             {/* Day header row */}
-            <div className="grid grid-cols-[52px_repeat(7,1fr)] bg-muted/20 border-b border-border">
+            <div className="grid grid-cols-[74px_repeat(7,1fr)] bg-muted/20 border-b border-border">
               <div />
               {DAYS.map((day) => {
                 const isActive = selectedDays.has(day.id);
