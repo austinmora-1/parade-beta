@@ -10,11 +10,11 @@ interface InterestsActivitiesStepProps {
 
 const SOCIAL_GOALS = [
   { id: 'stay_connected', label: 'Stay connected with close friends' },
-  { id: 'meet_new_people', label: 'Meet new people' },
   { id: 'try_new_things', label: 'Try new activities & experiences' },
   { id: 'be_more_social', label: 'Be more intentional about socializing' },
   { id: 'less_flaking', label: 'Follow through on plans more' },
   { id: 'work_life_balance', label: 'Better work-life balance' },
+  { id: 'meet_new_people', label: 'Meet new people' },
 ];
 
 const VIBE_SECTIONS = [
