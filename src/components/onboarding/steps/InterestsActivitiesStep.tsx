@@ -15,8 +15,6 @@ const SOCIAL_GOALS = [
   { id: 'be_more_social', label: 'Be more intentional about socializing' },
   { id: 'less_flaking', label: 'Follow through on plans more' },
   { id: 'work_life_balance', label: 'Better work-life balance' },
-  { id: 'explore_city', label: 'Explore my city more' },
-  { id: 'deepen_friendships', label: 'Deepen existing friendships' },
 ];
 
 const VIBE_SECTIONS = [
