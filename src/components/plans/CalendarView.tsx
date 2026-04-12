@@ -200,15 +200,16 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
             )}
           </div>
           {selectedDayPlans.length > 0 ? (
-            <div className="space-y-2 md:space-y-3">
+            <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
               {selectedDayPlans.map((plan) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  onEdit={onEditPlan}
-                  onDelete={onDeletePlan}
-                  compact={isMobile}
-                />
+                <div key={plan.id} className="min-w-[280px] max-w-[320px] flex-shrink-0 snap-start">
+                  <PlanCard
+                    plan={plan}
+                    onEdit={onEditPlan}
+                    onDelete={onDeletePlan}
+                    compact={isMobile}
+                  />
+                </div>
               ))}
             </div>
           ) : (
