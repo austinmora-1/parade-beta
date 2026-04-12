@@ -13,6 +13,7 @@ import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
+import { WeeklyIntentionsSummary } from '@/components/dashboard/WeeklyIntentionsSummary';
 
 const stagger = {
   hidden: { opacity: 0 },
