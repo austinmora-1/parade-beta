@@ -162,12 +162,55 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     setLoadingSlots(false);
   }, [preSelectedFriends, myAvailabilityMap, myPlans]);
 
-  // When step changes to 'time', fetch
+  // Fetch extended availability (180 days) when calendar is opened
+  const fetchExtendedAvail = useCallback(async () => {
+    if (preSelectedFriends.length === 0) return;
+    const userIds = preSelectedFriends.map(f => f.userId);
+    const startDate = format(addDays(new Date(), 14), 'yyyy-MM-dd'); // skip first 14 already fetched
+    const endDate = format(addDays(new Date(), 180), 'yyyy-MM-dd');
+
+    const [{ data: availData }, { data: plansData }] = await Promise.all([
+      supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
+      supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+    ]);
+
+    const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+    const extended: typeof friendMultiDayAvail = {};
+
+    for (let i = 14; i <= 180; i++) {
+      const day = addDays(new Date(), i);
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
+      for (const slot of allSlots) {
+        let freeCount = 0;
+        for (const uid of userIds) {
+          const row = (availData || []).find(d => d.user_id === uid && d.date === dateStr);
+          const colName = slot.replace(/-/g, '_') as string;
+          const isAvailable = row ? ((row as any)[colName] ?? true) : true;
+          const hasPlan = (plansData || []).some(p => p.user_id === uid && p.time_slot === slot && p.date?.startsWith(dateStr));
+          if (isAvailable && !hasPlan) freeCount++;
+        }
+        slotMap[slot] = { free: freeCount, total: userIds.length };
+      }
+      extended[dateStr] = slotMap;
+    }
+
+    setFriendMultiDayAvail(prev => ({ ...prev, ...extended }));
+  }, [preSelectedFriends]);
+
+  // When step changes to 'time', fetch initial best slots
   useEffect(() => {
     if (step === 'time') {
       fetchBestSlots();
     }
   }, [step]);
+
+  // When calendar is shown, fetch extended availability
+  useEffect(() => {
+    if (showCalendar) {
+      fetchExtendedAvail();
+    }
+  }, [showCalendar]);
 
   const getSlotStatusForDate = useCallback((date: Date, slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | null => {
     if (preSelectedFriends.length === 0) return null;
