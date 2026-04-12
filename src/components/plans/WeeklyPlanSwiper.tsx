@@ -247,15 +247,12 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         </span>
       </div>
       {dayPlans.length > 0 ? (
-        <div className="relative px-3 mt-1 mb-3" style={{ height: `${80 + (dayPlans.length - 1) * 32}px` }}>
+        <div className="flex gap-2 px-3 mt-1 mb-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-hide">
           {dayPlans.map((plan, idx) => (
             <div
               key={plan.id}
-              className="absolute left-3 right-3"
-              style={{
-                top: `${idx * 32}px`,
-                zIndex: dayPlans.length - idx,
-              }}
+              className="flex-shrink-0 snap-start"
+              style={{ width: dayPlans.length === 1 ? '100%' : 'calc(85% - 8px)', minWidth: '260px' }}
             >
               <PlanCardCompact
                 plan={plan}
@@ -404,9 +401,9 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       className={cn(
-        "w-full rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.99] shadow-md",
+        "w-full rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.99] shadow-lg ring-1 ring-white/5",
         (isTentative || isPendingRsvp) && "border-dashed opacity-70",
-        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border/60"
+        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border"
       )}
     >
       <div className="flex items-center gap-2 mb-1.5">
