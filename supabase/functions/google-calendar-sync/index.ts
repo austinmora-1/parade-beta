@@ -321,6 +321,19 @@ async function handleEventsSync(params: {
     }
   }
 
+  const syncRangeStart = getDateString(threeMonthsAgo, timezone)
+  const syncRangeEnd = getDateString(threeMonthsAhead, timezone)
+  const { data: existingAvailabilityRows } = await adminClient
+    .from('availability')
+    .select('date, location_status, trip_location')
+    .eq('user_id', userId)
+    .gte('date', syncRangeStart)
+    .lte('date', syncRangeEnd)
+
+  const existingAvailabilityByDate = new Map(
+    (existingAvailabilityRows || []).map((row: { date: string; location_status: string | null; trip_location: string | null }) => [row.date, row])
+  )
+
   // Update availability table for each date with busy slots
   let updatedCount = 0
   for (const [date, slots] of busySlotsByDate) {
@@ -328,10 +341,15 @@ async function handleEventsSync(params: {
     for (const slot of slots) slotUpdates[slot] = false
 
     const flightCity = flightLocationByDate.get(date)
-    const locationFields: Record<string, string> = {}
+    const existingRow = existingAvailabilityByDate.get(date)
+    const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+    const locationFields: Record<string, string | null> = {}
     if (flightCity) {
       locationFields.location_status = 'away'
       locationFields.trip_location = flightCity
+    } else if (shouldClearStaleHomeAway) {
+      locationFields.location_status = 'home'
+      locationFields.trip_location = null
     }
 
     const { error: upsertError } = await adminClient
@@ -367,6 +385,19 @@ async function handleEventsSync(params: {
       )
     if (error) console.error('Error upserting flight location for', date, ':', error)
     else updatedCount++
+  }
+
+  for (const existingRow of (existingAvailabilityRows || [])) {
+    if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
+    if (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) {
+      const { error } = await adminClient
+        .from('availability')
+        .upsert(
+          { user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null },
+          { onConflict: 'user_id,date', ignoreDuplicates: false }
+        )
+      if (error) console.error('Error clearing stale home-city location for', existingRow.date, ':', error)
+    }
   }
 
   // ── Sync plans: preserve manually-enriched plans (those with participants or manual edits) ──
