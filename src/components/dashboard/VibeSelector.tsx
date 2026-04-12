@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { X, Plus, Sparkles } from 'lucide-react';
+import { X, Plus, Sparkles, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { GifPicker } from '@/components/chat/GifPicker';
