@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay } from 'date-fns';
 import { Plane, MapPin, Calendar, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,31 +19,51 @@ interface TripsListProps {
   refreshKey?: number;
 }
 
+const TRIPS_UPDATED_EVENT = 'trips:updated';
+
 export function TripsList({ refreshKey }: TripsListProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchTrips = async () => {
-      setLoading(true);
-      const today = format(startOfDay(new Date()), 'yyyy-MM-dd');
-      const { data, error } = await supabase
-        .from('trips')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('end_date', today)
-        .order('start_date', { ascending: true });
-
-      if (!error && data) {
-        setTrips(data);
-      }
+  const fetchTrips = useCallback(async () => {
+    if (!user) {
+      setTrips([]);
       setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const today = format(startOfDay(new Date()), 'yyyy-MM-dd');
+    const { data, error } = await supabase
+      .from('trips')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('end_date', today)
+      .order('start_date', { ascending: true });
+
+    if (!error && data) {
+      setTrips(data);
+    }
+
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    void fetchTrips();
+  }, [fetchTrips, refreshKey]);
+
+  useEffect(() => {
+    const handleTripsUpdated = () => {
+      void fetchTrips();
     };
-    fetchTrips();
-  }, [user, refreshKey]);
+
+    window.addEventListener(TRIPS_UPDATED_EVENT, handleTripsUpdated);
+    return () => {
+      window.removeEventListener(TRIPS_UPDATED_EVENT, handleTripsUpdated);
+    };
+  }, [fetchTrips]);
 
   if (loading) {
     return (
