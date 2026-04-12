@@ -190,7 +190,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [location, connectedFriends, session?.user, startDate, endDate]);
+  }, [location, connectedFriends, session?.user, dateRange?.from, dateRange?.to]);
 
   // Combined set of suggested friend IDs (lives nearby + visiting)
   const suggestedFriendIds = useMemo(() => {
