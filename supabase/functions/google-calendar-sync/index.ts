@@ -363,7 +363,7 @@ async function handleEventsSync(params: {
     const existingRow = existingAvailabilityByDate.get(date)
     const isReturnDate = returnHomeDates.has(date)
     const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
-    const shouldClearAfterReturn = !flightCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterAnyReturn(date, returnHomeDates)
+    const shouldClearAfterReturn = !flightCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
     const locationFields: Record<string, string | null> = {}
     if (flightCity) {
       locationFields.location_status = 'away'
@@ -413,7 +413,7 @@ async function handleEventsSync(params: {
     const isReturnDate = returnHomeDates.has(existingRow.date)
     const shouldClear = isReturnDate ||
       (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
-      (existingRow.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterAnyReturn(existingRow.date, returnHomeDates))
+      (existingRow.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(existingRow.date, returnHomeDates, outboundFlightDates))
     if (shouldClear) {
       const { error } = await adminClient
         .from('availability')
