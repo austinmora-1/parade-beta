@@ -709,6 +709,12 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
     if (updates.status) dbUpdates.status = updates.status;
     if (updates.feedVisibility !== undefined) dbUpdates.feed_visibility = updates.feedVisibility;
+
+    // Mark imported plans as manually edited so calendar re-sync won't overwrite
+    const plan = get().plans.find(p => p.id === id);
+    if (plan?.source && (plan.source === 'gcal' || plan.source === 'ical')) {
+      dbUpdates.manually_edited = true;
+    }
     
     const { error } = await supabase
       .from('plans')
