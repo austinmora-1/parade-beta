@@ -832,15 +832,19 @@ async function handleEventsSync(params: {
     if (!contentLookup.has(key)) contentLookup.set(key, p)
   }
 
-  // Find which existing plans have participants (manually enriched)
+  // Find which existing plans have participants (manually enriched) or were manually edited
   const existingPlanIds = (existingPlans || []).map((p: any) => p.id)
   let enrichedPlanIds = new Set<string>()
+  // Include manually edited plans
+  for (const p of (existingPlans || [])) {
+    if (p.manually_edited) enrichedPlanIds.add(p.id)
+  }
   if (existingPlanIds.length > 0) {
     const { data: participantRows } = await adminClient
       .from('plan_participants')
       .select('plan_id')
       .in('plan_id', existingPlanIds)
-    enrichedPlanIds = new Set((participantRows || []).map((r: any) => r.plan_id))
+    for (const r of (participantRows || [])) enrichedPlanIds.add(r.plan_id)
   }
 
   // Build lookup of existing event_id → plan
