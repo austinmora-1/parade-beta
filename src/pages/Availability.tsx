@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
+import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus, Merge } from 'lucide-react';
@@ -27,6 +28,8 @@ export default function Availability() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [mergePreselected, setMergePreselected] = useState<string[] | undefined>(undefined);
+  const [sharePlanId, setSharePlanId] = useState<string | null>(null);
+  const [sharePlanTitle, setSharePlanTitle] = useState('');
 
   const openPlanDialog = (date?: Date) => {
     setPlanDefaultDate(date);
@@ -70,13 +73,8 @@ export default function Availability() {
   }, [deletePlan]);
 
   const handleSharePlan = useCallback((plan: any) => {
-    const text = `${plan.title || plan.activity}`;
-    if (navigator.share) {
-      navigator.share({ title: 'Plan', text, url: `${window.location.origin}/plan/${plan.id}` }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(`${window.location.origin}/plan/${plan.id}`);
-      toast.success('Link copied to clipboard');
-    }
+    setSharePlanId(plan.id);
+    setSharePlanTitle(plan.title || plan.activity);
   }, []);
 
   const handleMergeSelected = useCallback((planIds: string[]) => {
@@ -156,6 +154,15 @@ export default function Availability() {
         onOpenChange={setMergeOpen}
         preselectedPlanIds={mergePreselected}
       />
+
+      {sharePlanId && (
+        <InviteToPlanDialog
+          open={!!sharePlanId}
+          onOpenChange={(open) => { if (!open) setSharePlanId(null); }}
+          planId={sharePlanId}
+          planTitle={sharePlanTitle}
+        />
+      )}
     </div>
   );
 }
