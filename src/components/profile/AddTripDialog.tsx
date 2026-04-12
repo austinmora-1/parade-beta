@@ -729,14 +729,6 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                 </div>
               )}
 
-              {/* Priority Friends */}
-              {tripDays.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5" />
-                    Friends to see
-                  </label>
-
               {/* Travel Companions - inserted before Friends to see */}
               {tripDays.length > 0 && (
                 <div className="space-y-2">
