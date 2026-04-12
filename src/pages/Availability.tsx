@@ -105,15 +105,6 @@ export default function Availability() {
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Plan</span>
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0 gap-2"
-            onClick={() => { setMergePreselected(undefined); setMergeOpen(true); }}
-          >
-            <Merge className="h-4 w-4" />
-            <span className="hidden sm:inline">Merge</span>
-          </Button>
           <ShareDialog
             trigger={
               <Button size="sm" variant="outline" className="shrink-0 gap-2">
