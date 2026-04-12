@@ -247,20 +247,28 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         </span>
       </div>
       {dayPlans.length > 0 ? (
-        <div className="flex gap-2 overflow-x-auto px-3 pb-2 snap-x snap-mandatory scrollbar-hide">
-          {dayPlans.map((plan) => (
-            <PlanCardCompact
+        <div className="relative px-3 pb-2" style={{ height: `${72 + (dayPlans.length - 1) * 28}px` }}>
+          {dayPlans.map((plan, idx) => (
+            <div
               key={plan.id}
-              plan={plan}
-              selectMode={selectMode}
-              selected={selectedIds.has(plan.id)}
-              onTap={() => {
-                if (selectMode) { toggleSelect(plan.id); return; }
-                const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
-                if (planIsPast) { navigate(`/plan/${plan.id}`); } else { onEditPlan?.(plan); }
+              className="absolute left-3 right-3"
+              style={{
+                top: `${idx * 28}px`,
+                zIndex: dayPlans.length - idx,
               }}
-              onLongPress={() => onCardLongPress(plan.id)}
-            />
+            >
+              <PlanCardCompact
+                plan={plan}
+                selectMode={selectMode}
+                selected={selectedIds.has(plan.id)}
+                onTap={() => {
+                  if (selectMode) { toggleSelect(plan.id); return; }
+                  const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
+                  if (planIsPast) { navigate(`/plan/${plan.id}`); } else { onEditPlan?.(plan); }
+                }}
+                onLongPress={() => onCardLongPress(plan.id)}
+              />
+            </div>
           ))}
         </div>
       ) : (
@@ -396,7 +404,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       className={cn(
-        "flex-shrink-0 w-[200px] snap-start rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.98] shadow-soft",
+        "w-full rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.99] shadow-md",
         (isTentative || isPendingRsvp) && "border-dashed opacity-70",
         selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border/60"
       )}
