@@ -391,7 +391,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plane className="h-5 w-5 text-availability-away-foreground" />
@@ -405,7 +405,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
             <div className="grid gap-4 py-4">
               {/* Location */}
               <div className="space-y-2">
