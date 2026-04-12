@@ -1,0 +1,1 @@
+ALTER TABLE public.trips ADD COLUMN needs_return_date boolean NOT NULL DEFAULT false;

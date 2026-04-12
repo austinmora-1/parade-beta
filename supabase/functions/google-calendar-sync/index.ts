@@ -133,11 +133,45 @@ function isFlightEvent(event: CalendarEvent): boolean {
   return false
 }
 
+// ── Hotel / Reservation Detection ───────────────────────────────────────────
+
+const HOTEL_REGEX = /\b(hotel|airbnb|vrbo|booking|reservation|check[\s-]?in|check[\s-]?out|stay\s+at|lodging|accommodation|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|courtyard|residence\s*inn|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|motel|hostel|inn\b|lodge\b)\b/i
+
+function isHotelEvent(summary?: string, location?: string): boolean {
+  if (!summary) return false
+  if (HOTEL_REGEX.test(summary)) return true
+  // Also check location field for hotel brands
+  if (location && HOTEL_REGEX.test(location)) return true
+  return false
+}
+
+function extractHotelLocation(summary?: string, location?: string): string | null {
+  // Prefer event location field
+  if (location && location.trim().length > 0) {
+    // Extract city from location: often "Hotel Name, City, State" or "City, Country"
+    const parts = location.split(',').map(p => p.trim())
+    if (parts.length >= 2) {
+      // Return second-to-last part as city (common pattern: "Name, City, State/Country")
+      return parts.length >= 3 ? parts[parts.length - 2] : parts[0]
+    }
+    return location.trim()
+  }
+  // Try to extract from summary: "Stay at Hotel in City" or "Airbnb in City"
+  const inMatch = summary?.match(/\b(?:in|at)\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–—]|\s*\(|$)/i)
+  if (inMatch) {
+    const city = inMatch[1].trim()
+    // Filter out hotel brand names
+    if (city.length >= 3 && !HOTEL_REGEX.test(city)) return city
+  }
+  return null
+}
+
 interface CalendarEvent {
   id: string
   summary?: string
   start: { dateTime?: string; date?: string }
   end: { dateTime?: string; date?: string }
+  location?: string
 }
 
 // Format a Date to HH:MM in the given timezone
@@ -237,12 +271,29 @@ function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDa
   return true
 }
 
+// Get all dates between two date strings (inclusive)
+function getDateRange(startDate: string, endDate: string): string[] {
+  const dates: string[] = []
+  const current = new Date(startDate + 'T00:00:00Z')
+  const end = new Date(endDate + 'T00:00:00Z')
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0])
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
+}
+
+interface PendingReturnTrip {
+  destination: string
+  departureDate: string
+}
+
 async function handleEventsSync(params: {
   adminClient: any
   userId: string
   events: CalendarEvent[]
   timezone?: string
-}) {
+}): Promise<{ updatedCount: number; pendingReturnTrips: PendingReturnTrip[] }> {
   const { adminClient, userId, events, timezone } = params
 
   // Fetch user's home address to skip return-home flights
@@ -286,7 +337,6 @@ async function handleEventsSync(params: {
       // For timezone-aware slot calculation, we need to check each hour
       const slots = getEventTimeSlots(startTime, endTime, timezone)
       slots.forEach((slot) => busySlotsByDate.get(date)!.add(slot))
-      slots.forEach((slot) => busySlotsByDate.get(date)!.add(slot))
     }
   }
 
@@ -295,21 +345,48 @@ async function handleEventsSync(params: {
   const allFlights: FlightInfo[] = []
   const flightLocationByDate: Map<string, string> = new Map()
 
+  // ── Hotel / Reservation Detection ──
+  interface HotelStay { startDate: string; endDate: string; city: string }
+  const hotelStays: HotelStay[] = []
+
   for (const event of events) {
-    if (!isFlightEvent(event)) continue
+    const isFlight = isFlightEvent(event)
 
-    const city = extractFlightDestination(event.summary)
-    const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
+    if (isFlight) {
+      const city = extractFlightDestination(event.summary)
+      const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
 
-    const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
-    if (!startDate) continue
+      const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
+      if (!startDate) continue
 
-    const dateStr = getDateString(startDate, timezone)
-    allFlights.push({ date: dateStr, city, isReturn })
+      const dateStr = getDateString(startDate, timezone)
+      allFlights.push({ date: dateStr, city, isReturn })
 
-    // Only mark non-return, recognized flights as away
-    if (city && !isReturn) {
-      flightLocationByDate.set(dateStr, city)
+      // Only mark non-return, recognized flights as away
+      if (city && !isReturn) {
+        flightLocationByDate.set(dateStr, city)
+      }
+      continue
+    }
+
+    // Check for hotel/reservation events
+    if (isHotelEvent(event.summary, event.location)) {
+      const hotelCity = extractHotelLocation(event.summary, event.location)
+      if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
+        const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
+        const endDate = event.end.dateTime ? new Date(event.end.dateTime) : event.end.date ? new Date(event.end.date) : null
+        if (startDate && endDate) {
+          const startStr = getDateString(startDate, timezone)
+          let endStr = getDateString(endDate, timezone)
+          // All-day end dates are exclusive
+          if (event.end.date && !event.end.dateTime) {
+            const endExclusive = new Date(endDate)
+            endExclusive.setDate(endExclusive.getDate() - 1)
+            endStr = getDateString(endExclusive, timezone)
+          }
+          hotelStays.push({ startDate: startStr, endDate: endStr, city: hotelCity })
+        }
+      }
     }
   }
 
@@ -324,21 +401,78 @@ async function handleEventsSync(params: {
   const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
   const outboundFlightDates = new Set(allFlights.filter(f => !f.isReturn && f.city).map(f => f.date))
 
-  // Fill gap days: for each outbound flight, fill forward until we hit another flight date
+  // ── Detect one-way flights (outbound with no return within 30 days) ──
+  const pendingReturnTrips: PendingReturnTrip[] = []
   const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
 
   for (const [outDate, city] of outboundEntries) {
-    const current = new Date(outDate)
-    current.setDate(current.getDate() + 1)
-    // Fill forward up to 30 days max (safety limit)
-    for (let i = 0; i < 30; i++) {
-      const dateStr = current.toISOString().split('T')[0]
-      // Stop if we hit any other flight date (outbound to new city, return, or unrecognized)
-      if (allFlightDatesSet.has(dateStr)) break
-      flightLocationByDate.set(dateStr, city)
+    // Check if there's a return flight within 30 days
+    let hasReturn = false
+    const outDateObj = new Date(outDate + 'T00:00:00Z')
+    const maxReturnDate = new Date(outDateObj)
+    maxReturnDate.setDate(maxReturnDate.getDate() + 30)
+    const maxReturnStr = maxReturnDate.toISOString().split('T')[0]
+
+    for (const rf of allFlights) {
+      if (rf.date > outDate && rf.date <= maxReturnStr && rf.isReturn) {
+        hasReturn = true
+        break
+      }
+      // Also check if there's another outbound to a different city (acts as boundary)
+      if (rf.date > outDate && rf.date <= maxReturnStr && !rf.isReturn && rf.city && rf.city !== city) {
+        hasReturn = true // different trip, so this one has a boundary
+        break
+      }
+    }
+
+    if (hasReturn) {
+      // Fill forward until we hit another flight date (existing behavior)
+      const current = new Date(outDate)
       current.setDate(current.getDate() + 1)
+      for (let i = 0; i < 30; i++) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        flightLocationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+    } else {
+      // One-way flight: only fill forward 7 days (not 30) and flag for user prompt
+      const current = new Date(outDate)
+      current.setDate(current.getDate() + 1)
+      for (let i = 0; i < 7; i++) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        flightLocationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+      pendingReturnTrips.push({ destination: city, departureDate: outDate })
     }
   }
+
+  // ── Apply hotel stays (only if no flight covers the same dates) ──
+  const hotelLocationByDate: Map<string, string> = new Map()
+  for (const stay of hotelStays) {
+    const dates = getDateRange(stay.startDate, stay.endDate)
+    for (const d of dates) {
+      // Flight dates take priority
+      if (!flightLocationByDate.has(d)) {
+        hotelLocationByDate.set(d, stay.city)
+      }
+    }
+  }
+
+  // Merge hotel locations into the main location map
+  // (flight locations already set take priority)
+  const allLocationByDate = new Map(flightLocationByDate)
+  for (const [d, city] of hotelLocationByDate) {
+    if (!allLocationByDate.has(d)) {
+      allLocationByDate.set(d, city)
+    }
+  }
+
+  const now = new Date()
+  const threeMonthsAgo = new Date(now); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+  const threeMonthsAhead = new Date(now); threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3)
 
   const syncRangeStart = getDateString(threeMonthsAgo, timezone)
   const syncRangeEnd = getDateString(threeMonthsAhead, timezone)
@@ -359,15 +493,15 @@ async function handleEventsSync(params: {
     const slotUpdates: Record<string, boolean> = {}
     for (const slot of slots) slotUpdates[slot] = false
 
-    const flightCity = flightLocationByDate.get(date)
+    const locationCity = allLocationByDate.get(date)
     const existingRow = existingAvailabilityByDate.get(date)
     const isReturnDate = returnHomeDates.has(date)
-    const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
-    const shouldClearAfterReturn = !flightCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
+    const shouldClearStaleHomeAway = !locationCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+    const shouldClearAfterReturn = !locationCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
     const locationFields: Record<string, string | null> = {}
-    if (flightCity) {
+    if (locationCity) {
       locationFields.location_status = 'away'
-      locationFields.trip_location = flightCity
+      locationFields.trip_location = locationCity
     } else if (isReturnDate || shouldClearStaleHomeAway || shouldClearAfterReturn) {
       locationFields.location_status = 'home'
       locationFields.trip_location = null
@@ -395,8 +529,8 @@ async function handleEventsSync(params: {
     }
   }
 
-  // Also update location for flight dates that might not have busy slots
-  for (const [date, city] of flightLocationByDate) {
+  // Also update location for flight/hotel dates that might not have busy slots
+  for (const [date, city] of allLocationByDate) {
     if (busySlotsByDate.has(date)) continue // already handled above
     const { error } = await adminClient
       .from('availability')
@@ -404,12 +538,12 @@ async function handleEventsSync(params: {
         { user_id: userId, date, location_status: 'away', trip_location: city },
         { onConflict: 'user_id,date', ignoreDuplicates: false }
       )
-    if (error) console.error('Error upserting flight location for', date, ':', error)
+    if (error) console.error('Error upserting location for', date, ':', error)
     else updatedCount++
   }
 
   for (const existingRow of (existingAvailabilityRows || [])) {
-    if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
+    if (busySlotsByDate.has(existingRow.date) || allLocationByDate.has(existingRow.date)) continue
     const isReturnDate = returnHomeDates.has(existingRow.date)
     const shouldClear = isReturnDate ||
       (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
@@ -422,6 +556,47 @@ async function handleEventsSync(params: {
           { onConflict: 'user_id,date', ignoreDuplicates: false }
         )
       if (error) console.error('Error clearing stale location for', existingRow.date, ':', error)
+    }
+  }
+
+  // ── Flag one-way trips in the trips table ──
+  if (pendingReturnTrips.length > 0) {
+    for (const pending of pendingReturnTrips) {
+      // Check if a trip already exists for this destination starting on this date
+      const { data: existingTrips } = await adminClient
+        .from('trips')
+        .select('id, needs_return_date')
+        .eq('user_id', userId)
+        .eq('start_date', pending.departureDate)
+        .ilike('location', `%${pending.destination}%`)
+
+      if (existingTrips && existingTrips.length > 0) {
+        // Update existing trip to flag it
+        await adminClient
+          .from('trips')
+          .update({ needs_return_date: true })
+          .eq('id', existingTrips[0].id)
+      }
+      // If no trip exists yet, it will be auto-created by the availability trigger
+      // and we'll flag it after
+    }
+
+    // Wait a moment for triggers, then flag any newly created trips
+    for (const pending of pendingReturnTrips) {
+      const { data: trips } = await adminClient
+        .from('trips')
+        .select('id')
+        .eq('user_id', userId)
+        .lte('start_date', pending.departureDate)
+        .gte('end_date', pending.departureDate)
+        .ilike('location', `%${pending.destination}%`)
+
+      if (trips && trips.length > 0) {
+        await adminClient
+          .from('trips')
+          .update({ needs_return_date: true })
+          .eq('id', trips[0].id)
+      }
     }
   }
 
@@ -537,7 +712,7 @@ async function handleEventsSync(params: {
     }
   }
 
-  return { updatedCount }
+  return { updatedCount, pendingReturnTrips }
 }
 
 Deno.serve(async (req) => {
@@ -664,7 +839,7 @@ Deno.serve(async (req) => {
     const calendarData = await calendarResponse.json()
     const events: CalendarEvent[] = calendarData.items || []
 
-    const { updatedCount } = await handleEventsSync({ adminClient, userId, events, timezone })
+    const { updatedCount, pendingReturnTrips } = await handleEventsSync({ adminClient, userId, events, timezone })
 
     return new Response(
       JSON.stringify({
@@ -672,6 +847,7 @@ Deno.serve(async (req) => {
         synced: true,
         eventsProcessed: events.length,
         datesUpdated: updatedCount,
+        pendingReturnTrips,
         message: `Synced ${events.length} events, updated ${updatedCount} days`,
       }),
       {
