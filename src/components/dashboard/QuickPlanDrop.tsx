@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { GuidedPlanSheet } from '@/components/plans/GuidedPlanSheet';
 
 export interface StagedFriend {
   userId: string;
