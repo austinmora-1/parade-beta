@@ -6,7 +6,6 @@ import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Clock } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
