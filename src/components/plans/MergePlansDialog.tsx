@@ -168,6 +168,7 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
       }
       await loadPlans();
       toast.success(`Merged ${selectedPlans.length} plans into one`);
+      onMerged?.();
       onOpenChange(false);
     } catch (err) {
       console.error('Error merging plans:', err);
@@ -178,28 +179,28 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
   };
 
   const handleOpenChange = (v: boolean) => {
-    if (!v) setStep('details');
+    if (!v) {
+      setStep(needsSelectStep ? 'select' : 'details');
+      setAdditionalPlanIds(new Set());
+    }
     onOpenChange(v);
   };
 
-  if (selectedPlans.length < 2) {
-    return (
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Merge className="h-5 w-5 text-primary" />
-              Merge Plans
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground text-center py-6">
-            Select at least 2 plans from the weekly view to merge them.
-            Long-press a plan card to enter selection mode.
-          </p>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  const toggleAdditionalPlan = (id: string) => {
+    setAdditionalPlanIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const stepsForIndicator: Step[] = needsSelectStep
+    ? ['select', 'details', 'participants', 'confirm']
+    : ['details', 'participants', 'confirm'];
+
+  // Show select step or need 2+ plans
+  const readyForDetails = selectedPlans.length >= 2;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
