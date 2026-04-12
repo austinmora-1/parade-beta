@@ -345,12 +345,14 @@ async function handleEventsSync(params: {
 
     const flightCity = flightLocationByDate.get(date)
     const existingRow = existingAvailabilityByDate.get(date)
+    const isReturnDate = returnHomeDates.has(date)
     const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+    const shouldClearAfterReturn = !flightCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterAnyReturn(date, returnHomeDates)
     const locationFields: Record<string, string | null> = {}
     if (flightCity) {
       locationFields.location_status = 'away'
       locationFields.trip_location = flightCity
-    } else if (shouldClearStaleHomeAway) {
+    } else if (isReturnDate || shouldClearStaleHomeAway || shouldClearAfterReturn) {
       locationFields.location_status = 'home'
       locationFields.trip_location = null
     }
