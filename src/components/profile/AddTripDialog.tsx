@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, eachDayOfInterval, isAfter, isBefore, startOfDay } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 import { CalendarIcon, Plane, Trash2, X, Users, Clock, CheckSquare, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -75,8 +76,7 @@ function buildDaySlotsMap(days: Date[], defaultSlots: string[] = ALL_SLOTS as st
 
 export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: AddTripDialogProps) {
   const { session } = useAuth();
-  const [startDate, setStartDate] = useState<Date | undefined>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [location, setLocation] = useState('');
   const [daySlots, setDaySlots] = useState<DaySlotsMap>(new Map());
   const [priorityFriendIds, setPriorityFriendIds] = useState<string[]>([]);
@@ -110,6 +110,9 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       .filter(Boolean) as FriendOption[];
   }, [priorityFriendIds, connectedFriends]);
 
+  const startDate = dateRange?.from;
+  const endDate = dateRange?.to;
+
   const tripDays = useMemo(() => {
     if (!startDate || !endDate) return [];
     return eachDayOfInterval({ start: startDate, end: endDate });
@@ -136,16 +139,14 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   // Populate form when editing
   useEffect(() => {
     if (editingTrip) {
-      setStartDate(editingTrip.startDate);
-      setEndDate(editingTrip.endDate);
+      setDateRange({ from: editingTrip.startDate, to: editingTrip.endDate });
       setLocation(editingTrip.location || '');
       const days = eachDayOfInterval({ start: editingTrip.startDate, end: editingTrip.endDate });
       const defaultSlots = editingTrip.availableSlots?.length ? editingTrip.availableSlots : ALL_SLOTS as string[];
       setDaySlots(buildDaySlotsMap(days, defaultSlots));
       setPriorityFriendIds(editingTrip.priorityFriendIds || []);
     } else {
-      setStartDate(undefined);
-      setEndDate(undefined);
+      setDateRange(undefined);
       setLocation('');
       setDaySlots(new Map());
       setPriorityFriendIds([]);
@@ -383,11 +384,8 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
     }
   };
 
-  const handleStartDateSelect = (date: Date | undefined) => {
-    setStartDate(date);
-    if (date && endDate && isBefore(endDate, date)) {
-      setEndDate(undefined);
-    }
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    setDateRange(range);
   };
 
   return (
@@ -422,60 +420,39 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                 />
               </div>
 
-              {/* Start Date */}
+              {/* Date Range */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Start Date</label>
+                <label className="text-sm font-medium">Trip Dates</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground"
+                        !dateRange?.from && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, 'PPP') : 'Select start date'}
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          `${format(dateRange.from, 'MMM d, yyyy')} – ${format(dateRange.to, 'MMM d, yyyy')}`
+                        ) : (
+                          format(dateRange.from, 'MMM d, yyyy')
+                        )
+                      ) : (
+                        'Select dates'
+                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={handleStartDateSelect}
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={handleDateRangeSelect}
                       disabled={(date) => isBefore(date, today)}
+                      numberOfMonths={1}
                       initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* End Date */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">End Date</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !endDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, 'PPP') : 'Select end date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      disabled={(date) => 
-                        isBefore(date, today) || 
-                        (startDate ? isBefore(date, startDate) : false)
-                      }
-                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>
                 </Popover>
