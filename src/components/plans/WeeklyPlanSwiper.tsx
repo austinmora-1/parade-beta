@@ -232,7 +232,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   const key = format(day, 'yyyy-MM-dd');
   return (
     <div className={cn("rounded-xl transition-colors", isPast && "opacity-50")}>
-      <div className={cn("flex items-center gap-2 px-3 py-1.5", isToday && "text-primary")}>
+      <div className={cn("flex items-center gap-2 px-3 py-1.5 relative z-10", isToday && "text-primary")}>
         <span className={cn(
           "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
           isToday ? "bg-primary text-primary-foreground" : "text-muted-foreground"
@@ -247,13 +247,13 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         </span>
       </div>
       {dayPlans.length > 0 ? (
-        <div className="relative px-3 pb-2" style={{ height: `${72 + (dayPlans.length - 1) * 28}px` }}>
+        <div className="relative px-3 pb-2" style={{ height: `${80 + (dayPlans.length - 1) * 32}px` }}>
           {dayPlans.map((plan, idx) => (
             <div
               key={plan.id}
               className="absolute left-3 right-3"
               style={{
-                top: `${idx * 28}px`,
+                top: `${idx * 32}px`,
                 zIndex: dayPlans.length - idx,
               }}
             >
