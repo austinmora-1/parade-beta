@@ -66,9 +66,9 @@ export function PlanCard({
         )}
         style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${(isTentative || isPendingRsvp) ? '0.08' : '0.15'})` }}
       >
-        <div className="flex items-center gap-1">
-          <ActivityIcon config={activityConfig} size={14} />
-          <span className="truncate font-medium">{displayTitle}</span>
+        <div className="flex items-center gap-1 min-w-0">
+          <ActivityIcon config={activityConfig} size={14} className="shrink-0" />
+          <span className="truncate font-medium min-w-0 flex-1">{displayTitle}</span>
           {isTentative && !isPendingRsvp && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
           {isPendingRsvp && <span className="text-[8px] text-amber-500 ml-auto">pending</span>}
         </div>
@@ -102,8 +102,8 @@ export function PlanCard({
       {/* Content */}
       <div className="flex-1 min-w-0">
         {/* Title row */}
-        <div className="flex items-center gap-1">
-          <p className="text-xs font-medium truncate">{displayTitle}</p>
+        <div className="flex items-center gap-1 min-w-0">
+          <p className="text-xs font-medium truncate min-w-0 flex-1">{displayTitle}</p>
           {plan.recurringPlanId && (
             <Repeat className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
           )}
