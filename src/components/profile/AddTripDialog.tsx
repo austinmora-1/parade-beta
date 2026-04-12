@@ -388,6 +388,9 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
 
   const handleDateRangeSelect = (range: DateRange | undefined) => {
     setDateRange(range);
+    if (range?.from && range?.to) {
+      setCalendarOpen(false);
+    }
   };
 
   return (
