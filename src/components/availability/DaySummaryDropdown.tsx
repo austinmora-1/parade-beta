@@ -152,7 +152,7 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                 )}
               >
                 {/* Time label */}
-                <span className="text-[10px] text-muted-foreground w-[52px] shrink-0 font-medium">
+                <span className="text-[10px] text-muted-foreground w-[58px] shrink-0 font-medium whitespace-nowrap">
                   {slotInfo.time}
                 </span>
 
