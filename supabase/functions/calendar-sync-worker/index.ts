@@ -188,17 +188,36 @@ function isHotelEvent(summary?: string, location?: string): boolean {
   return false
 }
 
+function stripHotelBrands(text: string): string {
+  return text
+    .replace(/\b(residence\s*inn|courtyard|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|airbnb|vrbo|hotel|motel|hostel|inn|lodge|resort|suites?)\b/gi, '')
+    .replace(/\bby\s+(marriott|hilton|hyatt|wyndham|ihg|accor|choice)\b/gi, '')
+    .replace(/\s[-–—]\s/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
 function extractHotelLocation(summary?: string, location?: string): string | null {
   if (location && location.trim().length > 0) {
     const parts = location.split(',').map(p => p.trim())
-    if (parts.length >= 2) {
-      return parts.length >= 3 ? parts[parts.length - 2] : parts[0]
+    if (parts.length >= 3) {
+      const city = stripHotelBrands(parts[parts.length - 2])
+      if (city.length >= 2) return city
     }
-    return location.trim()
+    if (parts.length === 2) {
+      const stripped = stripHotelBrands(parts[0])
+      if (stripped.length >= 2 && !HOTEL_REGEX.test(stripped)) return stripped
+      const stripped2 = stripHotelBrands(parts[1])
+      if (stripped2.length >= 2) return stripped2
+      return parts[0]
+    }
+    const stripped = stripHotelBrands(location.trim())
+    if (stripped.length >= 2 && !HOTEL_REGEX.test(stripped)) return stripped
+    return null
   }
   const inMatch = summary?.match(/\b(?:in|at)\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–—]|\s*\(|$)/i)
   if (inMatch) {
-    const city = inMatch[1].trim()
+    const city = stripHotelBrands(inMatch[1].trim())
     if (city.length >= 3 && !HOTEL_REGEX.test(city)) return city
   }
   return null

@@ -145,22 +145,44 @@ function isHotelEvent(summary?: string, location?: string): boolean {
   return false
 }
 
+// Strip hotel/brand names from a string, leaving just city/place names
+function stripHotelBrands(text: string): string {
+  return text
+    .replace(/\b(residence\s*inn|courtyard|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|airbnb|vrbo|hotel|motel|hostel|inn|lodge|resort|suites?)\b/gi, '')
+    .replace(/\bby\s+(marriott|hilton|hyatt|wyndham|ihg|accor|choice)\b/gi, '')
+    .replace(/\s[-–—]\s/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
 function extractHotelLocation(summary?: string, location?: string): string | null {
-  // Prefer event location field
   if (location && location.trim().length > 0) {
-    // Extract city from location: often "Hotel Name, City, State" or "City, Country"
     const parts = location.split(',').map(p => p.trim())
-    if (parts.length >= 2) {
-      // Return second-to-last part as city (common pattern: "Name, City, State/Country")
-      return parts.length >= 3 ? parts[parts.length - 2] : parts[0]
+    if (parts.length >= 3) {
+      // "Hotel Name, City, State/Country" → return "City"
+      const city = stripHotelBrands(parts[parts.length - 2])
+      if (city.length >= 2) return city
     }
-    return location.trim()
+    if (parts.length === 2) {
+      // Could be "City, State" or "Hotel Name, City"
+      // If first part has hotel branding, strip it and check
+      const stripped = stripHotelBrands(parts[0])
+      if (stripped.length >= 2 && !HOTEL_REGEX.test(stripped)) return stripped
+      // Otherwise return second part stripped
+      const stripped2 = stripHotelBrands(parts[1])
+      if (stripped2.length >= 2) return stripped2
+      return parts[0]
+    }
+    // Single part - strip hotel brands
+    const stripped = stripHotelBrands(location.trim())
+    if (stripped.length >= 2 && !HOTEL_REGEX.test(stripped)) return stripped
+    // Can't extract city from raw hotel name
+    return null
   }
   // Try to extract from summary: "Stay at Hotel in City" or "Airbnb in City"
   const inMatch = summary?.match(/\b(?:in|at)\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–—]|\s*\(|$)/i)
   if (inMatch) {
-    const city = inMatch[1].trim()
-    // Filter out hotel brand names
+    const city = stripHotelBrands(inMatch[1].trim())
     if (city.length >= 3 && !HOTEL_REGEX.test(city)) return city
   }
   return null
