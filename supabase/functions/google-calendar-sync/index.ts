@@ -305,6 +305,9 @@ async function handleEventsSync(params: {
   // These act as trip boundaries — we never fill past any flight date
   const allFlightDatesSet = new Set(allFlights.map(f => f.date))
 
+  // Track return-home flight dates — these should reset location to 'home'
+  const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
+
   // Fill gap days: for each outbound flight, fill forward until we hit another flight date
   const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
 
