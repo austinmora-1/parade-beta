@@ -92,7 +92,7 @@ export function VibeSelector() {
             )}
           >
             {selectedConfig ? (
-              <span className="text-base">{selectedConfig.icon}</span>
+              <selectedConfig.icon className="h-4 w-4 text-white" />
             ) : (
               <Sparkles className="h-4 w-4" />
             )}
@@ -153,7 +153,7 @@ export function VibeSelector() {
                     )}
                   >
                     <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-white text-sm', style.iconBg)}>
-                      {config.icon}
+                      <config.icon className="h-3.5 w-3.5 text-white" />
                     </div>
                     <span className={cn('text-sm font-medium', isSelected ? 'text-primary' : 'text-foreground')}>
                       {config.label}

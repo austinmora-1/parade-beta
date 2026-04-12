@@ -238,7 +238,7 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
 
               {vibeConfig && (
                 <span className="absolute -bottom-0.5 -left-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-background text-[11px] shadow-sm">
-                  {vibeConfig.icon}
+                  <vibeConfig.icon className="h-3 w-3 text-muted-foreground" />
                 </span>
               )}
 
@@ -288,8 +288,9 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
             {currentVibe ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-sm">
-                    {vibeConfig?.icon} {isCustom && customVibeTags?.length
+                  <span className="text-sm flex items-center gap-1">
+                    {vibeConfig && <vibeConfig.icon className="h-3.5 w-3.5" />}
+                    {isCustom && customVibeTags?.length
                       ? customVibeTags.map(t => `#${t}`).join(' ')
                       : vibeConfig?.label}
                   </span>

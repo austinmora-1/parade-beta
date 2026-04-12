@@ -822,7 +822,7 @@ export default function Notifications() {
                               <span className="text-primary">{vibe.sender_name}</span> sent you a vibe
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-sm">{vibeConfig?.icon || '✨'}</span>
+                              <span className="text-sm">{vibeConfig ? <vibeConfig.icon className="h-3.5 w-3.5" /> : '✨'}</span>
                               <span className="text-xs text-muted-foreground capitalize">{vibeConfig?.label || vibe.vibe_type}</span>
                               {vibe.message && (
                                 <span className="text-xs text-muted-foreground truncate">· {vibe.message}</span>

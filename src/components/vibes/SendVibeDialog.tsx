@@ -160,7 +160,7 @@ export function SendVibeDialog({ open, onOpenChange }: SendVibeDialogProps) {
                     )}
                     style={isSelected ? { backgroundColor: vibeColors[type] } : undefined}
                   >
-                    <span>{config.icon}</span>
+                    <config.icon className="h-3.5 w-3.5" />
                     <span>{config.label}</span>
                   </button>
                 );

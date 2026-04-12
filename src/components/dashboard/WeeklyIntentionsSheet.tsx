@@ -143,7 +143,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
                       borderColor: selected ? style?.text : style?.border,
                     }}
                   >
-                    <span>{config.icon}</span>
+                    <config.icon className="h-3.5 w-3.5" />
                     <span>{config.label}</span>
                   </button>
                 );

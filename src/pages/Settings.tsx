@@ -857,7 +857,7 @@ export default function Settings() {
                               : "bg-muted/50 text-muted-foreground hover:bg-muted"
                           )}
                         >
-                          <span>{config.icon}</span>
+                          <config.icon className="h-3.5 w-3.5" />
                         </button>
                       );
                     })}

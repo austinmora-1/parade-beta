@@ -555,7 +555,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
                   return (
                     <div key={vibe}>
                       <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                        <span>{vibeConfig.icon}</span>
+                        <vibeConfig.icon className="h-3.5 w-3.5" />
                         {vibeConfig.label}
                       </div>
                       {activities.map((type) => {

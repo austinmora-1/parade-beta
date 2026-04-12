@@ -448,7 +448,7 @@ export default function Share() {
               {/* Vibe Status */}
               {vibeConfig && (
                 <div className="flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1">
-                  <span className="text-sm">{vibeConfig.icon}</span>
+                  <vibeConfig.icon className="h-3.5 w-3.5" />
                   <span className="text-xs font-medium">{vibeConfig.label}</span>
                 </div>
               )}

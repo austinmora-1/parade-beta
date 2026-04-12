@@ -132,7 +132,7 @@ export default function Friends() {
           : null;
         vibeMap[p.user_id] = {
           vibe: vibeConfig?.label || p.current_vibe || null,
-          icon: vibeConfig?.icon || null,
+          icon: vibeConfig?.label?.[0] || null,
         };
       }
       setFriendVibeMap(vibeMap);
