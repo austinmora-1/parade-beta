@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils';
-import { useTheme } from 'next-themes';
 
 interface ParadeWordmarkProps {
   className?: string;
@@ -7,9 +6,6 @@ interface ParadeWordmarkProps {
 }
 
 export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) {
-  const { resolvedTheme } = useTheme();
-  const isLight = resolvedTheme === 'light';
-
   const sizeClasses = {
     sm: 'text-xl',
     md: 'text-2xl',
@@ -20,11 +16,10 @@ export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) 
   return (
     <span
       className={cn(
-        'parade-wordmark tracking-wide',
+        'parade-wordmark tracking-wide text-primary',
         sizeClasses[size],
         className
       )}
-      style={isLight ? { color: 'hsl(150 35% 40%)' } : undefined}
     >
       parade
     </span>
