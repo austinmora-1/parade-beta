@@ -865,7 +865,7 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     const localDateStr = getDateString(event.dtstart)
     incomingEventIds.add(event.uid)
     planRowsByEventId.set(event.uid, {
-      user_id: userId, title: event.summary || 'iCal imported event',
+      user_id: userId, title: (event.summary || 'iCal imported event').replace(/\s+/g, ' ').trim(),
       activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
       time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
       location: event.location || null, source: 'ical', source_event_id: event.uid,
