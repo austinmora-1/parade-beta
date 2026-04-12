@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
+const TRIPS_UPDATED_EVENT = 'trips:updated';
+
 interface TripRow {
   id: string;
   location: string | null;
@@ -86,8 +88,9 @@ export default function TripDetail() {
       toast.error('Failed to delete trip');
     } else {
       toast.success('Trip deleted');
+      window.dispatchEvent(new Event(TRIPS_UPDATED_EVENT));
       await loadProfileAndAvailability();
-      navigate('/availability');
+      navigate('/availability?tab=trips');
     }
     setDeleting(false);
   };
@@ -153,7 +156,7 @@ export default function TripDetail() {
     <div className="animate-fade-in space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/availability')} className="gap-1.5 -ml-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/availability?tab=trips')} className="gap-1.5 -ml-2">
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-1.5">

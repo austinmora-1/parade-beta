@@ -8,7 +8,7 @@ import { TripConflictDialog, TripConflict } from '@/components/trips/TripConflic
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus, PlaneTakeoff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -28,6 +28,7 @@ type TabId = typeof TABS[number]['id'];
 
 export default function Availability() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
@@ -36,7 +37,9 @@ export default function Availability() {
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
   const [tripDialogOpen, setTripDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>('grid');
+  const [activeTab, setActiveTab] = useState<TabId>(() =>
+    searchParams.get('tab') === 'trips' ? 'trips' : 'grid'
+  );
   const [direction, setDirection] = useState(0);
   const [pendingReturnTrips, setPendingReturnTrips] = useState<PendingReturnTrip[]>([]);
   const [missingReturnOpen, setMissingReturnOpen] = useState(false);
@@ -117,6 +120,7 @@ export default function Availability() {
     const oldIndex = TABS.findIndex(t => t.id === activeTab);
     setDirection(newIndex > oldIndex ? 1 : -1);
     setActiveTab(tabId);
+    setSearchParams(tabId === 'grid' ? {} : { tab: tabId }, { replace: true });
   }, [activeTab]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
