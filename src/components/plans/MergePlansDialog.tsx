@@ -14,22 +14,26 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Merge, ChevronRight, ChevronLeft, Check, MapPin, Clock, Users } from 'lucide-react';
 
-type Step = 'details' | 'participants' | 'confirm';
+type Step = 'select' | 'details' | 'participants' | 'confirm';
 
 interface MergePlansDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preselectedPlanIds?: string[];
+  onMerged?: () => void;
 }
 
-export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: MergePlansDialogProps) {
+export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMerged }: MergePlansDialogProps) {
   const plans = usePlannerStore((s) => s.plans);
   const addPlan = usePlannerStore((s) => s.addPlan);
   const deletePlan = usePlannerStore((s) => s.deletePlan);
   const loadPlans = usePlannerStore((s) => s.loadPlans);
 
-  const [step, setStep] = useState<Step>('details');
+  // If only 1 plan preselected, show a selection step to pick others
+  const needsSelectStep = (preselectedPlanIds?.length ?? 0) === 1;
+  const [step, setStep] = useState<Step>(needsSelectStep ? 'select' : 'details');
   const [merging, setMerging] = useState(false);
+  const [additionalPlanIds, setAdditionalPlanIds] = useState<Set<string>>(new Set());
 
   // Detail choices
   const [chosenTitle, setChosenTitle] = useState<string>('');
@@ -44,10 +48,25 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
   // Participant choices
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<Set<string>>(new Set());
 
+  const allMergeIds = useMemo(() => {
+    const ids = new Set(preselectedPlanIds || []);
+    additionalPlanIds.forEach(id => ids.add(id));
+    return Array.from(ids);
+  }, [preselectedPlanIds, additionalPlanIds]);
+
   const selectedPlans = useMemo(
-    () => plans.filter(p => preselectedPlanIds?.includes(p.id)),
-    [plans, preselectedPlanIds]
+    () => plans.filter(p => allMergeIds.includes(p.id)),
+    [plans, allMergeIds]
   );
+
+  // Plans available to pick from in the select step (exclude already-selected)
+  const pickablePlans = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return plans
+      .filter(p => (p.endDate || p.date) >= now && !preselectedPlanIds?.includes(p.id))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [plans, preselectedPlanIds]);
 
   // All unique participants from selected plans
   const allParticipants = useMemo(() => {
