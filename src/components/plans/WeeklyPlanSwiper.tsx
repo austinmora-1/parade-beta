@@ -287,31 +287,21 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
       </div>
       {dayPlans.length > 0 ? (
         <div className="px-3 mt-1 mb-3">
-          <div className={cn(
-            "flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1",
-            dayPlans.length === 1 && "overflow-visible"
-          )}>
-            {dayPlans.map(plan => (
-              <div key={plan.id} className={cn(
-                "snap-start shrink-0",
-                dayPlans.length === 1 ? "w-full" : "w-[85%]"
-              )}>
-                <PlanCardCompact
-                  plan={plan}
-                  selectMode={selectMode}
-                  selected={selectedIds.has(plan.id)}
-                  onTap={() => onCardTap(plan.id)}
-                  onLongPress={() => onCardTap(plan.id)}
-                />
-              </div>
-            ))}
-          </div>
-          {dayPlans.length > 1 && (
-            <div className="flex justify-center gap-1.5 mt-1.5">
-              {dayPlans.map((_, idx) => (
-                <div key={idx} className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-              ))}
-            </div>
+          {dayPlans.length === 1 ? (
+            <PlanCardCompact
+              plan={dayPlans[0]}
+              selectMode={selectMode}
+              selected={selectedIds.has(dayPlans[0].id)}
+              onTap={() => onCardTap(dayPlans[0].id)}
+              onLongPress={() => onCardTap(dayPlans[0].id)}
+            />
+          ) : (
+            <SwipeStack
+              plans={dayPlans}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onCardTap={onCardTap}
+            />
           )}
         </div>
       ) : (
@@ -408,6 +398,98 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   );
 }
 
+// Swipe-to-flip stacked cards
+function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
+  plans: Plan[];
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  onCardTap: (id: string) => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const dragStartX = useRef(0);
+  const dragDelta = useRef(0);
+  const [swipeX, setSwipeX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragStartX.current = e.clientX;
+    dragDelta.current = 0;
+    setSwiping(true);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!swiping) return;
+    dragDelta.current = e.clientX - dragStartX.current;
+    setSwipeX(dragDelta.current);
+  };
+
+  const handlePointerUp = () => {
+    if (!swiping) return;
+    setSwiping(false);
+    const threshold = 60;
+    if (dragDelta.current < -threshold && activeIndex < plans.length - 1) {
+      setActiveIndex(i => i + 1);
+    } else if (dragDelta.current > threshold && activeIndex > 0) {
+      setActiveIndex(i => i - 1);
+    }
+    setSwipeX(0);
+    dragDelta.current = 0;
+  };
+
+  return (
+    <div className="relative" style={{ height: '116px' }}>
+      {plans.map((plan, idx) => {
+        const offset = idx - activeIndex;
+        const isTop = idx === activeIndex;
+        const isBehind = offset > 0 && offset <= 2;
+        const isGone = offset < 0 || offset > 2;
+
+        return (
+          <motion.div
+            key={plan.id}
+            className={cn("absolute top-0 left-0 right-0", isGone && "pointer-events-none")}
+            initial={false}
+            animate={{
+              y: isTop ? 0 : offset * 6,
+              scale: isTop ? 1 : 1 - offset * 0.04,
+              opacity: isGone ? 0 : 1 - offset * 0.2,
+              x: isTop ? swipeX * 0.3 : 0,
+              rotate: isTop ? swipeX * 0.05 : 0,
+            }}
+            transition={swiping && isTop ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
+            style={{ zIndex: plans.length - idx, transformOrigin: 'center bottom' }}
+            onPointerDown={isTop ? handlePointerDown : undefined}
+            onPointerMove={isTop ? handlePointerMove : undefined}
+            onPointerUp={isTop ? handlePointerUp : undefined}
+            onPointerCancel={isTop ? handlePointerUp : undefined}
+          >
+            <PlanCardCompact
+              plan={plan}
+              selectMode={selectMode}
+              selected={selectedIds.has(plan.id)}
+              onTap={() => onCardTap(plan.id)}
+              onLongPress={() => onCardTap(plan.id)}
+            />
+          </motion.div>
+        );
+      })}
+      {/* Pagination dots */}
+      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+        {plans.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveIndex(idx)}
+            className={cn(
+              "h-1.5 rounded-full transition-all",
+              idx === activeIndex ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
   plan: Plan;
