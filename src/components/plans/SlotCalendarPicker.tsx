@@ -29,7 +29,7 @@ export function SlotCalendarPicker({
   selectedSlot,
   onSelect,
   getSlotStatus,
-  days = 14,
+  days = 30,
   hasFriends = false,
 }: SlotCalendarPickerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
