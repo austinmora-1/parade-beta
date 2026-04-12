@@ -119,8 +119,8 @@ export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss, reaction
               {vibe.sender_avatar ? (
                 <AvatarImage src={vibe.sender_avatar} alt={vibe.sender_name} />
               ) : null}
-              <AvatarFallback className="text-lg" style={{ backgroundColor: `${bgColor}30` }}>
-                {config.icon}
+              <AvatarFallback className="text-lg flex items-center justify-center" style={{ backgroundColor: `${bgColor}30` }}>
+                <config.icon className="h-5 w-5" />
               </AvatarFallback>
             </Avatar>
 
@@ -143,7 +143,7 @@ export function VibeDetailDialog({ vibe, open, onOpenChange, onDismiss, reaction
                     className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-primary-foreground"
                     style={{ backgroundColor: bgColor }}
                   >
-                    {config.icon} {config.label}
+                    <config.icon className="h-3 w-3 inline" /> {config.label}
                   </span>
                 )}
               </div>

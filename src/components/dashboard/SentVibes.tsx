@@ -104,7 +104,7 @@ function SentVibeCard({ vibe, reactions, commentCount, onTap }: { vibe: VibeSend
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base"
           style={{ backgroundColor: `${vibeColors[vibe.vibe_type] || vibeColors.social}20` }}
         >
-          {config.icon}
+          <config.icon className="h-4 w-4" />
         </div>
 
         <div className="flex-1 min-w-0">

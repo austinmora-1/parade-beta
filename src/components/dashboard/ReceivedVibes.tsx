@@ -220,7 +220,7 @@ function VibeCard({ vibe, onDismiss, onTap, reactions, currentUserId, onToggleRe
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
             style={{ backgroundColor: `${vibeColors[vibe.vibe_type] || vibeColors.social}20` }}
           >
-            {config.icon}
+            <config.icon className="h-4 w-4" />
           </div>
 
           <div className="flex-1 min-w-0">

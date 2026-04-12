@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { X, Plus, Sparkles } from 'lucide-react';
+import { X, Plus, Sparkles, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { GifPicker } from '@/components/chat/GifPicker';
@@ -92,7 +92,7 @@ export function VibeSelector() {
             )}
           >
             {selectedConfig ? (
-              <span className="text-base">{selectedConfig.icon}</span>
+              <selectedConfig.icon className="h-4 w-4 text-white" />
             ) : (
               <Sparkles className="h-4 w-4" />
             )}
@@ -153,7 +153,7 @@ export function VibeSelector() {
                     )}
                   >
                     <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-white text-sm', style.iconBg)}>
-                      {config.icon}
+                      <config.icon className="h-3.5 w-3.5 text-white" />
                     </div>
                     <span className={cn('text-sm font-medium', isSelected ? 'text-primary' : 'text-foreground')}>
                       {config.label}
@@ -176,7 +176,7 @@ export function VibeSelector() {
                     className="w-56 overflow-hidden shrink-0"
                   >
                     <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-2 shadow-lg border border-primary">
-                      <span className="text-sm">✏️</span>
+                      <Pencil className="h-3.5 w-3.5 text-primary" />
                       <input
                         autoFocus
                         placeholder="type a vibe tag..."
@@ -213,7 +213,7 @@ export function VibeSelector() {
                     className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border shrink-0"
                   >
                     <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-white text-sm', VIBE_CHIP_STYLES.custom.iconBg)}>
-                      ✏️
+                      <Pencil className="h-3.5 w-3.5 text-white" />
                     </div>
                     <span className="text-sm font-medium text-foreground">Add custom tag</span>
                   </motion.button>

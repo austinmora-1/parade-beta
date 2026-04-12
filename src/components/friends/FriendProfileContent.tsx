@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG, VibeType } from '@/types/planner';
@@ -413,7 +413,7 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
                   </div>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                    {vibeConfig?.icon || '✨'} {vibeConfig?.label || profile.current_vibe}
+                    {vibeConfig ? <vibeConfig.icon className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />} {vibeConfig?.label || profile.current_vibe}
                   </span>
                 );
               })()}

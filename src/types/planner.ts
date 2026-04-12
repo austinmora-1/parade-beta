@@ -163,15 +163,15 @@ export interface CustomActivity {
   vibeType: VibeType;
 }
 
-export const VIBE_CONFIG: Record<VibeType, { label: string; icon: string; color: string; description: string }> = {
-  social: { label: 'Social', icon: '🎉', color: 'vibe-social', description: 'Hanging out with friends' },
-  chill: { label: 'Chill', icon: '😌', color: 'vibe-chill', description: 'Relaxing and unwinding' },
-  athletic: { label: 'Athletic', icon: '💪', color: 'vibe-athletic', description: 'Getting active' },
-  productive: { label: 'Productive', icon: '🎯', color: 'vibe-productive', description: 'Getting things done' },
-  custom: { label: 'Custom', icon: '✨', color: 'primary', description: 'Your own vibe' },
-};
+import { Wine, Sparkles, Landmark, Compass, Utensils, Music, User, Umbrella, Smile, Eye, Megaphone, Tent, Gamepad2, Video, Trophy, Sword, Drama, PartyPopper, Theater, Zap, Headphones, Clapperboard, TreePine, Tv, Flame, Film, BookOpen, Waves as WavesIcon, Footprints, Dumbbell, PersonStanding, Home, Mountain, PawPrint, GlassWater, Dog, Heart, Disc3, Plane, ShoppingBag, Users, Coffee, Activity, Target, Pencil } from 'lucide-react';
 
-import { Wine, Sparkles, Landmark, Compass, Utensils, Music, User, Umbrella, Smile, Eye, Megaphone, Tent, Gamepad2, Video, Trophy, Sword, Drama, PartyPopper, Theater, Zap, Headphones, Clapperboard, TreePine, Tv, Flame, Film, BookOpen, Waves as WavesIcon, Footprints, Dumbbell, PersonStanding, Home, Mountain, PawPrint, GlassWater, Dog, Heart, Disc3, Plane, ShoppingBag } from 'lucide-react';
+export const VIBE_CONFIG: Record<VibeType, { label: string; icon: LucideIcon; color: string; description: string }> = {
+  social: { label: 'Social', icon: Users, color: 'vibe-social', description: 'Hanging out with friends' },
+  chill: { label: 'Chill', icon: Coffee, color: 'vibe-chill', description: 'Relaxing and unwinding' },
+  athletic: { label: 'Athletic', icon: Activity, color: 'vibe-athletic', description: 'Getting active' },
+  productive: { label: 'Productive', icon: Target, color: 'vibe-productive', description: 'Getting things done' },
+  custom: { label: 'Custom', icon: Pencil, color: 'primary', description: 'Your own vibe' },
+};
 
 export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   // Social activities (ranked)
