@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, eachDayOfInterval, isAfter, isBefore, startOfDay } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 import { CalendarIcon, Plane, Trash2, X, Users, Clock, CheckSquare, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -75,8 +76,7 @@ function buildDaySlotsMap(days: Date[], defaultSlots: string[] = ALL_SLOTS as st
 
 export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: AddTripDialogProps) {
   const { session } = useAuth();
-  const [startDate, setStartDate] = useState<Date | undefined>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [location, setLocation] = useState('');
   const [daySlots, setDaySlots] = useState<DaySlotsMap>(new Map());
   const [priorityFriendIds, setPriorityFriendIds] = useState<string[]>([]);
