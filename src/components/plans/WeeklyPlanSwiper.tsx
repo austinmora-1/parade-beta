@@ -1,6 +1,6 @@
-import { useMemo, useRef, useCallback } from 'react';
+import { useMemo, useRef, useCallback, useState } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Merge, X } from 'lucide-react';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,8 @@ import { MapPin, Clock } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -22,13 +24,18 @@ interface WeeklyPlanSwiperProps {
   onWeekChange: (offset: number) => void;
   onEditPlan?: (plan: Plan) => void;
   onDeletePlan?: (id: string) => void;
+  onMergeSelected?: (planIds: string[]) => void;
 }
 
-export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan }: WeeklyPlanSwiperProps) {
+export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected }: WeeklyPlanSwiperProps) {
   const navigate = useNavigate();
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const weekStart = useMemo(() => {
     const base = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -60,7 +67,6 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         map.get(key)!.push(plan);
       }
     }
-    // Sort each day's plans by time slot
     const slotOrder: Record<string, number> = {
       'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
       'late-afternoon': 3, 'evening': 4, 'late-night': 5,
@@ -73,6 +79,27 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 
   const isThisWeek = weekOffset === 0;
   const today = new Date();
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const handleMerge = () => {
+    if (selectedIds.size >= 2 && onMergeSelected) {
+      onMergeSelected(Array.from(selectedIds));
+      exitSelectMode();
+    }
+  };
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -97,6 +124,13 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
       }
     }
   }, []);
+
+  const handleCardLongPress = (planId: string) => {
+    if (!selectMode) {
+      setSelectMode(true);
+      setSelectedIds(new Set([planId]));
+    }
+  };
 
   return (
     <div
@@ -125,6 +159,25 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Select mode banner */}
+      <AnimatePresence>
+        {selectMode && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/20 px-3 py-2"
+          >
+            <span className="text-xs font-medium text-primary">
+              {selectedIds.size} selected — tap cards to select
+            </span>
+            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={exitSelectMode}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Days with plan cards */}
       <div className="space-y-1">
@@ -162,7 +215,13 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
                     <PlanCardCompact
                       key={plan.id}
                       plan={plan}
+                      selectMode={selectMode}
+                      selected={selectedIds.has(plan.id)}
                       onTap={() => {
+                        if (selectMode) {
+                          toggleSelect(plan.id);
+                          return;
+                        }
                         const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
                         if (planIsPast) {
                           navigate(`/plan/${plan.id}`);
@@ -170,6 +229,7 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
                           onEditPlan?.(plan);
                         }
                       }}
+                      onLongPress={() => handleCardLongPress(plan.id)}
                     />
                   ))}
                 </div>
@@ -182,28 +242,76 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
           );
         })}
       </div>
+
+      {/* Merge FAB when in select mode with 2+ selected */}
+      <AnimatePresence>
+        {selectMode && selectedIds.size >= 2 && onMergeSelected && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30 md:bottom-8"
+          >
+            <Button
+              onClick={handleMerge}
+              className="gap-2 rounded-full px-6 shadow-lg"
+            >
+              <Merge className="h-4 w-4" />
+              Merge {selectedIds.size} Plans
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function PlanCardCompact({ plan, onTap }: { plan: Plan; onTap: () => void }) {
+function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
+  plan: Plan;
+  onTap: () => void;
+  selectMode: boolean;
+  selected: boolean;
+  onLongPress: () => void;
+}) {
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
   const displayTitle = getPlanDisplayTitle(plan);
   const isTentative = plan.status === 'tentative';
   const isPendingRsvp = plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePointerDown = () => {
+    longPressTimer.current = setTimeout(() => {
+      onLongPress();
+    }, 500);
+  };
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
   return (
     <button
       onClick={onTap}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
       className={cn(
-        "flex-shrink-0 w-[200px] snap-start rounded-xl border border-border/60 bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.98] shadow-soft",
-        (isTentative || isPendingRsvp) && "border-dashed opacity-70"
+        "flex-shrink-0 w-[200px] snap-start rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.98] shadow-soft",
+        (isTentative || isPendingRsvp) && "border-dashed opacity-70",
+        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border/60"
       )}
     >
       <div className="flex items-center gap-2 mb-1.5">
+        {selectMode && (
+          <Checkbox checked={selected} className="shrink-0" />
+        )}
         <div
-          className="flex h-8 w-8 items-center justify-center rounded-lg"
+          className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0"
           style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
         >
           <ActivityIcon config={activityConfig} size={16} />

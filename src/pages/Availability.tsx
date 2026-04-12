@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
-import { RefreshCw, Loader2, Plus } from 'lucide-react';
+import { RefreshCw, Loader2, Plus, Merge } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
@@ -22,6 +23,8 @@ export default function Availability() {
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
   const [editPlan, setEditPlan] = useState<any>(undefined);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergePreselected, setMergePreselected] = useState<string[] | undefined>(undefined);
 
   const openPlanDialog = (date?: Date) => {
     setPlanDefaultDate(date);
@@ -57,6 +60,11 @@ export default function Availability() {
     setEditPlan(plan);
     setPlanDefaultDate(plan.date);
     setPlanDialogOpen(true);
+  }, []);
+
+  const handleMergeSelected = useCallback((planIds: string[]) => {
+    setMergePreselected(planIds);
+    setMergeOpen(true);
   }, []);
 
   return (
@@ -97,6 +105,15 @@ export default function Availability() {
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Plan</span>
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 gap-2"
+            onClick={() => { setMergePreselected(undefined); setMergeOpen(true); }}
+          >
+            <Merge className="h-4 w-4" />
+            <span className="hidden sm:inline">Merge</span>
+          </Button>
           <ShareDialog
             trigger={
               <Button size="sm" variant="outline" className="shrink-0 gap-2">
@@ -120,6 +137,7 @@ export default function Availability() {
         weekOffset={weekOffset}
         onWeekChange={setWeekOffset}
         onEditPlan={handleEditPlan}
+        onMergeSelected={handleMergeSelected}
       />
 
       <CreatePlanDialog
@@ -127,6 +145,12 @@ export default function Availability() {
         onOpenChange={setPlanDialogOpen}
         defaultDate={planDefaultDate}
         editPlan={editPlan}
+      />
+
+      <MergePlansDialog
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        preselectedPlanIds={mergePreselected}
       />
     </div>
   );

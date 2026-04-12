@@ -1,0 +1,584 @@
+import { useState, useMemo } from 'react';
+import { format, isSameDay } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS, Friend } from '@/types/planner';
+import { getPlanDisplayTitle } from '@/lib/planTitle';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { usePlannerStore } from '@/stores/plannerStore';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { Merge, ChevronRight, ChevronLeft, Check, MapPin, Clock, Users } from 'lucide-react';
+
+type Step = 'select' | 'details' | 'participants' | 'confirm';
+
+interface MergePlansDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  preselectedPlanIds?: string[];
+}
+
+export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: MergePlansDialogProps) {
+  const plans = usePlannerStore((s) => s.plans);
+  const addPlan = usePlannerStore((s) => s.addPlan);
+  const deletePlan = usePlannerStore((s) => s.deletePlan);
+  const loadPlans = usePlannerStore((s) => s.loadPlans);
+
+  const [step, setStep] = useState<Step>('select');
+  const [selectedPlanIds, setSelectedPlanIds] = useState<Set<string>>(
+    new Set(preselectedPlanIds || [])
+  );
+  const [merging, setMerging] = useState(false);
+
+  // Detail choices
+  const [chosenTitle, setChosenTitle] = useState<string>('');
+  const [chosenActivity, setChosenActivity] = useState<string>('');
+  const [chosenDate, setChosenDate] = useState<string>('');
+  const [chosenTimeSlot, setChosenTimeSlot] = useState<string>('');
+  const [chosenLocation, setChosenLocation] = useState<string>('');
+  const [chosenNotes, setChosenNotes] = useState<string>('');
+  const [chosenStartTime, setChosenStartTime] = useState<string>('');
+  const [chosenEndTime, setChosenEndTime] = useState<string>('');
+
+  // Participant choices
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<Set<string>>(new Set());
+
+  // Only show user's own upcoming plans
+  const upcomingPlans = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return plans
+      .filter(p => (p.endDate || p.date) >= now)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [plans]);
+
+  const selectedPlans = useMemo(
+    () => upcomingPlans.filter(p => selectedPlanIds.has(p.id)),
+    [upcomingPlans, selectedPlanIds]
+  );
+
+  // Group plans by day for selection step
+  const plansByDay = useMemo(() => {
+    const map = new Map<string, Plan[]>();
+    for (const plan of upcomingPlans) {
+      const key = format(plan.date, 'yyyy-MM-dd');
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(plan);
+    }
+    return map;
+  }, [upcomingPlans]);
+
+  // All unique participants from selected plans
+  const allParticipants = useMemo(() => {
+    const map = new Map<string, Friend>();
+    for (const plan of selectedPlans) {
+      for (const p of plan.participants) {
+        if (p.friendUserId && !map.has(p.friendUserId)) {
+          map.set(p.friendUserId, p);
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [selectedPlans]);
+
+  const togglePlan = (id: string) => {
+    setSelectedPlanIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleParticipant = (id: string) => {
+    setSelectedParticipantIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const initDetailsStep = () => {
+    if (selectedPlans.length === 0) return;
+    const first = selectedPlans[0];
+    setChosenTitle(first.id);
+    setChosenActivity(first.id);
+    setChosenDate(first.id);
+    setChosenTimeSlot(first.id);
+    // Find first plan with location
+    const withLocation = selectedPlans.find(p => p.location);
+    setChosenLocation(withLocation?.id || '');
+    const withNotes = selectedPlans.find(p => p.notes);
+    setChosenNotes(withNotes?.id || '');
+    const withStartTime = selectedPlans.find(p => p.startTime);
+    setChosenStartTime(withStartTime?.id || '');
+    const withEndTime = selectedPlans.find(p => p.endTime);
+    setChosenEndTime(withEndTime?.id || '');
+  };
+
+  const initParticipantsStep = () => {
+    setSelectedParticipantIds(new Set(allParticipants.map(p => p.friendUserId!)));
+  };
+
+  const goToStep = (nextStep: Step) => {
+    if (nextStep === 'details') initDetailsStep();
+    if (nextStep === 'participants') initParticipantsStep();
+    setStep(nextStep);
+  };
+
+  const getPlanById = (id: string) => selectedPlans.find(p => p.id === id);
+
+  const mergedPlanPreview = useMemo(() => {
+    const titlePlan = getPlanById(chosenTitle);
+    const activityPlan = getPlanById(chosenActivity);
+    const datePlan = getPlanById(chosenDate);
+    const timeSlotPlan = getPlanById(chosenTimeSlot);
+    const locationPlan = chosenLocation ? getPlanById(chosenLocation) : undefined;
+    const notesPlan = chosenNotes ? getPlanById(chosenNotes) : undefined;
+    const startTimePlan = chosenStartTime ? getPlanById(chosenStartTime) : undefined;
+    const endTimePlan = chosenEndTime ? getPlanById(chosenEndTime) : undefined;
+
+    return {
+      title: titlePlan?.title || '',
+      activity: activityPlan?.activity || 'hanging-out',
+      date: datePlan?.date || new Date(),
+      endDate: datePlan?.endDate,
+      timeSlot: timeSlotPlan?.timeSlot || 'evening',
+      duration: timeSlotPlan?.duration || 60,
+      startTime: startTimePlan?.startTime,
+      endTime: endTimePlan?.endTime,
+      location: locationPlan?.location,
+      notes: notesPlan?.notes,
+      status: 'confirmed' as const,
+      feedVisibility: 'private' as const,
+      participants: allParticipants.filter(p => p.friendUserId && selectedParticipantIds.has(p.friendUserId)),
+    };
+  }, [chosenTitle, chosenActivity, chosenDate, chosenTimeSlot, chosenLocation, chosenNotes, chosenStartTime, chosenEndTime, selectedPlans, allParticipants, selectedParticipantIds]);
+
+  const handleMerge = async () => {
+    setMerging(true);
+    try {
+      // Create merged plan
+      await addPlan(mergedPlanPreview);
+
+      // Delete original plans
+      for (const plan of selectedPlans) {
+        await deletePlan(plan.id);
+      }
+
+      await loadPlans();
+      toast.success(`Merged ${selectedPlans.length} plans into one`);
+      onOpenChange(false);
+      resetState();
+    } catch (err) {
+      console.error('Error merging plans:', err);
+      toast.error('Failed to merge plans');
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  const resetState = () => {
+    setStep('select');
+    setSelectedPlanIds(new Set(preselectedPlanIds || []));
+    setMerging(false);
+  };
+
+  const handleOpenChange = (v: boolean) => {
+    if (!v) resetState();
+    onOpenChange(v);
+  };
+
+  function formatTime12(time: string): string {
+    const [h, m] = time.split(':').map(Number);
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const hour12 = h % 12 || 12;
+    return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[90dvh] flex flex-col overflow-hidden sm:max-w-md">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="flex items-center gap-2">
+            <Merge className="h-5 w-5 text-primary" />
+            Merge Plans
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-1 shrink-0 pb-2">
+          {(['select', 'details', 'participants', 'confirm'] as Step[]).map((s, i) => (
+            <div key={s} className="flex items-center gap-1">
+              <div className={cn(
+                'h-2 w-2 rounded-full transition-colors',
+                step === s ? 'bg-primary w-5' : (
+                  (['select', 'details', 'participants', 'confirm'].indexOf(step) > i)
+                    ? 'bg-primary/40' : 'bg-muted-foreground/20'
+                )
+              )} />
+            </div>
+          ))}
+        </div>
+
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-1 pb-4">
+            {/* Step 1: Select plans */}
+            {step === 'select' && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Select 2 or more plans to merge together.
+                </p>
+                {upcomingPlans.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No upcoming plans to merge.</p>
+                ) : (
+                  Array.from(plansByDay.entries()).map(([dateKey, dayPlans]) => (
+                    <div key={dateKey}>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                        {format(dayPlans[0].date, 'EEEE, MMM d')}
+                      </h4>
+                      <div className="space-y-1">
+                        {dayPlans.map(plan => {
+                          const config = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
+                          const selected = selectedPlanIds.has(plan.id);
+                          return (
+                            <button
+                              key={plan.id}
+                              onClick={() => togglePlan(plan.id)}
+                              className={cn(
+                                'w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all',
+                                selected
+                                  ? 'border-primary bg-primary/5 shadow-sm'
+                                  : 'border-border hover:bg-muted/50'
+                              )}
+                            >
+                              <Checkbox checked={selected} className="shrink-0" />
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <ActivityIcon config={config} size={16} />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{getPlanDisplayTitle(plan)}</p>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {plan.startTime ? formatTime12(plan.startTime) : TIME_SLOT_LABELS[plan.timeSlot]?.time}
+                                    {plan.location && ` · ${plan.location.name}`}
+                                  </p>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Step 2: Choose details */}
+            {step === 'details' && (
+              <div className="space-y-5">
+                <p className="text-sm text-muted-foreground">
+                  Choose which details to keep for the merged plan.
+                </p>
+
+                {/* Title */}
+                <DetailPicker
+                  label="Title"
+                  plans={selectedPlans}
+                  value={chosenTitle}
+                  onChange={setChosenTitle}
+                  renderOption={(plan) => getPlanDisplayTitle(plan)}
+                />
+
+                {/* Activity */}
+                <DetailPicker
+                  label="Activity"
+                  plans={selectedPlans}
+                  value={chosenActivity}
+                  onChange={setChosenActivity}
+                  renderOption={(plan) => {
+                    const config = ACTIVITY_CONFIG[plan.activity] || { label: plan.activity, icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
+                    return (
+                      <span className="flex items-center gap-1.5">
+                        <ActivityIcon config={config} size={14} />
+                        {config.label}
+                      </span>
+                    );
+                  }}
+                />
+
+                {/* Date */}
+                <DetailPicker
+                  label="Date"
+                  plans={selectedPlans}
+                  value={chosenDate}
+                  onChange={setChosenDate}
+                  renderOption={(plan) => format(plan.date, 'EEE, MMM d')}
+                  dedup={(plan) => format(plan.date, 'yyyy-MM-dd')}
+                />
+
+                {/* Time */}
+                <DetailPicker
+                  label="Time"
+                  plans={selectedPlans}
+                  value={chosenTimeSlot}
+                  onChange={setChosenTimeSlot}
+                  renderOption={(plan) => (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : TIME_SLOT_LABELS[plan.timeSlot]?.time}
+                    </span>
+                  )}
+                  dedup={(plan) => `${plan.timeSlot}-${plan.startTime || ''}`}
+                />
+
+                {/* Location */}
+                {selectedPlans.some(p => p.location) && (
+                  <DetailPicker
+                    label="Location"
+                    plans={selectedPlans.filter(p => p.location)}
+                    value={chosenLocation}
+                    onChange={setChosenLocation}
+                    renderOption={(plan) => (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {plan.location?.name}
+                      </span>
+                    )}
+                    allowNone
+                    dedup={(plan) => plan.location?.name || ''}
+                  />
+                )}
+
+                {/* Notes */}
+                {selectedPlans.some(p => p.notes) && (
+                  <DetailPicker
+                    label="Notes"
+                    plans={selectedPlans.filter(p => p.notes)}
+                    value={chosenNotes}
+                    onChange={setChosenNotes}
+                    renderOption={(plan) => (
+                      <span className="truncate max-w-[200px]">{plan.notes}</span>
+                    )}
+                    allowNone
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Step 3: Choose participants */}
+            {step === 'participants' && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Choose which participants to include in the merged plan.
+                </p>
+                {allParticipants.length === 0 ? (
+                  <div className="text-center py-6">
+                    <Users className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                    <p className="text-sm text-muted-foreground">No participants to merge.</p>
+                    <p className="text-xs text-muted-foreground/60">The merged plan will be a solo plan.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {allParticipants.map(p => {
+                      const checked = selectedParticipantIds.has(p.friendUserId!);
+                      return (
+                        <button
+                          key={p.friendUserId}
+                          onClick={() => toggleParticipant(p.friendUserId!)}
+                          className={cn(
+                            'w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all',
+                            checked
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:bg-muted/50'
+                          )}
+                        >
+                          <Checkbox checked={checked} className="shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{p.name}</p>
+                            {p.email && <p className="text-[11px] text-muted-foreground">{p.email}</p>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 4: Confirm */}
+            {step === 'confirm' && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Review the merged plan before confirming.
+                </p>
+
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                  {/* Title & activity */}
+                  <div className="flex items-center gap-2">
+                    <ActivityIcon
+                      config={ACTIVITY_CONFIG[mergedPlanPreview.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const }}
+                      size={20}
+                    />
+                    <span className="text-base font-semibold">{mergedPlanPreview.title}</span>
+                  </div>
+
+                  {/* Date & time */}
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    {format(mergedPlanPreview.date, 'EEE, MMM d')}
+                    {' · '}
+                    {mergedPlanPreview.startTime
+                      ? formatTime12(mergedPlanPreview.startTime) + (mergedPlanPreview.endTime ? ` – ${formatTime12(mergedPlanPreview.endTime)}` : '')
+                      : TIME_SLOT_LABELS[mergedPlanPreview.timeSlot]?.time}
+                  </div>
+
+                  {/* Location */}
+                  {mergedPlanPreview.location && (
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {mergedPlanPreview.location.name}
+                    </div>
+                  )}
+
+                  {/* Participants */}
+                  {mergedPlanPreview.participants.length > 0 && (
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" />
+                      w/ {mergedPlanPreview.participants.map(p => p.name).join(', ')}
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {mergedPlanPreview.notes && (
+                    <p className="text-xs text-muted-foreground/70 italic">
+                      {mergedPlanPreview.notes}
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
+                  <p className="text-xs text-destructive font-medium">
+                    This will delete {selectedPlans.length} original plan{selectedPlans.length > 1 ? 's' : ''} and create one merged plan.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Footer buttons */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-border shrink-0">
+          {step !== 'select' ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const steps: Step[] = ['select', 'details', 'participants', 'confirm'];
+                const idx = steps.indexOf(step);
+                if (idx > 0) setStep(steps[idx - 1]);
+              }}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+          ) : (
+            <div />
+          )}
+
+          {step === 'select' && (
+            <Button
+              size="sm"
+              disabled={selectedPlanIds.size < 2}
+              onClick={() => goToStep('details')}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+          {step === 'details' && (
+            <Button size="sm" onClick={() => goToStep('participants')}>
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+          {step === 'participants' && (
+            <Button size="sm" onClick={() => goToStep('confirm')}>
+              Review
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+          {step === 'confirm' && (
+            <Button size="sm" disabled={merging} onClick={handleMerge}>
+              {merging ? 'Merging...' : 'Merge Plans'}
+              <Check className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// --- Helper: radio picker for a field across selected plans ---
+
+interface DetailPickerProps {
+  label: string;
+  plans: Plan[];
+  value: string;
+  onChange: (id: string) => void;
+  renderOption: (plan: Plan) => React.ReactNode;
+  allowNone?: boolean;
+  dedup?: (plan: Plan) => string;
+}
+
+function DetailPicker({ label, plans, value, onChange, renderOption, allowNone, dedup }: DetailPickerProps) {
+  // Deduplicate options if dedup function provided
+  const uniquePlans = useMemo(() => {
+    if (!dedup) return plans;
+    const seen = new Set<string>();
+    return plans.filter(p => {
+      const key = dedup(p);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [plans, dedup]);
+
+  if (uniquePlans.length <= 1 && !allowNone) return null;
+
+  return (
+    <div>
+      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
+      <RadioGroup value={value} onValueChange={onChange} className="mt-1.5 space-y-1">
+        {uniquePlans.map(plan => (
+          <label
+            key={plan.id}
+            className={cn(
+              'flex items-center gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-all text-sm',
+              value === plan.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+            )}
+          >
+            <RadioGroupItem value={plan.id} className="shrink-0" />
+            {renderOption(plan)}
+          </label>
+        ))}
+        {allowNone && (
+          <label
+            className={cn(
+              'flex items-center gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-all text-sm',
+              value === '' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+            )}
+          >
+            <RadioGroupItem value="" className="shrink-0" />
+            <span className="text-muted-foreground italic">None</span>
+          </label>
+        )}
+      </RadioGroup>
+    </div>
+  );
+}
