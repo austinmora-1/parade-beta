@@ -5,20 +5,20 @@ import {
   Users,
   Inbox,
   Plus,
-  Share2,
   X,
   Zap,
   Sparkles,
-  MessageCirclePlus,
+  PlaneTakeoff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
 import { useState, useCallback } from 'react';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
-import { ShareDialog } from '@/components/dashboard/ShareDialog';
+import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useConversations } from '@/hooks/useChat';
+import { usePlannerStore } from '@/stores/plannerStore';
 
 const navItems = [
   { path: '/',             icon: House,        label: 'Home'    },
@@ -33,8 +33,7 @@ const rightItems = navItems.slice(2);
 const fabActions = [
   { id: 'quick-plan', icon: Sparkles,          label: 'Quick Plan',         gradient: 'from-[hsl(150,45%,36%)] to-[hsl(160,50%,44%)]', iconColor: 'text-white' },
   { id: 'send-vibe',  icon: Zap,               label: 'Send Vibe',          gradient: 'from-[hsl(38,90%,52%)] to-[hsl(28,85%,50%)]',   iconColor: 'text-white' },
-  { id: 'share',      icon: Share2,            label: 'Share Availability', gradient: 'from-[hsl(200,55%,50%)] to-[hsl(210,60%,45%)]', iconColor: 'text-white' },
-  { id: 'new-chat',   icon: MessageCirclePlus, label: 'New Chat',           gradient: 'from-[hsl(270,55%,58%)] to-[hsl(280,50%,50%)]', iconColor: 'text-white' },
+  { id: 'add-trip',   icon: PlaneTakeoff,      label: 'Add a Trip',         gradient: 'from-[hsl(200,55%,50%)] to-[hsl(210,60%,45%)]', iconColor: 'text-white' },
 ] as const;
 
 type FabAction = typeof fabActions[number]['id'];
@@ -45,7 +44,8 @@ export function MobileNav() {
   const [fabOpen, setFabOpen] = useState(false);
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   const [sendVibeOpen, setSendVibeOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
+  const [tripOpen, setTripOpen] = useState(false);
+  const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
   const { totalNotifications } = useNotifications();
   const { conversations } = useConversations();
 
@@ -69,11 +69,8 @@ export function MobileNav() {
         case 'send-vibe':
           setSendVibeOpen(true);
           break;
-        case 'share':
-          setShareOpen(true);
-          break;
-        case 'new-chat':
-          navigate('/inbox');
+        case 'add-trip':
+          setTripOpen(true);
           break;
       }
     }, 150);
@@ -225,7 +222,7 @@ export function MobileNav() {
 
       <QuickPlanSheet open={quickPlanOpen} onOpenChange={setQuickPlanOpen} />
       <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
-      <ShareDialog open={shareOpen} onOpenChange={setShareOpen} />
+      <AddTripDialog open={tripOpen} onOpenChange={setTripOpen} onTripAdded={() => loadProfileAndAvailability()} />
     </>
   );
 }
