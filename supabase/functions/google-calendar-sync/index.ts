@@ -821,7 +821,8 @@ async function handleEventsSync(params: {
   // Build content-based lookup: "normalizedTitle|date|start_time" → plan
   const contentLookup = new Map<string, any>()
   for (const p of (allUserPlans || [])) {
-    const key = `${normalizePlanTitle(p.title)}|${p.date}|${p.start_time || ''}`
+    const nt = normalizePlanTitle(p.title)
+    const key = makeContentKey(nt, p.date, p.start_time)
     if (!contentLookup.has(key)) contentLookup.set(key, p)
   }
 
@@ -879,16 +880,24 @@ async function handleEventsSync(params: {
         })
         .eq('id', existing.id)
     } else {
-      // Content-based dedup: check if a plan with same normalized title+date+start_time already exists
-      const contentKey = `${normalizePlanTitle(planRow.title)}|${planRow.date}|${planRow.start_time || ''}`
+      // Content-based dedup: check if a plan with same normalized title+date (+start_time for non-flights) already exists
+      const nt = normalizePlanTitle(planRow.title)
+      const contentKey = makeContentKey(nt, planRow.date, planRow.start_time)
       const contentMatch = contentLookup.get(contentKey)
       if (contentMatch) {
-        // Link the existing plan's source_event_id if it doesn't have one, then skip
+        // Merge: update source linkage and prefer more specific data
+        const mergeFields: Record<string, any> = {}
         if (!contentMatch.source_event_id || contentMatch.source === 'gcal') {
-          await adminClient
-            .from('plans')
-            .update({ source: 'gcal', source_event_id: eventId })
-            .eq('id', contentMatch.id)
+          mergeFields.source = 'gcal'
+          mergeFields.source_event_id = eventId
+        }
+        // Prefer non-null start_time (timed event beats all-day)
+        if (!contentMatch.start_time && planRow.start_time) {
+          mergeFields.start_time = planRow.start_time
+          mergeFields.end_time = planRow.end_time
+        }
+        if (Object.keys(mergeFields).length > 0) {
+          await adminClient.from('plans').update(mergeFields).eq('id', contentMatch.id)
         }
         console.log(`[DEDUP] Skipped duplicate: "${planRow.title}" on ${planRow.date} (content match with plan ${contentMatch.id})`)
       } else {

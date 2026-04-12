@@ -873,7 +873,7 @@ Deno.serve(async (req) => {
       incomingEventIds.add(event.uid)
       planRowsByEventId.set(event.uid, {
         user_id: userId,
-        title: event.summary || 'iCal imported event',
+        title: (event.summary || 'iCal imported event').replace(/\s+/g, ' ').trim(),
         activity: classifyActivity(event.summary),
         date: planDate,
         time_slot: timeSlot,
@@ -901,7 +901,8 @@ Deno.serve(async (req) => {
 
     const contentLookup = new Map<string, any>()
     for (const p of (allUserPlans || [])) {
-      const key = `${normalizePlanTitle(p.title)}|${p.date}|${p.start_time || ''}`
+      const nt = normalizePlanTitle(p.title)
+      const key = makeContentKey(nt, p.date, p.start_time)
       if (!contentLookup.has(key)) contentLookup.set(key, p)
     }
 
@@ -952,14 +953,22 @@ Deno.serve(async (req) => {
           .eq('id', existing.id)
       } else {
         // Content-based dedup
-        const contentKey = `${normalizePlanTitle(planRow.title)}|${planRow.date}|${planRow.start_time || ''}`
+        const nt = normalizePlanTitle(planRow.title)
+        const contentKey = makeContentKey(nt, planRow.date, planRow.start_time)
         const contentMatch = contentLookup.get(contentKey)
         if (contentMatch) {
+          const mergeFields: Record<string, any> = {}
           if (!contentMatch.source_event_id || contentMatch.source === 'ical') {
-            await adminClient
-              .from('plans')
-              .update({ source: 'ical', source_event_id: eventId })
-              .eq('id', contentMatch.id)
+            mergeFields.source = 'ical'
+            mergeFields.source_event_id = eventId
+          }
+          // Prefer non-null start_time (timed event beats all-day)
+          if (!contentMatch.start_time && planRow.start_time) {
+            mergeFields.start_time = planRow.start_time
+            mergeFields.end_time = planRow.end_time
+          }
+          if (Object.keys(mergeFields).length > 0) {
+            await adminClient.from('plans').update(mergeFields).eq('id', contentMatch.id)
           }
           console.log(`[DEDUP] Skipped duplicate: "${planRow.title}" on ${planRow.date} (content match with plan ${contentMatch.id})`)
         } else {
