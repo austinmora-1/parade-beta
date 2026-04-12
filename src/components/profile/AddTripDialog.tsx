@@ -86,6 +86,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [nearbyFriendIds, setNearbyFriendIds] = useState<string[] | null>(null);
+  const [visitingFriendIds, setVisitingFriendIds] = useState<string[]>([]);
   const [isLoadingNearby, setIsLoadingNearby] = useState(false);
 
   const friends = usePlannerStore((s) => s.friends);
@@ -106,6 +107,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
     const trimmedLocation = location.trim();
     if (!trimmedLocation || connectedFriends.length === 0 || !session?.user) {
       setNearbyFriendIds(null);
+      setVisitingFriendIds([]);
       return;
     }
 
@@ -113,8 +115,9 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
     const fetchNearby = async () => {
       setIsLoadingNearby(true);
       try {
-        // Fetch home_address for all connected friends
         const friendUserIds = connectedFriends.map(f => f.friendUserId);
+
+        // Fetch home_address for all connected friends
         const { data: profiles } = await supabase
           .from('profiles')
           .select('user_id, home_address')
@@ -124,49 +127,89 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
           .filter(p => p.home_address && p.home_address.trim().length > 0)
           .map(p => ({ userId: p.user_id, city: p.home_address! }));
 
-        if (friendCities.length === 0) {
-          if (!cancelled) setNearbyFriendIds([]);
-          return;
+        // Fetch friends' trips that overlap with our date range and match destination
+        let overlappingVisitors: string[] = [];
+        if (dateRange?.from && dateRange?.to) {
+          const startStr = format(dateRange.from, 'yyyy-MM-dd');
+          const endStr = format(dateRange.to, 'yyyy-MM-dd');
+
+          // Get trips from friends that overlap our dates
+          const { data: friendTrips } = await supabase
+            .from('trips')
+            .select('user_id, location, start_date, end_date')
+            .in('user_id', friendUserIds)
+            .lte('start_date', endStr)
+            .gte('end_date', startStr);
+
+          if (friendTrips && friendTrips.length > 0) {
+            // Filter trips whose location matches/is near our destination via the edge function
+            const tripCities = friendTrips
+              .filter(t => t.location && t.location.trim().length > 0)
+              .map(t => ({ userId: t.user_id, city: t.location! }));
+
+            if (tripCities.length > 0) {
+              const { data: tripData, error: tripErr } = await supabase.functions.invoke('filter-friends-by-location', {
+                body: { tripLocation: trimmedLocation, friendCities: tripCities }
+              });
+              if (!tripErr && tripData?.nearbyFriendIds) {
+                overlappingVisitors = tripData.nearbyFriendIds;
+              }
+            }
+          }
         }
 
-        const { data, error } = await supabase.functions.invoke('filter-friends-by-location', {
-          body: { tripLocation: trimmedLocation, friendCities }
-        });
+        // Geocode home addresses for "lives there" friends
+        let homeNearbyIds: string[] = [];
+        if (friendCities.length > 0) {
+          const { data, error } = await supabase.functions.invoke('filter-friends-by-location', {
+            body: { tripLocation: trimmedLocation, friendCities }
+          });
+          if (!error && data?.nearbyFriendIds) {
+            homeNearbyIds = data.nearbyFriendIds;
+          }
+        }
 
         if (!cancelled) {
-          if (error) {
-            console.error('Error filtering friends by location:', error);
-            setNearbyFriendIds(null); // fallback to showing all
-          } else {
-            setNearbyFriendIds(data.nearbyFriendIds || []);
-          }
+          setNearbyFriendIds(homeNearbyIds);
+          // Visiting = friends whose trip overlaps but who don't already live there
+          setVisitingFriendIds(overlappingVisitors.filter(id => !homeNearbyIds.includes(id)));
         }
       } catch (err) {
         console.error('Error fetching nearby friends:', err);
-        if (!cancelled) setNearbyFriendIds(null);
+        if (!cancelled) {
+          setNearbyFriendIds(null);
+          setVisitingFriendIds([]);
+        }
       } finally {
         if (!cancelled) setIsLoadingNearby(false);
       }
     };
 
-    const timeout = setTimeout(fetchNearby, 500); // debounce
+    const timeout = setTimeout(fetchNearby, 500);
     return () => {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [location, connectedFriends, session?.user]);
+  }, [location, connectedFriends, session?.user, dateRange?.from, dateRange?.to]);
+
+  // Combined set of suggested friend IDs (lives nearby + visiting)
+  const suggestedFriendIds = useMemo(() => {
+    if (nearbyFriendIds === null) return null;
+    const set = new Set([...nearbyFriendIds, ...visitingFriendIds]);
+    return Array.from(set);
+  }, [nearbyFriendIds, visitingFriendIds]);
 
   const filteredFriends = useMemo(() => {
     const search = friendSearch.toLowerCase();
     let pool = connectedFriends.filter(f => !priorityFriendIds.includes(f.friendUserId));
     
-    // If we have nearby data, filter to only nearby friends (+ always show search matches)
-    if (nearbyFriendIds !== null && !friendSearch.trim()) {
-      pool = pool.filter(f => nearbyFriendIds.includes(f.friendUserId));
+    // If we have nearby/visiting data, filter to only those friends (unless searching)
+    if (suggestedFriendIds !== null && !friendSearch.trim()) {
+      pool = pool.filter(f => suggestedFriendIds.includes(f.friendUserId));
     }
     
     return pool.filter(f => !search || f.name.toLowerCase().includes(search));
-  }, [connectedFriends, priorityFriendIds, friendSearch, nearbyFriendIds]);
+  }, [connectedFriends, priorityFriendIds, friendSearch, suggestedFriendIds]);
 
   const selectedFriendDetails = useMemo(() => {
     return priorityFriendIds
@@ -638,8 +681,8 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                   <p className="text-xs text-muted-foreground">
                     {isLoadingNearby
                       ? 'Finding friends near your destination...'
-                      : nearbyFriendIds !== null && location.trim()
-                        ? `${nearbyFriendIds.length} friend${nearbyFriendIds.length !== 1 ? 's' : ''} in or near ${location.trim()}`
+                      : suggestedFriendIds !== null && location.trim()
+                        ? `${nearbyFriendIds?.length || 0} live${(nearbyFriendIds?.length || 0) === 1 ? 's' : ''} nearby${visitingFriendIds.length > 0 ? ` · ${visitingFriendIds.length} visiting` : ''}`
                         : 'Tag friends you want to hang out with during this trip'
                     }
                   </p>
@@ -703,13 +746,19 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                           </Avatar>
                           <span className="text-sm">{friend.name}</span>
                           {nearbyFriendIds?.includes(friend.friendUserId) && (
-                            <span className="ml-auto text-[10px] text-primary font-medium">Nearby</span>
+                            <span className="ml-auto text-[10px] text-primary font-medium">Lives nearby</span>
+                          )}
+                          {visitingFriendIds.includes(friend.friendUserId) && (
+                            <span className="ml-auto text-[10px] text-availability-away-foreground font-medium flex items-center gap-0.5">
+                              <Plane className="h-2.5 w-2.5" />
+                              Visiting
+                            </span>
                           )}
                         </button>
                       ))}
                     </div>
                   )}
-                  {nearbyFriendIds !== null && !friendSearch.trim() && filteredFriends.length === 0 && !isLoadingNearby && (
+                  {suggestedFriendIds !== null && !friendSearch.trim() && filteredFriends.length === 0 && !isLoadingNearby && (
                     <p className="text-xs text-muted-foreground italic">
                       No friends found near {location.trim()}. Search above to add any friend.
                     </p>
