@@ -247,26 +247,30 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         </span>
       </div>
       {dayPlans.length > 0 ? (
-        <div className="flex gap-2 px-3 mt-1 mb-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-hide">
-          {dayPlans.map((plan, idx) => (
-            <div
-              key={plan.id}
-              className="flex-shrink-0 snap-start"
-              style={{ width: dayPlans.length === 1 ? '100%' : 'calc(85% - 8px)', minWidth: '260px' }}
-            >
-              <PlanCardCompact
-                plan={plan}
-                selectMode={selectMode}
-                selected={selectedIds.has(plan.id)}
-                onTap={() => {
-                  if (selectMode) { toggleSelect(plan.id); return; }
-                  const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
-                  if (planIsPast) { navigate(`/plan/${plan.id}`); } else { onEditPlan?.(plan); }
-                }}
-                onLongPress={() => onCardLongPress(plan.id)}
-              />
-            </div>
-          ))}
+        <div className="px-3 mt-1 mb-3">
+          {dayPlans.length === 1 ? (
+            <PlanCardCompact
+              plan={dayPlans[0]}
+              selectMode={selectMode}
+              selected={selectedIds.has(dayPlans[0].id)}
+              onTap={() => {
+                if (selectMode) { toggleSelect(dayPlans[0].id); return; }
+                const planIsPast = (dayPlans[0].endDate || dayPlans[0].date) < new Date(new Date().setHours(0, 0, 0, 0));
+                if (planIsPast) { navigate(`/plan/${dayPlans[0].id}`); } else { onEditPlan?.(dayPlans[0]); }
+              }}
+              onLongPress={() => onCardLongPress(dayPlans[0].id)}
+            />
+          ) : (
+            <DeckOfCards
+              plans={dayPlans}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              toggleSelect={toggleSelect}
+              onEditPlan={onEditPlan}
+              onCardLongPress={onCardLongPress}
+              navigate={navigate}
+            />
+          )}
         </div>
       ) : (
         <div className="px-3 pb-2">
@@ -365,6 +369,89 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   );
 }
 
+// Deck of cards component for multiple plans on same day
+function DeckOfCards({ plans, selectMode, selectedIds, toggleSelect, onEditPlan, onCardLongPress, navigate }: {
+  plans: Plan[];
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  toggleSelect: (id: string) => void;
+  onEditPlan?: (plan: Plan) => void;
+  onCardLongPress: (id: string) => void;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartXRef = useRef(0);
+
+  const handleSwipeStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleSwipeEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0 && activeIndex < plans.length - 1) setActiveIndex(i => i + 1);
+      if (dx > 0 && activeIndex > 0) setActiveIndex(i => i - 1);
+    }
+  };
+
+  return (
+    <div
+      className="relative"
+      style={{ height: '124px' }}
+      onTouchStart={handleSwipeStart}
+      onTouchEnd={handleSwipeEnd}
+    >
+      {plans.map((plan, idx) => {
+        const offset = idx - activeIndex;
+        const isActive = idx === activeIndex;
+        const isGone = offset < 0;
+
+        return (
+          <motion.div
+            key={plan.id}
+            className="absolute top-0 left-0"
+            initial={false}
+            animate={{
+              x: isGone ? -20 : offset * 24,
+              scale: isActive ? 1 : 1 - Math.abs(offset) * 0.04,
+              opacity: isGone ? 0 : Math.max(0, 1 - Math.abs(offset) * 0.25),
+              zIndex: plans.length - Math.abs(offset),
+            }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            style={{ width: 'calc(100% - 48px)' }}
+          >
+            <PlanCardCompact
+              plan={plan}
+              selectMode={selectMode}
+              selected={selectedIds.has(plan.id)}
+              onTap={() => {
+                if (!isActive) { setActiveIndex(idx); return; }
+                if (selectMode) { toggleSelect(plan.id); return; }
+                const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
+                if (planIsPast) { navigate(`/plan/${plan.id}`); } else { onEditPlan?.(plan); }
+              }}
+              onLongPress={() => onCardLongPress(plan.id)}
+            />
+          </motion.div>
+        );
+      })}
+      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1.5">
+        {plans.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveIndex(idx)}
+            className={cn(
+              "h-1.5 rounded-full transition-all",
+              idx === activeIndex ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
   plan: Plan;
