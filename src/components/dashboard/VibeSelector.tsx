@@ -127,7 +127,7 @@ export function VibeSelector() {
         {/* Pop-up menu */}
         <AnimatePresence>
           {menuOpen && (
-            <div className="absolute left-0 right-0 top-full mt-2 flex flex-col items-center gap-2 z-50 max-h-[60vh] overflow-y-auto rounded-2xl">
+            <div className="mt-2 flex flex-col items-center gap-2 z-50">
               {/* Vibe options */}
               {vibeTypes.map((type, i) => {
                 const config = VIBE_CONFIG[type];
