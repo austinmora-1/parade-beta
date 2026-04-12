@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback, useState, Fragment } from 'react';
+import { useMemo, useRef, useCallback, useState, useEffect, Fragment } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2 } from 'lucide-react';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
@@ -398,19 +398,25 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   );
 }
 
-// Swipe-to-flip stacked cards
+// Swipe-to-flip stacked cards — cycles top card to bottom
 function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   plans: Plan[];
   selectMode: boolean;
   selectedIds: Set<string>;
   onCardTap: (id: string) => void;
 }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  // order[0] is front card, order[n-1] is back
+  const [order, setOrder] = useState(() => plans.map((_, i) => i));
   const dragStartX = useRef(0);
   const dragDelta = useRef(0);
   const didSwipe = useRef(false);
   const [swipeX, setSwipeX] = useState(0);
   const [swiping, setSwiping] = useState(false);
+
+  // Keep order in sync if plans change
+  useEffect(() => {
+    setOrder(plans.map((_, i) => i));
+  }, [plans.length]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     dragStartX.current = e.clientX;
@@ -424,17 +430,17 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
     if (!swiping) return;
     dragDelta.current = e.clientX - dragStartX.current;
     if (Math.abs(dragDelta.current) > 8) didSwipe.current = true;
-    setSwipeX(dragDelta.current);
+    // Only allow swiping left (negative)
+    setSwipeX(Math.min(0, dragDelta.current));
   };
 
   const handlePointerUp = () => {
     if (!swiping) return;
     setSwiping(false);
     const threshold = 60;
-    if (dragDelta.current < -threshold && activeIndex < plans.length - 1) {
-      setActiveIndex(i => i + 1);
-    } else if (dragDelta.current > threshold && activeIndex > 0) {
-      setActiveIndex(i => i - 1);
+    if (dragDelta.current < -threshold) {
+      // Send front card to back
+      setOrder(prev => [...prev.slice(1), prev[0]]);
     }
     setSwipeX(0);
     dragDelta.current = 0;
@@ -447,24 +453,25 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
 
   return (
     <div className="relative" style={{ height: '116px' }}>
-      {plans.map((plan, idx) => {
-        const offset = idx - activeIndex;
-        const isTop = idx === activeIndex;
-        const isGone = offset < 0 || offset > 3;
+      {order.map((planIdx, stackPos) => {
+        const plan = plans[planIdx];
+        if (!plan) return null;
+        const isTop = stackPos === 0;
+        const isVisible = stackPos <= 3;
 
         return (
           <motion.div
             key={plan.id}
-            className={cn("absolute top-0", isGone && "pointer-events-none")}
+            className={cn("absolute top-0", !isVisible && "pointer-events-none")}
             initial={false}
             animate={{
-              x: isTop ? swipeX * 0.3 : offset * 20,
-              scale: isTop ? 1 : 1 - offset * 0.03,
-              opacity: isGone ? 0 : 1 - offset * 0.2,
-              rotate: isTop ? swipeX * 0.05 : 0,
+              x: isTop ? swipeX * 0.4 : stackPos * 20,
+              scale: isTop ? 1 : 1 - stackPos * 0.03,
+              opacity: !isVisible ? 0 : 1 - stackPos * 0.2,
+              rotate: isTop ? swipeX * 0.06 : 0,
             }}
             transition={swiping && isTop ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
-            style={{ zIndex: plans.length - idx, width: 'calc(100% - 40px)', left: 0 }}
+            style={{ zIndex: plans.length - stackPos, width: 'calc(100% - 40px)', left: 0 }}
             onPointerDown={isTop ? handlePointerDown : undefined}
             onPointerMove={isTop ? handlePointerMove : undefined}
             onPointerUp={isTop ? handlePointerUp : undefined}
@@ -482,13 +489,12 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
       })}
       {/* Pagination dots */}
       <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {plans.map((_, idx) => (
-          <button
+        {plans.map((plan, idx) => (
+          <div
             key={idx}
-            onClick={() => setActiveIndex(idx)}
             className={cn(
               "h-1.5 rounded-full transition-all",
-              idx === activeIndex ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"
+              order[0] === idx ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"
             )}
           />
         ))}
