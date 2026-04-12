@@ -256,6 +256,25 @@ function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   return false
 }
 
+function normalizeLocation(value: string | null | undefined): string {
+  return (value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s*(city|town|village)$/i, '')
+    .trim()
+}
+
+function isLocationMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const normalizedA = normalizeLocation(a)
+  const normalizedB = normalizeLocation(b)
+  if (!normalizedA || !normalizedB) return false
+  if (normalizedA.includes(normalizedB) || normalizedB.includes(normalizedA)) return true
+
+  const cityA = normalizedA.split(',')[0]?.trim()
+  const cityB = normalizedB.split(',')[0]?.trim()
+  return !!cityA && !!cityB && (cityA.includes(cityB) || cityB.includes(cityA))
+}
+
 // Check if a date falls after a return-home flight but before the next outbound flight
 function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDates: Set<string>): boolean {
   // Find the most recent return date on or before this date
@@ -407,6 +426,11 @@ async function handleEventsSync(params: {
   // These act as trip boundaries — we never fill past any flight date
   const allFlightDatesSet = new Set(allFlights.map(f => f.date))
 
+  const { data: existingTrips } = await adminClient
+    .from('trips')
+    .select('id, location, start_date, end_date, needs_return_date')
+    .eq('user_id', userId)
+
   // Track return-home flight dates — these should reset location to 'home'
   // For return flights, only count them if they are the LAST flight on that date
   // (a connecting flight through home airport shouldn't reset location)
@@ -437,6 +461,26 @@ async function handleEventsSync(params: {
   const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
 
   for (const [outDate, city] of outboundEntries) {
+    const resolvedTrip = (existingTrips || []).find((trip: any) =>
+      !trip.needs_return_date &&
+      isLocationMatch(trip.location, city) &&
+      trip.start_date <= outDate &&
+      trip.end_date >= outDate
+    )
+
+    if (resolvedTrip) {
+      const current = new Date(outDate + 'T00:00:00Z')
+      current.setDate(current.getDate() + 1)
+      const manualEnd = new Date(resolvedTrip.end_date + 'T00:00:00Z')
+      while (current <= manualEnd) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        flightLocationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+      continue
+    }
+
     // Check if there's a return flight within 30 days
     let hasReturn = false
     const outDateObj = new Date(outDate + 'T00:00:00Z')

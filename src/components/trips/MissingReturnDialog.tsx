@@ -43,42 +43,86 @@ export function MissingReturnDialog({ open, onOpenChange, trips, onComplete }: M
     setSaving(true);
 
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+
+      const user = authData.user;
+      if (!user) throw new Error('User not found');
+
       const returnDateStr = format(selectedDate, 'yyyy-MM-dd');
 
-      // Find the trip and update its end_date
-      const { data: existingTrips } = await supabase
+      const { data: exactTrips, error: exactTripsError } = await supabase
         .from('trips')
         .select('id')
-        .lte('start_date', currentTrip.departureDate)
-        .gte('end_date', currentTrip.departureDate)
-        .ilike('location', `%${currentTrip.destination}%`);
+        .eq('user_id', user.id)
+        .eq('start_date', currentTrip.departureDate)
+        .ilike('location', `%${currentTrip.destination}%`)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (existingTrips && existingTrips.length > 0) {
-        await supabase
+      if (exactTripsError) throw exactTripsError;
+
+      let tripId = exactTrips?.[0]?.id;
+
+      if (!tripId) {
+        const { data: overlappingTrips, error: overlappingTripsError } = await supabase
+          .from('trips')
+          .select('id')
+          .eq('user_id', user.id)
+          .lte('start_date', currentTrip.departureDate)
+          .gte('end_date', currentTrip.departureDate)
+          .ilike('location', `%${currentTrip.destination}%`)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (overlappingTripsError) throw overlappingTripsError;
+        tripId = overlappingTrips?.[0]?.id;
+      }
+
+      if (tripId) {
+        const { error: updateTripError } = await supabase
           .from('trips')
           .update({ end_date: returnDateStr, needs_return_date: false })
-          .eq('id', existingTrips[0].id);
+          .eq('id', tripId);
 
-        // Fill availability for the date range
-        const dates: string[] = [];
-        const current = new Date(currentTrip.departureDate + 'T00:00:00');
-        const end = new Date(returnDateStr + 'T00:00:00');
-        while (current <= end) {
-          dates.push(current.toISOString().split('T')[0]);
-          current.setDate(current.getDate() + 1);
-        }
+        if (updateTripError) throw updateTripError;
+      } else {
+        const { error: insertTripError } = await supabase
+          .from('trips')
+          .insert({
+            user_id: user.id,
+            location: currentTrip.destination,
+            start_date: currentTrip.departureDate,
+            end_date: returnDateStr,
+            needs_return_date: false,
+          });
 
-        for (const date of dates) {
-          await supabase
-            .from('availability')
-            .upsert(
-              { date, location_status: 'away', trip_location: currentTrip.destination, user_id: (await supabase.auth.getUser()).data.user!.id },
-              { onConflict: 'user_id,date' }
-            );
-        }
-
-        toast.success(`Return date set for ${currentTrip.destination}`);
+        if (insertTripError) throw insertTripError;
       }
+
+      const dates: string[] = [];
+      const current = new Date(currentTrip.departureDate + 'T00:00:00');
+      const end = new Date(returnDateStr + 'T00:00:00');
+      while (current <= end) {
+        dates.push(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+
+      const { error: availabilityError } = await supabase
+        .from('availability')
+        .upsert(
+          dates.map((date) => ({
+            date,
+            location_status: 'away',
+            trip_location: currentTrip.destination,
+            user_id: user.id,
+          })),
+          { onConflict: 'user_id,date' }
+        );
+
+      if (availabilityError) throw availabilityError;
+
+      toast.success(`Return date set for ${currentTrip.destination}`);
     } catch (err) {
       console.error('Error setting return date:', err);
       toast.error('Failed to set return date');
