@@ -222,6 +222,14 @@ function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   return false
 }
 
+// Check if a date falls after a return-home flight and before the next outbound flight
+function isDateAfterAnyReturn(dateStr: string, returnDates: Set<string>): boolean {
+  for (const rd of returnDates) {
+    if (dateStr >= rd) return true
+  }
+  return false
+}
+
 async function handleEventsSync(params: {
   adminClient: any
   userId: string
