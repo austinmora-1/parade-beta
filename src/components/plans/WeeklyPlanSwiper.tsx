@@ -543,7 +543,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
         selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border"
       )}
     >
-      <div className="flex items-center gap-2 mb-1.5">
+      <div className="flex items-center gap-2 mb-1.5 min-w-0">
         {selectMode && (
           <Checkbox checked={selected} className="shrink-0" />
         )}
