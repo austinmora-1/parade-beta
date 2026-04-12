@@ -321,7 +321,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   );
 }
 
-function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, navigate }: {
+function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap }: {
   weekDays: Date[];
   today: Date;
   plansByDay: Map<string, Plan[]>;
@@ -330,7 +330,6 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   toggleSelect: (id: string) => void;
   onEditPlan?: (plan: Plan) => void;
   onCardTap: (id: string) => void;
-  navigate: ReturnType<typeof useNavigate>;
 }) {
   const [showPast, setShowPast] = useState(false);
 
