@@ -9,7 +9,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { usePlannerStore } from "@/stores/plannerStore";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-import Plans from "./pages/Plans";
+
 import Availability from "./pages/Availability";
 import Friends from "./pages/Friends";
 import Chat from "./pages/Chat";
@@ -134,7 +134,7 @@ const AppRoutes = () => {
       }
     >
       <Route path="/" element={<ErrorBoundary scope="Dashboard"><Dashboard /></ErrorBoundary>} />
-      <Route path="/plans" element={<ErrorBoundary scope="Plans"><Plans /></ErrorBoundary>} />
+      
       <Route path="/availability" element={<ErrorBoundary scope="Availability"><Availability /></ErrorBoundary>} />
       <Route path="/friends" element={<ErrorBoundary scope="Friends"><Friends /></ErrorBoundary>} />
       <Route path="/chat" element={<ErrorBoundary scope="Chat"><Chat /></ErrorBoundary>} />
