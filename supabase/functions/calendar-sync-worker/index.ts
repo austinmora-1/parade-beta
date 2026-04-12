@@ -221,8 +221,9 @@ function isHotelEvent(summary?: string, location?: string): boolean {
 
 function stripHotelBrands(text: string): string {
   return text
-    .replace(/\b(residence\s*inn|courtyard|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|airbnb|vrbo|hotel|motel|hostel|inn|lodge|resort|suites?)\b/gi, '')
+    .replace(/\b(residence\s*inn|courtyard|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|airbnb|vrbo|hotel|motel|hostel|inn|lodge|resort|suites?|stay\s+at)\b/gi, '')
     .replace(/\bby\s+(marriott|hilton|hyatt|wyndham|ihg|accor|choice)\b/gi, '')
+    .replace(/^\s*by\s+/i, '')
     .replace(/\s[-–—]\s/g, ' ')
     .replace(/\s{2,}/g, ' ')
     .trim()
