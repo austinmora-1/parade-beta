@@ -1479,6 +1479,19 @@ export type Database = {
           refresh_token: string
         }[]
       }
+      get_conflicting_trips: {
+        Args: { p_user_id: string }
+        Returns: {
+          trip_a_end: string
+          trip_a_id: string
+          trip_a_location: string
+          trip_a_start: string
+          trip_b_end: string
+          trip_b_id: string
+          trip_b_location: string
+          trip_b_start: string
+        }[]
+      }
       get_dashboard_data: { Args: { p_user_id: string }; Returns: Json }
       get_display_names_for_users: {
         Args: { p_user_ids: string[] }
@@ -1547,6 +1560,8 @@ export type Database = {
           user_id: string
         }[]
       }
+      merge_overlapping_trips: { Args: { p_user_id: string }; Returns: number }
+      normalize_trip_city: { Args: { loc: string }; Returns: string }
       owns_share_code: { Args: { p_share_code: string }; Returns: boolean }
       remove_friendship: {
         Args: { p_friendship_id: string }
