@@ -681,8 +681,8 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                   <p className="text-xs text-muted-foreground">
                     {isLoadingNearby
                       ? 'Finding friends near your destination...'
-                      : nearbyFriendIds !== null && location.trim()
-                        ? `${nearbyFriendIds.length} friend${nearbyFriendIds.length !== 1 ? 's' : ''} in or near ${location.trim()}`
+                      : suggestedFriendIds !== null && location.trim()
+                        ? `${nearbyFriendIds?.length || 0} live${(nearbyFriendIds?.length || 0) === 1 ? 's' : ''} nearby${visitingFriendIds.length > 0 ? ` · ${visitingFriendIds.length} visiting` : ''}`
                         : 'Tag friends you want to hang out with during this trip'
                     }
                   </p>
