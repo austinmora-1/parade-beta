@@ -347,6 +347,8 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   const flightLocationByDate: Map<string, string> = new Map()
   interface FlightInfo { date: string; city: string | null; isReturn: boolean }
   const allFlights: FlightInfo[] = []
+  interface HotelStay { startDate: string; endDate: string; city: string }
+  const hotelStays: HotelStay[] = []
 
   for (const event of events) {
     if (!event.start.dateTime || !event.end.dateTime) {
@@ -357,6 +359,14 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
           ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(s => busySlotsByDate.get(date)!.add(s))
+        }
+        // Check all-day hotel events
+        if (isHotelEvent(event.summary, event.location)) {
+          const hotelCity = extractHotelLocation(event.summary, event.location)
+          if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
+            const endExcl = new Date(event.end.date); endExcl.setDate(endExcl.getDate() - 1)
+            hotelStays.push({ startDate: getDateString(startDate, timezone), endDate: getDateString(endExcl, timezone), city: hotelCity })
+          }
         }
       }
       continue
@@ -377,6 +387,11 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
       if (city && !isReturn) {
         flightLocationByDate.set(dateStr, city)
       }
+    } else if (isHotelEvent(event.summary, event.location)) {
+      const hotelCity = extractHotelLocation(event.summary, event.location)
+      if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
+        hotelStays.push({ startDate: getDateString(startTime, timezone), endDate: getDateString(endTime, timezone), city: hotelCity })
+      }
     }
   }
 
@@ -386,16 +401,32 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
   const outboundFlightDates = new Set(allFlights.filter(f => !f.isReturn && f.city).map(f => f.date))
 
-  // Fill gap days: stop at any other flight date
+  // Fill gap days with one-way flight detection (7 days instead of 30)
   const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
   for (const [outDate, city] of outboundEntries) {
+    let hasReturn = false
+    const maxReturnDate = new Date(outDate + 'T00:00:00Z'); maxReturnDate.setDate(maxReturnDate.getDate() + 30)
+    const maxReturnStr = maxReturnDate.toISOString().split('T')[0]
+    for (const rf of allFlights) {
+      if (rf.date > outDate && rf.date <= maxReturnStr && (rf.isReturn || (!rf.isReturn && rf.city && rf.city !== city))) { hasReturn = true; break }
+    }
+    const fillLimit = hasReturn ? 30 : 7
     const current = new Date(outDate)
     current.setDate(current.getDate() + 1)
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < fillLimit; i++) {
       const dateStr = current.toISOString().split('T')[0]
       if (allFlightDatesSet.has(dateStr)) break
       flightLocationByDate.set(dateStr, city)
       current.setDate(current.getDate() + 1)
+    }
+  }
+
+  // Apply hotel stays (flight dates take priority)
+  const allLocationByDate = new Map(flightLocationByDate)
+  for (const stay of hotelStays) {
+    const dates = getDateRange(stay.startDate, stay.endDate)
+    for (const d of dates) {
+      if (!allLocationByDate.has(d)) allLocationByDate.set(d, stay.city)
     }
   }
 
