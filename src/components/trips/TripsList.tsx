@@ -15,7 +15,11 @@ interface Trip {
   available_slots: string[];
 }
 
-export function TripsList() {
+interface TripsListProps {
+  refreshKey?: number;
+}
+
+export function TripsList({ refreshKey }: TripsListProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -39,7 +43,7 @@ export function TripsList() {
       setLoading(false);
     };
     fetchTrips();
-  }, [user]);
+  }, [user, refreshKey]);
 
   if (loading) {
     return (

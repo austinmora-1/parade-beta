@@ -42,6 +42,7 @@ export default function Availability() {
   const [missingReturnOpen, setMissingReturnOpen] = useState(false);
   const [tripConflicts, setTripConflicts] = useState<TripConflict[]>([]);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [tripsRefreshKey, setTripsRefreshKey] = useState(0);
 
   const checkTripConflicts = useCallback(async () => {
     if (!user) return;
@@ -258,7 +259,7 @@ export default function Availability() {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             {activeTab === 'grid' && <AvailabilityGrid onCreatePlan={(date) => openPlanDialog(date)} />}
-            {activeTab === 'trips' && <TripsList />}
+            {activeTab === 'trips' && <TripsList refreshKey={tripsRefreshKey} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -273,7 +274,7 @@ export default function Availability() {
       <AddTripDialog
         open={tripDialogOpen}
         onOpenChange={setTripDialogOpen}
-        onTripAdded={() => loadProfileAndAvailability()}
+        onTripAdded={() => { loadProfileAndAvailability(); setTripsRefreshKey(k => k + 1); }}
       />
 
       <MissingReturnDialog
