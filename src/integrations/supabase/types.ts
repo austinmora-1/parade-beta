@@ -1394,6 +1394,42 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_intentions: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          social_energy: string | null
+          target_hangouts: number | null
+          updated_at: string
+          user_id: string
+          vibes: string[] | null
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          social_energy?: string | null
+          target_hangouts?: number | null
+          updated_at?: string
+          user_id: string
+          vibes?: string[] | null
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          social_energy?: string | null
+          target_hangouts?: number | null
+          updated_at?: string
+          user_id?: string
+          vibes?: string[] | null
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       friendships_incoming: {
