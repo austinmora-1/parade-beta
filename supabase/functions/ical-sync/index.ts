@@ -228,6 +228,19 @@ function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   return false
 }
 
+// Check if a date falls after a return-home flight but before the next outbound flight
+function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDates: Set<string>): boolean {
+  let latestReturn: string | null = null
+  for (const rd of returnDates) {
+    if (rd <= dateStr && (!latestReturn || rd > latestReturn)) latestReturn = rd
+  }
+  if (!latestReturn) return false
+  for (const od of outboundDates) {
+    if (od > latestReturn && od <= dateStr) return false
+  }
+  return true
+}
+
 // ── Time Slot Helpers (mirrored from google-calendar-sync) ──────────────────
 
 function getTimeSlot(hour: number): string {
