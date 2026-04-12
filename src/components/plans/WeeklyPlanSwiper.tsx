@@ -1,6 +1,6 @@
 import { useMemo, useRef, useCallback, useState, Fragment } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, ChevronDown, Merge, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2 } from 'lucide-react';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
@@ -25,9 +25,10 @@ interface WeeklyPlanSwiperProps {
   onEditPlan?: (plan: Plan) => void;
   onDeletePlan?: (id: string) => void;
   onMergeSelected?: (planIds: string[]) => void;
+  onSharePlan?: (plan: Plan) => void;
 }
 
-export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected }: WeeklyPlanSwiperProps) {
+export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan }: WeeklyPlanSwiperProps) {
   const navigate = useNavigate();
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -85,6 +86,8 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      // Auto-exit select mode when nothing selected
+      if (next.size === 0) setSelectMode(false);
       return next;
     });
   };
@@ -125,10 +128,37 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
     }
   }, []);
 
-  const handleCardLongPress = (planId: string) => {
+  const handleCardTap = (planId: string) => {
     if (!selectMode) {
       setSelectMode(true);
       setSelectedIds(new Set([planId]));
+    } else {
+      toggleSelect(planId);
+    }
+  };
+
+  const selectedPlans = useMemo(() => {
+    return plans.filter(p => selectedIds.has(p.id));
+  }, [plans, selectedIds]);
+
+  const handleEditSelected = () => {
+    if (selectedPlans.length === 1 && onEditPlan) {
+      onEditPlan(selectedPlans[0]);
+      exitSelectMode();
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedPlans.length >= 1 && onDeletePlan) {
+      for (const p of selectedPlans) onDeletePlan(p.id);
+      exitSelectMode();
+    }
+  };
+
+  const handleShareSelected = () => {
+    if (selectedPlans.length === 1 && onSharePlan) {
+      onSharePlan(selectedPlans[0]);
+      exitSelectMode();
     }
   };
 
@@ -160,21 +190,49 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         </Button>
       </div>
 
-      {/* Select mode banner */}
+      {/* Selection action banner */}
       <AnimatePresence>
         {selectMode && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/20 px-3 py-2"
+            className="rounded-xl bg-primary/10 border border-primary/20 px-3 py-2 space-y-2"
           >
-            <span className="text-xs font-medium text-primary">
-              {selectedIds.size} selected — tap cards to select
-            </span>
-            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={exitSelectMode}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-primary">
+                {selectedIds.size} plan{selectedIds.size !== 1 ? 's' : ''} selected
+              </span>
+              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={exitSelectMode}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {selectedIds.size === 1 && onEditPlan && (
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs flex-1" onClick={handleEditSelected}>
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              )}
+              {selectedIds.size >= 2 && onMergeSelected && (
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs flex-1" onClick={handleMerge}>
+                  <Merge className="h-3.5 w-3.5" />
+                  Merge
+                </Button>
+              )}
+              {selectedIds.size === 1 && onSharePlan && (
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs flex-1" onClick={handleShareSelected}>
+                  <Share2 className="h-3.5 w-3.5" />
+                  Share
+                </Button>
+              )}
+              {onDeletePlan && (
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs flex-1 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30" onClick={handleDeleteSelected}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -188,36 +246,16 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         selectedIds={selectedIds}
         toggleSelect={toggleSelect}
         onEditPlan={onEditPlan}
-        onCardLongPress={handleCardLongPress}
+        onCardTap={handleCardTap}
         navigate={navigate}
       />
-
-      {/* Merge FAB when in select mode with 2+ selected */}
-      <AnimatePresence>
-        {selectMode && selectedIds.size >= 2 && onMergeSelected && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-30 md:bottom-8"
-          >
-            <Button
-              onClick={handleMerge}
-              className="gap-2 rounded-full px-6 shadow-lg"
-            >
-              <Merge className="h-4 w-4" />
-              Merge {selectedIds.size} Plans
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
 
 // --- Collapsible past days section ---
 
-function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardLongPress, navigate }: {
+function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, navigate }: {
   day: Date;
   dayPlans: Plan[];
   isToday: boolean;
@@ -226,7 +264,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   selectedIds: Set<string>;
   toggleSelect: (id: string) => void;
   onEditPlan?: (plan: Plan) => void;
-  onCardLongPress: (id: string) => void;
+  onCardTap: (id: string) => void;
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const key = format(day, 'yyyy-MM-dd');
@@ -254,11 +292,9 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
               selectMode={selectMode}
               selected={selectedIds.has(dayPlans[0].id)}
               onTap={() => {
-                if (selectMode) { toggleSelect(dayPlans[0].id); return; }
-                const planIsPast = (dayPlans[0].endDate || dayPlans[0].date) < new Date(new Date().setHours(0, 0, 0, 0));
-                if (planIsPast) { navigate(`/plan/${dayPlans[0].id}`); } else { onEditPlan?.(dayPlans[0]); }
+                onCardTap(dayPlans[0].id);
               }}
-              onLongPress={() => onCardLongPress(dayPlans[0].id)}
+              onLongPress={() => onCardTap(dayPlans[0].id)}
             />
           ) : (
             <DeckOfCards
@@ -266,8 +302,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
               selectMode={selectMode}
               selectedIds={selectedIds}
               toggleSelect={toggleSelect}
-              onEditPlan={onEditPlan}
-              onCardLongPress={onCardLongPress}
+              onCardTap={onCardTap}
               navigate={navigate}
             />
           )}
@@ -281,7 +316,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   );
 }
 
-function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardLongPress, navigate }: {
+function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, navigate }: {
   weekDays: Date[];
   today: Date;
   plansByDay: Map<string, Plan[]>;
@@ -289,7 +324,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   selectedIds: Set<string>;
   toggleSelect: (id: string) => void;
   onEditPlan?: (plan: Plan) => void;
-  onCardLongPress: (id: string) => void;
+  onCardTap: (id: string) => void;
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const [showPast, setShowPast] = useState(false);
@@ -337,7 +372,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
                 selectedIds={selectedIds}
                 toggleSelect={toggleSelect}
                 onEditPlan={onEditPlan}
-                onCardLongPress={onCardLongPress}
+                onCardTap={onCardTap}
                 navigate={navigate}
               />
             </motion.div>
@@ -360,7 +395,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
             selectedIds={selectedIds}
             toggleSelect={toggleSelect}
             onEditPlan={onEditPlan}
-            onCardLongPress={onCardLongPress}
+            onCardTap={onCardTap}
             navigate={navigate}
           />
         );
@@ -370,13 +405,12 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
 }
 
 // Deck of cards component for multiple plans on same day
-function DeckOfCards({ plans, selectMode, selectedIds, toggleSelect, onEditPlan, onCardLongPress, navigate }: {
+function DeckOfCards({ plans, selectMode, selectedIds, toggleSelect, onCardTap, navigate }: {
   plans: Plan[];
   selectMode: boolean;
   selectedIds: Set<string>;
   toggleSelect: (id: string) => void;
-  onEditPlan?: (plan: Plan) => void;
-  onCardLongPress: (id: string) => void;
+  onCardTap: (id: string) => void;
   navigate: ReturnType<typeof useNavigate>;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -428,11 +462,9 @@ function DeckOfCards({ plans, selectMode, selectedIds, toggleSelect, onEditPlan,
               selected={selectedIds.has(plan.id)}
               onTap={() => {
                 if (!isActive) { setActiveIndex(idx); return; }
-                if (selectMode) { toggleSelect(plan.id); return; }
-                const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
-                if (planIsPast) { navigate(`/plan/${plan.id}`); } else { onEditPlan?.(plan); }
+                onCardTap(plan.id);
               }}
-              onLongPress={() => onCardLongPress(plan.id)}
+              onLongPress={() => onCardTap(plan.id)}
             />
           </motion.div>
         );
