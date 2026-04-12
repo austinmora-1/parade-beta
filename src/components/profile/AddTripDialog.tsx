@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, eachDayOfInterval, isAfter, isBefore, startOfDay } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-import { CalendarIcon, Plane, Trash2, X, Users, Clock, CheckSquare, Square } from 'lucide-react';
+import { CalendarIcon, Plane, Trash2, X, Users, Clock, CheckSquare, Square, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -79,6 +79,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [location, setLocation] = useState('');
   const [daySlots, setDaySlots] = useState<DaySlotsMap>(new Map());
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [priorityFriendIds, setPriorityFriendIds] = useState<string[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -498,14 +499,28 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                       const allSelected = slots.size === ALL_SLOTS.length;
 
                       return (
-                        <div key={dateKey} className="rounded-lg border border-border p-2.5 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold">
-                              {format(day, 'EEE, MMM d')}
-                            </span>
+                        <div key={dateKey} className="rounded-lg border border-border overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedDays(prev => {
+                              const next = new Set(prev);
+                              next.has(dateKey) ? next.delete(dateKey) : next.add(dateKey);
+                              return next;
+                            })}
+                            className="flex w-full items-center justify-between p-2.5 hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expandedDays.has(dateKey) && "rotate-180")} />
+                              <span className="text-xs font-semibold">
+                                {format(day, 'EEE, MMM d')}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {slots.size}/{ALL_SLOTS.length} slots
+                              </span>
+                            </div>
                             <button
                               type="button"
-                              onClick={() => toggleAllSlotsForDay(dateKey)}
+                              onClick={(e) => { e.stopPropagation(); toggleAllSlotsForDay(dateKey); }}
                               className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                             >
                               {allSelected ? (
@@ -515,29 +530,31 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                               )}
                               {allSelected ? 'All' : 'None'}
                             </button>
-                          </div>
-                          <div className="grid grid-cols-3 gap-1">
-                            {ALL_SLOTS.map(slot => {
-                              const info = TIME_SLOT_LABELS[slot];
-                              const isSelected = slots.has(slot);
-                              return (
-                                <button
-                                  key={slot}
-                                  type="button"
-                                  onClick={() => toggleDaySlot(dateKey, slot)}
-                                  className={cn(
-                                    "rounded-md px-1.5 py-1 text-center transition-colors border",
-                                    isSelected
-                                      ? "bg-availability-available-light border-availability-available text-foreground"
-                                      : "bg-muted/30 border-transparent text-muted-foreground"
-                                  )}
-                                >
-                                  <span className="text-[10px] font-medium leading-tight block">{info.label}</span>
-                                  <span className="text-[8px] opacity-60 leading-tight block">{info.time}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
+                          </button>
+                          {expandedDays.has(dateKey) && (
+                            <div className="grid grid-cols-3 gap-1 px-2.5 pb-2.5">
+                              {ALL_SLOTS.map(slot => {
+                                const info = TIME_SLOT_LABELS[slot];
+                                const isSelected = slots.has(slot);
+                                return (
+                                  <button
+                                    key={slot}
+                                    type="button"
+                                    onClick={() => toggleDaySlot(dateKey, slot)}
+                                    className={cn(
+                                      "rounded-md px-1.5 py-1 text-center transition-colors border",
+                                      isSelected
+                                        ? "bg-availability-available-light border-availability-available text-foreground"
+                                        : "bg-muted/30 border-transparent text-muted-foreground"
+                                    )}
+                                  >
+                                    <span className="text-[10px] font-medium leading-tight block">{info.label}</span>
+                                    <span className="text-[8px] opacity-60 leading-tight block">{info.time}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
