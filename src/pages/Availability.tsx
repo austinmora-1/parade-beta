@@ -73,13 +73,8 @@ export default function Availability() {
   }, [deletePlan]);
 
   const handleSharePlan = useCallback((plan: any) => {
-    const text = `${plan.title || plan.activity}`;
-    if (navigator.share) {
-      navigator.share({ title: 'Plan', text, url: `${window.location.origin}/plan/${plan.id}` }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(`${window.location.origin}/plan/${plan.id}`);
-      toast.success('Link copied to clipboard');
-    }
+    setSharePlanId(plan.id);
+    setSharePlanTitle(plan.title || plan.activity);
   }, []);
 
   const handleMergeSelected = useCallback((planIds: string[]) => {
