@@ -1,62 +1,98 @@
 
 
-## Weekly Social Intentions & Sunday Nudge
+## Brand Revamp Plan — Parade Brand Guide V1.0
 
-### Overview
-Add a "Weekly Intentions" feature that lets users set their social goals and vibes for the upcoming week. On Sunday afternoons, a push notification nudges users to complete their weekly planning ritual.
+### Summary
 
-### Database Changes
+Overhaul the app's visual identity to match the new brand guide: swap the color palette from forest green to a coral-led warm palette, replace Cal Sans with Fraunces for display type, and update component styles across the app.
 
-**New table: `weekly_intentions`**
-- `id` (uuid, PK)
-- `user_id` (uuid, NOT NULL)
-- `week_start` (date, NOT NULL) — Monday of the target week
-- `social_energy` (text) — e.g. "high", "medium", "low"
-- `target_hangouts` (integer) — how many times they want to hang out
-- `vibes` (text[]) — vibes they're feeling for the week (social, chill, athletic, productive)
-- `notes` (text) — free-form intention text
-- `created_at`, `updated_at` (timestamptz)
-- UNIQUE(user_id, week_start)
-- RLS: users can CRUD their own rows
+---
 
-### Frontend Components
+### Brand Guide Key Specs
 
-**1. `WeeklyIntentionsSheet` (new component)**
-A bottom sheet / dialog that guides users through setting their week:
-- **Social energy level**: Low / Medium / High slider or 3-option selector
-- **Target hangouts**: "How many times do you want to see friends?" (1-5+ selector)
-- **Weekly vibes**: Multi-select from existing vibe types (social, chill, athletic, productive)
-- **Optional note**: Free-text field for personal intention ("Try a new restaurant", "Catch up with college friends")
-- Save button persists to `weekly_intentions` table
+| Element | Current | New (Brand Guide) |
+|---|---|---|
+| **Primary color** | Forest green `hsl(150 45% 36%)` | Parade Green `#3D8C6C` |
+| **Accent** | Green-based | Parade Coral `#FF6B5B` |
+| **Background** | White `hsl(0 0% 100%)` | Warm Cream `#FFF8F2` |
+| **Secondary colors** | Blue `hsl(200 40% 35%)` | Sunset Peach `#FFAD9E`, Open Sky `#9DD4F0`, Go Mint `#A8E6CF`, Sunshine `#FFE156`, Meadow Green `#72C4A2` |
+| **Display font** | Cal Sans 600 | Fraunces 900, tracking -0.02em, leading 110% |
+| **Body font** | Lexend 300 | Lexend 300 (same — keep) |
+| **Corners** | Rounded | Rounded (keep, already aligned) |
 
-**2. Dashboard integration**
-- On the Dashboard, if it's Sunday-Thursday and no intention is set for the current/upcoming week, show a subtle card below the greeting: "Set your intentions for the week →"
-- Once set, show a compact summary widget: "This week: 🔥 High energy · 3 hangouts · Social, Athletic"
-- Tapping the summary reopens the sheet to edit
+**Color distribution**: Cream/white ~70%, Coral ~15% (hero/CTAs), accent colors ~15% (celebrations, badges, highlights).
 
-**3. Sunday afternoon push nudge**
-- New edge function `weekly-intention-nudge` triggered via cron every Sunday at 2 PM UTC (adjustable)
-- Queries users who haven't set intentions for the upcoming week (next Monday's week_start)
-- Sends a push notification: "Plan your week! Set your social intentions for the week ahead 🗓️"
-- Respects user notification preferences (reuse `plan_reminders` preference or add a new one)
-- Links to open the intentions sheet on tap
+---
 
-### Files to Create/Modify
+### Implementation Steps
 
-| File | Action |
-|------|--------|
-| Migration SQL | Create `weekly_intentions` table with RLS |
-| `src/hooks/useWeeklyIntentions.ts` | Hook: fetch/upsert current week's intentions |
-| `src/components/dashboard/WeeklyIntentionsSheet.tsx` | The planning UI sheet |
-| `src/components/dashboard/WeeklyIntentionsSummary.tsx` | Compact dashboard widget |
-| `src/pages/Dashboard.tsx` | Add intention card/summary to dashboard |
-| `supabase/functions/weekly-intention-nudge/index.ts` | Sunday push notification edge function |
-| Cron job SQL (via insert tool) | Schedule the Sunday nudge |
+#### Step 1: Update CSS variables and Tailwind config (`src/index.css`, `tailwind.config.ts`)
 
-### Technical Details
-- Week starts on Monday (consistent with existing `startOfWeek` usage with `weekStartsOn: 1`)
-- The intentions sheet uses existing UI primitives (Sheet, Button, Badge)
-- Vibe selection reuses `VIBE_CONFIG` and `VIBE_CHIP_STYLES` from the existing vibe system
-- Push notifications use the existing `web-push` infrastructure from `send-push-notification`
-- The cron job runs at ~2 PM UTC on Sundays; the edge function checks each user's timezone to only nudge during their local afternoon window (1-5 PM)
+- Replace `:root` CSS custom properties with new hex values converted to HSL:
+  - `--background` → Warm Cream `#FFF8F2`
+  - `--primary` → Parade Green `#3D8C6C`
+  - `--primary-glow` → Meadow Green `#72C4A2`
+  - `--secondary` → Parade Coral `#FF6B5B`
+  - `--accent` → light coral tint
+  - `--foreground` → dark warm neutral
+  - `--card` → slightly warm white
+  - `--muted` → warm cream variant
+- Add new brand tokens: `--coral`, `--sunset-peach`, `--open-sky`, `--go-mint`, `--sunshine`, `--meadow-green`
+- Update gradient variables to use coral → peach → green transitions
+- Update shadow tints from green to warm coral/peach
+- Update dark mode palette correspondingly (darker warm tones)
+- Update sidebar colors to match warm cream palette
+
+#### Step 2: Swap display font from Cal Sans to Fraunces
+
+- Replace Cal Sans `@font-face` in `src/index.css` with Fraunces (Google Font, weight 900)
+- Add Fraunces to `index.html` `<link>` tags
+- Update `tailwind.config.ts` font-family `display` from `'Cal Sans'` to `'Fraunces'`
+- Update base styles: `h1-h6, .font-display` to use `font-weight: 900`, `letter-spacing: -0.02em`, `line-height: 1.1`
+
+#### Step 3: Update the ParadeWordmark component
+
+- Update `ParadeWordmark.tsx` colors to use Parade Green or coral instead of the current green/white logic
+- Keep Bungee Shade font for wordmark (brand identity element)
+
+#### Step 4: Update button and component accent colors
+
+- `button.tsx`: Update `gradient` variant to use coral-to-peach gradient; update `default` variant glow to coral tint
+- `card.tsx`: Ensure card backgrounds use the warm cream token
+- `input.tsx`: Update focus ring to Parade Green
+
+#### Step 5: Update activity, availability, and vibe colors
+
+- Map activity colors to brand palette where possible (coral, peach, mint, sky, sunshine)
+- Update vibe colors: social → Coral, chill → Open Sky, athletic → Go Mint
+
+#### Step 6: Update confetti and celebration moments
+
+- Update `ConfettiBackground.tsx` to use the brand palette (coral, peach, mint, sunshine, sky)
+- Ensure plan-confirmed confetti uses the full accent palette per brand guide
+
+#### Step 7: Landing page and key screens
+
+- Update hero gradients on Landing page to warm cream → coral → green
+- Update onboarding screens to reflect new palette
+- Update login/signup pages
+
+#### Step 8: Dark mode pass
+
+- Derive dark mode from the new palette: deep warm backgrounds, muted coral/green accents
+- Ensure sufficient contrast for all text on dark backgrounds
+
+---
+
+### What stays the same
+- Lexend body font (already matches brand guide)
+- Rounded corners / border-radius system
+- Component architecture and layout
+- Bungee Shade wordmark font
+- Ellie mascot usage
+
+### Estimated scope
+- ~3 core files heavily modified (index.css, tailwind.config.ts, index.html)
+- ~5-8 component files with color/font tweaks
+- Dark mode calibration pass
 
