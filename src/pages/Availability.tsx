@@ -5,6 +5,7 @@ import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus, Merge } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
@@ -19,6 +20,7 @@ export default function Availability() {
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const plans = usePlannerStore((s) => s.plans);
+  const deletePlan = usePlannerStore((s) => s.deletePlan);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
   const [editPlan, setEditPlan] = useState<any>(undefined);
@@ -60,6 +62,21 @@ export default function Availability() {
     setEditPlan(plan);
     setPlanDefaultDate(plan.date);
     setPlanDialogOpen(true);
+  }, []);
+
+  const handleDeletePlan = useCallback((id: string) => {
+    deletePlan(id);
+    toast.success('Plan deleted');
+  }, [deletePlan]);
+
+  const handleSharePlan = useCallback((plan: any) => {
+    const text = `${plan.title || plan.activity}`;
+    if (navigator.share) {
+      navigator.share({ title: 'Plan', text, url: `${window.location.origin}/plan/${plan.id}` }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(`${window.location.origin}/plan/${plan.id}`);
+      toast.success('Link copied to clipboard');
+    }
   }, []);
 
   const handleMergeSelected = useCallback((planIds: string[]) => {
@@ -122,7 +139,9 @@ export default function Availability() {
         weekOffset={weekOffset}
         onWeekChange={setWeekOffset}
         onEditPlan={handleEditPlan}
+        onDeletePlan={handleDeletePlan}
         onMergeSelected={handleMergeSelected}
+        onSharePlan={handleSharePlan}
       />
 
       <CreatePlanDialog
