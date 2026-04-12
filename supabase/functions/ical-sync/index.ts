@@ -86,9 +86,6 @@ function unescapeICS(text: string): string {
 }
 
 function parseICSDate(line: string): { date: Date; allDay: boolean } | null {
-  // DTSTART;VALUE=DATE:20250301
-  // DTSTART;TZID=America/New_York:20250301T090000
-  // DTSTART:20250301T090000Z
   const colonIdx = line.indexOf(':')
   if (colonIdx === -1) return null
 
@@ -98,14 +95,12 @@ function parseICSDate(line: string): { date: Date; allDay: boolean } | null {
   const allDay = params.includes('VALUE=DATE') && !params.includes('VALUE=DATE-TIME')
 
   if (allDay) {
-    // YYYYMMDD
     const y = parseInt(value.slice(0, 4))
     const m = parseInt(value.slice(4, 6)) - 1
     const d = parseInt(value.slice(6, 8))
     return { date: new Date(Date.UTC(y, m, d)), allDay: true }
   }
 
-  // YYYYMMDDTHHMMSS or YYYYMMDDTHHMMSSZ
   const y = parseInt(value.slice(0, 4))
   const m = parseInt(value.slice(4, 6)) - 1
   const d = parseInt(value.slice(6, 8))
@@ -117,17 +112,12 @@ function parseICSDate(line: string): { date: Date; allDay: boolean } | null {
     return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
   }
 
-  // Extract TZID (e.g. DTSTART;TZID=America/New_York:20260226T073000)
   const tzidMatch = params.match(/TZID=([^;:]+)/)
   const tzid = tzidMatch ? tzidMatch[1] : undefined
 
   if (tzid) {
-    // The parsed h/min/s are LOCAL to the TZID timezone.
-    // Convert to proper UTC using Intl offset computation.
     try {
-      // Create a "guess" Date using the local components as if they were UTC
       const guess = new Date(Date.UTC(y, m, d, h, min, s))
-      // Format that guess in the target timezone to see what local time it maps to
       const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: tzid,
         year: 'numeric', month: '2-digit', day: '2-digit',
@@ -138,29 +128,24 @@ function parseICSDate(line: string): { date: Date; allDay: boolean } | null {
       const getPart = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0')
       const tzHour = getPart('hour') === 24 ? 0 : getPart('hour')
 
-      // Build a Date from the timezone-local representation of our guess
       const localAsUtc = new Date(Date.UTC(
         getPart('year'), getPart('month') - 1, getPart('day'),
         tzHour, getPart('minute'), getPart('second')
       ))
 
-      // offset = what-UTC-looks-like-in-TZ minus actual-UTC
       const offsetMs = localAsUtc.getTime() - guess.getTime()
-      // Correct: the real UTC = guess(local-components-as-UTC) - offset
       const correctedUtc = new Date(guess.getTime() - offsetMs)
 
       return { date: correctedUtc, allDay: false }
     } catch {
-      // If TZID is unrecognized, fall back to treating as UTC
       return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
     }
   }
 
-  // No timezone info — treat as UTC
   return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
 }
 
-// ── Airport / Flight Detection (mirrored from google-calendar-sync) ─────────
+// ── Airport / Flight Detection ─────────────────────────────────────────────
 
 const AIRPORT_CITY_MAP: Record<string, string> = {
   ATL: 'Atlanta', BOS: 'Boston', BWI: 'Baltimore', CLT: 'Charlotte', DCA: 'Washington DC',
@@ -217,6 +202,33 @@ function isFlightEvent(summary?: string): boolean {
   return false
 }
 
+// ── Hotel / Reservation Detection ───────────────────────────────────────────
+
+const HOTEL_REGEX = /\b(hotel|airbnb|vrbo|booking|reservation|check[\s-]?in|check[\s-]?out|stay\s+at|lodging|accommodation|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|courtyard|residence\s*inn|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|motel|hostel|inn\b|lodge\b)\b/i
+
+function isHotelEvent(summary?: string, location?: string): boolean {
+  if (!summary) return false
+  if (HOTEL_REGEX.test(summary)) return true
+  if (location && HOTEL_REGEX.test(location)) return true
+  return false
+}
+
+function extractHotelLocation(summary?: string, location?: string): string | null {
+  if (location && location.trim().length > 0) {
+    const parts = location.split(',').map(p => p.trim())
+    if (parts.length >= 2) {
+      return parts.length >= 3 ? parts[parts.length - 2] : parts[0]
+    }
+    return location.trim()
+  }
+  const inMatch = summary?.match(/\b(?:in|at)\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–—]|\s*\(|$)/i)
+  if (inMatch) {
+    const city = inMatch[1].trim()
+    if (city.length >= 3 && !HOTEL_REGEX.test(city)) return city
+  }
+  return null
+}
+
 function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   if (!city || !homeAddress) return false
   const normCity = city.toLowerCase().trim()
@@ -228,7 +240,6 @@ function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   return false
 }
 
-// Check if a date falls after a return-home flight but before the next outbound flight
 function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDates: Set<string>): boolean {
   let latestReturn: string | null = null
   for (const rd of returnDates) {
@@ -241,7 +252,7 @@ function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDa
   return true
 }
 
-// ── Time Slot Helpers (mirrored from google-calendar-sync) ──────────────────
+// ── Time Slot Helpers ──────────────────────────────────────────────────────
 
 function getTimeSlot(hour: number): string {
   if (hour >= 6 && hour < 9) return 'early_morning'
@@ -292,23 +303,30 @@ function getEventDates(startTime: Date, endTime: Date, timezone?: string): strin
   return dates
 }
 
-// Format a Date to HH:MM in the given timezone
 function formatTimeHHMM(date: Date, timezone?: string): string {
   const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: false }
   if (timezone) opts.timeZone = timezone
   return new Intl.DateTimeFormat('en-GB', opts).format(date)
 }
 
-// ── Activity Classifier (same as gcal sync) ─────────────────────────────────
+function getDateRange(startDate: string, endDate: string): string[] {
+  const dates: string[] = []
+  const current = new Date(startDate + 'T00:00:00Z')
+  const end = new Date(endDate + 'T00:00:00Z')
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0])
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
+}
+
+// ── Activity Classifier ─────────────────────────────────────────────────────
 
 function classifyActivity(summary?: string): string {
   if (!summary) return 'hanging-out'
   const s = summary.toLowerCase()
 
-  // ── Flights ──
   if (/\bflight\b/.test(s)) return 'flight'
-
-  // ── Social ──
   if (/\b(drinks|happy\s*hour|bar|cocktail|cocktails|beer|beers|pub|brewery|nightclub|club)\b/.test(s)) return 'drinks'
   if (/\b(museum|exhibit|exhibition|gallery)\b/.test(s)) return 'museum'
   if (/\b(sightsee|sightseeing|tourist|tour)\b/.test(s)) return 'sightseeing'
@@ -328,8 +346,6 @@ function classifyActivity(summary?: string): string {
   if (/\b(opera)\b/.test(s)) return 'opera'
   if (/\b(comic[\s-]*con|cosplay|convention|con\b|anime\s*expo)\b/.test(s)) return 'comic-con'
   if (/\b(hang|hanging\s*out|get[\s-]*together|kickback|hangout)\b/.test(s)) return 'hanging-out'
-
-  // ── Chill ──
   if (/\b(listen|music|playlist|spotify|vinyl|record)\b/.test(s) && !/\b(concert|live)\b/.test(s)) return 'listening-music'
   if (/\b(movie|movies|cinema|film|screening)\b/.test(s)) return 'movies'
   if (/\b(watch|tv|netflix|hulu|streaming|binge|show|series)\b/.test(s) && !/\b(sports|game|match)\b/.test(s)) return 'watching-tv'
@@ -337,8 +353,6 @@ function classifyActivity(summary?: string): string {
   if (/\b(grill|grilling|bbq|barbecue|cookout)\b/.test(s)) return 'grilling'
   if (/\b(theater|theatre|play|musical|show|performance)\b/.test(s)) return 'movies'
   if (/\b(read|reading|book\s*club|library)\b/.test(s)) return 'reading'
-
-  // ── Athletic ──
   if (/\b(surf|surfing|bodyboard)\b/.test(s)) return 'surfing'
   if (/\b(gym|weight\s*lifting|weightlifting|lifting|crossfit|cross[\s-]?fit|strength|conditioning|bootcamp|boot\s*camp|f45|orangetheory|equinox)\b/.test(s)) return 'gym'
   if (/\b(yoga|pilates|barre|stretching)\b/.test(s)) return 'yoga'
@@ -348,8 +362,6 @@ function classifyActivity(summary?: string): string {
   if (/\b(hike|hiking|trail|mountain|backpack)\b/.test(s)) return 'hiking'
   if (/\b(walk|walking|stroll|jaywalking)\b/.test(s)) return 'jaywalking'
   if (/\b(workout|exercise|fitness|hiit|tabata|cardio|calisthenics|zumba|spin|spinning|rowing|cycling|bike|biking|boxing|kickboxing|martial\s*arts|karate|judo|jiu[\s-]?jitsu|mma|basketball|soccer|football|tennis|golf|volleyball|baseball|hockey|lacrosse|rugby|cricket|athletics|peloton|soulcycle|class\s*pass|classpass|spartan|triathlon|obstacle)\b/.test(s)) return 'gym'
-
-  // ── Productive ──
   if (/\b(pet|pets|feed|feeding|cat|fish\s*tank)\b/.test(s) && /\b(feed|care|sitting)\b/.test(s)) return 'feeding-pets'
   if (/\b(dog\s*walk|walk\s*(the\s*)?dog|dog\s*park)\b/.test(s)) return 'walking-dog'
   if (/\b(volunteer|volunteering|charity|fundraiser|community\s*service)\b/.test(s)) return 'volunteering'
@@ -357,7 +369,6 @@ function classifyActivity(summary?: string): string {
   if (/\b(dj|djing|turntable|mix|mixing\s*music)\b/.test(s)) return 'amateur-djing'
   if (/\b(shop|shopping|grocery|groceries|market|mall|store|target|walmart|costco|trader|whole\s*foods)\b/.test(s)) return 'shopping'
 
-  // ── Fallback ──
   return 'hanging-out'
 }
 
@@ -471,6 +482,10 @@ Deno.serve(async (req) => {
     const allFlights: FlightInfo[] = []
     const flightLocationByDate: Map<string, string> = new Map()
 
+    // Hotel detection
+    interface HotelStay { startDate: string; endDate: string; city: string }
+    const hotelStays: HotelStay[] = []
+
     for (const event of events) {
       if (event.isAllDay) {
         const endExclusive = new Date(event.dtend)
@@ -481,6 +496,19 @@ Deno.serve(async (req) => {
           ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(
             slot => busySlotsByDate.get(date)!.add(slot)
           )
+        }
+        // Check if all-day event is a hotel stay
+        if (isHotelEvent(event.summary, event.location)) {
+          const hotelCity = extractHotelLocation(event.summary, event.location)
+          if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
+            const endExcl = new Date(event.dtend)
+            endExcl.setDate(endExcl.getDate() - 1)
+            hotelStays.push({
+              startDate: getDateString(event.dtstart, timezone),
+              endDate: getDateString(endExcl, timezone),
+              city: hotelCity,
+            })
+          }
         }
         continue
       }
@@ -501,6 +529,16 @@ Deno.serve(async (req) => {
         if (city && !isReturn) {
           flightLocationByDate.set(dateStr, city)
         }
+      } else if (isHotelEvent(event.summary, event.location)) {
+        // Non-all-day hotel event
+        const hotelCity = extractHotelLocation(event.summary, event.location)
+        if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
+          hotelStays.push({
+            startDate: getDateString(event.dtstart, timezone),
+            endDate: getDateString(event.dtend, timezone),
+            city: hotelCity,
+          })
+        }
       }
     }
 
@@ -509,15 +547,59 @@ Deno.serve(async (req) => {
     const allFlightDatesSet = new Set(allFlights.map(f => f.date))
     const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
     const outboundFlightDates = new Set(allFlights.filter(f => !f.isReturn && f.city).map(f => f.date))
+
+    // Detect one-way flights
+    interface PendingReturnTrip { destination: string; departureDate: string }
+    const pendingReturnTrips: PendingReturnTrip[] = []
     const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+
     for (const [outDate, city] of outboundEntries) {
-      const current = new Date(outDate)
-      current.setDate(current.getDate() + 1)
-      for (let i = 0; i < 30; i++) {
-        const dateStr = current.toISOString().split('T')[0]
-        if (allFlightDatesSet.has(dateStr)) break
-        flightLocationByDate.set(dateStr, city)
+      let hasReturn = false
+      const maxReturnDate = new Date(outDate + 'T00:00:00Z')
+      maxReturnDate.setDate(maxReturnDate.getDate() + 30)
+      const maxReturnStr = maxReturnDate.toISOString().split('T')[0]
+
+      for (const rf of allFlights) {
+        if (rf.date > outDate && rf.date <= maxReturnStr && rf.isReturn) {
+          hasReturn = true
+          break
+        }
+        if (rf.date > outDate && rf.date <= maxReturnStr && !rf.isReturn && rf.city && rf.city !== city) {
+          hasReturn = true
+          break
+        }
+      }
+
+      if (hasReturn) {
+        const current = new Date(outDate)
         current.setDate(current.getDate() + 1)
+        for (let i = 0; i < 30; i++) {
+          const dateStr = current.toISOString().split('T')[0]
+          if (allFlightDatesSet.has(dateStr)) break
+          flightLocationByDate.set(dateStr, city)
+          current.setDate(current.getDate() + 1)
+        }
+      } else {
+        const current = new Date(outDate)
+        current.setDate(current.getDate() + 1)
+        for (let i = 0; i < 7; i++) {
+          const dateStr = current.toISOString().split('T')[0]
+          if (allFlightDatesSet.has(dateStr)) break
+          flightLocationByDate.set(dateStr, city)
+          current.setDate(current.getDate() + 1)
+        }
+        pendingReturnTrips.push({ destination: city, departureDate: outDate })
+      }
+    }
+
+    // Apply hotel stays (flight dates take priority)
+    const allLocationByDate = new Map(flightLocationByDate)
+    for (const stay of hotelStays) {
+      const dates = getDateRange(stay.startDate, stay.endDate)
+      for (const d of dates) {
+        if (!allLocationByDate.has(d)) {
+          allLocationByDate.set(d, stay.city)
+        }
       }
     }
 
@@ -540,15 +622,15 @@ Deno.serve(async (req) => {
       const slotUpdates: Record<string, boolean> = {}
       for (const slot of slots) slotUpdates[slot] = false
 
-      const flightCity = flightLocationByDate.get(date)
+      const locationCity = allLocationByDate.get(date)
       const existingRow = existingAvailabilityByDate.get(date)
       const isReturnDate = returnHomeDates.has(date)
-      const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
-      const shouldClearAfterReturn = !flightCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
+      const shouldClearStaleHomeAway = !locationCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+      const shouldClearAfterReturn = !locationCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
       const locationFields: Record<string, string | null> = {}
-      if (flightCity) {
+      if (locationCity) {
         locationFields.location_status = 'away'
-        locationFields.trip_location = flightCity
+        locationFields.trip_location = locationCity
       } else if (isReturnDate || shouldClearStaleHomeAway || shouldClearAfterReturn) {
         locationFields.location_status = 'home'
         locationFields.trip_location = null
@@ -568,8 +650,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update location for flight dates without busy slots
-    for (const [date, city] of flightLocationByDate) {
+    // Update location for flight/hotel dates without busy slots
+    for (const [date, city] of allLocationByDate) {
       if (busySlotsByDate.has(date)) continue
       const { error } = await adminClient
         .from('availability')
@@ -577,13 +659,13 @@ Deno.serve(async (req) => {
           { user_id: userId, date, location_status: 'away', trip_location: city },
           { onConflict: 'user_id,date', ignoreDuplicates: false }
         )
-      if (error) console.error('Error upserting flight location for', date, ':', error)
+      if (error) console.error('Error upserting location for', date, ':', error)
       else updatedCount++
     }
 
     // Clean stale home-city away statuses
     for (const existingRow of (existingAvailabilityRows || [])) {
-      if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
+      if (busySlotsByDate.has(existingRow.date) || allLocationByDate.has(existingRow.date)) continue
       const isReturnDate = returnHomeDates.has(existingRow.date)
       const shouldClear = isReturnDate ||
         (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
@@ -596,9 +678,28 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Flag one-way trips
+    if (pendingReturnTrips.length > 0) {
+      for (const pending of pendingReturnTrips) {
+        const { data: trips } = await adminClient
+          .from('trips')
+          .select('id')
+          .eq('user_id', userId)
+          .lte('start_date', pending.departureDate)
+          .gte('end_date', pending.departureDate)
+          .ilike('location', `%${pending.destination}%`)
+
+        if (trips && trips.length > 0) {
+          await adminClient
+            .from('trips')
+            .update({ needs_return_date: true })
+            .eq('id', trips[0].id)
+        }
+      }
+    }
+
     // ── Sync plans: preserve manually-enriched plans ──────────────────────
 
-    // Build incoming plan data keyed by source_event_id (uid)
     const incomingEventIds = new Set<string>()
     const planRowsByEventId = new Map<string, any>()
 
@@ -698,6 +799,7 @@ Deno.serve(async (req) => {
         synced: true,
         eventsProcessed: events.length,
         datesUpdated: updatedCount,
+        pendingReturnTrips,
         message: `Synced ${events.length} events, updated ${updatedCount} days`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
