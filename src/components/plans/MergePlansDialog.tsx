@@ -178,10 +178,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
 
       // If any source plans were imported from a calendar, mark the new merged plan as manually edited
       // so that the next calendar sync doesn't re-create the deleted source events
-      const hasImportedSource = selectedPlans.some(p => {
-        // We need to check DB for source field since Plan type doesn't carry it
-        return true; // will check after addPlan
-      });
 
       // Get the newly created plan (last one added)
       const latestPlans = usePlannerStore.getState().plans;
