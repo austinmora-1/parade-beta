@@ -156,7 +156,7 @@ export default function TripDetail() {
     <div className="animate-fade-in space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/availability')} className="gap-1.5 -ml-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/availability?tab=trips')} className="gap-1.5 -ml-2">
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-1.5">

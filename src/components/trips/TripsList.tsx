@@ -97,6 +97,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
           <button
             key={trip.id}
             onClick={() => navigate(`/trip/${trip.id}`)}
+            state={{ fromTripsTab: true }}
             className={cn(
               "w-full flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-soft",
               "hover:bg-muted/50 transition-colors text-left group"
