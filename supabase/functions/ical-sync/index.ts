@@ -542,6 +542,8 @@ Deno.serve(async (req) => {
 
     // Sort flights chronologically by actual departure time (critical for connecting flights)
     allFlights.sort((a, b) => a.timestamp - b.timestamp)
+    console.log(`[FLIGHTS SORTED] ${allFlights.map(f => `${f.city}@${f.date}(ts=${f.timestamp})`).join(' → ')}`)
+    console.log(`[FLIGHTS SORTED DETAIL] ${JSON.stringify(allFlights)}`)
 
     // Build flightLocationByDate: for same-day connecting flights, last leg wins
     const flightLocationByDate: Map<string, string> = new Map()
