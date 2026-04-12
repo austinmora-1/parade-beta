@@ -731,6 +731,7 @@ export type Database = {
           feed_visibility: string
           id: string
           location: string | null
+          manually_edited: boolean
           notes: string | null
           proposed_by: string | null
           recurring_plan_id: string | null
@@ -754,6 +755,7 @@ export type Database = {
           feed_visibility?: string
           id?: string
           location?: string | null
+          manually_edited?: boolean
           notes?: string | null
           proposed_by?: string | null
           recurring_plan_id?: string | null
@@ -777,6 +779,7 @@ export type Database = {
           feed_visibility?: string
           id?: string
           location?: string | null
+          manually_edited?: boolean
           notes?: string | null
           proposed_by?: string | null
           recurring_plan_id?: string | null

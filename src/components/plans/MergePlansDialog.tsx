@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { addDays, subDays } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -174,6 +175,30 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
     setMerging(true);
     try {
       await addPlan(mergedPlanPreview);
+
+      // If any source plans were imported from a calendar, mark the new merged plan as manually edited
+      // so that the next calendar sync doesn't re-create the deleted source events
+
+      // Get the newly created plan (last one added)
+      const latestPlans = usePlannerStore.getState().plans;
+      const newPlan = latestPlans.find(p =>
+        p.title === mergedPlanPreview.title &&
+        !selectedPlans.some(sp => sp.id === p.id)
+      );
+
+      if (newPlan) {
+        // Check if any of the selected plans were imported
+        const selectedIds = selectedPlans.map(p => p.id);
+        const { data: sourceRows } = await supabase
+          .from('plans')
+          .select('id, source')
+          .in('id', selectedIds);
+        const anyImported = (sourceRows || []).some((r: any) => r.source === 'gcal' || r.source === 'ical');
+        if (anyImported) {
+          await supabase.from('plans').update({ manually_edited: true } as any).eq('id', newPlan.id);
+        }
+      }
+
       for (const plan of selectedPlans) {
         await deletePlan(plan.id);
       }
