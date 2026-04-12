@@ -28,6 +28,8 @@ export default function Availability() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [mergePreselected, setMergePreselected] = useState<string[] | undefined>(undefined);
+  const [sharePlanId, setSharePlanId] = useState<string | null>(null);
+  const [sharePlanTitle, setSharePlanTitle] = useState('');
 
   const openPlanDialog = (date?: Date) => {
     setPlanDefaultDate(date);
