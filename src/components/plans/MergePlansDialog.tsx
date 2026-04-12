@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { format, isSameDay } from 'date-fns';
+import { useState, useMemo, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Merge, ChevronRight, ChevronLeft, Check, MapPin, Clock, Users } from 'lucide-react';
 
-type Step = 'select' | 'details' | 'participants' | 'confirm';
+type Step = 'details' | 'participants' | 'confirm';
 
 interface MergePlansDialogProps {
   open: boolean;
@@ -28,10 +28,7 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
   const deletePlan = usePlannerStore((s) => s.deletePlan);
   const loadPlans = usePlannerStore((s) => s.loadPlans);
 
-  const [step, setStep] = useState<Step>('select');
-  const [selectedPlanIds, setSelectedPlanIds] = useState<Set<string>>(
-    new Set(preselectedPlanIds || [])
-  );
+  const [step, setStep] = useState<Step>('details');
   const [merging, setMerging] = useState(false);
 
   // Detail choices
@@ -47,30 +44,10 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
   // Participant choices
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<Set<string>>(new Set());
 
-  // Only show user's own upcoming plans
-  const upcomingPlans = useMemo(() => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return plans
-      .filter(p => (p.endDate || p.date) >= now)
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [plans]);
-
   const selectedPlans = useMemo(
-    () => upcomingPlans.filter(p => selectedPlanIds.has(p.id)),
-    [upcomingPlans, selectedPlanIds]
+    () => plans.filter(p => preselectedPlanIds?.includes(p.id)),
+    [plans, preselectedPlanIds]
   );
-
-  // Group plans by day for selection step
-  const plansByDay = useMemo(() => {
-    const map = new Map<string, Plan[]>();
-    for (const plan of upcomingPlans) {
-      const key = format(plan.date, 'yyyy-MM-dd');
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(plan);
-    }
-    return map;
-  }, [upcomingPlans]);
 
   // All unique participants from selected plans
   const allParticipants = useMemo(() => {
@@ -85,14 +62,28 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
     return Array.from(map.values());
   }, [selectedPlans]);
 
-  const togglePlan = (id: string) => {
-    setSelectedPlanIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  // Initialize details when dialog opens
+  useEffect(() => {
+    if (open && selectedPlans.length >= 2) {
+      const first = selectedPlans[0];
+      setChosenTitle(first.id);
+      setChosenActivity(first.id);
+      setChosenDate(first.id);
+      setChosenTimeSlot(first.id);
+      const withLocation = selectedPlans.find(p => p.location);
+      setChosenLocation(withLocation?.id || '');
+      const withNotes = selectedPlans.find(p => p.notes);
+      setChosenNotes(withNotes?.id || '');
+      const withStartTime = selectedPlans.find(p => p.startTime);
+      setChosenStartTime(withStartTime?.id || '');
+      const withEndTime = selectedPlans.find(p => p.endTime);
+      setChosenEndTime(withEndTime?.id || '');
+      setSelectedParticipantIds(new Set(
+        Array.from(new Map(selectedPlans.flatMap(p => p.participants).filter(p => p.friendUserId).map(p => [p.friendUserId!, p])).keys())
+      ));
+      setStep('details');
+    }
+  }, [open, selectedPlans]);
 
   const toggleParticipant = (id: string) => {
     setSelectedParticipantIds(prev => {
@@ -103,35 +94,14 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
     });
   };
 
-  const initDetailsStep = () => {
-    if (selectedPlans.length === 0) return;
-    const first = selectedPlans[0];
-    setChosenTitle(first.id);
-    setChosenActivity(first.id);
-    setChosenDate(first.id);
-    setChosenTimeSlot(first.id);
-    // Find first plan with location
-    const withLocation = selectedPlans.find(p => p.location);
-    setChosenLocation(withLocation?.id || '');
-    const withNotes = selectedPlans.find(p => p.notes);
-    setChosenNotes(withNotes?.id || '');
-    const withStartTime = selectedPlans.find(p => p.startTime);
-    setChosenStartTime(withStartTime?.id || '');
-    const withEndTime = selectedPlans.find(p => p.endTime);
-    setChosenEndTime(withEndTime?.id || '');
-  };
-
-  const initParticipantsStep = () => {
-    setSelectedParticipantIds(new Set(allParticipants.map(p => p.friendUserId!)));
-  };
-
-  const goToStep = (nextStep: Step) => {
-    if (nextStep === 'details') initDetailsStep();
-    if (nextStep === 'participants') initParticipantsStep();
-    setStep(nextStep);
-  };
-
   const getPlanById = (id: string) => selectedPlans.find(p => p.id === id);
+
+  function formatTime12(time: string): string {
+    const [h, m] = time.split(':').map(Number);
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const hour12 = h % 12 || 12;
+    return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+  }
 
   const mergedPlanPreview = useMemo(() => {
     const titlePlan = getPlanById(chosenTitle);
@@ -163,18 +133,13 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
   const handleMerge = async () => {
     setMerging(true);
     try {
-      // Create merged plan
       await addPlan(mergedPlanPreview);
-
-      // Delete original plans
       for (const plan of selectedPlans) {
         await deletePlan(plan.id);
       }
-
       await loadPlans();
       toast.success(`Merged ${selectedPlans.length} plans into one`);
       onOpenChange(false);
-      resetState();
     } catch (err) {
       console.error('Error merging plans:', err);
       toast.error('Failed to merge plans');
@@ -183,22 +148,28 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
     }
   };
 
-  const resetState = () => {
-    setStep('select');
-    setSelectedPlanIds(new Set(preselectedPlanIds || []));
-    setMerging(false);
-  };
-
   const handleOpenChange = (v: boolean) => {
-    if (!v) resetState();
+    if (!v) setStep('details');
     onOpenChange(v);
   };
 
-  function formatTime12(time: string): string {
-    const [h, m] = time.split(':').map(Number);
-    const ampm = h >= 12 ? 'pm' : 'am';
-    const hour12 = h % 12 || 12;
-    return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+  if (selectedPlans.length < 2) {
+    return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Merge className="h-5 w-5 text-primary" />
+              Merge Plans
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground text-center py-6">
+            Select at least 2 plans from the weekly view to merge them.
+            Long-press a plan card to enter selection mode.
+          </p>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (
@@ -207,18 +178,18 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Merge className="h-5 w-5 text-primary" />
-            Merge Plans
+            Merge {selectedPlans.length} Plans
           </DialogTitle>
         </DialogHeader>
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-1 shrink-0 pb-2">
-          {(['select', 'details', 'participants', 'confirm'] as Step[]).map((s, i) => (
+          {(['details', 'participants', 'confirm'] as Step[]).map((s, i) => (
             <div key={s} className="flex items-center gap-1">
               <div className={cn(
                 'h-2 w-2 rounded-full transition-colors',
                 step === s ? 'bg-primary w-5' : (
-                  (['select', 'details', 'participants', 'confirm'].indexOf(step) > i)
+                  (['details', 'participants', 'confirm'].indexOf(step) > i)
                     ? 'bg-primary/40' : 'bg-muted-foreground/20'
                 )
               )} />
@@ -228,64 +199,13 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
 
         <ScrollArea className="flex-1 min-h-0">
           <div className="px-1 pb-4">
-            {/* Step 1: Select plans */}
-            {step === 'select' && (
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Select 2 or more plans to merge together.
-                </p>
-                {upcomingPlans.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No upcoming plans to merge.</p>
-                ) : (
-                  Array.from(plansByDay.entries()).map(([dateKey, dayPlans]) => (
-                    <div key={dateKey}>
-                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                        {format(dayPlans[0].date, 'EEEE, MMM d')}
-                      </h4>
-                      <div className="space-y-1">
-                        {dayPlans.map(plan => {
-                          const config = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
-                          const selected = selectedPlanIds.has(plan.id);
-                          return (
-                            <button
-                              key={plan.id}
-                              onClick={() => togglePlan(plan.id)}
-                              className={cn(
-                                'w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all',
-                                selected
-                                  ? 'border-primary bg-primary/5 shadow-sm'
-                                  : 'border-border hover:bg-muted/50'
-                              )}
-                            >
-                              <Checkbox checked={selected} className="shrink-0" />
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <ActivityIcon config={config} size={16} />
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium truncate">{getPlanDisplayTitle(plan)}</p>
-                                  <p className="text-[11px] text-muted-foreground">
-                                    {plan.startTime ? formatTime12(plan.startTime) : TIME_SLOT_LABELS[plan.timeSlot]?.time}
-                                    {plan.location && ` · ${plan.location.name}`}
-                                  </p>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* Step 2: Choose details */}
+            {/* Step 1: Choose details */}
             {step === 'details' && (
               <div className="space-y-5">
                 <p className="text-sm text-muted-foreground">
                   Choose which details to keep for the merged plan.
                 </p>
 
-                {/* Title */}
                 <DetailPicker
                   label="Title"
                   plans={selectedPlans}
@@ -294,7 +214,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                   renderOption={(plan) => getPlanDisplayTitle(plan)}
                 />
 
-                {/* Activity */}
                 <DetailPicker
                   label="Activity"
                   plans={selectedPlans}
@@ -311,7 +230,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                   }}
                 />
 
-                {/* Date */}
                 <DetailPicker
                   label="Date"
                   plans={selectedPlans}
@@ -321,7 +239,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                   dedup={(plan) => format(plan.date, 'yyyy-MM-dd')}
                 />
 
-                {/* Time */}
                 <DetailPicker
                   label="Time"
                   plans={selectedPlans}
@@ -336,7 +253,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                   dedup={(plan) => `${plan.timeSlot}-${plan.startTime || ''}`}
                 />
 
-                {/* Location */}
                 {selectedPlans.some(p => p.location) && (
                   <DetailPicker
                     label="Location"
@@ -354,7 +270,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                   />
                 )}
 
-                {/* Notes */}
                 {selectedPlans.some(p => p.notes) && (
                   <DetailPicker
                     label="Notes"
@@ -370,7 +285,7 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
               </div>
             )}
 
-            {/* Step 3: Choose participants */}
+            {/* Step 2: Choose participants */}
             {step === 'participants' && (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -410,7 +325,7 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
               </div>
             )}
 
-            {/* Step 4: Confirm */}
+            {/* Step 3: Confirm */}
             {step === 'confirm' && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
@@ -418,7 +333,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                 </p>
 
                 <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
-                  {/* Title & activity */}
                   <div className="flex items-center gap-2">
                     <ActivityIcon
                       config={ACTIVITY_CONFIG[mergedPlanPreview.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const }}
@@ -427,7 +341,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                     <span className="text-base font-semibold">{mergedPlanPreview.title}</span>
                   </div>
 
-                  {/* Date & time */}
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />
                     {format(mergedPlanPreview.date, 'EEE, MMM d')}
@@ -437,7 +350,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                       : TIME_SLOT_LABELS[mergedPlanPreview.timeSlot]?.time}
                   </div>
 
-                  {/* Location */}
                   {mergedPlanPreview.location && (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <MapPin className="h-3.5 w-3.5" />
@@ -445,7 +357,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                     </div>
                   )}
 
-                  {/* Participants */}
                   {mergedPlanPreview.participants.length > 0 && (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Users className="h-3.5 w-3.5" />
@@ -453,7 +364,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
                     </div>
                   )}
 
-                  {/* Notes */}
                   {mergedPlanPreview.notes && (
                     <p className="text-xs text-muted-foreground/70 italic">
                       {mergedPlanPreview.notes}
@@ -473,12 +383,12 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
 
         {/* Footer buttons */}
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border shrink-0">
-          {step !== 'select' ? (
+          {step !== 'details' ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
-                const steps: Step[] = ['select', 'details', 'participants', 'confirm'];
+                const steps: Step[] = ['details', 'participants', 'confirm'];
                 const idx = steps.indexOf(step);
                 if (idx > 0) setStep(steps[idx - 1]);
               }}
@@ -490,24 +400,14 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds }: Mer
             <div />
           )}
 
-          {step === 'select' && (
-            <Button
-              size="sm"
-              disabled={selectedPlanIds.size < 2}
-              onClick={() => goToStep('details')}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          )}
           {step === 'details' && (
-            <Button size="sm" onClick={() => goToStep('participants')}>
+            <Button size="sm" onClick={() => setStep('participants')}>
               Next
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           )}
           {step === 'participants' && (
-            <Button size="sm" onClick={() => goToStep('confirm')}>
+            <Button size="sm" onClick={() => setStep('confirm')}>
               Review
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
@@ -537,7 +437,6 @@ interface DetailPickerProps {
 }
 
 function DetailPicker({ label, plans, value, onChange, renderOption, allowNone, dedup }: DetailPickerProps) {
-  // Deduplicate options if dedup function provided
   const uniquePlans = useMemo(() => {
     if (!dedup) return plans;
     const seen = new Set<string>();
