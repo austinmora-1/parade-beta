@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, eachDayOfInterval, isAfter, isBefore, startOfDay } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-import { CalendarIcon, Plane, Trash2, X, Users, Clock, CheckSquare, Square, ChevronDown } from 'lucide-react';
+import { CalendarIcon, Plane, Trash2, X, Users, Clock, CheckSquare, Square, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
