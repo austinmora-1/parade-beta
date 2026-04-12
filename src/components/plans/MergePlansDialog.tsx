@@ -81,28 +81,38 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
     return Array.from(map.values());
   }, [selectedPlans]);
 
-  // Initialize details when dialog opens
+  // Initialize details when moving to details step
+  const initDetails = (plansToMerge: Plan[]) => {
+    const first = plansToMerge[0];
+    setChosenTitle(first.id);
+    setChosenActivity(first.id);
+    setChosenDate(first.id);
+    setChosenTimeSlot(first.id);
+    const withLocation = plansToMerge.find(p => p.location);
+    setChosenLocation(withLocation?.id || '');
+    const withNotes = plansToMerge.find(p => p.notes);
+    setChosenNotes(withNotes?.id || '');
+    const withStartTime = plansToMerge.find(p => p.startTime);
+    setChosenStartTime(withStartTime?.id || '');
+    const withEndTime = plansToMerge.find(p => p.endTime);
+    setChosenEndTime(withEndTime?.id || '');
+    setSelectedParticipantIds(new Set(
+      Array.from(new Map(plansToMerge.flatMap(p => p.participants).filter(p => p.friendUserId).map(p => [p.friendUserId!, p])).keys())
+    ));
+  };
+
+  // Initialize when dialog opens with 2+ preselected
   useEffect(() => {
-    if (open && selectedPlans.length >= 2) {
-      const first = selectedPlans[0];
-      setChosenTitle(first.id);
-      setChosenActivity(first.id);
-      setChosenDate(first.id);
-      setChosenTimeSlot(first.id);
-      const withLocation = selectedPlans.find(p => p.location);
-      setChosenLocation(withLocation?.id || '');
-      const withNotes = selectedPlans.find(p => p.notes);
-      setChosenNotes(withNotes?.id || '');
-      const withStartTime = selectedPlans.find(p => p.startTime);
-      setChosenStartTime(withStartTime?.id || '');
-      const withEndTime = selectedPlans.find(p => p.endTime);
-      setChosenEndTime(withEndTime?.id || '');
-      setSelectedParticipantIds(new Set(
-        Array.from(new Map(selectedPlans.flatMap(p => p.participants).filter(p => p.friendUserId).map(p => [p.friendUserId!, p])).keys())
-      ));
-      setStep('details');
+    if (open) {
+      setAdditionalPlanIds(new Set());
+      if (needsSelectStep) {
+        setStep('select');
+      } else if (selectedPlans.length >= 2) {
+        initDetails(selectedPlans);
+        setStep('details');
+      }
     }
-  }, [open, selectedPlans]);
+  }, [open]);
 
   const toggleParticipant = (id: string) => {
     setSelectedParticipantIds(prev => {
