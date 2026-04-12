@@ -458,7 +458,7 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Footer buttons */}
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border shrink-0">
