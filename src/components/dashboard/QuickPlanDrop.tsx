@@ -126,7 +126,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                     }}
                     onFocus={() => searchQuery.trim() && setShowResults(true)}
                     onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                    placeholder="Search friends to plan with…"
+                    placeholder="Search or tap friends to plan with…"
                     className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none"
                   />
                 )}
