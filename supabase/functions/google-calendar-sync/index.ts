@@ -785,10 +785,10 @@ async function handleEventsSync(params: {
     .select('id, source, source_event_id, title, date, start_time')
     .eq('user_id', userId)
 
-  // Build content-based lookup: "lower(title)|date|start_time" → plan
+  // Build content-based lookup: "normalizedTitle|date|start_time" → plan
   const contentLookup = new Map<string, any>()
   for (const p of (allUserPlans || [])) {
-    const key = `${(p.title || '').toLowerCase().trim()}|${p.date}|${p.start_time || ''}`
+    const key = `${normalizePlanTitle(p.title)}|${p.date}|${p.start_time || ''}`
     if (!contentLookup.has(key)) contentLookup.set(key, p)
   }
 
@@ -846,8 +846,8 @@ async function handleEventsSync(params: {
         })
         .eq('id', existing.id)
     } else {
-      // Content-based dedup: check if a plan with same title+date+start_time already exists
-      const contentKey = `${(planRow.title || '').toLowerCase().trim()}|${planRow.date}|${planRow.start_time || ''}`
+      // Content-based dedup: check if a plan with same normalized title+date+start_time already exists
+      const contentKey = `${normalizePlanTitle(planRow.title)}|${planRow.date}|${planRow.start_time || ''}`
       const contentMatch = contentLookup.get(contentKey)
       if (contentMatch) {
         // Link the existing plan's source_event_id if it doesn't have one, then skip
@@ -867,12 +867,19 @@ async function handleEventsSync(params: {
   }
 
   if (toInsert.length > 0) {
-    // Use upsert with conflict handling on the unique index
     const { error: plansError } = await adminClient
       .from('plans')
-      .upsert(toInsert, { onConflict: 'user_id,source,source_event_id', ignoreDuplicates: true })
+      .insert(toInsert)
     if (plansError) {
-      console.error('Error inserting gcal plans:', plansError)
+      // If batch fails due to unique constraint, insert one-by-one, skipping duplicates
+      if (plansError.code === '23505') {
+        for (const row of toInsert) {
+          const { error: singleErr } = await adminClient.from('plans').insert(row)
+          if (singleErr && singleErr.code !== '23505') console.error('Error inserting plan:', singleErr)
+        }
+      } else {
+        console.error('Error inserting gcal plans:', plansError)
+      }
     }
   }
 
