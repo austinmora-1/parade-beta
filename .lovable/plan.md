@@ -1,24 +1,59 @@
 
 
-## Update Early Morning Time Slot Boundary
+## Redesign Plans UI: Card-Based Weekly Swiper + Trips Page
 
-**What changes**: The "Early Morning" time slot currently covers 6am-9am. It needs to be expanded to cover 2am-9am, so that flights and events starting between 2am and 6am (like a 4:55am flight) are categorized as "Early Morning" instead of "Late Night".
+### Summary
+Replace the calendar-oriented Plans view with a horizontally-swipeable, card-based weekly layout. Move Trips to its own dedicated page with a new bottom nav tab, and remove the FAB button entirely.
 
-**Late Night** will now only cover 10pm-2am (hours 22, 23, 0, 1).
+### Changes
 
-### Files to update
+**1. New Plans/Availability page (`src/pages/Availability.tsx`)**
+- Remove the Daily/Trips tab switcher entirely
+- Remove TripsList import and rendering
+- Remove "Add Trip" button from header
+- Replace AvailabilityGrid with a new weekly card swiper component
+- Keep: header with "Plans" title, sync button, "Add Plan" button, Share button, "View Plan List" link
+- Add week navigation (left/right arrows + "This Week" button) showing the current week range (e.g. "Apr 7 – 13")
+- Show plans for the selected week as horizontally-scrollable cards (one card per plan, grouped by day)
+- Each day section shows the day label (e.g. "Mon, Apr 7") with plan cards stacked horizontally beneath
+- Swipe left/right to navigate between weeks
 
-All 5 locations where `getTimeSlot` logic exists:
+**2. New component: `src/components/plans/WeeklyPlanSwiper.tsx`**
+- Accepts plans array and week offset state
+- Groups plans by day within the current week
+- Renders each day as a row with plan cards in a horizontal scroll container
+- Days with no plans show a subtle "No plans" indicator
+- Plan cards reuse the existing `PlanCard` component (compact mode)
+- Swipe gesture support to move between weeks
+- Week navigation header with chevrons and "This Week" reset
 
-1. **`supabase/functions/google-calendar-sync/index.ts`** — change `hour >= 6 && hour < 9` to `hour >= 2 && hour < 9`
-2. **`supabase/functions/ical-sync/index.ts`** — same change
-3. **`supabase/functions/calendar-sync-worker/index.ts`** — same change
-4. **`supabase/functions/nylas-sync/index.ts`** — same change
-5. **`src/lib/timezone.ts`** (`getTimeSlotForTime`) — change `h >= 6 && h < 9` to `h >= 2 && h < 9`
+**3. New Trips page (`src/pages/Trips.tsx`)**
+- New standalone page at `/trips` route
+- Contains the TripsList component, AddTripDialog, MissingReturnDialog, TripConflictDialog (moved from Availability)
+- Header: "Trips" with "Add Trip" button
+- Keeps all existing trip conflict and missing return logic
 
-In each function, the early morning check must come before the fallback to `late_night`, so late night will implicitly cover hours 22-1 (10pm to 2am).
+**4. Update bottom navigation (`src/components/layout/MobileNav.tsx`)**
+- Remove the entire FAB button and its pop-up actions (QuickPlanSheet, SendVibeDialog, AddTripDialog)
+- Remove the left/right item split — just render all nav items in a flat row
+- Add new "Trips" tab with `PlaneTakeoff` icon, linking to `/trips`
+- Nav order: Home, Plans, Trips, Friends, Inbox
+- Update `isActive` to handle `/trips` route
 
-### Edge function redeployment
+**5. Update desktop sidebar (`src/components/layout/Sidebar.tsx`)**
+- Add "Trips" nav item with PlaneTakeoff icon at `/trips`
 
-All four updated edge functions will be redeployed.
+**6. Update routing (`src/App.tsx`)**
+- Add new route for `/trips` inside the protected AppLayout
+- Lazy-load the Trips page
+
+**7. Update `UpcomingPlans.tsx`**
+- Update `TIME_SLOT_HOURS['early-morning']` from `{ start: 6, end: 9 }` to `{ start: 2, end: 9 }` to match the time slot logic change made earlier
+
+### Technical details
+
+- The `WeeklyPlanSwiper` uses `startOfWeek`/`endOfWeek` from date-fns with `weekStartsOn: 1` (Monday)
+- Horizontal scroll uses CSS `overflow-x: auto` with `snap-x snap-mandatory` for card snapping
+- Week swipe uses the same touch gesture pattern already in `Availability.tsx`
+- The FAB removal simplifies the nav to 5 equal-width items with no special center element
 
