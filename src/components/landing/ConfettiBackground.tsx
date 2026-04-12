@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 const COLORS = [
-  "#FF6B6B", "#FFB347", "#FFD700", "#55C78E", "#4ECDC4",
-  "#A78BFA", "#F472B6", "#60A5FA", "#FBBF24", "#34D399",
+  "#FF6B5B", "#FFAD9E", "#FFE156", "#A8E6CF", "#9DD4F0",
+  "#72C4A2", "#3D8C6C", "#FF6B5B", "#FFAD9E", "#FFE156",
 ];
 
 interface ConfettiPiece {

@@ -15,7 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Lexend', 'sans-serif'],
-        display: ['Cal Sans', 'sans-serif'],
+        display: ['Fraunces', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -94,6 +94,14 @@ export default {
           social: "hsl(var(--vibe-social))",
           chill: "hsl(var(--vibe-chill))",
           athletic: "hsl(var(--vibe-athletic))",
+        },
+        brand: {
+          coral: "hsl(var(--coral))",
+          "sunset-peach": "hsl(var(--sunset-peach))",
+          "open-sky": "hsl(var(--open-sky))",
+          "go-mint": "hsl(var(--go-mint))",
+          sunshine: "hsl(var(--sunshine))",
+          "meadow-green": "hsl(var(--meadow-green))",
         },
       },
       borderRadius: {

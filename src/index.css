@@ -4,171 +4,180 @@
 
 /* Fonts loaded via index.html <link> tags and CDN for reliability */
 
-/* Cal Sans - display/header font */
-@font-face {
-  font-family: 'Cal Sans';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url('https://cdn.jsdelivr.net/npm/cal-sans@1.0.1/fonts/webfonts/CalSans-SemiBold.woff2') format('woff2'),
-       url('https://cdn.jsdelivr.net/npm/cal-sans@1.0.1/fonts/webfonts/CalSans-SemiBold.woff') format('woff');
-}
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 150 30% 26%;
+    /* Warm Cream background #FFF8F2 */
+    --background: 30 100% 97%;
+    /* Dark warm neutral foreground */
+    --foreground: 20 15% 20%;
 
-    --card: 40 30% 99%;
-    --card-foreground: 150 30% 26%;
+    /* Slightly warm white card */
+    --card: 30 50% 99%;
+    --card-foreground: 20 15% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 150 30% 26%;
+    --popover: 30 100% 97%;
+    --popover-foreground: 20 15% 20%;
 
-    --primary: 150 45% 36%;
+    /* Parade Green #3D8C6C */
+    --primary: 152 39% 39%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 150 45% 55%;
+    /* Meadow Green #72C4A2 */
+    --primary-glow: 152 39% 61%;
 
-    --secondary: 200 40% 35%;
+    /* Parade Coral #FF6B5B */
+    --secondary: 5 100% 68%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 40 20% 96%;
-    --muted-foreground: 150 10% 42%;
+    /* Warm cream variant */
+    --muted: 30 40% 95%;
+    --muted-foreground: 20 10% 45%;
 
-    --accent: 150 30% 92%;
-    --accent-foreground: 150 45% 28%;
+    /* Light coral tint accent */
+    --accent: 9 100% 95%;
+    --accent-foreground: 5 80% 45%;
 
     --destructive: 0 72% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 20% 90%;
-    --input: 40 20% 90%;
-    --ring: 150 40% 40%;
+    --border: 30 30% 90%;
+    --input: 30 30% 90%;
+    --ring: 152 39% 39%;
 
     --radius: 1rem;
 
-    /* Custom colors for activities */
-    --activity-food: 35 90% 60%;
+    /* Brand accent tokens */
+    --coral: 5 100% 68%;
+    --sunset-peach: 9 100% 81%;
+    --open-sky: 203 75% 78%;
+    --go-mint: 152 56% 78%;
+    --sunshine: 49 100% 67%;
+    --meadow-green: 152 39% 61%;
+
+    /* Custom colors for activities — mapped to brand palette */
+    --activity-food: 9 100% 81%;
     --activity-coffee: 25 70% 45%;
-    --activity-drinks: 280 60% 65%;
-    --activity-workout: 145 65% 45%;
-    --activity-misc: 210 50% 60%;
+    --activity-drinks: 5 100% 68%;
+    --activity-workout: 152 56% 78%;
+    --activity-misc: 203 75% 78%;
     --activity-me-time: 270 50% 60%;
     --activity-chores: 30 50% 55%;
-    --activity-reading: 200 55% 50%;
-    --activity-watching: 330 70% 55%;
-    --activity-events: 350 75% 60%;
-    --activity-errands: 180 50% 45%;
+    --activity-reading: 203 75% 78%;
+    --activity-watching: 5 80% 65%;
+    --activity-events: 49 100% 67%;
+    --activity-errands: 152 39% 61%;
     --activity-movies: 260 60% 55%;
-    --activity-shopping: 320 65% 60%;
+    --activity-shopping: 9 100% 81%;
     --activity-doctor: 0 60% 55%;
 
     /* Availability colors */
-    --available: 150 65% 42%;
-    --available-light: 150 55% 92%;
-    --partial: 38 90% 55%;
-    --partial-light: 38 85% 93%;
-    --busy: 0 70% 60%;
-    --busy-light: 0 65% 94%;
-    --today: 210 70% 35%;
-    --away: 25 95% 53%;
-    --away-light: 25 90% 93%;
-    --away-foreground: 25 80% 38%;
+    --available: 152 39% 39%;
+    --available-light: 152 40% 92%;
+    --partial: 49 100% 67%;
+    --partial-light: 49 80% 93%;
+    --busy: 5 100% 68%;
+    --busy-light: 9 100% 95%;
+    --today: 203 75% 45%;
+    --away: 9 100% 81%;
+    --away-light: 9 80% 95%;
+    --away-foreground: 9 70% 40%;
 
-    /* Vibe colors */
-    --vibe-social: 350 80% 58%;
-    --vibe-chill: 200 55% 52%;
-    --vibe-athletic: 145 65% 46%;
-    --vibe-productive: 38 90% 52%;
+    /* Vibe colors — brand mapped */
+    --vibe-social: 5 100% 68%;
+    --vibe-chill: 203 75% 78%;
+    --vibe-athletic: 152 56% 78%;
+    --vibe-productive: 49 100% 67%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(150 40% 34%), hsl(150 50% 46%));
-    --gradient-secondary: linear-gradient(135deg, hsl(200 40% 35%), hsl(200 50% 45%));
-    --gradient-card: linear-gradient(145deg, hsl(40 30% 99%), hsl(40 20% 97%));
-    --gradient-hero: linear-gradient(160deg, hsl(150 40% 36%), hsl(160 42% 44%), hsl(200 40% 45%));
+    /* Gradients — coral-led warm palette */
+    --gradient-primary: linear-gradient(135deg, hsl(152 39% 39%), hsl(152 39% 61%));
+    --gradient-secondary: linear-gradient(135deg, hsl(5 100% 68%), hsl(9 100% 81%));
+    --gradient-card: linear-gradient(145deg, hsl(30 50% 99%), hsl(30 40% 97%));
+    --gradient-hero: linear-gradient(160deg, hsl(5 100% 68%), hsl(9 100% 81%), hsl(152 39% 39%));
     --gradient-wordmark: linear-gradient(
       135deg,
-      hsl(0 75% 55%) 0%,
-      hsl(30 85% 55%) 16%,
-      hsl(50 90% 50%) 33%,
-      hsl(145 65% 45%) 50%,
-      hsl(200 70% 50%) 66%,
-      hsl(270 60% 58%) 83%,
-      hsl(330 90% 60%) 100%
+      hsl(5 100% 68%) 0%,
+      hsl(9 100% 81%) 20%,
+      hsl(49 100% 67%) 40%,
+      hsl(152 56% 78%) 60%,
+      hsl(203 75% 78%) 80%,
+      hsl(152 39% 39%) 100%
     );
-    /* Shadows — warm tint */
-    --shadow-sm: 0 2px 8px -2px hsl(30 30% 20% / 0.07);
-    --shadow-md: 0 8px 24px -8px hsl(30 30% 20% / 0.10);
-    --shadow-lg: 0 16px 48px -12px hsl(30 30% 20% / 0.13);
-    --shadow-glow: 0 0 40px hsl(150 40% 40% / 0.22);
 
-    /* Light sidebar — warm cream instead of dark green */
-    --sidebar-background: 40 30% 97%;
-    --sidebar-foreground: 150 30% 26%;
-    --sidebar-primary: 150 45% 36%;
+    /* Shadows — warm coral tint */
+    --shadow-sm: 0 2px 8px -2px hsl(20 30% 20% / 0.07);
+    --shadow-md: 0 8px 24px -8px hsl(20 30% 20% / 0.10);
+    --shadow-lg: 0 16px 48px -12px hsl(20 30% 20% / 0.13);
+    --shadow-glow: 0 0 40px hsl(5 100% 68% / 0.20);
+
+    /* Warm cream sidebar */
+    --sidebar-background: 30 50% 97%;
+    --sidebar-foreground: 20 15% 20%;
+    --sidebar-primary: 152 39% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 150 30% 90%;
-    --sidebar-accent-foreground: 150 45% 28%;
-    --sidebar-border: 40 20% 88%;
-    --sidebar-ring: 150 40% 40%;
+    --sidebar-accent: 9 100% 95%;
+    --sidebar-accent-foreground: 5 80% 45%;
+    --sidebar-border: 30 30% 88%;
+    --sidebar-ring: 152 39% 39%;
   }
 
   .dark {
-    --background: 150 12% 12%;
-    --foreground: 120 10% 90%;
+    /* Deep warm dark background */
+    --background: 20 15% 10%;
+    --foreground: 30 20% 90%;
 
-    --card: 150 12% 12%;
-    --card-foreground: 120 10% 90%;
+    --card: 20 12% 12%;
+    --card-foreground: 30 20% 90%;
 
-    --popover: 150 12% 14%;
-    --popover-foreground: 120 10% 90%;
+    --popover: 20 12% 14%;
+    --popover-foreground: 30 20% 90%;
 
-    --primary: 150 40% 45%;
+    /* Parade Green — slightly brighter for dark */
+    --primary: 152 39% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 150 45% 55%;
+    --primary-glow: 152 39% 55%;
 
-    --secondary: 200 35% 30%;
-    --secondary-foreground: 200 30% 90%;
+    /* Coral muted for dark */
+    --secondary: 5 85% 62%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 150 12% 18%;
-    --muted-foreground: 120 8% 55%;
+    --muted: 20 12% 18%;
+    --muted-foreground: 30 15% 55%;
 
-    --accent: 200 25% 20%;
-    --accent-foreground: 200 35% 85%;
+    --accent: 5 40% 20%;
+    --accent-foreground: 9 80% 80%;
 
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 10% 18%;
-    --input: 150 10% 20%;
-    --ring: 150 40% 45%;
+    --border: 20 10% 18%;
+    --input: 20 10% 20%;
+    --ring: 152 39% 45%;
 
     /* Dark mode availability colors */
-    --available-light: 150 40% 18%;
-    --partial-light: 45 50% 18%;
-    --busy-light: 0 40% 18%;
-    --away-light: 25 50% 18%;
-    --away-foreground: 25 80% 60%;
+    --available-light: 152 35% 18%;
+    --partial-light: 49 40% 18%;
+    --busy-light: 5 40% 18%;
+    --away-light: 9 40% 18%;
+    --away-foreground: 9 70% 60%;
 
     /* Dark mode shadows */
     --shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
     --shadow-md: 0 8px 24px -8px hsl(0 0% 0% / 0.4);
     --shadow-lg: 0 16px 48px -12px hsl(0 0% 0% / 0.5);
-    --shadow-glow: 0 0 40px hsl(150 40% 45% / 0.15);
+    --shadow-glow: 0 0 40px hsl(5 85% 62% / 0.15);
 
-    --gradient-primary: linear-gradient(135deg, hsl(150 40% 40%), hsl(150 50% 48%));
-    --gradient-secondary: linear-gradient(135deg, hsl(200 35% 30%), hsl(200 45% 38%));
-    --gradient-card: linear-gradient(145deg, hsl(150 12% 14%), hsl(150 10% 10%));
-    --gradient-hero: linear-gradient(160deg, hsl(150 40% 35%), hsl(170 35% 38%), hsl(200 35% 38%));
+    --gradient-primary: linear-gradient(135deg, hsl(152 39% 40%), hsl(152 39% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(5 85% 55%), hsl(9 80% 65%));
+    --gradient-card: linear-gradient(145deg, hsl(20 12% 14%), hsl(20 10% 10%));
+    --gradient-hero: linear-gradient(160deg, hsl(5 85% 55%), hsl(9 80% 65%), hsl(152 39% 40%));
 
-    --sidebar-background: 150 12% 10%;
-    --sidebar-foreground: 120 10% 90%;
-    --sidebar-primary: 150 40% 45%;
+    --sidebar-background: 20 15% 8%;
+    --sidebar-foreground: 30 20% 90%;
+    --sidebar-primary: 152 39% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 25% 18%;
-    --sidebar-accent-foreground: 200 35% 85%;
-    --sidebar-border: 150 10% 16%;
-    --sidebar-ring: 150 40% 45%;
+    --sidebar-accent: 5 40% 18%;
+    --sidebar-accent-foreground: 9 80% 80%;
+    --sidebar-border: 20 10% 16%;
+    --sidebar-ring: 152 39% 45%;
   }
 
 }
@@ -203,8 +212,10 @@
 
   h1, h2, h3, h4, h5, h6,
   .font-display {
-    font-family: 'Cal Sans', sans-serif !important;
-    font-weight: 600;
+    font-family: 'Fraunces', serif !important;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
   }
 
   strong, b {
@@ -228,11 +239,11 @@
   .parade-wordmark {
     font-family: 'Bungee Shade', sans-serif;
     font-weight: 400;
-    color: hsl(150 50% 55%);
+    color: hsl(152 39% 39%);
   }
 
   :root:not(.dark) .parade-wordmark {
-    color: hsl(0 0% 100%);
+    color: hsl(152 39% 39%);
   }
 
   .shadow-soft {
