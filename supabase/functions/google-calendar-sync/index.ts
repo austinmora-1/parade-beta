@@ -390,6 +390,7 @@ async function handleEventsSync(params: {
 
   // Sort all flights chronologically by actual departure time (critical for connecting flights)
   allFlights.sort((a, b) => a.timestamp - b.timestamp)
+  console.log(`[FLIGHTS SORTED] ${allFlights.map(f => `${f.city}@${f.date}(ts=${f.timestamp})`).join(' → ')}`)
 
   // Build flightLocationByDate: for same-day connecting flights, the LAST departing
   // flight's destination wins (it's the final leg / ultimate destination)
@@ -400,6 +401,7 @@ async function handleEventsSync(params: {
       flightLocationByDate.set(flight.date, flight.city)
     }
   }
+  console.log(`[FLIGHT LOCATIONS BY DATE] ${JSON.stringify(Object.fromEntries(flightLocationByDate))}`)
 
   // Build a sorted set of ALL flight dates (outbound, return, and unrecognized)
   // These act as trip boundaries — we never fill past any flight date
