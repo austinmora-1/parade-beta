@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarPlus, X, Sparkles } from 'lucide-react';
+import { ElephantIcon } from '@/components/ui/ElephantIcon';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getElephantAvatar } from '@/lib/elephantAvatars';

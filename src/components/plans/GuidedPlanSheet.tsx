@@ -500,8 +500,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 font-medium">
+                <div className="flex items-center justify-center gap-1.5 text-[11px] text-primary dark:text-primary">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium">
                     💡 Proposed
                   </span>
                   <span className="text-muted-foreground">— confirmed when they accept</span>
