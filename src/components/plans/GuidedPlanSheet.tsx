@@ -444,7 +444,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   onSelect={handleCalendarSelect}
                   getSlotStatus={getSlotStatusForDate}
                   hasFriends={true}
-                  days={14}
+                  days={180}
                 />
               </motion.div>
             )}
