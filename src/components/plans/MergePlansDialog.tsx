@@ -451,14 +451,13 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
 
         {/* Footer buttons */}
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border shrink-0">
-          {step !== 'details' ? (
+          {step !== stepsForIndicator[0] ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
-                const steps: Step[] = ['details', 'participants', 'confirm'];
-                const idx = steps.indexOf(step);
-                if (idx > 0) setStep(steps[idx - 1]);
+                const idx = stepsForIndicator.indexOf(step);
+                if (idx > 0) setStep(stepsForIndicator[idx - 1]);
               }}
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
@@ -468,6 +467,19 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
             <div />
           )}
 
+          {step === 'select' && (
+            <Button
+              size="sm"
+              disabled={additionalPlanIds.size < 1}
+              onClick={() => {
+                initDetails(selectedPlans.length >= 2 ? selectedPlans : plans.filter(p => allMergeIds.includes(p.id)));
+                setStep('details');
+              }}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
           {step === 'details' && (
             <Button size="sm" onClick={() => setStep('participants')}>
               Next
