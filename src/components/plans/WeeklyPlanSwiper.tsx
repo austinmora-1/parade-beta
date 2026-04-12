@@ -255,7 +255,7 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 
 // --- Collapsible past days section ---
 
-function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, navigate }: {
+function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap }: {
   day: Date;
   dayPlans: Plan[];
   isToday: boolean;
@@ -265,7 +265,6 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   toggleSelect: (id: string) => void;
   onEditPlan?: (plan: Plan) => void;
   onCardTap: (id: string) => void;
-  navigate: ReturnType<typeof useNavigate>;
 }) {
   const key = format(day, 'yyyy-MM-dd');
   return (
