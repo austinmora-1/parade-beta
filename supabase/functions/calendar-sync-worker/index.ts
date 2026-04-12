@@ -345,6 +345,8 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   // Build set of ALL flight dates as trip boundaries
   allFlights.sort((a, b) => a.date.localeCompare(b.date))
   const allFlightDatesSet = new Set(allFlights.map(f => f.date))
+  const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
+  const outboundFlightDates = new Set(allFlights.filter(f => !f.isReturn && f.city).map(f => f.date))
 
   // Fill gap days: stop at any other flight date
   const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
