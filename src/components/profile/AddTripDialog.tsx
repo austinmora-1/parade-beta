@@ -758,7 +758,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                       ))}
                     </div>
                   )}
-                  {nearbyFriendIds !== null && !friendSearch.trim() && filteredFriends.length === 0 && !isLoadingNearby && (
+                  {suggestedFriendIds !== null && !friendSearch.trim() && filteredFriends.length === 0 && !isLoadingNearby && (
                     <p className="text-xs text-muted-foreground italic">
                       No friends found near {location.trim()}. Search above to add any friend.
                     </p>
