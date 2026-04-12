@@ -279,6 +279,11 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         )}>
           {format(day, 'EEEE')}
         </span>
+        {dayPlans.length > 1 && (
+          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary/15 px-1 text-[10px] font-semibold text-primary">
+            {dayPlans.length}
+          </span>
+        )}
       </div>
       {dayPlans.length > 0 ? (
         <div className="px-3 mt-1 mb-3">
