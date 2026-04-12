@@ -8,11 +8,11 @@ import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { GifPicker } from '@/components/chat/GifPicker';
 
 const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
-  social:     { bg: 'hsl(5 60% 95%)',   text: 'hsl(5 50% 45%)',   border: 'hsl(5 50% 85%)',   iconBg: 'bg-[hsl(5_50%_72%)]' },
-  chill:      { bg: 'hsl(203 50% 93%)', text: 'hsl(203 45% 40%)', border: 'hsl(203 45% 82%)', iconBg: 'bg-[hsl(203_45%_72%)]' },
-  athletic:   { bg: 'hsl(152 40% 93%)', text: 'hsl(152 35% 35%)', border: 'hsl(152 35% 78%)', iconBg: 'bg-[hsl(152_35%_65%)]' },
-  productive: { bg: 'hsl(49 60% 93%)',  text: 'hsl(49 50% 38%)',  border: 'hsl(49 50% 80%)',  iconBg: 'bg-[hsl(49_50%_62%)]' },
-  custom:     { bg: 'hsl(9 45% 95%)',   text: 'hsl(9 40% 45%)',   border: 'hsl(9 40% 82%)',   iconBg: 'bg-[hsl(9_40%_75%)]' },
+  social:     { bg: 'hsl(5 60% 95%)',   text: 'hsl(5 50% 45%)',   border: 'hsl(5 50% 85%)',   iconBg: 'bg-[hsl(5_80%_65%)]' },
+  chill:      { bg: 'hsl(203 50% 93%)', text: 'hsl(203 45% 40%)', border: 'hsl(203 45% 82%)', iconBg: 'bg-[hsl(203_60%_55%)]' },
+  athletic:   { bg: 'hsl(152 40% 93%)', text: 'hsl(152 35% 35%)', border: 'hsl(152 35% 78%)', iconBg: 'bg-[hsl(152_39%_39%)]' },
+  productive: { bg: 'hsl(49 60% 93%)',  text: 'hsl(49 50% 38%)',  border: 'hsl(49 50% 80%)',  iconBg: 'bg-[hsl(49_80%_50%)]' },
+  custom:     { bg: 'hsl(9 45% 95%)',   text: 'hsl(9 40% 45%)',   border: 'hsl(9 40% 82%)',   iconBg: 'bg-[hsl(9_60%_60%)]' },
 };
 
 export function VibeSelector() {
