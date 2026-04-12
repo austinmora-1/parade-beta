@@ -222,12 +222,19 @@ function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   return false
 }
 
-// Check if a date falls after a return-home flight and before the next outbound flight
-function isDateAfterAnyReturn(dateStr: string, returnDates: Set<string>): boolean {
+// Check if a date falls after a return-home flight but before the next outbound flight
+function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDates: Set<string>): boolean {
+  // Find the most recent return date on or before this date
+  let latestReturn: string | null = null
   for (const rd of returnDates) {
-    if (dateStr >= rd) return true
+    if (rd <= dateStr && (!latestReturn || rd > latestReturn)) latestReturn = rd
   }
-  return false
+  if (!latestReturn) return false
+  // Check no outbound flight between the return and this date
+  for (const od of outboundDates) {
+    if (od > latestReturn && od <= dateStr) return false
+  }
+  return true
 }
 
 async function handleEventsSync(params: {
