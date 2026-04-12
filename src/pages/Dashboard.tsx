@@ -13,6 +13,7 @@ import { VibeSelector } from '@/components/dashboard/VibeSelector';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
+import { WeeklyIntentionsSummary } from '@/components/dashboard/WeeklyIntentionsSummary';
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -87,6 +88,11 @@ export default function Dashboard() {
       {/* Personalized greeting */}
       <motion.div variants={fadeUp}>
         <GreetingHeader />
+      </motion.div>
+
+      {/* Weekly intentions */}
+      <motion.div variants={fadeUp}>
+        <WeeklyIntentionsSummary />
       </motion.div>
 
       {/* Who's around — the social hook */}
