@@ -1183,6 +1183,7 @@ export type Database = {
           end_date: string
           id: string
           location: string | null
+          needs_return_date: boolean
           priority_friend_ids: string[]
           start_date: string
           updated_at: string
@@ -1194,6 +1195,7 @@ export type Database = {
           end_date: string
           id?: string
           location?: string | null
+          needs_return_date?: boolean
           priority_friend_ids?: string[]
           start_date: string
           updated_at?: string
@@ -1205,6 +1207,7 @@ export type Database = {
           end_date?: string
           id?: string
           location?: string | null
+          needs_return_date?: boolean
           priority_friend_ids?: string[]
           start_date?: string
           updated_at?: string
