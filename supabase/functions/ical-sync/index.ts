@@ -524,7 +524,9 @@ Deno.serve(async (req) => {
         const city = extractFlightDestination(event.summary)
         const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
         const dateStr = getDateString(event.dtstart, timezone)
-        allFlights.push({ date: dateStr, timestamp: event.dtstart.getTime(), city, isReturn })
+        const ts = event.dtstart.getTime()
+        console.log(`[FLIGHT] "${event.summary}" | dtstart=${event.dtstart.toISOString()} | ts=${ts} | dateStr=${dateStr} | city=${city} | isReturn=${isReturn}`)
+        allFlights.push({ date: dateStr, timestamp: ts, city, isReturn })
       } else if (isHotelEvent(event.summary, event.location)) {
         // Non-all-day hotel event
         const hotelCity = extractHotelLocation(event.summary, event.location)
@@ -540,6 +542,8 @@ Deno.serve(async (req) => {
 
     // Sort flights chronologically by actual departure time (critical for connecting flights)
     allFlights.sort((a, b) => a.timestamp - b.timestamp)
+    console.log(`[FLIGHTS SORTED] ${allFlights.map(f => `${f.city}@${f.date}(ts=${f.timestamp})`).join(' → ')}`)
+    console.log(`[FLIGHTS SORTED DETAIL] ${JSON.stringify(allFlights)}`)
 
     // Build flightLocationByDate: for same-day connecting flights, last leg wins
     const flightLocationByDate: Map<string, string> = new Map()
