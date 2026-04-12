@@ -341,9 +341,9 @@ async function handleEventsSync(params: {
   }
 
   // Detect flight events and build a chronological list of flights with dates + destinations
-  interface FlightInfo { date: string; city: string | null; isReturn: boolean }
+  // Store actual departure timestamps for proper chronological sorting of connecting flights
+  interface FlightInfo { date: string; timestamp: number; city: string | null; isReturn: boolean }
   const allFlights: FlightInfo[] = []
-  const flightLocationByDate: Map<string, string> = new Map()
 
   // ── Hotel / Reservation Detection ──
   interface HotelStay { startDate: string; endDate: string; city: string }
@@ -360,12 +360,7 @@ async function handleEventsSync(params: {
       if (!startDate) continue
 
       const dateStr = getDateString(startDate, timezone)
-      allFlights.push({ date: dateStr, city, isReturn })
-
-      // Only mark non-return, recognized flights as away
-      if (city && !isReturn) {
-        flightLocationByDate.set(dateStr, city)
-      }
+      allFlights.push({ date: dateStr, timestamp: startDate.getTime(), city, isReturn })
       continue
     }
 
