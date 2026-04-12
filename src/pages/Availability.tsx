@@ -259,7 +259,7 @@ export default function Availability() {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             {activeTab === 'grid' && <AvailabilityGrid onCreatePlan={(date) => openPlanDialog(date)} />}
-            {activeTab === 'trips' && <TripsList />}
+            {activeTab === 'trips' && <TripsList refreshKey={tripsRefreshKey} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -274,7 +274,7 @@ export default function Availability() {
       <AddTripDialog
         open={tripDialogOpen}
         onOpenChange={setTripDialogOpen}
-        onTripAdded={() => loadProfileAndAvailability()}
+        onTripAdded={() => { loadProfileAndAvailability(); setTripsRefreshKey(k => k + 1); }}
       />
 
       <MissingReturnDialog
