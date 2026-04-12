@@ -57,11 +57,12 @@ interface FriendOption {
 interface AddTripDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onTripAdded: () => void;
+  onTripAdded: () => void | Promise<void>;
   editingTrip?: TripData | null;
 }
 
 const ALL_SLOTS: TimeSlot[] = ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+const TRIPS_UPDATED_EVENT = 'trips:updated';
 
 // Per-day slots map: dateString -> Set<slotName>
 type DaySlotsMap = Map<string, Set<string>>;
@@ -328,6 +329,10 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
 
   const totalPossibleSlots = tripDays.length * ALL_SLOTS.length;
 
+  const notifyTripsUpdated = () => {
+    window.dispatchEvent(new Event(TRIPS_UPDATED_EVENT));
+  };
+
   const handleSave = async () => {
     if (!session?.user || !startDate || !endDate) return;
 
@@ -436,7 +441,8 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
 
       const locationText = location.trim() ? ` to ${location.trim()}` : '';
       toast.success(`Trip${locationText} ${isEditing ? 'updated' : 'added'}: ${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`);
-      onTripAdded();
+      notifyTripsUpdated();
+      await Promise.resolve(onTripAdded());
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving trip:', error);
@@ -480,7 +486,8 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       }
 
       toast.success('Trip deleted');
-      onTripAdded();
+      notifyTripsUpdated();
+      await Promise.resolve(onTripAdded());
       onOpenChange(false);
       setDeleteDialogOpen(false);
     } catch (error) {
