@@ -90,6 +90,11 @@ export default function Dashboard() {
         <GreetingHeader />
       </motion.div>
 
+      {/* Weekly intentions */}
+      <motion.div variants={fadeUp}>
+        <WeeklyIntentionsSummary />
+      </motion.div>
+
       {/* Who's around — the social hook */}
       <motion.div variants={fadeUp}>
         <FriendVibeStrip onFriendTap={handleAddFriend} />
