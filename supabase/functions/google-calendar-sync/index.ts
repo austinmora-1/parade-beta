@@ -253,6 +253,22 @@ function normalizePlanTitle(title?: string): string {
   return t
 }
 
+// Check if a normalized title looks like a flight (contains 2+ known airport codes)
+function isFlightTitle(normalizedTitle: string): boolean {
+  const upper = normalizedTitle.toUpperCase()
+  const codes = upper.match(/\b([A-Z]{3})\b/g)
+  if (!codes) return false
+  return codes.filter(c => c in AIRPORT_CITY_MAP).length >= 2
+}
+
+// Build content dedup key: for flights, ignore start_time to catch all-day vs timed mismatches
+function makeContentKey(normalizedTitle: string, date: string, startTime: string | null): string {
+  if (isFlightTitle(normalizedTitle)) {
+    return `${normalizedTitle}|${date}`
+  }
+  return `${normalizedTitle}|${date}|${startTime || ''}`
+}
+
 // Classify a calendar event into a Parade activity type based on its title
 function classifyActivity(summary?: string, isFlight = false): string {
   if (isFlight) return 'flight'
