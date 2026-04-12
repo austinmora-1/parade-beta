@@ -1,87 +1,67 @@
 
 
-# Fix Calendar Sync Plan Deduplication
+# Fix Plan Deduplication: Root Cause & Solution
 
-## Problem
+## Root Cause Analysis
 
-Calendar sync is creating duplicate plans because:
+Investigating the real duplicate — `DL0679 | JFK to SFO` on Apr 13:
 
-1. **iCal recurring events get new UIDs each sync** — Apple Calendar generates different `source_event_id` values for the same recurring event instance across syncs, so the existing dedup-by-event-ID completely misses them
-2. **Shared Google Calendar events** — the same event shared across multiple Google calendars has different event IDs, creating duplicates
-3. **No database-level protection** — there's no unique constraint, so race conditions between the two-hourly auto-sync and manual syncs can insert duplicates
+| Field | Plan 1 (manual/gcal display) | Plan 2 (iCal sync) |
+|---|---|---|
+| title | `DL0679 \| JFK to SFO` | `Flight  DL679 JFK to SFO` |
+| source | `null` | `ical` |
+| start_time | `15:20:00` | `null` |
+| created_at | 13:56 | 16:00 |
 
-Real data confirms this: "Power Yoga", "YS Vinyasa", "Authentic knife making" all have duplicate rows for the same user, same date, same time, but different `source_event_id` values.
+The content-based dedup key is `normalizedTitle|date|start_time`. Both titles normalize to `dl679 jfk to sfo` correctly, but the keys diverge because **start_time differs** — one has `15:20:00`, the other is `null` (iCal treats this flight as an all-day event).
+
+### Three distinct bugs causing duplicates:
+
+1. **start_time mismatch in dedup key** — When the same event appears as a timed event in one source and an all-day event in another (or no source at all), the `start_time` component of the dedup key prevents matching. This is the primary bug.
+
+2. **Cross-source blindness** — The first plan has `source=null` (created manually or via the Google Calendar events UI, not the sync function). The iCal sync's content dedup does check all plans regardless of source, but fails due to issue #1.
+
+3. **iCal all-day flight events lose start_time** — When iCal provides a flight as an all-day event (`VALUE=DATE`), the sync sets `start_time=null`, losing the specific departure time that Google Calendar preserves.
 
 ## Plan
 
-### 1. Add content-based dedup to sync functions
+### 1. Make content dedup key ignore start_time for flight events
 
-Before inserting new plans, check for existing plans with the **same user_id + date + title + start_time** (regardless of source or source_event_id). If a match exists, skip the insert or update the existing record's `source_event_id` instead.
+In both `google-calendar-sync/index.ts` and `ical-sync/index.ts`, when building the content dedup key, use **only `normalizedTitle|date`** (without start_time) when the normalized title matches a flight pattern (contains airport codes). This prevents all-day vs timed mismatches from creating duplicates.
 
-**Files:** `supabase/functions/google-calendar-sync/index.ts`, `supabase/functions/ical-sync/index.ts`, `supabase/functions/calendar-sync-worker/index.ts`
+For non-flight events, keep the full key `normalizedTitle|date|start_time` to avoid false dedup of genuinely different events at different times.
 
-Changes in each sync function:
-- After the existing `existingByEventId` lookup, also fetch all plans for the user in the sync date range (not filtered by source)
-- Build a secondary lookup: `Map<"title|date|start_time", plan>` 
-- When a plan isn't found by `source_event_id`, check the content-based lookup before inserting
-- If content-match found: update that plan's `source_event_id` to link it, skip insert
+### 2. When content-match found, prefer the plan with more data
 
-### 2. Add unique constraint to prevent future duplicates
+Currently when a content match is found, the sync just links the `source_event_id`. Update this to also merge useful fields: if the existing plan has `start_time` but the incoming doesn't (or vice versa), keep the more specific value. This ensures we don't lose departure times.
 
-Add a DB migration with a unique index on `(user_id, source, source_event_id)` to prevent exact-duplicate inserts at the database level. This catches race conditions the app logic misses.
+### 3. Clean up existing duplicate flight plans
 
-**File:** New SQL migration
+Run a one-time migration to delete content-duplicate flight plans (same user, same date, same normalized title containing airport codes), keeping the one with the most data (non-null start_time preferred, oldest as tiebreaker).
 
-```sql
--- First clean up existing exact duplicates (keep the oldest)
-DELETE FROM plans p1
-USING plans p2
-WHERE p1.user_id = p2.user_id
-  AND p1.source = p2.source
-  AND p1.source_event_id = p2.source_event_id
-  AND p1.source IS NOT NULL
-  AND p1.source_event_id IS NOT NULL
-  AND p1.created_at > p2.created_at;
+### 4. Fix double-space in iCal flight title parsing
 
--- Add unique constraint
-CREATE UNIQUE INDEX IF NOT EXISTS plans_user_source_event_unique 
-ON plans (user_id, source, source_event_id) 
-WHERE source IS NOT NULL AND source_event_id IS NOT NULL;
+The iCal-synced title `"Flight  DL679 JFK to SFO"` has a double space. This is cosmetic but the `normalizePlanTitle` function already collapses whitespace so it doesn't affect dedup — however it should still be fixed for display quality by trimming/collapsing the title during ICS parsing.
+
+## Files to modify
+
+- `supabase/functions/google-calendar-sync/index.ts` — flight-aware dedup key logic
+- `supabase/functions/ical-sync/index.ts` — flight-aware dedup key logic  
+- `supabase/functions/calendar-sync-worker/index.ts` — same changes if it has its own sync logic
+- New SQL migration — cleanup existing duplicates
+
+## Technical Detail
+
+```text
+Current dedup key:  "dl679 jfk to sfo|2026-04-13T12:00:00+00:00|15:20:00"
+                    "dl679 jfk to sfo|2026-04-13T12:00:00+00:00|"
+                    → NO MATCH (start_time differs)
+
+Proposed dedup key for flights:
+                    "dl679 jfk to sfo|2026-04-13T12:00:00+00:00"
+                    "dl679 jfk to sfo|2026-04-13T12:00:00+00:00"
+                    → MATCH ✓
 ```
 
-### 3. Clean up existing content-based duplicates
+Flight detection for the dedup key: check if the normalized title contains two 3-letter airport codes from the existing `AIRPORT_CITY_MAP`, reusing the `isFlightEvent` function already present in both files.
 
-Add a one-time cleanup migration that removes content-based duplicates (same user + date + title + start_time, different source_event_id), keeping the oldest record.
-
-**File:** New SQL migration
-
-```sql
-DELETE FROM plans p1
-USING plans p2
-WHERE p1.user_id = p2.user_id
-  AND p1.date = p2.date
-  AND p1.title = p2.title
-  AND COALESCE(p1.start_time::text, '') = COALESCE(p2.start_time::text, '')
-  AND p1.id != p2.id
-  AND p1.created_at > p2.created_at
-  AND NOT EXISTS (SELECT 1 FROM plan_participants WHERE plan_id = p1.id);
-```
-
-### 4. Expand `normalize_trip_city` with abbreviations and neighborhoods
-
-Add common city abbreviations (NYC, SF, LA, DC, NOLA, ATX) and neighborhood-to-city mappings (Brooklyn → New York City, Hollywood → Los Angeles, etc.) to the existing DB function.
-
-**File:** New SQL migration updating `normalize_trip_city`
-
-### 5. Use upsert with conflict handling in sync inserts
-
-Change the `insert` calls to `upsert` with `onConflict: 'user_id,source,source_event_id'` and `ignoreDuplicates: true` so even if the app-level dedup misses something, the DB constraint prevents duplicates silently.
-
-**Files:** Same three sync edge functions
-
-## Technical Details
-
-- Content-based dedup key: `lower(trim(title)) + date + coalesce(start_time, '')` — this catches iCal recurring events with changing UIDs and cross-calendar shared events
-- The unique index is partial (WHERE source IS NOT NULL) so manually created plans without a source aren't affected
-- Cleanup migration preserves plans that have participants (enriched plans)
-- All three sync codepaths (google-calendar-sync, ical-sync, calendar-sync-worker) get identical fixes
