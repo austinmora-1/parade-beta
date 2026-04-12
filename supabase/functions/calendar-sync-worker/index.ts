@@ -864,7 +864,7 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
 
   const contentLookupIcal = new Map<string, any>()
   for (const p of (allUserPlansIcal || [])) {
-    const key = `${(p.title || '').toLowerCase().trim()}|${p.date}|${p.start_time || ''}`
+    const key = `${normalizePlanTitle(p.title)}|${p.date}|${p.start_time || ''}`
     if (!contentLookupIcal.has(key)) contentLookupIcal.set(key, p)
   }
 
@@ -902,7 +902,7 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
       }).eq('id', existing.id)
     } else {
       // Content-based dedup
-      const contentKey = `${(planRow.title || '').toLowerCase().trim()}|${planRow.date}|${planRow.start_time || ''}`
+      const contentKey = `${normalizePlanTitle(planRow.title)}|${planRow.date}|${planRow.start_time || ''}`
       const contentMatch = contentLookupIcal.get(contentKey)
       if (contentMatch) {
         if (!contentMatch.source_event_id || contentMatch.source === 'ical') {
@@ -921,8 +921,17 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
   if (toInsert.length > 0) {
     const { error: insertErr } = await adminClient
       .from('plans')
-      .upsert(toInsert, { onConflict: 'user_id,source,source_event_id', ignoreDuplicates: true })
-    if (insertErr) console.error('Error inserting ical plans:', insertErr)
+      .insert(toInsert)
+    if (insertErr) {
+      if (insertErr.code === '23505') {
+        for (const row of toInsert) {
+          const { error: singleErr } = await adminClient.from('plans').insert(row)
+          if (singleErr && singleErr.code !== '23505') console.error('Error inserting plan:', singleErr)
+        }
+      } else {
+        console.error('Error inserting ical plans:', insertErr)
+      }
+    }
   }
 
   return { eventsProcessed: events.length, datesUpdated: updatedCount }
