@@ -287,31 +287,21 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
       </div>
       {dayPlans.length > 0 ? (
         <div className="px-3 mt-1 mb-3">
-          <div className={cn(
-            "flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1",
-            dayPlans.length === 1 && "overflow-visible"
-          )}>
-            {dayPlans.map(plan => (
-              <div key={plan.id} className={cn(
-                "snap-start shrink-0",
-                dayPlans.length === 1 ? "w-full" : "w-[85%]"
-              )}>
-                <PlanCardCompact
-                  plan={plan}
-                  selectMode={selectMode}
-                  selected={selectedIds.has(plan.id)}
-                  onTap={() => onCardTap(plan.id)}
-                  onLongPress={() => onCardTap(plan.id)}
-                />
-              </div>
-            ))}
-          </div>
-          {dayPlans.length > 1 && (
-            <div className="flex justify-center gap-1.5 mt-1.5">
-              {dayPlans.map((_, idx) => (
-                <div key={idx} className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-              ))}
-            </div>
+          {dayPlans.length === 1 ? (
+            <PlanCardCompact
+              plan={dayPlans[0]}
+              selectMode={selectMode}
+              selected={selectedIds.has(dayPlans[0].id)}
+              onTap={() => onCardTap(dayPlans[0].id)}
+              onLongPress={() => onCardTap(dayPlans[0].id)}
+            />
+          ) : (
+            <SwipeStack
+              plans={dayPlans}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onCardTap={onCardTap}
+            />
           )}
         </div>
       ) : (
