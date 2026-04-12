@@ -356,11 +356,14 @@ async function handleEventsSync(params: {
       const city = extractFlightDestination(event.summary)
       const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
 
-      const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
-      if (!startDate) continue
+      const rawDateTime = event.start.dateTime || event.start.date || null
+      const startDate = rawDateTime ? new Date(rawDateTime) : null
+      if (!startDate || isNaN(startDate.getTime())) continue
 
       const dateStr = getDateString(startDate, timezone)
-      allFlights.push({ date: dateStr, timestamp: startDate.getTime(), city, isReturn })
+      const ts = startDate.getTime()
+      console.log(`[FLIGHT] "${event.summary}" | raw=${rawDateTime} | parsed=${startDate.toISOString()} | ts=${ts} | dateStr=${dateStr} | city=${city} | isReturn=${isReturn}`)
+      allFlights.push({ date: dateStr, timestamp: ts, city, isReturn })
       continue
     }
 
