@@ -575,7 +575,7 @@ Deno.serve(async (req) => {
         }
         // Check if all-day event is a hotel stay
         if (isHotelEvent(event.summary, event.location)) {
-          const hotelCity = extractHotelLocation(event.summary, event.location)
+          const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
           if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
             const endExcl = new Date(event.dtend)
             endExcl.setDate(endExcl.getDate() - 1)
@@ -598,7 +598,7 @@ Deno.serve(async (req) => {
 
       // Detect flights
       if (isFlightEvent(event.summary)) {
-        const city = extractFlightDestination(event.summary)
+        const city = resolveToCity(extractFlightDestination(event.summary))
         const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
         const dateStr = getDateString(event.dtstart, timezone)
         const ts = event.dtstart.getTime()
@@ -606,7 +606,7 @@ Deno.serve(async (req) => {
         allFlights.push({ date: dateStr, timestamp: ts, city, isReturn })
       } else if (isHotelEvent(event.summary, event.location)) {
         // Non-all-day hotel event
-        const hotelCity = extractHotelLocation(event.summary, event.location)
+        const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
         if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
           hotelStays.push({
             startDate: getDateString(event.dtstart, timezone),
