@@ -154,6 +154,15 @@ export default function Availability() {
         onOpenChange={setMergeOpen}
         preselectedPlanIds={mergePreselected}
       />
+
+      {sharePlanId && (
+        <InviteToPlanDialog
+          open={!!sharePlanId}
+          onOpenChange={(open) => { if (!open) setSharePlanId(null); }}
+          planId={sharePlanId}
+          planTitle={sharePlanTitle}
+        />
+      )}
     </div>
   );
 }
