@@ -247,7 +247,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         </span>
       </div>
       {dayPlans.length > 0 ? (
-        <div className="relative px-3 pb-2" style={{ height: `${80 + (dayPlans.length - 1) * 32}px` }}>
+        <div className="relative px-3 mt-1 mb-3" style={{ height: `${80 + (dayPlans.length - 1) * 32}px` }}>
           {dayPlans.map((plan, idx) => (
             <div
               key={plan.id}
