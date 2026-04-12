@@ -113,12 +113,6 @@ export default function Availability() {
               </Button>
             }
           />
-          <button
-            onClick={() => navigate('/plans')}
-            className="text-xs font-medium text-primary hover:text-primary/80 transition-colors ml-auto"
-          >
-            View Plan List →
-          </button>
         </div>
       </div>
 
