@@ -488,7 +488,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       className={cn(
-        "w-full rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.99] shadow-lg ring-1 ring-white/5",
+        "w-full h-[100px] rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
         (isTentative || isPendingRsvp) && "border-dashed opacity-70",
         selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border"
       )}
