@@ -126,7 +126,7 @@ export default function Landing() {
               Designed for Fun
             </p>
             <p className="mt-3 text-white/80 text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
-              Endless group chats, 'are you around?' texts, and memes sent, but still find plans always seem to fall through? Parade brings order to the chaos: a simple, seamless platform that connects your existing calendars to show you who's free, who's in town, and what your plans are, making it easy to turn a "TBD" into a "hell yeah".
+              Stop letting plans die in the group chat. Parade syncs your calendars so you can see who's free, who's nearby, and what's on deck — no more 'wya' spirals, no more 'lmk' dead ends. Just real plans with real people, actually happening.
             </p>
             <div className="mt-5">
               <Button onClick={scrollToSignup} className="text-sm sm:text-base px-6 py-5">
