@@ -208,18 +208,18 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Merge className="h-5 w-5 text-primary" />
-            Merge {selectedPlans.length} Plans
+            Merge Plans
           </DialogTitle>
         </DialogHeader>
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-1 shrink-0 pb-2">
-          {(['details', 'participants', 'confirm'] as Step[]).map((s, i) => (
+          {stepsForIndicator.map((s, i) => (
             <div key={s} className="flex items-center gap-1">
               <div className={cn(
                 'h-2 w-2 rounded-full transition-colors',
                 step === s ? 'bg-primary w-5' : (
-                  (['details', 'participants', 'confirm'].indexOf(step) > i)
+                  stepsForIndicator.indexOf(step) > i
                     ? 'bg-primary/40' : 'bg-muted-foreground/20'
                 )
               )} />
@@ -229,7 +229,45 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
 
         <ScrollArea className="flex-1 min-h-0">
           <div className="px-1 pb-4">
-            {/* Step 1: Choose details */}
+            {/* Select step (when coming from plan detail with 1 plan) */}
+            {step === 'select' && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Select plans to merge with this one.
+                </p>
+                {pickablePlans.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No other upcoming plans to merge with.</p>
+                ) : (
+                  pickablePlans.map(plan => {
+                    const config = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
+                    const checked = additionalPlanIds.has(plan.id);
+                    return (
+                      <button
+                        key={plan.id}
+                        onClick={() => toggleAdditionalPlan(plan.id)}
+                        className={cn(
+                          'w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all',
+                          checked ? 'border-primary bg-primary/5 shadow-sm' : 'border-border hover:bg-muted/50'
+                        )}
+                      >
+                        <Checkbox checked={checked} className="shrink-0" />
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <ActivityIcon config={config} size={16} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{getPlanDisplayTitle(plan)}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {format(plan.date, 'EEE, MMM d')} · {plan.startTime ? formatTime12(plan.startTime) : TIME_SLOT_LABELS[plan.timeSlot]?.time}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* Choose details */}
             {step === 'details' && (
               <div className="space-y-5">
                 <p className="text-sm text-muted-foreground">
