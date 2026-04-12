@@ -83,7 +83,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
 
   return (
     <>
-      <div ref={containerRef} className="relative">
+      <div ref={containerRef} className="relative z-20">
         <motion.div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
