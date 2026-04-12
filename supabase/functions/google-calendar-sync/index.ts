@@ -394,14 +394,19 @@ async function handleEventsSync(params: {
 
   for (const existingRow of (existingAvailabilityRows || [])) {
     if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
-    if (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) {
+    const isReturnDate = returnHomeDates.has(existingRow.date)
+    const shouldClear = isReturnDate ||
+      (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
+      (existingRow.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterAnyReturn(existingRow.date, returnHomeDates))
+    if (shouldClear) {
       const { error } = await adminClient
         .from('availability')
         .upsert(
           { user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null },
           { onConflict: 'user_id,date', ignoreDuplicates: false }
         )
-      if (error) console.error('Error clearing stale home-city location for', existingRow.date, ':', error)
+      if (error) console.error('Error clearing stale location for', existingRow.date, ':', error)
+    }
     }
   }
 
