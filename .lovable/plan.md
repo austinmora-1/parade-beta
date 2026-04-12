@@ -1,47 +1,48 @@
 
 
-## Enhance Trip Planning Functionality
+## Plan: Improve Trip Detection from Calendar Sync
 
-Currently, adding a trip simply marks date ranges as "away" with an optional destination. This plan upgrades trips to support availability slots during the trip and priority friends to hang out with at the destination.
+### Problem
+Currently, trip creation from calendar sync only detects flights. It does not detect hotel/Airbnb reservations, and when there's an outbound flight with no detected return flight, the system silently fills forward up to 30 days, which creates incorrect long trips.
 
-### What Changes
+### Changes
 
-**1. Expand the AddTripDialog UI** (`src/components/profile/AddTripDialog.tsx`)
-- Add a new section: **"Available time slots"** — a simplified time slot picker (reusing the existing 6-slot grid) letting users mark which slots they're free during the trip (default: all free, matching current behavior)
-- Add a new section: **"Friends to see"** — a searchable friend picker (similar to the plan creation friend selector) letting users tag friends they want to prioritize hanging out with during the trip. Show connected friends filtered by those who live in or are also traveling to the trip destination
-- Store the selected availability slots per trip day (current behavior writes all slots as default `true`; new behavior writes only the selected slots as `true`, others as `false`)
+#### 1. Add Hotel/Reservation Detection to Sync Functions
+**Files:** `supabase/functions/google-calendar-sync/index.ts`, `supabase/functions/calendar-sync-worker/index.ts`, `supabase/functions/ical-sync/index.ts`
 
-**2. Create a `trips` table** (new database migration)
-- Columns: `id`, `user_id`, `start_date`, `end_date`, `location`, `available_slots` (text array of selected time slots), `priority_friend_ids` (uuid array), `created_at`, `updated_at`
-- RLS: users can CRUD their own trips; friends can SELECT trips where they're in `priority_friend_ids`
-- This replaces the implicit "trip = consecutive away days" detection with explicit trip records
-- The existing availability upsert logic continues to mark days as away, but now references the trip record
+- Add `isHotelEvent()` detector: match keywords like "hotel", "airbnb", "vrbo", "reservation", "check-in", "check-out", "stay at", "lodging", "accommodation", common hotel brand names (Marriott, Hilton, Hyatt, etc.)
+- Add `extractHotelLocation()`: pull location from event location field or summary
+- Build a `hotelStaysByDate` map similar to `flightLocationByDate`, marking all dates from check-in to check-out as "away" at the hotel's location
+- When both a flight and hotel overlap for the same destination, use flight dates (flight takes priority per requirement)
 
-**3. Update availability upsert logic** (`AddTripDialog.tsx` save handler)
-- When saving a trip, write only the user-selected time slots as `true` in the availability table (others `false`)
-- Insert/update the corresponding `trips` table row
-- On delete, also delete the `trips` row
+#### 2. Track "One-Way Flights" (Outbound Without Return)
+**Files:** `supabase/functions/google-calendar-sync/index.ts`, `supabase/functions/calendar-sync-worker/index.ts`, `supabase/functions/ical-sync/index.ts`
 
-**4. Show priority friends on trip UI** 
-- In `LocationTimeline.tsx`: when displaying a trip block, show small avatar chips of priority friends beneath the trip bar
-- In `AvailabilityGrid` / `DaySummaryDropdown`: for away days linked to a trip with priority friends, show a subtle "Want to see: [names]" note
+- After processing all flights, identify outbound flights that have no corresponding return flight within 30 days
+- For these, instead of silently filling forward 30 days, store a flag in the trip record or a new `pending_return_trips` table so the client knows to prompt the user
+- Stop the gap-filling at a reasonable limit (e.g., 7 days instead of 30) when no return flight is found
 
-**5. Notify priority friends** (optional enhancement)
-- When a user saves a trip with priority friends, create smart nudges for those friends: "[Name] is visiting [Location] from [Date]–[Date] and wants to hang out!"
+#### 3. Create "Missing Return Flight" Dialog
+**File:** New `src/components/trips/MissingReturnDialog.tsx`
+
+- Dialog that appears after calendar sync completes when one-way outbound flights are detected
+- Shows the trip destination and departure date
+- Options: "Sync return flight" (prompts re-sync or manual calendar add), "Add return date manually" (date picker), "Skip" (dismiss)
+- On manual return date selection, update the trip's `end_date` and fill availability accordingly
+
+#### 4. Integrate the Dialog into Sync Flow
+**Files:** `src/hooks/useGoogleCalendar.ts`, `src/hooks/useAppleCalendar.ts`, `src/pages/Availability.tsx`
+
+- After `syncCalendar()` returns, check if the response includes `pendingReturnTrips` (trips with outbound but no return)
+- If so, open the `MissingReturnDialog` with the trip details
+- On user action, update the trip record and availability accordingly
+
+#### 5. Database Changes
+- Add a `needs_return_date` boolean column to the `trips` table (default false) to flag trips that were auto-created from one-way flights
+- The sync functions set this flag; the dialog clears it when the user provides a return date
 
 ### Technical Details
-
-- New migration creates the `trips` table with appropriate RLS policies
-- `AddTripDialog` gains two new collapsible sections below the date pickers
-- Friend picker reuses the same searchable pattern from `QuickPlanSheet` (filter connected friends, display as removable chips)
-- Time slot picker uses a simple 6-toggle grid matching `TIME_SLOT_LABELS`
-- The `TripData` interface expands to include `id?: string`, `availableSlots?: TimeSlot[]`, `priorityFriendIds?: string[]`
-- Existing trip detection logic in `LocationTimeline` switches to querying the `trips` table instead of inferring from consecutive away days
-
-### Files Modified
-- `src/components/profile/AddTripDialog.tsx` — major UI expansion
-- `src/components/profile/LocationTimeline.tsx` — show priority friends on trip blocks
-- `src/components/availability/DaySummaryDropdown.tsx` — show "want to see" note on away days
-- `src/types/planner.ts` — expand `TripData` type
-- New migration for `trips` table
+- Hotel detection regex: `/\b(hotel|airbnb|vrbo|booking|reservation|check[\s-]?in|check[\s-]?out|stay\s+at|lodging|accommodation|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|courtyard|residence\s*inn|ritz|four\s*seasons|intercontinental|radisson)\b/i`
+- Hotel location extraction: prefer event `location` field, then parse from summary
+- Flight-hotel priority: when both exist for the same destination, use flight departure as start and flight return as end; fall back to hotel dates if only hotel exists
 
