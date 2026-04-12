@@ -538,22 +538,22 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       className={cn(
-        "w-full h-[100px] rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
+        "w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all hover:bg-muted/50 active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
         (isTentative || isPendingRsvp) && "border-dashed opacity-70",
         selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border"
       )}
     >
-      <div className="flex items-center gap-2 mb-1.5 min-w-0">
+      <div className="flex items-start gap-2 mb-1.5 min-w-0">
         {selectMode && (
-          <Checkbox checked={selected} className="shrink-0" />
+          <Checkbox checked={selected} className="shrink-0 mt-0.5" />
         )}
         <div
-          className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0"
+          className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5"
           style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
         >
           <ActivityIcon config={activityConfig} size={16} />
         </div>
-        <span className="text-sm font-semibold truncate flex-1">{displayTitle}</span>
+        <span className="flex-1 min-w-0 text-sm font-semibold leading-tight break-words [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">{displayTitle}</span>
       </div>
 
       <div className="text-[11px] text-muted-foreground space-y-0.5">
