@@ -751,6 +751,14 @@ export default function PlanDetail() {
         />
       )}
 
+      {/* Merge dialog */}
+      <MergePlansDialog
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        preselectedPlanIds={mergeSelectedIds}
+        onMerged={() => navigate('/availability')}
+      />
+
       {/* Delete confirm */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
