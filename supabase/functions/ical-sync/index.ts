@@ -861,9 +861,21 @@ Deno.serve(async (req) => {
     // Fetch existing ical plans
     const { data: existingPlans } = await adminClient
       .from('plans')
-      .select('id, source_event_id')
+      .select('id, source_event_id, title, date, start_time')
       .eq('user_id', userId)
       .eq('source', 'ical')
+
+    // Also fetch ALL plans for content-based dedup
+    const { data: allUserPlans } = await adminClient
+      .from('plans')
+      .select('id, source, source_event_id, title, date, start_time')
+      .eq('user_id', userId)
+
+    const contentLookup = new Map<string, any>()
+    for (const p of (allUserPlans || [])) {
+      const key = `${(p.title || '').toLowerCase().trim()}|${p.date}|${p.start_time || ''}`
+      if (!contentLookup.has(key)) contentLookup.set(key, p)
+    }
 
     // Find which have participants (manually enriched)
     const existingPlanIds = (existingPlans || []).map((p: any) => p.id)
@@ -892,7 +904,7 @@ Deno.serve(async (req) => {
         .in('id', toDelete.map((p: any) => p.id))
     }
 
-    // Upsert: skip enriched, update existing, insert new
+    // Upsert: skip enriched, update existing, content-dedup, insert new
     const toInsert: any[] = []
     for (const [eventId, planRow] of planRowsByEventId) {
       const existing = existingByEventId.get(eventId)
@@ -911,14 +923,28 @@ Deno.serve(async (req) => {
           })
           .eq('id', existing.id)
       } else {
-        toInsert.push(planRow)
+        // Content-based dedup
+        const contentKey = `${(planRow.title || '').toLowerCase().trim()}|${planRow.date}|${planRow.start_time || ''}`
+        const contentMatch = contentLookup.get(contentKey)
+        if (contentMatch) {
+          if (!contentMatch.source_event_id || contentMatch.source === 'ical') {
+            await adminClient
+              .from('plans')
+              .update({ source: 'ical', source_event_id: eventId })
+              .eq('id', contentMatch.id)
+          }
+          console.log(`[DEDUP] Skipped duplicate: "${planRow.title}" on ${planRow.date} (content match with plan ${contentMatch.id})`)
+        } else {
+          toInsert.push(planRow)
+          contentLookup.set(contentKey, planRow)
+        }
       }
     }
 
     if (toInsert.length > 0) {
       const { error: plansError } = await adminClient
         .from('plans')
-        .insert(toInsert)
+        .upsert(toInsert, { onConflict: 'user_id,source,source_event_id', ignoreDuplicates: true })
       if (plansError) {
         console.error('Error inserting iCal plans:', plansError)
       }

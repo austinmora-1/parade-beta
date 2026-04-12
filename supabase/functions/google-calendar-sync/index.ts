@@ -775,9 +775,22 @@ async function handleEventsSync(params: {
   // Fetch existing gcal plans for this user
   const { data: existingPlans } = await adminClient
     .from('plans')
-    .select('id, source_event_id')
+    .select('id, source_event_id, title, date, start_time')
     .eq('user_id', userId)
     .eq('source', 'gcal')
+
+  // Also fetch ALL plans for this user (any source) for content-based dedup
+  const { data: allUserPlans } = await adminClient
+    .from('plans')
+    .select('id, source, source_event_id, title, date, start_time')
+    .eq('user_id', userId)
+
+  // Build content-based lookup: "lower(title)|date|start_time" → plan
+  const contentLookup = new Map<string, any>()
+  for (const p of (allUserPlans || [])) {
+    const key = `${(p.title || '').toLowerCase().trim()}|${p.date}|${p.start_time || ''}`
+    if (!contentLookup.has(key)) contentLookup.set(key, p)
+  }
 
   // Find which existing plans have participants (manually enriched)
   const existingPlanIds = (existingPlans || []).map((p: any) => p.id)
@@ -810,6 +823,7 @@ async function handleEventsSync(params: {
   // For plans that still exist in calendar:
   // - If enriched (has participants): skip entirely to preserve manual edits
   // - If exists but not enriched: update in place (preserving ID)
+  // - If content-match found: link source_event_id to existing plan, skip insert
   // - If new: insert
   const toInsert: any[] = []
   for (const [eventId, planRow] of planRowsByEventId) {
@@ -832,14 +846,31 @@ async function handleEventsSync(params: {
         })
         .eq('id', existing.id)
     } else {
-      toInsert.push(planRow)
+      // Content-based dedup: check if a plan with same title+date+start_time already exists
+      const contentKey = `${(planRow.title || '').toLowerCase().trim()}|${planRow.date}|${planRow.start_time || ''}`
+      const contentMatch = contentLookup.get(contentKey)
+      if (contentMatch) {
+        // Link the existing plan's source_event_id if it doesn't have one, then skip
+        if (!contentMatch.source_event_id || contentMatch.source === 'gcal') {
+          await adminClient
+            .from('plans')
+            .update({ source: 'gcal', source_event_id: eventId })
+            .eq('id', contentMatch.id)
+        }
+        console.log(`[DEDUP] Skipped duplicate: "${planRow.title}" on ${planRow.date} (content match with plan ${contentMatch.id})`)
+      } else {
+        toInsert.push(planRow)
+        // Add to content lookup to prevent duplicate inserts within same sync batch
+        contentLookup.set(contentKey, planRow)
+      }
     }
   }
 
   if (toInsert.length > 0) {
+    // Use upsert with conflict handling on the unique index
     const { error: plansError } = await adminClient
       .from('plans')
-      .insert(toInsert)
+      .upsert(toInsert, { onConflict: 'user_id,source,source_event_id', ignoreDuplicates: true })
     if (plansError) {
       console.error('Error inserting gcal plans:', plansError)
     }
