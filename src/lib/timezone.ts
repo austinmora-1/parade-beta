@@ -379,7 +379,7 @@ export function convertTimeBetweenTimezones(
  */
 export function getTimeSlotForTime(time: string): string {
   const [h] = time.split(':').map(Number);
-  if (h >= 6 && h < 9) return 'early-morning';
+  if (h >= 2 && h < 9) return 'early-morning';
   if (h >= 9 && h < 12) return 'late-morning';
   if (h >= 12 && h < 15) return 'early-afternoon';
   if (h >= 15 && h < 18) return 'late-afternoon';
