@@ -17,13 +17,13 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 150 30% 22%;
+    --foreground: 150 30% 26%;
 
     --card: 40 30% 99%;
-    --card-foreground: 150 30% 22%;
+    --card-foreground: 150 30% 26%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 150 30% 22%;
+    --popover-foreground: 150 30% 26%;
 
     --primary: 150 45% 36%;
     --primary-foreground: 0 0% 100%;
@@ -104,7 +104,7 @@
 
     /* Light sidebar — warm cream instead of dark green */
     --sidebar-background: 40 30% 97%;
-    --sidebar-foreground: 150 30% 22%;
+    --sidebar-foreground: 150 30% 26%;
     --sidebar-primary: 150 45% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 150 30% 90%;
