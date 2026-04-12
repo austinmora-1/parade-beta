@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback, useState, Fragment } from 'react';
+import { useMemo, useRef, useCallback, useState, useEffect, Fragment } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2 } from 'lucide-react';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
