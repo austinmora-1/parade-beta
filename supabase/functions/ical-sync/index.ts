@@ -507,6 +507,8 @@ Deno.serve(async (req) => {
     // Sort flights and fill gap days
     allFlights.sort((a, b) => a.date.localeCompare(b.date))
     const allFlightDatesSet = new Set(allFlights.map(f => f.date))
+    const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
+    const outboundFlightDates = new Set(allFlights.filter(f => !f.isReturn && f.city).map(f => f.date))
     const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
     for (const [outDate, city] of outboundEntries) {
       const current = new Date(outDate)
