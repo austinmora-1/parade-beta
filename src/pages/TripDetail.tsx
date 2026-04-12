@@ -39,6 +39,11 @@ interface FriendProfile {
   avatar_url: string | null;
 }
 
+interface TripParticipant {
+  id: string;
+  friend_user_id: string;
+}
+
 export default function TripDetail() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
@@ -48,6 +53,7 @@ export default function TripDetail() {
   const [trip, setTrip] = useState<TripRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [friendProfiles, setFriendProfiles] = useState<FriendProfile[]>([]);
+  const [companionProfiles, setCompanionProfiles] = useState<FriendProfile[]>([]);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -75,6 +81,21 @@ export default function TripDetail() {
           .rpc('get_display_names_for_users', { p_user_ids: data.priority_friend_ids });
         if (profiles) setFriendProfiles(profiles);
       }
+
+      // Fetch travel companions
+      const { data: participants } = await supabase
+        .from('trip_participants')
+        .select('friend_user_id')
+        .eq('trip_id', tripId);
+      if (participants && participants.length > 0) {
+        const companionIds = participants.map((p: any) => p.friend_user_id);
+        const { data: cProfiles } = await supabase
+          .rpc('get_display_names_for_users', { p_user_ids: companionIds });
+        if (cProfiles) setCompanionProfiles(cProfiles);
+      } else {
+        setCompanionProfiles([]);
+      }
+
       setLoading(false);
     };
     fetchTrip();
@@ -113,6 +134,20 @@ export default function TripDetail() {
       } else {
         setFriendProfiles([]);
       }
+        // Reload companions
+        const { data: participants } = await supabase
+          .from('trip_participants')
+          .select('friend_user_id')
+          .eq('trip_id', tripId);
+        if (participants && participants.length > 0) {
+          const companionIds = participants.map((p: any) => p.friend_user_id);
+          const { data: cProfiles } = await supabase
+            .rpc('get_display_names_for_users', { p_user_ids: companionIds });
+          if (cProfiles) setCompanionProfiles(cProfiles);
+          else setCompanionProfiles([]);
+        } else {
+          setCompanionProfiles([]);
+        }
     }
     await loadProfileAndAvailability();
   };
@@ -143,6 +178,8 @@ export default function TripDetail() {
   const duration = differenceInDays(endDate, startDate) + 1;
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
+  const editTravelCompanionIds = companionProfiles.map(c => c.user_id);
+
   const editTripData: TripData = {
     id: trip.id,
     startDate,
@@ -150,6 +187,7 @@ export default function TripDetail() {
     location: trip.location || undefined,
     availableSlots: trip.available_slots,
     priorityFriendIds: trip.priority_friend_ids,
+    travelCompanionIds: editTravelCompanionIds,
   };
 
   return (
@@ -236,6 +274,46 @@ export default function TripDetail() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Friends to See */}
+      <div className="space-y-2">
+        {/* Travel Companions */}
+        <div className="flex items-center gap-1.5">
+          <Plane className="h-4 w-4 text-muted-foreground" />
+          <h2 className="font-display text-sm font-semibold">
+            Traveling With ({companionProfiles.length})
+          </h2>
+        </div>
+        {companionProfiles.length > 0 ? (
+          <div className="space-y-1.5">
+            {companionProfiles.map((friend) => (
+              <button
+                key={friend.user_id}
+                onClick={() => navigate(`/friend/${friend.user_id}`)}
+                className="w-full flex items-center gap-2.5 rounded-lg border border-border bg-card p-2.5 hover:bg-muted/50 transition-colors text-left"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={friend.avatar_url || undefined} />
+                  <AvatarFallback className="text-xs">
+                    {(friend.display_name || '?')[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium truncate">
+                  {friend.display_name || 'Friend'}
+                </span>
+                <span className="ml-auto text-[10px] text-availability-away-foreground font-medium flex items-center gap-0.5">
+                  <Plane className="h-2.5 w-2.5" />
+                  Companion
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border bg-card p-4 text-center">
+            <p className="text-xs text-muted-foreground">No travel companions added</p>
+          </div>
+        )}
       </div>
 
       {/* Friends to See */}
