@@ -418,12 +418,18 @@ function isFlightTitle(normalizedTitle: string): boolean {
   return codes.filter(c => c in AIRPORT_CITY_MAP).length >= 2
 }
 
+// Extract YYYY-MM-DD from any date format (ISO string, Postgres timestamptz, etc.)
+function extractDateOnly(date: string): string {
+  return date.replace(/^(\d{4}-\d{2}-\d{2}).*/, '$1')
+}
+
 // Build content dedup key: for flights, ignore start_time to catch all-day vs timed mismatches
 function makeContentKey(normalizedTitle: string, date: string, startTime: string | null): string {
+  const d = extractDateOnly(date)
   if (isFlightTitle(normalizedTitle)) {
-    return `${normalizedTitle}|${date}`
+    return `${normalizedTitle}|${d}`
   }
-  return `${normalizedTitle}|${date}|${startTime || ''}`
+  return `${normalizedTitle}|${d}|${startTime || ''}`
 }
 
 // ── Activity Classifier ─────────────────────────────────────────────────────
