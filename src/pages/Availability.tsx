@@ -12,12 +12,12 @@ import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { WeekOverview } from '@/components/dashboard/WeekOverview';
+import { TripsList } from '@/components/trips/TripsList';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TABS = [
   { id: 'grid', label: 'Daily' },
-  { id: 'overview', label: 'Weekly' },
+  { id: 'trips', label: 'Trips' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
@@ -217,7 +217,7 @@ export default function Availability() {
             transition={{ duration: 0.2, ease: 'easeInOut' }}
           >
             {activeTab === 'grid' && <AvailabilityGrid onCreatePlan={(date) => openPlanDialog(date)} />}
-            {activeTab === 'overview' && <WeekOverview standalone />}
+            {activeTab === 'trips' && <TripsList />}
           </motion.div>
         </AnimatePresence>
       </div>
