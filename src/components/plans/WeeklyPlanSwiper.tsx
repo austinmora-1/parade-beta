@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback, useState } from 'react';
+import { useMemo, useRef, useCallback, useState, Fragment } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Merge, X } from 'lucide-react';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
@@ -180,68 +180,17 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
       </AnimatePresence>
 
       {/* Days with plan cards */}
-      <div className="space-y-1">
-        {weekDays.map((day) => {
-          const key = format(day, 'yyyy-MM-dd');
-          const dayPlans = plansByDay.get(key) || [];
-          const isToday = isSameDay(day, today);
-          const isPast = day < today && !isToday;
-
-          return (
-            <div key={key} className={cn("rounded-xl transition-colors", isPast && "opacity-50")}>
-              {/* Day header */}
-              <div className={cn(
-                "flex items-center gap-2 px-3 py-1.5",
-                isToday && "text-primary"
-              )}>
-                <span className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
-                  isToday ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                )}>
-                  {format(day, 'd')}
-                </span>
-                <span className={cn(
-                  "text-xs font-medium",
-                  isToday ? "text-primary font-semibold" : "text-muted-foreground"
-                )}>
-                  {format(day, 'EEEE')}
-                </span>
-              </div>
-
-              {/* Plan cards - horizontal scroll */}
-              {dayPlans.length > 0 ? (
-                <div className="flex gap-2 overflow-x-auto px-3 pb-2 snap-x snap-mandatory scrollbar-hide">
-                  {dayPlans.map((plan) => (
-                    <PlanCardCompact
-                      key={plan.id}
-                      plan={plan}
-                      selectMode={selectMode}
-                      selected={selectedIds.has(plan.id)}
-                      onTap={() => {
-                        if (selectMode) {
-                          toggleSelect(plan.id);
-                          return;
-                        }
-                        const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
-                        if (planIsPast) {
-                          navigate(`/plan/${plan.id}`);
-                        } else {
-                          onEditPlan?.(plan);
-                        }
-                      }}
-                      onLongPress={() => handleCardLongPress(plan.id)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="px-3 pb-2">
-                  <div className="h-[1px] bg-border/40 mx-7" />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <PastDaysCollapsible
+        weekDays={weekDays}
+        today={today}
+        plansByDay={plansByDay}
+        selectMode={selectMode}
+        selectedIds={selectedIds}
+        toggleSelect={toggleSelect}
+        onEditPlan={onEditPlan}
+        onCardLongPress={handleCardLongPress}
+        navigate={navigate}
+      />
 
       {/* Merge FAB when in select mode with 2+ selected */}
       <AnimatePresence>
