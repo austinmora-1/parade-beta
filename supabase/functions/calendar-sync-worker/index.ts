@@ -158,6 +158,25 @@ function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   return false
 }
 
+function normalizeLocation(value: string | null | undefined): string {
+  return (value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s*(city|town|village)$/i, '')
+    .trim()
+}
+
+function isLocationMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const normalizedA = normalizeLocation(a)
+  const normalizedB = normalizeLocation(b)
+  if (!normalizedA || !normalizedB) return false
+  if (normalizedA.includes(normalizedB) || normalizedB.includes(normalizedA)) return true
+
+  const cityA = normalizedA.split(',')[0]?.trim()
+  const cityB = normalizedB.split(',')[0]?.trim()
+  return !!cityA && !!cityB && (cityA.includes(cityB) || cityB.includes(cityA))
+}
+
 // ── Hotel / Reservation Detection ───────────────────────────────────────────
 
 const HOTEL_REGEX = /\b(hotel|airbnb|vrbo|booking|reservation|check[\s-]?in|check[\s-]?out|stay\s+at|lodging|accommodation|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|courtyard|residence\s*inn|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|motel|hostel|inn\b|lodge\b)\b/i
@@ -404,6 +423,11 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
 
   const allFlightDatesSet = new Set(allFlights.map(f => f.date))
 
+  const { data: existingTrips } = await adminClient
+    .from('trips')
+    .select('id, location, start_date, end_date, needs_return_date')
+    .eq('user_id', userId)
+
   // Determine return vs outbound per day based on LAST flight of each day
   const returnHomeDates = new Set<string>()
   const outboundFlightDates = new Set<string>()
@@ -512,6 +536,26 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   // Flag one-way trips (needs_return_date)
   const pendingReturnTrips: { city: string; departureDate: string }[] = []
   for (const [outDate, city] of outboundEntries) {
+    const resolvedTrip = (existingTrips || []).find((trip: any) =>
+      !trip.needs_return_date &&
+      isLocationMatch(trip.location, city) &&
+      trip.start_date <= outDate &&
+      trip.end_date >= outDate
+    )
+
+    if (resolvedTrip) {
+      const current = new Date(outDate + 'T00:00:00Z')
+      current.setDate(current.getDate() + 1)
+      const manualEnd = new Date(resolvedTrip.end_date + 'T00:00:00Z')
+      while (current <= manualEnd) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        flightLocationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+      continue
+    }
+
     let hasReturn = false
     const maxReturnDate = new Date(outDate + 'T00:00:00Z'); maxReturnDate.setDate(maxReturnDate.getDate() + 30)
     const maxReturnStr = maxReturnDate.toISOString().split('T')[0]
