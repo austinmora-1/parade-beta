@@ -236,6 +236,23 @@ function formatTimeHHMM(date: Date, timezone?: string): string {
   const parts = new Intl.DateTimeFormat('en-GB', opts).format(date)
   return parts // en-GB gives HH:MM
 }
+
+// Normalize plan title for dedup comparison: strip "Flight" prefix, "|" separators,
+// leading zeros from flight numbers, and collapse whitespace
+function normalizePlanTitle(title?: string): string {
+  if (!title) return ''
+  let t = title.toLowerCase().trim()
+  // Remove "flight" prefix (with optional count like "Flight 1 of 2 |")
+  t = t.replace(/^flight\s*(\d+\s*of\s*\d+\s*\|?\s*)?/i, '')
+  // Remove pipe separators
+  t = t.replace(/\|/g, ' ')
+  // Remove leading zeros from flight numbers (e.g., DL0679 → DL679)
+  t = t.replace(/([a-z]{2})0+(\d)/gi, '$1$2')
+  // Collapse whitespace
+  t = t.replace(/\s+/g, ' ').trim()
+  return t
+}
+
 // Classify a calendar event into a Parade activity type based on its title
 function classifyActivity(summary?: string, isFlight = false): string {
   if (isFlight) return 'flight'
