@@ -144,7 +144,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
         </AnimatePresence>
       </motion.div>
 
-      <QuickPlanSheet
+      <GuidedPlanSheet
         open={quickPlanOpen}
         onOpenChange={(open) => {
           setQuickPlanOpen(open);
