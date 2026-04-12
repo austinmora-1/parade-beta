@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarPlus, X, Sparkles } from 'lucide-react';
+import { ElephantIcon } from '@/components/ui/ElephantIcon';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { GuidedPlanSheet } from '@/components/plans/GuidedPlanSheet';
 
 export interface StagedFriend {
   userId: string;
@@ -136,14 +137,14 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                 className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shrink-0"
               >
                 <Sparkles className="h-3 w-3" />
-                Plan
+                Let's Plan
               </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
 
-      <QuickPlanSheet
+      <GuidedPlanSheet
         open={quickPlanOpen}
         onOpenChange={(open) => {
           setQuickPlanOpen(open);
