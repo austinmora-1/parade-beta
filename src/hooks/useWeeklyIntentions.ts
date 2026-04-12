@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { startOfWeek, addWeeks, addDays, isSunday, format } from 'date-fns';
+import { TRAVEL_ACTIVITIES } from '@/types/planner';
 
 export interface WeeklyIntention {
   id: string;
