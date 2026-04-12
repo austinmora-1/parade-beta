@@ -18,10 +18,10 @@ const HANGOUT_OPTIONS = [1, 2, 3, 4, 5];
 const VIBE_TYPES = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
 
 const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  social:     { bg: 'hsl(350 80% 95%)', text: 'hsl(350 80% 42%)', border: 'hsl(350 80% 80%)' },
-  chill:      { bg: 'hsl(200 55% 93%)', text: 'hsl(200 55% 35%)', border: 'hsl(200 55% 75%)' },
-  athletic:   { bg: 'hsl(145 65% 92%)', text: 'hsl(145 65% 32%)', border: 'hsl(145 65% 70%)' },
-  productive: { bg: 'hsl(38 90% 93%)',  text: 'hsl(38 80% 36%)',  border: 'hsl(38 90% 72%)' },
+  social:     { bg: 'hsl(5 60% 95%)',   text: 'hsl(5 50% 45%)',   border: 'hsl(5 50% 85%)' },
+  chill:      { bg: 'hsl(203 50% 93%)', text: 'hsl(203 45% 40%)', border: 'hsl(203 45% 82%)' },
+  athletic:   { bg: 'hsl(152 40% 93%)', text: 'hsl(152 35% 35%)', border: 'hsl(152 35% 78%)' },
+  productive: { bg: 'hsl(49 60% 93%)',  text: 'hsl(49 50% 38%)',  border: 'hsl(49 50% 80%)' },
 };
 
 interface Props {
