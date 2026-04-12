@@ -6,6 +6,7 @@ import {
   Inbox,
   Plus,
   Settings,
+  PlaneTakeoff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -19,6 +20,7 @@ import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 const navItems = [
   { path: '/',             icon: LayoutDashboard, label: 'Home'         },
   { path: '/availability', icon: CalendarDays,    label: 'Plans'        },
+  { path: '/trips',        icon: PlaneTakeoff,    label: 'Trips'        },
   { path: '/friends',      icon: Users,           label: 'Friends'      },
   { path: '/inbox',        icon: Inbox,           label: 'Inbox'        },
 ];
@@ -42,6 +44,7 @@ export function Sidebar() {
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
     if (path === '/availability') return location.pathname.startsWith('/availability') || location.pathname.startsWith('/plans');
+    if (path === '/trips') return location.pathname.startsWith('/trips') || location.pathname.startsWith('/trip/');
     return location.pathname.startsWith(path);
   };
 
