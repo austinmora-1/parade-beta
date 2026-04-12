@@ -4,11 +4,12 @@ import { WeeklyIntentionsSheet } from './WeeklyIntentionsSheet';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { CalendarHeart, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 const ENERGY_EMOJI: Record<string, string> = { low: '🌙', medium: '☀️', high: '🔥' };
 
 export function WeeklyIntentionsSummary() {
-  const { intention, loading, upsertIntention, weekStart } = useWeeklyIntentions();
+  const { intention, loading, upsertIntention, weekStart, completedHangouts } = useWeeklyIntentions();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   if (loading) return null;
@@ -41,33 +42,54 @@ export function WeeklyIntentionsSummary() {
     );
   }
 
-  // Show summary
+  // Show summary with progress
   const energyEmoji = ENERGY_EMOJI[intention.social_energy || 'medium'] || '☀️';
   const energyLabel = (intention.social_energy || 'medium').charAt(0).toUpperCase() + (intention.social_energy || 'medium').slice(1);
   const vibeLabels = (intention.vibes || [])
     .map(v => VIBE_CONFIG[v as VibeType]?.label)
     .filter(Boolean);
 
+  const target = intention.target_hangouts || 1;
+  const progressPct = Math.min(100, Math.round((completedHangouts / target) * 100));
+  const goalMet = completedHangouts >= target;
+
   return (
     <>
       <button
         onClick={() => setSheetOpen(true)}
         className={cn(
-          'w-full flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left',
-          'transition-colors hover:bg-accent/50 shadow-sm'
+          'w-full rounded-2xl border bg-card px-4 py-3 text-left',
+          'transition-colors hover:bg-accent/50 shadow-sm',
+          goalMet ? 'border-green-300 dark:border-green-700' : 'border-border'
         )}
       >
-        <span className="text-xl">{energyEmoji}</span>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
-            {energyLabel} energy · {intention.target_hangouts || 0} hangout{(intention.target_hangouts || 0) !== 1 ? 's' : ''}
-            {vibeLabels.length > 0 && ` · ${vibeLabels.join(', ')}`}
-          </p>
-          {intention.notes && (
-            <p className="text-xs text-muted-foreground truncate mt-0.5">{intention.notes}</p>
-          )}
+        <div className="flex items-center gap-3">
+          <span className="text-xl">{energyEmoji}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
+              {energyLabel} energy
+              {vibeLabels.length > 0 && ` · ${vibeLabels.join(', ')}`}
+            </p>
+            {intention.notes && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">{intention.notes}</p>
+            )}
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
         </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+
+        {/* Progress tracker */}
+        <div className="mt-2.5 flex items-center gap-2.5">
+          <Progress
+            value={progressPct}
+            className={cn('h-2 flex-1', goalMet && '[&>div]:bg-green-500')}
+          />
+          <span className={cn(
+            'text-xs font-semibold whitespace-nowrap',
+            goalMet ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'
+          )}>
+            {goalMet ? '✅ ' : ''}{completedHangouts}/{target} hangouts
+          </span>
+        </div>
       </button>
       <WeeklyIntentionsSheet
         open={sheetOpen}
