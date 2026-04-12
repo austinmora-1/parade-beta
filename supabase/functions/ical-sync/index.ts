@@ -158,18 +158,57 @@ const AIRPORT_CITY_MAP: Record<string, string> = {
   SLC: 'Salt Lake City', SMF: 'Sacramento', STL: 'St. Louis', TPA: 'Tampa',
   AUS: 'Austin', BNA: 'Nashville', IND: 'Indianapolis', JAX: 'Jacksonville', MKE: 'Milwaukee',
   OMA: 'Omaha', RNO: 'Reno', BUR: 'Burbank', SNA: 'Orange County', ONT: 'Ontario',
+  ABQ: 'Albuquerque', ANC: 'Anchorage', BDL: 'Hartford', BHM: 'Birmingham', BOI: 'Boise',
+  BUF: 'Buffalo', CHS: 'Charleston', CLE: 'Cleveland', CMH: 'Columbus', CVG: 'Cincinnati',
+  DAL: 'Dallas', DSM: 'Des Moines', ELP: 'El Paso', GRR: 'Grand Rapids', GSP: 'Greenville',
+  ICT: 'Wichita', LIT: 'Little Rock', MEM: 'Memphis', MHT: 'Manchester', MSN: 'Madison',
+  OKC: 'Oklahoma City', PBI: 'West Palm Beach', PVD: 'Providence', RIC: 'Richmond',
+  ROC: 'Rochester', RSW: 'Fort Myers', SDF: 'Louisville', SRQ: 'Sarasota', SYR: 'Syracuse',
+  TUL: 'Tulsa', TUS: 'Tucson',
   YYZ: 'Toronto', YVR: 'Vancouver', YUL: 'Montreal', YOW: 'Ottawa', YYC: 'Calgary',
-  LHR: 'London', LGW: 'London', CDG: 'Paris', ORY: 'Paris', FCO: 'Rome', AMS: 'Amsterdam',
-  FRA: 'Frankfurt', MUC: 'Munich', MAD: 'Madrid', BCN: 'Barcelona', LIS: 'Lisbon',
-  DUB: 'Dublin', ZRH: 'Zurich', CPH: 'Copenhagen', ARN: 'Stockholm', OSL: 'Oslo',
+  YEG: 'Edmonton', YHZ: 'Halifax', YWG: 'Winnipeg',
+  LHR: 'London', LGW: 'London', STN: 'London', LTN: 'London', CDG: 'Paris', ORY: 'Paris',
+  FCO: 'Rome', CIA: 'Rome', AMS: 'Amsterdam', FRA: 'Frankfurt', MUC: 'Munich',
+  MAD: 'Madrid', BCN: 'Barcelona', LIS: 'Lisbon', OPO: 'Porto', DUB: 'Dublin',
+  ZRH: 'Zurich', GVA: 'Geneva', CPH: 'Copenhagen', ARN: 'Stockholm', OSL: 'Oslo',
   HEL: 'Helsinki', VIE: 'Vienna', BRU: 'Brussels', ATH: 'Athens', IST: 'Istanbul',
-  NRT: 'Tokyo', HND: 'Tokyo', ICN: 'Seoul', PEK: 'Beijing', PVG: 'Shanghai',
+  SAW: 'Istanbul', MRS: 'Marseille', NCE: 'Nice', LYS: 'Lyon', TLS: 'Toulouse',
+  BER: 'Berlin', TXL: 'Berlin', SXF: 'Berlin', HAM: 'Hamburg', DUS: 'Düsseldorf',
+  CGN: 'Cologne', MXP: 'Milan', LIN: 'Milan', NAP: 'Naples', VCE: 'Venice',
+  FLR: 'Florence', PMI: 'Palma de Mallorca', AGP: 'Málaga', ALC: 'Alicante',
+  VLC: 'Valencia', SVQ: 'Seville', BIO: 'Bilbao', EDI: 'Edinburgh', MAN: 'Manchester',
+  BHX: 'Birmingham', GLA: 'Glasgow', PRG: 'Prague', BUD: 'Budapest', WAW: 'Warsaw',
+  KRK: 'Krakow', OTP: 'Bucharest', SOF: 'Sofia', ZAG: 'Zagreb', BEG: 'Belgrade',
+  TIA: 'Tirana', SKG: 'Thessaloniki', CHQ: 'Chania', HER: 'Heraklion', RHO: 'Rhodes',
+  JTR: 'Santorini', MYK: 'Mykonos', SPU: 'Split', DBV: 'Dubrovnik',
+  NRT: 'Tokyo', HND: 'Tokyo', KIX: 'Osaka', ICN: 'Seoul', PEK: 'Beijing', PVG: 'Shanghai',
   HKG: 'Hong Kong', SIN: 'Singapore', BKK: 'Bangkok', SYD: 'Sydney', MEL: 'Melbourne',
-  AKL: 'Auckland', DEL: 'Delhi', BOM: 'Mumbai', DXB: 'Dubai', DOH: 'Doha',
-  GRU: 'São Paulo', EZE: 'Buenos Aires', MEX: 'Mexico City', CUN: 'Cancún',
-  BOG: 'Bogotá', LIM: 'Lima', SCL: 'Santiago', JNB: 'Johannesburg', CAI: 'Cairo',
-  NBO: 'Nairobi', CPT: 'Cape Town',
-  DPS: 'Denpasar',
+  BNE: 'Brisbane', PER: 'Perth', AKL: 'Auckland', DEL: 'Delhi', BOM: 'Mumbai',
+  BLR: 'Bangalore', MAA: 'Chennai', CCU: 'Kolkata', DXB: 'Dubai', AUH: 'Abu Dhabi',
+  DOH: 'Doha', RUH: 'Riyadh', JED: 'Jeddah', TLV: 'Tel Aviv',
+  GRU: 'São Paulo', GIG: 'Rio de Janeiro', EZE: 'Buenos Aires', MEX: 'Mexico City',
+  CUN: 'Cancún', GDL: 'Guadalajara', SJO: 'San José', PTY: 'Panama City',
+  BOG: 'Bogotá', MDE: 'Medellín', LIM: 'Lima', SCL: 'Santiago', MVD: 'Montevideo',
+  JNB: 'Johannesburg', CAI: 'Cairo', NBO: 'Nairobi', CPT: 'Cape Town',
+  CMN: 'Casablanca', ADD: 'Addis Ababa', LOS: 'Lagos', ACC: 'Accra',
+  DPS: 'Denpasar', KUL: 'Kuala Lumpur', MNL: 'Manila', SGN: 'Ho Chi Minh City',
+  HAN: 'Hanoi', PNH: 'Phnom Penh', RGN: 'Yangon', CMB: 'Colombo',
+}
+
+// Resolve a location to a full city name — catches raw airport codes stored as trip locations
+function resolveToCity(location: string | null | undefined): string | null {
+  if (!location || !location.trim()) return null
+  const trimmed = location.trim()
+  // If it's a raw 3-letter uppercase code, look it up
+  const upper = trimmed.toUpperCase()
+  if (/^[A-Z]{3}$/.test(upper) && upper in AIRPORT_CITY_MAP) {
+    return AIRPORT_CITY_MAP[upper]
+  }
+  // If it looks like it could be an abbreviation embedded in a longer string, try to resolve
+  if (trimmed.length <= 4) {
+    if (upper in AIRPORT_CITY_MAP) return AIRPORT_CITY_MAP[upper]
+  }
+  return trimmed
 }
 
 function extractFlightDestination(summary?: string): string | null {

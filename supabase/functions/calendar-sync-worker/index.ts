@@ -115,11 +115,42 @@ function classifyActivity(summary?: string): string {
 
 // Airport codes for flight detection
 const AIRPORT_CITY_MAP: Record<string, string> = {
-  ATL: 'Atlanta', BOS: 'Boston', DEN: 'Denver', DFW: 'Dallas', EWR: 'New York City',
-  JFK: 'New York City', LAX: 'Los Angeles', LGA: 'New York City', MIA: 'Miami',
-  ORD: 'Chicago', SEA: 'Seattle', SFO: 'San Francisco', LHR: 'London', CDG: 'Paris',
-  NRT: 'Tokyo', HND: 'Tokyo', SIN: 'Singapore', HKG: 'Hong Kong', SYD: 'Sydney',
-  DXB: 'Dubai', AMS: 'Amsterdam', FRA: 'Frankfurt', ICN: 'Seoul',
+  ATL: 'Atlanta', BOS: 'Boston', BWI: 'Baltimore', CLT: 'Charlotte', DCA: 'Washington DC',
+  DEN: 'Denver', DFW: 'Dallas', DTW: 'Detroit', EWR: 'New York City', FLL: 'Fort Lauderdale',
+  HNL: 'Honolulu', IAD: 'Washington DC', IAH: 'Houston', JFK: 'New York City', LAS: 'Las Vegas',
+  LAX: 'Los Angeles', LGA: 'New York City', MCI: 'Kansas City', MCO: 'Orlando', MDW: 'Chicago',
+  MIA: 'Miami', MSP: 'Minneapolis', MSY: 'New Orleans', OAK: 'Oakland', ORD: 'Chicago',
+  PDX: 'Portland', PHL: 'Philadelphia', PHX: 'Phoenix', PIT: 'Pittsburgh', RDU: 'Raleigh',
+  SAN: 'San Diego', SAT: 'San Antonio', SEA: 'Seattle', SFO: 'San Francisco', SJC: 'San Jose',
+  SLC: 'Salt Lake City', SMF: 'Sacramento', STL: 'St. Louis', TPA: 'Tampa',
+  AUS: 'Austin', BNA: 'Nashville', IND: 'Indianapolis', JAX: 'Jacksonville', MKE: 'Milwaukee',
+  OMA: 'Omaha', RNO: 'Reno', BUR: 'Burbank', SNA: 'Orange County', ONT: 'Ontario',
+  ABQ: 'Albuquerque', ANC: 'Anchorage', BDL: 'Hartford', BHM: 'Birmingham', BOI: 'Boise',
+  BUF: 'Buffalo', CHS: 'Charleston', CLE: 'Cleveland', CMH: 'Columbus', CVG: 'Cincinnati',
+  YYZ: 'Toronto', YVR: 'Vancouver', YUL: 'Montreal', YOW: 'Ottawa', YYC: 'Calgary',
+  LHR: 'London', LGW: 'London', CDG: 'Paris', ORY: 'Paris', FCO: 'Rome', AMS: 'Amsterdam',
+  FRA: 'Frankfurt', MUC: 'Munich', MAD: 'Madrid', BCN: 'Barcelona', LIS: 'Lisbon',
+  DUB: 'Dublin', ZRH: 'Zurich', CPH: 'Copenhagen', ATH: 'Athens', IST: 'Istanbul',
+  MRS: 'Marseille', NCE: 'Nice', BER: 'Berlin', MXP: 'Milan', PRG: 'Prague', BUD: 'Budapest',
+  CHQ: 'Chania', HER: 'Heraklion', SPU: 'Split', DBV: 'Dubrovnik', EDI: 'Edinburgh',
+  NRT: 'Tokyo', HND: 'Tokyo', KIX: 'Osaka', ICN: 'Seoul', PEK: 'Beijing', PVG: 'Shanghai',
+  HKG: 'Hong Kong', SIN: 'Singapore', BKK: 'Bangkok', SYD: 'Sydney', MEL: 'Melbourne',
+  AKL: 'Auckland', DEL: 'Delhi', BOM: 'Mumbai', DXB: 'Dubai', DOH: 'Doha',
+  GRU: 'São Paulo', EZE: 'Buenos Aires', MEX: 'Mexico City', CUN: 'Cancún',
+  GDL: 'Guadalajara', BOG: 'Bogotá', LIM: 'Lima', SCL: 'Santiago',
+  JNB: 'Johannesburg', CAI: 'Cairo', NBO: 'Nairobi', CPT: 'Cape Town',
+  DPS: 'Denpasar', KUL: 'Kuala Lumpur', MNL: 'Manila',
+}
+
+function resolveToCity(location: string | null | undefined): string | null {
+  if (!location || !location.trim()) return null
+  const trimmed = location.trim()
+  const upper = trimmed.toUpperCase()
+  if (/^[A-Z]{3}$/.test(upper) && upper in AIRPORT_CITY_MAP) {
+    return AIRPORT_CITY_MAP[upper]
+  }
+  if (trimmed.length <= 4 && upper in AIRPORT_CITY_MAP) return AIRPORT_CITY_MAP[upper]
+  return trimmed
 }
 
 function isFlightEvent(summary?: string): boolean {
