@@ -98,7 +98,7 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
   };
 
   const handleMerge = () => {
-    if (selectedIds.size >= 2 && onMergeSelected) {
+    if (selectedIds.size >= 1 && onMergeSelected) {
       onMergeSelected(Array.from(selectedIds));
       exitSelectMode();
     }
@@ -215,9 +215,9 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
                 </Button>
               )}
               {selectedIds.size >= 1 && onMergeSelected && (
-                <Button variant="outline" size="sm" className={cn("h-8 gap-1.5 text-xs flex-1", selectedIds.size === 1 && "border-primary/40 text-primary")} onClick={selectedIds.size >= 2 ? handleMerge : undefined} disabled={selectedIds.size < 2}>
+                <Button variant="outline" size="sm" className={cn("h-8 gap-1.5 text-xs flex-1", selectedIds.size === 1 && "border-primary/40 text-primary")} onClick={handleMerge}>
                   <Merge className="h-3.5 w-3.5" />
-                  {selectedIds.size >= 2 ? `Merge (${selectedIds.size})` : 'Merge (+1)'}
+                  {selectedIds.size >= 2 ? `Merge (${selectedIds.size})` : 'Merge'}
                 </Button>
               )}
               {selectedIds.size === 1 && onSharePlan && (
