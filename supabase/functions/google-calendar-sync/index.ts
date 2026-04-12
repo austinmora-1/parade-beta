@@ -814,7 +814,7 @@ async function handleEventsSync(params: {
   // Fetch existing gcal plans for this user
   const { data: existingPlans } = await adminClient
     .from('plans')
-    .select('id, source_event_id, title, date, start_time')
+    .select('id, source_event_id, title, date, start_time, manually_edited')
     .eq('user_id', userId)
     .eq('source', 'gcal')
 

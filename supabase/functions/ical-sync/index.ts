@@ -895,7 +895,7 @@ Deno.serve(async (req) => {
     // Fetch existing ical plans
     const { data: existingPlans } = await adminClient
       .from('plans')
-      .select('id, source_event_id, title, date, start_time')
+      .select('id, source_event_id, title, date, start_time, manually_edited')
       .eq('user_id', userId)
       .eq('source', 'ical')
 
