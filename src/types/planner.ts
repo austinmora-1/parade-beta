@@ -51,9 +51,13 @@ export type ActivityType =
   | 'wine-tasting'
   | 'amateur-djing'
   | 'flight'
+  | 'hotel'
   | 'shopping'
   // Custom (placeholder for user-defined)
   | 'custom';
+
+/** Activities that represent travel logistics, not social hangouts */
+export const TRAVEL_ACTIVITIES: ActivityType[] = ['flight', 'hotel'];
 
 export type TimeSlot = 'early-morning' | 'late-morning' | 'early-afternoon' | 'late-afternoon' | 'evening' | 'late-night';
 
@@ -218,6 +222,7 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   'wine-tasting': { label: 'Wine Tasting', icon: '🍷', lucideIcon: Wine, color: 'activity-errands', vibeType: 'productive' },
   'amateur-djing': { label: 'Amateur DJing', icon: '🎧', lucideIcon: Disc3, color: 'activity-errands', vibeType: 'productive' },
   'flight': { label: 'Flight', icon: '✈️', lucideIcon: Plane, color: 'activity-events', vibeType: 'productive' },
+  'hotel': { label: 'Hotel / Stay', icon: '🏨', lucideIcon: Home, color: 'activity-events', vibeType: 'productive' },
   'shopping': { label: 'Shopping', icon: '🛍️', lucideIcon: ShoppingBag, color: 'activity-shopping', vibeType: 'productive' },
   // Custom placeholder
   'custom': { label: 'Custom', icon: '✨', lucideIcon: Sparkles, color: 'primary', vibeType: 'social' },
