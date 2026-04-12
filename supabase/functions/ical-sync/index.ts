@@ -747,6 +747,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Merge overlapping trips with same destination before flagging
+    await adminClient.rpc('merge_overlapping_trips', { p_user_id: userId })
+
     // Flag one-way trips
     if (pendingReturnTrips.length > 0) {
       for (const pending of pendingReturnTrips) {

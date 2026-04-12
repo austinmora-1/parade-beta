@@ -634,6 +634,9 @@ async function handleEventsSync(params: {
     }
   }
 
+  // Merge overlapping trips with same destination
+  await adminClient.rpc('merge_overlapping_trips', { p_user_id: userId })
+
   // ── Flag one-way trips in the trips table ──
   if (pendingReturnTrips.length > 0) {
     for (const pending of pendingReturnTrips) {

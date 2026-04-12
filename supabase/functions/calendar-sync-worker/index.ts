@@ -564,6 +564,9 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     }
     if (!hasReturn) pendingReturnTrips.push({ city, departureDate: outDate })
   }
+  // Merge overlapping trips with same destination
+  await adminClient.rpc('merge_overlapping_trips', { p_user_id: userId })
+
   if (pendingReturnTrips.length > 0) {
     for (const prt of pendingReturnTrips) {
       await adminClient.from('trips').update({ needs_return_date: true })

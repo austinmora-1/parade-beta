@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { AvailabilityGrid } from '@/components/availability/AvailabilityGrid';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { MissingReturnDialog, PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
+import { TripConflictDialog, TripConflict } from '@/components/trips/TripConflictDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus, PlaneTakeoff } from 'lucide-react';
@@ -11,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { TripsList } from '@/components/trips/TripsList';
@@ -25,6 +28,7 @@ type TabId = typeof TABS[number]['id'];
 
 export default function Availability() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
@@ -36,6 +40,26 @@ export default function Availability() {
   const [direction, setDirection] = useState(0);
   const [pendingReturnTrips, setPendingReturnTrips] = useState<PendingReturnTrip[]>([]);
   const [missingReturnOpen, setMissingReturnOpen] = useState(false);
+  const [tripConflicts, setTripConflicts] = useState<TripConflict[]>([]);
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+
+  const checkTripConflicts = useCallback(async () => {
+    if (!user) return;
+    try {
+      await supabase.rpc('merge_overlapping_trips', { p_user_id: user.id });
+      const { data } = await supabase.rpc('get_conflicting_trips', { p_user_id: user.id });
+      if (data && data.length > 0) {
+        setTripConflicts(data as TripConflict[]);
+        setConflictDialogOpen(true);
+      }
+    } catch (err) {
+      console.error('Error checking trip conflicts:', err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    checkTripConflicts();
+  }, [checkTripConflicts]);
 
   // Swipe handling
   const touchStartX = useRef(0);
@@ -77,6 +101,9 @@ export default function Availability() {
     if (allPendingTrips.length > 0) {
       setPendingReturnTrips(allPendingTrips);
       setMissingReturnOpen(true);
+    } else {
+      // If no missing returns, check for trip conflicts
+      await checkTripConflicts();
     }
   };
 
@@ -252,6 +279,17 @@ export default function Availability() {
         onOpenChange={setMissingReturnOpen}
         trips={pendingReturnTrips}
         onComplete={() => {
+          loadProfileAndAvailability();
+          loadPlans();
+          checkTripConflicts();
+        }}
+      />
+
+      <TripConflictDialog
+        open={conflictDialogOpen}
+        onOpenChange={setConflictDialogOpen}
+        conflicts={tripConflicts}
+        onResolved={() => {
           loadProfileAndAvailability();
           loadPlans();
         }}
