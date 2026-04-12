@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
+import { addDays, subDays } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -61,10 +62,20 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
 
   // Plans available to pick from in the select step (exclude already-selected)
   const pickablePlans = useMemo(() => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    // Find the preselected plan to anchor the date range
+    const anchorPlan = preselectedPlanIds?.length
+      ? plans.find(p => p.id === preselectedPlanIds[0])
+      : null;
+    const rangeStart = anchorPlan ? subDays(anchorPlan.date, 3) : new Date();
+    const rangeEnd = anchorPlan ? addDays(anchorPlan.date, 3) : addDays(new Date(), 365);
+    rangeStart.setHours(0, 0, 0, 0);
+    rangeEnd.setHours(23, 59, 59, 999);
     return plans
-      .filter(p => (p.endDate || p.date) >= now && !preselectedPlanIds?.includes(p.id))
+      .filter(p => {
+        if (preselectedPlanIds?.includes(p.id)) return false;
+        const planDate = p.endDate || p.date;
+        return planDate >= rangeStart && p.date <= rangeEnd;
+      })
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [plans, preselectedPlanIds]);
 

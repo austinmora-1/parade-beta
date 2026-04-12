@@ -98,7 +98,7 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
   };
 
   const handleMerge = () => {
-    if (selectedIds.size >= 2 && onMergeSelected) {
+    if (selectedIds.size >= 1 && onMergeSelected) {
       onMergeSelected(Array.from(selectedIds));
       exitSelectMode();
     }
