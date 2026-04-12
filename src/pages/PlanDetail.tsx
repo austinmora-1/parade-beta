@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2 } from 'lucide-react';
+import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
@@ -26,6 +26,7 @@ import { PlanPhotos } from '@/components/plans/PlanPhotos';
 import { PlanComments } from '@/components/plans/PlanComments';
 import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
 import { SuggestFriendDialog } from '@/components/plans/SuggestFriendDialog';
+import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -73,6 +74,8 @@ export default function PlanDetail() {
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [friendSearch, setFriendSearch] = useState('');
   const [isAddingFriend, setIsAddingFriend] = useState(false);
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeSelectedIds, setMergeSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -666,6 +669,15 @@ export default function PlanDetail() {
             {!isPast && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setInviteDialogOpen(true)}>
                 <Share2 className="h-4 w-4" /> Share
+              </Button>
+            )}
+
+            {canEdit && !isPast && (
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+                setMergeSelectedIds([plan.id]);
+                setMergeOpen(true);
+              }}>
+                <Merge className="h-4 w-4" /> Merge
               </Button>
             )}
 
