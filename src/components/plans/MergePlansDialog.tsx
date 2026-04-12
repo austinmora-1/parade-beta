@@ -238,7 +238,7 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
           ))}
         </div>
 
-        <ScrollArea className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="px-1 pb-4">
             {/* Select step (when coming from plan detail with 1 plan) */}
             {step === 'select' && (
@@ -458,7 +458,7 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Footer buttons */}
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border shrink-0">
