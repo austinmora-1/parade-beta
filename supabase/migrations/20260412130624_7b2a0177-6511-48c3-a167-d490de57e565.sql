@@ -1,0 +1,1 @@
+UPDATE availability SET trip_location = 'Redwood City' WHERE trip_location = 'by Redwood City';
