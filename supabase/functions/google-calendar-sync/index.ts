@@ -222,6 +222,21 @@ function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   return false
 }
 
+// Check if a date falls after a return-home flight but before the next outbound flight
+function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDates: Set<string>): boolean {
+  // Find the most recent return date on or before this date
+  let latestReturn: string | null = null
+  for (const rd of returnDates) {
+    if (rd <= dateStr && (!latestReturn || rd > latestReturn)) latestReturn = rd
+  }
+  if (!latestReturn) return false
+  // Check no outbound flight between the return and this date
+  for (const od of outboundDates) {
+    if (od > latestReturn && od <= dateStr) return false
+  }
+  return true
+}
+
 async function handleEventsSync(params: {
   adminClient: any
   userId: string
@@ -305,6 +320,10 @@ async function handleEventsSync(params: {
   // These act as trip boundaries — we never fill past any flight date
   const allFlightDatesSet = new Set(allFlights.map(f => f.date))
 
+  // Track return-home flight dates — these should reset location to 'home'
+  const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
+  const outboundFlightDates = new Set(allFlights.filter(f => !f.isReturn && f.city).map(f => f.date))
+
   // Fill gap days: for each outbound flight, fill forward until we hit another flight date
   const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
 
@@ -342,12 +361,14 @@ async function handleEventsSync(params: {
 
     const flightCity = flightLocationByDate.get(date)
     const existingRow = existingAvailabilityByDate.get(date)
+    const isReturnDate = returnHomeDates.has(date)
     const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+    const shouldClearAfterReturn = !flightCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
     const locationFields: Record<string, string | null> = {}
     if (flightCity) {
       locationFields.location_status = 'away'
       locationFields.trip_location = flightCity
-    } else if (shouldClearStaleHomeAway) {
+    } else if (isReturnDate || shouldClearStaleHomeAway || shouldClearAfterReturn) {
       locationFields.location_status = 'home'
       locationFields.trip_location = null
     }
@@ -389,14 +410,18 @@ async function handleEventsSync(params: {
 
   for (const existingRow of (existingAvailabilityRows || [])) {
     if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
-    if (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) {
+    const isReturnDate = returnHomeDates.has(existingRow.date)
+    const shouldClear = isReturnDate ||
+      (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
+      (existingRow.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(existingRow.date, returnHomeDates, outboundFlightDates))
+    if (shouldClear) {
       const { error } = await adminClient
         .from('availability')
         .upsert(
           { user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null },
           { onConflict: 'user_id,date', ignoreDuplicates: false }
         )
-      if (error) console.error('Error clearing stale home-city location for', existingRow.date, ':', error)
+      if (error) console.error('Error clearing stale location for', existingRow.date, ':', error)
     }
   }
 
