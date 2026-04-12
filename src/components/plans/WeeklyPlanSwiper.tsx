@@ -408,12 +408,14 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   const [activeIndex, setActiveIndex] = useState(0);
   const dragStartX = useRef(0);
   const dragDelta = useRef(0);
+  const didSwipe = useRef(false);
   const [swipeX, setSwipeX] = useState(0);
   const [swiping, setSwiping] = useState(false);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     dragStartX.current = e.clientX;
     dragDelta.current = 0;
+    didSwipe.current = false;
     setSwiping(true);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -421,6 +423,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!swiping) return;
     dragDelta.current = e.clientX - dragStartX.current;
+    if (Math.abs(dragDelta.current) > 8) didSwipe.current = true;
     setSwipeX(dragDelta.current);
   };
 
@@ -435,6 +438,11 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
     }
     setSwipeX(0);
     dragDelta.current = 0;
+  };
+
+  const handleCardTapIfNotSwiped = (planId: string) => {
+    if (didSwipe.current) return;
+    onCardTap(planId);
   };
 
   return (
