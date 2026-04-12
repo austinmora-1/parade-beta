@@ -450,23 +450,21 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
       {plans.map((plan, idx) => {
         const offset = idx - activeIndex;
         const isTop = idx === activeIndex;
-        const isBehind = offset > 0 && offset <= 2;
-        const isGone = offset < 0 || offset > 2;
+        const isGone = offset < 0 || offset > 3;
 
         return (
           <motion.div
             key={plan.id}
-            className={cn("absolute top-0 left-0 right-0", isGone && "pointer-events-none")}
+            className={cn("absolute top-0", isGone && "pointer-events-none")}
             initial={false}
             animate={{
-              y: isTop ? 0 : offset * 6,
-              scale: isTop ? 1 : 1 - offset * 0.04,
+              x: isTop ? swipeX * 0.3 : offset * 20,
+              scale: isTop ? 1 : 1 - offset * 0.03,
               opacity: isGone ? 0 : 1 - offset * 0.2,
-              x: isTop ? swipeX * 0.3 : 0,
               rotate: isTop ? swipeX * 0.05 : 0,
             }}
             transition={swiping && isTop ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
-            style={{ zIndex: plans.length - idx, transformOrigin: 'center bottom' }}
+            style={{ zIndex: plans.length - idx, width: 'calc(100% - 40px)', left: 0 }}
             onPointerDown={isTop ? handlePointerDown : undefined}
             onPointerMove={isTop ? handlePointerMove : undefined}
             onPointerUp={isTop ? handlePointerUp : undefined}
