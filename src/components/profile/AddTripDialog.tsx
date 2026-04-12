@@ -746,7 +746,13 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                           </Avatar>
                           <span className="text-sm">{friend.name}</span>
                           {nearbyFriendIds?.includes(friend.friendUserId) && (
-                            <span className="ml-auto text-[10px] text-primary font-medium">Nearby</span>
+                            <span className="ml-auto text-[10px] text-primary font-medium">Lives nearby</span>
+                          )}
+                          {visitingFriendIds.includes(friend.friendUserId) && (
+                            <span className="ml-auto text-[10px] text-availability-away-foreground font-medium flex items-center gap-0.5">
+                              <Plane className="h-2.5 w-2.5" />
+                              Visiting
+                            </span>
                           )}
                         </button>
                       ))}
