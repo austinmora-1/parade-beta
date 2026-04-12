@@ -432,7 +432,7 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
                   {mergedPlanPreview.location && (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <MapPin className="h-3.5 w-3.5" />
-                      {mergedPlanPreview.location.name}
+                      {mergedPlanPreview.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}
                     </div>
                   )}
 
