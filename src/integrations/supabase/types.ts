@@ -1561,6 +1561,10 @@ export type Database = {
         }[]
       }
       merge_overlapping_trips: { Args: { p_user_id: string }; Returns: number }
+      normalize_plan_title_for_dedup: {
+        Args: { title: string }
+        Returns: string
+      }
       normalize_trip_city: { Args: { loc: string }; Returns: string }
       owns_share_code: { Args: { p_share_code: string }; Returns: boolean }
       remove_friendship: {

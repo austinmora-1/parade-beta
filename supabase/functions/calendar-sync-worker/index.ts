@@ -52,6 +52,16 @@ function getEventDates(startTime: Date, endTime: Date, timezone?: string): strin
   return dates
 }
 
+function normalizePlanTitle(title?: string): string {
+  if (!title) return ''
+  let t = title.toLowerCase().trim()
+  t = t.replace(/^flight\s*(\d+\s*of\s*\d+\s*\|?\s*)?/i, '')
+  t = t.replace(/\|/g, ' ')
+  t = t.replace(/([a-z]{2})0+(\d)/gi, '$1$2')
+  t = t.replace(/\s+/g, ' ').trim()
+  return t
+}
+
 function classifyActivity(summary?: string): string {
   if (!summary) return 'hanging-out'
   const s = summary.toLowerCase()
@@ -679,7 +689,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
 
   const contentLookup = new Map<string, any>()
   for (const p of (allUserPlans || [])) {
-    const key = `${(p.title || '').toLowerCase().trim()}|${p.date}|${p.start_time || ''}`
+    const key = `${normalizePlanTitle(p.title)}|${p.date}|${p.start_time || ''}`
     if (!contentLookup.has(key)) contentLookup.set(key, p)
   }
 
@@ -731,7 +741,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
         .eq('id', existing.id)
     } else {
       // Content-based dedup
-      const contentKey = `${(planRow.title || '').toLowerCase().trim()}|${planRow.date}|${planRow.start_time || ''}`
+      const contentKey = `${normalizePlanTitle(planRow.title)}|${planRow.date}|${planRow.start_time || ''}`
       const contentMatch = contentLookup.get(contentKey)
       if (contentMatch) {
         if (!contentMatch.source_event_id || contentMatch.source === 'gcal') {
@@ -751,8 +761,17 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   if (toInsert.length > 0) {
     const { error: plansError } = await adminClient
       .from('plans')
-      .upsert(toInsert, { onConflict: 'user_id,source,source_event_id', ignoreDuplicates: true })
-    if (plansError) console.error('Error inserting gcal plans:', plansError)
+      .insert(toInsert)
+    if (plansError) {
+      if (plansError.code === '23505') {
+        for (const row of toInsert) {
+          const { error: singleErr } = await adminClient.from('plans').insert(row)
+          if (singleErr && singleErr.code !== '23505') console.error('Error inserting plan:', singleErr)
+        }
+      } else {
+        console.error('Error inserting gcal plans:', plansError)
+      }
+    }
   }
 
   return { eventsProcessed: events.length, datesUpdated: updatedCount }
@@ -845,7 +864,7 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
 
   const contentLookupIcal = new Map<string, any>()
   for (const p of (allUserPlansIcal || [])) {
-    const key = `${(p.title || '').toLowerCase().trim()}|${p.date}|${p.start_time || ''}`
+    const key = `${normalizePlanTitle(p.title)}|${p.date}|${p.start_time || ''}`
     if (!contentLookupIcal.has(key)) contentLookupIcal.set(key, p)
   }
 
@@ -883,7 +902,7 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
       }).eq('id', existing.id)
     } else {
       // Content-based dedup
-      const contentKey = `${(planRow.title || '').toLowerCase().trim()}|${planRow.date}|${planRow.start_time || ''}`
+      const contentKey = `${normalizePlanTitle(planRow.title)}|${planRow.date}|${planRow.start_time || ''}`
       const contentMatch = contentLookupIcal.get(contentKey)
       if (contentMatch) {
         if (!contentMatch.source_event_id || contentMatch.source === 'ical') {
@@ -902,8 +921,17 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
   if (toInsert.length > 0) {
     const { error: insertErr } = await adminClient
       .from('plans')
-      .upsert(toInsert, { onConflict: 'user_id,source,source_event_id', ignoreDuplicates: true })
-    if (insertErr) console.error('Error inserting ical plans:', insertErr)
+      .insert(toInsert)
+    if (insertErr) {
+      if (insertErr.code === '23505') {
+        for (const row of toInsert) {
+          const { error: singleErr } = await adminClient.from('plans').insert(row)
+          if (singleErr && singleErr.code !== '23505') console.error('Error inserting plan:', singleErr)
+        }
+      } else {
+        console.error('Error inserting ical plans:', insertErr)
+      }
+    }
   }
 
   return { eventsProcessed: events.length, datesUpdated: updatedCount }
