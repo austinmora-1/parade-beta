@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import type { PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 
 interface SyncResult {
   synced: boolean;
   eventsProcessed?: number;
   datesUpdated?: number;
   message?: string;
+  pendingReturnTrips?: PendingReturnTrip[];
 }
 
 export function useAppleCalendar() {
@@ -25,7 +27,6 @@ export function useAppleCalendar() {
     }
 
     try {
-      // Check if an ical provider row exists in calendar_connections
       const { data, error } = await supabase
         .from('calendar_connections')
         .select('id')
@@ -107,6 +108,7 @@ export function useAppleCalendar() {
         eventsProcessed: data.eventsProcessed,
         datesUpdated: data.datesUpdated,
         message: data.message,
+        pendingReturnTrips: data.pendingReturnTrips,
       };
 
       setLastSyncResult(result);

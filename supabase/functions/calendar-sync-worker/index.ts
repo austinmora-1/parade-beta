@@ -158,6 +158,44 @@ function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   return false
 }
 
+// ── Hotel / Reservation Detection ───────────────────────────────────────────
+
+const HOTEL_REGEX = /\b(hotel|airbnb|vrbo|booking|reservation|check[\s-]?in|check[\s-]?out|stay\s+at|lodging|accommodation|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|courtyard|residence\s*inn|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|motel|hostel|inn\b|lodge\b)\b/i
+
+function isHotelEvent(summary?: string, location?: string): boolean {
+  if (!summary) return false
+  if (HOTEL_REGEX.test(summary)) return true
+  if (location && HOTEL_REGEX.test(location)) return true
+  return false
+}
+
+function extractHotelLocation(summary?: string, location?: string): string | null {
+  if (location && location.trim().length > 0) {
+    const parts = location.split(',').map(p => p.trim())
+    if (parts.length >= 2) {
+      return parts.length >= 3 ? parts[parts.length - 2] : parts[0]
+    }
+    return location.trim()
+  }
+  const inMatch = summary?.match(/\b(?:in|at)\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–—]|\s*\(|$)/i)
+  if (inMatch) {
+    const city = inMatch[1].trim()
+    if (city.length >= 3 && !HOTEL_REGEX.test(city)) return city
+  }
+  return null
+}
+
+function getDateRange(startDate: string, endDate: string): string[] {
+  const dates: string[] = []
+  const current = new Date(startDate + 'T00:00:00Z')
+  const end = new Date(endDate + 'T00:00:00Z')
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0])
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
+}
+
 // Check if a date falls after a return-home flight but before the next outbound flight
 function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDates: Set<string>): boolean {
   let latestReturn: string | null = null

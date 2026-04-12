@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import type { PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 
 interface CalendarEvent {
   id: string;
@@ -16,6 +17,7 @@ interface SyncResult {
   eventsProcessed?: number;
   datesUpdated?: number;
   message?: string;
+  pendingReturnTrips?: PendingReturnTrip[];
 }
 
 export function useGoogleCalendar() {
@@ -67,7 +69,6 @@ export function useGoogleCalendar() {
       if (error) throw error;
 
       if (data.authUrl) {
-        // Direct navigation instead of popup for better Safari compatibility
         window.location.href = data.authUrl;
       }
     } catch (err) {
@@ -116,6 +117,7 @@ export function useGoogleCalendar() {
         eventsProcessed: data.eventsProcessed,
         datesUpdated: data.datesUpdated,
         message: data.message,
+        pendingReturnTrips: data.pendingReturnTrips,
       };
       
       setLastSyncResult(result);
@@ -134,10 +136,6 @@ export function useGoogleCalendar() {
     if (!session?.access_token || !isConnected) return;
 
     try {
-      const params = new URLSearchParams();
-      if (timeMin) params.set('timeMin', timeMin);
-      if (timeMax) params.set('timeMax', timeMax);
-
       const { data, error } = await supabase.functions.invoke('google-calendar-events', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
