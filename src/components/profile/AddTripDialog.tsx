@@ -488,7 +488,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground -mt-1">
-                    Tap slots per day to set when you're free
+                    Pick which slots you want to hang with friends
                   </p>
 
                   <div className="space-y-2">
