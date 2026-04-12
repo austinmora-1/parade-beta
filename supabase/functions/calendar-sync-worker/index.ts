@@ -62,6 +62,22 @@ function normalizePlanTitle(title?: string): string {
   return t
 }
 
+// Check if a normalized title looks like a flight (contains 2+ known airport codes)
+function isFlightTitle(normalizedTitle: string): boolean {
+  const upper = normalizedTitle.toUpperCase()
+  const codes = upper.match(/\b([A-Z]{3})\b/g)
+  if (!codes) return false
+  return codes.filter(c => c in AIRPORT_CITY_MAP).length >= 2
+}
+
+// Build content dedup key: for flights, ignore start_time to catch all-day vs timed mismatches
+function makeContentKey(normalizedTitle: string, date: string, startTime: string | null): string {
+  if (isFlightTitle(normalizedTitle)) {
+    return `${normalizedTitle}|${date}`
+  }
+  return `${normalizedTitle}|${date}|${startTime || ''}`
+}
+
 function classifyActivity(summary?: string): string {
   if (!summary) return 'hanging-out'
   const s = summary.toLowerCase()
@@ -689,7 +705,8 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
 
   const contentLookup = new Map<string, any>()
   for (const p of (allUserPlans || [])) {
-    const key = `${normalizePlanTitle(p.title)}|${p.date}|${p.start_time || ''}`
+    const nt = normalizePlanTitle(p.title)
+    const key = makeContentKey(nt, p.date, p.start_time)
     if (!contentLookup.has(key)) contentLookup.set(key, p)
   }
 
@@ -741,14 +758,21 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
         .eq('id', existing.id)
     } else {
       // Content-based dedup
-      const contentKey = `${normalizePlanTitle(planRow.title)}|${planRow.date}|${planRow.start_time || ''}`
+      const nt = normalizePlanTitle(planRow.title)
+      const contentKey = makeContentKey(nt, planRow.date, planRow.start_time)
       const contentMatch = contentLookup.get(contentKey)
       if (contentMatch) {
+        const mergeFields: Record<string, any> = {}
         if (!contentMatch.source_event_id || contentMatch.source === 'gcal') {
-          await adminClient
-            .from('plans')
-            .update({ source: 'gcal', source_event_id: eventId })
-            .eq('id', contentMatch.id)
+          mergeFields.source = 'gcal'
+          mergeFields.source_event_id = eventId
+        }
+        if (!contentMatch.start_time && planRow.start_time) {
+          mergeFields.start_time = planRow.start_time
+          mergeFields.end_time = planRow.end_time
+        }
+        if (Object.keys(mergeFields).length > 0) {
+          await adminClient.from('plans').update(mergeFields).eq('id', contentMatch.id)
         }
         console.log(`[DEDUP] Skipped duplicate: "${planRow.title}" on ${planRow.date}`)
       } else {
@@ -841,7 +865,7 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     const localDateStr = getDateString(event.dtstart)
     incomingEventIds.add(event.uid)
     planRowsByEventId.set(event.uid, {
-      user_id: userId, title: event.summary || 'iCal imported event',
+      user_id: userId, title: (event.summary || 'iCal imported event').replace(/\s+/g, ' ').trim(),
       activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
       time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
       location: event.location || null, source: 'ical', source_event_id: event.uid,
@@ -864,7 +888,8 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
 
   const contentLookupIcal = new Map<string, any>()
   for (const p of (allUserPlansIcal || [])) {
-    const key = `${normalizePlanTitle(p.title)}|${p.date}|${p.start_time || ''}`
+    const nt = normalizePlanTitle(p.title)
+    const key = makeContentKey(nt, p.date, p.start_time)
     if (!contentLookupIcal.has(key)) contentLookupIcal.set(key, p)
   }
 
@@ -902,14 +927,21 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
       }).eq('id', existing.id)
     } else {
       // Content-based dedup
-      const contentKey = `${normalizePlanTitle(planRow.title)}|${planRow.date}|${planRow.start_time || ''}`
+      const nt = normalizePlanTitle(planRow.title)
+      const contentKey = makeContentKey(nt, planRow.date, planRow.start_time)
       const contentMatch = contentLookupIcal.get(contentKey)
       if (contentMatch) {
+        const mergeFields: Record<string, any> = {}
         if (!contentMatch.source_event_id || contentMatch.source === 'ical') {
-          await adminClient
-            .from('plans')
-            .update({ source: 'ical', source_event_id: eventId })
-            .eq('id', contentMatch.id)
+          mergeFields.source = 'ical'
+          mergeFields.source_event_id = eventId
+        }
+        if (!contentMatch.start_time && planRow.start_time) {
+          mergeFields.start_time = planRow.start_time
+          mergeFields.end_time = planRow.end_time
+        }
+        if (Object.keys(mergeFields).length > 0) {
+          await adminClient.from('plans').update(mergeFields).eq('id', contentMatch.id)
         }
         console.log(`[DEDUP] Skipped duplicate: "${planRow.title}" on ${planRow.date}`)
       } else {
