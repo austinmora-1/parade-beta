@@ -376,7 +376,6 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
                 toggleSelect={toggleSelect}
                 onEditPlan={onEditPlan}
                 onCardTap={onCardTap}
-                navigate={navigate}
               />
             </motion.div>
           );
