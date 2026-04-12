@@ -207,7 +207,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   };
 
   const activityLabel = activity ? (SUGGESTED_ACTIVITIES.find(a => a.id === activity)?.label || ACTIVITY_CONFIG[activity]?.label || activity) : '';
-  const activityEmoji = activity ? (SUGGESTED_ACTIVITIES.find(a => a.id === activity)?.emoji || ACTIVITY_CONFIG[activity]?.emoji || '📅') : '';
+  const activityEmoji = activity ? (SUGGESTED_ACTIVITIES.find(a => a.id === activity)?.emoji || '📅') : '';
 
   const autoTitle = activity
     ? `${activityLabel} with ${friendNames.join(', ')}`
