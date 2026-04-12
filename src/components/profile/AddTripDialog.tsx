@@ -84,6 +84,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   const [friendSearch, setFriendSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const friends = usePlannerStore((s) => s.friends);
 
@@ -387,6 +388,9 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
 
   const handleDateRangeSelect = (range: DateRange | undefined) => {
     setDateRange(range);
+    if (range?.from && range?.to) {
+      setCalendarOpen(false);
+    }
   };
 
   return (
@@ -427,7 +431,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
               {/* Date Range */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Trip Dates</label>
-                <Popover>
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
