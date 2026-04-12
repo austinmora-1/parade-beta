@@ -341,9 +341,9 @@ async function handleEventsSync(params: {
   }
 
   // Detect flight events and build a chronological list of flights with dates + destinations
-  interface FlightInfo { date: string; city: string | null; isReturn: boolean }
+  // Store actual departure timestamps for proper chronological sorting of connecting flights
+  interface FlightInfo { date: string; timestamp: number; city: string | null; isReturn: boolean }
   const allFlights: FlightInfo[] = []
-  const flightLocationByDate: Map<string, string> = new Map()
 
   // ── Hotel / Reservation Detection ──
   interface HotelStay { startDate: string; endDate: string; city: string }
@@ -360,12 +360,7 @@ async function handleEventsSync(params: {
       if (!startDate) continue
 
       const dateStr = getDateString(startDate, timezone)
-      allFlights.push({ date: dateStr, city, isReturn })
-
-      // Only mark non-return, recognized flights as away
-      if (city && !isReturn) {
-        flightLocationByDate.set(dateStr, city)
-      }
+      allFlights.push({ date: dateStr, timestamp: startDate.getTime(), city, isReturn })
       continue
     }
 
@@ -390,16 +385,47 @@ async function handleEventsSync(params: {
     }
   }
 
-  // Sort all flights chronologically
-  allFlights.sort((a, b) => a.date.localeCompare(b.date))
+  // Sort all flights chronologically by actual departure time (critical for connecting flights)
+  allFlights.sort((a, b) => a.timestamp - b.timestamp)
+
+  // Build flightLocationByDate: for same-day connecting flights, the LAST departing
+  // flight's destination wins (it's the final leg / ultimate destination)
+  const flightLocationByDate: Map<string, string> = new Map()
+  for (const flight of allFlights) {
+    if (flight.city && !flight.isReturn) {
+      // Overwrites any earlier same-day flight (connecting leg), so last leg wins
+      flightLocationByDate.set(flight.date, flight.city)
+    }
+  }
 
   // Build a sorted set of ALL flight dates (outbound, return, and unrecognized)
   // These act as trip boundaries — we never fill past any flight date
   const allFlightDatesSet = new Set(allFlights.map(f => f.date))
 
   // Track return-home flight dates — these should reset location to 'home'
-  const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
-  const outboundFlightDates = new Set(allFlights.filter(f => !f.isReturn && f.city).map(f => f.date))
+  // For return flights, only count them if they are the LAST flight on that date
+  // (a connecting flight through home airport shouldn't reset location)
+  const returnHomeDates = new Set<string>()
+  const outboundFlightDates = new Set<string>()
+
+  // Group flights by date to determine final status per day
+  const flightsByDate = new Map<string, FlightInfo[]>()
+  for (const f of allFlights) {
+    if (!flightsByDate.has(f.date)) flightsByDate.set(f.date, [])
+    flightsByDate.get(f.date)!.push(f)
+  }
+
+  for (const [date, flights] of flightsByDate) {
+    // Last flight of the day determines if it's a return or outbound day
+    const lastFlight = flights[flights.length - 1]
+    if (lastFlight.isReturn) {
+      returnHomeDates.add(date)
+      // If the last flight is a return, clear any outbound location set for this date
+      flightLocationByDate.delete(date)
+    } else if (lastFlight.city) {
+      outboundFlightDates.add(date)
+    }
+  }
 
   // ── Detect one-way flights (outbound with no return within 30 days) ──
   const pendingReturnTrips: PendingReturnTrip[] = []

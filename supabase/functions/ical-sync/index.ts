@@ -477,10 +477,9 @@ Deno.serve(async (req) => {
 
     const busySlotsByDate: Map<string, Set<string>> = new Map()
 
-    // Flight detection
-    interface FlightInfo { date: string; city: string | null; isReturn: boolean }
+    // Flight detection - store actual timestamps for connecting flight chronology
+    interface FlightInfo { date: string; timestamp: number; city: string | null; isReturn: boolean }
     const allFlights: FlightInfo[] = []
-    const flightLocationByDate: Map<string, string> = new Map()
 
     // Hotel detection
     interface HotelStay { startDate: string; endDate: string; city: string }
@@ -525,10 +524,7 @@ Deno.serve(async (req) => {
         const city = extractFlightDestination(event.summary)
         const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
         const dateStr = getDateString(event.dtstart, timezone)
-        allFlights.push({ date: dateStr, city, isReturn })
-        if (city && !isReturn) {
-          flightLocationByDate.set(dateStr, city)
-        }
+        allFlights.push({ date: dateStr, timestamp: event.dtstart.getTime(), city, isReturn })
       } else if (isHotelEvent(event.summary, event.location)) {
         // Non-all-day hotel event
         const hotelCity = extractHotelLocation(event.summary, event.location)
@@ -542,11 +538,36 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Sort flights and fill gap days
-    allFlights.sort((a, b) => a.date.localeCompare(b.date))
+    // Sort flights chronologically by actual departure time (critical for connecting flights)
+    allFlights.sort((a, b) => a.timestamp - b.timestamp)
+
+    // Build flightLocationByDate: for same-day connecting flights, last leg wins
+    const flightLocationByDate: Map<string, string> = new Map()
+    for (const flight of allFlights) {
+      if (flight.city && !flight.isReturn) {
+        flightLocationByDate.set(flight.date, flight.city)
+      }
+    }
+
     const allFlightDatesSet = new Set(allFlights.map(f => f.date))
-    const returnHomeDates = new Set(allFlights.filter(f => f.isReturn).map(f => f.date))
-    const outboundFlightDates = new Set(allFlights.filter(f => !f.isReturn && f.city).map(f => f.date))
+
+    // Determine return vs outbound per day based on LAST flight of each day
+    const returnHomeDates = new Set<string>()
+    const outboundFlightDates = new Set<string>()
+    const flightsByDate = new Map<string, FlightInfo[]>()
+    for (const f of allFlights) {
+      if (!flightsByDate.has(f.date)) flightsByDate.set(f.date, [])
+      flightsByDate.get(f.date)!.push(f)
+    }
+    for (const [date, flights] of flightsByDate) {
+      const lastFlight = flights[flights.length - 1]
+      if (lastFlight.isReturn) {
+        returnHomeDates.add(date)
+        flightLocationByDate.delete(date)
+      } else if (lastFlight.city) {
+        outboundFlightDates.add(date)
+      }
+    }
 
     // Detect one-way flights
     interface PendingReturnTrip { destination: string; departureDate: string }
