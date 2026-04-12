@@ -770,16 +770,14 @@ export default function Profile() {
       <QuickStats />
 
 
-      {/* Hangout History */}
-
-      {/* Hangout History */}
+      {/* Plan History */}
       <Collapsible open={hangoutsOpen} onOpenChange={setHangoutsOpen}>
         <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
           <CollapsibleTrigger asChild>
             <button className="mb-0 data-[state=open]:mb-4 flex w-full items-center justify-between group [&[data-state=open]]:mb-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-primary" />
-                <h2 className="font-display text-sm font-semibold">Hangout History</h2>
+                <h2 className="font-display text-sm font-semibold">Plan History</h2>
                 {pastPlans.length > 0 && (
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                     {pastPlans.length}
