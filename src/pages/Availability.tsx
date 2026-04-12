@@ -3,6 +3,7 @@ import { AvailabilityGrid } from '@/components/availability/AvailabilityGrid';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
+import { MissingReturnDialog, PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus, PlaneTakeoff } from 'lucide-react';
@@ -33,6 +34,8 @@ export default function Availability() {
   const [tripDialogOpen, setTripDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('grid');
   const [direction, setDirection] = useState(0);
+  const [pendingReturnTrips, setPendingReturnTrips] = useState<PendingReturnTrip[]>([]);
+  const [missingReturnOpen, setMissingReturnOpen] = useState(false);
 
   // Swipe handling
   const touchStartX = useRef(0);
@@ -50,14 +53,17 @@ export default function Availability() {
   const handleSync = async () => {
     const results: string[] = [];
     let anySynced = false;
+    const allPendingTrips: PendingReturnTrip[] = [];
 
     if (isGcalConnected) {
       const result = await syncGcal();
       if (result.synced) { anySynced = true; results.push('Google Calendar'); }
+      if (result.pendingReturnTrips?.length) allPendingTrips.push(...result.pendingReturnTrips);
     }
     if (isIcalConnected) {
       const result = await syncIcal();
       if (result.synced) { anySynced = true; results.push('Apple Calendar'); }
+      if (result.pendingReturnTrips?.length) allPendingTrips.push(...result.pendingReturnTrips);
     }
 
     if (anySynced) {
@@ -65,6 +71,12 @@ export default function Availability() {
       await Promise.all([loadProfileAndAvailability(), loadPlans()]);
     } else {
       toast.error('Failed to sync calendar');
+    }
+
+    // Show missing return dialog if there are one-way flights
+    if (allPendingTrips.length > 0) {
+      setPendingReturnTrips(allPendingTrips);
+      setMissingReturnOpen(true);
     }
   };
 
@@ -233,6 +245,16 @@ export default function Availability() {
         open={tripDialogOpen}
         onOpenChange={setTripDialogOpen}
         onTripAdded={() => loadProfileAndAvailability()}
+      />
+
+      <MissingReturnDialog
+        open={missingReturnOpen}
+        onOpenChange={setMissingReturnOpen}
+        trips={pendingReturnTrips}
+        onComplete={() => {
+          loadProfileAndAvailability();
+          loadPlans();
+        }}
       />
     </div>
   );
