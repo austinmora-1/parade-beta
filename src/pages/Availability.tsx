@@ -42,6 +42,7 @@ export default function Availability() {
   const [missingReturnOpen, setMissingReturnOpen] = useState(false);
   const [tripConflicts, setTripConflicts] = useState<TripConflict[]>([]);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [tripsRefreshKey, setTripsRefreshKey] = useState(0);
 
   const checkTripConflicts = useCallback(async () => {
     if (!user) return;
