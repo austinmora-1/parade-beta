@@ -52,6 +52,16 @@ function getEventDates(startTime: Date, endTime: Date, timezone?: string): strin
   return dates
 }
 
+function normalizePlanTitle(title?: string): string {
+  if (!title) return ''
+  let t = title.toLowerCase().trim()
+  t = t.replace(/^flight\s*(\d+\s*of\s*\d+\s*\|?\s*)?/i, '')
+  t = t.replace(/\|/g, ' ')
+  t = t.replace(/([a-z]{2})0+(\d)/gi, '$1$2')
+  t = t.replace(/\s+/g, ' ').trim()
+  return t
+}
+
 function classifyActivity(summary?: string): string {
   if (!summary) return 'hanging-out'
   const s = summary.toLowerCase()

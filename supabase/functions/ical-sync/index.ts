@@ -398,6 +398,18 @@ function getDateRange(startDate: string, endDate: string): string[] {
   return dates
 }
 
+// ── Title Normalizer for Dedup ───────────────────────────────────────────────
+
+function normalizePlanTitle(title?: string): string {
+  if (!title) return ''
+  let t = title.toLowerCase().trim()
+  t = t.replace(/^flight\s*(\d+\s*of\s*\d+\s*\|?\s*)?/i, '')
+  t = t.replace(/\|/g, ' ')
+  t = t.replace(/([a-z]{2})0+(\d)/gi, '$1$2')
+  t = t.replace(/\s+/g, ' ').trim()
+  return t
+}
+
 // ── Activity Classifier ─────────────────────────────────────────────────────
 
 function classifyActivity(summary?: string): string {
