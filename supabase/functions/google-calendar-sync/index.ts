@@ -423,7 +423,6 @@ async function handleEventsSync(params: {
         )
       if (error) console.error('Error clearing stale location for', existingRow.date, ':', error)
     }
-    }
   }
 
   // ── Sync plans: preserve manually-enriched plans (those with participants or manual edits) ──
