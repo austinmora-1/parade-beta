@@ -137,7 +137,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                 className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shrink-0"
               >
                 <Sparkles className="h-3 w-3" />
-                Plan
+                Let's Plan
               </motion.button>
             </motion.div>
           )}
