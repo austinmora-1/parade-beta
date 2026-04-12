@@ -427,7 +427,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
               {/* Date Range */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Trip Dates</label>
-                <Popover>
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
