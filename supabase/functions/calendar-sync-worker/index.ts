@@ -91,6 +91,9 @@ function classifyActivity(summary?: string): string {
   // ── Flights (keep first — used for trip detection) ──
   if (/\bflight\b/.test(s)) return 'flight'
 
+  // ── Hotels / Accommodation ──
+  if (/\b(hotel|airbnb|vrbo|booking|reservation|check[\s-]?in|check[\s-]?out|stay\s+at|lodging|accommodation|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|courtyard|residence\s*inn|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|motel|hostel)\b/i.test(s)) return 'hotel'
+
   // ── Social ──
   if (/\b(drinks|happy\s*hour|bar|cocktail|cocktails|beer|beers|pub|brewery|nightclub|club)\b/.test(s)) return 'drinks'
   if (/\b(museum|exhibit|exhibition|gallery)\b/.test(s)) return 'museum'

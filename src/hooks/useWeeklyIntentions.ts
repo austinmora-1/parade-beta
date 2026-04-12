@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { startOfWeek, addWeeks, addDays, isSunday, format } from 'date-fns';
+import { TRAVEL_ACTIVITIES } from '@/types/planner';
 
 export interface WeeklyIntention {
   id: string;
@@ -54,14 +55,15 @@ export function useWeeklyIntentions() {
         .eq('user_id', session.user.id)
         .eq('week_start', weekStart)
         .maybeSingle(),
-      // Count plans that have at least one participant (social hangouts)
+      // Count social hangouts (plans with participants, excluding travel logistics)
       supabase
         .from('plans')
-        .select('id, plan_participants!inner(id)')
+        .select('id, activity, plan_participants!inner(id)')
         .eq('user_id', session.user.id)
         .gte('date', weekStartTs)
         .lte('date', weekEndTs)
-        .neq('status', 'cancelled'),
+        .neq('status', 'cancelled')
+        .not('activity', 'in', `(${TRAVEL_ACTIVITIES.join(',')})`),
     ]);
 
     setIntention(intentionRes.data as WeeklyIntention | null);
