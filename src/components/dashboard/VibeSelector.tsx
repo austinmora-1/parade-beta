@@ -127,7 +127,7 @@ export function VibeSelector() {
         {/* Pop-up menu */}
         <AnimatePresence>
           {menuOpen && (
-            <div className="absolute left-0 right-0 top-full mt-2 flex flex-col items-center gap-2 z-50">
+            <div className="absolute left-0 right-0 top-full mt-2 flex flex-col items-center gap-2 z-50 max-h-[60vh] overflow-y-auto rounded-2xl">
               {/* Vibe options */}
               {vibeTypes.map((type, i) => {
                 const config = VIBE_CONFIG[type];
@@ -148,7 +148,7 @@ export function VibeSelector() {
                     }}
                     onClick={() => handleVibeSelect(type)}
                     className={cn(
-                      'flex w-56 items-center gap-2.5 rounded-2xl px-4 py-2.5 shadow-lg border',
+                      'flex w-56 items-center gap-2.5 rounded-2xl px-4 py-2.5 shadow-lg border shrink-0',
                       isSelected ? 'border-primary bg-primary/5' : 'border-border bg-card'
                     )}
                   >
@@ -173,7 +173,7 @@ export function VibeSelector() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="w-56 overflow-hidden"
+                    className="w-56 overflow-hidden shrink-0"
                   >
                     <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-2 shadow-lg border border-primary">
                       <span className="text-sm">✏️</span>
@@ -210,7 +210,7 @@ export function VibeSelector() {
                     exit={{ opacity: 0, y: -5, scale: 0.9 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 22, delay: vibeTypes.length * 0.04 }}
                     onClick={() => setShowCustomInput(true)}
-                    className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
+                    className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border shrink-0"
                   >
                     <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-white text-sm', VIBE_CHIP_STYLES.custom.iconBg)}>
                       ✏️
@@ -227,7 +227,7 @@ export function VibeSelector() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -5, scale: 0.9 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 22, delay: (vibeTypes.length + 1) * 0.04 }}
-                  className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border"
+                  className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border shrink-0"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-sm">
                     🎬
