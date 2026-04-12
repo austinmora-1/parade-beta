@@ -405,7 +405,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
             <div className="grid gap-4 py-4">
               {/* Location */}
               <div className="space-y-2">
