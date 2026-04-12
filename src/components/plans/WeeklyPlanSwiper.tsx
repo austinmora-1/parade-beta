@@ -476,7 +476,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
               plan={plan}
               selectMode={selectMode}
               selected={selectedIds.has(plan.id)}
-              onTap={() => onCardTap(plan.id)}
+              onTap={() => handleCardTapIfNotSwiped(plan.id)}
               onLongPress={() => onCardTap(plan.id)}
             />
           </motion.div>
