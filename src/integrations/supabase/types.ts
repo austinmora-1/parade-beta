@@ -1176,6 +1176,35 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_participants: {
+        Row: {
+          created_at: string
+          friend_user_id: string
+          id: string
+          trip_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_user_id: string
+          id?: string
+          trip_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_user_id?: string
+          id?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_participants_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           available_slots: string[]

@@ -45,6 +45,7 @@ export interface TripData {
   location?: string;
   availableSlots?: string[];
   priorityFriendIds?: string[];
+  travelCompanionIds?: string[];
 }
 
 interface FriendOption {
@@ -89,6 +90,8 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   const [nearbyFriendIds, setNearbyFriendIds] = useState<string[] | null>(null);
   const [visitingFriendIds, setVisitingFriendIds] = useState<string[]>([]);
   const [isLoadingNearby, setIsLoadingNearby] = useState(false);
+  const [travelCompanionIds, setTravelCompanionIds] = useState<string[]>([]);
+  const [companionSearch, setCompanionSearch] = useState('');
 
   const friends = usePlannerStore((s) => s.friends);
 
@@ -200,6 +203,19 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
     return Array.from(set);
   }, [nearbyFriendIds, visitingFriendIds]);
 
+  const filteredCompanionFriends = useMemo(() => {
+    const search = companionSearch.toLowerCase();
+    return connectedFriends
+      .filter(f => !travelCompanionIds.includes(f.friendUserId))
+      .filter(f => !search || f.name.toLowerCase().includes(search));
+  }, [connectedFriends, travelCompanionIds, companionSearch]);
+
+  const selectedCompanionDetails = useMemo(() => {
+    return travelCompanionIds
+      .map(id => connectedFriends.find(f => f.friendUserId === id))
+      .filter(Boolean) as FriendOption[];
+  }, [travelCompanionIds, connectedFriends]);
+
   const filteredFriends = useMemo(() => {
     const search = friendSearch.toLowerCase();
     let pool = connectedFriends.filter(f => !priorityFriendIds.includes(f.friendUserId));
@@ -253,13 +269,16 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       const defaultSlots = editingTrip.availableSlots?.length ? editingTrip.availableSlots : ALL_SLOTS as string[];
       setDaySlots(buildDaySlotsMap(days, defaultSlots));
       setPriorityFriendIds(editingTrip.priorityFriendIds || []);
+      setTravelCompanionIds(editingTrip.travelCompanionIds || []);
     } else {
       setDateRange(undefined);
       setLocation('');
       setDaySlots(new Map());
       setPriorityFriendIds([]);
+      setTravelCompanionIds([]);
     }
     setFriendSearch('');
+    setCompanionSearch('');
   }, [editingTrip, open]);
 
   const toggleDaySlot = useCallback((dateKey: string, slot: string) => {
@@ -308,6 +327,15 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       return next;
     });
   }, []);
+
+  const addCompanion = (friendUserId: string) => {
+    setTravelCompanionIds(prev => [...prev, friendUserId]);
+    setCompanionSearch('');
+  };
+
+  const removeCompanion = (friendUserId: string) => {
+    setTravelCompanionIds(prev => prev.filter(id => id !== friendUserId));
+  };
 
   const addFriend = (friendUserId: string) => {
     setPriorityFriendIds(prev => [...prev, friendUserId]);
@@ -415,6 +443,14 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
           .update(tripPayload)
           .eq('id', editingTrip.id);
         if (tripError) throw tripError;
+
+        // Sync travel companions
+        await supabase.from('trip_participants').delete().eq('trip_id', editingTrip.id);
+        if (travelCompanionIds.length > 0) {
+          await supabase.from('trip_participants').insert(
+            travelCompanionIds.map(fid => ({ trip_id: editingTrip.id!, friend_user_id: fid }))
+          );
+        }
       } else {
         // Check for existing trip with same dates to avoid duplicates
         const { data: existingTrip } = await supabase
@@ -431,11 +467,26 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
             .update(tripPayload)
             .eq('id', existingTrip.id);
           if (tripError) throw tripError;
+
+          await supabase.from('trip_participants').delete().eq('trip_id', existingTrip.id);
+          if (travelCompanionIds.length > 0) {
+            await supabase.from('trip_participants').insert(
+              travelCompanionIds.map(fid => ({ trip_id: existingTrip.id, friend_user_id: fid }))
+            );
+          }
         } else {
-          const { error: tripError } = await supabase
+          const { data: newTrip, error: tripError } = await supabase
             .from('trips')
-            .insert(tripPayload);
+            .insert(tripPayload)
+            .select('id')
+            .single();
           if (tripError) throw tripError;
+
+          if (newTrip && travelCompanionIds.length > 0) {
+            await supabase.from('trip_participants').insert(
+              travelCompanionIds.map(fid => ({ trip_id: newTrip.id, friend_user_id: fid }))
+            );
+          }
         }
       }
 
@@ -678,6 +729,73 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                 </div>
               )}
 
+              {/* Travel Companions - inserted before Friends to see */}
+              {tripDays.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-1.5">
+                    <Plane className="h-3.5 w-3.5" />
+                    Traveling with
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Friends joining you on this trip
+                  </p>
+
+                  {selectedCompanionDetails.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedCompanionDetails.map(friend => (
+                        <span
+                          key={friend.friendUserId}
+                          className="inline-flex items-center gap-1 rounded-full bg-availability-away/15 pl-1 pr-2 py-0.5 text-xs"
+                        >
+                          <Avatar className="h-4 w-4">
+                            <AvatarImage src={friend.avatarUrl} />
+                            <AvatarFallback className="text-[8px]">
+                              {friend.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{friend.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeCompanion(friend.friendUserId)}
+                            className="ml-0.5 rounded-full p-0.5 hover:bg-availability-away/30"
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <Input
+                    placeholder="Search friends..."
+                    value={companionSearch}
+                    onChange={(e) => setCompanionSearch(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+
+                  {(companionSearch || travelCompanionIds.length === 0) && filteredCompanionFriends.length > 0 && (
+                    <div className="max-h-32 overflow-y-auto rounded-lg border border-border">
+                      {filteredCompanionFriends.slice(0, 8).map(friend => (
+                        <button
+                          key={friend.friendUserId}
+                          type="button"
+                          onClick={() => addCompanion(friend.friendUserId)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+                        >
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={friend.avatarUrl} />
+                            <AvatarFallback className="text-[10px]">
+                              {friend.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">{friend.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Priority Friends */}
               {tripDays.length > 0 && (
                 <div className="space-y-2">
@@ -783,6 +901,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                   <p className="text-availability-away-foreground/70">
                     {tripDays.length} days · {totalSelectedSlots}/{totalPossibleSlots} slots free
                     {priorityFriendIds.length > 0 && ` · ${priorityFriendIds.length} friend${priorityFriendIds.length > 1 ? 's' : ''} to see`}
+                    {travelCompanionIds.length > 0 && ` · ${travelCompanionIds.length} traveling with you`}
                   </p>
                 </div>
               )}
