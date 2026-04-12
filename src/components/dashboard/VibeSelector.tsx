@@ -213,7 +213,7 @@ export function VibeSelector() {
                     className="flex w-56 items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-lg border border-border shrink-0"
                   >
                     <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-white text-sm', VIBE_CHIP_STYLES.custom.iconBg)}>
-                      ✏️
+                      <Pencil className="h-3.5 w-3.5 text-white" />
                     </div>
                     <span className="text-sm font-medium text-foreground">Add custom tag</span>
                   </motion.button>
