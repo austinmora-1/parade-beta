@@ -491,7 +491,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   );
 }
 
-
+function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
   plan: Plan;
   onTap: () => void;
   selectMode: boolean;
