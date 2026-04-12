@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { startOfWeek, addWeeks, isSunday, isAfter, format } from 'date-fns';
+import { startOfWeek, addWeeks, addDays, isSunday, format } from 'date-fns';
 
 export interface WeeklyIntention {
   id: string;
@@ -23,7 +23,6 @@ function getCurrentWeekStart(): string {
 
 function getUpcomingWeekStart(): string {
   const now = new Date();
-  // If it's Sunday, target next week
   if (isSunday(now)) {
     const nextMonday = addWeeks(startOfWeek(now, { weekStartsOn: 1 }), 1);
     return format(nextMonday, 'yyyy-MM-dd');
@@ -34,6 +33,7 @@ function getUpcomingWeekStart(): string {
 export function useWeeklyIntentions() {
   const { session } = useAuth();
   const [intention, setIntention] = useState<WeeklyIntention | null>(null);
+  const [completedHangouts, setCompletedHangouts] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const weekStart = getUpcomingWeekStart();
@@ -41,13 +41,31 @@ export function useWeeklyIntentions() {
   const fetchIntention = useCallback(async () => {
     if (!session?.user) { setLoading(false); return; }
     setLoading(true);
-    const { data } = await supabase
-      .from('weekly_intentions')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .eq('week_start', weekStart)
-      .maybeSingle();
-    setIntention(data as WeeklyIntention | null);
+
+    // Fetch intention and completed hangouts in parallel
+    const weekEnd = format(addDays(new Date(weekStart), 6), 'yyyy-MM-dd');
+    const weekStartTs = `${weekStart}T00:00:00Z`;
+    const weekEndTs = `${weekEnd}T23:59:59Z`;
+
+    const [intentionRes, plansRes] = await Promise.all([
+      supabase
+        .from('weekly_intentions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('week_start', weekStart)
+        .maybeSingle(),
+      // Count plans that have at least one participant (social hangouts)
+      supabase
+        .from('plans')
+        .select('id, plan_participants!inner(id)')
+        .eq('user_id', session.user.id)
+        .gte('date', weekStartTs)
+        .lte('date', weekEndTs)
+        .neq('status', 'cancelled'),
+    ]);
+
+    setIntention(intentionRes.data as WeeklyIntention | null);
+    setCompletedHangouts(plansRes.data?.length || 0);
     setLoading(false);
   }, [session?.user, weekStart]);
 
@@ -84,5 +102,5 @@ export function useWeeklyIntentions() {
     }
   }, [session?.user, weekStart, intention]);
 
-  return { intention, loading, upsertIntention, weekStart, refetch: fetchIntention };
+  return { intention, loading, upsertIntention, weekStart, completedHangouts, refetch: fetchIntention };
 }
