@@ -101,6 +101,9 @@ export default function Availability() {
     if (allPendingTrips.length > 0) {
       setPendingReturnTrips(allPendingTrips);
       setMissingReturnOpen(true);
+    } else {
+      // If no missing returns, check for trip conflicts
+      await checkTripConflicts();
     }
   };
 
@@ -276,6 +279,17 @@ export default function Availability() {
         onOpenChange={setMissingReturnOpen}
         trips={pendingReturnTrips}
         onComplete={() => {
+          loadProfileAndAvailability();
+          loadPlans();
+          checkTripConflicts();
+        }}
+      />
+
+      <TripConflictDialog
+        open={conflictDialogOpen}
+        onOpenChange={setConflictDialogOpen}
+        conflicts={tripConflicts}
+        onResolved={() => {
           loadProfileAndAvailability();
           loadPlans();
         }}
