@@ -86,6 +86,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [nearbyFriendIds, setNearbyFriendIds] = useState<string[] | null>(null);
+  const [visitingFriendIds, setVisitingFriendIds] = useState<string[]>([]);
   const [isLoadingNearby, setIsLoadingNearby] = useState(false);
 
   const friends = usePlannerStore((s) => s.friends);
