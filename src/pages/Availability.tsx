@@ -98,8 +98,10 @@ export default function Availability() {
     }
 
     // Show missing return dialog if there are one-way flights
-    if (allPendingTrips.length > 0) {
-      setPendingReturnTrips(allPendingTrips);
+    const today = new Date().toISOString().split('T')[0];
+    const futureTrips = allPendingTrips.filter(t => t.departureDate >= today);
+    if (futureTrips.length > 0) {
+      setPendingReturnTrips(futureTrips);
       setMissingReturnOpen(true);
     } else {
       // If no missing returns, check for trip conflicts
