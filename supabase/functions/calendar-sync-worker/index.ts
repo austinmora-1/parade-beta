@@ -430,7 +430,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
         }
         // Check all-day hotel events
         if (isHotelEvent(event.summary, event.location)) {
-          const hotelCity = extractHotelLocation(event.summary, event.location)
+          const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
           if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
             const endExcl = new Date(event.end.date); endExcl.setDate(endExcl.getDate() - 1)
             hotelStays.push({ startDate: getDateString(startDate, timezone), endDate: getDateString(endExcl, timezone), city: hotelCity })
@@ -448,12 +448,12 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     }
 
     if (isFlightEvent(event.summary)) {
-      const city = extractFlightDestination(event.summary)
+      const city = resolveToCity(extractFlightDestination(event.summary))
       const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
       const dateStr = getDateString(startTime, timezone)
       allFlights.push({ date: dateStr, timestamp: startTime.getTime(), city, isReturn })
     } else if (isHotelEvent(event.summary, event.location)) {
-      const hotelCity = extractHotelLocation(event.summary, event.location)
+      const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
       if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
         hotelStays.push({ startDate: getDateString(startTime, timezone), endDate: getDateString(endTime, timezone), city: hotelCity })
       }
