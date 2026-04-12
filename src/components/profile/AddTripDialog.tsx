@@ -405,7 +405,10 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y -mx-6 px-6"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="grid gap-4 py-4">
               {/* Location */}
               <div className="space-y-2">
@@ -626,7 +629,7 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           <DialogFooter className="flex-row gap-2 sm:justify-between">
             {isEditing && (
