@@ -247,7 +247,6 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         toggleSelect={toggleSelect}
         onEditPlan={onEditPlan}
         onCardTap={handleCardTap}
-        navigate={navigate}
       />
     </div>
   );
