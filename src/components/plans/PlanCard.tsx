@@ -145,7 +145,7 @@ export function PlanCard({
         {plan.location && (
           <p className="text-[10px] text-muted-foreground truncate flex items-center gap-0.5">
             <MapPin className="h-2.5 w-2.5 shrink-0" />
-            {plan.location.name.split(' · ')[0].split(', ')[0]}
+            {plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}
           </p>
         )}
 
