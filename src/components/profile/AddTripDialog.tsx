@@ -680,6 +680,12 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                   />
 
                   {/* Friend suggestions */}
+                  {isLoadingNearby && (
+                    <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Searching nearby friends...
+                    </div>
+                  )}
                   {(friendSearch || priorityFriendIds.length === 0) && filteredFriends.length > 0 && (
                     <div className="max-h-32 overflow-y-auto rounded-lg border border-border">
                       {filteredFriends.slice(0, 8).map(friend => (
@@ -696,9 +702,17 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm">{friend.name}</span>
+                          {nearbyFriendIds?.includes(friend.friendUserId) && (
+                            <span className="ml-auto text-[10px] text-primary font-medium">Nearby</span>
+                          )}
                         </button>
                       ))}
                     </div>
+                  )}
+                  {nearbyFriendIds !== null && !friendSearch.trim() && filteredFriends.length === 0 && !isLoadingNearby && (
+                    <p className="text-xs text-muted-foreground italic">
+                      No friends found near {location.trim()}. Search above to add any friend.
+                    </p>
                   )}
                 </div>
               )}
