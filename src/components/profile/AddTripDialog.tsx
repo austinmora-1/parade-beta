@@ -85,6 +85,8 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
   const [isLoading, setIsLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [nearbyFriendIds, setNearbyFriendIds] = useState<string[] | null>(null);
+  const [isLoadingNearby, setIsLoadingNearby] = useState(false);
 
   const friends = usePlannerStore((s) => s.friends);
 
@@ -99,12 +101,72 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       }));
   }, [friends]);
 
+  // Fetch friend home addresses and filter by proximity when location changes
+  useEffect(() => {
+    const trimmedLocation = location.trim();
+    if (!trimmedLocation || connectedFriends.length === 0 || !session?.user) {
+      setNearbyFriendIds(null);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchNearby = async () => {
+      setIsLoadingNearby(true);
+      try {
+        // Fetch home_address for all connected friends
+        const friendUserIds = connectedFriends.map(f => f.friendUserId);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, home_address')
+          .in('user_id', friendUserIds);
+
+        const friendCities = (profiles || [])
+          .filter(p => p.home_address && p.home_address.trim().length > 0)
+          .map(p => ({ userId: p.user_id, city: p.home_address! }));
+
+        if (friendCities.length === 0) {
+          if (!cancelled) setNearbyFriendIds([]);
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke('filter-friends-by-location', {
+          body: { tripLocation: trimmedLocation, friendCities }
+        });
+
+        if (!cancelled) {
+          if (error) {
+            console.error('Error filtering friends by location:', error);
+            setNearbyFriendIds(null); // fallback to showing all
+          } else {
+            setNearbyFriendIds(data.nearbyFriendIds || []);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching nearby friends:', err);
+        if (!cancelled) setNearbyFriendIds(null);
+      } finally {
+        if (!cancelled) setIsLoadingNearby(false);
+      }
+    };
+
+    const timeout = setTimeout(fetchNearby, 500); // debounce
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [location, connectedFriends, session?.user]);
+
   const filteredFriends = useMemo(() => {
     const search = friendSearch.toLowerCase();
-    return connectedFriends
-      .filter(f => !priorityFriendIds.includes(f.friendUserId))
-      .filter(f => !search || f.name.toLowerCase().includes(search));
-  }, [connectedFriends, priorityFriendIds, friendSearch]);
+    let pool = connectedFriends.filter(f => !priorityFriendIds.includes(f.friendUserId));
+    
+    // If we have nearby data, filter to only nearby friends (+ always show search matches)
+    if (nearbyFriendIds !== null && !friendSearch.trim()) {
+      pool = pool.filter(f => nearbyFriendIds.includes(f.friendUserId));
+    }
+    
+    return pool.filter(f => !search || f.name.toLowerCase().includes(search));
+  }, [connectedFriends, priorityFriendIds, friendSearch, nearbyFriendIds]);
 
   const selectedFriendDetails = useMemo(() => {
     return priorityFriendIds
