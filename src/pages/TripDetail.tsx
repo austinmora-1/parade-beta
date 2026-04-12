@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
+const TRIPS_UPDATED_EVENT = 'trips:updated';
+
 interface TripRow {
   id: string;
   location: string | null;
@@ -86,8 +88,9 @@ export default function TripDetail() {
       toast.error('Failed to delete trip');
     } else {
       toast.success('Trip deleted');
+      window.dispatchEvent(new Event(TRIPS_UPDATED_EVENT));
       await loadProfileAndAvailability();
-      navigate('/availability');
+      navigate('/availability?tab=trips');
     }
     setDeleting(false);
   };
