@@ -422,19 +422,21 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
         <span className="text-sm font-semibold truncate flex-1">{displayTitle}</span>
       </div>
 
-      <div className="space-y-0.5 text-[11px] text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <Clock className="h-3 w-3 shrink-0" />
-          {plan.startTime
-            ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
-            : timeSlotConfig.time}
-        </div>
-        {plan.location && (
-          <div className="flex items-center gap-1 truncate">
-            <MapPin className="h-3 w-3 shrink-0" />
-            <span className="truncate">{plan.location.name}</span>
+      <div className="text-[11px] text-muted-foreground space-y-0.5">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 shrink-0">
+            <Clock className="h-3 w-3 shrink-0" />
+            {plan.startTime
+              ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
+              : timeSlotConfig.time}
           </div>
-        )}
+          {plan.location && (
+            <div className="flex items-center gap-1 truncate min-w-0">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{plan.location.name}</span>
+            </div>
+          )}
+        </div>
         {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
           <div className="text-[10px] truncate">
             w/ {plan.participants.filter(p => p.role !== 'subscriber').map(p => p.name).join(', ')}
