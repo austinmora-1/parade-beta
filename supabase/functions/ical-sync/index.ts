@@ -584,7 +584,11 @@ Deno.serve(async (req) => {
     // Clean stale home-city away statuses
     for (const existingRow of (existingAvailabilityRows || [])) {
       if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
-      if (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) {
+      const isReturnDate = returnHomeDates.has(existingRow.date)
+      const shouldClear = isReturnDate ||
+        (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
+        (existingRow.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(existingRow.date, returnHomeDates, outboundFlightDates))
+      if (shouldClear) {
         await adminClient.from('availability').upsert(
           { user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null },
           { onConflict: 'user_id,date', ignoreDuplicates: false }
