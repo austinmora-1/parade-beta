@@ -205,28 +205,28 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               {selectedIds.size === 1 && onEditPlan && (
-                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs flex-1" onClick={handleEditSelected}>
-                  <Pencil className="h-3.5 w-3.5" />
+                <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-[11px] flex-1 min-w-0" onClick={handleEditSelected}>
+                  <Pencil className="h-3 w-3 shrink-0" />
                   Edit
                 </Button>
               )}
               {selectedIds.size >= 1 && onMergeSelected && (
-                <Button variant="outline" size="sm" className={cn("h-8 gap-1.5 text-xs flex-1", selectedIds.size === 1 && "border-primary/40 text-primary")} onClick={handleMerge}>
-                  <Merge className="h-3.5 w-3.5" />
-                  {selectedIds.size >= 2 ? `Merge (${selectedIds.size})` : 'Merge'}
+                <Button variant="outline" size="sm" className={cn("h-7 gap-1 px-2 text-[11px] flex-1 min-w-0", selectedIds.size === 1 && "border-primary/40 text-primary")} onClick={handleMerge}>
+                  <Merge className="h-3 w-3 shrink-0" />
+                  {selectedIds.size >= 2 ? `Merge` : 'Merge'}
                 </Button>
               )}
               {selectedIds.size === 1 && onSharePlan && (
-                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs flex-1" onClick={handleShareSelected}>
-                  <Share2 className="h-3.5 w-3.5" />
+                <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-[11px] flex-1 min-w-0" onClick={handleShareSelected}>
+                  <Share2 className="h-3 w-3 shrink-0" />
                   Share
                 </Button>
               )}
               {onDeletePlan && (
-                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs flex-1 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30" onClick={handleDeleteSelected}>
-                  <Trash2 className="h-3.5 w-3.5" />
+                <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-[11px] flex-1 min-w-0 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30" onClick={handleDeleteSelected}>
+                  <Trash2 className="h-3 w-3 shrink-0" />
                   Delete
                 </Button>
               )}
