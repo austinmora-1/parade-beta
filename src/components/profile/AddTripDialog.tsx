@@ -636,7 +636,12 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                     Friends to see
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Tag friends you want to hang out with during this trip
+                    {isLoadingNearby
+                      ? 'Finding friends near your destination...'
+                      : nearbyFriendIds !== null && location.trim()
+                        ? `${nearbyFriendIds.length} friend${nearbyFriendIds.length !== 1 ? 's' : ''} in or near ${location.trim()}`
+                        : 'Tag friends you want to hang out with during this trip'
+                    }
                   </p>
 
                   {/* Selected friends chips */}
