@@ -681,7 +681,7 @@ function PlanFeedCard({
           {plan.location && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
               <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate">{plan.location.name}</span>
+              <span className="truncate">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
             </div>
           )}
         </div>

@@ -251,7 +251,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
             {plan.location && (
               <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
                 <MapPin className="h-3 w-3 shrink-0" />
-                <span className="truncate max-w-[140px]">{plan.location.name}</span>
+                <span className="truncate max-w-[140px]">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
               </div>
             )}
           </div>
