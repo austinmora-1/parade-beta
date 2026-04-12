@@ -149,7 +149,7 @@ export function SlotCalendarPicker({
                     status === 'some-free' ? "bg-availability-partial" : ""
                   )} />
                 )}
-                <span className="text-[11px] leading-tight">{t.shortLabel}</span>
+                <span className="text-[11px] leading-tight whitespace-nowrap">{t.shortLabel}</span>
               </motion.button>
             );
           })}
