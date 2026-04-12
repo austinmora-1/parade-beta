@@ -90,7 +90,7 @@ export default function TripDetail() {
       toast.success('Trip deleted');
       window.dispatchEvent(new Event(TRIPS_UPDATED_EVENT));
       await loadProfileAndAvailability();
-      navigate('/availability?tab=trips');
+      navigate('/trips');
     }
     setDeleting(false);
   };
@@ -128,7 +128,7 @@ export default function TripDetail() {
   if (!trip) {
     return (
       <div className="animate-fade-in space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/availability')} className="gap-1.5">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/trips')} className="gap-1.5">
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="text-center py-12">
@@ -156,7 +156,7 @@ export default function TripDetail() {
     <div className="animate-fade-in space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/availability?tab=trips')} className="gap-1.5 -ml-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/trips')} className="gap-1.5 -ml-2">
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-1.5">
