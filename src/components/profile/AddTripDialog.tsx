@@ -129,9 +129,9 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
 
         // Fetch friends' trips that overlap with our date range and match destination
         let overlappingVisitors: string[] = [];
-        if (startDate && endDate) {
-          const startStr = format(startDate, 'yyyy-MM-dd');
-          const endStr = format(endDate, 'yyyy-MM-dd');
+        if (dateRange?.from && dateRange?.to) {
+          const startStr = format(dateRange.from, 'yyyy-MM-dd');
+          const endStr = format(dateRange.to, 'yyyy-MM-dd');
 
           // Get trips from friends that overlap our dates
           const { data: friendTrips } = await supabase
