@@ -441,9 +441,22 @@ Deno.serve(async (req) => {
 
     const events = parseICS(icsText, rangeStart, rangeEnd)
 
+    // Fetch user's home address for flight detection
+    const { data: profileData } = await adminClient
+      .from('profiles')
+      .select('home_address')
+      .eq('user_id', userId)
+      .single()
+    const homeAddress: string | null = profileData?.home_address || null
+
     // ── Update availability ────────────────────────────────────────────────
 
     const busySlotsByDate: Map<string, Set<string>> = new Map()
+
+    // Flight detection
+    interface FlightInfo { date: string; city: string | null; isReturn: boolean }
+    const allFlights: FlightInfo[] = []
+    const flightLocationByDate: Map<string, string> = new Map()
 
     for (const event of events) {
       if (event.isAllDay) {
@@ -465,17 +478,69 @@ Deno.serve(async (req) => {
         const slots = getEventTimeSlots(event.dtstart, event.dtend, timezone)
         slots.forEach(slot => busySlotsByDate.get(date)!.add(slot))
       }
+
+      // Detect flights
+      if (isFlightEvent(event.summary)) {
+        const city = extractFlightDestination(event.summary)
+        const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
+        const dateStr = getDateString(event.dtstart, timezone)
+        allFlights.push({ date: dateStr, city, isReturn })
+        if (city && !isReturn) {
+          flightLocationByDate.set(dateStr, city)
+        }
+      }
     }
+
+    // Sort flights and fill gap days
+    allFlights.sort((a, b) => a.date.localeCompare(b.date))
+    const allFlightDatesSet = new Set(allFlights.map(f => f.date))
+    const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+    for (const [outDate, city] of outboundEntries) {
+      const current = new Date(outDate)
+      current.setDate(current.getDate() + 1)
+      for (let i = 0; i < 30; i++) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        flightLocationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+    }
+
+    // Fetch existing availability for stale-away cleanup
+    const syncRangeStart = getDateString(rangeStart, timezone)
+    const syncRangeEnd = getDateString(rangeEnd, timezone)
+    const { data: existingAvailabilityRows } = await adminClient
+      .from('availability')
+      .select('date, location_status, trip_location')
+      .eq('user_id', userId)
+      .gte('date', syncRangeStart)
+      .lte('date', syncRangeEnd)
+
+    const existingAvailabilityByDate = new Map(
+      (existingAvailabilityRows || []).map((row: any) => [row.date, row])
+    )
 
     let updatedCount = 0
     for (const [date, slots] of busySlotsByDate) {
       const slotUpdates: Record<string, boolean> = {}
       for (const slot of slots) slotUpdates[slot] = false
 
+      const flightCity = flightLocationByDate.get(date)
+      const existingRow = existingAvailabilityByDate.get(date)
+      const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+      const locationFields: Record<string, string | null> = {}
+      if (flightCity) {
+        locationFields.location_status = 'away'
+        locationFields.trip_location = flightCity
+      } else if (shouldClearStaleHomeAway) {
+        locationFields.location_status = 'home'
+        locationFields.trip_location = null
+      }
+
       const { error: upsertError } = await adminClient
         .from('availability')
         .upsert(
-          { user_id: userId, date, ...slotUpdates },
+          { user_id: userId, date, ...slotUpdates, ...locationFields },
           { onConflict: 'user_id,date', ignoreDuplicates: false }
         )
 
@@ -483,6 +548,30 @@ Deno.serve(async (req) => {
         console.error('Error upserting availability for', date, ':', upsertError)
       } else {
         updatedCount++
+      }
+    }
+
+    // Update location for flight dates without busy slots
+    for (const [date, city] of flightLocationByDate) {
+      if (busySlotsByDate.has(date)) continue
+      const { error } = await adminClient
+        .from('availability')
+        .upsert(
+          { user_id: userId, date, location_status: 'away', trip_location: city },
+          { onConflict: 'user_id,date', ignoreDuplicates: false }
+        )
+      if (error) console.error('Error upserting flight location for', date, ':', error)
+      else updatedCount++
+    }
+
+    // Clean stale home-city away statuses
+    for (const existingRow of (existingAvailabilityRows || [])) {
+      if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
+      if (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) {
+        await adminClient.from('availability').upsert(
+          { user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null },
+          { onConflict: 'user_id,date', ignoreDuplicates: false }
+        )
       }
     }
 
