@@ -274,7 +274,7 @@ export default function TripDetail() {
       <AddTripDialog
         open={editOpen}
         onOpenChange={setEditOpen}
-        editTrip={editTripData}
+        editingTrip={editTripData}
         onTripAdded={handleTripEdited}
       />
 
