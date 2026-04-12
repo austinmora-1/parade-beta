@@ -361,6 +361,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
 }
 
 
+function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
   plan: Plan;
   onTap: () => void;
   selectMode: boolean;
