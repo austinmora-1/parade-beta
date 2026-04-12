@@ -160,6 +160,74 @@ function parseICSDate(line: string): { date: Date; allDay: boolean } | null {
   return { date: new Date(Date.UTC(y, m, d, h, min, s)), allDay: false }
 }
 
+// ── Airport / Flight Detection (mirrored from google-calendar-sync) ─────────
+
+const AIRPORT_CITY_MAP: Record<string, string> = {
+  ATL: 'Atlanta', BOS: 'Boston', BWI: 'Baltimore', CLT: 'Charlotte', DCA: 'Washington DC',
+  DEN: 'Denver', DFW: 'Dallas', DTW: 'Detroit', EWR: 'New York City', FLL: 'Fort Lauderdale',
+  HNL: 'Honolulu', IAD: 'Washington DC', IAH: 'Houston', JFK: 'New York City', LAS: 'Las Vegas',
+  LAX: 'Los Angeles', LGA: 'New York City', MCI: 'Kansas City', MCO: 'Orlando', MDW: 'Chicago',
+  MIA: 'Miami', MSP: 'Minneapolis', MSY: 'New Orleans', OAK: 'Oakland', ORD: 'Chicago',
+  PDX: 'Portland', PHL: 'Philadelphia', PHX: 'Phoenix', PIT: 'Pittsburgh', RDU: 'Raleigh',
+  SAN: 'San Diego', SAT: 'San Antonio', SEA: 'Seattle', SFO: 'San Francisco', SJC: 'San Jose',
+  SLC: 'Salt Lake City', SMF: 'Sacramento', STL: 'St. Louis', TPA: 'Tampa',
+  AUS: 'Austin', BNA: 'Nashville', IND: 'Indianapolis', JAX: 'Jacksonville', MKE: 'Milwaukee',
+  OMA: 'Omaha', RNO: 'Reno', BUR: 'Burbank', SNA: 'Orange County', ONT: 'Ontario',
+  YYZ: 'Toronto', YVR: 'Vancouver', YUL: 'Montreal', YOW: 'Ottawa', YYC: 'Calgary',
+  LHR: 'London', LGW: 'London', CDG: 'Paris', ORY: 'Paris', FCO: 'Rome', AMS: 'Amsterdam',
+  FRA: 'Frankfurt', MUC: 'Munich', MAD: 'Madrid', BCN: 'Barcelona', LIS: 'Lisbon',
+  DUB: 'Dublin', ZRH: 'Zurich', CPH: 'Copenhagen', ARN: 'Stockholm', OSL: 'Oslo',
+  HEL: 'Helsinki', VIE: 'Vienna', BRU: 'Brussels', ATH: 'Athens', IST: 'Istanbul',
+  NRT: 'Tokyo', HND: 'Tokyo', ICN: 'Seoul', PEK: 'Beijing', PVG: 'Shanghai',
+  HKG: 'Hong Kong', SIN: 'Singapore', BKK: 'Bangkok', SYD: 'Sydney', MEL: 'Melbourne',
+  AKL: 'Auckland', DEL: 'Delhi', BOM: 'Mumbai', DXB: 'Dubai', DOH: 'Doha',
+  GRU: 'São Paulo', EZE: 'Buenos Aires', MEX: 'Mexico City', CUN: 'Cancún',
+  BOG: 'Bogotá', LIM: 'Lima', SCL: 'Santiago', JNB: 'Johannesburg', CAI: 'Cairo',
+  NBO: 'Nairobi', CPT: 'Cape Town',
+  DPS: 'Denpasar',
+}
+
+function extractFlightDestination(summary?: string): string | null {
+  if (!summary) return null
+  const upper = summary.toUpperCase()
+  const codes = upper.match(/\b([A-Z]{3})\b/g)
+  if (codes) {
+    const airports = codes.filter(c => c in AIRPORT_CITY_MAP)
+    if (airports.length > 0) {
+      return AIRPORT_CITY_MAP[airports[airports.length - 1]]
+    }
+  }
+  const flightToMatch = summary.match(/\bflight\s+to\s+([A-Za-z\s]+?)(?:\s*\(|$)/i)
+  if (flightToMatch) {
+    const city = flightToMatch[1].trim()
+    if (city.length >= 3) return city
+  }
+  return null
+}
+
+function isFlightEvent(summary?: string): boolean {
+  if (!summary) return false
+  const s = summary.toLowerCase()
+  if (/\bflight\b/.test(s)) return true
+  if (/\b(united|delta|american|southwest|jetblue|alaska|spirit|frontier|british airways|lufthansa|air france|emirates|qatar)\b/.test(s)) return true
+  if (/\b[A-Z]{2}\s?\d{1,4}\b/i.test(summary)) {
+    const codes = summary.toUpperCase().match(/\b([A-Z]{3})\b/g)
+    if (codes?.some(c => c in AIRPORT_CITY_MAP)) return true
+  }
+  return false
+}
+
+function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
+  if (!city || !homeAddress) return false
+  const normCity = city.toLowerCase().trim()
+  const normHome = homeAddress.toLowerCase().trim()
+  if (normHome.includes(normCity) || normCity.includes(normHome)) return true
+  const homeCity = normHome.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim()
+  const flightCity = normCity.replace(/\s*(city|town|village)$/i, '').trim()
+  if (homeCity && flightCity && (homeCity.includes(flightCity) || flightCity.includes(homeCity))) return true
+  return false
+}
+
 // ── Time Slot Helpers (mirrored from google-calendar-sync) ──────────────────
 
 function getTimeSlot(hour: number): string {
@@ -373,9 +441,22 @@ Deno.serve(async (req) => {
 
     const events = parseICS(icsText, rangeStart, rangeEnd)
 
+    // Fetch user's home address for flight detection
+    const { data: profileData } = await adminClient
+      .from('profiles')
+      .select('home_address')
+      .eq('user_id', userId)
+      .single()
+    const homeAddress: string | null = profileData?.home_address || null
+
     // ── Update availability ────────────────────────────────────────────────
 
     const busySlotsByDate: Map<string, Set<string>> = new Map()
+
+    // Flight detection
+    interface FlightInfo { date: string; city: string | null; isReturn: boolean }
+    const allFlights: FlightInfo[] = []
+    const flightLocationByDate: Map<string, string> = new Map()
 
     for (const event of events) {
       if (event.isAllDay) {
@@ -397,17 +478,69 @@ Deno.serve(async (req) => {
         const slots = getEventTimeSlots(event.dtstart, event.dtend, timezone)
         slots.forEach(slot => busySlotsByDate.get(date)!.add(slot))
       }
+
+      // Detect flights
+      if (isFlightEvent(event.summary)) {
+        const city = extractFlightDestination(event.summary)
+        const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
+        const dateStr = getDateString(event.dtstart, timezone)
+        allFlights.push({ date: dateStr, city, isReturn })
+        if (city && !isReturn) {
+          flightLocationByDate.set(dateStr, city)
+        }
+      }
     }
+
+    // Sort flights and fill gap days
+    allFlights.sort((a, b) => a.date.localeCompare(b.date))
+    const allFlightDatesSet = new Set(allFlights.map(f => f.date))
+    const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+    for (const [outDate, city] of outboundEntries) {
+      const current = new Date(outDate)
+      current.setDate(current.getDate() + 1)
+      for (let i = 0; i < 30; i++) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        flightLocationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+    }
+
+    // Fetch existing availability for stale-away cleanup
+    const syncRangeStart = getDateString(rangeStart, timezone)
+    const syncRangeEnd = getDateString(rangeEnd, timezone)
+    const { data: existingAvailabilityRows } = await adminClient
+      .from('availability')
+      .select('date, location_status, trip_location')
+      .eq('user_id', userId)
+      .gte('date', syncRangeStart)
+      .lte('date', syncRangeEnd)
+
+    const existingAvailabilityByDate = new Map(
+      (existingAvailabilityRows || []).map((row: any) => [row.date, row])
+    )
 
     let updatedCount = 0
     for (const [date, slots] of busySlotsByDate) {
       const slotUpdates: Record<string, boolean> = {}
       for (const slot of slots) slotUpdates[slot] = false
 
+      const flightCity = flightLocationByDate.get(date)
+      const existingRow = existingAvailabilityByDate.get(date)
+      const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+      const locationFields: Record<string, string | null> = {}
+      if (flightCity) {
+        locationFields.location_status = 'away'
+        locationFields.trip_location = flightCity
+      } else if (shouldClearStaleHomeAway) {
+        locationFields.location_status = 'home'
+        locationFields.trip_location = null
+      }
+
       const { error: upsertError } = await adminClient
         .from('availability')
         .upsert(
-          { user_id: userId, date, ...slotUpdates },
+          { user_id: userId, date, ...slotUpdates, ...locationFields },
           { onConflict: 'user_id,date', ignoreDuplicates: false }
         )
 
@@ -415,6 +548,30 @@ Deno.serve(async (req) => {
         console.error('Error upserting availability for', date, ':', upsertError)
       } else {
         updatedCount++
+      }
+    }
+
+    // Update location for flight dates without busy slots
+    for (const [date, city] of flightLocationByDate) {
+      if (busySlotsByDate.has(date)) continue
+      const { error } = await adminClient
+        .from('availability')
+        .upsert(
+          { user_id: userId, date, location_status: 'away', trip_location: city },
+          { onConflict: 'user_id,date', ignoreDuplicates: false }
+        )
+      if (error) console.error('Error upserting flight location for', date, ':', error)
+      else updatedCount++
+    }
+
+    // Clean stale home-city away statuses
+    for (const existingRow of (existingAvailabilityRows || [])) {
+      if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
+      if (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) {
+        await adminClient.from('availability').upsert(
+          { user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null },
+          { onConflict: 'user_id,date', ignoreDuplicates: false }
+        )
       }
     }
 
