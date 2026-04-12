@@ -32,6 +32,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const PlanDetail = lazy(() => import("./pages/PlanDetail"));
+const TripDetail = lazy(() => import("./pages/TripDetail"));
 const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
 
 const queryClient = new QueryClient();
@@ -141,6 +142,7 @@ const AppRoutes = () => {
       <Route path="/profile" element={<ErrorBoundary scope="Profile"><Profile /></ErrorBoundary>} />
       <Route path="/friend/:userId" element={<ErrorBoundary scope="FriendProfile"><FriendProfile /></ErrorBoundary>} />
       <Route path="/plan/:planId" element={<ErrorBoundary scope="PlanDetail"><PlanDetail /></ErrorBoundary>} />
+      <Route path="/trip/:tripId" element={<ErrorBoundary scope="TripDetail"><TripDetail /></ErrorBoundary>} />
       <Route path="/settings" element={<ErrorBoundary scope="Settings"><Settings /></ErrorBoundary>} />
     </Route>
     <Route path="*" element={<NotFound />} />
