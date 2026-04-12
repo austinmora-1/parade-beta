@@ -214,10 +214,10 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
                   Edit
                 </Button>
               )}
-              {selectedIds.size >= 2 && onMergeSelected && (
-                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs flex-1" onClick={handleMerge}>
+              {selectedIds.size >= 1 && onMergeSelected && (
+                <Button variant="outline" size="sm" className={cn("h-8 gap-1.5 text-xs flex-1", selectedIds.size === 1 && "border-primary/40 text-primary")} onClick={selectedIds.size >= 2 ? handleMerge : undefined} disabled={selectedIds.size < 2}>
                   <Merge className="h-3.5 w-3.5" />
-                  Merge
+                  {selectedIds.size >= 2 ? `Merge (${selectedIds.size})` : 'Merge (+1)'}
                 </Button>
               )}
               {selectedIds.size === 1 && onSharePlan && (
