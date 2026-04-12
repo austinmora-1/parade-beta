@@ -833,9 +833,21 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
   // Fetch existing ical plans
   const { data: existingPlans } = await adminClient
     .from('plans')
-    .select('id, source_event_id')
+    .select('id, source_event_id, title, date, start_time')
     .eq('user_id', userId)
     .eq('source', 'ical')
+
+  // Also fetch ALL plans for content-based dedup
+  const { data: allUserPlansIcal } = await adminClient
+    .from('plans')
+    .select('id, source, source_event_id, title, date, start_time')
+    .eq('user_id', userId)
+
+  const contentLookupIcal = new Map<string, any>()
+  for (const p of (allUserPlansIcal || [])) {
+    const key = `${(p.title || '').toLowerCase().trim()}|${p.date}|${p.start_time || ''}`
+    if (!contentLookupIcal.has(key)) contentLookupIcal.set(key, p)
+  }
 
   const existingPlanIds = (existingPlans || []).map((p: any) => p.id)
   let enrichedPlanIds = new Set<string>()
@@ -870,10 +882,29 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
         date: planRow.date, time_slot: planRow.time_slot,
       }).eq('id', existing.id)
     } else {
-      toInsert.push(planRow)
+      // Content-based dedup
+      const contentKey = `${(planRow.title || '').toLowerCase().trim()}|${planRow.date}|${planRow.start_time || ''}`
+      const contentMatch = contentLookupIcal.get(contentKey)
+      if (contentMatch) {
+        if (!contentMatch.source_event_id || contentMatch.source === 'ical') {
+          await adminClient
+            .from('plans')
+            .update({ source: 'ical', source_event_id: eventId })
+            .eq('id', contentMatch.id)
+        }
+        console.log(`[DEDUP] Skipped duplicate: "${planRow.title}" on ${planRow.date}`)
+      } else {
+        toInsert.push(planRow)
+        contentLookupIcal.set(contentKey, planRow)
+      }
     }
   }
-  if (toInsert.length > 0) await adminClient.from('plans').insert(toInsert)
+  if (toInsert.length > 0) {
+    const { error: insertErr } = await adminClient
+      .from('plans')
+      .upsert(toInsert, { onConflict: 'user_id,source,source_event_id', ignoreDuplicates: true })
+    if (insertErr) console.error('Error inserting ical plans:', insertErr)
+  }
 
   return { eventsProcessed: events.length, datesUpdated: updatedCount }
 }
