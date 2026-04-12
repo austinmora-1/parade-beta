@@ -447,15 +447,15 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   for (const [date, slots] of busySlotsByDate) {
     const slotUpdates: Record<string, boolean> = {}
     for (const slot of slots) slotUpdates[slot] = false
-    const flightCity = flightLocationByDate.get(date)
+    const locationCity = allLocationByDate.get(date)
     const existingRow = existingAvailabilityByDate.get(date)
     const isReturnDate = returnHomeDates.has(date)
-    const shouldClearStaleHomeAway = !flightCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
-    const shouldClearAfterReturn = !flightCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
+    const shouldClearStaleHomeAway = !locationCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+    const shouldClearAfterReturn = !locationCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
     const locationFields: Record<string, string | null> = {}
-    if (flightCity) {
+    if (locationCity) {
       locationFields.location_status = 'away'
-      locationFields.trip_location = flightCity
+      locationFields.trip_location = locationCity
     } else if (isReturnDate || shouldClearStaleHomeAway || shouldClearAfterReturn) {
       locationFields.location_status = 'home'
       locationFields.trip_location = null
@@ -464,8 +464,18 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     if (!error) updatedCount++
   }
 
+  // Also update dates that have location data but no busy slots
+  for (const [date, city] of allLocationByDate) {
+    if (busySlotsByDate.has(date)) continue
+    await adminClient.from('availability').upsert(
+      { user_id: userId, date, location_status: 'away', trip_location: city },
+      { onConflict: 'user_id,date', ignoreDuplicates: false }
+    )
+    updatedCount++
+  }
+
   for (const existingRow of (existingAvailabilityRows || [])) {
-    if (busySlotsByDate.has(existingRow.date) || flightLocationByDate.has(existingRow.date)) continue
+    if (busySlotsByDate.has(existingRow.date) || allLocationByDate.has(existingRow.date)) continue
     const isReturnDate = returnHomeDates.has(existingRow.date)
     const shouldClear = isReturnDate ||
       (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
@@ -475,6 +485,26 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
         { user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null },
         { onConflict: 'user_id,date', ignoreDuplicates: false }
       )
+    }
+  }
+
+  // Flag one-way trips (needs_return_date)
+  const pendingReturnTrips: { city: string; departureDate: string }[] = []
+  for (const [outDate, city] of outboundEntries) {
+    let hasReturn = false
+    const maxReturnDate = new Date(outDate + 'T00:00:00Z'); maxReturnDate.setDate(maxReturnDate.getDate() + 30)
+    const maxReturnStr = maxReturnDate.toISOString().split('T')[0]
+    for (const rf of allFlights) {
+      if (rf.date > outDate && rf.date <= maxReturnStr && (rf.isReturn || (!rf.isReturn && rf.city && rf.city !== city))) { hasReturn = true; break }
+    }
+    if (!hasReturn) pendingReturnTrips.push({ city, departureDate: outDate })
+  }
+  if (pendingReturnTrips.length > 0) {
+    for (const prt of pendingReturnTrips) {
+      await adminClient.from('trips').update({ needs_return_date: true })
+        .eq('user_id', userId)
+        .eq('location', prt.city)
+        .gte('start_date', prt.departureDate)
     }
   }
 
