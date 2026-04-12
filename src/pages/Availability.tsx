@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
+import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus, Merge } from 'lucide-react';
