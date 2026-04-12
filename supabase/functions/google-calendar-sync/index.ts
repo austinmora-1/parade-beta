@@ -426,7 +426,7 @@ async function handleEventsSync(params: {
     const isFlight = isFlightEvent(event)
 
     if (isFlight) {
-      const city = extractFlightDestination(event.summary)
+      const city = resolveToCity(extractFlightDestination(event.summary))
       const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
 
       const rawDateTime = event.start.dateTime || event.start.date || null
@@ -442,7 +442,7 @@ async function handleEventsSync(params: {
 
     // Check for hotel/reservation events
     if (isHotelEvent(event.summary, event.location)) {
-      const hotelCity = extractHotelLocation(event.summary, event.location)
+      const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
       if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
         const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
         const endDate = event.end.dateTime ? new Date(event.end.dateTime) : event.end.date ? new Date(event.end.date) : null
