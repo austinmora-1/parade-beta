@@ -1,6 +1,6 @@
 import { useMemo, useRef, useCallback, useState, Fragment } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, Merge, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Merge, X } from 'lucide-react';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
@@ -215,7 +215,152 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
   );
 }
 
-function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
+// --- Collapsible past days section ---
+
+function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardLongPress, navigate }: {
+  day: Date;
+  dayPlans: Plan[];
+  isToday: boolean;
+  isPast: boolean;
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  toggleSelect: (id: string) => void;
+  onEditPlan?: (plan: Plan) => void;
+  onCardLongPress: (id: string) => void;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const key = format(day, 'yyyy-MM-dd');
+  return (
+    <div className={cn("rounded-xl transition-colors", isPast && "opacity-50")}>
+      <div className={cn("flex items-center gap-2 px-3 py-1.5", isToday && "text-primary")}>
+        <span className={cn(
+          "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
+          isToday ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+        )}>
+          {format(day, 'd')}
+        </span>
+        <span className={cn(
+          "text-xs font-medium",
+          isToday ? "text-primary font-semibold" : "text-muted-foreground"
+        )}>
+          {format(day, 'EEEE')}
+        </span>
+      </div>
+      {dayPlans.length > 0 ? (
+        <div className="flex gap-2 overflow-x-auto px-3 pb-2 snap-x snap-mandatory scrollbar-hide">
+          {dayPlans.map((plan) => (
+            <PlanCardCompact
+              key={plan.id}
+              plan={plan}
+              selectMode={selectMode}
+              selected={selectedIds.has(plan.id)}
+              onTap={() => {
+                if (selectMode) { toggleSelect(plan.id); return; }
+                const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
+                if (planIsPast) { navigate(`/plan/${plan.id}`); } else { onEditPlan?.(plan); }
+              }}
+              onLongPress={() => onCardLongPress(plan.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="px-3 pb-2">
+          <div className="h-[1px] bg-border/40 mx-7" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardLongPress, navigate }: {
+  weekDays: Date[];
+  today: Date;
+  plansByDay: Map<string, Plan[]>;
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  toggleSelect: (id: string) => void;
+  onEditPlan?: (plan: Plan) => void;
+  onCardLongPress: (id: string) => void;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const [showPast, setShowPast] = useState(false);
+
+  const pastDays = weekDays.filter(d => d < today && !isSameDay(d, today));
+  const currentAndFutureDays = weekDays.filter(d => isSameDay(d, today) || d > today);
+  const pastPlanCount = pastDays.reduce((sum, d) => sum + (plansByDay.get(format(d, 'yyyy-MM-dd'))?.length || 0), 0);
+
+  return (
+    <div className="space-y-1">
+      {pastDays.length > 0 && (
+        <button
+          onClick={() => setShowPast(!showPast)}
+          className="flex items-center gap-2 px-3 py-1.5 w-full text-left group"
+        >
+          <ChevronDown className={cn(
+            "h-3.5 w-3.5 text-muted-foreground transition-transform",
+            !showPast && "-rotate-90"
+          )} />
+          <span className="text-[11px] font-medium text-muted-foreground">
+            {pastDays.length} past day{pastDays.length > 1 ? 's' : ''}
+            {pastPlanCount > 0 && ` · ${pastPlanCount} plan${pastPlanCount > 1 ? 's' : ''}`}
+          </span>
+        </button>
+      )}
+
+      <AnimatePresence initial={false}>
+        {showPast && pastDays.map(day => {
+          const key = format(day, 'yyyy-MM-dd');
+          const dayPlans = plansByDay.get(key) || [];
+          return (
+            <motion.div
+              key={key}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <DayRow
+                day={day}
+                dayPlans={dayPlans}
+                isToday={false}
+                isPast={true}
+                selectMode={selectMode}
+                selectedIds={selectedIds}
+                toggleSelect={toggleSelect}
+                onEditPlan={onEditPlan}
+                onCardLongPress={onCardLongPress}
+                navigate={navigate}
+              />
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+
+      {currentAndFutureDays.map(day => {
+        const key = format(day, 'yyyy-MM-dd');
+        const dayPlans = plansByDay.get(key) || [];
+        const isToday = isSameDay(day, today);
+        return (
+          <DayRow
+            key={key}
+            day={day}
+            dayPlans={dayPlans}
+            isToday={isToday}
+            isPast={false}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            toggleSelect={toggleSelect}
+            onEditPlan={onEditPlan}
+            onCardLongPress={onCardLongPress}
+            navigate={navigate}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+
   plan: Plan;
   onTap: () => void;
   selectMode: boolean;
