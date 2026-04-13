@@ -438,8 +438,11 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
     setSwiping(false);
     const threshold = 60;
     if (dragDelta.current < -threshold) {
-      // Send front card to back
+      // Swipe left: send front card to back
       setOrder(prev => [...prev.slice(1), prev[0]]);
+    } else if (dragDelta.current > threshold) {
+      // Swipe right: bring last card to front
+      setOrder(prev => [prev[prev.length - 1], ...prev.slice(0, -1)]);
     }
     setSwipeX(0);
     dragDelta.current = 0;
