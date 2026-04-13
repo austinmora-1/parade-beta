@@ -133,16 +133,28 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
       const startDate = format(days[0], 'yyyy-MM-dd');
       const endDate = format(days[6], 'yyyy-MM-dd');
 
-      const { data } = await supabase
-        .from('availability')
-        .select('*')
-        .in('user_id', userIds)
-        .gte('date', startDate)
-        .lte('date', endDate);
+      const [{ data }, { data: profileData }] = await Promise.all([
+        supabase
+          .from('availability')
+          .select('*')
+          .in('user_id', userIds)
+          .gte('date', startDate)
+          .lte('date', endDate),
+        supabase
+          .from('profiles')
+          .select('user_id, home_address')
+          .in('user_id', userIds),
+      ]);
+
+      const homeMap = new Map<string, string | null>();
+      for (const p of (profileData || [])) {
+        homeMap.set(p.user_id, p.home_address);
+      }
 
       const avails: FriendAvailability[] = userIds.map(uid => {
         const userRows = (data || []).filter(d => d.user_id === uid);
         const slots: Record<string, Record<TimeSlot, boolean>> = {};
+        const locationByDate: Record<string, { locationStatus: string; tripLocation: string | null }> = {};
         for (const row of userRows) {
           slots[row.date] = {
             'early-morning': row.early_morning ?? true,
@@ -152,8 +164,12 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
             'evening': row.evening ?? true,
             'late-night': row.late_night ?? true,
           };
+          locationByDate[row.date] = {
+            locationStatus: row.location_status || 'home',
+            tripLocation: row.trip_location || null,
+          };
         }
-        return { userId: uid, slots };
+        return { userId: uid, slots, locationByDate, homeAddress: homeMap.get(uid) || null };
       });
 
       setFriendAvailabilities(avails);
