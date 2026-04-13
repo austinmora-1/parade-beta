@@ -2,7 +2,7 @@ import { Friend } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
-import { ChevronRight, Flame, MapPin } from 'lucide-react';
+import { ChevronRight, Flame, Home, Plane } from 'lucide-react';
 import { Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
