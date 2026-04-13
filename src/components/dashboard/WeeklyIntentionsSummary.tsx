@@ -81,7 +81,10 @@ export function WeeklyIntentionsSummary() {
         <div className="mt-2.5 flex items-center gap-2.5">
           <Progress
             value={progressPct}
-            className={cn('h-2 flex-1', goalMet && '[&>div]:bg-green-500')}
+            className={cn(
+              'h-2 flex-1 bg-[hsl(30_30%_90%)] dark:bg-[hsl(20_15%_22%)]',
+              goalMet && '[&>div]:bg-green-500'
+            )}
           />
           <span className={cn(
             'text-xs font-semibold whitespace-nowrap',
