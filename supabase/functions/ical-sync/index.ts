@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
+  formatTimeHHMM, getDateRange, getAllDayDateRange,
   formatTimeHHMM, getDateRange,
   resolveToCity, extractFlightDestination, isFlightEvent,
   isCityMatchingHome, isLocationMatch, isDateAfterReturn,
@@ -115,8 +116,11 @@ Deno.serve(async (req) => {
 
     for (const event of events) {
       if (event.isAllDay) {
-        const endExclusive = new Date(event.dtend); endExclusive.setDate(endExclusive.getDate() - 1)
-        const dates = getEventDates(event.dtstart, endExclusive, userTimezone)
+        // Parse all-day dates directly to avoid timezone shift
+        const startDateStr = event.dtstart.toISOString().split('T')[0]
+        const endExcl = new Date(event.dtend); endExcl.setDate(endExcl.getDate() - 1)
+        const endDateStr = endExcl.toISOString().split('T')[0]
+        const dates = getAllDayDateRange(startDateStr, endDateStr)
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
           ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(
@@ -126,10 +130,9 @@ Deno.serve(async (req) => {
         if (isHotelEvent(event.summary, event.location)) {
           const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
           if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
-            const endExcl = new Date(event.dtend); endExcl.setDate(endExcl.getDate() - 1)
             hotelStays.push({
-              startDate: getDateString(event.dtstart, userTimezone),
-              endDate: getDateString(endExcl, userTimezone),
+              startDate: startDateStr,
+              endDate: endDateStr,
               city: hotelCity,
             })
           }
@@ -345,9 +348,19 @@ Deno.serve(async (req) => {
     const planRowsByEventId = new Map<string, any>()
 
     for (const event of events) {
-      const hour = event.isAllDay ? 8 : getHourInTimezone(event.dtstart, userTimezone)
+      let localDateStr: string
+      let hour: number
+
+      if (event.isAllDay) {
+        // Parse all-day date directly to avoid timezone shift
+        localDateStr = event.dtstart.toISOString().split('T')[0]
+        hour = 12
+      } else {
+        hour = getHourInTimezone(event.dtstart, userTimezone)
+        localDateStr = getDateString(event.dtstart, userTimezone)
+      }
+
       const timeSlot = getTimeSlot(hour).replace('_', '-')
-      const localDateStr = getDateString(event.dtstart, userTimezone)
       const planDate = `${localDateStr}T12:00:00+00:00`
       const startTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtstart, userTimezone)
       const endTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtend, userTimezone)
