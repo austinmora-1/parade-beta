@@ -99,9 +99,10 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const startDate = format(scanDays[0], 'yyyy-MM-dd');
     const endDate = format(scanDays[179], 'yyyy-MM-dd');
 
+    const allUserIds = userId ? [...userIds, userId] : userIds;
     const [{ data: availData }, { data: plansData }, { data: friendProfiles }] = await Promise.all([
-      supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
-      supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+      supabase.from('availability').select('*').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate),
+      supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
       supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
     ]);
 
