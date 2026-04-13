@@ -47,6 +47,7 @@ interface BestSlot {
   status: 'all-free' | 'some-free';
   freeCount: number;
   total: number;
+  sharedCity: string;
 }
 
 const SLOT_LABELS: Record<string, string> = {
@@ -71,8 +72,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
-  const [friendCities, setFriendCities] = useState<Record<string, string>>({});
-  const [myCity, setMyCity] = useState<string>('');
+  const [selectedSharedCity, setSelectedSharedCity] = useState<string>('');
 
   const friendNames = preSelectedFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
@@ -108,28 +108,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
     ]);
 
-    // Build friend home address map and compute current cities for display
+    // Build friend home address map
     const friendHomeMap = new Map<string, string | null>();
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const cityMap: Record<string, string> = {};
     for (const p of (friendProfiles || [])) {
       friendHomeMap.set(p.user_id, p.home_address);
-      const todayRow = (availData || []).find(a => a.user_id === p.user_id && a.date === todayStr);
-      const loc = todayRow?.location_status || 'home';
-      const trip = todayRow?.trip_location || null;
-      const city = getEffectiveCity(loc, trip, p.home_address);
-      if (city) cityMap[p.user_id] = city.charAt(0).toUpperCase() + city.slice(1);
     }
-    setFriendCities(cityMap);
-
-    // Compute my current city for display
-    const myTodayRow = userId ? (availData || []).find(a => a.user_id === userId && a.date === todayStr) : null;
-    const myCurrCity = getEffectiveCity(
-      myTodayRow?.location_status || 'home',
-      myTodayRow?.trip_location || null,
-      homeAddress
-    );
-    if (myCurrCity) setMyCity(myCurrCity.charAt(0).toUpperCase() + myCurrCity.slice(1));
 
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
     const results: BestSlot[] = [];
@@ -204,12 +187,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         slotMap[slot] = { free: freeCount, total: userIds.length };
 
         if (iAmFree && freeCount > 0) {
+          // Capitalize the shared city name
+          const rawCity = myCity || '';
+          const sharedCity = rawCity ? rawCity.charAt(0).toUpperCase() + rawCity.slice(1) : '';
           results.push({
             date: day,
             slot,
             status: freeCount === userIds.length ? 'all-free' : 'some-free',
             freeCount,
             total: userIds.length,
+            sharedCity,
           });
         }
       }
@@ -227,8 +214,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       return (slotOrder[a.slot] || 0) - (slotOrder[b.slot] || 0);
     });
 
-    const top = results.slice(0, 3);
-    setBestSlots(top);
+    // Group by city, take up to 3 per city, flatten
+    const cityGroups = new Map<string, BestSlot[]>();
+    for (const r of results) {
+      const key = r.sharedCity || 'Unknown';
+      if (!cityGroups.has(key)) cityGroups.set(key, []);
+      const group = cityGroups.get(key)!;
+      if (group.length < 3) group.push(r);
+    }
+    const grouped = Array.from(cityGroups.values()).flat();
+    setBestSlots(grouped);
     setLoadingSlots(false);
   }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
@@ -266,6 +261,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const handleSelectSlot = (bs: BestSlot) => {
     setSelectedDate(bs.date);
     setTimeSlot(bs.slot);
+    setSelectedSharedCity(bs.sharedCity);
     setStep('confirm');
   };
 
