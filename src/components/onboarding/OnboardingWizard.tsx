@@ -91,6 +91,34 @@ export function OnboardingWizard() {
     allowAllHangRequests: true,
     allowEllyHangouts: true,
   });
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Pre-populate from existing profile so we don't overwrite with empty values
+  useEffect(() => {
+    if (!session?.user || profileLoaded) return;
+    supabase
+      .from('profiles')
+      .select('display_name, first_name, last_name, phone_number, avatar_url, cover_photo_url, home_address, timezone, neighborhood')
+      .eq('user_id', session.user.id)
+      .single()
+      .then(({ data: profile }) => {
+        if (profile) {
+          setData(prev => ({
+            ...prev,
+            displayName: profile.display_name || prev.displayName,
+            firstName: profile.first_name || prev.firstName,
+            lastName: profile.last_name || prev.lastName,
+            phoneNumber: profile.phone_number || prev.phoneNumber,
+            avatarUrl: profile.avatar_url || prev.avatarUrl,
+            coverPhotoUrl: profile.cover_photo_url || prev.coverPhotoUrl,
+            homeAddress: profile.home_address || prev.homeAddress,
+            timezone: profile.timezone || prev.timezone,
+            neighborhood: profile.neighborhood || prev.neighborhood,
+          }));
+        }
+        setProfileLoaded(true);
+      });
+  }, [session?.user, profileLoaded]);
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...updates }));
