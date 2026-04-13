@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TimeSlot, ActivityType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
-import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
+import { normalizeCity, citiesMatch } from '@/lib/locationMatch';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
@@ -147,137 +147,232 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const endDate = format(scanDays[179], 'yyyy-MM-dd');
 
     const allUserIds = userId ? [...userIds, userId] : userIds;
-    const [{ data: availData }, { data: plansData }, { data: friendProfiles }, { data: tripsData }] = await Promise.all([
+    const [
+      { data: availData },
+      { data: ownPlansData },
+      { data: friendProfiles },
+      { data: tripsData },
+      { data: participatedPlansData },
+    ] = await Promise.all([
       supabase.from('availability').select('*').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate),
       supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
-      supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
+      supabase.from('profiles').select('user_id, home_address, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status').in('user_id', allUserIds),
       supabase.from('trips').select('user_id, location, start_date, end_date').in('user_id', allUserIds).gte('end_date', startDate).lte('start_date', endDate),
+      // Fetch plans where friends are participants (not owners) to check busy times
+      supabase.from('plan_participants').select('friend_id, plan_id, status, plans!inner(date, time_slot, status)').in('friend_id', allUserIds).in('status', ['accepted', 'invited']),
     ]);
 
-    // Build friend home address map
-    const friendHomeMap = new Map<string, string | null>();
+    // Build profile map
+    const profileMap = new Map<string, {
+      homeAddress: string | null;
+      defaultWorkDays: string[];
+      defaultWorkStartHour: number;
+      defaultWorkEndHour: number;
+      defaultAvailStatus: string;
+    }>();
     for (const p of (friendProfiles || [])) {
-      friendHomeMap.set(p.user_id, p.home_address);
+      profileMap.set(p.user_id, {
+        homeAddress: p.home_address,
+        defaultWorkDays: (p.default_work_days as string[]) || ['monday','tuesday','wednesday','thursday','friday'],
+        defaultWorkStartHour: (p.default_work_start_hour as number) ?? 9,
+        defaultWorkEndHour: (p.default_work_end_hour as number) ?? 17,
+        defaultAvailStatus: (p.default_availability_status as string) || 'free',
+      });
+    }
+    // Also add current user's profile from store or fetched data
+    if (userId && !profileMap.has(userId)) {
+      profileMap.set(userId, {
+        homeAddress: homeAddress || null,
+        defaultWorkDays: ['monday','tuesday','wednesday','thursday','friday'],
+        defaultWorkStartHour: 9,
+        defaultWorkEndHour: 17,
+        defaultAvailStatus: 'free',
+      });
     }
 
-    // Build trip lookup: for a given userId + date, find the trip location
+    // Build trip lookup: for a given userId + date, find ALL trip locations
     const tripsByUser = new Map<string, { location: string; start_date: string; end_date: string }[]>();
     for (const t of (tripsData || [])) {
       if (!tripsByUser.has(t.user_id)) tripsByUser.set(t.user_id, []);
       tripsByUser.get(t.user_id)!.push(t);
     }
-    function getTripLocationForDate(uid: string, dateStr: string): string | null {
+    function getAllTripCitiesForDate(uid: string, dateStr: string): string[] {
       const trips = tripsByUser.get(uid);
-      if (!trips) return null;
+      if (!trips) return [];
+      const cities: string[] = [];
       for (const t of trips) {
-        if (dateStr >= t.start_date && dateStr <= t.end_date) return t.location;
+        if (dateStr >= t.start_date && dateStr <= t.end_date && t.location) {
+          const city = normalizeCity(t.location);
+          if (city) cities.push(city);
+        }
+      }
+      return cities;
+    }
+
+    // Resolve all possible cities for a user on a given date
+    function getUserCitiesForDate(uid: string, dateStr: string, availRow: any): string[] {
+      const profile = profileMap.get(uid);
+      const cities = new Set<string>();
+
+      // From availability record trip_location
+      if (availRow?.trip_location) {
+        const city = normalizeCity(availRow.trip_location);
+        if (city) cities.add(city);
+      }
+
+      // From ALL trips covering this date (canonical source)
+      for (const city of getAllTripCitiesForDate(uid, dateStr)) {
+        cities.add(city);
+      }
+
+      // If no away indicators found, use home address
+      const isAway = cities.size > 0 || availRow?.location_status === 'away';
+      if (!isAway && profile?.homeAddress) {
+        const city = normalizeCity(profile.homeAddress);
+        if (city) cities.add(city);
+      }
+
+      return Array.from(cities);
+    }
+
+    // Find first shared city between two sets
+    function findSharedCity(citiesA: string[], citiesB: string[]): string | null {
+      for (const a of citiesA) {
+        for (const b of citiesB) {
+          if (citiesMatch(a, b)) return a;
+        }
       }
       return null;
+    }
+
+    // Slot → approximate hour range for work-hour checking
+    const SLOT_HOURS: Record<string, [number, number]> = {
+      'early-morning': [6, 9],
+      'late-morning': [9, 12],
+      'early-afternoon': [12, 15],
+      'late-afternoon': [15, 18],
+      'evening': [18, 21],
+      'late-night': [21, 24],
+    };
+
+    const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+    // Get default slot availability when no explicit row exists
+    function getDefaultSlotFree(uid: string, date: Date, slot: string): boolean {
+      const profile = profileMap.get(uid);
+      if (!profile) return false; // Unknown user → not free
+      if (profile.defaultAvailStatus === 'unavailable') return false;
+
+      // Check if it's a work day
+      const dayName = DAY_NAMES[date.getDay()];
+      const isWorkDay = profile.defaultWorkDays.includes(dayName);
+      if (!isWorkDay) return true; // Non-work days are free
+
+      // Check if slot overlaps with work hours
+      const [slotStart, slotEnd] = SLOT_HOURS[slot] || [0, 0];
+      const workStart = profile.defaultWorkStartHour;
+      const workEnd = profile.defaultWorkEndHour;
+      // Slot is busy if it overlaps work hours
+      if (slotStart < workEnd && slotEnd > workStart) return false;
+      return true;
     }
 
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
     const results: BestSlot[] = [];
     const multiDay: typeof friendMultiDayAvail = {};
 
-    // Index availability and plans by "userId:date" for O(1) lookup
+    // Index availability by "userId:date" for O(1) lookup
     const availIndex = new Map<string, (typeof availData extends (infer T)[] | null ? T : never)>();
     for (const a of (availData || [])) {
       availIndex.set(`${a.user_id}:${a.date}`, a);
     }
+
+    // Index plans (owned) by "userId:date" → set of busy slots
     const planIndex = new Map<string, Set<string>>();
-    for (const p of (plansData || [])) {
+    for (const p of (ownPlansData || [])) {
       const key = `${p.user_id}:${p.date?.slice(0, 10)}`;
       if (!planIndex.has(key)) planIndex.set(key, new Set());
       planIndex.get(key)!.add(p.time_slot);
+    }
+
+    // Index participated plans by "userId:date" → set of busy slots
+    for (const pp of (participatedPlansData || [])) {
+      const plan = (pp as any).plans;
+      if (!plan || plan.status === 'cancelled' || plan.status === 'declined') continue;
+      const dateStr = plan.date?.slice(0, 10);
+      if (!dateStr) continue;
+      const key = `${pp.friend_id}:${dateStr}`;
+      if (!planIndex.has(key)) planIndex.set(key, new Set());
+      planIndex.get(key)!.add(plan.time_slot);
     }
 
     for (const day of scanDays) {
       const dateStr = format(day, 'yyyy-MM-dd');
       const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
 
-      // Get my availability — prefer store data, fall back to fetched data for dates beyond store range
+      // Resolve my cities for this date
+      const myRow = userId ? availIndex.get(`${userId}:${dateStr}`) : undefined;
+      const myCities = userId ? getUserCitiesForDate(userId, dateStr, myRow) : [];
+
+      // Skip if I have no resolvable location
+      if (myCities.length === 0) {
+        for (const slot of allSlots) slotMap[slot] = { free: 0, total: userIds.length };
+        multiDay[dateStr] = slotMap;
+        continue;
+      }
+
+      // Get my availability from store or fetched data
       let myDay = myAvailabilityMap[dateStr];
-      if (!myDay && userId) {
-        const myRow = availIndex.get(`${userId}:${dateStr}`);
-        if (myRow) {
-          myDay = {
-            date: day,
-            slots: {
-              'early-morning': myRow.early_morning ?? true,
-              'late-morning': myRow.late_morning ?? true,
-              'early-afternoon': myRow.early_afternoon ?? true,
-              'late-afternoon': myRow.late_afternoon ?? true,
-              'evening': myRow.evening ?? true,
-              'late-night': myRow.late_night ?? true,
-            },
-            locationStatus: (myRow.location_status as any) || 'home',
-            tripLocation: myRow.trip_location || undefined,
-          };
-        }
+      if (!myDay && myRow) {
+        myDay = {
+          date: day,
+          slots: {
+            'early-morning': myRow.early_morning ?? true,
+            'late-morning': myRow.late_morning ?? true,
+            'early-afternoon': myRow.early_afternoon ?? true,
+            'late-afternoon': myRow.late_afternoon ?? true,
+            'evening': myRow.evening ?? true,
+            'late-night': myRow.late_night ?? true,
+          },
+          locationStatus: (myRow.location_status as any) || 'home',
+          tripLocation: myRow.trip_location || undefined,
+        };
       }
 
-      // Get my effective city — also check trips as fallback
-      const myLocStatus = myDay?.locationStatus || 'home';
-      let myTripLoc = myDay?.tripLocation || null;
-      if (!myTripLoc && userId) {
-        const tripLoc = getTripLocationForDate(userId, dateStr);
-        if (tripLoc) myTripLoc = tripLoc;
-      }
-      const myEffectiveStatus = myTripLoc ? 'away' : myLocStatus;
-      const myCity = getEffectiveCity(myEffectiveStatus, myTripLoc, homeAddress);
-
-      // Debug: log location resolution for first 7 days
-      if (scanDays.indexOf(day) < 14 || myCity !== getEffectiveCity('home', null, homeAddress)) {
-        console.log(`[PlanWizard] ${dateStr} MY: status=${myEffectiveStatus} tripLoc=${myTripLoc} home=${homeAddress} → city=${myCity}`, myDay ? { locStatus: myDay.locationStatus, tripLoc: myDay.tripLocation } : 'no avail record');
-      }
-
-      // Check if I have plans on this date
+      // My plan busy slots
       const myPlanSlots = userId ? planIndex.get(`${userId}:${dateStr}`) : undefined;
 
       for (const slot of allSlots) {
-        const myFree = myDay ? myDay.slots[slot] : true;
+        // My availability: use explicit row, or profile defaults
+        const myFree = myDay ? myDay.slots[slot] : (userId ? getDefaultSlotFree(userId, day, slot) : true);
         const myBusy = myPlanSlots?.has(slot) || false;
         const iAmFree = myFree && !myBusy;
 
         let freeCount = 0;
         for (const uid of userIds) {
           const row = availIndex.get(`${uid}:${dateStr}`);
+
+          // Co-location check: resolve friend's cities and find intersection with mine
+          const friendCities = getUserCitiesForDate(uid, dateStr, row);
+          const sharedCity = findSharedCity(myCities, friendCities);
+          if (!sharedCity) continue; // Not co-located, skip
+
+          // Friend availability: use explicit row, or profile defaults
           const colName = slot.replace(/-/g, '_') as string;
-          const isAvailable = row ? ((row as any)[colName] ?? true) : true;
+          const isAvailable = row ? ((row as any)[colName] ?? true) : getDefaultSlotFree(uid, day, slot);
+
+          // Friend busy check: owned plans + participated plans
           const hasPlan = planIndex.get(`${uid}:${dateStr}`)?.has(slot) || false;
 
-          // Check co-location using availability, then trips as fallback
-          let friendLocStatus = row?.location_status || 'home';
-          let friendTripLoc = row?.trip_location || null;
-          const friendHome = friendHomeMap.get(uid) || null;
-
-          // Always check trips table as it's the canonical source for travel
-          if (!friendTripLoc) {
-            const tripLoc = getTripLocationForDate(uid, dateStr);
-            if (tripLoc) {
-              friendLocStatus = 'away';
-              friendTripLoc = tripLoc;
-            }
-          }
-
-          const friendEffectiveStatus = friendTripLoc ? 'away' : friendLocStatus;
-          const friendCity = getEffectiveCity(friendEffectiveStatus, friendTripLoc, friendHome);
-          // Both cities must be known to confirm co-location
-          const coLocated = myCity && friendCity ? citiesMatch(myCity, friendCity) : false;
-
-          // Debug: log friend location for early dates
-          if (scanDays.indexOf(day) < 14 || coLocated) {
-            console.log(`[PlanWizard] ${dateStr} FRIEND ${uid.slice(0,8)}: status=${friendEffectiveStatus} tripLoc=${friendTripLoc} home=${friendHome} → city=${friendCity} coLocated=${coLocated}`);
-          }
-
-          if (isAvailable && !hasPlan && coLocated) freeCount++;
+          if (isAvailable && !hasPlan) freeCount++;
         }
         slotMap[slot] = { free: freeCount, total: userIds.length };
 
         if (iAmFree && freeCount > 0) {
-          // Capitalize the shared city name
-          const rawCity = myCity || '';
-          const sharedCity = rawCity ? rawCity.charAt(0).toUpperCase() + rawCity.slice(1) : '';
+          // Find the shared city for display
+          const friendCities = getUserCitiesForDate(userIds[0], dateStr, availIndex.get(`${userIds[0]}:${dateStr}`));
+          const rawCity = findSharedCity(myCities, friendCities) || '';
+          const sharedCity = rawCity ? rawCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '';
           results.push({
             date: day,
             slot,

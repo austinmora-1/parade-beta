@@ -86,6 +86,52 @@ const NEIGHBORHOOD_MAP: Record<string, string> = {
 };
 
 /**
+ * ZIP code prefix → city mapping for common US zip codes.
+ */
+const ZIP_CODE_MAP: Record<string, string> = {
+  '100': 'new york city', '101': 'new york city', '102': 'new york city',
+  '103': 'new york city', '104': 'new york city', '110': 'new york city',
+  '111': 'new york city', '112': 'new york city', '113': 'new york city',
+  '114': 'new york city',
+  '070': 'new york city', '071': 'new york city', // Newark/Jersey City (NYC metro)
+  '200': 'washington dc', '201': 'washington dc', '202': 'washington dc',
+  '203': 'washington dc', '204': 'washington dc', '205': 'washington dc',
+  '220': 'washington dc', '221': 'washington dc', '222': 'washington dc',
+  '900': 'los angeles', '901': 'los angeles', '902': 'los angeles',
+  '906': 'los angeles', '910': 'los angeles', '911': 'los angeles',
+  '912': 'los angeles', '913': 'los angeles', '914': 'los angeles',
+  '941': 'san francisco', '940': 'san francisco',
+  '606': 'chicago', '608': 'chicago',
+  '331': 'miami', '330': 'miami',
+  '021': 'boston', '022': 'boston',
+  '750': 'dallas', '751': 'dallas', '752': 'dallas', '753': 'dallas',
+  '760': 'dallas', '761': 'dallas',
+  '770': 'houston', '773': 'houston', '774': 'houston',
+  '782': 'austin', '787': 'austin',
+  '850': 'phoenix', '852': 'phoenix', '853': 'phoenix',
+  '981': 'seattle', '980': 'seattle',
+};
+
+/**
+ * Attempts to resolve a zip code (possibly with prefix text) to a city.
+ */
+function resolveZipCode(input: string): string | null {
+  // Pure zip code (5 digits, or 5+4 format)
+  const pureZip = input.match(/^(\d{5})(-\d{4})?$/);
+  if (pureZip) {
+    const prefix3 = pureZip[1].slice(0, 3);
+    return ZIP_CODE_MAP[prefix3] || null;
+  }
+  // "City ZIPCODE" or "STATE ZIPCODE" pattern (e.g., "DC 20006")
+  const trailingZip = input.match(/(\d{5})(-\d{4})?$/);
+  if (trailingZip) {
+    const prefix3 = trailingZip[1].slice(0, 3);
+    return ZIP_CODE_MAP[prefix3] || null;
+  }
+  return null;
+}
+
+/**
  * Normalizes a city/location string to a canonical city name.
  * Mirrors the DB normalize_trip_city function.
  */
@@ -102,6 +148,10 @@ export function normalizeCity(loc: string | null | undefined): string {
   if (/^[A-Z]{3}$/.test(upper) && AIRPORT_CODES[upper]) {
     return AIRPORT_CODES[upper];
   }
+
+  // Check zip code patterns before other processing
+  const zipCity = resolveZipCode(trimmed);
+  if (zipCity) return zipCity;
 
   const lower = trimmed.toLowerCase();
 
