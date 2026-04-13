@@ -53,6 +53,8 @@ export function FriendListRow({
   currentVibe,
   vibeIcon,
   lastHungOut: lastHungOutDate,
+  locationCity,
+  isAway,
   onOpen,
 }: FriendListRowProps) {
   const { user } = useAuth();
