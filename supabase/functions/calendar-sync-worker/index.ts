@@ -889,14 +889,14 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
   // Fetch existing ical plans
   const { data: existingPlans } = await adminClient
     .from('plans')
-    .select('id, source_event_id, title, date, start_time')
+    .select('id, source_event_id, title, date, start_time, manually_edited')
     .eq('user_id', userId)
     .eq('source', 'ical')
 
   // Also fetch ALL plans for content-based dedup
   const { data: allUserPlansIcal } = await adminClient
     .from('plans')
-    .select('id, source, source_event_id, title, date, start_time')
+    .select('id, source, source_event_id, title, date, start_time, manually_edited')
     .eq('user_id', userId)
 
   const contentLookupIcal = new Map<string, any>()
