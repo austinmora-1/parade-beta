@@ -265,7 +265,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
 }) {
   const key = format(day, 'yyyy-MM-dd');
   return (
-    <div className={cn("rounded-xl transition-colors", isPast && "opacity-50")}>
+    <div className={cn("rounded-xl transition-colors", isPast && "grayscale-[40%]")}>
       <div className={cn("flex items-center gap-2 px-3 py-1.5 relative z-10", isToday && "text-primary")}>
         <span className={cn(
           "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
