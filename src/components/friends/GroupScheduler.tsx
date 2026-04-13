@@ -85,7 +85,7 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; slot: TimeSlot } | null>(null);
-  const { availabilityMap: myAvailabilityMap, plans } = usePlannerStore();
+  const { availabilityMap: myAvailabilityMap, plans, homeAddress } = usePlannerStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
