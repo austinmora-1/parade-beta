@@ -398,6 +398,56 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   );
 }
 
+// Map time slots to approximate hour ranges for determining past/current/upcoming
+const TIME_SLOT_HOURS: Record<string, { start: number; end: number }> = {
+  'early-morning': { start: 6, end: 9 },
+  'late-morning': { start: 9, end: 12 },
+  'early-afternoon': { start: 12, end: 15 },
+  'late-afternoon': { start: 15, end: 18 },
+  'evening': { start: 18, end: 22 },
+  'late-night': { start: 22, end: 26 }, // 26 = 2am next day
+};
+
+function getPlanTimeStatus(plan: Plan): 'past' | 'live' | 'upcoming' {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const planDate = new Date(plan.date);
+  const planDay = new Date(planDate.getFullYear(), planDate.getMonth(), planDate.getDate());
+
+  if (planDay > today) return 'upcoming';
+  if (planDay < today) return 'past';
+
+  // Same day — check time slot
+  const currentHour = now.getHours() + now.getMinutes() / 60;
+  const slot = TIME_SLOT_HOURS[plan.timeSlot];
+  if (!slot) return 'upcoming';
+
+  // If plan has explicit start/end times, use those
+  if (plan.startTime) {
+    const [sh, sm] = plan.startTime.split(':').map(Number);
+    const startH = sh + sm / 60;
+    const endH = plan.endTime
+      ? (() => { const [eh, em] = plan.endTime!.split(':').map(Number); return eh + em / 60; })()
+      : startH + plan.duration / 60;
+    if (currentHour < startH) return 'upcoming';
+    if (currentHour >= startH && currentHour < endH) return 'live';
+    return 'past';
+  }
+
+  if (currentHour < slot.start) return 'upcoming';
+  if (currentHour >= slot.start && currentHour < slot.end) return 'live';
+  return 'past';
+}
+
+function computeInitialOrder(plans: Plan[]): number[] {
+  const statuses = plans.map((p, i) => ({ i, status: getPlanTimeStatus(p) }));
+  // Priority: live first, then upcoming, then past
+  const live = statuses.filter(s => s.status === 'live').map(s => s.i);
+  const upcoming = statuses.filter(s => s.status === 'upcoming').map(s => s.i);
+  const past = statuses.filter(s => s.status === 'past').map(s => s.i);
+  return [...live, ...upcoming, ...past];
+}
+
 // Swipe-to-flip stacked cards — cycles top card to bottom
 function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   plans: Plan[];
@@ -406,7 +456,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   onCardTap: (id: string) => void;
 }) {
   // order[0] is front card, order[n-1] is back
-  const [order, setOrder] = useState(() => plans.map((_, i) => i));
+  const [order, setOrder] = useState(() => computeInitialOrder(plans));
   const dragStartX = useRef(0);
   const dragDelta = useRef(0);
   const didSwipe = useRef(false);
@@ -415,7 +465,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
 
   // Keep order in sync if plans change
   useEffect(() => {
-    setOrder(plans.map((_, i) => i));
+    setOrder(computeInitialOrder(plans));
   }, [plans.length]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
