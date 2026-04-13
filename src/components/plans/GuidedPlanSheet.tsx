@@ -437,46 +437,43 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                             Suggested times
                           </p>
                         </div>
-                        <div className="space-y-2">
-                          {bestSlots.map((bs, i) => {
-                            const isWeekend = [0, 6].includes(bs.date.getDay());
-                            const dayLabel = isSameDay(bs.date, new Date())
-                              ? 'Today'
-                              : isSameDay(bs.date, addDays(new Date(), 1))
-                                ? 'Tomorrow'
-                                : format(bs.date, 'EEEE, MMM d');
+                     {(() => {
+                       // Group bestSlots by sharedCity
+                       const groups: { city: string; slots: BestSlot[] }[] = [];
+                       const seen = new Map<string, number>();
+                       for (const bs of bestSlots) {
+                         const key = bs.sharedCity || 'Unknown';
+                         if (!seen.has(key)) {
+                           seen.set(key, groups.length);
+                           groups.push({ city: key, slots: [] });
+                         }
+                         groups[seen.get(key)!].slots.push(bs);
+                       }
+                       const multiCity = groups.length > 1;
 
-                            return (
-                              <motion.button
-                                key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.08 }}
-                                onClick={() => handleSelectSlot(bs)}
-                                className={cn(
-                                  "w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all",
-                                  bs.status === 'all-free'
-                                    ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
-                                    : "border-border hover:border-primary/30 hover:bg-primary/5"
-                                )}
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-foreground">{dayLabel}</p>
-                                  <p className="text-xs text-muted-foreground">{SLOT_LABELS[bs.slot]}</p>
-                                </div>
-                                {bs.status === 'all-free' && bs.total > 0 ? (
-                                  <span className="text-[10px] font-medium text-availability-available bg-availability-available/10 rounded-full px-2 py-0.5">
-                                    Everyone's free ✓
-                                  </span>
-                                ) : bs.total > 0 ? (
-                                  <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                                    {bs.freeCount}/{bs.total} free
-                                  </span>
-                                ) : null}
-                              </motion.button>
-                            );
-                          })}
-                        </div>
+                       return multiCity ? (
+                         <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
+                           {groups.map((g) => (
+                             <div key={g.city} className="snap-start shrink-0 w-[85%] space-y-2">
+                               <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                                 <MapPin className="h-3 w-3 text-primary" />
+                                 In {g.city}
+                                 <span className="text-[10px] font-normal ml-1">({g.slots.length} times)</span>
+                               </div>
+                               {g.slots.map((bs, i) => (
+                                 <SlotCard key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`} bs={bs} i={i} onSelect={handleSelectSlot} />
+                               ))}
+                             </div>
+                           ))}
+                         </div>
+                       ) : (
+                         <div className="space-y-2">
+                           {bestSlots.map((bs, i) => (
+                             <SlotCard key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`} bs={bs} i={i} onSelect={handleSelectSlot} />
+                           ))}
+                         </div>
+                       );
+                     })()}
                       </>
                     ) : (
                       <div className="flex flex-col items-center gap-2 py-6 text-center">
