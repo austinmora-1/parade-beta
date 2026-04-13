@@ -169,6 +169,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       defaultWorkStartHour: number;
       defaultWorkEndHour: number;
       defaultAvailStatus: string;
+      preferredSocialDays: string[];
+      preferredSocialTimes: string[];
     }>();
     for (const p of (friendProfiles || [])) {
       profileMap.set(p.user_id, {
@@ -177,6 +179,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         defaultWorkStartHour: (p.default_work_start_hour as number) ?? 9,
         defaultWorkEndHour: (p.default_work_end_hour as number) ?? 17,
         defaultAvailStatus: (p.default_availability_status as string) || 'free',
+        preferredSocialDays: (p.preferred_social_days as string[]) || [],
+        preferredSocialTimes: (p.preferred_social_times as string[]) || [],
       });
     }
     // Also add current user's profile from store or fetched data
@@ -187,6 +191,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         defaultWorkStartHour: 9,
         defaultWorkEndHour: 17,
         defaultAvailStatus: 'free',
+        preferredSocialDays: [],
+        preferredSocialTimes: [],
       });
     }
 
