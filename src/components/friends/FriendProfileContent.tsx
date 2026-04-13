@@ -39,6 +39,7 @@ interface FriendProfileData {
   share_code: string | null;
   cover_photo_url: string | null;
   vibe_gif_url: string | null;
+  home_address: string | null;
 }
 
 interface AvailabilityDay {
