@@ -64,7 +64,7 @@ const SMART_DEFAULTS: BestSlot[] = [
 ];
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
-  const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans } = usePlannerStore();
+  const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
 
   const [step, setStep] = useState<Step>('activity');
