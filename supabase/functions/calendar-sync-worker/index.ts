@@ -702,14 +702,14 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   // Fetch existing gcal plans for this user
   const { data: existingPlans } = await adminClient
     .from('plans')
-    .select('id, source_event_id, title, date, start_time')
+    .select('id, source_event_id, title, date, start_time, manually_edited')
     .eq('user_id', userId)
     .eq('source', 'gcal')
 
   // Also fetch ALL plans for content-based dedup
   const { data: allUserPlans } = await adminClient
     .from('plans')
-    .select('id, source, source_event_id, title, date, start_time')
+    .select('id, source, source_event_id, title, date, start_time, manually_edited')
     .eq('user_id', userId)
 
   const contentLookup = new Map<string, any>()
@@ -736,9 +736,9 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     if (p.source_event_id) existingByEventId.set(p.source_event_id, p)
   }
 
-  // Delete plans that are no longer in the calendar AND don't have participants
+  // Delete plans that are no longer in the calendar AND not enriched AND not manually edited
   const toDelete = (existingPlans || []).filter((p: any) =>
-    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id)
+    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id) && !p.manually_edited
   )
   if (toDelete.length > 0) {
     await adminClient
@@ -751,7 +751,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   for (const [eventId, planRow] of planRowsByEventId) {
     const existing = existingByEventId.get(eventId)
     if (existing) {
-      if (enrichedPlanIds.has(existing.id)) {
+      if (enrichedPlanIds.has(existing.id) || existing.manually_edited) {
         continue // Skip - preserve manual edits and participants
       }
       await adminClient
@@ -873,26 +873,30 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     const hour = event.isAllDay ? 8 : event.dtstart.getUTCHours()
     const localDateStr = getDateString(event.dtstart)
     incomingEventIds.add(event.uid)
+    const icalStartTime = !event.isAllDay ? formatTimeHHMM(event.dtstart, profileData?.timezone) : null
+    const icalEndTime = !event.isAllDay && event.dtend ? formatTimeHHMM(event.dtend, profileData?.timezone) : null
     planRowsByEventId.set(event.uid, {
       user_id: userId, title: (event.summary || 'iCal imported event').replace(/\s+/g, ' ').trim(),
       activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
       time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
       location: event.location || null, source: 'ical', source_event_id: event.uid,
       source_timezone: profileData?.timezone || null,
+      start_time: icalStartTime,
+      end_time: icalEndTime,
     })
   }
 
   // Fetch existing ical plans
   const { data: existingPlans } = await adminClient
     .from('plans')
-    .select('id, source_event_id, title, date, start_time')
+    .select('id, source_event_id, title, date, start_time, manually_edited')
     .eq('user_id', userId)
     .eq('source', 'ical')
 
   // Also fetch ALL plans for content-based dedup
   const { data: allUserPlansIcal } = await adminClient
     .from('plans')
-    .select('id, source, source_event_id, title, date, start_time')
+    .select('id, source, source_event_id, title, date, start_time, manually_edited')
     .eq('user_id', userId)
 
   const contentLookupIcal = new Map<string, any>()
@@ -917,9 +921,9 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     if (p.source_event_id) existingByEventId.set(p.source_event_id, p)
   }
 
-  // Delete plans no longer in calendar AND not enriched
+  // Delete plans no longer in calendar AND not enriched AND not manually edited
   const toDelete = (existingPlans || []).filter((p: any) =>
-    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id)
+    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id) && !p.manually_edited
   )
   if (toDelete.length > 0) {
     await adminClient.from('plans').delete().in('id', toDelete.map((p: any) => p.id))
@@ -929,10 +933,11 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
   for (const [eventId, planRow] of planRowsByEventId) {
     const existing = existingByEventId.get(eventId)
     if (existing) {
-      if (enrichedPlanIds.has(existing.id)) continue
+      if (enrichedPlanIds.has(existing.id) || existing.manually_edited) continue
       await adminClient.from('plans').update({
         title: planRow.title, activity: planRow.activity,
         date: planRow.date, time_slot: planRow.time_slot,
+        start_time: planRow.start_time, end_time: planRow.end_time,
       }).eq('id', existing.id)
     } else {
       // Content-based dedup
