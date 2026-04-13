@@ -26,7 +26,7 @@ export function MobileHeader() {
   const inboxCount = totalNotifications + unreadChats;
 
   return (
-    <header className="sticky top-0 z-40 flex h-[56px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
+    <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
       {/* Left: avatar → profile */}
       <button
         onClick={() => navigate('/profile')}
