@@ -421,10 +421,27 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
                 );
               })()}
               {profile.location_status && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  {profile.location_status === 'home' ? 'Home' : 'Away'}
-                </span>
+              {(() => {
+                const todayAvail = availability.find(a => a.date === format(new Date(), 'yyyy-MM-dd'));
+                const isAway = profile.location_status === 'away' || todayAvail?.location_status === 'away';
+                const cityRaw = isAway && todayAvail?.trip_location
+                  ? todayAvail.trip_location
+                  : profile.home_address;
+                const cityNorm = normalizeCity(cityRaw);
+                const cityDisplay = cityNorm
+                  ? cityNorm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                  : null;
+
+                return (
+                  <span className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
+                    isAway ? "bg-status-away/10 text-status-away" : "bg-muted text-muted-foreground"
+                  )}>
+                    {isAway ? <Plane className="h-3 w-3" /> : <Home className="h-3 w-3" />}
+                    {cityDisplay || (isAway ? 'Away' : 'Home')}
+                  </span>
+                );
+              })()}
               )}
               {lastDate && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
