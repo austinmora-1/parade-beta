@@ -243,12 +243,23 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           const isAvailable = row ? ((row as any)[colName] ?? true) : true;
           const hasPlan = planIndex.get(`${uid}:${dateStr}`)?.has(slot) || false;
 
-          // Check co-location
-          const friendLocStatus = row?.location_status || 'home';
-          const friendTripLoc = row?.trip_location || null;
+          // Check co-location using availability, then trips as fallback
+          let friendLocStatus = row?.location_status || 'home';
+          let friendTripLoc = row?.trip_location || null;
           const friendHome = friendHomeMap.get(uid) || null;
+
+          // If no availability record or no trip_location, check trips table
+          if (!friendTripLoc) {
+            const tripLoc = getTripLocationForDate(uid, dateStr);
+            if (tripLoc) {
+              friendLocStatus = 'away';
+              friendTripLoc = tripLoc;
+            }
+          }
+
           const friendCity = getEffectiveCity(friendLocStatus, friendTripLoc, friendHome);
-          const coLocated = !myCity || !friendCity || citiesMatch(myCity, friendCity);
+          // Both cities must be known to confirm co-location
+          const coLocated = myCity && friendCity ? citiesMatch(myCity, friendCity) : false;
 
           if (isAvailable && !hasPlan && coLocated) freeCount++;
         }
