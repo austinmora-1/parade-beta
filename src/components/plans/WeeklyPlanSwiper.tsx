@@ -569,12 +569,14 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   );
 }
 
-function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
+function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPast = false, isLive = false }: {
   plan: Plan;
   onTap: () => void;
   selectMode: boolean;
   selected: boolean;
   onLongPress: () => void;
+  isPast?: boolean;
+  isLive?: boolean;
 }) {
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
