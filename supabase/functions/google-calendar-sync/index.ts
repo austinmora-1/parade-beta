@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
-  formatTimeHHMM, getDateRange, AIRPORT_CITY_MAP,
+  formatTimeHHMM, getDateRange, AIRPORT_CITY_MAP, parseAllDayDate, getAllDayDateRange,
   resolveToCity, extractFlightDestination, isFlightEvent,
   isCityMatchingHome, isLocationMatch, isDateAfterReturn,
   isHotelEvent, extractHotelLocation,
@@ -39,10 +39,12 @@ async function handleEventsSync(params: {
   for (const event of events) {
     if (!event.start.dateTime || !event.end.dateTime) {
       if (event.start.date && event.end.date) {
-        const startDate = new Date(event.start.date)
-        const endDate = new Date(event.end.date)
+        // Parse all-day date strings directly to avoid timezone shift
+        const startParsed = parseAllDayDate(event.start.date)
+        const endDate = new Date(event.end.date + 'T12:00:00Z')
         endDate.setDate(endDate.getDate() - 1)
-        const dates = getEventDates(startDate, endDate, timezone)
+        const endDateStr = endDate.toISOString().split('T')[0]
+        const dates = getAllDayDateRange(startParsed.dateString, endDateStr)
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
           ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(
@@ -52,8 +54,7 @@ async function handleEventsSync(params: {
         if (isHotelEvent(event.summary, event.location)) {
           const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
           if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
-            const endExcl = new Date(event.end.date); endExcl.setDate(endExcl.getDate() - 1)
-            hotelStays.push({ startDate: getDateString(startDate, timezone), endDate: getDateString(endExcl, timezone), city: hotelCity })
+            hotelStays.push({ startDate: startParsed.dateString, endDate: endDateStr, city: hotelCity })
           }
         }
       }
@@ -303,19 +304,29 @@ async function handleEventsSync(params: {
   const planRowsByEventId = new Map<string, any>()
 
   for (const event of events) {
-    const startDate = event.start.dateTime
-      ? new Date(event.start.dateTime)
-      : event.start.date
-        ? new Date(event.start.date)
-        : null
-    if (!startDate) continue
+    let localDateStr: string
+    let hour: number
+    let startTimeStr: string | null
+    let endTimeStr: string | null
 
-    const hour = event.start.dateTime ? getHourInTimezone(startDate, timezone) : 8
+    if (event.start.dateTime) {
+      const startDate = new Date(event.start.dateTime)
+      hour = getHourInTimezone(startDate, timezone)
+      localDateStr = getDateString(startDate, timezone)
+      startTimeStr = formatTimeHHMM(startDate, timezone)
+      endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
+    } else if (event.start.date) {
+      // All-day event: parse date string directly to avoid timezone shift
+      localDateStr = event.start.date
+      hour = 12
+      startTimeStr = null
+      endTimeStr = null
+    } else {
+      continue
+    }
+
     const timeSlotHyphen = getTimeSlot(hour).replace('_', '-')
-    const localDateStr = getDateString(startDate!, timezone)
     const planDate = `${localDateStr}T12:00:00+00:00`
-    const startTimeStr = event.start.dateTime ? formatTimeHHMM(new Date(event.start.dateTime), timezone) : null
-    const endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
 
     incomingEventIds.add(event.id)
     planRowsByEventId.set(event.id, {
