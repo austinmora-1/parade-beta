@@ -610,9 +610,17 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
       className={cn(
         "w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
         showTentativeStyle && "border-dashed border-muted-foreground/40 opacity-70",
-        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border"
+        isPast && !showTentativeStyle && "opacity-50 grayscale-[30%]",
+        isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
+        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && "border-border"
       )}
     >
+      {isLive && !showTentativeStyle && (
+        <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+          Live
+        </span>
+      )}
       <div className="flex items-start gap-2 mb-1.5 min-w-0">
         {selectMode && (
           <Checkbox checked={selected} className="shrink-0 mt-0.5" />
