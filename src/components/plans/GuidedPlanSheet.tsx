@@ -251,7 +251,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           let friendTripLoc = row?.trip_location || null;
           const friendHome = friendHomeMap.get(uid) || null;
 
-          // If no availability record or no trip_location, check trips table
+          // Always check trips table as it's the canonical source for travel
           if (!friendTripLoc) {
             const tripLoc = getTripLocationForDate(uid, dateStr);
             if (tripLoc) {
@@ -260,9 +260,15 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
             }
           }
 
-          const friendCity = getEffectiveCity(friendLocStatus, friendTripLoc, friendHome);
+          const friendEffectiveStatus = friendTripLoc ? 'away' : friendLocStatus;
+          const friendCity = getEffectiveCity(friendEffectiveStatus, friendTripLoc, friendHome);
           // Both cities must be known to confirm co-location
           const coLocated = myCity && friendCity ? citiesMatch(myCity, friendCity) : false;
+
+          // Debug: log friend location for early dates
+          if (scanDays.indexOf(day) < 14 || coLocated) {
+            console.log(`[PlanWizard] ${dateStr} FRIEND ${uid.slice(0,8)}: status=${friendEffectiveStatus} tripLoc=${friendTripLoc} home=${friendHome} → city=${friendCity} coLocated=${coLocated}`);
+          }
 
           if (isAvailable && !hasPlan && coLocated) freeCount++;
         }
