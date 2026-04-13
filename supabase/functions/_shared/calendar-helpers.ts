@@ -414,18 +414,28 @@ export function parseICS(icsText: string, rangeStart: Date, rangeEnd: Date): ICa
   let dtend: Date | null = null
   let isAllDay = false
   let location = ''
+  let rrule = ''
+  let exdates: Set<string> = new Set()
 
   for (const line of lines) {
     if (line === 'BEGIN:VEVENT') {
       inEvent = true
-      uid = ''; summary = ''; dtstart = null; dtend = null; isAllDay = false; location = ''
+      uid = ''; summary = ''; dtstart = null; dtend = null; isAllDay = false; location = ''; rrule = ''; exdates = new Set()
       continue
     }
 
     if (line === 'END:VEVENT') {
       inEvent = false
-      if (dtstart && dtend && dtend > rangeStart && dtstart < rangeEnd) {
-        events.push({ uid, summary, dtstart, dtend, isAllDay, location: location || undefined })
+      if (dtstart && dtend) {
+        if (rrule) {
+          // Expand recurring event instances
+          const instances = expandRRule(rrule, dtstart, dtend, isAllDay, rangeStart, rangeEnd, exdates)
+          for (const inst of instances) {
+            events.push({ uid: `${uid}_${inst.dtstart.toISOString()}`, summary, dtstart: inst.dtstart, dtend: inst.dtend, isAllDay, location: location || undefined })
+          }
+        } else if (dtend > rangeStart && dtstart < rangeEnd) {
+          events.push({ uid, summary, dtstart, dtend, isAllDay, location: location || undefined })
+        }
       }
       continue
     }
@@ -444,10 +454,117 @@ export function parseICS(icsText: string, rangeStart: Date, rangeEnd: Date): ICa
     } else if (line.startsWith('DTEND')) {
       const parsed = parseICSDate(line)
       if (parsed) dtend = parsed.date
+    } else if (line.startsWith('RRULE:')) {
+      rrule = line.slice(6)
+    } else if (line.startsWith('EXDATE')) {
+      const parsed = parseICSDate(line)
+      if (parsed) exdates.add(parsed.date.toISOString().split('T')[0])
     }
   }
 
   return events
+}
+
+// ── RRULE Expansion ─────────────────────────────────────────────────────────
+// Supports FREQ=DAILY/WEEKLY/MONTHLY/YEARLY with INTERVAL, COUNT, UNTIL, BYDAY.
+// Generates individual instances within [rangeStart, rangeEnd].
+
+function expandRRule(
+  rrule: string,
+  dtstart: Date,
+  dtend: Date,
+  isAllDay: boolean,
+  rangeStart: Date,
+  rangeEnd: Date,
+  exdates: Set<string>,
+): { dtstart: Date; dtend: Date }[] {
+  const parts = new Map<string, string>()
+  for (const part of rrule.split(';')) {
+    const [k, v] = part.split('=')
+    if (k && v) parts.set(k.toUpperCase(), v.toUpperCase())
+  }
+
+  const freq = parts.get('FREQ')
+  if (!freq) return []
+
+  const interval = parseInt(parts.get('INTERVAL') || '1')
+  const count = parts.has('COUNT') ? parseInt(parts.get('COUNT')!) : undefined
+  const until = parts.has('UNTIL') ? parseRRuleUntil(parts.get('UNTIL')!) : undefined
+  const byDay = parts.has('BYDAY') ? parts.get('BYDAY')!.split(',') : undefined
+
+  const duration = dtend.getTime() - dtstart.getTime()
+  const instances: { dtstart: Date; dtend: Date }[] = []
+  const maxInstances = 500 // safety cap
+  let generated = 0
+
+  const DAY_MAP: Record<string, number> = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 }
+
+  let current = new Date(dtstart)
+
+  while (generated < maxInstances) {
+    if (until && current > until) break
+    if (count !== undefined && generated >= count) break
+    if (current > rangeEnd) break
+
+    const endCurrent = new Date(current.getTime() + duration)
+
+    if (endCurrent > rangeStart && current < rangeEnd) {
+      const dateKey = current.toISOString().split('T')[0]
+      if (!exdates.has(dateKey)) {
+        // If BYDAY specified for WEEKLY, check day matches
+        if (freq === 'WEEKLY' && byDay) {
+          const dayOfWeek = current.getUTCDay()
+          const dayAbbrevs = Object.entries(DAY_MAP)
+          const dayName = dayAbbrevs.find(([, num]) => num === dayOfWeek)?.[0]
+          if (dayName && byDay.includes(dayName)) {
+            instances.push({ dtstart: new Date(current), dtend: endCurrent })
+          }
+        } else {
+          instances.push({ dtstart: new Date(current), dtend: endCurrent })
+        }
+      }
+    }
+
+    generated++
+
+    // Advance to next occurrence
+    if (freq === 'DAILY') {
+      current.setUTCDate(current.getUTCDate() + interval)
+    } else if (freq === 'WEEKLY') {
+      if (byDay && byDay.length > 1) {
+        // For multi-day BYDAY, advance one day at a time
+        current.setUTCDate(current.getUTCDate() + 1)
+        // But count interval only after cycling through a full week
+        const startDow = dtstart.getUTCDay()
+        if (current.getUTCDay() === startDow) {
+          current.setUTCDate(current.getUTCDate() + (interval - 1) * 7)
+        }
+      } else {
+        current.setUTCDate(current.getUTCDate() + interval * 7)
+      }
+    } else if (freq === 'MONTHLY') {
+      current.setUTCMonth(current.getUTCMonth() + interval)
+    } else if (freq === 'YEARLY') {
+      current.setUTCFullYear(current.getUTCFullYear() + interval)
+    } else {
+      break // unsupported frequency
+    }
+  }
+
+  return instances
+}
+
+function parseRRuleUntil(value: string): Date {
+  const y = parseInt(value.slice(0, 4))
+  const m = parseInt(value.slice(4, 6)) - 1
+  const d = parseInt(value.slice(6, 8))
+  if (value.length >= 15) {
+    const h = parseInt(value.slice(9, 11))
+    const min = parseInt(value.slice(11, 13))
+    const s = parseInt(value.slice(13, 15)) || 0
+    return new Date(Date.UTC(y, m, d, h, min, s))
+  }
+  return new Date(Date.UTC(y, m, d, 23, 59, 59))
 }
 
 function unfoldLines(text: string): string[] {
@@ -526,6 +643,50 @@ export interface CalendarEvent {
   start: { dateTime?: string; date?: string }
   end: { dateTime?: string; date?: string }
   location?: string
+}
+
+// ── Google Calendar Paginated Fetch ─────────────────────────────────────────
+// Fetches ALL events via nextPageToken pagination (Google caps at 2500 per page,
+// but we use 250 per page and loop). Max 10 pages (~2500 events) as safety limit.
+
+export async function fetchAllGoogleEvents(
+  accessToken: string,
+  timeMin: string,
+  timeMax: string,
+): Promise<CalendarEvent[]> {
+  const allEvents: CalendarEvent[] = []
+  let pageToken: string | undefined = undefined
+  const maxPages = 10
+
+  for (let page = 0; page < maxPages; page++) {
+    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+    url.searchParams.set('timeMin', timeMin)
+    url.searchParams.set('timeMax', timeMax)
+    url.searchParams.set('maxResults', '250')
+    url.searchParams.set('singleEvents', 'true')
+    url.searchParams.set('orderBy', 'startTime')
+    if (pageToken) url.searchParams.set('pageToken', pageToken)
+
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+
+    if (!response.ok) {
+      if (page === 0) throw new Error(`Google Calendar API error: ${response.status}`)
+      // On subsequent pages, return what we have
+      console.warn(`Google Calendar pagination stopped at page ${page}: ${response.status}`)
+      break
+    }
+
+    const data = await response.json()
+    const items: CalendarEvent[] = data.items || []
+    allEvents.push(...items)
+
+    if (!data.nextPageToken) break
+    pageToken = data.nextPageToken
+  }
+
+  return allEvents
 }
 
 // ── Shared Plan Reconciliation ──────────────────────────────────────────────

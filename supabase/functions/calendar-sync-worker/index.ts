@@ -5,7 +5,7 @@ import {
   resolveToCity, extractFlightDestination, isFlightEvent,
   isCityMatchingHome, isLocationMatch, isDateAfterReturn,
   isHotelEvent, extractHotelLocation,
-  classifyActivity, parseICS, reconcilePlans,
+  classifyActivity, parseICS, reconcilePlans, fetchAllGoogleEvents,
   type ICalEvent, type FlightInfo, type HotelStay, type PendingReturnTrip,
   type CalendarEvent,
 } from '../_shared/calendar-helpers.ts'
@@ -59,21 +59,11 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
   const threeMonthsAgo = new Date(now); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
   const threeMonthsAhead = new Date(now); threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3)
 
-  const calendarUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
-  calendarUrl.searchParams.set('timeMin', threeMonthsAgo.toISOString())
-  calendarUrl.searchParams.set('timeMax', threeMonthsAhead.toISOString())
-  calendarUrl.searchParams.set('maxResults', '250')
-  calendarUrl.searchParams.set('singleEvents', 'true')
-  calendarUrl.searchParams.set('orderBy', 'startTime')
-
-  const calendarResponse = await fetch(calendarUrl.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-
-  if (!calendarResponse.ok) throw new Error(`Google Calendar API error: ${calendarResponse.status}`)
-
-  const calendarData = await calendarResponse.json()
-  const events: GCalEvent[] = calendarData.items || []
+  const events: GCalEvent[] = await fetchAllGoogleEvents(
+    accessToken,
+    threeMonthsAgo.toISOString(),
+    threeMonthsAhead.toISOString(),
+  )
 
   // Process events into availability
   const busySlotsByDate: Map<string, Set<string>> = new Map()
