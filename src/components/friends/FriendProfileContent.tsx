@@ -422,7 +422,9 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
               })()}
               {(() => {
                 const todayAvail = availability.find(a => a.date === format(new Date(), 'yyyy-MM-dd'));
-                const isAway = profile.location_status === 'away' || todayAvail?.location_status === 'away';
+                const isAway = todayAvail
+                  ? todayAvail.location_status === 'away'
+                  : profile.location_status === 'away';
                 const cityRaw = isAway && todayAvail?.trip_location
                   ? todayAvail.trip_location
                   : profile.home_address;
