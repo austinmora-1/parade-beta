@@ -531,7 +531,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
             animate={{
               x: isTop ? swipeX * 0.4 : stackPos * 20,
               scale: isTop ? 1 : 1 - stackPos * 0.03,
-              opacity: isTop ? (isPast ? 0.55 : 1) : !isVisible ? 0 : 1 - stackPos * 0.2,
+              opacity: isTop ? 1 : !isVisible ? 0 : 1 - stackPos * 0.2,
               rotate: isTop ? swipeX * 0.06 : 0,
             }}
             transition={swiping && isTop ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
