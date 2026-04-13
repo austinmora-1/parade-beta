@@ -72,7 +72,7 @@ export function VibeSelector() {
         )}
       </AnimatePresence>
 
-      <div className="relative z-50">
+      <div className={cn("relative", menuOpen ? "z-50" : "z-0")}>
         {/* Trigger row: shows current vibe or prompt */}
         <motion.button
           onClick={() => setMenuOpen(o => !o)}
