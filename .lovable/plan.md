@@ -1,46 +1,56 @@
 
 
-## Fix: All-Day Calendar Events Showing on Wrong Date
+# Plan: Group Trip Planning Wizard (Updated)
 
-### Root Cause
+## Overview
+Build a "Plan a Trip" wizard that helps users find optimal trip dates with friends by analyzing availability and existing trips across user-selected months, then lets users select and share up to 5 potential trip date ranges.
 
-The bug has two parts, both in the calendar sync functions:
-
-1. **Wrong date**: When syncing all-day events, `new Date("2026-07-04")` creates midnight UTC. Then `getDateString()` converts this to the user's timezone (e.g. `America/Chicago`), which shifts midnight UTC to 7pm the previous day — so July 4 becomes July 3 in the database.
-
-2. **Wrong time slot**: All-day events default to `hour = 8`, which maps to `early-morning`. All-day events should use a more neutral slot or be clearly marked.
-
-The display code in `plannerStore.ts` (lines 1560-1564) correctly uses UTC parts, so fixing the sync is sufficient.
-
-### Fix
-
-**Files to change**: 
-- `supabase/functions/_shared/calendar-helpers.ts`
-- `supabase/functions/google-calendar-sync/index.ts`
-- `supabase/functions/calendar-sync-worker/index.ts`
-- `supabase/functions/ical-sync/index.ts`
-
-**Changes**:
-
-1. **In all three sync functions** (google-calendar-sync, calendar-sync-worker, ical-sync): When an event is all-day (`event.start.date` without `dateTime`), parse the date string directly instead of using `new Date()`. Extract year/month/day from the `"YYYY-MM-DD"` string and construct the `planDate` as `"YYYY-MM-DDT12:00:00+00:00"` without going through timezone conversion. This prevents the UTC-midnight-to-local shift.
-
-2. **Change the default time slot** for all-day events from `early-morning` (hour 8) to `early-afternoon` (hour 12) or a dedicated "all-day" representation, so they don't appear as 6am events.
-
-3. **Fix existing bad data**: After deploying, trigger a re-sync so existing mis-dated plans get corrected. No migration needed since re-sync will overwrite via `source_event_id` reconciliation.
-
-### Technical Detail
+## User Flow
 
 ```text
-Before (buggy):
-  event.start.date = "2026-07-04"
-  → new Date("2026-07-04") = 2026-07-04T00:00:00Z
-  → getDateString(..., "America/Chicago") = "2026-07-03"  ← WRONG
-  → planDate = "2026-07-03T12:00:00+00:00"
-
-After (fixed):
-  event.start.date = "2026-07-04"
-  → parse directly: localDateStr = "2026-07-04"
-  → planDate = "2026-07-04T12:00:00+00:00"  ← CORRECT
+Step 1: Select friend(s) to trip with
+Step 2: Select individual months (non-consecutive allowed, e.g. July, Aug, Oct)
+Step 3: System shows weekends ranked by combined availability + no trip conflicts
+Step 4: User selects up to 5 date ranges from the results
+Step 5: Confirmation & share trip proposals with friends
 ```
 
-The same fix applies to the availability slot computation for all-day events (the `busySlotsByDate` loop), where `getEventDates` also receives a midnight-UTC date that can shift to the wrong local day.
+## Implementation
+
+### 1. New component: `src/components/trips/GuidedTripSheet.tsx`
+Drawer-based wizard modeled after `GuidedPlanSheet.tsx`.
+
+**Step 1 — Friend selector**: Reuse friend search pattern from GroupScheduler.
+
+**Step 2 — Month picker (non-consecutive)**: Display a grid of the next 6–12 months as toggle buttons. Users tap to select/deselect individual months freely — no requirement for consecutive selection. Selected months shown as highlighted chips. Minimum 1 month required.
+
+**Step 3 — Weekend analysis**: For each weekend (Fri–Sun) across all selected months:
+- Fetch all participants' `availability` rows and `trips`
+- Count available slots per participant, penalize weekends with existing trip conflicts
+- Sort by score DESC then chronologically
+- Display as ranked weekend cards with availability percentage
+
+**Step 4 — Date range selection**: User taps up to 5 weekends. Optional destination city input.
+
+**Step 5 — Confirmation & share**: Summary + create trip proposal records.
+
+### 2. Database migration
+Three new tables: `trip_proposals`, `trip_proposal_dates`, `trip_proposal_participants` with RLS policies allowing creator to manage, participants to view/vote.
+
+### 3. Entry point
+Add "Plan a Trip" button on `src/pages/Trips.tsx` alongside existing "Add Trip".
+
+### 4. Weekend scoring
+```text
+For each weekend in selected months:
+  availabilityScore = sum of free slots across all participants
+  conflictPenalty = -1000 if any participant has existing trip
+  finalScore = availabilityScore + conflictPenalty
+Sort by finalScore DESC, then chronologically
+```
+
+### Files to create/modify
+- **Create**: `src/components/trips/GuidedTripSheet.tsx` (~500 lines)
+- **Modify**: `src/pages/Trips.tsx` (add entry point button)
+- **Migration**: New tables for trip proposals
+
