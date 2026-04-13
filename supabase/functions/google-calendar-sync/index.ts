@@ -1,415 +1,30 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
+  formatTimeHHMM, getDateRange, AIRPORT_CITY_MAP,
+  resolveToCity, extractFlightDestination, isFlightEvent,
+  isCityMatchingHome, isLocationMatch, isDateAfterReturn,
+  isHotelEvent, extractHotelLocation,
+  normalizePlanTitle, makeContentKey,
+  classifyActivity, reconcilePlans,
+  type CalendarEvent, type FlightInfo, type HotelStay, type PendingReturnTrip,
+} from '../_shared/calendar-helpers.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Map time to Parade time slots
-function getTimeSlot(hour: number): string {
-  if (hour >= 2 && hour < 9) return 'early_morning'
-  if (hour >= 9 && hour < 12) return 'late_morning'
-  if (hour >= 12 && hour < 15) return 'early_afternoon'
-  if (hour >= 15 && hour < 18) return 'late_afternoon'
-  if (hour >= 18 && hour < 22) return 'evening'
-  return 'late_night' // 22-6
-}
-
-// Get all time slots that an event spans
-function getEventTimeSlots(startTime: Date, endTime: Date, timezone?: string): string[] {
-  const slots = new Set<string>()
-
-  // Iterate through each hour the event covers
-  const current = new Date(startTime)
-  while (current < endTime) {
-    const hour = getHourInTimezone(current, timezone)
-    slots.add(getTimeSlot(hour))
-    current.setTime(current.getTime() + 60 * 60 * 1000)
-  }
-
-  return Array.from(slots)
-}
-
-// Get date string in YYYY-MM-DD format in a given timezone
-function getDateString(date: Date, timezone?: string): string {
-  if (timezone) {
-    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
-    return parts // en-CA gives YYYY-MM-DD
-  }
-  return date.toISOString().split('T')[0]
-}
-
-// Get the hour in a given timezone
-function getHourInTimezone(date: Date, timezone?: string): number {
-  if (timezone) {
-    return parseInt(new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', hour12: false }).format(date), 10)
-  }
-  return date.getHours()
-}
-
-// Get all dates that an event spans
-function getEventDates(startTime: Date, endTime: Date, timezone?: string): string[] {
-  const dates: string[] = []
-  // Use timezone-aware date strings to iterate
-  const seen = new Set<string>()
-  const current = new Date(startTime)
-  while (current <= endTime) {
-    const d = getDateString(current, timezone)
-    if (!seen.has(d)) {
-      seen.add(d)
-      dates.push(d)
-    }
-    current.setTime(current.getTime() + 60 * 60 * 1000) // step by 1 hour
-  }
-  return dates
-}
-
-// Common airport codes → city names
-const AIRPORT_CITY_MAP: Record<string, string> = {
-  ATL: 'Atlanta', BOS: 'Boston', BWI: 'Baltimore', CLT: 'Charlotte', DCA: 'Washington DC',
-  DEN: 'Denver', DFW: 'Dallas', DTW: 'Detroit', EWR: 'New York City', FLL: 'Fort Lauderdale',
-  HNL: 'Honolulu', IAD: 'Washington DC', IAH: 'Houston', JFK: 'New York City', LAS: 'Las Vegas',
-  LAX: 'Los Angeles', LGA: 'New York City', MCI: 'Kansas City', MCO: 'Orlando', MDW: 'Chicago',
-  MIA: 'Miami', MSP: 'Minneapolis', MSY: 'New Orleans', OAK: 'Oakland', ORD: 'Chicago',
-  PDX: 'Portland', PHL: 'Philadelphia', PHX: 'Phoenix', PIT: 'Pittsburgh', RDU: 'Raleigh',
-  SAN: 'San Diego', SAT: 'San Antonio', SEA: 'Seattle', SFO: 'San Francisco', SJC: 'San Jose',
-  SLC: 'Salt Lake City', SMF: 'Sacramento', STL: 'St. Louis', TPA: 'Tampa',
-  AUS: 'Austin', BNA: 'Nashville', IND: 'Indianapolis', JAX: 'Jacksonville', MKE: 'Milwaukee',
-  OMA: 'Omaha', RNO: 'Reno', BUR: 'Burbank', SNA: 'Orange County', ONT: 'Ontario',
-  ABQ: 'Albuquerque', ANC: 'Anchorage', BDL: 'Hartford', BHM: 'Birmingham', BOI: 'Boise',
-  BUF: 'Buffalo', CHS: 'Charleston', CLE: 'Cleveland', CMH: 'Columbus', CVG: 'Cincinnati',
-  DAL: 'Dallas', DSM: 'Des Moines', ELP: 'El Paso', GRR: 'Grand Rapids', GSP: 'Greenville',
-  ICT: 'Wichita', LIT: 'Little Rock', MEM: 'Memphis', MHT: 'Manchester', MSN: 'Madison',
-  OKC: 'Oklahoma City', PBI: 'West Palm Beach', PVD: 'Providence', RIC: 'Richmond',
-  ROC: 'Rochester', RSW: 'Fort Myers', SDF: 'Louisville', SRQ: 'Sarasota', SYR: 'Syracuse',
-  TUL: 'Tulsa', TUS: 'Tucson',
-  YYZ: 'Toronto', YVR: 'Vancouver', YUL: 'Montreal', YOW: 'Ottawa', YYC: 'Calgary',
-  YEG: 'Edmonton', YHZ: 'Halifax', YWG: 'Winnipeg',
-  LHR: 'London', LGW: 'London', STN: 'London', LTN: 'London', CDG: 'Paris', ORY: 'Paris',
-  FCO: 'Rome', CIA: 'Rome', AMS: 'Amsterdam', FRA: 'Frankfurt', MUC: 'Munich',
-  MAD: 'Madrid', BCN: 'Barcelona', LIS: 'Lisbon', OPO: 'Porto', DUB: 'Dublin',
-  ZRH: 'Zurich', GVA: 'Geneva', CPH: 'Copenhagen', ARN: 'Stockholm', OSL: 'Oslo',
-  HEL: 'Helsinki', VIE: 'Vienna', BRU: 'Brussels', ATH: 'Athens', IST: 'Istanbul',
-  SAW: 'Istanbul', MRS: 'Marseille', NCE: 'Nice', LYS: 'Lyon', TLS: 'Toulouse',
-  BER: 'Berlin', TXL: 'Berlin', SXF: 'Berlin', HAM: 'Hamburg', DUS: 'Düsseldorf',
-  CGN: 'Cologne', MXP: 'Milan', LIN: 'Milan', NAP: 'Naples', VCE: 'Venice',
-  FLR: 'Florence', PMI: 'Palma de Mallorca', AGP: 'Málaga', ALC: 'Alicante',
-  VLC: 'Valencia', SVQ: 'Seville', BIO: 'Bilbao', EDI: 'Edinburgh', MAN: 'Manchester',
-  BHX: 'Birmingham', GLA: 'Glasgow', PRG: 'Prague', BUD: 'Budapest', WAW: 'Warsaw',
-  KRK: 'Krakow', OTP: 'Bucharest', SOF: 'Sofia', ZAG: 'Zagreb', BEG: 'Belgrade',
-  TIA: 'Tirana', SKG: 'Thessaloniki', CHQ: 'Chania', HER: 'Heraklion', RHO: 'Rhodes',
-  JTR: 'Santorini', MYK: 'Mykonos', SPU: 'Split', DBV: 'Dubrovnik',
-  NRT: 'Tokyo', HND: 'Tokyo', KIX: 'Osaka', ICN: 'Seoul', PEK: 'Beijing', PVG: 'Shanghai',
-  HKG: 'Hong Kong', SIN: 'Singapore', BKK: 'Bangkok', SYD: 'Sydney', MEL: 'Melbourne',
-  BNE: 'Brisbane', PER: 'Perth', AKL: 'Auckland', DEL: 'Delhi', BOM: 'Mumbai',
-  BLR: 'Bangalore', MAA: 'Chennai', CCU: 'Kolkata', DXB: 'Dubai', AUH: 'Abu Dhabi',
-  DOH: 'Doha', RUH: 'Riyadh', JED: 'Jeddah', TLV: 'Tel Aviv',
-  GRU: 'São Paulo', GIG: 'Rio de Janeiro', EZE: 'Buenos Aires', MEX: 'Mexico City',
-  CUN: 'Cancún', GDL: 'Guadalajara', SJO: 'San José', PTY: 'Panama City',
-  BOG: 'Bogotá', MDE: 'Medellín', LIM: 'Lima', SCL: 'Santiago', MVD: 'Montevideo',
-  JNB: 'Johannesburg', CAI: 'Cairo', NBO: 'Nairobi', CPT: 'Cape Town',
-  CMN: 'Casablanca', ADD: 'Addis Ababa', LOS: 'Lagos', ACC: 'Accra',
-  DPS: 'Denpasar', KUL: 'Kuala Lumpur', MNL: 'Manila', SGN: 'Ho Chi Minh City',
-  HAN: 'Hanoi', PNH: 'Phnom Penh', RGN: 'Yangon', CMB: 'Colombo',
-}
-
-function resolveToCity(location: string | null | undefined): string | null {
-  if (!location || !location.trim()) return null
-  const trimmed = location.trim()
-  const upper = trimmed.toUpperCase()
-  if (/^[A-Z]{3}$/.test(upper) && upper in AIRPORT_CITY_MAP) {
-    return AIRPORT_CITY_MAP[upper]
-  }
-  if (trimmed.length <= 4 && upper in AIRPORT_CITY_MAP) return AIRPORT_CITY_MAP[upper]
-  return trimmed
-}
-
-// Extract destination city from a flight event
-function extractFlightDestination(summary?: string): string | null {
-  if (!summary) return null
-  const upper = summary.toUpperCase()
-
-  // Look for 3-letter airport codes - try to find the LAST one (destination)
-  const codes = upper.match(/\b([A-Z]{3})\b/g)
-  if (codes) {
-    // Filter to only known airport codes
-    const airports = codes.filter(c => c in AIRPORT_CITY_MAP)
-    if (airports.length > 0) {
-      // Last matched airport code is likely the destination
-      return AIRPORT_CITY_MAP[airports[airports.length - 1]]
-    }
-  }
-
-  // Fallback: match "Flight to <City>" pattern (e.g. "Flight to Dallas (AA 1849)")
-  const flightToMatch = summary.match(/\bflight\s+to\s+([A-Za-z\s]+?)(?:\s*\(|$)/i)
-  if (flightToMatch) {
-    const city = flightToMatch[1].trim()
-    if (city.length >= 3) return city
-  }
-
-  return null
-}
-
-// Detect if an event is a flight
-function isFlightEvent(event: CalendarEvent): boolean {
-  const s = (event.summary || '').toLowerCase()
-  // Common patterns: "Flight to ...", airline names, flight numbers
-  if (/\bflight\b/.test(s)) return true
-  if (/\b(united|delta|american|southwest|jetblue|alaska|spirit|frontier|british airways|lufthansa|air france|emirates|qatar)\b/.test(s)) return true
-  // Pattern like "AA 123", "UA1234", "DL 456"
-  if (/\b[A-Z]{2}\s?\d{1,4}\b/i.test(event.summary || '')) {
-    // Verify it also has airport codes
-    const codes = (event.summary || '').toUpperCase().match(/\b([A-Z]{3})\b/g)
-    if (codes?.some(c => c in AIRPORT_CITY_MAP)) return true
-  }
-  return false
-}
-
-// ── Hotel / Reservation Detection ───────────────────────────────────────────
-
-const HOTEL_REGEX = /\b(hotel|airbnb|vrbo|booking|reservation|check[\s-]?in|check[\s-]?out|stay\s+at|lodging|accommodation|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|courtyard|residence\s*inn|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|motel|hostel|inn\b|lodge\b)\b/i
-
-function isHotelEvent(summary?: string, location?: string): boolean {
-  if (!summary) return false
-  if (HOTEL_REGEX.test(summary)) return true
-  // Also check location field for hotel brands
-  if (location && HOTEL_REGEX.test(location)) return true
-  return false
-}
-
-// Strip hotel/brand names from a string, leaving just city/place names
-function stripHotelBrands(text: string): string {
-  return text
-    .replace(/\b(residence\s*inn|courtyard|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|airbnb|vrbo|hotel|motel|hostel|inn|lodge|resort|suites?|stay\s+at)\b/gi, '')
-    .replace(/\bby\s+(marriott|hilton|hyatt|wyndham|ihg|accor|choice)\b/gi, '')
-    .replace(/^\s*by\s+/i, '')
-    .replace(/\s[-–—]\s/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim()
-}
-
-function extractHotelLocation(summary?: string, location?: string): string | null {
-  if (location && location.trim().length > 0) {
-    const parts = location.split(',').map(p => p.trim())
-    if (parts.length >= 3) {
-      // "Hotel Name, City, State/Country" → return "City"
-      const city = stripHotelBrands(parts[parts.length - 2])
-      if (city.length >= 2) return city
-    }
-    if (parts.length === 2) {
-      // Could be "City, State" or "Hotel Name, City"
-      // If first part has hotel branding, strip it and check
-      const stripped = stripHotelBrands(parts[0])
-      if (stripped.length >= 2 && !HOTEL_REGEX.test(stripped)) return stripped
-      // Otherwise return second part stripped
-      const stripped2 = stripHotelBrands(parts[1])
-      if (stripped2.length >= 2) return stripped2
-      return parts[0]
-    }
-    // Single part - strip hotel brands
-    const stripped = stripHotelBrands(location.trim())
-    if (stripped.length >= 2 && !HOTEL_REGEX.test(stripped)) return stripped
-    // Can't extract city from raw hotel name
-    return null
-  }
-  // Try to extract from summary: "Stay at Hotel in City" or "Airbnb in City"
-  const inMatch = summary?.match(/\b(?:in|at)\s+([A-Z][A-Za-z\s]+?)(?:\s*[-–—]|\s*\(|$)/i)
-  if (inMatch) {
-    const city = stripHotelBrands(inMatch[1].trim())
-    if (city.length >= 3 && !HOTEL_REGEX.test(city)) return city
-  }
-  return null
-}
-
-interface CalendarEvent {
-  id: string
-  summary?: string
-  start: { dateTime?: string; date?: string }
-  end: { dateTime?: string; date?: string }
-  location?: string
-}
-
-// Format a Date to HH:MM in the given timezone
-function formatTimeHHMM(date: Date, timezone?: string): string {
-  const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: false }
-  if (timezone) opts.timeZone = timezone
-  const parts = new Intl.DateTimeFormat('en-GB', opts).format(date)
-  return parts // en-GB gives HH:MM
-}
-
-// Normalize plan title for dedup comparison: strip "Flight" prefix, "|" separators,
-// leading zeros from flight numbers, and collapse whitespace
-function normalizePlanTitle(title?: string): string {
-  if (!title) return ''
-  let t = title.toLowerCase().trim()
-  // Remove "flight" prefix (with optional count like "Flight 1 of 2 |")
-  t = t.replace(/^flight\s*(\d+\s*of\s*\d+\s*\|?\s*)?/i, '')
-  // Remove pipe separators
-  t = t.replace(/\|/g, ' ')
-  // Remove leading zeros from flight numbers (e.g., DL0679 → DL679)
-  t = t.replace(/([a-z]{2})0+(\d)/gi, '$1$2')
-  // Collapse whitespace
-  t = t.replace(/\s+/g, ' ').trim()
-  return t
-}
-
-// Check if a normalized title looks like a flight (contains 2+ known airport codes)
-function isFlightTitle(normalizedTitle: string): boolean {
-  const upper = normalizedTitle.toUpperCase()
-  const codes = upper.match(/\b([A-Z]{3})\b/g)
-  if (!codes) return false
-  return codes.filter(c => c in AIRPORT_CITY_MAP).length >= 2
-}
-
-// Extract YYYY-MM-DD from any date format (ISO string, Postgres timestamptz, etc.)
-function extractDateOnly(date: string): string {
-  return date.replace(/^(\d{4}-\d{2}-\d{2}).*/, '$1')
-}
-
-// Build content dedup key: for flights, ignore start_time to catch all-day vs timed mismatches
-function makeContentKey(normalizedTitle: string, date: string, startTime: string | null): string {
-  const d = extractDateOnly(date)
-  if (isFlightTitle(normalizedTitle)) {
-    return `${normalizedTitle}|${d}`
-  }
-  return `${normalizedTitle}|${d}|${startTime || ''}`
-}
-
-// Classify a calendar event into a Parade activity type based on its title
-function classifyActivity(summary?: string, isFlight = false): string {
-  if (isFlight) return 'flight'
-  if (!summary) return 'hanging-out'
-  const s = summary.toLowerCase()
-
-  // ── Flights ──
-  if (/\bflight\b/.test(s)) return 'flight'
-
-  // ── Social ──
-  if (/\b(drinks|happy\s*hour|bar|cocktail|cocktails|beer|beers|pub|brewery|nightclub|club)\b/.test(s)) return 'drinks'
-  if (/\b(museum|exhibit|exhibition|gallery)\b/.test(s)) return 'museum'
-  if (/\b(sightsee|sightseeing|tourist|tour)\b/.test(s)) return 'sightseeing'
-  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|eating|supper|bistro|diner|sushi|pizza|ramen|taco|tapas|dim\s*sum|buffet)\b/.test(s)) return 'dinner'
-  if (/\b(concert|live\s*music|gig)\b/.test(s)) return 'concert'
-  if (/\b(1[:\s]*1|one[\s-]*on[\s-]*one|catch\s*up|coffee|cafe|café|tea|espresso|latte|matcha)\b/.test(s)) return 'one-on-one'
-  if (/\b(beach|shore|ocean|seaside)\b/.test(s)) return 'beach'
-  if (/\b(stand[\s-]*up|comedy|comic|improv)\b/.test(s)) return 'stand-up-comedy'
-  if (/\b(theme\s*park|amusement|roller\s*coaster|disney|six\s*flags|universal)\b/.test(s)) return 'theme-park'
-  if (/\b(camp|camping|campfire|campsite|glamping)\b/.test(s)) return 'camping'
-  if (/\b(video\s*game|gaming|game\s*night|board\s*game|xbox|playstation|nintendo|switch)\b/.test(s)) return 'video-games'
-  if (/\b(facetime|zoom|video\s*call|google\s*meet|teams\s*call)\b/.test(s)) return 'facetime'
-  if (/\b(game|match|stadium|arena|sports\s*event)\b/.test(s) && !/\bvideo\b/.test(s)) return 'sports-event'
-  if (/\b(larp|larping)\b/.test(s)) return 'larping'
-  if (/\b(ballet|dance\s*recital|dance\s*performance)\b/.test(s)) return 'ballet'
-  if (/\b(dancing|dance\s*class|salsa|swing\s*dance|line\s*dance)\b/.test(s)) return 'dancing'
-  if (/\b(opera)\b/.test(s)) return 'opera'
-  if (/\b(comic[\s-]*con|cosplay|convention|con\b|anime\s*expo)\b/.test(s)) return 'comic-con'
-  if (/\b(hang|hanging\s*out|get[\s-]*together|kickback|hangout)\b/.test(s)) return 'hanging-out'
-
-  // ── Chill ──
-  if (/\b(listen|music|playlist|spotify|vinyl|record)\b/.test(s) && !/\b(concert|live)\b/.test(s)) return 'listening-music'
-  if (/\b(movie|movies|cinema|film|screening)\b/.test(s)) return 'movies'
-  if (/\b(watch|tv|netflix|hulu|streaming|binge|show|series)\b/.test(s) && !/\b(sports|game|match)\b/.test(s)) return 'watching-tv'
-  if (/\b(park|picnic|garden|botanical)\b/.test(s)) return 'park'
-  if (/\b(grill|grilling|bbq|barbecue|cookout)\b/.test(s)) return 'grilling'
-  if (/\b(theater|theatre|play|musical|show|performance)\b/.test(s)) return 'movies'
-  if (/\b(read|reading|book\s*club|library)\b/.test(s)) return 'reading'
-
-  // ── Athletic ──
-  if (/\b(surf|surfing|bodyboard)\b/.test(s)) return 'surfing'
-  if (/\b(gym|weight\s*lifting|weightlifting|lifting|crossfit|cross[\s-]?fit|strength|conditioning|bootcamp|boot\s*camp|f45|orangetheory|equinox)\b/.test(s)) return 'gym'
-  if (/\b(yoga|pilates|barre|stretching)\b/.test(s)) return 'yoga'
-  if (/\b(run|running|jog|jogging|marathon|5k|10k|half[\s-]?marathon|track|sprint)\b/.test(s)) return 'running'
-  if (/\b(workout|exercise|fitness|hiit|tabata|cardio|calisthenics|peloton|soulcycle)\b/.test(s) && /\b(home|indoor|living\s*room)\b/.test(s)) return 'workout-in'
-  if (/\b(swim|swimming|pool|laps)\b/.test(s)) return 'swimming'
-  if (/\b(hike|hiking|trail|mountain|backpack)\b/.test(s)) return 'hiking'
-  if (/\b(walk|walking|stroll|jaywalking)\b/.test(s)) return 'jaywalking'
-  if (/\b(workout|exercise|fitness|hiit|tabata|cardio|calisthenics|zumba|spin|spinning|rowing|cycling|bike|biking|boxing|kickboxing|martial\s*arts|karate|judo|jiu[\s-]?jitsu|mma|basketball|soccer|football|tennis|golf|volleyball|baseball|hockey|lacrosse|rugby|cricket|athletics|peloton|soulcycle|class\s*pass|classpass|spartan|triathlon|obstacle)\b/.test(s)) return 'gym'
-
-  // ── Productive ──
-  if (/\b(pet|pets|feed|feeding|cat|fish\s*tank)\b/.test(s) && /\b(feed|care|sitting)\b/.test(s)) return 'feeding-pets'
-  if (/\b(dog\s*walk|walk\s*(the\s*)?dog|dog\s*park)\b/.test(s)) return 'walking-dog'
-  if (/\b(volunteer|volunteering|charity|fundraiser|community\s*service)\b/.test(s)) return 'volunteering'
-  if (/\b(wine\s*tasting|winery|vineyard|sommelier)\b/.test(s)) return 'wine-tasting'
-  if (/\b(dj|djing|turntable|mix|mixing\s*music)\b/.test(s)) return 'amateur-djing'
-  if (/\b(shop|shopping|grocery|groceries|market|mall|store|target|walmart|costco|trader|whole\s*foods)\b/.test(s)) return 'shopping'
-
-  // ── Fallback ──
-  return 'hanging-out'
-}
-
-// Check if a city name matches a home address
-function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
-  if (!city || !homeAddress) return false
-  const normCity = city.toLowerCase().trim()
-  const normHome = homeAddress.toLowerCase().trim()
-  if (normHome.includes(normCity) || normCity.includes(normHome)) return true
-  // Compare city portion (before comma) stripped of "city/town" suffix
-  const homeCity = normHome.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim()
-  const flightCity = normCity.replace(/\s*(city|town|village)$/i, '').trim()
-  if (homeCity && flightCity && (homeCity.includes(flightCity) || flightCity.includes(homeCity))) return true
-  return false
-}
-
-function normalizeLocation(value: string | null | undefined): string {
-  return (value || '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s*(city|town|village)$/i, '')
-    .trim()
-}
-
-function isLocationMatch(a: string | null | undefined, b: string | null | undefined): boolean {
-  const normalizedA = normalizeLocation(a)
-  const normalizedB = normalizeLocation(b)
-  if (!normalizedA || !normalizedB) return false
-  if (normalizedA.includes(normalizedB) || normalizedB.includes(normalizedA)) return true
-
-  const cityA = normalizedA.split(',')[0]?.trim()
-  const cityB = normalizedB.split(',')[0]?.trim()
-  return !!cityA && !!cityB && (cityA.includes(cityB) || cityB.includes(cityA))
-}
-
-// Check if a date falls after a return-home flight but before the next outbound flight
-function isDateAfterReturn(dateStr: string, returnDates: Set<string>, outboundDates: Set<string>): boolean {
-  // Find the most recent return date on or before this date
-  let latestReturn: string | null = null
-  for (const rd of returnDates) {
-    if (rd <= dateStr && (!latestReturn || rd > latestReturn)) latestReturn = rd
-  }
-  if (!latestReturn) return false
-  // Check no outbound flight between the return and this date
-  for (const od of outboundDates) {
-    if (od > latestReturn && od <= dateStr) return false
-  }
-  return true
-}
-
-// Get all dates between two date strings (inclusive)
-function getDateRange(startDate: string, endDate: string): string[] {
-  const dates: string[] = []
-  const current = new Date(startDate + 'T00:00:00Z')
-  const end = new Date(endDate + 'T00:00:00Z')
-  while (current <= end) {
-    dates.push(current.toISOString().split('T')[0])
-    current.setDate(current.getDate() + 1)
-  }
-  return dates
-}
-
-interface PendingReturnTrip {
-  destination: string
-  departureDate: string
-}
+interface GCalEvent extends CalendarEvent {}
 
 async function handleEventsSync(params: {
   adminClient: any
   userId: string
-  events: CalendarEvent[]
+  events: GCalEvent[]
   timezone?: string
 }): Promise<{ updatedCount: number; pendingReturnTrips: PendingReturnTrip[] }> {
   const { adminClient, userId, events, timezone } = params
 
-  // Fetch user's home address to skip return-home flights
   const { data: profileData } = await adminClient
     .from('profiles')
     .select('home_address')
@@ -417,17 +32,16 @@ async function handleEventsSync(params: {
     .single()
   const homeAddress: string | null = profileData?.home_address || null
 
-  // Build a map of date -> slots to mark as busy
   const busySlotsByDate: Map<string, Set<string>> = new Map()
+  const allFlights: FlightInfo[] = []
+  const hotelStays: HotelStay[] = []
 
   for (const event of events) {
-    // All-day events (they don't have dateTime)
     if (!event.start.dateTime || !event.end.dateTime) {
       if (event.start.date && event.end.date) {
         const startDate = new Date(event.start.date)
         const endDate = new Date(event.end.date)
-        endDate.setDate(endDate.getDate() - 1) // All-day end is exclusive
-
+        endDate.setDate(endDate.getDate() - 1)
         const dates = getEventDates(startDate, endDate, timezone)
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
@@ -435,89 +49,62 @@ async function handleEventsSync(params: {
             (slot) => busySlotsByDate.get(date)!.add(slot)
           )
         }
+        if (isHotelEvent(event.summary, event.location)) {
+          const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
+          if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
+            const endExcl = new Date(event.end.date); endExcl.setDate(endExcl.getDate() - 1)
+            hotelStays.push({ startDate: getDateString(startDate, timezone), endDate: getDateString(endExcl, timezone), city: hotelCity })
+          }
+        }
       }
       continue
     }
 
     const startTime = new Date(event.start.dateTime)
     const endTime = new Date(event.end.dateTime)
-
     const dates = getEventDates(startTime, endTime, timezone)
-
     for (const date of dates) {
       if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
-
-      // For timezone-aware slot calculation, we need to check each hour
       const slots = getEventTimeSlots(startTime, endTime, timezone)
       slots.forEach((slot) => busySlotsByDate.get(date)!.add(slot))
     }
-  }
 
-  // Detect flight events and build a chronological list of flights with dates + destinations
-  // Store actual departure timestamps for proper chronological sorting of connecting flights
-  interface FlightInfo { date: string; timestamp: number; city: string | null; isReturn: boolean }
-  const allFlights: FlightInfo[] = []
-
-  // ── Hotel / Reservation Detection ──
-  interface HotelStay { startDate: string; endDate: string; city: string }
-  const hotelStays: HotelStay[] = []
-
-  for (const event of events) {
-    const isFlight = isFlightEvent(event)
-
-    if (isFlight) {
+    if (isFlightEvent(event)) {
       const city = resolveToCity(extractFlightDestination(event.summary))
       const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
-
       const rawDateTime = event.start.dateTime || event.start.date || null
-      const startDate = rawDateTime ? new Date(rawDateTime) : null
-      if (!startDate || isNaN(startDate.getTime())) continue
-
-      const dateStr = getDateString(startDate, timezone)
-      const ts = startDate.getTime()
-      console.log(`[FLIGHT] "${event.summary}" | raw=${rawDateTime} | parsed=${startDate.toISOString()} | ts=${ts} | dateStr=${dateStr} | city=${city} | isReturn=${isReturn}`)
+      const sd = rawDateTime ? new Date(rawDateTime) : null
+      if (!sd || isNaN(sd.getTime())) continue
+      const dateStr = getDateString(sd, timezone)
+      const ts = sd.getTime()
+      console.log(`[FLIGHT] "${event.summary}" | raw=${rawDateTime} | parsed=${sd.toISOString()} | ts=${ts} | dateStr=${dateStr} | city=${city} | isReturn=${isReturn}`)
       allFlights.push({ date: dateStr, timestamp: ts, city, isReturn })
       continue
     }
 
-    // Check for hotel/reservation events
     if (isHotelEvent(event.summary, event.location)) {
       const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
       if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
-        const startDate = event.start.dateTime ? new Date(event.start.dateTime) : event.start.date ? new Date(event.start.date) : null
-        const endDate = event.end.dateTime ? new Date(event.end.dateTime) : event.end.date ? new Date(event.end.date) : null
-        if (startDate && endDate) {
-          const startStr = getDateString(startDate, timezone)
-          let endStr = getDateString(endDate, timezone)
-          // All-day end dates are exclusive
-          if (event.end.date && !event.end.dateTime) {
-            const endExclusive = new Date(endDate)
-            endExclusive.setDate(endExclusive.getDate() - 1)
-            endStr = getDateString(endExclusive, timezone)
-          }
-          hotelStays.push({ startDate: startStr, endDate: endStr, city: hotelCity })
-        }
+        hotelStays.push({
+          startDate: getDateString(startTime, timezone),
+          endDate: getDateString(endTime, timezone),
+          city: hotelCity,
+        })
       }
     }
   }
 
-  // Sort all flights chronologically by actual departure time (critical for connecting flights)
   allFlights.sort((a, b) => a.timestamp - b.timestamp)
   console.log(`[FLIGHTS SORTED] ${allFlights.map(f => `${f.city}@${f.date}(ts=${f.timestamp})`).join(' → ')}`)
 
-  // Build flightLocationByDate: for same-day connecting flights, the LAST departing
-  // flight's destination wins (it's the final leg / ultimate destination)
   const flightLocationByDate: Map<string, string> = new Map()
   for (const flight of allFlights) {
     if (flight.city && !flight.isReturn) {
-      // Overwrites any earlier same-day flight (connecting leg), so last leg wins
       flightLocationByDate.set(flight.date, flight.city)
     }
   }
   console.log(`[FLIGHT LOCATIONS BY DATE] ${JSON.stringify(Object.fromEntries(flightLocationByDate))}`)
 
-  // Build a sorted set of ALL flight dates (outbound, return, and unrecognized)
-  // These act as trip boundaries — we never fill past any flight date
   const allFlightDatesSet = new Set(allFlights.map(f => f.date))
 
   const { data: existingTrips } = await adminClient
@@ -525,32 +112,23 @@ async function handleEventsSync(params: {
     .select('id, location, start_date, end_date, needs_return_date')
     .eq('user_id', userId)
 
-  // Track return-home flight dates — these should reset location to 'home'
-  // For return flights, only count them if they are the LAST flight on that date
-  // (a connecting flight through home airport shouldn't reset location)
   const returnHomeDates = new Set<string>()
   const outboundFlightDates = new Set<string>()
-
-  // Group flights by date to determine final status per day
   const flightsByDate = new Map<string, FlightInfo[]>()
   for (const f of allFlights) {
     if (!flightsByDate.has(f.date)) flightsByDate.set(f.date, [])
     flightsByDate.get(f.date)!.push(f)
   }
-
   for (const [date, flights] of flightsByDate) {
-    // Last flight of the day determines if it's a return or outbound day
     const lastFlight = flights[flights.length - 1]
     if (lastFlight.isReturn) {
       returnHomeDates.add(date)
-      // If the last flight is a return, clear any outbound location set for this date
       flightLocationByDate.delete(date)
     } else if (lastFlight.city) {
       outboundFlightDates.add(date)
     }
   }
 
-  // ── Detect one-way flights (outbound with no return within 30 days) ──
   const pendingReturnTrips: PendingReturnTrip[] = []
   const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
 
@@ -575,7 +153,6 @@ async function handleEventsSync(params: {
       continue
     }
 
-    // Check if there's a return flight within 30 days
     let hasReturn = false
     const outDateObj = new Date(outDate + 'T00:00:00Z')
     const maxReturnDate = new Date(outDateObj)
@@ -583,19 +160,11 @@ async function handleEventsSync(params: {
     const maxReturnStr = maxReturnDate.toISOString().split('T')[0]
 
     for (const rf of allFlights) {
-      if (rf.date > outDate && rf.date <= maxReturnStr && rf.isReturn) {
-        hasReturn = true
-        break
-      }
-      // Also check if there's another outbound to a different city (acts as boundary)
-      if (rf.date > outDate && rf.date <= maxReturnStr && !rf.isReturn && rf.city && rf.city !== city) {
-        hasReturn = true // different trip, so this one has a boundary
-        break
-      }
+      if (rf.date > outDate && rf.date <= maxReturnStr && rf.isReturn) { hasReturn = true; break }
+      if (rf.date > outDate && rf.date <= maxReturnStr && !rf.isReturn && rf.city && rf.city !== city) { hasReturn = true; break }
     }
 
     if (hasReturn) {
-      // Fill forward until we hit another flight date (existing behavior)
       const current = new Date(outDate)
       current.setDate(current.getDate() + 1)
       for (let i = 0; i < 30; i++) {
@@ -605,7 +174,6 @@ async function handleEventsSync(params: {
         current.setDate(current.getDate() + 1)
       }
     } else {
-      // One-way flight: only fill forward 7 days (not 30) and flag for user prompt
       const current = new Date(outDate)
       current.setDate(current.getDate() + 1)
       for (let i = 0; i < 7; i++) {
@@ -618,25 +186,18 @@ async function handleEventsSync(params: {
     }
   }
 
-  // ── Apply hotel stays (only if no flight covers the same dates) ──
+  // Apply hotel stays (flight dates take priority)
   const hotelLocationByDate: Map<string, string> = new Map()
   for (const stay of hotelStays) {
     const dates = getDateRange(stay.startDate, stay.endDate)
     for (const d of dates) {
-      // Flight dates take priority
-      if (!flightLocationByDate.has(d)) {
-        hotelLocationByDate.set(d, stay.city)
-      }
+      if (!flightLocationByDate.has(d)) hotelLocationByDate.set(d, stay.city)
     }
   }
 
-  // Merge hotel locations into the main location map
-  // (flight locations already set take priority)
   const allLocationByDate = new Map(flightLocationByDate)
   for (const [d, city] of hotelLocationByDate) {
-    if (!allLocationByDate.has(d)) {
-      allLocationByDate.set(d, city)
-    }
+    if (!allLocationByDate.has(d)) allLocationByDate.set(d, city)
   }
 
   const now = new Date()
@@ -656,7 +217,6 @@ async function handleEventsSync(params: {
     (existingAvailabilityRows || []).map((row: { date: string; location_status: string | null; trip_location: string | null }) => [row.date, row])
   )
 
-  // Update availability table for each date with busy slots
   let updatedCount = 0
   for (const [date, slots] of busySlotsByDate) {
     const slotUpdates: Record<string, boolean> = {}
@@ -678,35 +238,17 @@ async function handleEventsSync(params: {
 
     const { error: upsertError } = await adminClient
       .from('availability')
-      .upsert(
-        {
-          user_id: userId,
-          date,
-          ...slotUpdates,
-          ...locationFields,
-        },
-        {
-          onConflict: 'user_id,date',
-          ignoreDuplicates: false,
-        }
-      )
+      .upsert({ user_id: userId, date, ...slotUpdates, ...locationFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
 
-    if (upsertError) {
-      console.error('Error upserting availability for', date, ':', upsertError)
-    } else {
-      updatedCount++
-    }
+    if (upsertError) console.error('Error upserting availability for', date, ':', upsertError)
+    else updatedCount++
   }
 
-  // Also update location for flight/hotel dates that might not have busy slots
   for (const [date, city] of allLocationByDate) {
-    if (busySlotsByDate.has(date)) continue // already handled above
+    if (busySlotsByDate.has(date)) continue
     const { error } = await adminClient
       .from('availability')
-      .upsert(
-        { user_id: userId, date, location_status: 'away', trip_location: city },
-        { onConflict: 'user_id,date', ignoreDuplicates: false }
-      )
+      .upsert({ user_id: userId, date, location_status: 'away', trip_location: city }, { onConflict: 'user_id,date', ignoreDuplicates: false })
     if (error) console.error('Error upserting location for', date, ':', error)
     else updatedCount++
   }
@@ -720,21 +262,15 @@ async function handleEventsSync(params: {
     if (shouldClear) {
       const { error } = await adminClient
         .from('availability')
-        .upsert(
-          { user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null },
-          { onConflict: 'user_id,date', ignoreDuplicates: false }
-        )
+        .upsert({ user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null }, { onConflict: 'user_id,date', ignoreDuplicates: false })
       if (error) console.error('Error clearing stale location for', existingRow.date, ':', error)
     }
   }
 
-  // Merge overlapping trips with same destination
   await adminClient.rpc('merge_overlapping_trips', { p_user_id: userId })
 
-  // ── Flag one-way trips in the trips table ──
   if (pendingReturnTrips.length > 0) {
     for (const pending of pendingReturnTrips) {
-      // Check if a trip already exists for this destination starting on this date
       const { data: existingTrips } = await adminClient
         .from('trips')
         .select('id, needs_return_date')
@@ -743,17 +279,10 @@ async function handleEventsSync(params: {
         .ilike('location', `%${pending.destination}%`)
 
       if (existingTrips && existingTrips.length > 0) {
-        // Update existing trip to flag it
-        await adminClient
-          .from('trips')
-          .update({ needs_return_date: true })
-          .eq('id', existingTrips[0].id)
+        await adminClient.from('trips').update({ needs_return_date: true }).eq('id', existingTrips[0].id)
       }
-      // If no trip exists yet, it will be auto-created by the availability trigger
-      // and we'll flag it after
     }
 
-    // Wait a moment for triggers, then flag any newly created trips
     for (const pending of pendingReturnTrips) {
       const { data: trips } = await adminClient
         .from('trips')
@@ -764,17 +293,12 @@ async function handleEventsSync(params: {
         .ilike('location', `%${pending.destination}%`)
 
       if (trips && trips.length > 0) {
-        await adminClient
-          .from('trips')
-          .update({ needs_return_date: true })
-          .eq('id', trips[0].id)
+        await adminClient.from('trips').update({ needs_return_date: true }).eq('id', trips[0].id)
       }
     }
   }
 
-  // ── Sync plans: preserve manually-enriched plans (those with participants or manual edits) ──
-
-  // Collect all source_event_ids from the incoming sync
+  // ── Sync plans using shared reconciliation ──
   const incomingEventIds = new Set<string>()
   const planRowsByEventId = new Map<string, any>()
 
@@ -787,12 +311,9 @@ async function handleEventsSync(params: {
     if (!startDate) continue
 
     const hour = event.start.dateTime ? getHourInTimezone(startDate, timezone) : 8
-    const timeSlot = getTimeSlot(hour)
-    const timeSlotHyphen = timeSlot.replace('_', '-')
-
+    const timeSlotHyphen = getTimeSlot(hour).replace('_', '-')
     const localDateStr = getDateString(startDate!, timezone)
     const planDate = `${localDateStr}T12:00:00+00:00`
-
     const startTimeStr = event.start.dateTime ? formatTimeHHMM(new Date(event.start.dateTime), timezone) : null
     const endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
 
@@ -811,129 +332,7 @@ async function handleEventsSync(params: {
     })
   }
 
-  // Fetch existing gcal plans for this user
-  const { data: existingPlans } = await adminClient
-    .from('plans')
-    .select('id, source_event_id, title, date, start_time, manually_edited')
-    .eq('user_id', userId)
-    .eq('source', 'gcal')
-
-  // Also fetch ALL plans for this user (any source) for content-based dedup
-  const { data: allUserPlans } = await adminClient
-    .from('plans')
-    .select('id, source, source_event_id, title, date, start_time')
-    .eq('user_id', userId)
-
-  // Build content-based lookup: "normalizedTitle|date|start_time" → plan
-  const contentLookup = new Map<string, any>()
-  for (const p of (allUserPlans || [])) {
-    const nt = normalizePlanTitle(p.title)
-    const key = makeContentKey(nt, p.date, p.start_time)
-    if (!contentLookup.has(key)) contentLookup.set(key, p)
-  }
-
-  // Find which existing plans have participants (manually enriched) or were manually edited
-  const existingPlanIds = (existingPlans || []).map((p: any) => p.id)
-  let enrichedPlanIds = new Set<string>()
-  // Include manually edited plans
-  for (const p of (existingPlans || [])) {
-    if (p.manually_edited) enrichedPlanIds.add(p.id)
-  }
-  if (existingPlanIds.length > 0) {
-    const { data: participantRows } = await adminClient
-      .from('plan_participants')
-      .select('plan_id')
-      .in('plan_id', existingPlanIds)
-    for (const r of (participantRows || [])) enrichedPlanIds.add(r.plan_id)
-  }
-
-  // Build lookup of existing event_id → plan
-  const existingByEventId = new Map<string, any>()
-  for (const p of (existingPlans || [])) {
-    if (p.source_event_id) existingByEventId.set(p.source_event_id, p)
-  }
-
-  // Delete plans that are no longer in the calendar AND don't have participants
-  const toDelete = (existingPlans || []).filter((p: any) =>
-    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id)
-  )
-  if (toDelete.length > 0) {
-    await adminClient
-      .from('plans')
-      .delete()
-      .in('id', toDelete.map((p: any) => p.id))
-  }
-
-  // For plans that still exist in calendar:
-  // - If enriched (has participants): skip entirely to preserve manual edits
-  // - If exists but not enriched: update in place (preserving ID)
-  // - If content-match found: link source_event_id to existing plan, skip insert
-  // - If new: insert
-  const toInsert: any[] = []
-  for (const [eventId, planRow] of planRowsByEventId) {
-    const existing = existingByEventId.get(eventId)
-    if (existing) {
-      if (enrichedPlanIds.has(existing.id)) {
-        // Skip - preserve manual edits and participants
-        continue
-      }
-      // Update existing plan in-place (preserves ID and participants)
-      await adminClient
-        .from('plans')
-        .update({
-          title: planRow.title,
-          activity: planRow.activity,
-          date: planRow.date,
-          time_slot: planRow.time_slot,
-          start_time: planRow.start_time,
-          end_time: planRow.end_time,
-        })
-        .eq('id', existing.id)
-    } else {
-      // Content-based dedup: check if a plan with same normalized title+date (+start_time for non-flights) already exists
-      const nt = normalizePlanTitle(planRow.title)
-      const contentKey = makeContentKey(nt, planRow.date, planRow.start_time)
-      const contentMatch = contentLookup.get(contentKey)
-      if (contentMatch) {
-        // Merge: update source linkage and prefer more specific data
-        const mergeFields: Record<string, any> = {}
-        if (!contentMatch.source_event_id || contentMatch.source === 'gcal') {
-          mergeFields.source = 'gcal'
-          mergeFields.source_event_id = eventId
-        }
-        // Prefer non-null start_time (timed event beats all-day)
-        if (!contentMatch.start_time && planRow.start_time) {
-          mergeFields.start_time = planRow.start_time
-          mergeFields.end_time = planRow.end_time
-        }
-        if (Object.keys(mergeFields).length > 0) {
-          await adminClient.from('plans').update(mergeFields).eq('id', contentMatch.id)
-        }
-        console.log(`[DEDUP] Skipped duplicate: "${planRow.title}" on ${planRow.date} (content match with plan ${contentMatch.id})`)
-      } else {
-        toInsert.push(planRow)
-        // Add to content lookup to prevent duplicate inserts within same sync batch
-        contentLookup.set(contentKey, planRow)
-      }
-    }
-  }
-
-  if (toInsert.length > 0) {
-    const { error: plansError } = await adminClient
-      .from('plans')
-      .insert(toInsert)
-    if (plansError) {
-      // If batch fails due to unique constraint, insert one-by-one, skipping duplicates
-      if (plansError.code === '23505') {
-        for (const row of toInsert) {
-          const { error: singleErr } = await adminClient.from('plans').insert(row)
-          if (singleErr && singleErr.code !== '23505') console.error('Error inserting plan:', singleErr)
-        }
-      } else {
-        console.error('Error inserting gcal plans:', plansError)
-      }
-    }
-  }
+  await reconcilePlans({ adminClient, userId, source: 'gcal', planRowsByEventId, incomingEventIds })
 
   return { updatedCount, pendingReturnTrips }
 }
@@ -956,7 +355,6 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     })
 
-    // Validate user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       console.error('Auth error:', userError)
@@ -968,14 +366,12 @@ Deno.serve(async (req) => {
 
     const userId = user.id
 
-    // Parse timezone from request body
     let timezone: string | undefined
     try {
       const body = await req.json()
       timezone = body?.timezone
     } catch { /* no body or invalid JSON */ }
 
-    // Service role client to read tokens + update availability
     const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
     const { data: connRows, error: connError } = await adminClient
@@ -987,44 +383,31 @@ Deno.serve(async (req) => {
     if (connError || !connRows || connRows.length === 0) {
       return new Response(
         JSON.stringify({ error: 'Google Calendar not connected', connected: false, synced: false }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const tokenData = connRows[0]
-
     let accessToken = tokenData.access_token
 
-    // Refresh if expired
     if (new Date(tokenData.expires_at) < new Date()) {
       const refreshedToken = await refreshAccessToken(tokenData.refresh_token, adminClient, userId)
       if (!refreshedToken) {
         return new Response(
           JSON.stringify({ error: 'Failed to refresh token', connected: false, synced: false }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
       accessToken = refreshedToken
     }
 
-    // Fetch calendar events for the past 3 months and next 3 months
     const now = new Date()
-    const threeMonthsAgo = new Date(now)
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    const threeMonthsAhead = new Date(now)
-    threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3)
-    const timeMin = threeMonthsAgo.toISOString()
-    const timeMax = threeMonthsAhead.toISOString()
+    const threeMonthsAgo = new Date(now); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    const threeMonthsAhead = new Date(now); threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3)
 
     const calendarUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
-    calendarUrl.searchParams.set('timeMin', timeMin)
-    calendarUrl.searchParams.set('timeMax', timeMax)
+    calendarUrl.searchParams.set('timeMin', threeMonthsAgo.toISOString())
+    calendarUrl.searchParams.set('timeMax', threeMonthsAhead.toISOString())
     calendarUrl.searchParams.set('maxResults', '250')
     calendarUrl.searchParams.set('singleEvents', 'true')
     calendarUrl.searchParams.set('orderBy', 'startTime')
@@ -1037,25 +420,18 @@ Deno.serve(async (req) => {
       const errorText = await calendarResponse.text()
       console.error('Calendar API error:', calendarResponse.status, errorText)
 
-      // Most common user-facing failure: 403 from Google (API disabled or permission revoked)
       if (calendarResponse.status === 401 || calendarResponse.status === 403) {
         return new Response(
           JSON.stringify({
-            error:
-              'Google denied access (403). Please disconnect + reconnect Google Calendar. If this persists, ensure the Google Calendar API is enabled for the OAuth client used by Parade.',
-            connected: true,
-            synced: false,
+            error: 'Google denied access (403). Please disconnect + reconnect Google Calendar.',
+            connected: true, synced: false,
           }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
       return new Response(JSON.stringify({ error: 'Failed to fetch events', connected: true, synced: false }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -1066,23 +442,18 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        connected: true,
-        synced: true,
-        eventsProcessed: events.length,
-        datesUpdated: updatedCount,
+        connected: true, synced: true,
+        eventsProcessed: events.length, datesUpdated: updatedCount,
         pendingReturnTrips,
         message: `Synced ${events.length} events, updated ${updatedCount} days`,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error: unknown) {
     console.error('Error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
     return new Response(JSON.stringify({ error: message, synced: false }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
@@ -1096,22 +467,15 @@ async function refreshAccessToken(refreshToken: string, supabase: any, userId: s
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
+        client_id: clientId, client_secret: clientSecret,
+        refresh_token: refreshToken, grant_type: 'refresh_token',
       }),
     })
 
     const tokens = await response.json()
-
-    if (tokens.error) {
-      console.error('Token refresh error:', tokens)
-      return null
-    }
+    if (tokens.error) { console.error('Token refresh error:', tokens); return null }
 
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-
     await supabase
       .from('calendar_connections')
       .update({ access_token: tokens.access_token, expires_at: expiresAt, updated_at: new Date().toISOString() })
