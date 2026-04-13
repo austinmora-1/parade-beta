@@ -219,14 +219,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       // Get my effective city — also check trips as fallback
       const myLocStatus = myDay?.locationStatus || 'home';
       let myTripLoc = myDay?.tripLocation || null;
-      if (!myTripLoc && myLocStatus === 'home' && userId) {
+      if (!myTripLoc && userId) {
         const tripLoc = getTripLocationForDate(userId, dateStr);
         if (tripLoc) myTripLoc = tripLoc;
       }
-      const myCity = getEffectiveCity(
-        myTripLoc && !myDay?.tripLocation ? 'away' : myLocStatus,
-        myTripLoc, homeAddress
-      );
+      const myEffectiveStatus = myTripLoc ? 'away' : myLocStatus;
+      const myCity = getEffectiveCity(myEffectiveStatus, myTripLoc, homeAddress);
+
+      // Debug: log location resolution for first 7 days
+      if (scanDays.indexOf(day) < 14 || myCity !== getEffectiveCity('home', null, homeAddress)) {
+        console.log(`[PlanWizard] ${dateStr} MY: status=${myEffectiveStatus} tripLoc=${myTripLoc} home=${homeAddress} → city=${myCity}`, myDay ? { locStatus: myDay.locationStatus, tripLoc: myDay.tripLocation } : 'no avail record');
+      }
 
       // Check if I have plans on this date
       const myPlanSlots = userId ? planIndex.get(`${userId}:${dateStr}`) : undefined;
