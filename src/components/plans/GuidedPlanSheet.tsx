@@ -394,12 +394,69 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
     setFriendMultiDayAvail(multiDay);
 
-    // Sort: all-free first, then by date, then by slot priority
+    // --- Social preference scoring ---
+    // For each participant, check if the slot matches their preferred social days/times.
+    // Default to weekend evening (Fri/Sat/Sun evening) if no preferences defined.
+    const DEFAULT_SOCIAL_DAYS = ['friday', 'saturday', 'sunday'];
+    const DEFAULT_SOCIAL_TIMES = ['evening'];
+    const DAY_NAMES_LOWER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+    function getSocialPreferenceScore(date: Date, slot: string): number {
+      const dayName = DAY_NAMES_LOWER[date.getDay()];
+      let totalScore = 0;
+      const participantIds = userId ? [userId, ...userIds] : userIds;
+
+      for (const uid of participantIds) {
+        const profile = profileMap.get(uid);
+        const prefDays = profile?.preferredSocialDays?.length ? profile.preferredSocialDays : DEFAULT_SOCIAL_DAYS;
+        const prefTimes = profile?.preferredSocialTimes?.length ? profile.preferredSocialTimes : DEFAULT_SOCIAL_TIMES;
+
+        // Check day match (filter out non-day values that may be in the array)
+        const validDays = prefDays.filter(d => DAY_NAMES_LOWER.includes(d));
+        const dayMatch = validDays.length === 0 || validDays.includes(dayName);
+
+        // Check time/slot match - support both bare slot names and "day:slot" format
+        const slotMatch = prefTimes.some(t => t === slot || t.endsWith(`:${slot}`) || t === `${dayName}:${slot}`);
+        const hasAnySlotPref = prefTimes.some(t => !DAY_NAMES_LOWER.includes(t));
+
+        if (dayMatch) totalScore += 1;
+        if (hasAnySlotPref && slotMatch) totalScore += 1;
+        else if (!hasAnySlotPref && DEFAULT_SOCIAL_TIMES.includes(slot)) totalScore += 1;
+      }
+      return totalScore;
+    }
+
+    // Check if any participant has an existing plan on this date+slot
+    function hasExistingPlan(date: Date, slot: string): boolean {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const participantIds = userId ? [userId, ...userIds] : userIds;
+      for (const uid of participantIds) {
+        if (planIndex.get(`${uid}:${dateStr}`)?.has(slot)) return true;
+      }
+      return false;
+    }
+
+    // Sort: chronologically first, then prefer no-existing-plans, then social preference, then all-free > some-free
     const slotOrder: Record<string, number> = { 'late-morning': 0, 'early-afternoon': 1, 'late-afternoon': 2, 'evening': 3, 'late-night': 4 };
     results.sort((a, b) => {
-      if (a.status !== b.status) return a.status === 'all-free' ? -1 : 1;
+      // 1. Chronological (soonest first)
       const dateDiff = a.date.getTime() - b.date.getTime();
       if (dateDiff !== 0) return dateDiff;
+
+      // 2. Prefer slots where nobody has existing plans
+      const aPlan = hasExistingPlan(a.date, a.slot);
+      const bPlan = hasExistingPlan(b.date, b.slot);
+      if (aPlan !== bPlan) return aPlan ? 1 : -1;
+
+      // 3. Social preference score (higher is better)
+      const aScore = getSocialPreferenceScore(a.date, a.slot);
+      const bScore = getSocialPreferenceScore(b.date, b.slot);
+      if (aScore !== bScore) return bScore - aScore;
+
+      // 4. All-free beats some-free
+      if (a.status !== b.status) return a.status === 'all-free' ? -1 : 1;
+
+      // 5. Slot time-of-day order
       return (slotOrder[a.slot] || 0) - (slotOrder[b.slot] || 0);
     });
 
