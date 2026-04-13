@@ -124,7 +124,7 @@ export function FriendListRow({
           {locationLabel && (
             <span className={cn(
               "inline-flex items-center gap-0.5 text-[10px] shrink-0",
-              isAway ? "text-status-away" : "text-muted-foreground"
+              isAway ? "text-availability-away-foreground" : "text-muted-foreground"
             )}>
               <MapPin className="h-2.5 w-2.5" />
               <span className="max-w-[60px] truncate">{locationLabel}</span>

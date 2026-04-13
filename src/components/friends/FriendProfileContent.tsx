@@ -434,7 +434,7 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
                 return (
                   <span className={cn(
                     "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                    isAway ? "bg-status-away/10 text-status-away" : "bg-muted text-muted-foreground"
+                    isAway ? "bg-availability-away-light text-availability-away-foreground" : "bg-muted text-muted-foreground"
                   )}>
                     {isAway ? <Plane className="h-3 w-3" /> : <Home className="h-3 w-3" />}
                     {cityDisplay || (isAway ? 'Away' : 'Home')}
