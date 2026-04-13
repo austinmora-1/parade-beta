@@ -335,6 +335,7 @@ export function classifyActivity(summary?: string, isFlight = false): string {
 
   // ── Flights ──
   if (/\bflight\b/.test(s)) return 'flight'
+  if (extractFlightNumber(summary)) return 'flight'
 
   // ── Hotels / Accommodation ──
   if (/\b(hotel|airbnb|vrbo|booking|reservation|check[\s-]?in|check[\s-]?out|stay\s+at|lodging|accommodation|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|courtyard|residence\s*inn|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|motel|hostel)\b/i.test(s)) return 'hotel'
