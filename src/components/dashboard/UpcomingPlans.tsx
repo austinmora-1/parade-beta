@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isBefore, addDays, isSameDay } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { useDisplayPlans } from '@/hooks/useDisplayPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
@@ -77,8 +78,8 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
 }
 
 export function UpcomingPlans({ standalone = false }: { standalone?: boolean } = {}) {
-  const { plans, userTimezone, userId } = usePlannerStore();
-  const { user } = useAuth();
+  const { plans: rawPlans, userTimezone, userId } = usePlannerStore();
+  const { displayPlans: plans } = useDisplayPlans(rawPlans);
   const navigate = useNavigate();
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
 
