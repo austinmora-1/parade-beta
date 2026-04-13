@@ -149,11 +149,11 @@ export function OnboardingWizard() {
     
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: data.firstName || null,
-          last_name: data.lastName || null,
+      // Only include display_name if user actually entered one
+      const profileUpdate: Record<string, any> = {
+        first_name: data.firstName || null,
+        last_name: data.lastName || null,
+        phone_number: data.phoneNumber || null,
           display_name: data.displayName || null,
           phone_number: data.phoneNumber || null,
           avatar_url: data.avatarUrl || null,
