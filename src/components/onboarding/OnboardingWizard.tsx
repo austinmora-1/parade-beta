@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
@@ -91,6 +91,34 @@ export function OnboardingWizard() {
     allowAllHangRequests: true,
     allowEllyHangouts: true,
   });
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Pre-populate from existing profile so we don't overwrite with empty values
+  useEffect(() => {
+    if (!session?.user || profileLoaded) return;
+    supabase
+      .from('profiles')
+      .select('display_name, first_name, last_name, phone_number, avatar_url, cover_photo_url, home_address, timezone, neighborhood')
+      .eq('user_id', session.user.id)
+      .single()
+      .then(({ data: profile }) => {
+        if (profile) {
+          setData(prev => ({
+            ...prev,
+            displayName: profile.display_name || prev.displayName,
+            firstName: profile.first_name || prev.firstName,
+            lastName: profile.last_name || prev.lastName,
+            phoneNumber: profile.phone_number || prev.phoneNumber,
+            avatarUrl: profile.avatar_url || prev.avatarUrl,
+            coverPhotoUrl: profile.cover_photo_url || prev.coverPhotoUrl,
+            homeAddress: profile.home_address || prev.homeAddress,
+            timezone: profile.timezone || prev.timezone,
+            neighborhood: profile.neighborhood || prev.neighborhood,
+          }));
+        }
+        setProfileLoaded(true);
+      });
+  }, [session?.user, profileLoaded]);
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...updates }));
@@ -121,34 +149,40 @@ export function OnboardingWizard() {
     
     setIsSubmitting(true);
     try {
+      const profileUpdate: Record<string, any> = {
+        first_name: data.firstName || null,
+        last_name: data.lastName || null,
+        phone_number: data.phoneNumber || null,
+        avatar_url: data.avatarUrl || null,
+        cover_photo_url: data.coverPhotoUrl || null,
+        home_address: data.homeAddress || null,
+        timezone: data.timezone || null,
+        neighborhood: data.neighborhood || null,
+        show_availability: data.showAvailability,
+        show_location: data.showLocation,
+        show_vibe_status: data.showVibeStatus,
+        discoverable: data.discoverable,
+        allow_all_hang_requests: data.allowAllHangRequests,
+        allow_elly_hangouts: data.allowEllyHangouts,
+        default_work_days: data.workDays,
+        default_work_start_hour: data.workStartHour,
+        default_work_end_hour: data.workEndHour,
+        social_cap: data.socialCap,
+        preferred_social_days: data.preferredSocialDays,
+        preferred_social_times: data.preferredSocialTimes,
+        interests: data.interests,
+        social_goals: data.socialGoals,
+        onboarding_completed: true,
+      };
+
+      // Only overwrite display_name if user actually entered one
+      if (data.displayName && data.displayName.trim()) {
+        profileUpdate.display_name = data.displayName.trim();
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          first_name: data.firstName || null,
-          last_name: data.lastName || null,
-          display_name: data.displayName || null,
-          phone_number: data.phoneNumber || null,
-          avatar_url: data.avatarUrl || null,
-          cover_photo_url: data.coverPhotoUrl || null,
-          home_address: data.homeAddress || null,
-          timezone: data.timezone || null,
-          neighborhood: data.neighborhood || null,
-          show_availability: data.showAvailability,
-          show_location: data.showLocation,
-          show_vibe_status: data.showVibeStatus,
-          discoverable: data.discoverable,
-          allow_all_hang_requests: data.allowAllHangRequests,
-          allow_elly_hangouts: data.allowEllyHangouts,
-          default_work_days: data.workDays,
-          default_work_start_hour: data.workStartHour,
-          default_work_end_hour: data.workEndHour,
-          social_cap: data.socialCap,
-          preferred_social_days: data.preferredSocialDays,
-          preferred_social_times: data.preferredSocialTimes,
-          interests: data.interests,
-          social_goals: data.socialGoals,
-          onboarding_completed: true,
-        } as any)
+        .update(profileUpdate)
         .eq('user_id', session.user.id);
 
       if (error) throw error;
