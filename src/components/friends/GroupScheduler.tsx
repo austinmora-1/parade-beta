@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
 import { Friend, TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
