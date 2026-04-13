@@ -21,6 +21,8 @@ interface GroupSchedulerProps {
 interface FriendAvailability {
   userId: string;
   slots: Record<string, Record<TimeSlot, boolean>>;
+  locationByDate: Record<string, { locationStatus: string; tripLocation: string | null }>;
+  homeAddress: string | null;
 }
 
 const getInitials = (name: string) =>
