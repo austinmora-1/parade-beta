@@ -420,7 +420,6 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
                   </span>
                 );
               })()}
-              {profile.location_status && (
               {(() => {
                 const todayAvail = availability.find(a => a.date === format(new Date(), 'yyyy-MM-dd'));
                 const isAway = profile.location_status === 'away' || todayAvail?.location_status === 'away';
@@ -442,7 +441,6 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
                   </span>
                 );
               })()}
-              )}
               {lastDate && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                   <Calendar className="h-3 w-3" />
