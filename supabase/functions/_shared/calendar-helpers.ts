@@ -646,20 +646,36 @@ export interface CalendarEvent {
 }
 
 // ── Google Calendar Paginated Fetch ─────────────────────────────────────────
-// Fetches ALL events via nextPageToken pagination (Google caps at 2500 per page,
-// but we use 250 per page and loop). Max 10 pages (~2500 events) as safety limit.
+// Fetches ALL events across ALL user calendars via calendarList + pagination.
+// Deduplicates by event ID across calendars.
 
-export async function fetchAllGoogleEvents(
+async function fetchCalendarIds(accessToken: string): Promise<string[]> {
+  const url = 'https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=100'
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    console.warn(`calendarList failed (${response.status}), falling back to primary only`)
+    return ['primary']
+  }
+  const data = await response.json()
+  const ids = (data.items || []).map((c: any) => c.id as string)
+  console.log(`[calendar-sync] Found ${ids.length} calendars: ${ids.join(', ')}`)
+  return ids.length > 0 ? ids : ['primary']
+}
+
+async function fetchEventsFromCalendar(
   accessToken: string,
+  calendarId: string,
   timeMin: string,
   timeMax: string,
 ): Promise<CalendarEvent[]> {
-  const allEvents: CalendarEvent[] = []
+  const events: CalendarEvent[] = []
   let pageToken: string | undefined = undefined
   const maxPages = 10
 
   for (let page = 0; page < maxPages; page++) {
-    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+    const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`)
     url.searchParams.set('timeMin', timeMin)
     url.searchParams.set('timeMax', timeMax)
     url.searchParams.set('maxResults', '250')
@@ -672,20 +688,46 @@ export async function fetchAllGoogleEvents(
     })
 
     if (!response.ok) {
-      if (page === 0) throw new Error(`Google Calendar API error: ${response.status}`)
-      // On subsequent pages, return what we have
-      console.warn(`Google Calendar pagination stopped at page ${page}: ${response.status}`)
+      if (page === 0) {
+        console.warn(`[calendar-sync] Skipping calendar ${calendarId}: ${response.status}`)
+        return events
+      }
+      console.warn(`[calendar-sync] Pagination stopped for ${calendarId} at page ${page}: ${response.status}`)
       break
     }
 
     const data = await response.json()
     const items: CalendarEvent[] = data.items || []
-    allEvents.push(...items)
+    events.push(...items)
 
     if (!data.nextPageToken) break
     pageToken = data.nextPageToken
   }
 
+  console.log(`[calendar-sync] Calendar "${calendarId}": ${events.length} events`)
+  return events
+}
+
+export async function fetchAllGoogleEvents(
+  accessToken: string,
+  timeMin: string,
+  timeMax: string,
+): Promise<CalendarEvent[]> {
+  const calendarIds = await fetchCalendarIds(accessToken)
+  const seenIds = new Set<string>()
+  const allEvents: CalendarEvent[] = []
+
+  for (const calId of calendarIds) {
+    const events = await fetchEventsFromCalendar(accessToken, calId, timeMin, timeMax)
+    for (const event of events) {
+      if (!seenIds.has(event.id)) {
+        seenIds.add(event.id)
+        allEvents.push(event)
+      }
+    }
+  }
+
+  console.log(`[calendar-sync] Total unique events across all calendars: ${allEvents.length}`)
   return allEvents
 }
 
