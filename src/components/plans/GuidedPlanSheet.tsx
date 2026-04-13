@@ -196,7 +196,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const top = results.slice(0, 3);
     setBestSlots(top);
     setLoadingSlots(false);
-  }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress]);
+  }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
   // Fetch extended availability (180 days) when calendar is opened
   const fetchExtendedAvail = useCallback(async () => {
@@ -515,7 +515,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         <span className="text-2xl">🌎</span>
                         <p className="text-sm font-medium text-foreground">No overlapping times found</p>
                         <p className="text-xs text-muted-foreground max-w-[240px]">
-                          It looks like you and {friendNamesStr} won't be in the same city in the next 2 weeks. Try picking a date further out.
+                          It looks like you and {friendNamesStr} won't be in the same city in the next 6 months based on your schedules.
                         </p>
                       </div>
                     )}
