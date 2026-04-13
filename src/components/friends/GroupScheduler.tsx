@@ -204,9 +204,12 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
 
     const dateStr = format(date, 'yyyy-MM-dd');
 
-    const myDay = myAvailabilityMap[format(date, 'yyyy-MM-dd')];
+    const myDay = myAvailabilityMap[dateStr];
     const myFree = myDay ? myDay.slots[slot] : true;
     const myBusy = plans.some(p => isSameDay(p.date, date) && p.timeSlot === slot);
+
+    // My effective city for this date
+    const myCity = getEffectiveCity(myDay?.locationStatus || 'home', myDay?.tripLocation || null, homeAddress);
 
     let freeCount = 0;
     let totalChecked = 0;
@@ -214,7 +217,18 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
     for (const fa of friendAvailabilities) {
       totalChecked++;
       const daySlots = fa.slots[dateStr];
-      if (!daySlots || daySlots[slot]) freeCount++;
+      const slotFree = !daySlots || daySlots[slot];
+
+      // Check co-location
+      const friendLoc = fa.locationByDate[dateStr];
+      const friendCity = getEffectiveCity(
+        friendLoc?.locationStatus || 'home',
+        friendLoc?.tripLocation || null,
+        fa.homeAddress,
+      );
+      const coLocated = !myCity || !friendCity || citiesMatch(myCity, friendCity);
+
+      if (slotFree && coLocated) freeCount++;
     }
 
     const iAmFree = myFree && !myBusy;
