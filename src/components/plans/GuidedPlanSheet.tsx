@@ -118,8 +118,28 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
     for (const day of scanDays) {
       const dateStr = format(day, 'yyyy-MM-dd');
-      const myDay = myAvailabilityMap[dateStr];
       const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
+
+      // Get my availability — prefer store data, fall back to fetched data for dates beyond store range
+      let myDay = myAvailabilityMap[dateStr];
+      if (!myDay && userId) {
+        const myRow = (availData || []).find(d => d.user_id === userId && d.date === dateStr);
+        if (myRow) {
+          myDay = {
+            date: day,
+            slots: {
+              'early-morning': myRow.early_morning ?? true,
+              'late-morning': myRow.late_morning ?? true,
+              'early-afternoon': myRow.early_afternoon ?? true,
+              'late-afternoon': myRow.late_afternoon ?? true,
+              'evening': myRow.evening ?? true,
+              'late-night': myRow.late_night ?? true,
+            },
+            locationStatus: (myRow.location_status as any) || 'home',
+            tripLocation: myRow.trip_location || undefined,
+          };
+        }
+      }
 
       // Get my effective city for this date
       const myLocStatus = myDay?.locationStatus || 'home';
