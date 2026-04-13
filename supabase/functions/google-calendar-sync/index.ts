@@ -6,7 +6,7 @@ import {
   isCityMatchingHome, isLocationMatch, isDateAfterReturn,
   isHotelEvent, extractHotelLocation,
   normalizePlanTitle, makeContentKey,
-  classifyActivity, reconcilePlans,
+  classifyActivity, reconcilePlans, fetchAllGoogleEvents,
   type CalendarEvent, type FlightInfo, type HotelStay, type PendingReturnTrip,
 } from '../_shared/calendar-helpers.ts'
 
