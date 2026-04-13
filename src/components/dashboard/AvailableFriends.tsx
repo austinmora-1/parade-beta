@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -34,7 +35,7 @@ interface FriendAvailDay {
 }
 
 export function AvailableFriends() {
-  const { friends, availability } = usePlannerStore();
+  const { friends, availability, homeAddress } = usePlannerStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
@@ -50,15 +51,28 @@ export function AvailableFriends() {
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
 
+  // Get the current user's location for today
+  const myTodayAvail = useMemo(() => {
+    const todayAvail = availability.find(a => format(a.date, 'yyyy-MM-dd') === todayStr);
+    return {
+      locationStatus: todayAvail?.locationStatus || 'home',
+      tripLocation: todayAvail?.tripLocation || null,
+    };
+  }, [availability, todayStr]);
+
+  const myEffectiveCity = useMemo(() => {
+    return getEffectiveCity(myTodayAvail.locationStatus, myTodayAvail.tripLocation, homeAddress);
+  }, [myTodayAvail, homeAddress]);
+
   const { data: todayAvailableFriendIds = new Set<string>(), isLoading: loadingTodayAvail } = useQuery({
-    queryKey: ['available-friends-today', friendUserIds, todayStr],
+    queryKey: ['available-friends-today', friendUserIds, todayStr, myEffectiveCity],
     queryFn: async () => {
       if (friendUserIds.length === 0) return new Set<string>();
 
-      const [availResult, plansResult] = await Promise.all([
+      const [availResult, plansResult, profilesResult] = await Promise.all([
         supabase
           .from('availability')
-          .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+          .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
           .in('user_id', friendUserIds)
           .eq('date', todayStr),
         supabase
@@ -67,11 +81,21 @@ export function AvailableFriends() {
           .in('user_id', friendUserIds)
           .gte('date', `${todayStr}T00:00:00`)
           .lte('date', `${todayStr}T23:59:59`),
+        supabase
+          .from('profiles')
+          .select('user_id, home_address')
+          .in('user_id', friendUserIds),
       ]);
 
       if (availResult.error) {
         console.error('Error fetching friend availability:', availResult.error);
         return new Set<string>(friendUserIds);
+      }
+
+      // Build home_address map for friends
+      const friendHomeMap = new Map<string, string | null>();
+      for (const p of (profilesResult.data || [])) {
+        friendHomeMap.set(p.user_id, p.home_address);
       }
 
       const friendBusySlots = new Map<string, Set<string>>();
@@ -86,6 +110,17 @@ export function AvailableFriends() {
       for (const friendUserId of friendUserIds) {
         const row = availResult.data?.find(r => r.user_id === friendUserId);
         const busySlots = friendBusySlots.get(friendUserId) || new Set();
+
+        // Check location: friend must be in the same city
+        const friendLocStatus = row?.location_status || 'home';
+        const friendTripLoc = row?.trip_location || null;
+        const friendHome = friendHomeMap.get(friendUserId) || null;
+        const friendCity = getEffectiveCity(friendLocStatus, friendTripLoc, friendHome);
+
+        if (myEffectiveCity && friendCity && !citiesMatch(myEffectiveCity, friendCity)) {
+          continue; // Skip friends not in the same city
+        }
+
         const hasAnyFree = TIME_SLOT_ORDER.some(slot => {
           if (busySlots.has(slot)) return false;
           if (!row) return true;
