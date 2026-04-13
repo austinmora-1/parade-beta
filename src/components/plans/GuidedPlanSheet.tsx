@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TimeSlot, ActivityType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
+import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
@@ -63,7 +64,7 @@ const SMART_DEFAULTS: BestSlot[] = [
 ];
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
-  const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans } = usePlannerStore();
+  const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
 
   const [step, setStep] = useState<Step>('activity');
@@ -103,10 +104,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const startDate = format(scanDays[0], 'yyyy-MM-dd');
     const endDate = format(scanDays[13], 'yyyy-MM-dd');
 
-    const [{ data: availData }, { data: plansData }] = await Promise.all([
+    const [{ data: availData }, { data: plansData }, { data: friendProfiles }] = await Promise.all([
       supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
       supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+      supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
     ]);
+
+    // Build friend home address map
+    const friendHomeMap = new Map<string, string | null>();
+    for (const p of (friendProfiles || [])) {
+      friendHomeMap.set(p.user_id, p.home_address);
+    }
 
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
     const results: BestSlot[] = [];
@@ -116,6 +124,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       const dateStr = format(day, 'yyyy-MM-dd');
       const myDay = myAvailabilityMap[dateStr];
       const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
+
+      // Get my effective city for this date
+      const myLocStatus = myDay?.locationStatus || 'home';
+      const myTripLoc = myDay?.tripLocation || null;
+      const myCity = getEffectiveCity(myLocStatus, myTripLoc, homeAddress);
 
       for (const slot of allSlots) {
         const myFree = myDay ? myDay.slots[slot] : true;
@@ -128,7 +141,15 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           const colName = slot.replace(/-/g, '_') as string;
           const isAvailable = row ? ((row as any)[colName] ?? true) : true;
           const hasPlan = (plansData || []).some(p => p.user_id === uid && p.time_slot === slot && p.date?.startsWith(dateStr));
-          if (isAvailable && !hasPlan) freeCount++;
+
+          // Check co-location
+          const friendLocStatus = row?.location_status || 'home';
+          const friendTripLoc = row?.trip_location || null;
+          const friendHome = friendHomeMap.get(uid) || null;
+          const friendCity = getEffectiveCity(friendLocStatus, friendTripLoc, friendHome);
+          const coLocated = !myCity || !friendCity || citiesMatch(myCity, friendCity);
+
+          if (isAvailable && !hasPlan && coLocated) freeCount++;
         }
         slotMap[slot] = { free: freeCount, total: userIds.length };
 
@@ -160,7 +181,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     // Fallback to smart defaults if nothing found
     setBestSlots(top.length > 0 ? top : SMART_DEFAULTS.slice(0, 3));
     setLoadingSlots(false);
-  }, [preSelectedFriends, myAvailabilityMap, myPlans]);
+  }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress]);
 
   // Fetch extended availability (180 days) when calendar is opened
   const fetchExtendedAvail = useCallback(async () => {
@@ -169,10 +190,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const startDate = format(addDays(new Date(), 14), 'yyyy-MM-dd'); // skip first 14 already fetched
     const endDate = format(addDays(new Date(), 180), 'yyyy-MM-dd');
 
-    const [{ data: availData }, { data: plansData }] = await Promise.all([
+    const [{ data: availData }, { data: plansData }, { data: friendProfiles }] = await Promise.all([
       supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
       supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+      supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
     ]);
+
+    const friendHomeMap = new Map<string, string | null>();
+    for (const p of (friendProfiles || [])) {
+      friendHomeMap.set(p.user_id, p.home_address);
+    }
 
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
     const extended: typeof friendMultiDayAvail = {};
@@ -181,6 +208,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       const day = addDays(new Date(), i);
       const dateStr = format(day, 'yyyy-MM-dd');
       const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
+
+      // Get my effective city for this date
+      const myDay = myAvailabilityMap[dateStr];
+      const myCity = getEffectiveCity(myDay?.locationStatus || 'home', myDay?.tripLocation || null, homeAddress);
+
       for (const slot of allSlots) {
         let freeCount = 0;
         for (const uid of userIds) {
@@ -188,7 +220,15 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           const colName = slot.replace(/-/g, '_') as string;
           const isAvailable = row ? ((row as any)[colName] ?? true) : true;
           const hasPlan = (plansData || []).some(p => p.user_id === uid && p.time_slot === slot && p.date?.startsWith(dateStr));
-          if (isAvailable && !hasPlan) freeCount++;
+
+          // Check co-location
+          const friendLocStatus = row?.location_status || 'home';
+          const friendTripLoc = row?.trip_location || null;
+          const friendHome = friendHomeMap.get(uid) || null;
+          const friendCity = getEffectiveCity(friendLocStatus, friendTripLoc, friendHome);
+          const coLocated = !myCity || !friendCity || citiesMatch(myCity, friendCity);
+
+          if (isAvailable && !hasPlan && coLocated) freeCount++;
         }
         slotMap[slot] = { free: freeCount, total: userIds.length };
       }
@@ -196,7 +236,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     }
 
     setFriendMultiDayAvail(prev => ({ ...prev, ...extended }));
-  }, [preSelectedFriends]);
+  }, [preSelectedFriends, myAvailabilityMap, homeAddress]);
 
   // When step changes to 'time', fetch initial best slots
   useEffect(() => {
