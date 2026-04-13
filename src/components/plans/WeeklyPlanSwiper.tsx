@@ -452,7 +452,13 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   };
 
   return (
-    <div className="relative" style={{ height: '116px' }}>
+    <div
+      className="relative"
+      style={{ height: '116px' }}
+      onTouchStart={e => e.stopPropagation()}
+      onTouchMove={e => e.stopPropagation()}
+      onTouchEnd={e => e.stopPropagation()}
+    >
       {order.map((planIdx, stackPos) => {
         const plan = plans[planIdx];
         if (!plan) return null;
