@@ -59,6 +59,51 @@ const SLOT_LABELS: Record<string, string> = {
 };
 
 
+function SlotCard({ bs, i, onSelect }: { bs: BestSlot; i: number; onSelect: (bs: BestSlot) => void }) {
+  const dayLabel = isSameDay(bs.date, new Date())
+    ? 'Today'
+    : isSameDay(bs.date, addDays(new Date(), 1))
+      ? 'Tomorrow'
+      : format(bs.date, 'EEEE, MMM d');
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: i * 0.08 }}
+      onClick={() => onSelect(bs)}
+      className={cn(
+        "w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all",
+        bs.status === 'all-free'
+          ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
+          : "border-border hover:border-primary/30 hover:bg-primary/5"
+      )}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground">{dayLabel}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">{SLOT_LABELS[bs.slot]}</p>
+          {bs.sharedCity && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-primary/80">
+              <MapPin className="h-2.5 w-2.5" />
+              {bs.sharedCity}
+            </span>
+          )}
+        </div>
+      </div>
+      {bs.status === 'all-free' && bs.total > 0 ? (
+        <span className="text-[10px] font-medium text-availability-available bg-availability-available/10 rounded-full px-2 py-0.5 shrink-0">
+          Everyone's free ✓
+        </span>
+      ) : bs.total > 0 ? (
+        <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5 shrink-0">
+          {bs.freeCount}/{bs.total} free
+        </span>
+      ) : null}
+    </motion.button>
+  );
+}
+
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
@@ -560,6 +605,12 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground">{timeSlot && SLOT_LABELS[timeSlot]}</p>
+                      {selectedSharedCity && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] text-primary mt-0.5">
+                          <MapPin className="h-2.5 w-2.5" />
+                          {selectedSharedCity}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">With</p>
