@@ -307,6 +307,8 @@ export default function Chat() {
                   currentVibe={friendVibeMap[fuid]?.vibe}
                   vibeIcon={friendVibeMap[fuid]?.icon}
                   lastHungOut={lastHungOut[fuid] || null}
+                  locationCity={friendLocationMap[fuid]?.city || null}
+                  isAway={friendLocationMap[fuid]?.isAway || false}
                   onOpen={handleOpenFriendFromPeople}
                 />
               );
