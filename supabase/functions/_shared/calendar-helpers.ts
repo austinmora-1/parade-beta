@@ -82,6 +82,35 @@ export function getDateRange(startDate: string, endDate: string): string[] {
   return dates
 }
 
+/**
+ * Parse a "YYYY-MM-DD" date string directly into its component parts,
+ * avoiding timezone shift that occurs with `new Date("YYYY-MM-DD")`.
+ * Returns the date string as-is and a Date set to noon UTC (safe for display).
+ */
+export function parseAllDayDate(dateStr: string): { dateString: string; noonUtc: Date } {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return {
+    dateString: dateStr,
+    noonUtc: new Date(Date.UTC(y, m - 1, d, 12, 0, 0)),
+  }
+}
+
+/**
+ * For all-day events spanning multiple days, get the list of date strings
+ * directly from YYYY-MM-DD strings without timezone conversion.
+ * startDateStr is inclusive, endDateStr is inclusive.
+ */
+export function getAllDayDateRange(startDateStr: string, endDateStr: string): string[] {
+  const dates: string[] = []
+  const current = new Date(startDateStr + 'T12:00:00Z')
+  const end = new Date(endDateStr + 'T12:00:00Z')
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0])
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
+}
+
 // ── Airport / Flight Detection ─────────────────────────────────────────────
 
 export const AIRPORT_CITY_MAP: Record<string, string> = {
