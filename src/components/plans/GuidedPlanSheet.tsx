@@ -57,11 +57,6 @@ const SLOT_LABELS: Record<string, string> = {
   'late-night': 'Late Night',
 };
 
-const SMART_DEFAULTS: BestSlot[] = [
-  { date: (() => { const d = new Date(); const day = d.getDay(); const sat = addDays(d, (6 - day + 7) % 7 || 7); return sat; })(), slot: 'late-afternoon', status: 'some-free', freeCount: 0, total: 0 },
-  { date: (() => { const d = new Date(); const day = d.getDay(); const sat = addDays(d, (6 - day + 7) % 7 || 7); return sat; })(), slot: 'evening', status: 'some-free', freeCount: 0, total: 0 },
-  { date: addDays(new Date(), 1), slot: 'evening', status: 'some-free', freeCount: 0, total: 0 },
-];
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
