@@ -422,6 +422,8 @@ export default function Friends() {
                   currentVibe={fuid ? friendVibeMap[fuid]?.vibe : null}
                   vibeIcon={fuid ? friendVibeMap[fuid]?.icon : null}
                   lastHungOut={fuid ? lastHungOut[fuid] || null : null}
+                  locationCity={fuid ? friendLocationMap[fuid]?.city || null : null}
+                  isAway={fuid ? friendLocationMap[fuid]?.isAway || false : false}
                   onOpen={handleOpenFriend}
                 />
               );
