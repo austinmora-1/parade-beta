@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -71,6 +71,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
+  const [friendCities, setFriendCities] = useState<Record<string, string>>({});
+  const [myCity, setMyCity] = useState<string>('');
 
   const friendNames = preSelectedFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
@@ -106,11 +108,28 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
     ]);
 
-    // Build friend home address map
+    // Build friend home address map and compute current cities for display
     const friendHomeMap = new Map<string, string | null>();
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const cityMap: Record<string, string> = {};
     for (const p of (friendProfiles || [])) {
       friendHomeMap.set(p.user_id, p.home_address);
+      const todayRow = (availData || []).find(a => a.user_id === p.user_id && a.date === todayStr);
+      const loc = todayRow?.location_status || 'home';
+      const trip = todayRow?.trip_location || null;
+      const city = getEffectiveCity(loc, trip, p.home_address);
+      if (city) cityMap[p.user_id] = city.charAt(0).toUpperCase() + city.slice(1);
     }
+    setFriendCities(cityMap);
+
+    // Compute my current city for display
+    const myTodayRow = userId ? (availData || []).find(a => a.user_id === userId && a.date === todayStr) : null;
+    const myCurrCity = getEffectiveCity(
+      myTodayRow?.location_status || 'home',
+      myTodayRow?.trip_location || null,
+      homeAddress
+    );
+    if (myCurrCity) setMyCity(myCurrCity.charAt(0).toUpperCase() + myCurrCity.slice(1));
 
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
     const results: BestSlot[] = [];
@@ -345,17 +364,39 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           </DrawerTitle>
         </DrawerHeader>
 
-        {/* Friend avatars strip */}
-        <div className="flex items-center justify-center gap-1 px-4 pb-3">
-          <div className="flex -space-x-2">
-            {preSelectedFriends.slice(0, 5).map(f => (
-              <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
-                <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-            ))}
+        {/* Friend avatars strip with city locations */}
+        <div className="flex flex-col items-center gap-1 px-4 pb-3">
+          <div className="flex items-center gap-1">
+            <div className="flex -space-x-2">
+              {preSelectedFriends.slice(0, 5).map(f => (
+                <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
+                  <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                  <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
           </div>
-          <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
+          {(myCity || Object.keys(friendCities).length > 0) && (
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
+              {myCity && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  <MapPin className="h-2.5 w-2.5" />
+                  You: {myCity}
+                </span>
+              )}
+              {preSelectedFriends.map(f => {
+                const city = friendCities[f.userId];
+                if (!city) return null;
+                return (
+                  <span key={f.userId} className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                    <MapPin className="h-2.5 w-2.5" />
+                    {f.name.split(' ')[0]}: {city}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="px-4 pb-2 overflow-y-auto flex-1 min-h-0">
