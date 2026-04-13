@@ -121,6 +121,15 @@ export function FriendListRow({
           {streak && (
             <Flame className={cn("h-3 w-3 shrink-0", streak.color)} />
           )}
+          {locationLabel && (
+            <span className={cn(
+              "inline-flex items-center gap-0.5 text-[10px] shrink-0",
+              isAway ? "text-status-away" : "text-muted-foreground"
+            )}>
+              <MapPin className="h-2.5 w-2.5" />
+              <span className="max-w-[60px] truncate">{locationLabel}</span>
+            </span>
+          )}
         </div>
         <p className={cn(
           "text-xs truncate",
