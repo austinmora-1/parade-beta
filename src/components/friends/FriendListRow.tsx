@@ -15,6 +15,8 @@ interface FriendListRowProps {
   currentVibe?: string | null;
   vibeIcon?: string | null;
   lastHungOut?: Date | null;
+  locationCity?: string | null;
+  isAway?: boolean;
   onOpen: (friendUserId: string, conversationId?: string) => void;
 }
 
