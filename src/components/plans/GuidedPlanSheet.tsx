@@ -116,6 +116,18 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const results: BestSlot[] = [];
     const multiDay: typeof friendMultiDayAvail = {};
 
+    // Index availability and plans by "userId:date" for O(1) lookup
+    const availIndex = new Map<string, (typeof availData extends (infer T)[] | null ? T : never)>();
+    for (const a of (availData || [])) {
+      availIndex.set(`${a.user_id}:${a.date}`, a);
+    }
+    const planIndex = new Map<string, Set<string>>();
+    for (const p of (plansData || [])) {
+      const key = `${p.user_id}:${p.date?.slice(0, 10)}`;
+      if (!planIndex.has(key)) planIndex.set(key, new Set());
+      planIndex.get(key)!.add(p.time_slot);
+    }
+
     for (const day of scanDays) {
       const dateStr = format(day, 'yyyy-MM-dd');
       const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
@@ -123,7 +135,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       // Get my availability — prefer store data, fall back to fetched data for dates beyond store range
       let myDay = myAvailabilityMap[dateStr];
       if (!myDay && userId) {
-        const myRow = (availData || []).find(d => d.user_id === userId && d.date === dateStr);
+        const myRow = availIndex.get(`${userId}:${dateStr}`);
         if (myRow) {
           myDay = {
             date: day,
@@ -146,17 +158,20 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       const myTripLoc = myDay?.tripLocation || null;
       const myCity = getEffectiveCity(myLocStatus, myTripLoc, homeAddress);
 
+      // Check if I have plans on this date
+      const myPlanSlots = userId ? planIndex.get(`${userId}:${dateStr}`) : undefined;
+
       for (const slot of allSlots) {
         const myFree = myDay ? myDay.slots[slot] : true;
-        const myBusy = myPlans.some(p => isSameDay(p.date, day) && p.timeSlot === slot);
+        const myBusy = myPlanSlots?.has(slot) || false;
         const iAmFree = myFree && !myBusy;
 
         let freeCount = 0;
         for (const uid of userIds) {
-          const row = (availData || []).find(d => d.user_id === uid && d.date === dateStr);
+          const row = availIndex.get(`${uid}:${dateStr}`);
           const colName = slot.replace(/-/g, '_') as string;
           const isAvailable = row ? ((row as any)[colName] ?? true) : true;
-          const hasPlan = (plansData || []).some(p => p.user_id === uid && p.time_slot === slot && p.date?.startsWith(dateStr));
+          const hasPlan = planIndex.get(`${uid}:${dateStr}`)?.has(slot) || false;
 
           // Check co-location
           const friendLocStatus = row?.location_status || 'home';
