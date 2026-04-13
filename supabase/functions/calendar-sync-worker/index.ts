@@ -921,9 +921,9 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     if (p.source_event_id) existingByEventId.set(p.source_event_id, p)
   }
 
-  // Delete plans no longer in calendar AND not enriched
+  // Delete plans no longer in calendar AND not enriched AND not manually edited
   const toDelete = (existingPlans || []).filter((p: any) =>
-    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id)
+    !incomingEventIds.has(p.source_event_id) && !enrichedPlanIds.has(p.id) && !p.manually_edited
   )
   if (toDelete.length > 0) {
     await adminClient.from('plans').delete().in('id', toDelete.map((p: any) => p.id))
@@ -933,10 +933,11 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
   for (const [eventId, planRow] of planRowsByEventId) {
     const existing = existingByEventId.get(eventId)
     if (existing) {
-      if (enrichedPlanIds.has(existing.id)) continue
+      if (enrichedPlanIds.has(existing.id) || existing.manually_edited) continue
       await adminClient.from('plans').update({
         title: planRow.title, activity: planRow.activity,
         date: planRow.date, time_slot: planRow.time_slot,
+        start_time: planRow.start_time, end_time: planRow.end_time,
       }).eq('id', existing.id)
     } else {
       // Content-based dedup
