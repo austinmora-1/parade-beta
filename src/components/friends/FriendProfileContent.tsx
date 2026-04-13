@@ -141,7 +141,7 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
 
       const { data: fullProfile } = await supabase
         .from('profiles')
-        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url')
+        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url, home_address')
         .eq('user_id', userId)
         .single();
 
@@ -155,6 +155,7 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
         share_code: fullProfile?.share_code || null,
         cover_photo_url: (fullProfile as any)?.cover_photo_url || null,
         vibe_gif_url: (fullProfile as any)?.vibe_gif_url || null,
+        home_address: fullProfile?.home_address || null,
       });
 
       const today = format(new Date(), 'yyyy-MM-dd');
