@@ -398,6 +398,56 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   );
 }
 
+// Map time slots to approximate hour ranges for determining past/current/upcoming
+const TIME_SLOT_HOURS: Record<string, { start: number; end: number }> = {
+  'early-morning': { start: 6, end: 9 },
+  'late-morning': { start: 9, end: 12 },
+  'early-afternoon': { start: 12, end: 15 },
+  'late-afternoon': { start: 15, end: 18 },
+  'evening': { start: 18, end: 22 },
+  'late-night': { start: 22, end: 26 }, // 26 = 2am next day
+};
+
+function getPlanTimeStatus(plan: Plan): 'past' | 'live' | 'upcoming' {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const planDate = new Date(plan.date);
+  const planDay = new Date(planDate.getFullYear(), planDate.getMonth(), planDate.getDate());
+
+  if (planDay > today) return 'upcoming';
+  if (planDay < today) return 'past';
+
+  // Same day — check time slot
+  const currentHour = now.getHours() + now.getMinutes() / 60;
+  const slot = TIME_SLOT_HOURS[plan.timeSlot];
+  if (!slot) return 'upcoming';
+
+  // If plan has explicit start/end times, use those
+  if (plan.startTime) {
+    const [sh, sm] = plan.startTime.split(':').map(Number);
+    const startH = sh + sm / 60;
+    const endH = plan.endTime
+      ? (() => { const [eh, em] = plan.endTime!.split(':').map(Number); return eh + em / 60; })()
+      : startH + plan.duration / 60;
+    if (currentHour < startH) return 'upcoming';
+    if (currentHour >= startH && currentHour < endH) return 'live';
+    return 'past';
+  }
+
+  if (currentHour < slot.start) return 'upcoming';
+  if (currentHour >= slot.start && currentHour < slot.end) return 'live';
+  return 'past';
+}
+
+function computeInitialOrder(plans: Plan[]): number[] {
+  const statuses = plans.map((p, i) => ({ i, status: getPlanTimeStatus(p) }));
+  // Priority: live first, then upcoming, then past
+  const live = statuses.filter(s => s.status === 'live').map(s => s.i);
+  const upcoming = statuses.filter(s => s.status === 'upcoming').map(s => s.i);
+  const past = statuses.filter(s => s.status === 'past').map(s => s.i);
+  return [...live, ...upcoming, ...past];
+}
+
 // Swipe-to-flip stacked cards — cycles top card to bottom
 function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   plans: Plan[];
@@ -406,7 +456,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   onCardTap: (id: string) => void;
 }) {
   // order[0] is front card, order[n-1] is back
-  const [order, setOrder] = useState(() => plans.map((_, i) => i));
+  const [order, setOrder] = useState(() => computeInitialOrder(plans));
   const dragStartX = useRef(0);
   const dragDelta = useRef(0);
   const didSwipe = useRef(false);
@@ -415,7 +465,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
 
   // Keep order in sync if plans change
   useEffect(() => {
-    setOrder(plans.map((_, i) => i));
+    setOrder(computeInitialOrder(plans));
   }, [plans.length]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -466,16 +516,22 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
         if (!plan) return null;
         const isTop = stackPos === 0;
         const isVisible = stackPos <= 3;
+        const timeStatus = getPlanTimeStatus(plan);
+        const isPast = timeStatus === 'past';
 
         return (
           <motion.div
             key={plan.id}
-            className={cn("absolute top-0", !isVisible && "pointer-events-none")}
+            className={cn(
+              "absolute top-0",
+              !isVisible && "pointer-events-none",
+              isPast && isTop && "opacity-60"
+            )}
             initial={false}
             animate={{
               x: isTop ? swipeX * 0.4 : stackPos * 20,
               scale: isTop ? 1 : 1 - stackPos * 0.03,
-              opacity: isTop ? 1 : !isVisible ? 0 : 1 - stackPos * 0.2,
+              opacity: isTop ? (isPast ? 0.55 : 1) : !isVisible ? 0 : 1 - stackPos * 0.2,
               rotate: isTop ? swipeX * 0.06 : 0,
             }}
             transition={swiping && isTop ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
@@ -491,6 +547,8 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
               selected={selectedIds.has(plan.id)}
               onTap={() => handleCardTapIfNotSwiped(plan.id)}
               onLongPress={() => onCardTap(plan.id)}
+              isPast={isPast}
+              isLive={timeStatus === 'live'}
             />
           </motion.div>
         );
@@ -511,12 +569,14 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
   );
 }
 
-function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
+function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPast = false, isLive = false }: {
   plan: Plan;
   onTap: () => void;
   selectMode: boolean;
   selected: boolean;
   onLongPress: () => void;
+  isPast?: boolean;
+  isLive?: boolean;
 }) {
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
@@ -548,11 +608,19 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       className={cn(
-        "w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
+        "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
         showTentativeStyle && "border-dashed border-muted-foreground/40 opacity-70",
-        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border"
+        isPast && !showTentativeStyle && "opacity-50 grayscale-[30%]",
+        isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
+        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && "border-border"
       )}
     >
+      {isLive && !showTentativeStyle && (
+        <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+          Live
+        </span>
+      )}
       <div className="flex items-start gap-2 mb-1.5 min-w-0">
         {selectMode && (
           <Checkbox checked={selected} className="shrink-0 mt-0.5" />
