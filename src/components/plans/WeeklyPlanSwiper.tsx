@@ -608,7 +608,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       className={cn(
-        "w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
+        "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
         showTentativeStyle && "border-dashed border-muted-foreground/40 opacity-70",
         isPast && !showTentativeStyle && "opacity-50 grayscale-[30%]",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
