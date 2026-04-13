@@ -525,7 +525,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
             className={cn(
               "absolute top-0",
               !isVisible && "pointer-events-none",
-              isPast && isTop && "opacity-60"
+              isPast && isTop && "grayscale-[30%]"
             )}
             initial={false}
             animate={{
@@ -610,7 +610,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
       className={cn(
         "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
         showTentativeStyle && "border-dashed border-muted-foreground/40 opacity-70",
-        isPast && !showTentativeStyle && "opacity-50 grayscale-[30%]",
+        isPast && !showTentativeStyle && "grayscale-[40%]",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
         selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && "border-border"
       )}
