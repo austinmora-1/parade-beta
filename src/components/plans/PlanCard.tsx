@@ -48,6 +48,7 @@ export function PlanCard({
   const displayTitle = getPlanDisplayTitle(plan);
 
   const isTentative = plan.status === 'tentative';
+  const hasPendingChange = !!plan.pendingChange;
   const isPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
 
   // Show RSVP buttons when user is a participant (not owner)
@@ -55,6 +56,7 @@ export function PlanCard({
   const needsRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
   // Pending RSVP = invited or maybe (not yet confirmed)
   const isPendingRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+  const showTentativeStyle = isTentative || isPendingRsvp || hasPendingChange;
   const showRsvp = isParticipant && !isPast;
 
   if (compact) {
@@ -62,15 +64,16 @@ export function PlanCard({
       <div
         className={cn(
           "rounded-lg p-2 text-xs",
-          (isTentative || isPendingRsvp) ? "border border-dashed border-border opacity-60" : ""
+          showTentativeStyle ? "border border-dashed border-muted-foreground/40 opacity-60" : ""
         )}
-        style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${(isTentative || isPendingRsvp) ? '0.08' : '0.15'})` }}
+        style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${showTentativeStyle ? '0.08' : '0.15'})` }}
       >
         <div className="flex items-center gap-1 min-w-0">
           <ActivityIcon config={activityConfig} size={14} className="shrink-0" />
           <span className="truncate font-medium min-w-0 flex-1">{displayTitle}</span>
-          {isTentative && !isPendingRsvp && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
-          {isPendingRsvp && <span className="text-[8px] text-amber-500 ml-auto">pending</span>}
+          {isTentative && !isPendingRsvp && !hasPendingChange && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
+          {hasPendingChange && <span className="text-[8px] text-muted-foreground ml-auto">proposed change</span>}
+          {isPendingRsvp && !hasPendingChange && <span className="text-[8px] text-amber-500 ml-auto">pending</span>}
         </div>
       </div>
     );
@@ -91,9 +94,9 @@ export function PlanCard({
       }}
       className={cn(
         "group flex items-start gap-2 rounded-md border border-border/50 bg-background/80 px-2 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors touch-manipulation",
-        (isTentative || isPendingRsvp) && "border-dashed border-border/60 opacity-70",
-        changeRequest && "border-amber-500/30",
-        needsRsvp && !isTentative && "border-amber-500/30 bg-amber-500/5"
+        showTentativeStyle && "border-dashed border-muted-foreground/40 opacity-70",
+        changeRequest && !hasPendingChange && "border-amber-500/30",
+        needsRsvp && !isTentative && !hasPendingChange && "border-amber-500/30 bg-amber-500/5"
       )}
     >
       {/* Activity icon */}
@@ -107,15 +110,20 @@ export function PlanCard({
           {plan.recurringPlanId && (
             <Repeat className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
           )}
-          {isTentative && !isPendingRsvp && (
+          {isTentative && !isPendingRsvp && !hasPendingChange && (
             <span className="text-[8px] text-muted-foreground">tentative</span>
           )}
-          {isPendingRsvp && (
+          {hasPendingChange && (
+            <span className="rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[8px] font-semibold text-muted-foreground">
+              Proposed change
+            </span>
+          )}
+          {isPendingRsvp && !hasPendingChange && (
             <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400">
               Pending RSVP
             </span>
           )}
-          {plan.status === 'proposed' && !isPendingRsvp && (
+          {plan.status === 'proposed' && !isPendingRsvp && !hasPendingChange && (
             <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400">
               Awaiting response
             </span>

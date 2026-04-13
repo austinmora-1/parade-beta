@@ -89,6 +89,14 @@ export interface Friend {
   respondedAt?: Date;
 }
 
+export interface PendingChange {
+  changeRequestId: string;
+  proposedDate?: Date;
+  proposedTimeSlot?: TimeSlot;
+  proposedDuration?: number;
+  proposedBy: string;
+}
+
 export interface Plan {
   id: string;
   userId?: string; // owner of the plan
@@ -110,6 +118,7 @@ export interface Plan {
   myRsvpStatus?: string; // current user's RSVP status: 'accepted' | 'maybe' | 'declined' | 'invited'
   recurringPlanId?: string; // linked to a recurring plan template
   proposedBy?: string; // user_id of the proposer; undefined for self-created plans
+  pendingChange?: PendingChange; // proposed time/date change awaiting acceptance
 }
 
 export interface Vibe {

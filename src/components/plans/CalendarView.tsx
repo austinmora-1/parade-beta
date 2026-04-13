@@ -20,6 +20,7 @@ import { Plan } from '@/types/planner';
 import { Plane } from 'lucide-react';
 import { PlanCard } from './PlanCard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDisplayPlans } from '@/hooks/useDisplayPlans';
 
 interface CalendarViewProps {
   onEditPlan?: (plan: Plan) => void;
@@ -28,7 +29,8 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: CalendarViewProps) {
-  const { plans, availabilityMap, loadAvailabilityForRange } = usePlannerStore();
+  const { plans: rawPlans, availabilityMap, loadAvailabilityForRange } = usePlannerStore();
+  const { displayPlans: plans } = useDisplayPlans(rawPlans);
   const isMobile = useIsMobile();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);

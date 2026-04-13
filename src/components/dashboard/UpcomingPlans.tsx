@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isBefore, addDays, isSameDay } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { useDisplayPlans } from '@/hooks/useDisplayPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
@@ -77,7 +78,8 @@ function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: s
 }
 
 export function UpcomingPlans({ standalone = false }: { standalone?: boolean } = {}) {
-  const { plans, userTimezone, userId } = usePlannerStore();
+  const { plans: rawPlans, userTimezone, userId } = usePlannerStore();
+  const { displayPlans: plans } = useDisplayPlans(rawPlans);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
@@ -211,7 +213,8 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     const isInProgress = timeStatus === 'in-progress';
     const isOwner = !plan.userId || plan.userId === userId;
     const isPendingRsvp = !isOwner && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
-    const isTentative = plan.status === 'tentative' || isPendingRsvp;
+    const hasPendingChange = !!plan.pendingChange;
+    const isTentative = plan.status === 'tentative' || isPendingRsvp || hasPendingChange;
 
     return (
       <div
@@ -222,7 +225,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
           isInProgress
             ? "bg-primary/8 hover:bg-primary/12 shadow-sm"
             : "bg-muted/30 hover:bg-muted/50",
-          isTentative && "border-dashed opacity-70",
+          isTentative && "border-dashed border border-muted-foreground/30 opacity-70",
         )}
         style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
       >
@@ -231,7 +234,12 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
             <div className="flex items-center gap-2">
               <ActivityIcon config={activityConfig} size={18} />
               <span className="text-sm font-medium truncate">{displayTitle}</span>
-              {isPendingRsvp && (
+              {hasPendingChange && (
+                <span className="rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground shrink-0">
+                  Proposed change
+                </span>
+              )}
+              {isPendingRsvp && !hasPendingChange && (
                 <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400 shrink-0">
                   Pending RSVP
                 </span>

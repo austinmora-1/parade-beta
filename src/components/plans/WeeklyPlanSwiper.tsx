@@ -515,6 +515,8 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
   const displayTitle = getPlanDisplayTitle(plan);
   const isTentative = plan.status === 'tentative';
   const isPendingRsvp = plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+  const hasPendingChange = !!plan.pendingChange;
+  const showTentativeStyle = isTentative || isPendingRsvp || hasPendingChange;
 
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -539,7 +541,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
       onPointerLeave={handlePointerUp}
       className={cn(
         "w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
-        (isTentative || isPendingRsvp) && "border-dashed opacity-70",
+        showTentativeStyle && "border-dashed border-muted-foreground/40 opacity-70",
         selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border"
       )}
     >
@@ -578,7 +580,12 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress }: {
         )}
       </div>
 
-      {isPendingRsvp && (
+      {hasPendingChange && (
+        <span className="mt-1.5 inline-block rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground">
+          Proposed change
+        </span>
+      )}
+      {isPendingRsvp && !hasPendingChange && (
         <span className="mt-1.5 inline-block rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400">
           Pending RSVP
         </span>

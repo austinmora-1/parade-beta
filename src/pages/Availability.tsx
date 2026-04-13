@@ -13,6 +13,7 @@ import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 import { WeeklyPlanSwiper } from '@/components/plans/WeeklyPlanSwiper';
+import { useDisplayPlans } from '@/hooks/useDisplayPlans';
 
 export default function Availability() {
   const navigate = useNavigate();
@@ -20,7 +21,8 @@ export default function Availability() {
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
   const loadPlans = usePlannerStore((s) => s.loadPlans);
-  const plans = usePlannerStore((s) => s.plans);
+  const rawPlans = usePlannerStore((s) => s.plans);
+  const { displayPlans: plans } = useDisplayPlans(rawPlans);
   const deletePlan = usePlannerStore((s) => s.deletePlan);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
