@@ -178,8 +178,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     });
 
     const top = results.slice(0, 3);
-    // Fallback to smart defaults if nothing found
-    setBestSlots(top.length > 0 ? top : SMART_DEFAULTS.slice(0, 3));
+    setBestSlots(top);
     setLoadingSlots(false);
   }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress]);
 
