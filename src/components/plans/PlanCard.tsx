@@ -48,6 +48,7 @@ export function PlanCard({
   const displayTitle = getPlanDisplayTitle(plan);
 
   const isTentative = plan.status === 'tentative';
+  const hasPendingChange = !!plan.pendingChange;
   const isPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
 
   // Show RSVP buttons when user is a participant (not owner)
@@ -55,6 +56,7 @@ export function PlanCard({
   const needsRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
   // Pending RSVP = invited or maybe (not yet confirmed)
   const isPendingRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+  const showTentativeStyle = isTentative || isPendingRsvp || hasPendingChange;
   const showRsvp = isParticipant && !isPast;
 
   if (compact) {
@@ -62,15 +64,16 @@ export function PlanCard({
       <div
         className={cn(
           "rounded-lg p-2 text-xs",
-          (isTentative || isPendingRsvp) ? "border border-dashed border-border opacity-60" : ""
+          showTentativeStyle ? "border border-dashed border-muted-foreground/40 opacity-60" : ""
         )}
-        style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${(isTentative || isPendingRsvp) ? '0.08' : '0.15'})` }}
+        style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / ${showTentativeStyle ? '0.08' : '0.15'})` }}
       >
         <div className="flex items-center gap-1 min-w-0">
           <ActivityIcon config={activityConfig} size={14} className="shrink-0" />
           <span className="truncate font-medium min-w-0 flex-1">{displayTitle}</span>
-          {isTentative && !isPendingRsvp && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
-          {isPendingRsvp && <span className="text-[8px] text-amber-500 ml-auto">pending</span>}
+          {isTentative && !isPendingRsvp && !hasPendingChange && <span className="text-[8px] text-muted-foreground ml-auto">tentative</span>}
+          {hasPendingChange && <span className="text-[8px] text-muted-foreground ml-auto">proposed change</span>}
+          {isPendingRsvp && !hasPendingChange && <span className="text-[8px] text-amber-500 ml-auto">pending</span>}
         </div>
       </div>
     );
