@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
