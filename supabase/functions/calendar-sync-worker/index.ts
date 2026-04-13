@@ -465,8 +465,18 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
   const planRowsByEventId = new Map<string, any>()
 
   for (const event of events) {
-    const hour = event.isAllDay ? 8 : event.dtstart.getUTCHours()
-    const localDateStr = getDateString(event.dtstart)
+    let localDateStr: string
+    let hour: number
+
+    if (event.isAllDay) {
+      // Parse all-day date directly to avoid timezone shift
+      localDateStr = event.dtstart.toISOString().split('T')[0]
+      hour = 12
+    } else {
+      localDateStr = getDateString(event.dtstart)
+      hour = event.dtstart.getUTCHours()
+    }
+
     const icalStartTime = !event.isAllDay ? formatTimeHHMM(event.dtstart, userTimezone) : null
     const icalEndTime = !event.isAllDay && event.dtend ? formatTimeHHMM(event.dtend, userTimezone) : null
 
