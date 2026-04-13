@@ -1,52 +1,34 @@
 
 
-## Root Cause Analysis: Triple Flight Duplication
+## Fix: Missing Dallas Flight (UA1062) Not Syncing
 
-### The 3 duplicates
+### Root Cause
 
-| # | Source | Title | Normalized | `manually_edited` |
-|---|--------|-------|------------|-------------------|
-| 1 | manual (no source) | `Flight to SFO (DL 679)` | `to sfo (dl 679)` | `true` |
-| 2 | iCal | `DL0679 \| JFK to SFO` | `dl679 jfk to sfo` | `false` |
-| 3 | gcal | `Flight to SFO (DL 679)` | `to sfo (dl 679)` | `false` |
+The UA1062 SFO→DFW flight on April 17 was never imported into the database. There are zero records for April 17-21 in plans, availability, or trips. Two likely causes:
 
-### Why dedup misses each pair
+1. **Sync timing**: The last automated sync ran before the pagination fix was deployed, so the event may have been cut off at the 250-event limit
+2. **Non-primary calendar**: If the flight is on a secondary Google Calendar (e.g., "Travel"), it won't be synced — the system only queries `calendars/primary/events`
 
-**Manual (#1) vs iCal (#2):** Completely different normalized titles. No source_event_id overlap. Content keys never match.
+### Plan
 
-**Manual (#1) vs gcal (#3):** Same normalized title, but #1 has no source_event_id so Layer 1 skips it. Layer 2 content key matches, but the merge logic only patches metadata onto #1 (adds source_event_id) — it doesn't prevent inserting #3 because #1 is `manually_edited` and the logic continues to insert.
+#### Step 1: Trigger a fresh sync for your account
+Manually invoke the `calendar-sync-worker` edge function for your user ID + Google provider. This will use the new pagination logic and should pick up the flight if it's on the primary calendar.
 
-**iCal (#2) vs gcal (#3):** Different normalized titles (`dl679 jfk to sfo` vs `to sfo (dl 679)`). Content keys never match. Different source_event_ids. Both get inserted.
+#### Step 2: Add multi-calendar support
+Update `fetchAllGoogleEvents` in `calendar-helpers.ts` to:
+- First call `calendarList` API to get all user calendars
+- Fetch events from each calendar (not just `primary`)
+- Deduplicate across calendars by event ID
 
-### Root Problem
+This ensures flights on secondary/travel calendars are captured.
 
-The content-based dedup relies on exact normalized title match, but airlines format flight titles inconsistently:
-- Apple Calendar: `DL0679 | JFK to SFO`
-- Google Calendar: `Flight to SFO (DL 679)`
+#### Step 3: Add sync logging
+Add structured console.log statements to the sync worker so we can verify which events are fetched, which are skipped, and why — making future debugging much faster.
 
-The title normalizer strips "Flight" prefixes and pipes, but the resulting strings are still structurally different. **What they share is a flight number (`DL679`) and a date** — that's the real identity of a flight.
+### Technical Details
 
-### Fix: Flight-Aware Content Key
-
-When a title contains a recognizable flight number (airline code + digits), extract it and use `flightNumber|date` as the content key instead of the full normalized title.
-
-#### Detailed changes in `supabase/functions/_shared/calendar-helpers.ts`:
-
-1. **Add `extractFlightNumber()` function** — regex to pull airline+number from various formats:
-   - `DL0679`, `DL 679`, `DL679`, `(DL 679)` → `dl679`
-   - Handles 2-letter IATA codes + 1-4 digit numbers
-
-2. **Update `makeContentKey()`** — before falling through to title-based matching, check if the normalized title contains a flight number. If so, use `flight:dl679|2026-04-13` as the key (ignoring start_time, which flights already do).
-
-3. **Update `isFlightTitle()`** — also return true when a flight number pattern is detected (not just 2+ airport codes). This ensures flight dedup skips `start_time` in the key.
-
-4. **Update `classifyActivity()`** — detect `DL0679`-style titles as flights (currently only matches the word "flight").
-
-### Files to edit
-- `supabase/functions/_shared/calendar-helpers.ts` — add flight number extraction, update `makeContentKey`, `isFlightTitle`, and `classifyActivity`
-
-### What this fixes
-- iCal `DL0679 | JFK to SFO` and gcal `Flight to SFO (DL 679)` will both produce content key `flight:dl679|2026-04-13` → deduplicated
-- Manual entry `Flight to SFO (DL 679)` will also match via flight number → incoming syncs merge onto it instead of creating new records
-- Non-flight events are completely unaffected
+- `fetchAllGoogleEvents` currently hardcodes `calendars/primary/events`
+- Google Calendar API supports `calendarList` endpoint to enumerate all calendars
+- Events from different calendars can have different IDs, so dedup needs to account for this
+- The `calendar-sync-worker` and `google-calendar-sync` functions both use the shared helper, so fixing it once fixes both paths
 
