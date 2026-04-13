@@ -430,8 +430,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
     if (!swiping) return;
     dragDelta.current = e.clientX - dragStartX.current;
     if (Math.abs(dragDelta.current) > 8) didSwipe.current = true;
-    // Only allow swiping left (negative)
-    setSwipeX(Math.min(0, dragDelta.current));
+    setSwipeX(dragDelta.current);
   };
 
   const handlePointerUp = () => {
