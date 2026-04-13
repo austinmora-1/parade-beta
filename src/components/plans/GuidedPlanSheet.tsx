@@ -216,10 +216,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         }
       }
 
-      // Get my effective city for this date
+      // Get my effective city — also check trips as fallback
       const myLocStatus = myDay?.locationStatus || 'home';
-      const myTripLoc = myDay?.tripLocation || null;
-      const myCity = getEffectiveCity(myLocStatus, myTripLoc, homeAddress);
+      let myTripLoc = myDay?.tripLocation || null;
+      if (!myTripLoc && myLocStatus === 'home' && userId) {
+        const tripLoc = getTripLocationForDate(userId, dateStr);
+        if (tripLoc) myTripLoc = tripLoc;
+      }
+      const myCity = getEffectiveCity(
+        myTripLoc && !myDay?.tripLocation ? 'away' : myLocStatus,
+        myTripLoc, homeAddress
+      );
 
       // Check if I have plans on this date
       const myPlanSlots = userId ? planIndex.get(`${userId}:${dateStr}`) : undefined;
