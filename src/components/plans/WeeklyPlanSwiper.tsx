@@ -265,7 +265,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
 }) {
   const key = format(day, 'yyyy-MM-dd');
   return (
-    <div className={cn("rounded-xl transition-colors", isPast && "grayscale-[40%]")}>
+    <div className={cn("rounded-xl transition-colors")}>
       <div className={cn("flex items-center gap-2 px-3 py-1.5 relative z-10", isToday && "text-primary")}>
         <span className={cn(
           "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
@@ -525,7 +525,7 @@ function SwipeStack({ plans, selectMode, selectedIds, onCardTap }: {
             className={cn(
               "absolute top-0",
               !isVisible && "pointer-events-none",
-              isPast && isTop && "grayscale-[30%]"
+              isPast && isTop && ""
             )}
             initial={false}
             animate={{
@@ -610,9 +610,9 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
       className={cn(
         "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
         showTentativeStyle && "border-dashed border-muted-foreground/40 opacity-70",
-        isPast && !showTentativeStyle && "grayscale-[40%]",
+        isPast && !showTentativeStyle && "bg-muted/60 text-muted-foreground border-muted-foreground/20 shadow-none ring-0",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
-        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && "border-border"
+        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && !isPast && "border-border"
       )}
     >
       {isLive && !showTentativeStyle && (
