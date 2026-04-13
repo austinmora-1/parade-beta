@@ -279,7 +279,30 @@ export function normalizePlanTitle(title?: string): string {
   return t
 }
 
+/**
+ * Extract a flight number (airline IATA code + digits) from a title.
+ * Handles formats like: DL0679, DL 679, DL679, (DL 679), UA 1234
+ * Returns normalized lowercase form with leading zeros stripped, e.g. "dl679"
+ */
+export function extractFlightNumber(title?: string): string | null {
+  if (!title) return null
+  // Match 2-letter IATA airline code followed by optional space and 1-4 digits
+  const match = title.match(/\b([A-Za-z]{2})\s?0*(\d{1,4})\b/)
+  if (!match) return null
+  const airline = match[1].toLowerCase()
+  const number = match[2]
+  // Validate: the 2-letter code should look like an airline (not a random word fragment)
+  // Common IATA prefixes — we accept any 2-letter code that's followed by digits
+  // but filter out obviously wrong matches like "at", "in", "to", "on", "am", "pm"
+  const excluded = new Set(['at', 'in', 'to', 'on', 'am', 'pm', 'an', 'as', 'be', 'by', 'do', 'go', 'he', 'if', 'is', 'it', 'me', 'my', 'no', 'of', 'or', 'so', 'up', 'us', 'we'])
+  if (excluded.has(airline)) return null
+  return `${airline}${number}`
+}
+
 export function isFlightTitle(normalizedTitle: string): boolean {
+  // Check for flight number pattern first
+  if (extractFlightNumber(normalizedTitle)) return true
+  // Fall back to 2+ airport codes
   const upper = normalizedTitle.toUpperCase()
   const codes = upper.match(/\b([A-Z]{3})\b/g)
   if (!codes) return false
@@ -292,6 +315,11 @@ export function extractDateOnly(date: string): string {
 
 export function makeContentKey(normalizedTitle: string, date: string, startTime: string | null): string {
   const d = extractDateOnly(date)
+  // Flight number-based key: all formats of the same flight produce the same key
+  const flightNum = extractFlightNumber(normalizedTitle)
+  if (flightNum) {
+    return `flight:${flightNum}|${d}`
+  }
   if (isFlightTitle(normalizedTitle)) {
     return `${normalizedTitle}|${d}`
   }
