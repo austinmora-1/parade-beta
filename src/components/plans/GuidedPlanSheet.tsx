@@ -95,9 +95,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     setLoadingSlots(true);
 
     const userIds = preSelectedFriends.map(f => f.userId);
-    const scanDays = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i));
+    const scanDays = Array.from({ length: 180 }, (_, i) => addDays(new Date(), i));
     const startDate = format(scanDays[0], 'yyyy-MM-dd');
-    const endDate = format(scanDays[13], 'yyyy-MM-dd');
+    const endDate = format(scanDays[179], 'yyyy-MM-dd');
 
     const [{ data: availData }, { data: plansData }, { data: friendProfiles }] = await Promise.all([
       supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
