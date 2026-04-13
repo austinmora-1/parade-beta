@@ -57,11 +57,6 @@ const SLOT_LABELS: Record<string, string> = {
   'late-night': 'Late Night',
 };
 
-const SMART_DEFAULTS: BestSlot[] = [
-  { date: (() => { const d = new Date(); const day = d.getDay(); const sat = addDays(d, (6 - day + 7) % 7 || 7); return sat; })(), slot: 'late-afternoon', status: 'some-free', freeCount: 0, total: 0 },
-  { date: (() => { const d = new Date(); const day = d.getDay(); const sat = addDays(d, (6 - day + 7) % 7 || 7); return sat; })(), slot: 'evening', status: 'some-free', freeCount: 0, total: 0 },
-  { date: addDays(new Date(), 1), slot: 'evening', status: 'some-free', freeCount: 0, total: 0 },
-];
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
@@ -178,8 +173,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     });
 
     const top = results.slice(0, 3);
-    // Fallback to smart defaults if nothing found
-    setBestSlots(top.length > 0 ? top : SMART_DEFAULTS.slice(0, 3));
+    setBestSlots(top);
     setLoadingSlots(false);
   }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress]);
 
@@ -446,52 +440,64 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 justify-center">
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Suggested times
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      {bestSlots.map((bs, i) => {
-                        const isWeekend = [0, 6].includes(bs.date.getDay());
-                        const dayLabel = isSameDay(bs.date, new Date())
-                          ? 'Today'
-                          : isSameDay(bs.date, addDays(new Date(), 1))
-                            ? 'Tomorrow'
-                            : format(bs.date, 'EEEE, MMM d');
+                    {bestSlots.length > 0 ? (
+                      <>
+                        <div className="flex items-center gap-1.5 justify-center">
+                          <Sparkles className="h-3.5 w-3.5 text-primary" />
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Suggested times
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          {bestSlots.map((bs, i) => {
+                            const isWeekend = [0, 6].includes(bs.date.getDay());
+                            const dayLabel = isSameDay(bs.date, new Date())
+                              ? 'Today'
+                              : isSameDay(bs.date, addDays(new Date(), 1))
+                                ? 'Tomorrow'
+                                : format(bs.date, 'EEEE, MMM d');
 
-                        return (
-                          <motion.button
-                            key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.08 }}
-                            onClick={() => handleSelectSlot(bs)}
-                            className={cn(
-                              "w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all",
-                              bs.status === 'all-free'
-                                ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
-                                : "border-border hover:border-primary/30 hover:bg-primary/5"
-                            )}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-foreground">{dayLabel}</p>
-                              <p className="text-xs text-muted-foreground">{SLOT_LABELS[bs.slot]}</p>
-                            </div>
-                            {bs.status === 'all-free' && bs.total > 0 ? (
-                              <span className="text-[10px] font-medium text-availability-available bg-availability-available/10 rounded-full px-2 py-0.5">
-                                Everyone's free ✓
-                              </span>
-                            ) : bs.total > 0 ? (
-                              <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                                {bs.freeCount}/{bs.total} free
-                              </span>
-                            ) : null}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
+                            return (
+                              <motion.button
+                                key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.08 }}
+                                onClick={() => handleSelectSlot(bs)}
+                                className={cn(
+                                  "w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all",
+                                  bs.status === 'all-free'
+                                    ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
+                                    : "border-border hover:border-primary/30 hover:bg-primary/5"
+                                )}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-foreground">{dayLabel}</p>
+                                  <p className="text-xs text-muted-foreground">{SLOT_LABELS[bs.slot]}</p>
+                                </div>
+                                {bs.status === 'all-free' && bs.total > 0 ? (
+                                  <span className="text-[10px] font-medium text-availability-available bg-availability-available/10 rounded-full px-2 py-0.5">
+                                    Everyone's free ✓
+                                  </span>
+                                ) : bs.total > 0 ? (
+                                  <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
+                                    {bs.freeCount}/{bs.total} free
+                                  </span>
+                                ) : null}
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 py-6 text-center">
+                        <span className="text-2xl">🌎</span>
+                        <p className="text-sm font-medium text-foreground">No overlapping times found</p>
+                        <p className="text-xs text-muted-foreground max-w-[240px]">
+                          It looks like you and {friendNamesStr} won't be in the same city in the next 2 weeks. Try picking a date further out.
+                        </p>
+                      </div>
+                    )}
 
                     <button
                       onClick={() => setShowCalendar(true)}
