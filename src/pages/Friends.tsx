@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserPlus, Search, Users, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeCity } from '@/lib/locationMatch';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -107,9 +108,10 @@ export default function Friends() {
   const [podPanelOpen, setPodPanelOpen] = useState(false);
   const [activePod, setActivePod] = useState<Pod | null>(null);
 
-  // Vibe + availability data for list rows
+  // Vibe + availability + location data for list rows
   const [friendVibeMap, setFriendVibeMap] = useState<Record<string, { vibe: string | null; icon: string | null }>>({});
   const [friendAvailMap, setFriendAvailMap] = useState<Record<string, boolean>>({});
+  const [friendLocationMap, setFriendLocationMap] = useState<Record<string, { city: string | null; isAway: boolean }>>({});
 
   const connectedFriendUserIds = useMemo(
     () => friends.filter(f => f.status === 'connected' && f.friendUserId).map(f => f.friendUserId!),
@@ -117,15 +119,16 @@ export default function Friends() {
   );
   const lastHungOut = useLastHungOut(connectedFriendUserIds);
 
-  // Batch fetch vibes + availability
+  // Batch fetch vibes + availability + location
   useEffect(() => {
     if (connectedFriendUserIds.length === 0) return;
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     Promise.all([
-      supabase.from('profiles').select('user_id, current_vibe, custom_vibe_tags').in('user_id', connectedFriendUserIds),
-      supabase.from('availability').select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night').in('user_id', connectedFriendUserIds).eq('date', todayStr),
+      supabase.from('profiles').select('user_id, current_vibe, custom_vibe_tags, home_address').in('user_id', connectedFriendUserIds),
+      supabase.from('availability').select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location').in('user_id', connectedFriendUserIds).eq('date', todayStr),
     ]).then(([profileRes, availRes]) => {
       const vibeMap: Record<string, { vibe: string | null; icon: string | null }> = {};
+      const homeMap: Record<string, string | null> = {};
       for (const p of (profileRes.data || [])) {
         const vibeConfig = p.current_vibe && p.current_vibe !== 'custom'
           ? VIBE_CONFIG[p.current_vibe as VibeType]
@@ -134,15 +137,30 @@ export default function Friends() {
           vibe: vibeConfig?.label || p.current_vibe || null,
           icon: vibeConfig?.label?.[0] || null,
         };
+        homeMap[p.user_id] = p.home_address;
       }
       setFriendVibeMap(vibeMap);
 
       const availMap: Record<string, boolean> = {};
+      const locMap: Record<string, { city: string | null; isAway: boolean }> = {};
       for (const a of (availRes.data || [])) {
         const isAvailable = SLOT_KEYS.some(({ key }) => (a as any)[key] === true);
         availMap[a.user_id] = isAvailable;
+
+        const isAway = a.location_status === 'away';
+        const cityRaw = isAway && a.trip_location ? a.trip_location : homeMap[a.user_id];
+        const cityNorm = normalizeCity(cityRaw);
+        locMap[a.user_id] = { city: cityNorm || null, isAway };
+      }
+      // For friends without availability data today, use home address
+      for (const uid of connectedFriendUserIds) {
+        if (!locMap[uid]) {
+          const cityNorm = normalizeCity(homeMap[uid]);
+          locMap[uid] = { city: cityNorm || null, isAway: false };
+        }
       }
       setFriendAvailMap(availMap);
+      setFriendLocationMap(locMap);
     });
   }, [connectedFriendUserIds]);
 
@@ -404,6 +422,8 @@ export default function Friends() {
                   currentVibe={fuid ? friendVibeMap[fuid]?.vibe : null}
                   vibeIcon={fuid ? friendVibeMap[fuid]?.icon : null}
                   lastHungOut={fuid ? lastHungOut[fuid] || null : null}
+                  locationCity={fuid ? friendLocationMap[fuid]?.city || null : null}
+                  isAway={fuid ? friendLocationMap[fuid]?.isAway || false : false}
                   onOpen={handleOpenFriend}
                 />
               );

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { normalizeCity } from '@/lib/locationMatch';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,6 +40,7 @@ interface FriendProfileData {
   share_code: string | null;
   cover_photo_url: string | null;
   vibe_gif_url: string | null;
+  home_address: string | null;
 }
 
 interface AvailabilityDay {
@@ -140,7 +142,7 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
 
       const { data: fullProfile } = await supabase
         .from('profiles')
-        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url')
+        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url, home_address')
         .eq('user_id', userId)
         .single();
 
@@ -154,6 +156,7 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
         share_code: fullProfile?.share_code || null,
         cover_photo_url: (fullProfile as any)?.cover_photo_url || null,
         vibe_gif_url: (fullProfile as any)?.vibe_gif_url || null,
+        home_address: fullProfile?.home_address || null,
       });
 
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -417,12 +420,27 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
                   </span>
                 );
               })()}
-              {profile.location_status && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  {profile.location_status === 'home' ? 'Home' : 'Away'}
-                </span>
-              )}
+              {(() => {
+                const todayAvail = availability.find(a => a.date === format(new Date(), 'yyyy-MM-dd'));
+                const isAway = profile.location_status === 'away' || todayAvail?.location_status === 'away';
+                const cityRaw = isAway && todayAvail?.trip_location
+                  ? todayAvail.trip_location
+                  : profile.home_address;
+                const cityNorm = normalizeCity(cityRaw);
+                const cityDisplay = cityNorm
+                  ? cityNorm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                  : null;
+
+                return (
+                  <span className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
+                    isAway ? "bg-availability-away-light text-availability-away-foreground" : "bg-muted text-muted-foreground"
+                  )}>
+                    {isAway ? <Plane className="h-3 w-3" /> : <Home className="h-3 w-3" />}
+                    {cityDisplay || (isAway ? 'Away' : 'Home')}
+                  </span>
+                );
+              })()}
               {lastDate && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                   <Calendar className="h-3 w-3" />

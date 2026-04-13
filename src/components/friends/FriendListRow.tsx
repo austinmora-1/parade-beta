@@ -2,7 +2,7 @@ import { Friend } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
-import { ChevronRight, Flame } from 'lucide-react';
+import { ChevronRight, Flame, MapPin } from 'lucide-react';
 import { Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
@@ -15,6 +15,8 @@ interface FriendListRowProps {
   currentVibe?: string | null;
   vibeIcon?: string | null;
   lastHungOut?: Date | null;
+  locationCity?: string | null;
+  isAway?: boolean;
   onOpen: (friendUserId: string, conversationId?: string) => void;
 }
 
@@ -51,6 +53,8 @@ export function FriendListRow({
   currentVibe,
   vibeIcon,
   lastHungOut: lastHungOutDate,
+  locationCity,
+  isAway,
   onOpen,
 }: FriendListRowProps) {
   const { user } = useAuth();
@@ -75,6 +79,11 @@ export function FriendListRow({
   } else if (lastHungOutDate) {
     subtitle = formatLastHungOut(lastHungOutDate);
   }
+
+  // Location display (capitalize each word)
+  const locationLabel = locationCity
+    ? locationCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    : null;
 
   return (
     <motion.button
@@ -111,6 +120,15 @@ export function FriendListRow({
           <p className="text-sm font-medium truncate">{friend.name}</p>
           {streak && (
             <Flame className={cn("h-3 w-3 shrink-0", streak.color)} />
+          )}
+          {locationLabel && (
+            <span className={cn(
+              "inline-flex items-center gap-0.5 text-[10px] shrink-0",
+              isAway ? "text-availability-away-foreground" : "text-muted-foreground"
+            )}>
+              <MapPin className="h-2.5 w-2.5" />
+              <span className="max-w-[60px] truncate">{locationLabel}</span>
+            </span>
           )}
         </div>
         <p className={cn(
