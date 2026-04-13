@@ -360,39 +360,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           </DrawerTitle>
         </DrawerHeader>
 
-        {/* Friend avatars strip with city locations */}
-        <div className="flex flex-col items-center gap-1 px-4 pb-3">
-          <div className="flex items-center gap-1">
-            <div className="flex -space-x-2">
-              {preSelectedFriends.slice(0, 5).map(f => (
-                <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
-                  <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                  <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-              ))}
-            </div>
-            <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
+        {/* Friend avatars strip */}
+        <div className="flex items-center justify-center gap-1 px-4 pb-3">
+          <div className="flex -space-x-2">
+            {preSelectedFriends.slice(0, 5).map(f => (
+              <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
+                <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            ))}
           </div>
-          {(myCity || Object.keys(friendCities).length > 0) && (
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
-              {myCity && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                  <MapPin className="h-2.5 w-2.5" />
-                  You: {myCity}
-                </span>
-              )}
-              {preSelectedFriends.map(f => {
-                const city = friendCities[f.userId];
-                if (!city) return null;
-                return (
-                  <span key={f.userId} className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                    <MapPin className="h-2.5 w-2.5" />
-                    {f.name.split(' ')[0]}: {city}
-                  </span>
-                );
-              })}
-            </div>
-          )}
+          <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
         </div>
 
         <div className="px-4 pb-2 overflow-y-auto flex-1 min-h-0">
