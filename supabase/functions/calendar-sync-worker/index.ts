@@ -296,9 +296,12 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
 
   const { data: profileData } = await adminClient
     .from('profiles')
-    .select('timezone')
+    .select('home_address, timezone')
     .eq('user_id', userId)
     .single()
+
+  const homeAddress: string | null = profileData?.home_address || null
+  const userTimezone: string | undefined = profileData?.timezone || undefined
 
   const icalUrl = connRows[0].access_token
   if (!icalUrl) throw new Error('No iCal URL stored')
@@ -312,9 +315,12 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
   const rangeStart = new Date(now); rangeStart.setMonth(rangeStart.getMonth() - 3)
   const rangeEnd = new Date(now); rangeEnd.setMonth(rangeEnd.getMonth() + 3)
   const events = parseICS(icsText, rangeStart, rangeEnd)
-  const userTimezone = profileData?.timezone
 
+  // ── Busy slots ──
   const busySlotsByDate: Map<string, Set<string>> = new Map()
+  const allFlights: FlightInfo[] = []
+  const hotelStays: HotelStay[] = []
+
   for (const event of events) {
     if (event.isAllDay) {
       const endExclusive = new Date(event.dtend); endExclusive.setDate(endExclusive.getDate() - 1)
@@ -322,21 +328,120 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
         if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
         ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(s => busySlotsByDate.get(date)!.add(s))
       }
+      if (isHotelEvent(event.summary, event.location)) {
+        const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
+        if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
+          hotelStays.push({ startDate: getDateString(event.dtstart, userTimezone), endDate: getDateString(endExclusive, userTimezone), city: hotelCity })
+        }
+      }
       continue
     }
     for (const date of getEventDates(event.dtstart, event.dtend)) {
       if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
       getEventTimeSlots(event.dtstart, event.dtend).forEach(s => busySlotsByDate.get(date)!.add(s))
     }
+
+    // Detect flights and hotels (same logic as Google sync)
+    if (isFlightEvent(event.summary)) {
+      const city = resolveToCity(extractFlightDestination(event.summary))
+      const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
+      const dateStr = getDateString(event.dtstart, userTimezone)
+      allFlights.push({ date: dateStr, timestamp: event.dtstart.getTime(), city, isReturn })
+      console.log(`[ical-sync] Flight detected: "${event.summary}" → city=${city}, isReturn=${isReturn}, date=${dateStr}`)
+    } else if (isHotelEvent(event.summary, event.location)) {
+      const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
+      if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
+        hotelStays.push({ startDate: getDateString(event.dtstart, userTimezone), endDate: getDateString(event.dtend, userTimezone), city: hotelCity })
+      }
+    }
   }
 
+  // ── Flight/hotel location processing (same as Google sync) ──
+  allFlights.sort((a, b) => a.timestamp - b.timestamp)
+
+  const flightLocationByDate: Map<string, string> = new Map()
+  for (const flight of allFlights) {
+    if (flight.city && !flight.isReturn) flightLocationByDate.set(flight.date, flight.city)
+  }
+
+  const allFlightDatesSet = new Set(allFlights.map(f => f.date))
+  const returnHomeDates = new Set<string>()
+  const outboundFlightDates = new Set<string>()
+  const flightsByDate = new Map<string, FlightInfo[]>()
+  for (const f of allFlights) {
+    if (!flightsByDate.has(f.date)) flightsByDate.set(f.date, [])
+    flightsByDate.get(f.date)!.push(f)
+  }
+  for (const [date, flights] of flightsByDate) {
+    const lastFlight = flights[flights.length - 1]
+    if (lastFlight.isReturn) {
+      returnHomeDates.add(date)
+      flightLocationByDate.delete(date)
+    } else if (lastFlight.city) {
+      outboundFlightDates.add(date)
+    }
+  }
+
+  const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+  for (const [outDate, city] of outboundEntries) {
+    let hasReturn = false
+    const maxReturnDate = new Date(outDate + 'T00:00:00Z'); maxReturnDate.setDate(maxReturnDate.getDate() + 30)
+    const maxReturnStr = maxReturnDate.toISOString().split('T')[0]
+    for (const rf of allFlights) {
+      if (rf.date > outDate && rf.date <= maxReturnStr && (rf.isReturn || (!rf.isReturn && rf.city && rf.city !== city))) { hasReturn = true; break }
+    }
+    const fillLimit = hasReturn ? 30 : 7
+    const current = new Date(outDate); current.setDate(current.getDate() + 1)
+    for (let i = 0; i < fillLimit; i++) {
+      const dateStr = current.toISOString().split('T')[0]
+      if (allFlightDatesSet.has(dateStr)) break
+      flightLocationByDate.set(dateStr, city)
+      current.setDate(current.getDate() + 1)
+    }
+  }
+
+  const allLocationByDate = new Map(flightLocationByDate)
+  for (const stay of hotelStays) {
+    const dates = getDateRange(stay.startDate, stay.endDate)
+    for (const d of dates) {
+      if (!allLocationByDate.has(d)) allLocationByDate.set(d, stay.city)
+    }
+  }
+
+  // ── Upsert availability with location info ──
   let updatedCount = 0
   for (const [date, slots] of busySlotsByDate) {
     const slotUpdates: Record<string, boolean> = {}
     for (const slot of slots) slotUpdates[slot] = false
-    const { error } = await adminClient.from('availability').upsert({ user_id: userId, date, ...slotUpdates }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+    const locationCity = allLocationByDate.get(date)
+    const isReturnDate = returnHomeDates.has(date)
+    const locationFields: Record<string, string | null> = {}
+    if (locationCity) {
+      locationFields.location_status = 'away'
+      locationFields.trip_location = locationCity
+    } else if (isReturnDate) {
+      locationFields.location_status = 'home'
+      locationFields.trip_location = null
+    }
+    const { error } = await adminClient.from('availability').upsert(
+      { user_id: userId, date, ...slotUpdates, ...locationFields },
+      { onConflict: 'user_id,date', ignoreDuplicates: false }
+    )
     if (!error) updatedCount++
   }
+
+  // Upsert location-only dates (no busy slots but has location from flights/hotels)
+  for (const [date, city] of allLocationByDate) {
+    if (busySlotsByDate.has(date)) continue
+    await adminClient.from('availability').upsert(
+      { user_id: userId, date, location_status: 'away', trip_location: city },
+      { onConflict: 'user_id,date', ignoreDuplicates: false }
+    )
+    updatedCount++
+  }
+
+  // ── Trip merge ──
+  await adminClient.rpc('merge_overlapping_trips', { p_user_id: userId })
 
   // ── Sync plans using shared reconciliation ──
   const incomingEventIds = new Set<string>()
