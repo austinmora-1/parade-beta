@@ -71,6 +71,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
+  const [friendCities, setFriendCities] = useState<Record<string, string>>({});
+  const [myCity, setMyCity] = useState<string>('');
 
   const friendNames = preSelectedFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
