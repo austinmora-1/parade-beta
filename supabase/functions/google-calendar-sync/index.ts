@@ -405,22 +405,18 @@ Deno.serve(async (req) => {
     const threeMonthsAgo = new Date(now); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
     const threeMonthsAhead = new Date(now); threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3)
 
-    const calendarUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
-    calendarUrl.searchParams.set('timeMin', threeMonthsAgo.toISOString())
-    calendarUrl.searchParams.set('timeMax', threeMonthsAhead.toISOString())
-    calendarUrl.searchParams.set('maxResults', '250')
-    calendarUrl.searchParams.set('singleEvents', 'true')
-    calendarUrl.searchParams.set('orderBy', 'startTime')
+    let events: CalendarEvent[]
+    try {
+      events = await fetchAllGoogleEvents(
+        accessToken,
+        threeMonthsAgo.toISOString(),
+        threeMonthsAhead.toISOString(),
+      )
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Calendar API error:', message)
 
-    const calendarResponse = await fetch(calendarUrl.toString(), {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-
-    if (!calendarResponse.ok) {
-      const errorText = await calendarResponse.text()
-      console.error('Calendar API error:', calendarResponse.status, errorText)
-
-      if (calendarResponse.status === 401 || calendarResponse.status === 403) {
+      if (message.includes('401') || message.includes('403')) {
         return new Response(
           JSON.stringify({
             error: 'Google denied access (403). Please disconnect + reconnect Google Calendar.',
@@ -434,9 +430,6 @@ Deno.serve(async (req) => {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-
-    const calendarData = await calendarResponse.json()
-    const events: CalendarEvent[] = calendarData.items || []
 
     const { updatedCount, pendingReturnTrips } = await handleEventsSync({ adminClient, userId, events, timezone })
 
