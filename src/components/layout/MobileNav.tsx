@@ -35,7 +35,7 @@ export function MobileNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe mb-1 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden">
       <div className="flex items-end justify-around px-1 py-1.5">
         <LayoutGroup>
           {navItems.map((item) => {
