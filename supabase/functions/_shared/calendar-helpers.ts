@@ -528,6 +528,50 @@ export interface CalendarEvent {
   location?: string
 }
 
+// ── Google Calendar Paginated Fetch ─────────────────────────────────────────
+// Fetches ALL events via nextPageToken pagination (Google caps at 2500 per page,
+// but we use 250 per page and loop). Max 10 pages (~2500 events) as safety limit.
+
+export async function fetchAllGoogleEvents(
+  accessToken: string,
+  timeMin: string,
+  timeMax: string,
+): Promise<CalendarEvent[]> {
+  const allEvents: CalendarEvent[] = []
+  let pageToken: string | undefined = undefined
+  const maxPages = 10
+
+  for (let page = 0; page < maxPages; page++) {
+    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events')
+    url.searchParams.set('timeMin', timeMin)
+    url.searchParams.set('timeMax', timeMax)
+    url.searchParams.set('maxResults', '250')
+    url.searchParams.set('singleEvents', 'true')
+    url.searchParams.set('orderBy', 'startTime')
+    if (pageToken) url.searchParams.set('pageToken', pageToken)
+
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+
+    if (!response.ok) {
+      if (page === 0) throw new Error(`Google Calendar API error: ${response.status}`)
+      // On subsequent pages, return what we have
+      console.warn(`Google Calendar pagination stopped at page ${page}: ${response.status}`)
+      break
+    }
+
+    const data = await response.json()
+    const items: CalendarEvent[] = data.items || []
+    allEvents.push(...items)
+
+    if (!data.nextPageToken) break
+    pageToken = data.nextPageToken
+  }
+
+  return allEvents
+}
+
 // ── Shared Plan Reconciliation ──────────────────────────────────────────────
 // Extracted from all 3 sync functions to prevent drift in dedup logic.
 
