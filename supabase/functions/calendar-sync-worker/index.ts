@@ -336,15 +336,19 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
 
   for (const event of events) {
     if (event.isAllDay) {
-      const endExclusive = new Date(event.dtend); endExclusive.setDate(endExclusive.getDate() - 1)
-      for (const date of getEventDates(event.dtstart, endExclusive)) {
+      // Parse all-day dates directly to avoid timezone shift
+      const startDateStr = event.dtstart.toISOString().split('T')[0]
+      const endExcl = new Date(event.dtend); endExcl.setDate(endExcl.getDate() - 1)
+      const endDateStr = endExcl.toISOString().split('T')[0]
+      const dates = getAllDayDateRange(startDateStr, endDateStr)
+      for (const date of dates) {
         if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set())
         ;['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'].forEach(s => busySlotsByDate.get(date)!.add(s))
       }
       if (isHotelEvent(event.summary, event.location)) {
         const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
         if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
-          hotelStays.push({ startDate: getDateString(event.dtstart, userTimezone), endDate: getDateString(endExclusive, userTimezone), city: hotelCity })
+          hotelStays.push({ startDate: startDateStr, endDate: endDateStr, city: hotelCity })
         }
       }
       continue
