@@ -47,6 +47,7 @@ interface BestSlot {
   status: 'all-free' | 'some-free';
   freeCount: number;
   total: number;
+  sharedCity: string;
 }
 
 const SLOT_LABELS: Record<string, string> = {
@@ -57,6 +58,51 @@ const SLOT_LABELS: Record<string, string> = {
   'late-night': 'Late Night',
 };
 
+
+function SlotCard({ bs, i, onSelect }: { bs: BestSlot; i: number; onSelect: (bs: BestSlot) => void }) {
+  const dayLabel = isSameDay(bs.date, new Date())
+    ? 'Today'
+    : isSameDay(bs.date, addDays(new Date(), 1))
+      ? 'Tomorrow'
+      : format(bs.date, 'EEEE, MMM d');
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: i * 0.08 }}
+      onClick={() => onSelect(bs)}
+      className={cn(
+        "w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all",
+        bs.status === 'all-free'
+          ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
+          : "border-border hover:border-primary/30 hover:bg-primary/5"
+      )}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground">{dayLabel}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">{SLOT_LABELS[bs.slot]}</p>
+          {bs.sharedCity && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-primary/80">
+              <MapPin className="h-2.5 w-2.5" />
+              {bs.sharedCity}
+            </span>
+          )}
+        </div>
+      </div>
+      {bs.status === 'all-free' && bs.total > 0 ? (
+        <span className="text-[10px] font-medium text-availability-available bg-availability-available/10 rounded-full px-2 py-0.5 shrink-0">
+          Everyone's free ✓
+        </span>
+      ) : bs.total > 0 ? (
+        <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5 shrink-0">
+          {bs.freeCount}/{bs.total} free
+        </span>
+      ) : null}
+    </motion.button>
+  );
+}
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
@@ -71,8 +117,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
-  const [friendCities, setFriendCities] = useState<Record<string, string>>({});
-  const [myCity, setMyCity] = useState<string>('');
+  const [selectedSharedCity, setSelectedSharedCity] = useState<string>('');
 
   const friendNames = preSelectedFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
@@ -108,28 +153,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
     ]);
 
-    // Build friend home address map and compute current cities for display
+    // Build friend home address map
     const friendHomeMap = new Map<string, string | null>();
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const cityMap: Record<string, string> = {};
     for (const p of (friendProfiles || [])) {
       friendHomeMap.set(p.user_id, p.home_address);
-      const todayRow = (availData || []).find(a => a.user_id === p.user_id && a.date === todayStr);
-      const loc = todayRow?.location_status || 'home';
-      const trip = todayRow?.trip_location || null;
-      const city = getEffectiveCity(loc, trip, p.home_address);
-      if (city) cityMap[p.user_id] = city.charAt(0).toUpperCase() + city.slice(1);
     }
-    setFriendCities(cityMap);
-
-    // Compute my current city for display
-    const myTodayRow = userId ? (availData || []).find(a => a.user_id === userId && a.date === todayStr) : null;
-    const myCurrCity = getEffectiveCity(
-      myTodayRow?.location_status || 'home',
-      myTodayRow?.trip_location || null,
-      homeAddress
-    );
-    if (myCurrCity) setMyCity(myCurrCity.charAt(0).toUpperCase() + myCurrCity.slice(1));
 
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
     const results: BestSlot[] = [];
@@ -204,12 +232,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         slotMap[slot] = { free: freeCount, total: userIds.length };
 
         if (iAmFree && freeCount > 0) {
+          // Capitalize the shared city name
+          const rawCity = myCity || '';
+          const sharedCity = rawCity ? rawCity.charAt(0).toUpperCase() + rawCity.slice(1) : '';
           results.push({
             date: day,
             slot,
             status: freeCount === userIds.length ? 'all-free' : 'some-free',
             freeCount,
             total: userIds.length,
+            sharedCity,
           });
         }
       }
@@ -227,8 +259,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       return (slotOrder[a.slot] || 0) - (slotOrder[b.slot] || 0);
     });
 
-    const top = results.slice(0, 3);
-    setBestSlots(top);
+    // Group by city, take up to 3 per city, flatten
+    const cityGroups = new Map<string, BestSlot[]>();
+    for (const r of results) {
+      const key = r.sharedCity || 'Unknown';
+      if (!cityGroups.has(key)) cityGroups.set(key, []);
+      const group = cityGroups.get(key)!;
+      if (group.length < 3) group.push(r);
+    }
+    const grouped = Array.from(cityGroups.values()).flat();
+    setBestSlots(grouped);
     setLoadingSlots(false);
   }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
@@ -266,6 +306,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const handleSelectSlot = (bs: BestSlot) => {
     setSelectedDate(bs.date);
     setTimeSlot(bs.slot);
+    setSelectedSharedCity(bs.sharedCity);
     setStep('confirm');
   };
 
@@ -364,39 +405,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           </DrawerTitle>
         </DrawerHeader>
 
-        {/* Friend avatars strip with city locations */}
-        <div className="flex flex-col items-center gap-1 px-4 pb-3">
-          <div className="flex items-center gap-1">
-            <div className="flex -space-x-2">
-              {preSelectedFriends.slice(0, 5).map(f => (
-                <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
-                  <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                  <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-              ))}
-            </div>
-            <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
+        {/* Friend avatars strip */}
+        <div className="flex items-center justify-center gap-1 px-4 pb-3">
+          <div className="flex -space-x-2">
+            {preSelectedFriends.slice(0, 5).map(f => (
+              <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
+                <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            ))}
           </div>
-          {(myCity || Object.keys(friendCities).length > 0) && (
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
-              {myCity && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                  <MapPin className="h-2.5 w-2.5" />
-                  You: {myCity}
-                </span>
-              )}
-              {preSelectedFriends.map(f => {
-                const city = friendCities[f.userId];
-                if (!city) return null;
-                return (
-                  <span key={f.userId} className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                    <MapPin className="h-2.5 w-2.5" />
-                    {f.name.split(' ')[0]}: {city}
-                  </span>
-                );
-              })}
-            </div>
-          )}
+          <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
         </div>
 
         <div className="px-4 pb-2 overflow-y-auto flex-1 min-h-0">
@@ -463,46 +482,43 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                             Suggested times
                           </p>
                         </div>
-                        <div className="space-y-2">
-                          {bestSlots.map((bs, i) => {
-                            const isWeekend = [0, 6].includes(bs.date.getDay());
-                            const dayLabel = isSameDay(bs.date, new Date())
-                              ? 'Today'
-                              : isSameDay(bs.date, addDays(new Date(), 1))
-                                ? 'Tomorrow'
-                                : format(bs.date, 'EEEE, MMM d');
+                     {(() => {
+                       // Group bestSlots by sharedCity
+                       const groups: { city: string; slots: BestSlot[] }[] = [];
+                       const seen = new Map<string, number>();
+                       for (const bs of bestSlots) {
+                         const key = bs.sharedCity || 'Unknown';
+                         if (!seen.has(key)) {
+                           seen.set(key, groups.length);
+                           groups.push({ city: key, slots: [] });
+                         }
+                         groups[seen.get(key)!].slots.push(bs);
+                       }
+                       const multiCity = groups.length > 1;
 
-                            return (
-                              <motion.button
-                                key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.08 }}
-                                onClick={() => handleSelectSlot(bs)}
-                                className={cn(
-                                  "w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all",
-                                  bs.status === 'all-free'
-                                    ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
-                                    : "border-border hover:border-primary/30 hover:bg-primary/5"
-                                )}
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-semibold text-foreground">{dayLabel}</p>
-                                  <p className="text-xs text-muted-foreground">{SLOT_LABELS[bs.slot]}</p>
-                                </div>
-                                {bs.status === 'all-free' && bs.total > 0 ? (
-                                  <span className="text-[10px] font-medium text-availability-available bg-availability-available/10 rounded-full px-2 py-0.5">
-                                    Everyone's free ✓
-                                  </span>
-                                ) : bs.total > 0 ? (
-                                  <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                                    {bs.freeCount}/{bs.total} free
-                                  </span>
-                                ) : null}
-                              </motion.button>
-                            );
-                          })}
-                        </div>
+                       return multiCity ? (
+                         <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
+                           {groups.map((g) => (
+                             <div key={g.city} className="snap-start shrink-0 w-[85%] space-y-2">
+                               <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                                 <MapPin className="h-3 w-3 text-primary" />
+                                 In {g.city}
+                                 <span className="text-[10px] font-normal ml-1">({g.slots.length} times)</span>
+                               </div>
+                               {g.slots.map((bs, i) => (
+                                 <SlotCard key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`} bs={bs} i={i} onSelect={handleSelectSlot} />
+                               ))}
+                             </div>
+                           ))}
+                         </div>
+                       ) : (
+                         <div className="space-y-2">
+                           {bestSlots.map((bs, i) => (
+                             <SlotCard key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`} bs={bs} i={i} onSelect={handleSelectSlot} />
+                           ))}
+                         </div>
+                       );
+                     })()}
                       </>
                     ) : (
                       <div className="flex flex-col items-center gap-2 py-6 text-center">
@@ -589,6 +605,12 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         )}
                       </p>
                       <p className="text-xs text-muted-foreground">{timeSlot && SLOT_LABELS[timeSlot]}</p>
+                      {selectedSharedCity && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] text-primary mt-0.5">
+                          <MapPin className="h-2.5 w-2.5" />
+                          {selectedSharedCity}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">With</p>
