@@ -147,16 +147,32 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const endDate = format(scanDays[179], 'yyyy-MM-dd');
 
     const allUserIds = userId ? [...userIds, userId] : userIds;
-    const [{ data: availData }, { data: plansData }, { data: friendProfiles }] = await Promise.all([
+    const [{ data: availData }, { data: plansData }, { data: friendProfiles }, { data: tripsData }] = await Promise.all([
       supabase.from('availability').select('*').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate),
       supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
       supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
+      supabase.from('trips').select('user_id, location, start_date, end_date').in('user_id', allUserIds).gte('end_date', startDate).lte('start_date', endDate),
     ]);
 
     // Build friend home address map
     const friendHomeMap = new Map<string, string | null>();
     for (const p of (friendProfiles || [])) {
       friendHomeMap.set(p.user_id, p.home_address);
+    }
+
+    // Build trip lookup: for a given userId + date, find the trip location
+    const tripsByUser = new Map<string, { location: string; start_date: string; end_date: string }[]>();
+    for (const t of (tripsData || [])) {
+      if (!tripsByUser.has(t.user_id)) tripsByUser.set(t.user_id, []);
+      tripsByUser.get(t.user_id)!.push(t);
+    }
+    function getTripLocationForDate(uid: string, dateStr: string): string | null {
+      const trips = tripsByUser.get(uid);
+      if (!trips) return null;
+      for (const t of trips) {
+        if (dateStr >= t.start_date && dateStr <= t.end_date) return t.location;
+      }
+      return null;
     }
 
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
@@ -200,10 +216,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         }
       }
 
-      // Get my effective city for this date
+      // Get my effective city — also check trips as fallback
       const myLocStatus = myDay?.locationStatus || 'home';
-      const myTripLoc = myDay?.tripLocation || null;
-      const myCity = getEffectiveCity(myLocStatus, myTripLoc, homeAddress);
+      let myTripLoc = myDay?.tripLocation || null;
+      if (!myTripLoc && myLocStatus === 'home' && userId) {
+        const tripLoc = getTripLocationForDate(userId, dateStr);
+        if (tripLoc) myTripLoc = tripLoc;
+      }
+      const myCity = getEffectiveCity(
+        myTripLoc && !myDay?.tripLocation ? 'away' : myLocStatus,
+        myTripLoc, homeAddress
+      );
 
       // Check if I have plans on this date
       const myPlanSlots = userId ? planIndex.get(`${userId}:${dateStr}`) : undefined;
@@ -220,12 +243,23 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           const isAvailable = row ? ((row as any)[colName] ?? true) : true;
           const hasPlan = planIndex.get(`${uid}:${dateStr}`)?.has(slot) || false;
 
-          // Check co-location
-          const friendLocStatus = row?.location_status || 'home';
-          const friendTripLoc = row?.trip_location || null;
+          // Check co-location using availability, then trips as fallback
+          let friendLocStatus = row?.location_status || 'home';
+          let friendTripLoc = row?.trip_location || null;
           const friendHome = friendHomeMap.get(uid) || null;
+
+          // If no availability record or no trip_location, check trips table
+          if (!friendTripLoc) {
+            const tripLoc = getTripLocationForDate(uid, dateStr);
+            if (tripLoc) {
+              friendLocStatus = 'away';
+              friendTripLoc = tripLoc;
+            }
+          }
+
           const friendCity = getEffectiveCity(friendLocStatus, friendTripLoc, friendHome);
-          const coLocated = !myCity || !friendCity || citiesMatch(myCity, friendCity);
+          // Both cities must be known to confirm co-location
+          const coLocated = myCity && friendCity ? citiesMatch(myCity, friendCity) : false;
 
           if (isAvailable && !hasPlan && coLocated) freeCount++;
         }
