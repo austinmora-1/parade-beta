@@ -1,34 +1,32 @@
 
 
-## Fix: Missing Dallas Flight (UA1062) Not Syncing
+## Fix: Airplane Icon Showing for Home-Based Friends
 
 ### Root Cause
 
-The UA1062 SFO→DFW flight on April 17 was never imported into the database. There are zero records for April 17-21 in plans, availability, or trips. Two likely causes:
+In `FriendProfileContent.tsx` (line 425), the `isAway` check uses an OR condition:
 
-1. **Sync timing**: The last automated sync ran before the pagination fix was deployed, so the event may have been cut off at the 250-event limit
-2. **Non-primary calendar**: If the flight is on a secondary Google Calendar (e.g., "Travel"), it won't be synced — the system only queries `calendars/primary/events`
+```typescript
+const isAway = profile.location_status === 'away' || todayAvail?.location_status === 'away';
+```
 
-### Plan
+If `profile.location_status` is stale (stuck on `'away'` from a previous trip), the airplane icon displays even when today's availability record correctly says `'home'`. Kristen's profile likely has `location_status = 'away'` left over from a past trip, but her availability for today shows `'home'` (Reno).
 
-#### Step 1: Trigger a fresh sync for your account
-Manually invoke the `calendar-sync-worker` edge function for your user ID + Google provider. This will use the new pagination logic and should pick up the flight if it's on the primary calendar.
+### Fix
 
-#### Step 2: Add multi-calendar support
-Update `fetchAllGoogleEvents` in `calendar-helpers.ts` to:
-- First call `calendarList` API to get all user calendars
-- Fetch events from each calendar (not just `primary`)
-- Deduplicate across calendars by event ID
+**File: `src/components/friends/FriendProfileContent.tsx`**
 
-This ensures flights on secondary/travel calendars are captured.
+Change the `isAway` logic to prioritize today's availability record over the profile-level field. If today's availability exists, use its `location_status`; only fall back to `profile.location_status` when there's no availability record for today.
 
-#### Step 3: Add sync logging
-Add structured console.log statements to the sync worker so we can verify which events are fetched, which are skipped, and why — making future debugging much faster.
+```typescript
+// Before (line 425):
+const isAway = profile.location_status === 'away' || todayAvail?.location_status === 'away';
 
-### Technical Details
+// After:
+const isAway = todayAvail
+  ? todayAvail.location_status === 'away'
+  : profile.location_status === 'away';
+```
 
-- `fetchAllGoogleEvents` currently hardcodes `calendars/primary/events`
-- Google Calendar API supports `calendarList` endpoint to enumerate all calendars
-- Events from different calendars can have different IDs, so dedup needs to account for this
-- The `calendar-sync-worker` and `google-calendar-sync` functions both use the shared helper, so fixing it once fixes both paths
+This is a single-line change in one file.
 
