@@ -2,7 +2,7 @@ import { Friend } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
-import { ChevronRight, Flame, MapPin } from 'lucide-react';
+import { ChevronRight, Flame, Home, Plane } from 'lucide-react';
 import { Conversation } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
@@ -126,7 +126,7 @@ export function FriendListRow({
               "inline-flex items-center gap-0.5 text-[10px] shrink-0",
               isAway ? "text-availability-away-foreground" : "text-muted-foreground"
             )}>
-              <MapPin className="h-2.5 w-2.5" />
+              {isAway ? <Plane className="h-2.5 w-2.5" /> : <Home className="h-2.5 w-2.5" />}
               <span className="max-w-[60px] truncate">{locationLabel}</span>
             </span>
           )}

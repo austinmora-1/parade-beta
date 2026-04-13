@@ -59,15 +59,17 @@ export default function Chat() {
   // Vibe + availability data for People list
   const [friendVibeMap, setFriendVibeMap] = useState<Record<string, { vibe: string | null; icon: string | null }>>({});
   const [friendAvailMap, setFriendAvailMap] = useState<Record<string, boolean>>({});
+  const [friendLocationMap, setFriendLocationMap] = useState<Record<string, { city: string | null; isAway: boolean }>>({});
 
   useEffect(() => {
     if (subView !== 'people' || connectedFriendUserIds.length === 0) return;
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     Promise.all([
-      supabase.from('profiles').select('user_id, current_vibe, custom_vibe_tags').in('user_id', connectedFriendUserIds),
-      supabase.from('availability').select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night').in('user_id', connectedFriendUserIds).eq('date', todayStr),
+      supabase.from('profiles').select('user_id, current_vibe, custom_vibe_tags, home_address').in('user_id', connectedFriendUserIds),
+      supabase.from('availability').select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location').in('user_id', connectedFriendUserIds).eq('date', todayStr),
     ]).then(([profileRes, availRes]) => {
       const vibeMap: Record<string, { vibe: string | null; icon: string | null }> = {};
+      const homeMap: Record<string, string | null> = {};
       for (const p of (profileRes.data || [])) {
         const vibeConfig = p.current_vibe && p.current_vibe !== 'custom'
           ? VIBE_CONFIG[p.current_vibe as VibeType]
@@ -76,15 +78,27 @@ export default function Chat() {
           vibe: vibeConfig?.label || p.current_vibe || null,
           icon: vibeConfig?.label?.[0] || null,
         };
+        homeMap[p.user_id] = p.home_address;
       }
       setFriendVibeMap(vibeMap);
 
       const availMap: Record<string, boolean> = {};
+      const locMap: Record<string, { city: string | null; isAway: boolean }> = {};
       for (const a of (availRes.data || [])) {
         const isAvailable = SLOT_KEYS.some(({ key }) => (a as any)[key] === true);
         availMap[a.user_id] = isAvailable;
+
+        const isAway = a.location_status === 'away';
+        const cityRaw = isAway && a.trip_location ? a.trip_location : homeMap[a.user_id];
+        locMap[a.user_id] = { city: cityRaw || null, isAway };
+      }
+      for (const uid of connectedFriendUserIds) {
+        if (!locMap[uid]) {
+          locMap[uid] = { city: homeMap[uid] || null, isAway: false };
+        }
       }
       setFriendAvailMap(availMap);
+      setFriendLocationMap(locMap);
     });
   }, [subView, connectedFriendUserIds]);
 
@@ -293,6 +307,8 @@ export default function Chat() {
                   currentVibe={friendVibeMap[fuid]?.vibe}
                   vibeIcon={friendVibeMap[fuid]?.icon}
                   lastHungOut={lastHungOut[fuid] || null}
+                  locationCity={friendLocationMap[fuid]?.city || null}
+                  isAway={friendLocationMap[fuid]?.isAway || false}
                   onOpen={handleOpenFriendFromPeople}
                 />
               );
