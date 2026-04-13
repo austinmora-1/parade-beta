@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TimeSlot, ActivityType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
+import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
