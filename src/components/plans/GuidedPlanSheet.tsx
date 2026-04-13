@@ -108,11 +108,28 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       supabase.from('profiles').select('user_id, home_address').in('user_id', userIds),
     ]);
 
-    // Build friend home address map
+    // Build friend home address map and compute current cities for display
     const friendHomeMap = new Map<string, string | null>();
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const cityMap: Record<string, string> = {};
     for (const p of (friendProfiles || [])) {
       friendHomeMap.set(p.user_id, p.home_address);
+      const todayRow = (availData || []).find(a => a.user_id === p.user_id && a.date === todayStr);
+      const loc = todayRow?.location_status || 'home';
+      const trip = todayRow?.trip_location || null;
+      const city = getEffectiveCity(loc, trip, p.home_address);
+      if (city) cityMap[p.user_id] = city.charAt(0).toUpperCase() + city.slice(1);
     }
+    setFriendCities(cityMap);
+
+    // Compute my current city for display
+    const myTodayRow = userId ? (availData || []).find(a => a.user_id === userId && a.date === todayStr) : null;
+    const myCurrCity = getEffectiveCity(
+      myTodayRow?.location_status || 'home',
+      myTodayRow?.trip_location || null,
+      homeAddress
+    );
+    if (myCurrCity) setMyCity(myCurrCity.charAt(0).toUpperCase() + myCurrCity.slice(1));
 
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
     const results: BestSlot[] = [];
