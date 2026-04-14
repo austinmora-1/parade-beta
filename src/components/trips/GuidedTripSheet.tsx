@@ -259,7 +259,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
 
   // Fetch and score weekends
   const analyzeWeekends = useCallback(async () => {
-    if (selectedMonths.length === 0 || selectedFriends.length === 0) return;
+    if (selectedMonths.length === 0) return;
     setLoadingWeekends(true);
 
     const friendUserIds = selectedFriends.map(f => f.friendUserId).filter(Boolean) as string[];
