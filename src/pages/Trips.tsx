@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Plane } from 'lucide-react';
 import { TripsList } from '@/components/trips/TripsList';
-import { TripProposalsList } from '@/components/trips/TripProposalsList';
+
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { MissingReturnDialog, PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 import { TripConflictDialog, TripConflict } from '@/components/trips/TripConflictDialog';
@@ -72,7 +72,6 @@ export default function Trips() {
         </div>
       </div>
 
-      <TripProposalsList />
       <TripsList refreshKey={tripsRefreshKey} />
 
       <AddTripDialog
