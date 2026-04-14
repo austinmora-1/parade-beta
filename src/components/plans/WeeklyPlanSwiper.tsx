@@ -1,11 +1,18 @@
 import { useMemo, useRef, useCallback, useState, useEffect, Fragment } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2 } from 'lucide-react';
-import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2, Check, Eye } from 'lucide-react';
+import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS, Friend } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { normalizeCity } from '@/lib/locationMatch';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { MapPin, Clock, Plane } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -764,10 +771,8 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
             </div>
           )}
         </div>
-        {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-          <div className="text-[10px] truncate">
-            w/ {plan.participants.filter(p => p.role !== 'subscriber').map(p => p.name).join(', ')}
-          </div>
+        {plan.participants.length > 0 && (
+          <ParticipantAvatarStack participants={plan.participants} />
         )}
       </div>
     </button>
