@@ -90,10 +90,9 @@ export function FeedbackPanel() {
                   animate={{ rotate: 0 }}
                   transition={{ type: "spring", stiffness: 200 }}
                 >
-                  <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" />
-                    <path d="M14 10h.01" />
-                    <path d="M10 10h.01" />
+                  <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 11a5 5 0 0 1 5-5h3a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H8l-3 3v-3a5 5 0 0 1-2-5Z" />
+                    <path d="M13 8h3a5 5 0 0 1 5 5v0a5 5 0 0 1-2 4v3l-3-3h-1a5 5 0 0 1-4-2" />
                   </svg>
                 </motion.div>
                 <h3 className="font-semibold">Send Feedback</h3>
