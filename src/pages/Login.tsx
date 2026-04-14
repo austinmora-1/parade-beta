@@ -17,6 +17,7 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect');
   const hasInviteRedirect = !!redirect;
+  const startInSignUp = searchParams.get('signup') === 'true';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +25,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(hasInviteRedirect);
+  const [isSignUp, setIsSignUp] = useState(hasInviteRedirect || startInSignUp);
   const [forgotLoading, setForgotLoading] = useState(false);
 
   const navigateAfterAuth = () => {

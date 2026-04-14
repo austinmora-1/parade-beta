@@ -1,100 +1,11 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { ChevronDown, CheckCircle2, Loader2 } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { ConfettiBackground } from '@/components/landing/ConfettiBackground';
 import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-
-function BetaSignupForm() {
-  const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('loops-subscribe', {
-        body: { email: email.trim(), firstName: firstName.trim() || undefined, lastName: lastName.trim() || undefined },
-      });
-
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Something went wrong');
-
-      setIsSubmitted(true);
-      toast.success(data.alreadySubscribed ? "You're already on the list!" : "You're in! We'll be in touch.");
-    } catch (err) {
-      console.error('Signup error:', err);
-      toast.error('Something went wrong. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isSubmitted) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-8"
-      >
-        <CheckCircle2 className="h-12 w-12 text-primary mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-foreground" style={{ fontFamily: "'Bungee', system-ui" }}>
-          You're on the list!
-        </h3>
-        <p className="text-muted-foreground mt-2 text-sm">
-          We'll let you know when Parade is ready for you.
-        </p>
-      </motion.div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex gap-2">
-        <Input
-          type="text"
-          placeholder="First name"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          required
-          className="bg-background/80 border-border/50"
-          maxLength={50}
-        />
-        <Input
-          type="text"
-          placeholder="Last name"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          required
-          className="bg-background/80 border-border/50"
-          maxLength={50}
-        />
-      </div>
-      <Input
-        type="email"
-        placeholder="you@example.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        className="bg-background/80 border-border/50"
-        maxLength={255}
-      />
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Joining...</> : 'Join the Waitlist'}
-      </Button>
-    </form>
-  );
-}
 
 export default function Landing() {
   const signupRef = useRef<HTMLDivElement>(null);
@@ -130,7 +41,7 @@ export default function Landing() {
             </p>
             <div className="mt-5">
               <Button onClick={scrollToSignup} className="text-sm sm:text-base px-6 py-5">
-                Join the Waitlist
+                Get Started
               </Button>
             </div>
           </motion.div>
@@ -145,15 +56,17 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Beta Signup Section */}
+      {/* Signup CTA Section */}
       <section ref={signupRef} className="relative py-20 px-6 bg-card/90">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <img src="/icon-192.png" alt="Parade" className="h-20 w-20 rounded-2xl mx-auto mb-4 object-cover" />
             <h2 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Bungee', system-ui" }}>Join the Parade</h2>
-            <p className="text-muted-foreground mt-2">Sign up for early access to the beta.</p>
+            <p className="text-muted-foreground mt-2">Create your free account and start making plans.</p>
           </div>
-          <BetaSignupForm />
+          <Link to="/login?signup=true">
+            <Button className="w-full" size="lg">Create Account</Button>
+          </Link>
           <p className="text-center text-sm text-muted-foreground mt-6">
             Already have an account?{' '}
             <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
