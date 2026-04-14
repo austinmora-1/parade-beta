@@ -89,6 +89,15 @@ interface ProposedPlan {
   proposerAvatar: string | null;
   proposerUserId: string | null;
 }
+interface TripProposalNotification {
+  id: string;
+  proposal_id: string;
+  creator_name: string;
+  creator_avatar: string | null;
+  destination: string | null;
+  dates: { id: string; start_date: string; end_date: string; votes: number }[];
+  created_at: string;
+}
 
 export default function Notifications() {
   const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans, respondToProposal } = usePlannerStore();
