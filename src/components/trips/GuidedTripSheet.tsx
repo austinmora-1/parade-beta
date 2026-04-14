@@ -564,13 +564,13 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         style={viewport ? { maxHeight: `${Math.min(viewport.height * 0.9, window.innerHeight * 0.9)}px` } : undefined}
       >
         <DrawerHeader className="pb-2 relative">
-          {step !== 'friends' && (
+          {step !== 'type' && (
             <button
               onClick={() => {
                 if (step === 'confirm') setStep('weekends');
                 else if (step === 'weekends') { setStep('months'); setSelectedWeekends([]); }
-                else if (step === 'months') setStep('type');
-                else if (step === 'type') setStep('friends');
+                else if (step === 'months') setStep('friends');
+                else if (step === 'friends') setStep('type');
               }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
