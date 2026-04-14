@@ -129,6 +129,60 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
     });
   }, []);
 
+  // Fetch month-level availability stats for the current user
+  useEffect(() => {
+    if (!open || !userId || step !== 'months') return;
+    let cancelled = false;
+    const fetchMonthStats = async () => {
+      setLoadingMonthStats(true);
+      const firstMonth = monthOptions[0].date;
+      const lastMonth = monthOptions[monthOptions.length - 1].date;
+      const rangeStart = format(startOfMonth(firstMonth), 'yyyy-MM-dd');
+      const rangeEnd = format(endOfMonth(lastMonth), 'yyyy-MM-dd');
+
+      const [availRes, tripsRes] = await Promise.all([
+        supabase.from('availability').select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+          .eq('user_id', userId).gte('date', rangeStart).lte('date', rangeEnd),
+        supabase.from('trips').select('start_date, end_date')
+          .eq('user_id', userId).gte('end_date', rangeStart).lte('start_date', rangeEnd),
+      ]);
+      if (cancelled) return;
+
+      const availByDate = new Map<string, number>();
+      for (const row of availRes.data || []) {
+        const slots = [row.early_morning, row.late_morning, row.early_afternoon, row.late_afternoon, row.evening, row.late_night];
+        availByDate.set(row.date, slots.filter(Boolean).length);
+      }
+      const trips = tripsRes.data || [];
+
+      const stats: Record<string, { freeWeekends: number; totalWeekends: number; tripConflicts: number }> = {};
+      for (const mo of monthOptions) {
+        const monthStart = startOfMonth(mo.date);
+        const monthEnd = endOfMonth(mo.date);
+        const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+        const fridays = days.filter(d => isFriday(d));
+        let freeWeekends = 0;
+        let tripConflicts = 0;
+        for (const fri of fridays) {
+          const sat = addDays(fri, 1);
+          const sun = addDays(fri, 2);
+          const weekendDates = [fri, sat, sun].map(d => format(d, 'yyyy-MM-dd'));
+          const hasTrip = trips.some(t =>
+            weekendDates.some(wd => wd >= t.start_date && wd <= t.end_date)
+          );
+          if (hasTrip) { tripConflicts++; continue; }
+          const totalFree = weekendDates.reduce((sum, d) => sum + (availByDate.get(d) ?? 6), 0);
+          if (totalFree >= 6) freeWeekends++;
+        }
+        stats[mo.key] = { freeWeekends, totalWeekends: fridays.length, tripConflicts };
+      }
+      setMonthStats(stats);
+      setLoadingMonthStats(false);
+    };
+    fetchMonthStats();
+    return () => { cancelled = true; };
+  }, [open, userId, step, monthOptions]);
+
   // Reset on open, pre-select friends if provided
   useEffect(() => {
     if (open) {
