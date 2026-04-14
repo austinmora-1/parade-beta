@@ -828,7 +828,7 @@ function WeekendCard({
           weekend.availPct >= 70
             ? "bg-availability-available/10 text-availability-available"
             : weekend.availPct >= 40
-              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              ? "bg-muted text-foreground"
               : "bg-muted text-muted-foreground"
         )}>
           {weekend.availPct}% free
