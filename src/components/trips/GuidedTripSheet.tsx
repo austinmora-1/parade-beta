@@ -1049,21 +1049,20 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         </div>
 
         {/* Footer buttons */}
-        {step === 'friends' && selectedFriends.length > 0 && (
-          <DrawerFooter className="pt-2">
-            <Button onClick={() => setStep('type')} className="w-full gap-2">
-              <Plane className="h-4 w-4" />
-              Continue with {selectedFriends.length} friend{selectedFriends.length > 1 ? 's' : ''}
-            </Button>
-          </DrawerFooter>
-        )}
-
-        {step === 'type' && (proposalType === 'trip' || (proposalType === 'visit' && (hostMode === 'hosting' || hostUserId))) && (
-          <DrawerFooter className="pt-2">
-            <Button onClick={() => setStep('months')} className="w-full gap-2">
-              {isVisit ? <Home className="h-4 w-4" /> : <Plane className="h-4 w-4" />}
-              Continue
-            </Button>
+        {step === 'friends' && (
+          <DrawerFooter className="pt-2 space-y-1.5">
+            {selectedFriends.length > 0 ? (
+              <Button onClick={() => setStep('months')} className="w-full gap-2">
+                Continue with {selectedFriends.length} friend{selectedFriends.length > 1 ? 's' : ''}
+              </Button>
+            ) : proposalType === 'trip' ? (
+              <Button onClick={() => setStep('months')} variant="outline" className="w-full gap-2">
+                Just me — solo trip
+              </Button>
+            ) : null}
+            {proposalType === 'visit' && selectedFriends.length === 0 && (
+              <p className="text-[10px] text-muted-foreground text-center">Select at least one friend for a visit</p>
+            )}
           </DrawerFooter>
         )}
 
@@ -1087,9 +1086,9 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
 
         {step === 'confirm' && (
           <DrawerFooter className="pt-2">
-            <Button onClick={handleSubmit} disabled={sending} className="w-full gap-2">
+            <Button onClick={isSoloTrip ? handleSoloSubmit : handleSubmit} disabled={sending} className="w-full gap-2">
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : isVisit ? <Home className="h-4 w-4" /> : <Plane className="h-4 w-4" />}
-              {isVisit ? 'Share Visit Options →' : 'Share Trip Options →'}
+              {isSoloTrip ? 'Create Trip' : isVisit ? 'Share Visit Options →' : 'Share Trip Options →'}
             </Button>
           </DrawerFooter>
         )}
