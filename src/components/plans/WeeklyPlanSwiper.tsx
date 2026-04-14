@@ -753,6 +753,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
   isPast?: boolean;
   isLive?: boolean;
 }) {
+  const userTimezone = usePlannerStore((s) => s.userTimezone);
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
   const displayTitle = getPlanDisplayTitle(plan);
