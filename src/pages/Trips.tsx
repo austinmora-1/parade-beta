@@ -15,6 +15,7 @@ export default function Trips() {
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const [tripDialogOpen, setTripDialogOpen] = useState(false);
+  const [guidedTripOpen, setGuidedTripOpen] = useState(false);
   const [tripsRefreshKey, setTripsRefreshKey] = useState(0);
   const [pendingReturnTrips, setPendingReturnTrips] = useState<PendingReturnTrip[]>([]);
   const [missingReturnOpen, setMissingReturnOpen] = useState(false);
