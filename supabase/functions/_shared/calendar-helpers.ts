@@ -369,7 +369,8 @@ export function makeContentKey(normalizedTitle: string, date: string, startTime:
   if (isFlightTitle(normalizedTitle)) {
     return `${normalizedTitle}|${d}`
   }
-  return `${normalizedTitle}|${d}|${startTime || ''}`
+  const t = startTime ? startTime.substring(0, 5) : '' // normalize HH:MM:SS → HH:MM
+  return `${normalizedTitle}|${d}|${t}`
 }
 
 // ── Activity Classifier ─────────────────────────────────────────────────────
