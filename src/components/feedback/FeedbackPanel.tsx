@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquarePlus, X, Send, Sparkles, Bug, Lightbulb } from "lucide-react";
+import { X, Send, Sparkles, Bug, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -90,7 +90,12 @@ export function FeedbackPanel() {
                   animate={{ rotate: 0 }}
                   transition={{ type: "spring", stiffness: 200 }}
                 >
-                  <MessageSquarePlus className="h-5 w-5 text-primary" />
+                  <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+                    <path d="M15.8 17.4A6 6 0 0 0 22 12c0-3.3-2.7-6-6-6" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
                 </motion.div>
                 <h3 className="font-semibold">Send Feedback</h3>
               </div>
