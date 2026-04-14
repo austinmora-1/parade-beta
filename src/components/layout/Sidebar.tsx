@@ -3,14 +3,11 @@ import {
   CalendarDays,
   LayoutDashboard,
   Users,
-  Inbox,
   Plus,
   Settings,
   PlaneTakeoff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useConversations } from '@/hooks/useChat';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -22,19 +19,13 @@ const navItems = [
   { path: '/availability', icon: CalendarDays,    label: 'Plans'        },
   { path: '/trips',        icon: PlaneTakeoff,    label: 'Trips'        },
   { path: '/friends',      icon: Users,           label: 'Friends'      },
-  { path: '/inbox',        icon: Inbox,           label: 'Inbox'        },
 ];
 
 export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { totalNotifications } = useNotifications();
-  const { conversations } = useConversations();
   const { profile } = useCurrentUserProfile();
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
-
-  const unreadChats = conversations.filter(c => c.unread_count > 0).length;
-  const inboxCount  = totalNotifications + unreadChats;
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -61,7 +52,6 @@ export function Sidebar() {
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
           {navItems.map((item) => {
             const active = isActive(item.path);
-            const isInbox = item.path === '/inbox';
             return (
               <NavLink
                 key={item.path}
@@ -73,7 +63,6 @@ export function Sidebar() {
                     : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                 )}
               >
-                {/* Left accent bar on active */}
                 {active && (
                   <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-sidebar-primary" />
                 )}
@@ -82,13 +71,6 @@ export function Sidebar() {
                   strokeWidth={active ? 2.2 : 1.8}
                 />
                 <span className="flex-1 truncate">{item.label}</span>
-
-                {/* Inbox badge */}
-                {isInbox && inboxCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                    {inboxCount > 99 ? '99+' : inboxCount}
-                  </span>
-                )}
               </NavLink>
             );
           })}

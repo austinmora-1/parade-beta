@@ -3,29 +3,20 @@ import {
   House,
   CalendarDays,
   Users,
-  Inbox,
   PlaneTakeoff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, LayoutGroup } from 'framer-motion';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useConversations } from '@/hooks/useChat';
 
 const navItems = [
   { path: '/',             icon: House,         label: 'Home'    },
   { path: '/availability', icon: CalendarDays,  label: 'Plans'   },
   { path: '/trips',        icon: PlaneTakeoff,  label: 'Trips'   },
   { path: '/friends',      icon: Users,         label: 'Friends' },
-  { path: '/inbox',        icon: Inbox,         label: 'Inbox'   },
 ];
 
 export function MobileNav() {
   const location = useLocation();
-  const { totalNotifications } = useNotifications();
-  const { conversations } = useConversations();
-
-  const unreadChats = conversations.filter(c => c.unread_count > 0).length;
-  const inboxCount  = totalNotifications + unreadChats;
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -40,7 +31,6 @@ export function MobileNav() {
         <LayoutGroup>
           {navItems.map((item) => {
             const active = isActive(item.path);
-            const isInbox = item.path === '/inbox';
             return (
               <NavLink
                 key={item.path}
@@ -62,11 +52,6 @@ export function MobileNav() {
                     )}
                     strokeWidth={active ? 2.2 : 1.8}
                   />
-                  {isInbox && inboxCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                      {inboxCount > 9 ? '9+' : inboxCount}
-                    </span>
-                  )}
                 </div>
                 <span className={cn(
                   'text-[10px] font-medium transition-colors duration-150',
