@@ -208,33 +208,46 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -4, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full z-50 mt-1.5 w-52 rounded-xl border border-border bg-popover shadow-lg overflow-hidden"
+                className="absolute right-0 top-full z-50 mt-1.5 w-56 rounded-xl border border-border bg-popover shadow-lg overflow-hidden p-1.5 flex flex-col gap-1"
               >
-                <button
+                <motion.button
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 }}
                   onClick={handleChoosePlan}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-accent transition-colors"
+                  className="group flex w-full items-center gap-3 px-3 py-3 text-left rounded-lg hover:bg-accent transition-all duration-150"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                    <CalendarPlus className="h-4 w-4 text-primary" />
-                  </div>
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: -6 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/10"
+                  >
+                    <CalendarPlus className="h-4.5 w-4.5 text-primary" />
+                  </motion.div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">Plan a Hangout</p>
-                    <p className="text-[10px] text-muted-foreground">Find a time to meet</p>
+                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Plan a Hangout</p>
+                    <p className="text-[10px] text-muted-foreground">Find a time to meet up</p>
                   </div>
-                </button>
-                <div className="mx-3 border-t border-border" />
-                <button
+                </motion.button>
+                <motion.button
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
                   onClick={handleChooseTrip}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-accent transition-colors"
+                  className="group flex w-full items-center gap-3 px-3 py-3 text-left rounded-lg hover:bg-accent transition-all duration-150"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                    <Plane className="h-4 w-4 text-primary" />
-                  </div>
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 6 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-chart-4/20 to-chart-4/5 ring-1 ring-chart-4/10"
+                  >
+                    <Plane className="h-4.5 w-4.5 text-chart-4" />
+                  </motion.div>
                   <div>
-                    <p className="text-sm font-medium text-foreground">Plan a Trip</p>
+                    <p className="text-sm font-semibold text-foreground group-hover:text-chart-4 transition-colors">Plan a Trip</p>
                     <p className="text-[10px] text-muted-foreground">Find the best weekend</p>
                   </div>
-                </button>
+                </motion.button>
               </motion.div>
             </>
           )}
