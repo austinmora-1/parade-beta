@@ -26,6 +26,7 @@ interface InviteToPlanDialogProps {
 export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: InviteToPlanDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const plans = usePlannerStore((s) => s.plans);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [smsConsent, setSmsConsent] = useState(false);
@@ -37,6 +38,25 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
+
+  // Get plan details for the email
+  const plan = plans.find((p) => p.id === planId);
+
+  function formatTime12(time: string): string {
+    const [h, m] = time.split(':').map(Number);
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const hour12 = h % 12 || 12;
+    return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+  }
+
+  const planDate = plan ? format(plan.date, 'EEEE, MMMM d') : '';
+  const planTime = plan
+    ? (plan.startTime
+        ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
+        : TIME_SLOT_LABELS[plan.timeSlot]?.time || '')
+    : '';
+  const planLocation = plan?.location?.name?.split(' · ')[0]?.split(', ')[0] || '';
+
 
   const createInviteAndGetLink = async () => {
     const { data, error } = await supabase
