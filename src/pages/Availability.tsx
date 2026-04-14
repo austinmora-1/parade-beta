@@ -5,9 +5,7 @@ import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
 import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
-import { RefreshCw, Loader2, Plus, Merge } from 'lucide-react';
-import { Share2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Loader2, Plus } from 'lucide-react';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -16,7 +14,7 @@ import { WeeklyPlanSwiper } from '@/components/plans/WeeklyPlanSwiper';
 import { useDisplayPlans } from '@/hooks/useDisplayPlans';
 
 export default function Availability() {
-  const navigate = useNavigate();
+  
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
