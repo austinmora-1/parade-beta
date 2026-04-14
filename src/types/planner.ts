@@ -119,6 +119,8 @@ export interface Plan {
   recurringPlanId?: string; // linked to a recurring plan template
   proposedBy?: string; // user_id of the proposer; undefined for self-created plans
   pendingChange?: PendingChange; // proposed time/date change awaiting acceptance
+  sourceTimezone?: string; // IANA timezone where the plan was created or synced from
+  source?: string; // origin: 'manual', 'google-calendar', 'apple-calendar', etc.
 }
 
 export interface Vibe {

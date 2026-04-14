@@ -409,6 +409,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           recurringPlanId: p.recurring_plan_id || undefined,
           proposedBy: p.proposed_by || undefined,
           createdAt: new Date(p.created_at),
+          sourceTimezone: p.source_timezone || undefined,
+          source: p.source || undefined,
         };
       });
 
