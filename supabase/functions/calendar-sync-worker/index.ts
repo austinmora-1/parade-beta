@@ -134,11 +134,35 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
 
   const { data: profileData } = await adminClient
     .from('profiles')
-    .select('home_address, timezone')
+    .select('home_address, timezone, location_status')
     .eq('user_id', userId)
     .single()
   const homeAddress: string | null = profileData?.home_address || null
-  const timezone: string | undefined = profileData?.timezone || undefined
+
+  // Resolve timezone using same priority as frontend getUserTimezone():
+  // 1. Explicit profile timezone
+  // 2. If "away", use today's trip_location timezone
+  // 3. Home address timezone
+  // 4. Fallback to America/New_York
+  let timezone: string | undefined = profileData?.timezone || undefined
+  if (!timezone) {
+    const todayStr = new Date().toISOString().split('T')[0]
+    const { data: todayAvail } = await adminClient
+      .from('availability')
+      .select('location_status, trip_location')
+      .eq('user_id', userId)
+      .eq('date', todayStr)
+      .maybeSingle()
+    const locStatus = todayAvail?.location_status || profileData?.location_status || 'home'
+    if (locStatus === 'away' && todayAvail?.trip_location) {
+      timezone = todayAvail.trip_location // will be stored as-is; city name used for display
+    }
+    // If still no timezone, home_address will be stored and resolved on frontend
+    // For source_timezone we need an IANA timezone, so just use a fallback
+    if (!timezone) {
+      timezone = homeAddress || 'America/New_York'
+    }
+  }
 
   let accessToken = connRows[0].access_token
 
@@ -252,12 +276,29 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
 
   const { data: profileData } = await adminClient
     .from('profiles')
-    .select('home_address, timezone')
+    .select('home_address, timezone, location_status')
     .eq('user_id', userId)
     .single()
 
   const homeAddress: string | null = profileData?.home_address || null
-  const userTimezone: string | undefined = profileData?.timezone || undefined
+  // Resolve timezone with same priority as frontend
+  let userTimezone: string | undefined = profileData?.timezone || undefined
+  if (!userTimezone) {
+    const todayStr = new Date().toISOString().split('T')[0]
+    const { data: todayAvail } = await adminClient
+      .from('availability')
+      .select('location_status, trip_location')
+      .eq('user_id', userId)
+      .eq('date', todayStr)
+      .maybeSingle()
+    const locStatus = todayAvail?.location_status || profileData?.location_status || 'home'
+    if (locStatus === 'away' && todayAvail?.trip_location) {
+      userTimezone = todayAvail.trip_location
+    }
+    if (!userTimezone) {
+      userTimezone = homeAddress || 'America/New_York'
+    }
+  }
 
   const icalUrl = connRows[0].access_token
   if (!icalUrl) throw new Error('No iCal URL stored')

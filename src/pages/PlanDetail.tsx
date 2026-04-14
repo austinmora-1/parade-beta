@@ -90,7 +90,7 @@ export default function PlanDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends } = usePlannerStore();
+  const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends, userTimezone } = usePlannerStore();
   const { createGroup, createDM } = useConversations();
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const { pods } = usePods();
@@ -499,11 +499,13 @@ export default function PlanDetail() {
                     {displayPlan.startTime && formatTime12(displayPlan.startTime)}
                     {displayPlan.startTime && displayPlan.endTime && ' – '}
                     {displayPlan.endTime && formatTime12(displayPlan.endTime)}
+                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
                     {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
                   </>
                 ) : timeSlotConfig ? (
                   <>
                     {timeSlotConfig.label} ({timeSlotConfig.time})
+                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
                   </>
                 ) : null}
                 {displayPlan.duration && !displayPlan.startTime && !displayPlan.endTime && (
@@ -527,7 +529,6 @@ export default function PlanDetail() {
               const tz = displayPlan.sourceTimezone;
               const isManual = !displayPlan.source || displayPlan.source === 'manual' || displayPlan.source === 'hang-request';
               const canEditTz = isOwner && isManual && !isPast;
-              if (!tz && !canEditTz) return null;
 
               return (
                 <div className="flex items-center gap-3 text-sm">
@@ -559,7 +560,7 @@ export default function PlanDetail() {
                     </Select>
                   ) : (
                     <span className="text-muted-foreground">
-                      {tz ? `${tz.replace(/_/g, ' ')} (${getTimezoneAbbreviation(tz)})` : ''}
+                      {tz ? `${tz.replace(/_/g, ' ')} (${getTimezoneAbbreviation(tz)})` : userTimezone.replace(/_/g, ' ') + ` (${getTimezoneAbbreviation(userTimezone)})`}
                     </span>
                   )}
                 </div>

@@ -311,9 +311,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
               <span className="flex items-center gap-0.5 shrink-0">
                 <Clock className="h-3 w-3" />
                 {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
-                {plan.sourceTimezone && (
-                  <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(plan.sourceTimezone)}</span>
-                )}
+                <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(userTimezone)}</span>
               </span>
             </div>
             {plan.location && (
