@@ -983,10 +983,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                           ? (hostMode === 'hosting'
                             ? `Hosting in ${destination || 'your city'}`
                             : `Visit to ${destination || "friend's city"}`)
-                          : (destination ? `Trip to ${destination}` : 'Group Trip')}
+                          : (destination ? `Trip to ${destination}` : isSoloTrip ? 'Solo Trip' : 'Group Trip')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {selectedWeekends.length} date option{selectedWeekends.length > 1 ? 's' : ''} with {friendNamesStr}
+                        {selectedWeekends.length} date option{selectedWeekends.length > 1 ? 's' : ''}
+                        {selectedFriends.length > 0 ? ` with ${friendNamesStr}` : ' — solo trip'}
                       </p>
                     </div>
                   </div>
@@ -995,7 +996,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
 
                   <div className="space-y-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Proposed dates
+                      {isSoloTrip ? 'Selected dates' : 'Proposed dates'}
                     </p>
                     {selectedWeekends
                       .sort((a, b) => a.fridayDate.getTime() - b.fridayDate.getTime())
@@ -1016,26 +1017,31 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                       ))}
                   </div>
 
-                  <div className="h-px bg-border" />
-
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">With</p>
-                    <div className="flex -space-x-1.5">
-                      {selectedFriends.slice(0, 6).map(f => (
-                        <Avatar key={f.id} className="h-6 w-6 border-2 border-background">
-                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                          <AvatarFallback className="text-[7px]">{f.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      ))}
-                    </div>
-                  </div>
+                  {selectedFriends.length > 0 && (
+                    <>
+                      <div className="h-px bg-border" />
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">With</p>
+                        <div className="flex -space-x-1.5">
+                          {selectedFriends.slice(0, 6).map(f => (
+                            <Avatar key={f.id} className="h-6 w-6 border-2 border-background">
+                              <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                              <AvatarFallback className="text-[7px]">{f.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px]">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
-                    {isVisit ? '🏠 Visit' : '✈️ Proposed'}
+                    {isVisit ? '🏠 Visit' : isSoloTrip ? '✈️ Confirmed' : '✈️ Proposed'}
                   </span>
-                  <span className="text-muted-foreground">— friends can vote on dates</span>
+                  <span className="text-muted-foreground">
+                    {isSoloTrip ? '— trip will be created' : '— friends can vote on dates'}
+                  </span>
                 </div>
               </motion.div>
             )}
