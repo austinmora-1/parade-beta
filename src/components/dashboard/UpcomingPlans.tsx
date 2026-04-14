@@ -14,7 +14,7 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { supabase } from '@/integrations/supabase/client';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
-import { getCurrentTimeInTimezone } from '@/lib/timezone';
+import { getCurrentTimeInTimezone, getTimezoneAbbreviation } from '@/lib/timezone';
 import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
 
 function formatTime12(time: string): string {
@@ -210,6 +210,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
             notes: p.notes || undefined,
             status: p.status,
             feedVisibility: p.feed_visibility || 'private',
+            sourceTimezone: p.source_timezone || undefined,
             isFriendPlan: true,
             ownerName: ownerProfile?.name || 'Someone',
             participants: [
@@ -310,6 +311,9 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
               <span className="flex items-center gap-0.5 shrink-0">
                 <Clock className="h-3 w-3" />
                 {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
+                {plan.sourceTimezone && (
+                  <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(plan.sourceTimezone)}</span>
+                )}
               </span>
             </div>
             {plan.location && (
