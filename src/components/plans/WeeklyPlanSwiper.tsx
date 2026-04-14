@@ -1,14 +1,15 @@
 import { useMemo, useRef, useCallback, useState, useEffect, Fragment } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2 } from 'lucide-react';
-import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock } from 'lucide-react';
+import { MapPin, Clock, Plane } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePlannerStore } from '@/stores/plannerStore';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -28,6 +29,8 @@ interface WeeklyPlanSwiperProps {
 }
 
 export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan }: WeeklyPlanSwiperProps) {
+  const availabilityMap = usePlannerStore((s) => s.availabilityMap);
+  const homeAddress = usePlannerStore((s) => s.homeAddress);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
@@ -245,6 +248,8 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         toggleSelect={toggleSelect}
         onEditPlan={onEditPlan}
         onCardTap={handleCardTap}
+        availabilityMap={availabilityMap}
+        homeAddress={homeAddress}
       />
     </div>
   );
@@ -252,7 +257,21 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 
 // --- Collapsible past days section ---
 
-function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap }: {
+function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeAddress: string | null): string | null {
+  const avail = availabilityMap[dateKey];
+  if (avail?.locationStatus === 'away' && avail.tripLocation) {
+    return avail.tripLocation;
+  }
+  // Show home city if available
+  if (homeAddress) {
+    // Extract first part (city name) from home address
+    const parts = homeAddress.split(',');
+    return parts[0]?.trim() || null;
+  }
+  return null;
+}
+
+function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress }: {
   day: Date;
   dayPlans: Plan[];
   isToday: boolean;
@@ -262,13 +281,18 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   toggleSelect: (id: string) => void;
   onEditPlan?: (plan: Plan) => void;
   onCardTap: (id: string) => void;
+  availabilityMap: Record<string, DayAvailability>;
+  homeAddress: string | null;
 }) {
   const key = format(day, 'yyyy-MM-dd');
+  const locationLabel = getLocationLabel(key, availabilityMap, homeAddress);
+  const isAway = availabilityMap[key]?.locationStatus === 'away';
+
   return (
     <div className={cn("rounded-xl transition-colors")}>
       <div className={cn("flex items-center gap-2 px-3 py-1.5 relative z-10", isToday && "text-primary")}>
         <span className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
+          "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shrink-0",
           isToday ? "bg-primary text-primary-foreground" : "text-muted-foreground"
         )}>
           {format(day, 'd')}
@@ -279,8 +303,17 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         )}>
           {format(day, 'EEEE')}
         </span>
+        {locationLabel && (
+          <span className={cn(
+            "flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[120px]",
+            isAway ? "text-availability-away-foreground" : "text-muted-foreground/70"
+          )}>
+            {isAway ? <Plane className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
+            {locationLabel}
+          </span>
+        )}
         {dayPlans.length > 1 && (
-          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary/15 px-1 text-[10px] font-semibold text-primary">
+          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary/15 px-1 text-[10px] font-semibold text-primary ml-auto shrink-0">
             {dayPlans.length}
           </span>
         )}
@@ -313,7 +346,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   );
 }
 
-function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap }: {
+function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress }: {
   weekDays: Date[];
   today: Date;
   plansByDay: Map<string, Plan[]>;
@@ -322,6 +355,8 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   toggleSelect: (id: string) => void;
   onEditPlan?: (plan: Plan) => void;
   onCardTap: (id: string) => void;
+  availabilityMap: Record<string, DayAvailability>;
+  homeAddress: string | null;
 }) {
   const [showPast, setShowPast] = useState(false);
 
@@ -369,6 +404,8 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
                 toggleSelect={toggleSelect}
                 onEditPlan={onEditPlan}
                 onCardTap={onCardTap}
+                availabilityMap={availabilityMap}
+                homeAddress={homeAddress}
               />
             </motion.div>
           );
@@ -391,6 +428,8 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
             toggleSelect={toggleSelect}
             onEditPlan={onEditPlan}
             onCardTap={onCardTap}
+            availabilityMap={availabilityMap}
+            homeAddress={homeAddress}
           />
         );
       })}
