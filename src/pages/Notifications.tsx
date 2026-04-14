@@ -320,6 +320,7 @@ export default function Notifications() {
     setTripProposalsLoading(false);
   };
 
+  const handleDismissVibe = async (recipientId: string) => {
     dismiss(`vibe-${recipientId}`);
     // Also mark as read in the database
     await supabase
