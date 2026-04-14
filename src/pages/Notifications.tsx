@@ -268,7 +268,58 @@ export default function Notifications() {
     setVibesLoading(false);
   };
 
-  const handleDismissVibe = async (recipientId: string) => {
+  const fetchTripProposalsData = async () => {
+    if (!user) { setTripProposalsLoading(false); return; }
+    // Get pending trip proposal participations
+    const { data: participations } = await supabase
+      .from('trip_proposal_participants')
+      .select('id, proposal_id, status')
+      .eq('user_id', user.id)
+      .eq('status', 'pending');
+
+    if (!participations?.length) { setTripProposals([]); setTripProposalsLoading(false); return; }
+
+    const proposalIds = [...new Set(participations.map(p => p.proposal_id))];
+    const { data: proposals } = await supabase
+      .from('trip_proposals')
+      .select('id, created_by, destination, status, created_at')
+      .in('id', proposalIds)
+      .eq('status', 'pending');
+
+    if (!proposals?.length) { setTripProposals([]); setTripProposalsLoading(false); return; }
+
+    // Get dates for all proposals
+    const { data: dates } = await supabase
+      .from('trip_proposal_dates')
+      .select('id, proposal_id, start_date, end_date, votes')
+      .in('proposal_id', proposals.map(p => p.id))
+      .order('start_date', { ascending: true });
+
+    // Get creator profiles
+    const creatorIds = [...new Set(proposals.map(p => p.created_by))];
+    const { data: profiles } = await supabase
+      .from('public_profiles')
+      .select('user_id, display_name, avatar_url')
+      .in('user_id', creatorIds);
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
+    setTripProposals(proposals.map(proposal => {
+      const participation = participations.find(p => p.proposal_id === proposal.id);
+      const creator = profileMap.get(proposal.created_by);
+      const proposalDates = (dates || []).filter(d => d.proposal_id === proposal.id);
+      return {
+        id: participation!.id,
+        proposal_id: proposal.id,
+        creator_name: creator?.display_name || 'Someone',
+        creator_avatar: creator?.avatar_url || null,
+        destination: proposal.destination,
+        dates: proposalDates,
+        created_at: proposal.created_at,
+      };
+    }));
+    setTripProposalsLoading(false);
+  };
+
     dismiss(`vibe-${recipientId}`);
     // Also mark as read in the database
     await supabase
