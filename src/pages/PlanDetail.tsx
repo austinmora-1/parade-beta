@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge } from 'lucide-react';
+import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
@@ -43,6 +43,40 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { getTimezoneAbbreviation } from '@/lib/timezone';
+
+const COMMON_TIMEZONES = [
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Phoenix',
+  'America/Los_Angeles',
+  'America/Anchorage',
+  'Pacific/Honolulu',
+  'America/Toronto',
+  'America/Vancouver',
+  'America/Mexico_City',
+  'America/Sao_Paulo',
+  'America/Argentina/Buenos_Aires',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Europe/Amsterdam',
+  'Europe/Rome',
+  'Europe/Madrid',
+  'Europe/Lisbon',
+  'Europe/Istanbul',
+  'Asia/Dubai',
+  'Asia/Kolkata',
+  'Asia/Bangkok',
+  'Asia/Singapore',
+  'Asia/Hong_Kong',
+  'Asia/Tokyo',
+  'Asia/Seoul',
+  'Asia/Shanghai',
+  'Australia/Sydney',
+  'Pacific/Auckland',
+];
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -133,6 +167,8 @@ export default function PlanDetail() {
           notes: planData.notes || undefined,
           status: planData.status,
           feedVisibility: planData.feed_visibility || 'private',
+          sourceTimezone: planData.source_timezone || undefined,
+          source: planData.source || undefined,
           participants: [
             { id: planData.user_id, name: profileMap[planData.user_id]?.name || 'Someone', avatar: profileMap[planData.user_id]?.avatar, friendUserId: planData.user_id, status: 'connected', role: 'participant' },
             ...(pData || []).map((pp: any) => ({
@@ -486,6 +522,49 @@ export default function PlanDetail() {
                 <span>{displayPlan.location.name}</span>
               </div>
             )}
+            {/* Timezone display / edit */}
+            {(() => {
+              const tz = displayPlan.sourceTimezone;
+              const isManual = !displayPlan.source || displayPlan.source === 'manual' || displayPlan.source === 'hang-request';
+              const canEditTz = isOwner && isManual && !isPast;
+              if (!tz && !canEditTz) return null;
+
+              return (
+                <div className="flex items-center gap-3 text-sm">
+                  <Globe2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                  {canEditTz ? (
+                    <Select
+                      value={tz || ''}
+                      onValueChange={async (newTz) => {
+                        if (!plan) return;
+                        try {
+                          await supabase.from('plans').update({ source_timezone: newTz }).eq('id', plan.id);
+                          await loadPlans();
+                          toast.success('Timezone updated');
+                        } catch {
+                          toast.error('Failed to update timezone');
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-7 w-auto min-w-[160px] text-sm border-none shadow-none px-0 hover:bg-muted/50 gap-1">
+                        <SelectValue placeholder="Set timezone" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {COMMON_TIMEZONES.map(tzOpt => (
+                          <SelectItem key={tzOpt} value={tzOpt} className="text-sm">
+                            {tzOpt.replace(/_/g, ' ')} ({getTimezoneAbbreviation(tzOpt)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {tz ? `${tz.replace(/_/g, ' ')} (${getTimezoneAbbreviation(tz)})` : ''}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Participants with avatars and RSVP status */}
