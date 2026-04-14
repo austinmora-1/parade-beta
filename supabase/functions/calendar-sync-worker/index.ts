@@ -59,9 +59,11 @@ function collectGoogleFlightsAndHotels(
 
     if (isFlightEvent(event.summary)) {
       const city = resolveToCity(extractFlightDestination(event.summary))
+      const departureCity = resolveToCity(extractFlightDepartureCity(event.summary))
       const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
       const dateStr = getDateString(startTime, timezone)
-      allFlights.push({ date: dateStr, timestamp: startTime.getTime(), city, isReturn })
+      const arrivalTimestamp = endTime.getTime()
+      allFlights.push({ date: dateStr, timestamp: startTime.getTime(), arrivalTimestamp, city, departureCity, isReturn })
     } else if (isHotelEvent(event.summary, event.location)) {
       const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
       if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
@@ -106,9 +108,10 @@ function collectICalFlightsAndHotels(
 
     if (isFlightEvent(event.summary)) {
       const city = resolveToCity(extractFlightDestination(event.summary))
+      const departureCity = resolveToCity(extractFlightDepartureCity(event.summary))
       const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
       const dateStr = getDateString(event.dtstart, userTimezone)
-      allFlights.push({ date: dateStr, timestamp: event.dtstart.getTime(), city, isReturn })
+      allFlights.push({ date: dateStr, timestamp: event.dtstart.getTime(), arrivalTimestamp: event.dtend.getTime(), city, departureCity, isReturn })
     } else if (isHotelEvent(event.summary, event.location)) {
       const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
       if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
