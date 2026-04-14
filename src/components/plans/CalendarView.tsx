@@ -154,6 +154,7 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
             const isToday = isDateToday(day);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const isAway = isDayAway(day);
+            const isSplit = isDaySplitLocation(day);
 
             return (
               <button
@@ -170,7 +171,10 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
                   "text-xs font-medium",
                   !isSelected && isAway && "text-availability-away-foreground"
                 )}>{format(day, 'd')}</span>
-                {isAway && !isSelected && dayPlans.length === 0 && (
+                {isSplit && !isSelected && (
+                  <Plane className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-2.5 w-2.5 text-amber-500" />
+                )}
+                {isAway && !isSplit && !isSelected && dayPlans.length === 0 && (
                   <Plane className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-2.5 w-2.5 text-availability-away-foreground/60" />
                 )}
                 {dayPlans.length > 0 && (
