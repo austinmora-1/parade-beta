@@ -56,12 +56,12 @@ export function MobileHeader() {
           aria-label="Send feedback"
         >
           <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 14a2 2 0 0 1-2 2H9l-4 4V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8Z" />
-            <path d="M14 20h3a2 2 0 0 0 2-2v-1" />
-            <path d="M9 20v2l-4-4h1a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1" />
-            <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
-            <circle cx="13" cy="10" r="1" fill="currentColor" stroke="none" />
-            <circle cx="17" cy="10" r="1" fill="currentColor" stroke="none" />
+            <path d="M18 8a4 4 0 0 0-4-4h-3a4 4 0 0 0-4 4v3.5a4 4 0 0 0 4 4h1.5l3.5 3v-3a4 4 0 0 0 2-3.5V8Z" />
+            <path d="M22 12a4 4 0 0 0-4-4" />
+            <path d="M22 12v3.5a4 4 0 0 1-2 3.5v3l-3.5-3H15" />
+            <circle cx="9.5" cy="10" r="0.9" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="10" r="0.9" fill="currentColor" stroke="none" />
+            <circle cx="14.5" cy="10" r="0.9" fill="currentColor" stroke="none" />
           </svg>
         </button>
         <Link
