@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isBefore, addDays, isSameDay } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -7,9 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
+import { MapPin, Users, Clock, CalendarCheck, Plane } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { supabase } from '@/integrations/supabase/client';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
@@ -83,6 +84,61 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
   const { user } = useAuth();
   const navigate = useNavigate();
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
+  const [tripProposals, setTripProposals] = useState<any[]>([]);
+
+  // Fetch pending trip proposals
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data: myParticipations } = await supabase
+        .from('trip_proposal_participants')
+        .select('id, proposal_id, status, preferred_date_id, user_id')
+        .eq('user_id', user.id);
+
+      if (!myParticipations?.length) { setTripProposals([]); return; }
+
+      const proposalIds = myParticipations.map(p => p.proposal_id);
+      const [{ data: proposalsData }, { data: datesData }, { data: allParts }] = await Promise.all([
+        supabase.from('trip_proposals').select('*').in('id', proposalIds).eq('status', 'pending'),
+        supabase.from('trip_proposal_dates').select('*').in('proposal_id', proposalIds).order('start_date'),
+        supabase.from('trip_proposal_participants').select('*').in('proposal_id', proposalIds),
+      ]);
+
+      if (!proposalsData?.length) { setTripProposals([]); return; }
+
+      const allUserIds = [...new Set([
+        ...proposalsData.map(p => p.created_by),
+        ...(allParts || []).map(p => p.user_id),
+      ])];
+      const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allUserIds });
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: p.display_name, avatar: p.avatar_url }]));
+
+      const mapped = proposalsData.map(prop => {
+        const myRow = myParticipations.find(p => p.proposal_id === prop.id)!;
+        const creator = profileMap.get(prop.created_by);
+        const propDates = (datesData || []).filter(d => d.proposal_id === prop.id);
+        const propParticipants = (allParts || [])
+          .filter(p => p.proposal_id === prop.id)
+          .map(p => ({ ...p, display_name: profileMap.get(p.user_id)?.name || 'Unknown', avatar_url: profileMap.get(p.user_id)?.avatar || null }));
+        const votedCount = propParticipants.filter(p => p.status === 'voted').length;
+
+        return {
+          id: `proposal-${prop.id}`,
+          proposalId: prop.id,
+          destination: prop.destination,
+          isCreator: prop.created_by === user.id,
+          creatorName: creator?.name || 'Someone',
+          dates: propDates,
+          participants: propParticipants,
+          votedCount,
+          totalVoters: propParticipants.length,
+          myVotedDateId: myRow.preferred_date_id,
+          isTripProposal: true,
+        };
+      });
+      setTripProposals(mapped);
+    })();
+  }, [user?.id]);
 
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
@@ -325,7 +381,66 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     );
   };
 
-  const content = upcomingPlans.length === 0 ? (
+  const renderTripProposalCard = (proposal: any) => {
+    const earliestDate = proposal.dates[0];
+    const latestDate = proposal.dates[proposal.dates.length - 1];
+
+    return (
+      <div
+        key={proposal.id}
+        onClick={() => navigate('/trips')}
+        className="rounded-xl border-l-[3px] border-dashed border border-muted-foreground/30 opacity-70 px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
+        style={{ borderLeftColor: 'hsl(var(--primary))' }}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+              <span className="text-sm font-medium truncate text-muted-foreground">
+                {proposal.destination ? `Trip to ${proposal.destination}` : 'Group Trip'}
+              </span>
+              <span className="rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground shrink-0">
+                Proposed
+              </span>
+            </div>
+            <div className="text-[10px] text-muted-foreground ml-[26px]">
+              {proposal.isCreator ? 'You proposed' : `${proposal.creatorName} proposed`} · {proposal.votedCount}/{proposal.totalVoters} voted
+            </div>
+            {earliestDate && latestDate && (
+              <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                <span className="flex items-center gap-0.5">
+                  <Clock className="h-3 w-3" />
+                  {format(new Date(earliestDate.start_date + 'T00:00:00'), 'MMM d')} – {format(new Date(latestDate.end_date + 'T00:00:00'), 'MMM d')}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {proposal.dates.length} date option{proposal.dates.length !== 1 ? 's' : ''}
+            </span>
+            <div className="flex items-center -space-x-1.5">
+              {proposal.participants.slice(0, 4).map((p: any, i: number) => (
+                <Avatar key={p.id || i} className="h-5 w-5 border-[1.5px] border-card">
+                  <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} className="object-cover" />
+                  <AvatarFallback className="text-[8px] bg-muted">{p.display_name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              ))}
+              {proposal.participants.length > 4 && (
+                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-[1.5px] border-card text-[8px] font-medium text-muted-foreground">
+                  +{proposal.participants.length - 4}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const hasAnyContent = upcomingPlans.length > 0 || tripProposals.length > 0;
+
+  const content = !hasAnyContent ? (
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <div className="mb-3 text-4xl">📅</div>
       <p className="text-muted-foreground">No upcoming plans this week</p>
@@ -333,6 +448,17 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     </div>
   ) : (
     <div className="space-y-4">
+      {tripProposals.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <Plane className="h-3 w-3" />
+            Trip Proposals
+          </h4>
+          <div className="space-y-1.5">
+            {tripProposals.map(renderTripProposalCard)}
+          </div>
+        </div>
+      )}
       {myPlans.length > 0 && (
         <div>
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Your Plans</h4>
@@ -364,9 +490,9 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
       title="Upcoming Plans"
       icon={<CalendarCheck className="h-4 w-4 text-primary" />}
       badge={
-        upcomingPlans.length > 0 ? (
+        (upcomingPlans.length + tripProposals.length) > 0 ? (
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            {upcomingPlans.length}
+            {upcomingPlans.length + tripProposals.length}
           </span>
         ) : undefined
       }
