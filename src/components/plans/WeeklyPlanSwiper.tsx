@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share
 import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
+import { normalizeCity } from '@/lib/locationMatch';
 import { MapPin, Clock, Plane } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
