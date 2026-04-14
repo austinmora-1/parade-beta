@@ -5,7 +5,7 @@ import {
 } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X,
+  Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X, Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
