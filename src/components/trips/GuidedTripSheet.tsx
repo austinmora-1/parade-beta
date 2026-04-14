@@ -640,8 +640,12 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         className={cn(
                           "relative rounded-xl border px-3 py-2.5 text-sm font-medium transition-all text-center flex flex-col items-center gap-1",
                           sel
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border hover:border-primary/30 hover:bg-primary/5 text-foreground"
+                            ? isGreat
+                              ? "border-chart-2 bg-chart-2/15 text-chart-2 ring-1 ring-chart-2/30"
+                              : "border-primary bg-primary/10 text-primary"
+                            : isGreat
+                              ? "border-chart-2/40 bg-chart-2/5 hover:bg-chart-2/10 text-foreground"
+                              : "border-border hover:border-primary/30 hover:bg-primary/5 text-foreground"
                         )}
                       >
                         <span>{mo.label}</span>
