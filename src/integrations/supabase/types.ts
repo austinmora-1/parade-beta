@@ -1732,6 +1732,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      is_trip_proposal_participant: {
+        Args: { p_proposal_id: string }
+        Returns: boolean
+      }
       merge_overlapping_trips: { Args: { p_user_id: string }; Returns: number }
       normalize_plan_title_for_dedup: {
         Args: { title: string }
