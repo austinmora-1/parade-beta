@@ -2,11 +2,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
   formatTimeHHMM, parseAllDayDate, getAllDayDateRange,
-  resolveToCity, extractFlightDestination, isFlightEvent,
+  resolveToCity, extractFlightDestination, extractFlightDepartureCity, isFlightEvent,
   isCityMatchingHome,
   isHotelEvent, extractHotelLocation,
   classifyActivity, parseICS, reconcilePlans, fetchAllGoogleEvents,
-  resolveLocationsByDate, upsertAvailabilityWithLocation,
+  resolveLocationsByDate, upsertAvailabilityWithLocation, resolveSlotLocations,
   type ICalEvent, type FlightInfo, type HotelStay,
   type CalendarEvent,
 } from '../_shared/calendar-helpers.ts'
@@ -59,9 +59,11 @@ function collectGoogleFlightsAndHotels(
 
     if (isFlightEvent(event.summary)) {
       const city = resolveToCity(extractFlightDestination(event.summary))
+      const departureCity = resolveToCity(extractFlightDepartureCity(event.summary))
       const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
       const dateStr = getDateString(startTime, timezone)
-      allFlights.push({ date: dateStr, timestamp: startTime.getTime(), city, isReturn })
+      const arrivalTimestamp = endTime.getTime()
+      allFlights.push({ date: dateStr, timestamp: startTime.getTime(), arrivalTimestamp, city, departureCity, isReturn })
     } else if (isHotelEvent(event.summary, event.location)) {
       const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
       if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
@@ -106,9 +108,10 @@ function collectICalFlightsAndHotels(
 
     if (isFlightEvent(event.summary)) {
       const city = resolveToCity(extractFlightDestination(event.summary))
+      const departureCity = resolveToCity(extractFlightDepartureCity(event.summary))
       const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
       const dateStr = getDateString(event.dtstart, userTimezone)
-      allFlights.push({ date: dateStr, timestamp: event.dtstart.getTime(), city, isReturn })
+      allFlights.push({ date: dateStr, timestamp: event.dtstart.getTime(), arrivalTimestamp: event.dtend.getTime(), city, departureCity, isReturn })
     } else if (isHotelEvent(event.summary, event.location)) {
       const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
       if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
@@ -180,13 +183,17 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     allFlights, hotelStays, homeAddress, existingTrips: existingTrips || [],
   })
 
+  const slotLocationsByDate = resolveSlotLocations({
+    allFlights, locationByDate, homeAddress, timezone,
+  })
+
   const syncRangeStart = getDateString(threeMonthsAgo, timezone)
   const syncRangeEnd = getDateString(threeMonthsAhead, timezone)
 
   const updatedCount = await upsertAvailabilityWithLocation({
     adminClient, userId, busySlotsByDate, locationByDate,
     returnHomeDates, outboundFlightDates, pendingReturnTrips,
-    homeAddress, syncRangeStart, syncRangeEnd,
+    homeAddress, syncRangeStart, syncRangeEnd, slotLocationsByDate,
   })
 
   // ── Sync plans using shared reconciliation ──
@@ -280,13 +287,17 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     allFlights, hotelStays, homeAddress, existingTrips: existingTrips || [],
   })
 
+  const slotLocationsByDate = resolveSlotLocations({
+    allFlights, locationByDate, homeAddress, timezone: userTimezone,
+  })
+
   const syncRangeStart = getDateString(rangeStart, userTimezone)
   const syncRangeEnd = getDateString(rangeEnd, userTimezone)
 
   const updatedCount = await upsertAvailabilityWithLocation({
     adminClient, userId, busySlotsByDate, locationByDate,
     returnHomeDates, outboundFlightDates, pendingReturnTrips,
-    homeAddress, syncRangeStart, syncRangeEnd,
+    homeAddress, syncRangeStart, syncRangeEnd, slotLocationsByDate,
   })
 
   // ── Sync plans ──

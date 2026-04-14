@@ -190,6 +190,23 @@ export function extractFlightDestination(summary?: string): string | null {
   return null
 }
 
+/**
+ * Extract the departure city (first airport code) from a flight summary.
+ * Returns the resolved city name or null.
+ */
+export function extractFlightDepartureCity(summary?: string): string | null {
+  if (!summary) return null
+  const upper = summary.toUpperCase()
+  const codes = upper.match(/\b([A-Z]{3})\b/g)
+  if (codes) {
+    const airports = codes.filter(c => c in AIRPORT_CITY_MAP)
+    if (airports.length > 0) {
+      return AIRPORT_CITY_MAP[airports[0]]
+    }
+  }
+  return null
+}
+
 // Detect if an event is a flight — accepts either a CalendarEvent-like object or a plain summary string
 export function isFlightEvent(eventOrSummary: { summary?: string } | string | undefined): boolean {
   const summary = typeof eventOrSummary === 'string'
@@ -880,8 +897,10 @@ export async function reconcilePlans(params: {
 
 export interface FlightInfo {
   date: string
-  timestamp: number
-  city: string | null
+  timestamp: number        // departure time (ms)
+  arrivalTimestamp: number  // arrival/landing time (ms)
+  city: string | null       // destination city
+  departureCity: string | null // origin city
   isReturn: boolean
 }
 
@@ -1098,6 +1117,133 @@ export function resolveLocationsByDate(params: {
   return { locationByDate, returnHomeDates, outboundFlightDates, pendingReturnTrips }
 }
 
+// ── Per-Slot Location Resolution ────────────────────────────────────────────
+
+const SLOT_NAMES = ['early_morning', 'late_morning', 'early_afternoon', 'late_afternoon', 'evening', 'late_night'] as const
+const SLOT_DB_COLS = ['slot_location_early_morning', 'slot_location_late_morning', 'slot_location_early_afternoon', 'slot_location_late_afternoon', 'slot_location_evening', 'slot_location_late_night'] as const
+
+/**
+ * For each flight day, resolve per-slot locations:
+ * - Slots before departure → departure city (or previous day's location)
+ * - Slots during the flight → null (unavailable, handled by busy slots)
+ * - Slots at or after arrival → destination city
+ */
+export function resolveSlotLocations(params: {
+  allFlights: FlightInfo[]
+  locationByDate: Map<string, string>
+  homeAddress: string | null
+  timezone?: string
+}): Map<string, Record<string, string | null>> {
+  const { allFlights, locationByDate, homeAddress, timezone } = params
+  const result = new Map<string, Record<string, string | null>>()
+
+  // Group flights by date
+  const flightsByDate = new Map<string, FlightInfo[]>()
+  for (const f of allFlights) {
+    if (!flightsByDate.has(f.date)) flightsByDate.set(f.date, [])
+    flightsByDate.get(f.date)!.push(f)
+  }
+
+  for (const [date, flights] of flightsByDate) {
+    // Sort flights on this day by departure time
+    const sorted = [...flights].sort((a, b) => a.timestamp - b.timestamp)
+    
+    const slotLocations: Record<string, string | null> = {}
+    for (const col of SLOT_DB_COLS) slotLocations[col] = null
+
+    // Determine the "before" location: departure city of first flight, or previous day location, or home
+    const firstFlight = sorted[0]
+    const prevDateStr = (() => {
+      const d = new Date(date + 'T12:00:00Z')
+      d.setDate(d.getDate() - 1)
+      return d.toISOString().split('T')[0]
+    })()
+    const beforeLocation = firstFlight.departureCity
+      || locationByDate.get(prevDateStr)
+      || (homeAddress ? homeAddress.split(',')[0].trim() : null)
+
+    // For each slot, determine location based on flight timing
+    for (let si = 0; si < SLOT_NAMES.length; si++) {
+      const slotName = SLOT_NAMES[si]
+      const slotCol = SLOT_DB_COLS[si]
+      const slotHour = getSlotStartHour(slotName)
+      // Build a Date for the slot start in the user's timezone
+      const slotTimestamp = getSlotTimestamp(date, slotHour, timezone)
+
+      // Find which flight window this slot falls in
+      let location: string | null = null
+      let isDuringFlight = false
+
+      for (const flight of sorted) {
+        if (slotTimestamp < flight.timestamp) {
+          // Before this flight's departure
+          location = flight.departureCity || beforeLocation
+          break
+        } else if (slotTimestamp >= flight.timestamp && slotTimestamp < flight.arrivalTimestamp) {
+          // During the flight — mark as in-transit (null = unavailable)
+          isDuringFlight = true
+          break
+        } else if (slotTimestamp >= flight.arrivalTimestamp) {
+          // After this flight's arrival — use destination
+          location = flight.city || null
+          // Don't break — a later flight on the same day may override
+        }
+      }
+
+      if (isDuringFlight) {
+        slotLocations[slotCol] = null // Will be marked unavailable via busy slots
+      } else {
+        slotLocations[slotCol] = location
+      }
+    }
+
+    // Only store if there's actual variation (not all the same)
+    const values = SLOT_DB_COLS.map(c => slotLocations[c])
+    const unique = new Set(values.filter(Boolean))
+    if (unique.size > 1 || values.some(v => v === null && unique.size > 0)) {
+      result.set(date, slotLocations)
+    }
+  }
+
+  return result
+}
+
+function getSlotStartHour(slotName: string): number {
+  switch (slotName) {
+    case 'early_morning': return 2
+    case 'late_morning': return 9
+    case 'early_afternoon': return 12
+    case 'late_afternoon': return 15
+    case 'evening': return 18
+    case 'late_night': return 22
+    default: return 12
+  }
+}
+
+function getSlotTimestamp(dateStr: string, hour: number, timezone?: string): number {
+  // Create a timestamp for the given hour on the given date in the user's timezone
+  const d = new Date(dateStr + 'T12:00:00Z')
+  const year = d.getUTCFullYear()
+  const month = d.getUTCMonth()
+  const day = d.getUTCDate()
+  
+  if (timezone) {
+    // Approximate: create UTC date at that hour and adjust for timezone offset
+    const guessUtc = new Date(Date.UTC(year, month, day, hour, 0, 0))
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone, hour: 'numeric', hour12: false,
+      })
+      const localHour = parseInt(formatter.format(guessUtc), 10)
+      const offsetHours = localHour - hour
+      return guessUtc.getTime() - offsetHours * 3600000
+    } catch {
+      return guessUtc.getTime()
+    }
+  }
+  return new Date(Date.UTC(year, month, day, hour, 0, 0)).getTime()
+}
+
 // ── Shared Availability Upsert Logic ────────────────────────────────────────
 
 /**
@@ -1116,11 +1262,12 @@ export async function upsertAvailabilityWithLocation(params: {
   homeAddress: string | null
   syncRangeStart: string
   syncRangeEnd: string
+  slotLocationsByDate?: Map<string, Record<string, string | null>>
 }): Promise<number> {
   const {
     adminClient, userId, busySlotsByDate, locationByDate,
     returnHomeDates, outboundFlightDates, pendingReturnTrips,
-    homeAddress, syncRangeStart, syncRangeEnd,
+    homeAddress, syncRangeStart, syncRangeEnd, slotLocationsByDate,
   } = params
 
   const { data: existingAvailabilityRows } = await adminClient
@@ -1155,18 +1302,27 @@ export async function upsertAvailabilityWithLocation(params: {
       locationFields.trip_location = null
     }
 
+    // Add per-slot location columns if available for this date
+    const slotLocs = slotLocationsByDate?.get(date)
+    const slotLocFields: Record<string, string | null> = {}
+    if (slotLocs) {
+      Object.assign(slotLocFields, slotLocs)
+    }
+
     const { error } = await adminClient
       .from('availability')
-      .upsert({ user_id: userId, date, ...slotUpdates, ...locationFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+      .upsert({ user_id: userId, date, ...slotUpdates, ...locationFields, ...slotLocFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
     if (!error) updatedCount++
   }
 
   // Upsert location-only dates
   for (const [date, city] of locationByDate) {
     if (busySlotsByDate.has(date)) continue
+    const slotLocs = slotLocationsByDate?.get(date)
+    const slotLocFields: Record<string, string | null> = slotLocs ? { ...slotLocs } : {}
     const { error } = await adminClient
       .from('availability')
-      .upsert({ user_id: userId, date, location_status: 'away', trip_location: city }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+      .upsert({ user_id: userId, date, location_status: 'away', trip_location: city, ...slotLocFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
     if (!error) updatedCount++
   }
 

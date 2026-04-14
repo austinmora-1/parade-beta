@@ -2,11 +2,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
   formatTimeHHMM, getAllDayDateRange,
-  resolveToCity, extractFlightDestination, isFlightEvent,
+  resolveToCity, extractFlightDestination, extractFlightDepartureCity, isFlightEvent,
   isCityMatchingHome,
   isHotelEvent, extractHotelLocation,
   classifyActivity, parseICS, reconcilePlans,
-  resolveLocationsByDate, upsertAvailabilityWithLocation,
+  resolveLocationsByDate, upsertAvailabilityWithLocation, resolveSlotLocations,
   type FlightInfo, type HotelStay,
 } from '../_shared/calendar-helpers.ts'
 
@@ -143,11 +143,13 @@ Deno.serve(async (req) => {
 
       if (isFlightEvent(event.summary)) {
         const city = resolveToCity(extractFlightDestination(event.summary))
+        const departureCity = resolveToCity(extractFlightDepartureCity(event.summary))
         const isReturn = city ? isCityMatchingHome(city, homeAddress) : false
         const dateStr = getDateString(event.dtstart, userTimezone)
         const ts = event.dtstart.getTime()
-        console.log(`[FLIGHT] "${event.summary}" | dtstart=${event.dtstart.toISOString()} | ts=${ts} | dateStr=${dateStr} | city=${city} | isReturn=${isReturn}`)
-        allFlights.push({ date: dateStr, timestamp: ts, city, isReturn })
+        const arrivalTs = event.dtend.getTime()
+        console.log(`[FLIGHT] "${event.summary}" | dtstart=${event.dtstart.toISOString()} | ts=${ts} | dateStr=${dateStr} | city=${city} | departureCity=${departureCity} | isReturn=${isReturn}`)
+        allFlights.push({ date: dateStr, timestamp: ts, arrivalTimestamp: arrivalTs, city, departureCity, isReturn })
       } else if (isHotelEvent(event.summary, event.location)) {
         const hotelCity = resolveToCity(extractHotelLocation(event.summary, event.location))
         if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
@@ -170,13 +172,17 @@ Deno.serve(async (req) => {
       allFlights, hotelStays, homeAddress, existingTrips: existingTrips || [],
     })
 
+    const slotLocationsByDate = resolveSlotLocations({
+      allFlights, locationByDate, homeAddress, timezone: userTimezone,
+    })
+
     const syncRangeStart = getDateString(rangeStart, userTimezone)
     const syncRangeEnd = getDateString(rangeEnd, userTimezone)
 
     const updatedCount = await upsertAvailabilityWithLocation({
       adminClient, userId, busySlotsByDate, locationByDate,
       returnHomeDates, outboundFlightDates, pendingReturnTrips,
-      homeAddress, syncRangeStart, syncRangeEnd,
+      homeAddress, syncRangeStart, syncRangeEnd, slotLocationsByDate,
     })
 
     // ── Sync plans using shared reconciliation ────────────────────────────
