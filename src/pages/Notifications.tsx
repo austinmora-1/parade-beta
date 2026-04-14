@@ -783,6 +783,73 @@ export default function Notifications() {
         </div>
       )}
 
+      {/* Trip Proposals Section */}
+      {(visibleTripProposals.length > 0 || tripProposalsLoading) && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <Plane className="h-4 w-4 text-primary md:h-5 md:w-5" />
+            Trip Proposals
+            {visibleTripProposals.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
+                {visibleTripProposals.length}
+              </span>
+            )}
+          </h2>
+
+          {tripProposalsLoading ? (
+            <div className="flex h-20 items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <AnimatePresence>
+              {visibleTripProposals.map((trip) => (
+                <SwipeableDismiss key={trip.id} onDismiss={() => dismiss(`trip-proposal-${trip.id}`)}>
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                          <Plane className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">{trip.creator_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            shared trip options{trip.destination ? ` to ${trip.destination}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <DismissButton id={`trip-proposal-${trip.id}`} />
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {trip.dates.map((d) => (
+                        <span key={d.id} className="inline-flex items-center gap-1 rounded-md bg-background border border-border px-2 py-1 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(d.start_date + 'T12:00:00'), 'MMM d')} – {format(new Date(d.end_date + 'T12:00:00'), 'MMM d')}
+                          {d.votes > 0 && (
+                            <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">
+                              {d.votes} {d.votes === 1 ? 'vote' : 'votes'}
+                            </Badge>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+
+                    <Button
+                      size="sm"
+                      className="w-full gap-1.5"
+                      onClick={() => navigate('/trips')}
+                    >
+                      <Plane className="h-4 w-4" />
+                      View & Vote
+                    </Button>
+                  </div>
+                </SwipeableDismiss>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
+      )}
+
       {/* Participant Requests Section (organizer approval) */}
       {(visibleParticipantRequests.length > 0 || participantReqLoading) && (
         <div>
