@@ -117,6 +117,8 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [selectedWeekends, setSelectedWeekends] = useState<WeekendOption[]>([]);
   const [destination, setDestination] = useState('');
   const [sending, setSending] = useState(false);
+  const [monthStats, setMonthStats] = useState<Record<string, { freeWeekends: number; totalWeekends: number; tripConflicts: number }>>({}); 
+  const [loadingMonthStats, setLoadingMonthStats] = useState(false);
 
   // Generate month options (next 12 months)
   const monthOptions = useMemo(() => {
