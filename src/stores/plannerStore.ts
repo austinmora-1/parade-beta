@@ -520,7 +520,10 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
           };
           for (const [slot, col] of Object.entries(slotMap)) {
             const val = (existing as any)[col] as string | null;
-            if (val) { slotLocs[slot] = val; hasSlotLocs = true; }
+            if (val !== undefined) {
+              slotLocs[slot] = val;
+              if (val) hasSlotLocs = true;
+            }
           }
           return {
             date,
