@@ -996,10 +996,14 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                 {/* Summary card */}
                 <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-4 space-y-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">✈️</span>
+                    <span className="text-2xl">{isVisit ? '🏠' : '✈️'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">
-                        {destination ? `Trip to ${destination}` : 'Group Trip'}
+                        {isVisit
+                          ? (hostMode === 'hosting'
+                            ? `Hosting in ${destination || 'your city'}`
+                            : `Visit to ${destination || "friend's city"}`)
+                          : (destination ? `Trip to ${destination}` : 'Group Trip')}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {selectedWeekends.length} date option{selectedWeekends.length > 1 ? 's' : ''} with {friendNamesStr}
