@@ -72,6 +72,7 @@ export default function Trips() {
         </div>
       </div>
 
+      <TripProposalsList />
       <TripsList refreshKey={tripsRefreshKey} />
 
       <AddTripDialog
