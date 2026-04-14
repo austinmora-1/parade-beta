@@ -508,6 +508,20 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         const existing = availDataMap.get(dateStr);
         const date = addDays(start, i);
         if (existing) {
+          const slotLocs: Record<string, string | null> = {};
+          let hasSlotLocs = false;
+          const slotMap: Record<string, string> = {
+            'early-morning': 'slot_location_early_morning',
+            'late-morning': 'slot_location_late_morning',
+            'early-afternoon': 'slot_location_early_afternoon',
+            'late-afternoon': 'slot_location_late_afternoon',
+            'evening': 'slot_location_evening',
+            'late-night': 'slot_location_late_night',
+          };
+          for (const [slot, col] of Object.entries(slotMap)) {
+            const val = (existing as any)[col] as string | null;
+            if (val) { slotLocs[slot] = val; hasSlotLocs = true; }
+          }
           return {
             date,
             slots: {
@@ -521,6 +535,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
             locationStatus: (existing.location_status as LocationStatus) || 'home',
             tripLocation:   existing.trip_location || undefined,
             vibe:           existing.vibe as VibeType | null || null,
+            ...(hasSlotLocs ? { slotLocations: slotLocs } : {}),
           };
         }
         return createDefaultAvailability(date, defaultSettings);
