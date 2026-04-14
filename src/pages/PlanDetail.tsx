@@ -520,6 +520,49 @@ export default function PlanDetail() {
                 <span>{displayPlan.location.name}</span>
               </div>
             )}
+            {/* Timezone display / edit */}
+            {(() => {
+              const tz = displayPlan.sourceTimezone;
+              const isManual = !displayPlan.source || displayPlan.source === 'manual' || displayPlan.source === 'hang-request';
+              const canEditTz = isOwner && isManual && !isPast;
+              if (!tz && !canEditTz) return null;
+
+              return (
+                <div className="flex items-center gap-3 text-sm">
+                  <Globe2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                  {canEditTz ? (
+                    <Select
+                      value={tz || ''}
+                      onValueChange={async (newTz) => {
+                        if (!plan) return;
+                        try {
+                          await supabase.from('plans').update({ source_timezone: newTz }).eq('id', plan.id);
+                          await loadPlans();
+                          toast.success('Timezone updated');
+                        } catch {
+                          toast.error('Failed to update timezone');
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-7 w-auto min-w-[160px] text-sm border-none shadow-none px-0 hover:bg-muted/50 gap-1">
+                        <SelectValue placeholder="Set timezone" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {COMMON_TIMEZONES.map(tzOpt => (
+                          <SelectItem key={tzOpt} value={tzOpt} className="text-sm">
+                            {tzOpt.replace(/_/g, ' ')} ({getTimezoneAbbreviation(tzOpt)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {tz ? `${tz.replace(/_/g, ' ')} (${getTimezoneAbbreviation(tz)})` : ''}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Participants with avatars and RSVP status */}
