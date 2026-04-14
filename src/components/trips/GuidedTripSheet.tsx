@@ -104,7 +104,7 @@ function useSuggestedFriends(connectedFriends: Friend[]) {
 const getInitials = (name: string) =>
   name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: GuidedTripSheetProps) {
+export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSelectedType }: GuidedTripSheetProps) {
   const { user } = useAuth();
   const { friends: allFriends, userId, loadProfileAndAvailability, loadPlans } = usePlannerStore();
   const viewport = useVisualViewport();
