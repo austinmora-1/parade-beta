@@ -17,6 +17,7 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect');
   const hasInviteRedirect = !!redirect;
+  const startInSignUp = searchParams.get('signup') === 'true';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
