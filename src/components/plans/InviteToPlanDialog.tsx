@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { usePlannerStore } from '@/stores/plannerStore';
+import { TIME_SLOT_LABELS } from '@/types/planner';
 import { Mail, Copy, Check, Loader2, Link2, Phone } from 'lucide-react';
 
 interface InviteToPlanDialogProps {
@@ -25,6 +26,7 @@ interface InviteToPlanDialogProps {
 export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: InviteToPlanDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const plans = usePlannerStore((s) => s.plans);
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [smsConsent, setSmsConsent] = useState(false);
@@ -36,6 +38,25 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
+
+  // Get plan details for the email
+  const plan = plans.find((p) => p.id === planId);
+
+  function formatTime12(time: string): string {
+    const [h, m] = time.split(':').map(Number);
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const hour12 = h % 12 || 12;
+    return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+  }
+
+  const planDate = plan ? format(plan.date, 'EEEE, MMMM d') : '';
+  const planTime = plan
+    ? (plan.startTime
+        ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
+        : TIME_SLOT_LABELS[plan.timeSlot]?.time || '')
+    : '';
+  const planLocation = plan?.location?.name?.split(' · ')[0]?.split(', ')[0] || '';
+
 
   const createInviteAndGetLink = async () => {
     const { data, error } = await supabase
@@ -86,13 +107,16 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       const inviteUrl = `https://helloparade.app/invite.html?t=${data.invite_token}`;
 
-      await supabase.functions.invoke('send-friend-invite', {
+      await supabase.functions.invoke('send-plan-invite', {
         body: {
           email: email.trim(),
           inviterName,
-          customSubject: `${inviterName} invited you to "${planTitle}"`,
-          customMessage: `You've been invited to join a plan: "${planTitle}". Click below to view the details and join!`,
-          customUrl: inviteUrl,
+          planTitle: planTitle || 'a plan',
+          planActivity: plan?.activity || 'other-events',
+          planDate,
+          planTime,
+          planLocation: planLocation || undefined,
+          inviteUrl,
         },
       });
 
