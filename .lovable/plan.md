@@ -1,55 +1,76 @@
 
 
-## Plan: Fix timezone display on plan cards
+## Plan: Trip vs Visit Sub-track
 
-### Problem Summary
+### Overview
 
-Two issues with timezone display:
+Add a "Trip or Visit?" type selector to the trip proposal system. A **Trip** means the group is traveling to a non-home destination. A **Visit** means one person is hosting at their home base and others are traveling to them (or vice versa). The system reuses all existing proposal infrastructure (date voting, availability analysis, participant management) but adapts language, icons, and destination logic based on the type.
 
-1. **Many plans have no timezone at all** — The calendar sync backend only reads `profiles.timezone` (explicit setting). ~47% of Google Calendar plans have `source_timezone = NULL` because users haven't explicitly set a timezone. The sync should fall back to resolving timezone from the user's location status (home address or trip location), matching the frontend's `getUserTimezone()` logic.
+### Database Changes
 
-2. **Wrong timezone abbreviation shown** — The UI displays the plan's *source* timezone abbreviation (e.g., "EDT" for a plan created in New York), but the displayed times have already been *converted* to the viewer's current timezone (e.g., PDT because they're in San Francisco). The abbreviation should reflect the viewer's timezone so it matches the displayed time.
+**Migration: Add `proposal_type` and `host_user_id` columns to `trip_proposals`**
 
-### Changes
+```sql
+ALTER TABLE public.trip_proposals
+  ADD COLUMN proposal_type text NOT NULL DEFAULT 'trip',  -- 'trip' | 'visit'
+  ADD COLUMN host_user_id uuid;  -- the person whose home base is the destination (for visits)
+```
 
-#### 1. Backend: Fix calendar sync to always resolve timezone (`supabase/functions/calendar-sync-worker/index.ts`)
+No new tables needed — the existing `trip_proposals`, `trip_proposal_dates`, and `trip_proposal_participants` tables handle everything.
 
-In `syncGoogleCalendar()` (line ~135-141), after fetching the profile, resolve the timezone using the same logic as the frontend:
-- Fetch today's availability row for the user (to get `location_status` and `trip_location`)
-- Implement a server-side version of `getUserTimezone()`: if explicit timezone is set use it, otherwise if "away" use trip location's timezone, otherwise use home address timezone, otherwise fallback to `'America/New_York'`
-- This ensures `source_timezone` is always populated for new syncs
+### Frontend Changes
 
-Also apply the same fix to the iCal sync function (`supabase/functions/ical-sync/index.ts`).
+#### 1. GuidedTripSheet — Add type selection step (`src/components/trips/GuidedTripSheet.tsx`)
 
-#### 2. Backend: Backfill existing NULL source_timezone plans (database migration)
+- Insert a new step **after friend selection** and **before months**: `'type'`
+- Step flow becomes: `friends → type → months → weekends → confirm`
+- The type step offers two cards:
+  - **"Plan a Trip"** (Plane icon) — "Travel somewhere together" → sets `proposalType = 'trip'`
+  - **"Plan a Visit"** (Home icon) — "Visit a friend's city or host them at yours" → sets `proposalType = 'visit'`
+- When "Visit" is selected, show a sub-choice: **"I'm hosting"** (destination auto-set to current user's home_address) vs **"I'm visiting"** (show a picker of selected friends' home cities as destination options)
+- For visits, the destination field on the confirm step is pre-filled and read-only (set to the host's home city)
+- On submit, write `proposal_type` and `host_user_id` to the `trip_proposals` row
 
-Run a migration that sets `source_timezone` for existing plans where it's NULL, using the plan owner's profile timezone/home_address as a best-effort resolution.
+#### 2. TripsList — Differentiate Trip vs Visit cards (`src/components/trips/TripsList.tsx`)
 
-#### 3. Frontend: Show viewer's timezone, not source timezone (`src/components/plans/WeeklyPlanSwiper.tsx`, `src/components/dashboard/UpcomingPlans.tsx`)
+- Read `proposal_type` and `host_user_id` from the proposal data
+- **Visit proposals** show:
+  - Home icon instead of Plane icon
+  - Title: "Visit to {city}" or "{host_name} is hosting in {city}" instead of "Trip to {destination}"
+  - Badge: "Visit" instead of "Proposed"
+- **Trip proposals** remain unchanged (Plane icon, "Trip to {destination}", "Proposed" badge)
 
-Currently the plan card shows `getTimezoneAbbreviation(plan.sourceTimezone)`. After timezone conversion, times are in the viewer's timezone. Change these to show the viewer's resolved timezone abbreviation instead:
-- In `WeeklyPlanSwiper.tsx`: Access `viewerTimezone` from the planner store and display `getTimezoneAbbreviation(viewerTimezone)` on every plan card (not just ones with `sourceTimezone`)
-- In `UpcomingPlans.tsx`: Same change — show the viewer's timezone abbreviation
-- In `PlanDetail.tsx`: Show the viewer's timezone for the displayed times, while keeping the source timezone info available for editing
+#### 3. TripProposalsList (dashboard widget) — Same language updates (`src/components/trips/TripProposalsList.tsx`)
 
-#### 4. Frontend: Always show timezone on plan cards
+- Mirror the same icon/title/badge logic as TripsList
 
-Currently the timezone abbreviation only renders when `plan.sourceTimezone` exists. Since we're now showing the viewer's timezone, it should always render — this fixes issue #1 from the UI perspective regardless of backend backfill.
+#### 4. Push notification language (`src/components/trips/GuidedTripSheet.tsx` submit handler)
 
-### Technical Details
+- Trip: `"{name} shared trip options to {dest} with you"` (existing)
+- Visit: `"{name} wants to plan a visit to {city}"` or `"{name} is hosting in {city} — vote on dates!"`
 
-**Viewer timezone resolution** — already computed in `plannerStore.ts` at line ~317 via `getUserTimezone()`. Need to expose it from the store so card components can access it.
+#### 5. Trips page — Add "Plan a Visit" button (`src/pages/Trips.tsx`)
 
-**Store change** — Add `viewerTimezone` to the planner store state so it's accessible to UI components without re-computing.
+- Add a second button alongside "Plan a Trip": **"Plan a Visit"** with Home icon
+- Opens the same GuidedTripSheet but with `preSelectedType = 'visit'` prop to skip the type step or pre-select it
 
-**Backend timezone resolution** — Replicate the city→timezone mapping logic server-side. The simplest approach: use a condensed version of the city map from `src/lib/timezone.ts` in the edge function, or resolve based on `profiles.timezone ?? profiles.home_address` with a simple fallback.
+### Files to Modify
 
-**Files to modify:**
-- `supabase/functions/calendar-sync-worker/index.ts` — resolve timezone from availability/profile
-- `supabase/functions/ical-sync/index.ts` — same fix
-- `src/stores/plannerStore.ts` — expose `viewerTimezone` in store state
-- `src/components/plans/WeeklyPlanSwiper.tsx` — show viewer tz abbreviation
-- `src/components/dashboard/UpcomingPlans.tsx` — show viewer tz abbreviation
-- `src/pages/PlanDetail.tsx` — show viewer tz for displayed times
-- Database migration to backfill NULL `source_timezone` values
+| File | Change |
+|---|---|
+| `supabase/migrations/` | New migration adding `proposal_type` and `host_user_id` columns |
+| `src/components/trips/GuidedTripSheet.tsx` | Add type step, host selection, adapt language and submission |
+| `src/components/trips/TripsList.tsx` | Read proposal_type, adapt icons/titles/badges |
+| `src/components/trips/TripProposalsList.tsx` | Same icon/title/badge adaptation |
+| `src/pages/Trips.tsx` | Add "Plan a Visit" button |
+
+### Language Summary
+
+| Context | Trip | Visit (hosting) | Visit (visiting) |
+|---|---|---|---|
+| Card title | "Trip to {dest}" | "{host} is hosting in {city}" | "Visit to {city}" |
+| Icon | ✈️ Plane | 🏠 Home | 🏠 Home |
+| Badge | Proposed | Visit | Visit |
+| Notification | "shared trip options" | "is hosting in {city}" | "wants to visit {city}" |
+| Confirm emoji | ✈️ | 🏠 | 🏠 |
 
