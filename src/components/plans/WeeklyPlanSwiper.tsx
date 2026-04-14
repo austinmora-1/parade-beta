@@ -26,7 +26,69 @@ function formatTime12(time: string): string {
   return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
 }
 
-interface WeeklyPlanSwiperProps {
+function getRsvpStyle(status?: string, role?: string) {
+  if (role === 'subscriber') return { color: 'bg-muted', icon: Eye, label: 'Watching' };
+  switch (status) {
+    case 'accepted': return { color: 'bg-emerald-500', icon: Check, label: 'Going' };
+    case 'declined': return { color: 'bg-destructive', icon: X, label: "Can't go" };
+    case 'maybe': return { color: 'bg-amber-500', icon: Clock, label: 'Maybe' };
+    default: return { color: 'bg-muted-foreground/50', icon: Clock, label: 'Pending' };
+  }
+}
+
+function ParticipantAvatarStack({ participants }: { participants: Friend[] }) {
+  const sorted = [...participants].sort((a, b) => {
+    const order: Record<string, number> = { accepted: 0, maybe: 1, invited: 2, declined: 3 };
+    return (order[a.rsvpStatus || 'invited'] ?? 2) - (order[b.rsvpStatus || 'invited'] ?? 2);
+  });
+  const maxVisible = 4;
+  const visible = sorted.slice(0, maxVisible);
+  const overflow = sorted.length - maxVisible;
+
+  return (
+    <div className="flex items-center mt-1">
+      {visible.map((p, i) => {
+        const rsvp = getRsvpStyle(p.rsvpStatus, p.role);
+        const RsvpIcon = rsvp.icon;
+        const avatarSrc = p.avatar || getElephantAvatar(p.name || p.id);
+        return (
+          <TooltipProvider key={p.id} delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={cn("relative shrink-0", i > 0 && "-ml-1.5")}>
+                  <img
+                    src={avatarSrc}
+                    alt={p.name}
+                    className={cn(
+                      "h-5 w-5 rounded-full object-cover border",
+                      p.rsvpStatus === 'declined'
+                        ? "border-destructive/40 opacity-50 grayscale"
+                        : "border-background"
+                    )}
+                  />
+                  <span className={cn(
+                    "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full flex items-center justify-center ring-1 ring-background text-white",
+                    rsvp.color
+                  )}>
+                    <RsvpIcon className="h-1.5 w-1.5" strokeWidth={3} />
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs px-2 py-1">
+                {p.name} <span className="text-muted-foreground">· {rsvp.label}</span>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      })}
+      {overflow > 0 && (
+        <span className="text-[9px] text-muted-foreground ml-1 font-medium">+{overflow}</span>
+      )}
+    </div>
+  );
+}
+
+
   plans: Plan[];
   weekOffset: number;
   onWeekChange: (offset: number) => void;
