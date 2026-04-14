@@ -529,7 +529,6 @@ export default function PlanDetail() {
               const tz = displayPlan.sourceTimezone;
               const isManual = !displayPlan.source || displayPlan.source === 'manual' || displayPlan.source === 'hang-request';
               const canEditTz = isOwner && isManual && !isPast;
-              if (!tz && !canEditTz) return null;
 
               return (
                 <div className="flex items-center gap-3 text-sm">
@@ -561,7 +560,7 @@ export default function PlanDetail() {
                     </Select>
                   ) : (
                     <span className="text-muted-foreground">
-                      {tz ? `${tz.replace(/_/g, ' ')} (${getTimezoneAbbreviation(tz)})` : ''}
+                      {tz ? `${tz.replace(/_/g, ' ')} (${getTimezoneAbbreviation(tz)})` : userTimezone.replace(/_/g, ' ') + ` (${getTimezoneAbbreviation(userTimezone)})`}
                     </span>
                   )}
                 </div>
