@@ -26,6 +26,12 @@ export type Database = {
           late_morning: boolean | null
           late_night: boolean | null
           location_status: string | null
+          slot_location_early_afternoon: string | null
+          slot_location_early_morning: string | null
+          slot_location_evening: string | null
+          slot_location_late_afternoon: string | null
+          slot_location_late_morning: string | null
+          slot_location_late_night: string | null
           trip_location: string | null
           updated_at: string
           user_id: string
@@ -42,6 +48,12 @@ export type Database = {
           late_morning?: boolean | null
           late_night?: boolean | null
           location_status?: string | null
+          slot_location_early_afternoon?: string | null
+          slot_location_early_morning?: string | null
+          slot_location_evening?: string | null
+          slot_location_late_afternoon?: string | null
+          slot_location_late_morning?: string | null
+          slot_location_late_night?: string | null
           trip_location?: string | null
           updated_at?: string
           user_id: string
@@ -58,6 +70,12 @@ export type Database = {
           late_morning?: boolean | null
           late_night?: boolean | null
           location_status?: string | null
+          slot_location_early_afternoon?: string | null
+          slot_location_early_morning?: string | null
+          slot_location_evening?: string | null
+          slot_location_late_afternoon?: string | null
+          slot_location_late_morning?: string | null
+          slot_location_late_night?: string | null
           trip_location?: string | null
           updated_at?: string
           user_id?: string
@@ -1639,6 +1657,12 @@ export type Database = {
           late_morning: boolean
           late_night: boolean
           location_status: string
+          slot_location_early_afternoon: string
+          slot_location_early_morning: string
+          slot_location_evening: string
+          slot_location_late_afternoon: string
+          slot_location_late_morning: string
+          slot_location_late_night: string
           trip_location: string
         }[]
       }
