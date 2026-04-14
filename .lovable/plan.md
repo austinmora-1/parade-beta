@@ -1,30 +1,28 @@
 
 
-# Fix Duplicate Plans from Calendar Sync
+# Improve Departure City Fallback from Previous Slot/Day Location
 
-## Root Cause
-`makeContentKey()` in `calendar-helpers.ts` uses raw `start_time` strings without normalizing the format. Database rows store `HH:MM:SS` (e.g., `16:00:00`) while incoming calendar data uses `HH:MM` (e.g., `16:00`). This causes the content-based dedup lookup to miss matches.
+## Problem
+When a flight reservation doesn't include a departure city, the `resolveSlotLocations` function walks back through `locationByDate` to find the previous location. However, `locationByDate` only contains **away** locations (from outbound flights/hotels). If the user is at their travel destination (e.g., Dallas) and `locationByDate` happens to not have that date populated (e.g., edge cases with segment boundaries), or the home address doesn't match, the departure city resolves incorrectly or not at all.
 
 ## Fix
 
-### 1. Normalize time format in `makeContentKey` (calendar-helpers.ts)
-Strip the seconds component from `startTime` before building the key:
-```typescript
-export function makeContentKey(normalizedTitle: string, date: string, startTime: string | null): string {
-  const d = extractDateOnly(date)
-  const t = startTime ? startTime.substring(0, 5) : '' // normalize HH:MM:SS → HH:MM
-  // ... rest of function uses `t` instead of `startTime`
-}
-```
+### 1. Backend: Improve fallback in `resolveSlotLocations` (calendar-helpers.ts)
 
-### 2. Clean up existing duplicates (one-time migration)
-Write a migration that identifies and deletes duplicate gcal-sourced plans where title, date, and `start_time` (truncated to HH:MM) match, keeping the one with the earliest `created_at`.
+Enhance the fallback logic when `departureCity` is null to also check:
+1. The **previous day's slot locations** (the last non-null slot from the day before — e.g., `slot_location_late_night` or `slot_location_evening`)
+2. The existing `locationByDate` walkback (already implemented)
+3. Home address as final fallback
 
-### Files Changed
+This means checking the already-resolved `result` map (previous flight days' slot locations) in addition to `locationByDate`. The key change is on the walkback at lines 1196-1209: after checking `locationByDate`, also check if the previous date had slot-level locations in the `result` map already built, and use the last populated slot from that day.
+
+### 2. Client-side: Fallback in `getLocationLabel` (WeeklyPlanSwiper.tsx)
+
+When building the split-location label, if the first slot location is null/empty but the previous day has a known `tripLocation` or slot location, use that as the departure city for the arrow indicator. This ensures even if the DB data is stale, the UI can infer the departure from the previous day's availability record.
+
+## Files Changed
 | File | Change |
 |------|--------|
-| `supabase/functions/_shared/calendar-helpers.ts` | Normalize `startTime` in `makeContentKey` |
-| DB migration | Delete existing duplicate plans |
-
-This is a 2-line fix in the helper function plus a cleanup migration.
+| `supabase/functions/_shared/calendar-helpers.ts` | In `resolveSlotLocations`, extend fallback to check previously resolved slot locations from the `result` map for the prior date |
+| `src/components/plans/WeeklyPlanSwiper.tsx` | In `getLocationLabel`, when first unique city is missing, look up previous day's `tripLocation` or last slot location from `availabilityMap` |
 
