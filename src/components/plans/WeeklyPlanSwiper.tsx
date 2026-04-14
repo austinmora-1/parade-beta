@@ -323,7 +323,7 @@ function getPreviousDayLocation(dateKey: string, availabilityMap: Record<string,
 
   // Check slot locations in reverse order for the last known location
   if (prevAvail.slotLocations) {
-    const slotKeys = ['slot_location_late_night', 'slot_location_evening', 'slot_location_late_afternoon', 'slot_location_early_afternoon', 'slot_location_late_morning', 'slot_location_early_morning'];
+    const slotKeys = ['late-night', 'evening', 'late-afternoon', 'early-afternoon', 'late-morning', 'early-morning'];
     for (const key of slotKeys) {
       const val = (prevAvail.slotLocations as Record<string, string | null>)[key];
       if (val) return val;
