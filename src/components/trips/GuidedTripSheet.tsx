@@ -599,7 +599,47 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
 
         <div className="px-4 pb-2 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
-            {/* STEP 1: Friend selection */}
+            {/* STEP 1: Type selection (trip vs visit) */}
+            {step === 'type' && (
+              <motion.div
+                key="type"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-4"
+              >
+                <p className="text-xs text-muted-foreground text-center">
+                  What kind of plans are you making?
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => { setProposalType('trip'); setHostUserId(null); setStep('friends'); }}
+                    className={cn(
+                      "rounded-xl border p-4 text-center transition-all space-y-2",
+                      "border-border hover:border-primary/30 hover:bg-primary/5"
+                    )}
+                  >
+                    <Plane className="h-6 w-6 mx-auto text-primary" />
+                    <p className="text-sm font-semibold">Plan a Trip</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Travel somewhere new</p>
+                  </button>
+                  <button
+                    onClick={() => { setProposalType('visit'); setStep('friends'); }}
+                    className={cn(
+                      "rounded-xl border p-4 text-center transition-all space-y-2",
+                      "border-border hover:border-primary/30 hover:bg-primary/5"
+                    )}
+                  >
+                    <Home className="h-6 w-6 mx-auto text-primary" />
+                    <p className="text-sm font-semibold">Plan a Visit</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Visit a friend or host them</p>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 2: Friend selection */}
             {step === 'friends' && (
               <motion.div
                 key="friends"
@@ -608,6 +648,52 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-3"
               >
+                {/* Visit sub-choice: who's hosting? */}
+                {proposalType === 'visit' && (
+                  <div className="space-y-3 mb-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Who's hosting?
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          setHostMode('hosting');
+                          setHostUserId(userId || null);
+                          supabase.from('profiles').select('home_address').eq('user_id', userId!).single()
+                            .then(({ data }) => {
+                              if (data?.home_address) setDestination(data.home_address);
+                            });
+                        }}
+                        className={cn(
+                          "rounded-lg border px-3 py-2 text-left transition-all flex items-center gap-2",
+                          hostMode === 'hosting'
+                            ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                            : "border-border hover:border-primary/30 hover:bg-primary/5"
+                        )}
+                      >
+                        <Home className="h-4 w-4 text-primary shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium">I'm hosting</p>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => { setHostMode('visiting'); setHostUserId(null); setDestination(''); }}
+                        className={cn(
+                          "rounded-lg border px-3 py-2 text-left transition-all flex items-center gap-2",
+                          hostMode === 'visiting'
+                            ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                            : "border-border hover:border-primary/30 hover:bg-primary/5"
+                        )}
+                      >
+                        <Plane className="h-4 w-4 text-primary shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium">I'm visiting</p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Selected chips */}
                 {selectedFriends.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
@@ -646,6 +732,50 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                         <FriendRow key={f.id} friend={f} selected={!!selectedFriends.find(s => s.id === f.id)} onToggle={() => toggleFriend(f)} />
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Friend city picker for "I'm visiting" */}
+                {proposalType === 'visit' && hostMode === 'visiting' && selectedFriends.length > 0 && Object.keys(friendHomeAddresses).length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Visit whose city?
+                    </p>
+                    {selectedFriends.filter(f => f.friendUserId && friendHomeAddresses[f.friendUserId]).map(f => {
+                      const addr = friendHomeAddresses[f.friendUserId!];
+                      const isSelected = hostUserId === f.friendUserId;
+                      return (
+                        <button
+                          key={f.id}
+                          onClick={() => {
+                            setHostUserId(f.friendUserId || null);
+                            setDestination(addr);
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all",
+                            isSelected
+                              ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                              : "border-border hover:border-primary/30 hover:bg-primary/5"
+                          )}
+                        >
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                            <AvatarFallback className="text-[8px]">{f.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{f.name.split(' ')[0]}</p>
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-2.5 w-2.5" />{addr}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <span className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
+                              <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
