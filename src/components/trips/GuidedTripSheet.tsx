@@ -391,6 +391,19 @@ export function GuidedTripSheet({ open, onOpenChange }: GuidedTripSheetProps) {
         await supabase.from('trip_proposal_participants').insert(participantRows);
       }
 
+      // Send push notifications to participants (fire-and-forget)
+      if (friendUserIds.length > 0) {
+        const destText = destination ? ` to ${destination}` : '';
+        supabase.functions.invoke('send-push-notification', {
+          body: {
+            user_ids: friendUserIds,
+            title: '✈️ Trip Proposal',
+            body: `${selectedFriends.length > 0 ? friendNamesStr.split(',')[0].trim() : 'Someone'} shared trip options${destText} with you`,
+            url: '/trips',
+          },
+        }).catch(() => {});
+      }
+
       confetti({
         particleCount: 80,
         spread: 55,
