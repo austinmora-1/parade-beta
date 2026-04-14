@@ -166,6 +166,25 @@ export function normalizeCity(loc: string | null | undefined): string {
     .replace(/^\s*by\s+/i, '')
     .trim();
 
+  // Strip well-known airport names that append to city names
+  // e.g. "New York Kennedy" → "new york", "London Heathrow" → "london"
+  const AIRPORT_SUFFIXES: Record<string, string> = {
+    'kennedy': 'new york city', 'jfk': 'new york city', 'laguardia': 'new york city',
+    'newark': 'new york city', 'heathrow': 'london', 'gatwick': 'london',
+    'stansted': 'london', 'luton': 'london', "o'hare": 'chicago', 'ohare': 'chicago',
+    'midway': 'chicago', 'dulles': 'washington dc', 'reagan': 'washington dc',
+    'logan': 'boston', 'love field': 'dallas', 'hobby': 'houston',
+    'intercontinental': 'houston', 'pearson': 'toronto', 'sky harbor': 'phoenix',
+    'orly': 'paris', 'charles de gaulle': 'paris', 'schiphol': 'amsterdam',
+    'fiumicino': 'rome', 'narita': 'tokyo', 'haneda': 'tokyo',
+    'ben gurion': 'tel aviv', 'changi': 'singapore',
+  };
+  for (const [suffix, city] of Object.entries(AIRPORT_SUFFIXES)) {
+    if (normalized.endsWith(` ${suffix}`)) {
+      return city;
+    }
+  }
+
   return normalized;
 }
 
