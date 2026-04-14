@@ -191,6 +191,24 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
     return () => { cancelled = true; };
   }, [open, userId, step, monthOptions]);
 
+  // Fetch home addresses of selected friends when entering type step
+  useEffect(() => {
+    if (step !== 'type' || selectedFriends.length === 0) return;
+    const friendUserIds = selectedFriends.map(f => f.friendUserId).filter(Boolean) as string[];
+    if (friendUserIds.length === 0) return;
+    supabase
+      .from('profiles')
+      .select('user_id, home_address')
+      .in('user_id', friendUserIds)
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        for (const p of data || []) {
+          if (p.home_address) map[p.user_id] = p.home_address;
+        }
+        setFriendHomeAddresses(map);
+      });
+  }, [step, selectedFriends]);
+
   // Reset on open, pre-select friends if provided
   useEffect(() => {
     if (open) {
@@ -200,19 +218,23 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
       setSelectedWeekends([]);
       setDestination('');
       setSending(false);
+      setProposalType(preSelectedType || 'trip');
+      setHostMode('hosting');
+      setHostUserId(null);
+      setFriendHomeAddresses({});
 
       if (preSelectedFriends && preSelectedFriends.length > 0) {
         const matched = connectedFriends.filter(f =>
           preSelectedFriends.some(ps => ps.userId === f.friendUserId)
         );
         setSelectedFriends(matched);
-        setStep(matched.length > 0 ? 'months' : 'friends');
+        setStep(matched.length > 0 ? (preSelectedType ? 'type' : 'months') : 'friends');
       } else {
         setSelectedFriends([]);
         setStep('friends');
       }
     }
-  }, [open, preSelectedFriends, connectedFriends]);
+  }, [open, preSelectedFriends, connectedFriends, preSelectedType]);
 
   const toggleFriend = (f: Friend) => {
     setSelectedFriends(prev =>
