@@ -960,20 +960,38 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                 className="space-y-4"
               >
                 {/* Destination input */}
-                <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
-                    Destination (optional)
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      placeholder="Where to?"
-                      value={destination}
-                      onChange={e => setDestination(e.target.value)}
-                      className="pl-9 h-9 text-sm"
-                    />
+                {proposalType === 'trip' ? (
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
+                      Destination (optional)
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Where to?"
+                        value={destination}
+                        onChange={e => setDestination(e.target.value)}
+                        className="pl-9 h-9 text-sm"
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
+                      {hostMode === 'hosting' ? 'Your city' : "Friend's city"}
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="City"
+                        value={destination}
+                        onChange={e => setDestination(e.target.value)}
+                        className="pl-9 h-9 text-sm bg-muted/50"
+                        readOnly={hostMode === 'hosting' && !!destination}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Summary card */}
                 <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-4 space-y-3">
