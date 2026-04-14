@@ -1263,18 +1263,11 @@ export async function upsertAvailabilityWithLocation(params: {
   syncRangeStart: string
   syncRangeEnd: string
   slotLocationsByDate?: Map<string, Record<string, string | null>>
-  locationByDate: Map<string, string>
-  returnHomeDates: Set<string>
-  outboundFlightDates: Set<string>
-  pendingReturnTrips: PendingReturnTrip[]
-  homeAddress: string | null
-  syncRangeStart: string
-  syncRangeEnd: string
 }): Promise<number> {
   const {
     adminClient, userId, busySlotsByDate, locationByDate,
     returnHomeDates, outboundFlightDates, pendingReturnTrips,
-    homeAddress, syncRangeStart, syncRangeEnd,
+    homeAddress, syncRangeStart, syncRangeEnd, slotLocationsByDate,
   } = params
 
   const { data: existingAvailabilityRows } = await adminClient
@@ -1307,6 +1300,13 @@ export async function upsertAvailabilityWithLocation(params: {
     } else if (isReturnDate || shouldClearStaleHomeAway || shouldClearAfterReturn) {
       locationFields.location_status = 'home'
       locationFields.trip_location = null
+    }
+
+    // Add per-slot location columns if available for this date
+    const slotLocs = slotLocationsByDate?.get(date)
+    const slotLocFields: Record<string, string | null> = {}
+    if (slotLocs) {
+      Object.assign(slotLocFields, slotLocs)
     }
 
     const { error } = await adminClient
