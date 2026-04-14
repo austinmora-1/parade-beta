@@ -137,6 +137,10 @@ export interface DayAvailability {
   customLocation?: Location;
   tripLocation?: string;
   vibe?: VibeType | null;
+  /** Per-slot location overrides for split-location days (e.g., flight days) */
+  slotLocations?: {
+    [key in TimeSlot]?: string | null;
+  };
 }
 
 export interface UserProfile {

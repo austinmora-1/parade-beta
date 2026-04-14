@@ -60,6 +60,12 @@ interface DashboardData {
     location_status: string | null;
     trip_location: string | null;
     vibe: string | null;
+    slot_location_early_morning: string | null;
+    slot_location_late_morning: string | null;
+    slot_location_early_afternoon: string | null;
+    slot_location_late_afternoon: string | null;
+    slot_location_evening: string | null;
+    slot_location_late_night: string | null;
   }>;
   profile: {
     current_vibe: string | null;
