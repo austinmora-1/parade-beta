@@ -1661,6 +1661,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         myRsvpStatus: p.user_id === userId ? undefined : (myParticipation?.status as string || 'invited'),
         recurringPlanId: (p as any).recurring_plan_id || undefined,
         createdAt: new Date(p.created_at),
+        sourceTimezone: (p as any).source_timezone || undefined,
+        source: (p as any).source || undefined,
       };
     });
 
