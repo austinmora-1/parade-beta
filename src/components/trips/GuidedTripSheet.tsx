@@ -23,9 +23,16 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { useAuth } from '@/hooks/useAuth';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 
+interface PreSelectedFriend {
+  userId: string;
+  name: string;
+  avatar?: string;
+}
+
 interface GuidedTripSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preSelectedFriends?: PreSelectedFriend[];
 }
 
 type Step = 'friends' | 'months' | 'weekends' | 'confirm';
@@ -93,7 +100,7 @@ function useSuggestedFriends(connectedFriends: Friend[]) {
 const getInitials = (name: string) =>
   name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-export function GuidedTripSheet({ open, onOpenChange }: GuidedTripSheetProps) {
+export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: GuidedTripSheetProps) {
   const { user } = useAuth();
   const { friends: allFriends, userId, loadProfileAndAvailability, loadPlans } = usePlannerStore();
   const viewport = useVisualViewport();
@@ -120,19 +127,28 @@ export function GuidedTripSheet({ open, onOpenChange }: GuidedTripSheetProps) {
     });
   }, []);
 
-  // Reset on open
+  // Reset on open, pre-select friends if provided
   useEffect(() => {
     if (open) {
-      setStep('friends');
-      setSelectedFriends([]);
       setSearchQuery('');
       setSelectedMonths([]);
       setWeekends([]);
       setSelectedWeekends([]);
       setDestination('');
       setSending(false);
+
+      if (preSelectedFriends && preSelectedFriends.length > 0) {
+        const matched = connectedFriends.filter(f =>
+          preSelectedFriends.some(ps => ps.userId === f.friendUserId)
+        );
+        setSelectedFriends(matched);
+        setStep(matched.length > 0 ? 'months' : 'friends');
+      } else {
+        setSelectedFriends([]);
+        setStep('friends');
+      }
     }
-  }, [open]);
+  }, [open, preSelectedFriends, connectedFriends]);
 
   const toggleFriend = (f: Friend) => {
     setSelectedFriends(prev =>
