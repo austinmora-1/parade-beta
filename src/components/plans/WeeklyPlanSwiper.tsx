@@ -103,6 +103,7 @@ interface WeeklyPlanSwiperProps {
 export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan }: WeeklyPlanSwiperProps) {
   const availabilityMap = usePlannerStore((s) => s.availabilityMap);
   const homeAddress = usePlannerStore((s) => s.homeAddress);
+  const userTimezone = usePlannerStore((s) => s.userTimezone);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
@@ -827,7 +828,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
             {plan.startTime
               ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
               : timeSlotConfig.time}
-            <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(viewerTimezone)}</span>
+            <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(userTimezone)}</span>
           </div>
           {plan.location && (
             <div className="flex items-center gap-1 truncate min-w-0">
