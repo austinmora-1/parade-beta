@@ -381,7 +381,66 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     );
   };
 
-  const content = upcomingPlans.length === 0 ? (
+  const renderTripProposalCard = (proposal: any) => {
+    const earliestDate = proposal.dates[0];
+    const latestDate = proposal.dates[proposal.dates.length - 1];
+
+    return (
+      <div
+        key={proposal.id}
+        onClick={() => navigate('/trips')}
+        className="rounded-xl border-l-[3px] border-dashed border border-muted-foreground/30 opacity-70 px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
+        style={{ borderLeftColor: 'hsl(var(--primary))' }}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+              <span className="text-sm font-medium truncate text-muted-foreground">
+                {proposal.destination ? `Trip to ${proposal.destination}` : 'Group Trip'}
+              </span>
+              <span className="rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground shrink-0">
+                Proposed
+              </span>
+            </div>
+            <div className="text-[10px] text-muted-foreground ml-[26px]">
+              {proposal.isCreator ? 'You proposed' : `${proposal.creatorName} proposed`} · {proposal.votedCount}/{proposal.totalVoters} voted
+            </div>
+            {earliestDate && latestDate && (
+              <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                <span className="flex items-center gap-0.5">
+                  <Clock className="h-3 w-3" />
+                  {format(new Date(earliestDate.start_date + 'T00:00:00'), 'MMM d')} – {format(new Date(latestDate.end_date + 'T00:00:00'), 'MMM d')}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {proposal.dates.length} date option{proposal.dates.length !== 1 ? 's' : ''}
+            </span>
+            <div className="flex items-center -space-x-1.5">
+              {proposal.participants.slice(0, 4).map((p: any, i: number) => (
+                <Avatar key={p.id || i} className="h-5 w-5 border-[1.5px] border-card">
+                  <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} className="object-cover" />
+                  <AvatarFallback className="text-[8px] bg-muted">{p.display_name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+              ))}
+              {proposal.participants.length > 4 && (
+                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-[1.5px] border-card text-[8px] font-medium text-muted-foreground">
+                  +{proposal.participants.length - 4}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const hasAnyContent = upcomingPlans.length > 0 || tripProposals.length > 0;
+
+  const content = !hasAnyContent ? (
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <div className="mb-3 text-4xl">📅</div>
       <p className="text-muted-foreground">No upcoming plans this week</p>
@@ -389,6 +448,17 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     </div>
   ) : (
     <div className="space-y-4">
+      {tripProposals.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <Plane className="h-3 w-3" />
+            Trip Proposals
+          </h4>
+          <div className="space-y-1.5">
+            {tripProposals.map(renderTripProposalCard)}
+          </div>
+        </div>
+      )}
       {myPlans.length > 0 && (
         <div>
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Your Plans</h4>
