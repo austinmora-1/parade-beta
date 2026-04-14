@@ -107,13 +107,16 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
 
       const inviteUrl = `https://helloparade.app/invite.html?t=${data.invite_token}`;
 
-      await supabase.functions.invoke('send-friend-invite', {
+      await supabase.functions.invoke('send-plan-invite', {
         body: {
           email: email.trim(),
           inviterName,
-          customSubject: `${inviterName} invited you to "${planTitle}"`,
-          customMessage: `You've been invited to join a plan: "${planTitle}". Click below to view the details and join!`,
-          customUrl: inviteUrl,
+          planTitle: planTitle || 'a plan',
+          planActivity: plan?.activity || 'other-events',
+          planDate,
+          planTime,
+          planLocation: planLocation || undefined,
+          inviteUrl,
         },
       });
 
