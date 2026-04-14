@@ -36,7 +36,7 @@ interface GuidedTripSheetProps {
   preSelectedType?: 'trip' | 'visit';
 }
 
-type Step = 'friends' | 'type' | 'months' | 'weekends' | 'confirm';
+type Step = 'type' | 'friends' | 'months' | 'weekends' | 'confirm';
 
 type ProposalType = 'trip' | 'visit';
 type HostMode = 'hosting' | 'visiting';
