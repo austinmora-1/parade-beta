@@ -45,6 +45,7 @@ const AIRPORT_CODES: Record<string, string> = {
 };
 
 const NEIGHBORHOOD_MAP: Record<string, string> = {
+  'new york': 'new york city',
   brooklyn: 'new york city', manhattan: 'new york city', queens: 'new york city',
   bronx: 'new york city', 'the bronx': 'new york city', 'staten island': 'new york city',
   harlem: 'new york city', soho: 'new york city', tribeca: 'new york city',
