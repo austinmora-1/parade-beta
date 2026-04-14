@@ -452,12 +452,13 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
       }));
       await supabase.from('trip_proposal_dates').insert(dateRows);
 
-      // Insert participants
+      // Insert participants (including the creator)
       const friendUserIds = selectedFriends.map(f => f.friendUserId).filter(Boolean) as string[];
-      const participantRows = friendUserIds.map(uid => ({
+      const allParticipantIds = [userId, ...friendUserIds.filter(id => id !== userId)];
+      const participantRows = allParticipantIds.map(uid => ({
         proposal_id: proposal.id,
         user_id: uid,
-        status: 'pending',
+        status: uid === userId ? 'voted' as const : 'pending' as const,
       }));
       if (participantRows.length > 0) {
         await supabase.from('trip_proposal_participants').insert(participantRows);
