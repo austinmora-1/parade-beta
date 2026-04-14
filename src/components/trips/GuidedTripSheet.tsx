@@ -119,10 +119,14 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
   const [weekends, setWeekends] = useState<WeekendOption[]>([]);
   const [loadingWeekends, setLoadingWeekends] = useState(false);
   const [selectedWeekends, setSelectedWeekends] = useState<WeekendOption[]>([]);
-  const [destination, setDestination] = useState('');
-  const [sending, setSending] = useState(false);
-  const [monthStats, setMonthStats] = useState<Record<string, { freeWeekends: number; totalWeekends: number; tripConflicts: number }>>({}); 
-  const [loadingMonthStats, setLoadingMonthStats] = useState(false);
+   const [destination, setDestination] = useState('');
+   const [sending, setSending] = useState(false);
+   const [monthStats, setMonthStats] = useState<Record<string, { freeWeekends: number; totalWeekends: number; tripConflicts: number }>>({}); 
+   const [loadingMonthStats, setLoadingMonthStats] = useState(false);
+   const [proposalType, setProposalType] = useState<ProposalType>('trip');
+   const [hostMode, setHostMode] = useState<HostMode>('hosting');
+   const [hostUserId, setHostUserId] = useState<string | null>(null);
+   const [friendHomeAddresses, setFriendHomeAddresses] = useState<Record<string, string>>({});
 
   // Generate month options (next 12 months)
   const monthOptions = useMemo(() => {
