@@ -1,14 +1,15 @@
 import { useMemo, useRef, useCallback, useState, useEffect, Fragment } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2 } from 'lucide-react';
-import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock } from 'lucide-react';
+import { MapPin, Clock, Plane } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePlannerStore } from '@/stores/plannerStore';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -28,6 +29,8 @@ interface WeeklyPlanSwiperProps {
 }
 
 export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan }: WeeklyPlanSwiperProps) {
+  const availabilityMap = usePlannerStore((s) => s.availabilityMap);
+  const profile = usePlannerStore((s) => s.profile);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
@@ -245,6 +248,8 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         toggleSelect={toggleSelect}
         onEditPlan={onEditPlan}
         onCardTap={handleCardTap}
+        availabilityMap={availabilityMap}
+        homeAddress={profile?.home_address ?? null}
       />
     </div>
   );
