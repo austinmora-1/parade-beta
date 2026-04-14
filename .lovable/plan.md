@@ -1,56 +1,91 @@
 
 
-# Plan: Group Trip Planning Wizard (Updated)
+# Optimize Location Logic for Multi-Leg Trips
 
-## Overview
-Build a "Plan a Trip" wizard that helps users find optimal trip dates with friends by analyzing availability and existing trips across user-selected months, then lets users select and share up to 5 potential trip date ranges.
+## Problem
 
-## User Flow
+The current flight logic uses a binary **outbound vs return** model: a flight is either "going away" (`isReturn = false`) or "coming home" (`isReturn = true`). This fails for multi-leg itineraries like:
 
 ```text
-Step 1: Select friend(s) to trip with
-Step 2: Select individual months (non-consecutive allowed, e.g. July, Aug, Oct)
-Step 3: System shows weekends ranked by combined availability + no trip conflicts
-Step 4: User selects up to 5 date ranges from the results
-Step 5: Confirmation & share trip proposals with friends
+Apr 13: JFK → SFO  (outbound — marks as SF)
+Apr 17: SFO → DFW  (NOT a return — but also not "home". Currently treated as outbound to Dallas, but the SF trip never ends properly)
+Apr 24: DFW → JFK  (return home)
 ```
 
-## Implementation
+The system fills intermediate dates per-outbound-flight by looking ahead for a "return" or "different city" flight. But it doesn't properly **end** the previous city's run when a secondary leg starts. This causes SF to persist from Apr 13 all the way until it hits a flight date, rather than ending on Apr 16.
 
-### 1. New component: `src/components/trips/GuidedTripSheet.tsx`
-Drawer-based wizard modeled after `GuidedPlanSheet.tsx`.
+Additionally, this logic is duplicated across 3 sync paths (`google-calendar-sync`, `ical-sync`, `calendar-sync-worker`), and the DB trigger can't shrink trips.
 
-**Step 1 — Friend selector**: Reuse friend search pattern from GroupScheduler.
+## Plan
 
-**Step 2 — Month picker (non-consecutive)**: Display a grid of the next 6–12 months as toggle buttons. Users tap to select/deselect individual months freely — no requirement for consecutive selection. Selected months shown as highlighted chips. Minimum 1 month required.
+### 1. Create `resolveLocationsByDate()` in `calendar-helpers.ts`
 
-**Step 3 — Weekend analysis**: For each weekend (Fri–Sun) across all selected months:
-- Fetch all participants' `availability` rows and `trips`
-- Count available slots per participant, penalize weekends with existing trip conflicts
-- Sort by score DESC then chronologically
-- Display as ranked weekend cards with availability percentage
+A single shared function that replaces the ~80 lines of flight/hotel → location-by-date logic duplicated in all 3 sync paths. The key algorithmic change:
 
-**Step 4 — Date range selection**: User taps up to 5 weekends. Optional destination city input.
+**New approach — segment-based, not binary:**
+- Sort all flights chronologically
+- Walk through flights in order, building **segments**: each outbound flight starts a new segment for its destination city
+- When a new outbound flight to a *different* city appears, it **ends** the previous segment on the day before
+- A return-home flight ends the current segment on that day
+- Fill intermediate dates within each segment only
+- No more binary outbound/return assumption — every non-home flight simply starts a new destination segment
 
-**Step 5 — Confirmation & share**: Summary + create trip proposal records.
-
-### 2. Database migration
-Three new tables: `trip_proposals`, `trip_proposal_dates`, `trip_proposal_participants` with RLS policies allowing creator to manage, participants to view/vote.
-
-### 3. Entry point
-Add "Plan a Trip" button on `src/pages/Trips.tsx` alongside existing "Add Trip".
-
-### 4. Weekend scoring
+Example with JFK→SFO (Apr 13), SFO→DFW (Apr 17), DFW→JFK (Apr 24):
 ```text
-For each weekend in selected months:
-  availabilityScore = sum of free slots across all participants
-  conflictPenalty = -1000 if any participant has existing trip
-  finalScore = availabilityScore + conflictPenalty
-Sort by finalScore DESC, then chronologically
+Segment 1: San Francisco, Apr 13–16 (ends day before DFW flight)
+Segment 2: Dallas, Apr 17–23 (ends day before return)
+Apr 24: return home
 ```
 
-### Files to create/modify
-- **Create**: `src/components/trips/GuidedTripSheet.tsx` (~500 lines)
-- **Modify**: `src/pages/Trips.tsx` (add entry point button)
-- **Migration**: New tables for trip proposals
+The function signature:
+```typescript
+export function resolveLocationsByDate(params: {
+  allFlights: FlightInfo[];
+  hotelStays: HotelStay[];
+  homeAddress: string | null;
+  existingTrips: ExistingTrip[];
+}): {
+  locationByDate: Map<string, string>;
+  returnHomeDates: Set<string>;
+  outboundFlightDates: Set<string>;
+  pendingReturnTrips: PendingReturnTrip[];
+}
+```
+
+### 2. Refactor all 3 sync paths to use the shared function
+
+Replace the duplicated flight-fill logic in:
+- `supabase/functions/google-calendar-sync/index.ts` (lines ~98–200)
+- `supabase/functions/ical-sync/index.ts` (equivalent block)
+- `supabase/functions/calendar-sync-worker/index.ts` (equivalent block)
+
+Each will call `resolveLocationsByDate()` after collecting flights and hotels, then proceed with availability upserts using the returned `locationByDate` map.
+
+### 3. Update the DB trigger to support trip shrinking
+
+Modify `auto_create_trip_from_availability()`:
+- When a day changes to a different city, find the trip for the old city covering that date
+- Scan availability to find the actual remaining consecutive run of days for the old city
+- If the run is shorter than the current trip range, **UPDATE** `start_date`/`end_date`
+- If no consecutive days remain, **DELETE** the trip
+- Use `normalize_trip_city()` consistently instead of `lower(trim())` for all comparisons
+
+### 4. Fix stale SF trip data
+
+Use the insert tool to update the existing SF trip (id: `c6dcf951`) to end on April 16 instead of April 24.
+
+### 5. Unify city normalization
+
+Add a `normalizeCityForComparison()` function in `calendar-helpers.ts` that matches the output of the DB's `normalize_trip_city()` function — lowercase, airport-code-resolved, abbreviation-resolved. Use it in the new `resolveLocationsByDate()` to ensure edge functions and DB trigger agree on city identity.
+
+## Summary of File Changes
+
+| File | Change |
+|------|--------|
+| `calendar-helpers.ts` | Add `resolveLocationsByDate()`, `normalizeCityForComparison()` |
+| `google-calendar-sync/index.ts` | Replace ~100 lines of flight-fill with shared function call |
+| `ical-sync/index.ts` | Same replacement |
+| `calendar-sync-worker/index.ts` | Same replacement |
+| DB migration | Update trigger with shrink logic + normalize_trip_city consistency |
+| DB data fix | Update stale SF trip end_date |
 
