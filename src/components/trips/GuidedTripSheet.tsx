@@ -626,19 +626,44 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 <div className="grid grid-cols-3 gap-2">
                   {monthOptions.map(mo => {
                     const sel = selectedMonths.includes(mo.key);
+                    const stats = monthStats[mo.key];
+                    const hasStats = !!stats && !loadingMonthStats;
+                    const freeRatio = hasStats && stats.totalWeekends > 0 ? stats.freeWeekends / stats.totalWeekends : 0;
+                    // Color coding: green if mostly free, amber if mixed, red-ish if conflicts
+                    const isGreat = hasStats && freeRatio >= 0.7 && stats.tripConflicts === 0;
+                    const hasTripConflict = hasStats && stats.tripConflicts > 0;
                     return (
                       <motion.button
                         key={mo.key}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => toggleMonth(mo.key)}
                         className={cn(
-                          "rounded-xl border px-3 py-3 text-sm font-medium transition-all text-center",
+                          "relative rounded-xl border px-3 py-2.5 text-sm font-medium transition-all text-center flex flex-col items-center gap-1",
                           sel
                             ? "border-primary bg-primary/10 text-primary"
                             : "border-border hover:border-primary/30 hover:bg-primary/5 text-foreground"
                         )}
                       >
-                        {mo.label}
+                        <span>{mo.label}</span>
+                        {hasStats && (
+                          <span className={cn(
+                            "text-[9px] font-medium leading-none",
+                            isGreat ? "text-chart-2" : hasTripConflict ? "text-destructive" : "text-muted-foreground"
+                          )}>
+                            {stats.freeWeekends}/{stats.totalWeekends} free
+                            {stats.tripConflicts > 0 && ` · ${stats.tripConflicts} trip${stats.tripConflicts > 1 ? 's' : ''}`}
+                          </span>
+                        )}
+                        {loadingMonthStats && (
+                          <span className="h-2.5 w-12 rounded-full bg-muted animate-pulse" />
+                        )}
+                        {/* Dot indicator */}
+                        {hasStats && (
+                          <div className="absolute top-1.5 right-1.5 flex gap-0.5">
+                            {isGreat && <span className="h-1.5 w-1.5 rounded-full bg-chart-2" />}
+                            {hasTripConflict && <span className="h-1.5 w-1.5 rounded-full bg-destructive" />}
+                          </div>
+                        )}
                       </motion.button>
                     );
                   })}
