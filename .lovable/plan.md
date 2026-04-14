@@ -1,28 +1,27 @@
 
+# Active Safeguards
 
-# Improve Departure City Fallback from Previous Slot/Day Location
+## Split-Location Departure City Fallback (April 2026)
 
-## Problem
-When a flight reservation doesn't include a departure city, the `resolveSlotLocations` function walks back through `locationByDate` to find the previous location. However, `locationByDate` only contains **away** locations (from outbound flights/hotels). If the user is at their travel destination (e.g., Dallas) and `locationByDate` happens to not have that date populated (e.g., edge cases with segment boundaries), or the home address doesn't match, the departure city resolves incorrectly or not at all.
+### What was fixed
+Flight transition days (e.g., Dallas → New York) were showing only the destination city instead of a "departure → arrival" arrow indicator.
 
-## Fix
+### Root causes (3 bugs)
+1. **`src/stores/plannerStore.ts`**: Null slot locations (in-transit gaps) were dropped when mapping DB rows to `DayAvailability.slotLocations` — only truthy values were kept. Fix: include all `val !== undefined` entries so `null` (transit) slots are preserved.
+2. **`src/components/plans/WeeklyPlanSwiper.tsx`**: `getPreviousDayLocation` used DB column names (`slot_location_late_night`) instead of TimeSlot keys (`late-night`). Fix: use correct keys.
+3. **`src/stores/plannerStore.ts`** (extended range loader ~line 1407): `slotLocations` weren't mapped at all for lazy-loaded availability. Fix: added the same slot mapping logic.
 
-### 1. Backend: Improve fallback in `resolveSlotLocations` (calendar-helpers.ts)
+### Critical invariants — DO NOT REGRESS
+- `slotLocs` must include **null** entries (not just truthy ones) so the client can detect in-transit slots
+- `getPreviousDayLocation` must use TimeSlot keys (`'late-night'`, `'evening'`, etc.), NOT DB column names
+- Both the initial load (~line 521) and extended range loader (~line 1407) must map `slotLocations`
+- `getLocationLabel` falls back to previous day's last known location when only one unique city + transit exists in slots
 
-Enhance the fallback logic when `departureCity` is null to also check:
-1. The **previous day's slot locations** (the last non-null slot from the day before — e.g., `slot_location_late_night` or `slot_location_evening`)
-2. The existing `locationByDate` walkback (already implemented)
-3. Home address as final fallback
-
-This means checking the already-resolved `result` map (previous flight days' slot locations) in addition to `locationByDate`. The key change is on the walkback at lines 1196-1209: after checking `locationByDate`, also check if the previous date had slot-level locations in the `result` map already built, and use the last populated slot from that day.
-
-### 2. Client-side: Fallback in `getLocationLabel` (WeeklyPlanSwiper.tsx)
-
-When building the split-location label, if the first slot location is null/empty but the previous day has a known `tripLocation` or slot location, use that as the departure city for the arrow indicator. This ensures even if the DB data is stale, the UI can infer the departure from the previous day's availability record.
-
-## Files Changed
-| File | Change |
-|------|--------|
-| `supabase/functions/_shared/calendar-helpers.ts` | In `resolveSlotLocations`, extend fallback to check previously resolved slot locations from the `result` map for the prior date |
-| `src/components/plans/WeeklyPlanSwiper.tsx` | In `getLocationLabel`, when first unique city is missing, look up previous day's `tripLocation` or last slot location from `availabilityMap` |
-
+### Files involved
+| File | Lines | What to protect |
+|------|-------|-----------------|
+| `src/stores/plannerStore.ts` | ~521-527 | `val !== undefined` check (not `if (val)`) |
+| `src/stores/plannerStore.ts` | ~1407-1440 | Extended range loader includes `slotLocations` mapping |
+| `src/components/plans/WeeklyPlanSwiper.tsx` | `getLocationLabel` | Single-city + transit → infer departure from previous day |
+| `src/components/plans/WeeklyPlanSwiper.tsx` | `getPreviousDayLocation` | Uses TimeSlot keys, not DB column names |
+| `supabase/functions/_shared/calendar-helpers.ts` | `resolveSlotLocations` | Checks `result` map (prev day slots) before `locationByDate` fallback |
