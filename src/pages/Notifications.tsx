@@ -104,7 +104,7 @@ export default function Notifications() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchUnreadVibes, dismissedIds, dismissNotification: dismiss } = useNotifications();
+  const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchUnreadVibes, refetchTripProposals, dismissedIds, dismissNotification: dismiss } = useNotifications();
 
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -126,6 +126,9 @@ export default function Notifications() {
   const [proposedPlans, setProposedPlans] = useState<ProposedPlan[]>([]);
   const [proposedLoading, setProposedLoading] = useState(true);
   const [counterProposal, setCounterProposal] = useState<ProposedPlan | null>(null);
+
+  const [tripProposals, setTripProposals] = useState<TripProposalNotification[]>([]);
+  const [tripProposalsLoading, setTripProposalsLoading] = useState(true);
 
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
   const visibleIncomingRequests = incomingRequests.filter(f => !dismissedIds.has(`friend-${f.id}`));
@@ -150,6 +153,7 @@ export default function Notifications() {
       fetchParticipantRequestsData();
       fetchIncomingVibes();
       fetchProposedPlans();
+      fetchTripProposalsData();
     }
   }, [user]);
 
