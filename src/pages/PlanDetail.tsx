@@ -167,6 +167,8 @@ export default function PlanDetail() {
           notes: planData.notes || undefined,
           status: planData.status,
           feedVisibility: planData.feed_visibility || 'private',
+          sourceTimezone: planData.source_timezone || undefined,
+          source: planData.source || undefined,
           participants: [
             { id: planData.user_id, name: profileMap[planData.user_id]?.name || 'Someone', avatar: profileMap[planData.user_id]?.avatar, friendUserId: planData.user_id, status: 'connected', role: 'participant' },
             ...(pData || []).map((pp: any) => ({
