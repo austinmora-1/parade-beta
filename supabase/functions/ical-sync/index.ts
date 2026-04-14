@@ -103,11 +103,28 @@ Deno.serve(async (req) => {
     // Fetch user's home address for flight detection
     const { data: profileData } = await adminClient
       .from('profiles')
-      .select('home_address, timezone')
+      .select('home_address, timezone, location_status')
       .eq('user_id', userId)
       .single()
     const homeAddress: string | null = profileData?.home_address || null
-    const userTimezone = timezone || profileData?.timezone
+    // Resolve timezone with same priority as frontend
+    let userTimezone = timezone || profileData?.timezone
+    if (!userTimezone) {
+      const todayStr = new Date().toISOString().split('T')[0]
+      const { data: todayAvail } = await adminClient
+        .from('availability')
+        .select('location_status, trip_location')
+        .eq('user_id', userId)
+        .eq('date', todayStr)
+        .maybeSingle()
+      const locStatus = todayAvail?.location_status || profileData?.location_status || 'home'
+      if (locStatus === 'away' && todayAvail?.trip_location) {
+        userTimezone = todayAvail.trip_location
+      }
+      if (!userTimezone) {
+        userTimezone = homeAddress || 'America/New_York'
+      }
+    }
 
     // ── Collect busy slots, flights, hotels ────────────────────────────────
     const busySlotsByDate: Map<string, Set<string>> = new Map()
