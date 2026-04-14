@@ -33,9 +33,13 @@ interface GuidedTripSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preSelectedFriends?: PreSelectedFriend[];
+  preSelectedType?: 'trip' | 'visit';
 }
 
-type Step = 'friends' | 'months' | 'weekends' | 'confirm';
+type Step = 'friends' | 'type' | 'months' | 'weekends' | 'confirm';
+
+type ProposalType = 'trip' | 'visit';
+type HostMode = 'hosting' | 'visiting';
 
 interface WeekendOption {
   fridayDate: Date;
