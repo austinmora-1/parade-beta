@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Plane } from 'lucide-react';
 import { TripsList } from '@/components/trips/TripsList';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { MissingReturnDialog, PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 import { TripConflictDialog, TripConflict } from '@/components/trips/TripConflictDialog';
+import { GuidedTripSheet } from '@/components/trips/GuidedTripSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
