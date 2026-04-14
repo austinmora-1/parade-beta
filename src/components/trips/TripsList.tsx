@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay } from 'date-fns';
-import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, ThumbsUp, Loader2, Users } from 'lucide-react';
+import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, ThumbsUp, Loader2, Users, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +47,9 @@ interface TripProposal {
   participants: ProposalParticipant[];
   myParticipantId: string;
   myVotedDateId: string | null;
+  proposal_type: string;
+  host_user_id: string | null;
+  host_name: string | null;
 }
 
 interface TripsListProps {
@@ -155,6 +158,9 @@ export function TripsList({ refreshKey }: TripsListProps) {
         participants: propParticipants,
         myParticipantId: myRow.id,
         myVotedDateId: myRow.preferred_date_id,
+        proposal_type: (prop as any).proposal_type || 'trip',
+        host_user_id: (prop as any).host_user_id || null,
+        host_name: (prop as any).host_user_id ? (profileMap.get((prop as any).host_user_id)?.name || null) : null,
       };
     });
 
@@ -350,12 +356,31 @@ function ProposalTripCard({
   const isCreator = proposal.created_by === currentUserId;
   const totalVoters = proposal.participants.length;
   const votedCount = proposal.participants.filter(p => p.status === 'voted').length;
+  const isVisit = proposal.proposal_type === 'visit';
+  const isHost = proposal.host_user_id === currentUserId;
 
   // Determine earliest/latest dates from options for display
   const allStarts = proposal.dates.map(d => d.start_date).sort();
   const allEnds = proposal.dates.map(d => d.end_date).sort();
   const earliestStart = allStarts[0];
   const latestEnd = allEnds[allEnds.length - 1];
+
+  // Build title
+  let cardTitle: string;
+  if (isVisit) {
+    if (isHost) {
+      cardTitle = `Hosting in ${proposal.destination || 'your city'}`;
+    } else if (proposal.host_name) {
+      cardTitle = `${proposal.host_name} is hosting in ${proposal.destination || 'their city'}`;
+    } else {
+      cardTitle = `Visit to ${proposal.destination || 'TBD'}`;
+    }
+  } else {
+    cardTitle = proposal.destination ? `Trip to ${proposal.destination}` : 'Group Trip';
+  }
+
+  const CardIcon = isVisit ? Home : Plane;
+  const badgeLabel = isVisit ? 'Visit' : 'Proposed';
 
   return (
     <div
@@ -366,16 +391,16 @@ function ProposalTripCard({
       {/* Card header — matches trip card layout */}
       <div className="flex items-center gap-3">
         <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary shrink-0">
-          <Plane className="h-5 w-5" />
+          <CardIcon className="h-5 w-5" />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="font-medium text-sm truncate text-muted-foreground">
-              {proposal.destination ? `Trip to ${proposal.destination}` : 'Group Trip'}
+              {cardTitle}
             </span>
             <span className="text-[10px] font-semibold bg-muted border border-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
-              Proposed
+              {badgeLabel}
             </span>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">

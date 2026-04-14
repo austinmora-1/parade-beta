@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Plane, Check, Calendar, MapPin, Users, ThumbsUp, Loader2 } from 'lucide-react';
+import { Plane, Check, Calendar, MapPin, Users, ThumbsUp, Loader2, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,9 @@ interface TripProposal {
   participants: Participant[];
   myParticipantId: string;
   myVotedDateId: string | null;
+  proposal_type: string;
+  host_user_id: string | null;
+  host_name: string | null;
 }
 
 export function TripProposalsList() {
@@ -120,6 +123,9 @@ export function TripProposalsList() {
         participants: propParticipants,
         myParticipantId: myRow.id,
         myVotedDateId: myRow.preferred_date_id,
+        proposal_type: (prop as any).proposal_type || 'trip',
+        host_user_id: (prop as any).host_user_id || null,
+        host_name: (prop as any).host_user_id ? (profileMap.get((prop as any).host_user_id)?.name || null) : null,
       };
     });
 
@@ -220,17 +226,36 @@ function ProposalCard({
   const isCreator = proposal.created_by === currentUserId;
   const totalVoters = proposal.participants.length;
   const votedCount = proposal.participants.filter(p => p.status === 'voted').length;
+  const isVisit = proposal.proposal_type === 'visit';
+  const isHost = proposal.host_user_id === currentUserId;
+
+  // Build title
+  let cardTitle: string;
+  if (isVisit) {
+    if (isHost) {
+      cardTitle = `Hosting in ${proposal.destination || 'your city'}`;
+    } else if (proposal.host_name) {
+      cardTitle = `${proposal.host_name} is hosting in ${proposal.destination || 'their city'}`;
+    } else {
+      cardTitle = `Visit to ${proposal.destination || 'TBD'}`;
+    }
+  } else {
+    cardTitle = proposal.destination ? `Trip to ${proposal.destination}` : 'Group Trip';
+  }
+
+  const CardIcon = isVisit ? Home : Plane;
+  const badgeLabel = isVisit ? 'Visit' : 'Proposed';
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-soft space-y-3">
       {/* Header */}
       <div className="flex items-start gap-3">
         <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary shrink-0">
-          <Plane className="h-5 w-5" />
+          <CardIcon className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate">
-            {proposal.destination ? `Trip to ${proposal.destination}` : 'Group Trip'}
+            {cardTitle}
           </p>
           <p className="text-xs text-muted-foreground">
             {isCreator ? 'You proposed' : `${proposal.creator_name} proposed`} · {votedCount}/{totalVoters} voted

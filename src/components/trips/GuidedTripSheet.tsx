@@ -5,7 +5,7 @@ import {
 } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X,
+  Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X, Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -33,9 +33,13 @@ interface GuidedTripSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preSelectedFriends?: PreSelectedFriend[];
+  preSelectedType?: 'trip' | 'visit';
 }
 
-type Step = 'friends' | 'months' | 'weekends' | 'confirm';
+type Step = 'friends' | 'type' | 'months' | 'weekends' | 'confirm';
+
+type ProposalType = 'trip' | 'visit';
+type HostMode = 'hosting' | 'visiting';
 
 interface WeekendOption {
   fridayDate: Date;
@@ -100,7 +104,7 @@ function useSuggestedFriends(connectedFriends: Friend[]) {
 const getInitials = (name: string) =>
   name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: GuidedTripSheetProps) {
+export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSelectedType }: GuidedTripSheetProps) {
   const { user } = useAuth();
   const { friends: allFriends, userId, loadProfileAndAvailability, loadPlans } = usePlannerStore();
   const viewport = useVisualViewport();
@@ -115,10 +119,14 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [weekends, setWeekends] = useState<WeekendOption[]>([]);
   const [loadingWeekends, setLoadingWeekends] = useState(false);
   const [selectedWeekends, setSelectedWeekends] = useState<WeekendOption[]>([]);
-  const [destination, setDestination] = useState('');
-  const [sending, setSending] = useState(false);
-  const [monthStats, setMonthStats] = useState<Record<string, { freeWeekends: number; totalWeekends: number; tripConflicts: number }>>({}); 
-  const [loadingMonthStats, setLoadingMonthStats] = useState(false);
+   const [destination, setDestination] = useState('');
+   const [sending, setSending] = useState(false);
+   const [monthStats, setMonthStats] = useState<Record<string, { freeWeekends: number; totalWeekends: number; tripConflicts: number }>>({}); 
+   const [loadingMonthStats, setLoadingMonthStats] = useState(false);
+   const [proposalType, setProposalType] = useState<ProposalType>('trip');
+   const [hostMode, setHostMode] = useState<HostMode>('hosting');
+   const [hostUserId, setHostUserId] = useState<string | null>(null);
+   const [friendHomeAddresses, setFriendHomeAddresses] = useState<Record<string, string>>({});
 
   // Generate month options (next 12 months)
   const monthOptions = useMemo(() => {
@@ -183,6 +191,24 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
     return () => { cancelled = true; };
   }, [open, userId, step, monthOptions]);
 
+  // Fetch home addresses of selected friends when entering type step
+  useEffect(() => {
+    if (step !== 'type' || selectedFriends.length === 0) return;
+    const friendUserIds = selectedFriends.map(f => f.friendUserId).filter(Boolean) as string[];
+    if (friendUserIds.length === 0) return;
+    supabase
+      .from('profiles')
+      .select('user_id, home_address')
+      .in('user_id', friendUserIds)
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        for (const p of data || []) {
+          if (p.home_address) map[p.user_id] = p.home_address;
+        }
+        setFriendHomeAddresses(map);
+      });
+  }, [step, selectedFriends]);
+
   // Reset on open, pre-select friends if provided
   useEffect(() => {
     if (open) {
@@ -192,19 +218,23 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setSelectedWeekends([]);
       setDestination('');
       setSending(false);
+      setProposalType(preSelectedType || 'trip');
+      setHostMode('hosting');
+      setHostUserId(null);
+      setFriendHomeAddresses({});
 
       if (preSelectedFriends && preSelectedFriends.length > 0) {
         const matched = connectedFriends.filter(f =>
           preSelectedFriends.some(ps => ps.userId === f.friendUserId)
         );
         setSelectedFriends(matched);
-        setStep(matched.length > 0 ? 'months' : 'friends');
+        setStep(matched.length > 0 ? (preSelectedType ? 'type' : 'months') : 'friends');
       } else {
         setSelectedFriends([]);
         setStep('friends');
       }
     }
-  }, [open, preSelectedFriends, connectedFriends]);
+  }, [open, preSelectedFriends, connectedFriends, preSelectedType]);
 
   const toggleFriend = (f: Friend) => {
     setSelectedFriends(prev =>
@@ -439,7 +469,13 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
       // Create proposal
       const { data: proposal, error: proposalErr } = await supabase
         .from('trip_proposals')
-        .insert({ created_by: userId, destination: destination || null, status: 'pending' })
+        .insert({
+          created_by: userId,
+          destination: destination || null,
+          status: 'pending',
+          proposal_type: proposalType,
+          host_user_id: proposalType === 'visit' ? hostUserId : null,
+        } as any)
         .select('id')
         .single();
       if (proposalErr || !proposal) throw proposalErr;
@@ -466,13 +502,23 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
       // Send push notifications to participants (fire-and-forget)
       if (friendUserIds.length > 0) {
-        const destText = destination ? ` to ${destination}` : '';
         const senderName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Someone';
+        const isVisit = proposalType === 'visit';
+        const notifTitle = isVisit ? '🏠 Visit Proposal' : '✈️ Trip Proposal';
+        let notifBody: string;
+        if (isVisit && hostMode === 'hosting') {
+          notifBody = `${senderName} is hosting in ${destination || 'their city'} — vote on dates!`;
+        } else if (isVisit) {
+          notifBody = `${senderName} wants to plan a visit to ${destination || 'your city'}`;
+        } else {
+          const destText = destination ? ` to ${destination}` : '';
+          notifBody = `${senderName} shared trip options${destText} with you`;
+        }
         supabase.functions.invoke('send-push-notification', {
           body: {
             user_ids: friendUserIds,
-            title: '✈️ Trip Proposal',
-            body: `${senderName} shared trip options${destText} with you`,
+            title: notifTitle,
+            body: notifBody,
             url: '/trips',
           },
         }).catch(() => {});
@@ -485,7 +531,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
         colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
         scalar: 0.9,
       });
-      toast.success(`Trip options shared with ${friendNamesStr}! ✈️`);
+      const isVisitMsg = proposalType === 'visit';
+      toast.success(isVisitMsg
+        ? `Visit options shared with ${friendNamesStr}! 🏠`
+        : `Trip options shared with ${friendNamesStr}! ✈️`
+      );
       onOpenChange(false);
     } catch (err) {
       console.error('Failed to create trip proposal:', err);
@@ -495,13 +545,16 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
     }
   };
 
+  const isVisit = proposalType === 'visit';
   const stepTitle = step === 'friends'
     ? 'Who do you want to travel with?'
-    : step === 'months'
-      ? 'Which months work for you?'
-      : step === 'weekends'
-        ? `Best weekends for ${friendNamesStr}`
-        : 'Your trip options';
+    : step === 'type'
+      ? 'Trip or Visit?'
+      : step === 'months'
+        ? 'Which months work for you?'
+        : step === 'weekends'
+          ? `Best weekends for ${friendNamesStr}`
+          : isVisit ? 'Your visit options' : 'Your trip options';
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -515,7 +568,8 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
               onClick={() => {
                 if (step === 'confirm') setStep('weekends');
                 else if (step === 'weekends') { setStep('months'); setSelectedWeekends([]); }
-                else if (step === 'months') setStep('friends');
+                else if (step === 'months') setStep('type');
+                else if (step === 'type') setStep('friends');
               }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -608,6 +662,158 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     )}
                   </div>
                 </div>
+              </motion.div>
+            )}
+
+            {/* STEP 1.5: Type selection (trip vs visit) */}
+            {step === 'type' && (
+              <motion.div
+                key="type"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-4"
+              >
+                <p className="text-xs text-muted-foreground text-center">
+                  What kind of plans are you making?
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => { setProposalType('trip'); setHostUserId(null); }}
+                    className={cn(
+                      "rounded-xl border p-4 text-center transition-all space-y-2",
+                      proposalType === 'trip'
+                        ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                        : "border-border hover:border-primary/30 hover:bg-primary/5"
+                    )}
+                  >
+                    <Plane className="h-6 w-6 mx-auto text-primary" />
+                    <p className="text-sm font-semibold">Plan a Trip</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Travel somewhere together</p>
+                  </button>
+                  <button
+                    onClick={() => { setProposalType('visit'); }}
+                    className={cn(
+                      "rounded-xl border p-4 text-center transition-all space-y-2",
+                      proposalType === 'visit'
+                        ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                        : "border-border hover:border-primary/30 hover:bg-primary/5"
+                    )}
+                  >
+                    <Home className="h-6 w-6 mx-auto text-primary" />
+                    <p className="text-sm font-semibold">Plan a Visit</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Visit a friend or host them</p>
+                  </button>
+                </div>
+
+                {/* Visit sub-choice */}
+                {proposalType === 'visit' && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Who's hosting?
+                    </p>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          setHostMode('hosting');
+                          setHostUserId(userId || null);
+                          // Auto-fill destination from user's profile
+                          supabase.from('profiles').select('home_address').eq('user_id', userId!).single()
+                            .then(({ data }) => {
+                              if (data?.home_address) setDestination(data.home_address);
+                            });
+                        }}
+                        className={cn(
+                          "w-full rounded-lg border px-3 py-2.5 text-left transition-all flex items-center gap-3",
+                          hostMode === 'hosting'
+                            ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                            : "border-border hover:border-primary/30 hover:bg-primary/5"
+                        )}
+                      >
+                        <Home className="h-4 w-4 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">I'm hosting</p>
+                          <p className="text-[10px] text-muted-foreground">Friends come to your city</p>
+                        </div>
+                        {hostMode === 'hosting' && (
+                          <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => { setHostMode('visiting'); setHostUserId(null); setDestination(''); }}
+                        className={cn(
+                          "w-full rounded-lg border px-3 py-2.5 text-left transition-all flex items-center gap-3",
+                          hostMode === 'visiting'
+                            ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                            : "border-border hover:border-primary/30 hover:bg-primary/5"
+                        )}
+                      >
+                        <Plane className="h-4 w-4 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">I'm visiting</p>
+                          <p className="text-[10px] text-muted-foreground">You travel to a friend's city</p>
+                        </div>
+                        {hostMode === 'visiting' && (
+                          <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Friend city picker for "I'm visiting" */}
+                    {hostMode === 'visiting' && Object.keys(friendHomeAddresses).length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Visit whose city?
+                        </p>
+                        {selectedFriends.filter(f => f.friendUserId && friendHomeAddresses[f.friendUserId]).map(f => {
+                          const addr = friendHomeAddresses[f.friendUserId!];
+                          const isSelected = hostUserId === f.friendUserId;
+                          return (
+                            <button
+                              key={f.id}
+                              onClick={() => {
+                                setHostUserId(f.friendUserId || null);
+                                setDestination(addr);
+                              }}
+                              className={cn(
+                                "w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all",
+                                isSelected
+                                  ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                                  : "border-border hover:border-primary/30 hover:bg-primary/5"
+                              )}
+                            >
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                                <AvatarFallback className="text-[8px]">{f.name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate">{f.name.split(' ')[0]}</p>
+                                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                  <MapPin className="h-2.5 w-2.5" />{addr}
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <span className="h-4 w-4 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                  <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                        {selectedFriends.filter(f => f.friendUserId && friendHomeAddresses[f.friendUserId]).length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-2">
+                            No friends have set a home city yet
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -754,28 +960,50 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 className="space-y-4"
               >
                 {/* Destination input */}
-                <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
-                    Destination (optional)
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      placeholder="Where to?"
-                      value={destination}
-                      onChange={e => setDestination(e.target.value)}
-                      className="pl-9 h-9 text-sm"
-                    />
+                {proposalType === 'trip' ? (
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
+                      Destination (optional)
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Where to?"
+                        value={destination}
+                        onChange={e => setDestination(e.target.value)}
+                        className="pl-9 h-9 text-sm"
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
+                      {hostMode === 'hosting' ? 'Your city' : "Friend's city"}
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="City"
+                        value={destination}
+                        onChange={e => setDestination(e.target.value)}
+                        className="pl-9 h-9 text-sm bg-muted/50"
+                        readOnly={hostMode === 'hosting' && !!destination}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Summary card */}
                 <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-4 space-y-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">✈️</span>
+                    <span className="text-2xl">{isVisit ? '🏠' : '✈️'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">
-                        {destination ? `Trip to ${destination}` : 'Group Trip'}
+                        {isVisit
+                          ? (hostMode === 'hosting'
+                            ? `Hosting in ${destination || 'your city'}`
+                            : `Visit to ${destination || "friend's city"}`)
+                          : (destination ? `Trip to ${destination}` : 'Group Trip')}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {selectedWeekends.length} date option{selectedWeekends.length > 1 ? 's' : ''} with {friendNamesStr}
@@ -825,7 +1053,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px]">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
-                    ✈️ Proposed
+                    {isVisit ? '🏠 Visit' : '✈️ Proposed'}
                   </span>
                   <span className="text-muted-foreground">— friends can vote on dates</span>
                 </div>
@@ -837,9 +1065,18 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
         {/* Footer buttons */}
         {step === 'friends' && selectedFriends.length > 0 && (
           <DrawerFooter className="pt-2">
-            <Button onClick={() => setStep('months')} className="w-full gap-2">
+            <Button onClick={() => setStep('type')} className="w-full gap-2">
               <Plane className="h-4 w-4" />
               Continue with {selectedFriends.length} friend{selectedFriends.length > 1 ? 's' : ''}
+            </Button>
+          </DrawerFooter>
+        )}
+
+        {step === 'type' && (proposalType === 'trip' || (proposalType === 'visit' && (hostMode === 'hosting' || hostUserId))) && (
+          <DrawerFooter className="pt-2">
+            <Button onClick={() => setStep('months')} className="w-full gap-2">
+              {isVisit ? <Home className="h-4 w-4" /> : <Plane className="h-4 w-4" />}
+              Continue
             </Button>
           </DrawerFooter>
         )}
@@ -865,8 +1102,8 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends }: Guid
         {step === 'confirm' && (
           <DrawerFooter className="pt-2">
             <Button onClick={handleSubmit} disabled={sending} className="w-full gap-2">
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plane className="h-4 w-4" />}
-              Share Trip Options →
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : isVisit ? <Home className="h-4 w-4" /> : <Plane className="h-4 w-4" />}
+              {isVisit ? 'Share Visit Options →' : 'Share Trip Options →'}
             </Button>
           </DrawerFooter>
         )}
