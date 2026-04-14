@@ -499,11 +499,13 @@ export default function PlanDetail() {
                     {displayPlan.startTime && formatTime12(displayPlan.startTime)}
                     {displayPlan.startTime && displayPlan.endTime && ' – '}
                     {displayPlan.endTime && formatTime12(displayPlan.endTime)}
+                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
                     {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
                   </>
                 ) : timeSlotConfig ? (
                   <>
                     {timeSlotConfig.label} ({timeSlotConfig.time})
+                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
                   </>
                 ) : null}
                 {displayPlan.duration && !displayPlan.startTime && !displayPlan.endTime && (
