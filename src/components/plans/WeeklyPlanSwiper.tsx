@@ -6,7 +6,8 @@ import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { normalizeCity } from '@/lib/locationMatch';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
-import { MapPin, Clock, Plane } from 'lucide-react';
+import { getTimezoneAbbreviation } from '@/lib/timezone';
+import { MapPin, Clock, Plane, Globe } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
