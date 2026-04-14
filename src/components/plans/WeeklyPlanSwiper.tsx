@@ -257,16 +257,27 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 
 // --- Collapsible past days section ---
 
-function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeAddress: string | null): string | null {
+function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeAddress: string | null): { label: string; isSplit: boolean; isAway: boolean } | null {
   const avail = availabilityMap[dateKey];
-  if (avail?.locationStatus === 'away' && avail.tripLocation) {
-    return avail.tripLocation;
+  const isAway = avail?.locationStatus === 'away';
+
+  // Check for split-location day
+  if (avail?.slotLocations) {
+    const locs = Object.values(avail.slotLocations).filter((v): v is string => !!v);
+    const unique = [...new Set(locs)];
+    const hasTransit = Object.values(avail.slotLocations).some(v => v === null && v !== undefined);
+    if (unique.length > 1 || (unique.length >= 1 && hasTransit)) {
+      return { label: unique.join(' → '), isSplit: true, isAway };
+    }
   }
-  // Show home city if available
+
+  if (isAway && avail?.tripLocation) {
+    return { label: avail.tripLocation, isSplit: false, isAway: true };
+  }
   if (homeAddress) {
-    // Extract first part (city name) from home address
     const parts = homeAddress.split(',');
-    return parts[0]?.trim() || null;
+    const city = parts[0]?.trim();
+    if (city) return { label: city, isSplit: false, isAway: false };
   }
   return null;
 }
@@ -285,8 +296,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   homeAddress: string | null;
 }) {
   const key = format(day, 'yyyy-MM-dd');
-  const locationLabel = getLocationLabel(key, availabilityMap, homeAddress);
-  const isAway = availabilityMap[key]?.locationStatus === 'away';
+  const locInfo = getLocationLabel(key, availabilityMap, homeAddress);
 
   return (
     <div className={cn("rounded-xl transition-colors")}>
@@ -303,13 +313,13 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         )}>
           {format(day, 'EEEE')}
         </span>
-        {locationLabel && (
+        {locInfo && (
           <span className={cn(
-            "flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[120px]",
-            isAway ? "text-availability-away-foreground text-secondary" : "text-muted-foreground/70"
+            "flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[140px]",
+            locInfo.isSplit ? "text-amber-600 dark:text-amber-400" : locInfo.isAway ? "text-availability-away-foreground text-secondary" : "text-muted-foreground/70"
           )}>
-            {isAway ? <Plane className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
-            {locationLabel}
+            {locInfo.isSplit ? <Plane className="h-2.5 w-2.5 shrink-0" /> : locInfo.isAway ? <Plane className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
+            {locInfo.label}
           </span>
         )}
         {dayPlans.length > 1 && (
