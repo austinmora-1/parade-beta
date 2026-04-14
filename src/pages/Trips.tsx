@@ -49,15 +49,26 @@ export default function Trips() {
             Track your upcoming trips and travel plans
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="shrink-0 gap-2"
-          onClick={() => setTripDialogOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Add Trip</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="default"
+            className="gap-2"
+            onClick={() => setGuidedTripOpen(true)}
+          >
+            <Plane className="h-4 w-4" />
+            <span className="hidden sm:inline">Plan a Trip</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => setTripDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Trip</span>
+          </Button>
+        </div>
       </div>
 
       <TripsList refreshKey={tripsRefreshKey} />
