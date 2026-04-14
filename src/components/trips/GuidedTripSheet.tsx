@@ -228,10 +228,10 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
           preSelectedFriends.some(ps => ps.userId === f.friendUserId)
         );
         setSelectedFriends(matched);
-        setStep(matched.length > 0 ? (preSelectedType ? 'type' : 'months') : 'friends');
+        setStep(matched.length > 0 ? 'months' : 'type');
       } else {
         setSelectedFriends([]);
-        setStep('friends');
+        setStep('type');
       }
     }
   }, [open, preSelectedFriends, connectedFriends, preSelectedType]);
