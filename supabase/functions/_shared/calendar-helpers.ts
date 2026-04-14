@@ -1191,16 +1191,22 @@ export function resolveSlotLocations(params: {
     const slotLocations: Record<string, string | null> = {}
     for (const col of SLOT_DB_COLS) slotLocations[col] = null
 
-    // Determine the "before" location: departure city of first flight, or previous day location, or home
+    // Determine the "before" location: departure city of first flight, or previous days' location, or home
     const firstFlight = sorted[0]
-    const prevDateStr = (() => {
-      const d = new Date(date + 'T12:00:00Z')
-      d.setDate(d.getDate() - 1)
-      return d.toISOString().split('T')[0]
-    })()
-    const beforeLocation = firstFlight.departureCity
-      || locationByDate.get(prevDateStr)
-      || (homeAddress ? homeAddress.split(',')[0].trim() : null)
+    let beforeLocation = firstFlight.departureCity || null
+    if (!beforeLocation) {
+      // Walk back up to 7 days to find the most recent known location
+      for (let dayBack = 1; dayBack <= 7; dayBack++) {
+        const d = new Date(date + 'T12:00:00Z')
+        d.setDate(d.getDate() - dayBack)
+        const prevStr = d.toISOString().split('T')[0]
+        const loc = locationByDate.get(prevStr)
+        if (loc) { beforeLocation = loc; break }
+      }
+    }
+    if (!beforeLocation && homeAddress) {
+      beforeLocation = homeAddress.split(',')[0].trim()
+    }
 
     // For each slot, determine location based on flight timing
     for (let si = 0; si < SLOT_NAMES.length; si++) {
