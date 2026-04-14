@@ -358,7 +358,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         let effectiveEndTime: string | undefined = p.end_time || undefined;
 
         const sourceTimezone = p.source_timezone;
-        if (sourceTimezone && sourceTimezone !== viewerTimezone && p.user_id !== userId) {
+        if (sourceTimezone && sourceTimezone !== viewerTimezone) {
           if (effectiveStartTime) {
             const converted = convertTimeBetweenTimezones(effectiveStartTime, normalizedPlanDate, sourceTimezone, viewerTimezone);
             effectiveStartTime = converted.time;
@@ -1589,7 +1589,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       let effectiveEndTime: string | undefined = (p as any).end_time || undefined;
 
       const sourceTimezone = (p as any).source_timezone;
-      if (sourceTimezone && sourceTimezone !== viewerTimezone && p.user_id !== userId) {
+      if (sourceTimezone && sourceTimezone !== viewerTimezone) {
         if (effectiveStartTime) {
           const converted = convertTimeBetweenTimezones(effectiveStartTime, normalizedPlanDate, sourceTimezone, viewerTimezone);
           effectiveStartTime = converted.time;
