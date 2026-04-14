@@ -545,7 +545,52 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
     }
   };
 
-  const isVisit = proposalType === 'visit';
+  // Solo trip: create a confirmed trip directly (no proposal)
+  const handleSoloSubmit = async () => {
+    if (!userId || selectedWeekends.length === 0) return;
+    setSending(true);
+    try {
+      // Use the first selected weekend as the trip dates
+      const sorted = [...selectedWeekends].sort((a, b) => a.fridayDate.getTime() - b.fridayDate.getTime());
+      const firstWeekend = sorted[0];
+      const lastWeekend = sorted[sorted.length - 1];
+      const startDate = format(firstWeekend.fridayDate, 'yyyy-MM-dd');
+      const endDate = format(lastWeekend.sundayDate, 'yyyy-MM-dd');
+
+      const { error } = await supabase.from('trips').insert({
+        user_id: userId,
+        location: destination.trim() || null,
+        start_date: startDate,
+        end_date: endDate,
+        available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
+        priority_friend_ids: [],
+      });
+      if (error) throw error;
+
+      // Also set availability to away for those dates
+      const { eachDayOfInterval: eachDay } = await import('date-fns');
+      const days = eachDay({ start: firstWeekend.fridayDate, end: lastWeekend.sundayDate });
+      const availRows = days.map(d => ({
+        user_id: userId,
+        date: format(d, 'yyyy-MM-dd'),
+        location_status: 'away',
+        trip_location: destination.trim() || null,
+        early_morning: true, late_morning: true, early_afternoon: true,
+        late_afternoon: true, evening: true, late_night: true,
+      }));
+      await supabase.from('availability').upsert(availRows, { onConflict: 'user_id,date', ignoreDuplicates: false });
+
+      confetti({ particleCount: 60, spread: 50, origin: { y: 0.75 }, colors: ['#3D8C6C', '#FF6B6B', '#F59E0B'], scalar: 0.9 });
+      toast.success(destination ? `Trip to ${destination} created! ✈️` : 'Trip created! ✈️');
+      onOpenChange(false);
+    } catch (err) {
+      console.error('Failed to create solo trip:', err);
+      toast.error('Something went wrong. Try again?');
+    } finally {
+      setSending(false);
+    }
+  };
+
   const isSoloTrip = selectedFriends.length === 0 && proposalType === 'trip';
   const stepTitle = step === 'type'
     ? 'Trip or Visit?'
