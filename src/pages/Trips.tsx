@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Plane } from 'lucide-react';
 import { TripsList } from '@/components/trips/TripsList';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { MissingReturnDialog, PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 import { TripConflictDialog, TripConflict } from '@/components/trips/TripConflictDialog';
+import { GuidedTripSheet } from '@/components/trips/GuidedTripSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,7 @@ export default function Trips() {
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const [tripDialogOpen, setTripDialogOpen] = useState(false);
+  const [guidedTripOpen, setGuidedTripOpen] = useState(false);
   const [tripsRefreshKey, setTripsRefreshKey] = useState(0);
   const [pendingReturnTrips, setPendingReturnTrips] = useState<PendingReturnTrip[]>([]);
   const [missingReturnOpen, setMissingReturnOpen] = useState(false);
@@ -47,15 +49,26 @@ export default function Trips() {
             Track your upcoming trips and travel plans
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="shrink-0 gap-2"
-          onClick={() => setTripDialogOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Add Trip</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="default"
+            className="gap-2"
+            onClick={() => setGuidedTripOpen(true)}
+          >
+            <Plane className="h-4 w-4" />
+            <span className="hidden sm:inline">Plan a Trip</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => setTripDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Trip</span>
+          </Button>
+        </div>
       </div>
 
       <TripsList refreshKey={tripsRefreshKey} />
@@ -85,6 +98,11 @@ export default function Trips() {
           loadProfileAndAvailability();
           loadPlans();
         }}
+      />
+
+      <GuidedTripSheet
+        open={guidedTripOpen}
+        onOpenChange={setGuidedTripOpen}
       />
     </div>
   );

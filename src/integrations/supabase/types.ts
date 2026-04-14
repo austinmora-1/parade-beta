@@ -1208,6 +1208,110 @@ export type Database = {
           },
         ]
       }
+      trip_proposal_dates: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          proposal_id: string
+          start_date: string
+          votes: number
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          proposal_id: string
+          start_date: string
+          votes?: number
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          proposal_id?: string
+          start_date?: string
+          votes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_proposal_dates_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_proposal_participants: {
+        Row: {
+          created_at: string
+          id: string
+          preferred_date_id: string | null
+          proposal_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preferred_date_id?: string | null
+          proposal_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preferred_date_id?: string | null
+          proposal_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_proposal_participants_preferred_date_id_fkey"
+            columns: ["preferred_date_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposal_dates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_proposal_participants_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_proposals: {
+        Row: {
+          created_at: string
+          created_by: string
+          destination: string | null
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          destination?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          destination?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           available_slots: string[]
