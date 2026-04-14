@@ -591,6 +591,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
     }
   };
 
+  const isVisit = proposalType === 'visit';
   const isSoloTrip = selectedFriends.length === 0 && proposalType === 'trip';
   const stepTitle = step === 'type'
     ? 'Trip or Visit?'
