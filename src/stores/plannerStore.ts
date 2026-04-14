@@ -1404,20 +1404,40 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       const dateStr = format(d, 'yyyy-MM-dd');
       if (!newMap[dateStr]) {
         const existing = fetchedMap.get(dateStr);
-        const dayAvail: DayAvailability = existing ? {
-          date: new Date(d),
-          slots: {
-            'early-morning':    existing.early_morning  ?? true,
-            'late-morning':     existing.late_morning   ?? true,
-            'early-afternoon':  existing.early_afternoon ?? true,
-            'late-afternoon':   existing.late_afternoon  ?? true,
-            'evening':          existing.evening        ?? true,
-            'late-night':       existing.late_night     ?? true,
-          },
-          locationStatus: (existing.location_status as LocationStatus) || 'home',
-          tripLocation:   existing.trip_location || undefined,
-          vibe:           existing.vibe as VibeType | null || null,
-        } : createDefaultAvailability(new Date(d), defaultSettings);
+        const dayAvail: DayAvailability = existing ? (() => {
+          const slotLocs: Record<string, string | null> = {};
+          let hasSlotLocs = false;
+          const slotMap: Record<string, string> = {
+            'early-morning': 'slot_location_early_morning',
+            'late-morning': 'slot_location_late_morning',
+            'early-afternoon': 'slot_location_early_afternoon',
+            'late-afternoon': 'slot_location_late_afternoon',
+            'evening': 'slot_location_evening',
+            'late-night': 'slot_location_late_night',
+          };
+          for (const [slot, col] of Object.entries(slotMap)) {
+            const val = (existing as any)[col] as string | null;
+            if (val !== undefined) {
+              slotLocs[slot] = val;
+              if (val) hasSlotLocs = true;
+            }
+          }
+          return {
+            date: new Date(d),
+            slots: {
+              'early-morning':    existing.early_morning  ?? true,
+              'late-morning':     existing.late_morning   ?? true,
+              'early-afternoon':  existing.early_afternoon ?? true,
+              'late-afternoon':   existing.late_afternoon  ?? true,
+              'evening':          existing.evening        ?? true,
+              'late-night':       existing.late_night     ?? true,
+            },
+            locationStatus: (existing.location_status as LocationStatus) || 'home',
+            tripLocation:   existing.trip_location || undefined,
+            vibe:           existing.vibe as VibeType | null || null,
+            ...(hasSlotLocs ? { slotLocations: slotLocs } : {}),
+          };
+        })() : createDefaultAvailability(new Date(d), defaultSettings);
         newMap[dateStr] = dayAvail;
         newAvail.push(dayAvail);
       }
