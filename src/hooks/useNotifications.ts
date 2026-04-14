@@ -23,6 +23,7 @@ let sharedState = {
   newPlanPhotosCount: 0,
   pendingParticipantRequestsCount: 0,
   unreadVibesCount: 0,
+  pendingTripProposalsCount: 0,
   dismissedIds: loadDismissedIds(),
 };
 let listeners = new Set<() => void>();
@@ -136,6 +137,18 @@ export function useNotifications() {
     emitChange();
   }, [user]);
 
+  const fetchPendingTripProposals = useCallback(async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from('trip_proposal_participants')
+      .select('*, trip_proposals!inner(status)', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .eq('trip_proposals.status', 'pending');
+    sharedState = { ...sharedState, pendingTripProposalsCount: count ?? 0 };
+    emitChange();
+  }, [user]);
+
   useEffect(() => {
     fetchPendingHangs();
     fetchPendingPlanInvites();
@@ -143,7 +156,8 @@ export function useNotifications() {
     fetchNewPlanPhotos();
     fetchPendingParticipantRequests();
     fetchUnreadVibes();
-  }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingParticipantRequests, fetchUnreadVibes]);
+    fetchPendingTripProposals();
+  }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingParticipantRequests, fetchUnreadVibes, fetchPendingTripProposals]);
 
   useEffect(() => {
     if (!user) return;
@@ -174,10 +188,15 @@ export function useNotifications() {
         { event: '*', schema: 'public', table: 'vibe_send_recipients', filter: `recipient_id=eq.${user.id}` },
         () => { fetchUnreadVibes(); }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'trip_proposal_participants', filter: `user_id=eq.${user.id}` },
+        () => { fetchPendingTripProposals(); }
+      )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchUnreadVibes]);
+  }, [user, fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchUnreadVibes, fetchPendingTripProposals]);
 
   const incomingRequestsCount = useMemo(() => {
     return friends.filter(f => f.status === 'pending' && f.isIncoming).length;
@@ -196,6 +215,7 @@ export function useNotifications() {
   const dismissedPhotoCount = useMemo(() => [...dismissed].filter(id => id.startsWith('photo-')).length, [dismissed]);
   const dismissedParticipantReqCount = useMemo(() => [...dismissed].filter(id => id.startsWith('participant-req-')).length, [dismissed]);
   const dismissedVibeCount = useMemo(() => [...dismissed].filter(id => id.startsWith('vibe-')).length, [dismissed]);
+  const dismissedTripProposalCount = useMemo(() => [...dismissed].filter(id => id.startsWith('trip-proposal-')).length, [dismissed]);
 
   const effectiveHangCount = Math.max(0, state.pendingHangRequestsCount - dismissedHangCount);
   const effectiveInviteCount = Math.max(0, state.pendingPlanInvitesCount - dismissedInviteCount);
@@ -204,8 +224,9 @@ export function useNotifications() {
   const effectiveFriendCount = Math.max(0, incomingRequestsCount - dismissedFriendCount);
   const effectiveParticipantReqCount = Math.max(0, state.pendingParticipantRequestsCount - dismissedParticipantReqCount);
   const effectiveVibeCount = Math.max(0, state.unreadVibesCount - dismissedVibeCount);
+  const effectiveTripProposalCount = Math.max(0, state.pendingTripProposalsCount - dismissedTripProposalCount);
 
-  const totalNotifications = effectiveFriendCount + effectiveHangCount + effectiveInviteCount + effectiveChangeCount + effectivePhotoCount + effectiveParticipantReqCount + effectiveVibeCount;
+  const totalNotifications = effectiveFriendCount + effectiveHangCount + effectiveInviteCount + effectiveChangeCount + effectivePhotoCount + effectiveParticipantReqCount + effectiveVibeCount + effectiveTripProposalCount;
 
   // Sync PWA app badge with notification count
   useEffect(() => {
@@ -226,6 +247,7 @@ export function useNotifications() {
     newPlanPhotosCount: state.newPlanPhotosCount,
     pendingParticipantRequestsCount: state.pendingParticipantRequestsCount,
     unreadVibesCount: state.unreadVibesCount,
+    pendingTripProposalsCount: state.pendingTripProposalsCount,
     dismissedIds: state.dismissedIds,
     totalNotifications,
     dismissNotification,
@@ -235,5 +257,6 @@ export function useNotifications() {
     refetchPlanPhotos: fetchNewPlanPhotos,
     refetchParticipantRequests: fetchPendingParticipantRequests,
     refetchUnreadVibes: fetchUnreadVibes,
+    refetchTripProposals: fetchPendingTripProposals,
   };
 }
