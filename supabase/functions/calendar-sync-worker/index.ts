@@ -2,11 +2,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
   formatTimeHHMM, parseAllDayDate, getAllDayDateRange,
-  resolveToCity, extractFlightDestination, isFlightEvent,
+  resolveToCity, extractFlightDestination, extractFlightDepartureCity, isFlightEvent,
   isCityMatchingHome,
   isHotelEvent, extractHotelLocation,
   classifyActivity, parseICS, reconcilePlans, fetchAllGoogleEvents,
-  resolveLocationsByDate, upsertAvailabilityWithLocation,
+  resolveLocationsByDate, upsertAvailabilityWithLocation, resolveSlotLocations,
   type ICalEvent, type FlightInfo, type HotelStay,
   type CalendarEvent,
 } from '../_shared/calendar-helpers.ts'
