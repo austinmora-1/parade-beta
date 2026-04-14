@@ -282,6 +282,20 @@ function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAv
           displayNames.push(loc.length <= 4 ? loc : loc.replace(/\b\w/g, c => c.toUpperCase()));
         }
       }
+
+      // If only one city found in slots but there's transit, infer departure from previous day
+      if (displayNames.length === 1 && hasTransit) {
+        const prevDayDeparture = getPreviousDayLocation(dateKey, availabilityMap, homeAddress);
+        if (prevDayDeparture) {
+          const prevNorm = normalizeCity(prevDayDeparture);
+          const currentNorm = normalizeCity(displayNames[0]);
+          if (prevNorm && currentNorm && prevNorm !== currentNorm) {
+            const prevDisplay = prevDayDeparture.length <= 4 ? prevDayDeparture : prevDayDeparture.replace(/\b\w/g, c => c.toUpperCase());
+            return { label: `${prevDisplay} → ${displayNames[0]}`, isSplit: true, isAway };
+          }
+        }
+      }
+
       if (displayNames.length > 1) {
         return { label: displayNames.join(' → '), isSplit: true, isAway };
       }
@@ -297,6 +311,29 @@ function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAv
     if (city) return { label: city, isSplit: false, isAway: false };
   }
   return null;
+}
+
+/** Look up the previous day's last known location from availability data */
+function getPreviousDayLocation(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeAddress: string | null): string | null {
+  const d = new Date(dateKey + 'T12:00:00Z');
+  d.setDate(d.getDate() - 1);
+  const prevKey = d.toISOString().split('T')[0];
+  const prevAvail = availabilityMap[prevKey];
+  if (!prevAvail) return homeAddress?.split(',')[0]?.trim() || null;
+
+  // Check slot locations in reverse order for the last known location
+  if (prevAvail.slotLocations) {
+    const slotKeys = ['slot_location_late_night', 'slot_location_evening', 'slot_location_late_afternoon', 'slot_location_early_afternoon', 'slot_location_late_morning', 'slot_location_early_morning'];
+    for (const key of slotKeys) {
+      const val = (prevAvail.slotLocations as Record<string, string | null>)[key];
+      if (val) return val;
+    }
+  }
+
+  // Fall back to trip_location
+  if (prevAvail.tripLocation) return prevAvail.tripLocation;
+
+  return homeAddress?.split(',')[0]?.trim() || null;
 }
 
 function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress }: {
