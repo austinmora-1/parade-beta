@@ -582,8 +582,8 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
           </DrawerTitle>
         </DrawerHeader>
 
-        {/* Friend chips strip (shown after step 1) */}
-        {step !== 'friends' && selectedFriends.length > 0 && (
+        {/* Friend chips strip (shown after friend selection step) */}
+        {step !== 'type' && step !== 'friends' && selectedFriends.length > 0 && (
           <div className="flex items-center justify-center gap-1 px-4 pb-3">
             <div className="flex -space-x-2">
               {selectedFriends.slice(0, 5).map(f => (
