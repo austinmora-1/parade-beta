@@ -1195,11 +1195,24 @@ export function resolveSlotLocations(params: {
     const firstFlight = sorted[0]
     let beforeLocation = firstFlight.departureCity || null
     if (!beforeLocation) {
-      // Walk back up to 7 days to find the most recent known location
+      // Walk back up to 7 days: check previously resolved slot locations first, then locationByDate
       for (let dayBack = 1; dayBack <= 7; dayBack++) {
         const d = new Date(date + 'T12:00:00Z')
         d.setDate(d.getDate() - dayBack)
         const prevStr = d.toISOString().split('T')[0]
+
+        // Check if the previous day has resolved slot-level locations in our result map
+        const prevSlots = result.get(prevStr)
+        if (prevSlots) {
+          // Walk slots in reverse order to find the last known location
+          for (let si = SLOT_DB_COLS.length - 1; si >= 0; si--) {
+            const slotVal = prevSlots[SLOT_DB_COLS[si]]
+            if (slotVal) { beforeLocation = slotVal; break }
+          }
+          if (beforeLocation) break
+        }
+
+        // Fall back to the date-level location map
         const loc = locationByDate.get(prevStr)
         if (loc) { beforeLocation = loc; break }
       }
