@@ -681,7 +681,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
           <ActivityIcon config={activityConfig} size={16} />
         </div>
         <div className="flex-1 min-w-0 flex items-start gap-1.5">
-          <span className="text-sm font-semibold leading-tight break-words [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">{displayTitle}</span>
+          <span className={cn("text-sm font-semibold leading-tight break-words [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden", showTentativeStyle && "text-muted-foreground")}>{displayTitle}</span>
           {hasPendingChange && (
             <span className="shrink-0 rounded-full bg-muted border border-muted-foreground/20 px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground whitespace-nowrap mt-0.5">
               Proposed
