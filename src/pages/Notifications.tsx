@@ -661,9 +661,10 @@ export default function Notifications() {
   const visibleParticipantRequests = participantRequests.filter(r => !dismissedIds.has(`participant-req-${r.id}`));
   const visibleVibes = incomingVibes.filter(v => !dismissedIds.has(`vibe-${v.id}`));
   const visibleProposedPlans = proposedPlans.filter(p => !dismissedIds.has(`proposal-${p.planId}`));
+  const visibleTripProposals = tripProposals.filter(t => !dismissedIds.has(`trip-proposal-${t.id}`));
 
-  const totalVisible = visibleIncomingRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length + visibleProposedPlans.length;
-  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && !proposedLoading;
+  const totalVisible = visibleIncomingRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length + visibleProposedPlans.length + visibleTripProposals.length;
+  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && !proposedLoading && !tripProposalsLoading;
 
   const clearAll = () => {
     visiblePlanInvitations.forEach(i => dismiss(`invite-${i.id}`));
@@ -672,6 +673,7 @@ export default function Notifications() {
     visibleParticipantRequests.forEach(r => dismiss(`participant-req-${r.id}`));
     visibleVibes.forEach(v => dismiss(`vibe-${v.id}`));
     visibleProposedPlans.forEach(p => dismiss(`proposal-${p.planId}`));
+    visibleTripProposals.forEach(t => dismiss(`trip-proposal-${t.id}`));
     visibleIncomingRequests.forEach(f => dismiss(`friend-${f.id}`));
   };
 
