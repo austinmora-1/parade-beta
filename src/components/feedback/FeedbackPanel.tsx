@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Sparkles, Bug, Lightbulb } from "lucide-react";
+import { X, Send, Sparkles, Bug, Lightbulb, MessagesSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
