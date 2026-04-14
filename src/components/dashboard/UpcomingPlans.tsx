@@ -210,6 +210,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
             notes: p.notes || undefined,
             status: p.status,
             feedVisibility: p.feed_visibility || 'private',
+            sourceTimezone: p.source_timezone || undefined,
             isFriendPlan: true,
             ownerName: ownerProfile?.name || 'Someone',
             participants: [
