@@ -545,13 +545,16 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
     }
   };
 
+  const isVisit = proposalType === 'visit';
   const stepTitle = step === 'friends'
     ? 'Who do you want to travel with?'
-    : step === 'months'
-      ? 'Which months work for you?'
-      : step === 'weekends'
-        ? `Best weekends for ${friendNamesStr}`
-        : 'Your trip options';
+    : step === 'type'
+      ? 'Trip or Visit?'
+      : step === 'months'
+        ? 'Which months work for you?'
+        : step === 'weekends'
+          ? `Best weekends for ${friendNamesStr}`
+          : isVisit ? 'Your visit options' : 'Your trip options';
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
