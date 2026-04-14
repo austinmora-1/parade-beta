@@ -183,13 +183,17 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     allFlights, hotelStays, homeAddress, existingTrips: existingTrips || [],
   })
 
+  const slotLocationsByDate = resolveSlotLocations({
+    allFlights, locationByDate, homeAddress, timezone,
+  })
+
   const syncRangeStart = getDateString(threeMonthsAgo, timezone)
   const syncRangeEnd = getDateString(threeMonthsAhead, timezone)
 
   const updatedCount = await upsertAvailabilityWithLocation({
     adminClient, userId, busySlotsByDate, locationByDate,
     returnHomeDates, outboundFlightDates, pendingReturnTrips,
-    homeAddress, syncRangeStart, syncRangeEnd,
+    homeAddress, syncRangeStart, syncRangeEnd, slotLocationsByDate,
   })
 
   // ── Sync plans using shared reconciliation ──
@@ -283,13 +287,17 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     allFlights, hotelStays, homeAddress, existingTrips: existingTrips || [],
   })
 
+  const slotLocationsByDate = resolveSlotLocations({
+    allFlights, locationByDate, homeAddress, timezone: userTimezone,
+  })
+
   const syncRangeStart = getDateString(rangeStart, userTimezone)
   const syncRangeEnd = getDateString(rangeEnd, userTimezone)
 
   const updatedCount = await upsertAvailabilityWithLocation({
     adminClient, userId, busySlotsByDate, locationByDate,
     returnHomeDates, outboundFlightDates, pendingReturnTrips,
-    homeAddress, syncRangeStart, syncRangeEnd,
+    homeAddress, syncRangeStart, syncRangeEnd, slotLocationsByDate,
   })
 
   // ── Sync plans ──
