@@ -658,7 +658,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
       onPointerLeave={handlePointerUp}
       className={cn(
         "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
-        showTentativeStyle && "border-dashed border-muted-foreground/40 opacity-70",
+        showTentativeStyle && "border-dashed border-muted-foreground/40",
         isPast && !showTentativeStyle && "bg-muted text-muted-foreground border-muted-foreground/20 shadow-none ring-0",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
         selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && !isPast && "border-border"
@@ -680,7 +680,19 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
         >
           <ActivityIcon config={activityConfig} size={16} />
         </div>
-        <span className="flex-1 min-w-0 text-sm font-semibold leading-tight break-words [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">{displayTitle}</span>
+        <div className="flex-1 min-w-0 flex items-start gap-1.5">
+          <span className="text-sm font-semibold leading-tight break-words [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">{displayTitle}</span>
+          {hasPendingChange && (
+            <span className="shrink-0 rounded-full bg-muted border border-muted-foreground/20 px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground whitespace-nowrap mt-0.5">
+              Proposed
+            </span>
+          )}
+          {isPendingRsvp && !hasPendingChange && (
+            <span className="shrink-0 rounded-full bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap mt-0.5">
+              RSVP
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="text-[11px] text-muted-foreground space-y-0.5">
@@ -704,17 +716,6 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
           </div>
         )}
       </div>
-
-      {hasPendingChange && (
-        <span className="mt-1.5 inline-block rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground">
-          Proposed change
-        </span>
-      )}
-      {isPendingRsvp && !hasPendingChange && (
-        <span className="mt-1.5 inline-block rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400">
-          Pending RSVP
-        </span>
-      )}
     </button>
   );
 }
