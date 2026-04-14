@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, MoreVertical, Trash2, Repeat } from 'lucide-react';
+import { MapPin, MoreVertical, Trash2, Repeat, Check, X, Clock, Eye } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import {
   DropdownMenu,
@@ -16,6 +16,14 @@ import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadg
 import { PlanChangeRequest } from '@/hooks/usePlanChangeRequests';
 import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
 import { usePlannerStore } from '@/stores/plannerStore';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Friend } from '@/types/planner';
 
 // Format "14:30" -> "2:30pm"
 function formatTimeDisplay(time: string): string {
@@ -23,6 +31,93 @@ function formatTimeDisplay(time: string): string {
   const ampm = h >= 12 ? 'pm' : 'am';
   const hour12 = h % 12 || 12;
   return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
+function getRsvpBadge(status?: string) {
+  switch (status) {
+    case 'accepted':
+      return { icon: Check, className: 'bg-emerald-500 text-white', label: 'Going' };
+    case 'declined':
+      return { icon: X, className: 'bg-destructive text-white', label: 'Can\'t go' };
+    case 'maybe':
+      return { icon: Clock, className: 'bg-amber-500 text-white', label: 'Maybe' };
+    default:
+      return { icon: Clock, className: 'bg-muted text-muted-foreground', label: 'Pending' };
+  }
+}
+
+function ParticipantAvatar({ participant, index }: { participant: Friend; index: number }) {
+  const avatarSrc = participant.avatar || getElephantAvatar(participant.name || participant.id);
+  const rsvp = getRsvpBadge(participant.rsvpStatus);
+  const RsvpIcon = rsvp.icon;
+  const isSubscriber = participant.role === 'subscriber';
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className={cn(
+              "relative shrink-0",
+              index > 0 && "-ml-1.5"
+            )}
+          >
+            <img
+              src={avatarSrc}
+              alt={participant.name}
+              className={cn(
+                "h-5 w-5 rounded-full object-cover border",
+                isSubscriber
+                  ? "border-dashed border-muted-foreground/40 opacity-70"
+                  : participant.rsvpStatus === 'declined'
+                    ? "border-destructive/40 opacity-50 grayscale"
+                    : "border-background"
+              )}
+            />
+            {/* RSVP status dot */}
+            {!isSubscriber && (
+              <span className={cn(
+                "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full flex items-center justify-center ring-1 ring-background",
+                rsvp.className
+              )}>
+                <RsvpIcon className="h-1.5 w-1.5" strokeWidth={3} />
+              </span>
+            )}
+            {isSubscriber && (
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full flex items-center justify-center bg-muted ring-1 ring-background">
+                <Eye className="h-1.5 w-1.5 text-muted-foreground" strokeWidth={3} />
+              </span>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs px-2 py-1">
+          <span>{participant.name}</span>
+          <span className="text-muted-foreground ml-1">
+            · {isSubscriber ? 'Watching' : rsvp.label}
+          </span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function ParticipantAvatarStack({ participants }: { participants: Friend[] }) {
+  const maxVisible = 4;
+  const visible = participants.slice(0, maxVisible);
+  const overflow = participants.length - maxVisible;
+
+  return (
+    <div className="flex items-center mt-0.5">
+      {visible.map((p, i) => (
+        <ParticipantAvatar key={p.id} participant={p} index={i} />
+      ))}
+      {overflow > 0 && (
+        <span className="text-[9px] text-muted-foreground ml-1 font-medium">
+          +{overflow}
+        </span>
+      )}
+    </div>
+  );
 }
 
 interface PlanCardProps {
@@ -58,6 +153,10 @@ export function PlanCard({
   const isPendingRsvp = isParticipant && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
   const showTentativeStyle = isTentative || isPendingRsvp || hasPendingChange;
   const showRsvp = isParticipant && !isPast;
+
+  const nonSubscriberParticipants = plan.participants.filter(p => p.role !== 'subscriber');
+  const subscriberParticipants = plan.participants.filter(p => p.role === 'subscriber');
+  const allDisplayParticipants = [...nonSubscriberParticipants, ...subscriberParticipants];
 
   if (compact) {
     return (
@@ -142,11 +241,9 @@ export function PlanCard({
           )}
         </p>
 
-        {/* Participants row */}
-        {plan.participants.filter(p => p.role !== 'subscriber').length > 0 && (
-          <p className="text-[10px] text-muted-foreground truncate">
-            w/ {plan.participants.filter(p => p.role !== 'subscriber').map(p => p.name).join(', ')}
-          </p>
+        {/* Participants avatar stack with RSVP status */}
+        {allDisplayParticipants.length > 0 && (
+          <ParticipantAvatarStack participants={allDisplayParticipants} />
         )}
 
         {/* Location row */}
