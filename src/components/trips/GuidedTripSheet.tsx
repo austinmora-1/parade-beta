@@ -469,7 +469,13 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
       // Create proposal
       const { data: proposal, error: proposalErr } = await supabase
         .from('trip_proposals')
-        .insert({ created_by: userId, destination: destination || null, status: 'pending' })
+        .insert({
+          created_by: userId,
+          destination: destination || null,
+          status: 'pending',
+          proposal_type: proposalType,
+          host_user_id: proposalType === 'visit' ? hostUserId : null,
+        } as any)
         .select('id')
         .single();
       if (proposalErr || !proposal) throw proposalErr;
