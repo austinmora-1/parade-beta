@@ -226,6 +226,22 @@ export function TripsList({ refreshKey }: TripsListProps) {
     }
   };
 
+  // Merge trips and proposals into a single chronologically sorted list
+  const sortedItems = useMemo(() => {
+    const items: { type: 'trip'; data: Trip; sortDate: string }[] = trips.map(t => ({
+      type: 'trip' as const, data: t, sortDate: t.start_date,
+    }));
+
+    const proposalItems = proposals.map(p => {
+      const earliestStart = p.dates.length > 0
+        ? [...p.dates].sort((a, b) => a.start_date.localeCompare(b.start_date))[0].start_date
+        : '9999-12-31';
+      return { type: 'proposal' as const, data: p, sortDate: earliestStart };
+    });
+
+    return [...items, ...proposalItems].sort((a, b) => a.sortDate.localeCompare(b.sortDate));
+  }, [trips, proposals]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -245,22 +261,6 @@ export function TripsList({ refreshKey }: TripsListProps) {
       </div>
     );
   }
-
-  // Merge trips and proposals into a single chronologically sorted list
-  const sortedItems = useMemo(() => {
-    const items: { type: 'trip'; data: Trip; sortDate: string }[] = trips.map(t => ({
-      type: 'trip' as const, data: t, sortDate: t.start_date,
-    }));
-
-    const proposalItems = proposals.map(p => {
-      const earliestStart = p.dates.length > 0
-        ? [...p.dates].sort((a, b) => a.start_date.localeCompare(b.start_date))[0].start_date
-        : '9999-12-31';
-      return { type: 'proposal' as const, data: p, sortDate: earliestStart };
-    });
-
-    return [...items, ...proposalItems].sort((a, b) => a.sortDate.localeCompare(b.sortDate));
-  }, [trips, proposals]);
 
   return (
     <div className="space-y-2">
