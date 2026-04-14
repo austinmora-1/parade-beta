@@ -56,10 +56,9 @@ export function MobileHeader() {
           aria-label="Send feedback"
         >
           <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
-            <path d="M15.8 17.4A6 6 0 0 0 22 12c0-3.3-2.7-6-6-6" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" />
+            <path d="M14 10h.01" />
+            <path d="M10 10h.01" />
           </svg>
         </button>
         <Link
