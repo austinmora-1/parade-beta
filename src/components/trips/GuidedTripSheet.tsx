@@ -1053,7 +1053,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px]">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
-                    ✈️ Proposed
+                    {isVisit ? '🏠 Visit' : '✈️ Proposed'}
                   </span>
                   <span className="text-muted-foreground">— friends can vote on dates</span>
                 </div>
