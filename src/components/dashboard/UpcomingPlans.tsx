@@ -84,6 +84,61 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
   const { user } = useAuth();
   const navigate = useNavigate();
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
+  const [tripProposals, setTripProposals] = useState<any[]>([]);
+
+  // Fetch pending trip proposals
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data: myParticipations } = await supabase
+        .from('trip_proposal_participants')
+        .select('id, proposal_id, status, preferred_date_id, user_id')
+        .eq('user_id', user.id);
+
+      if (!myParticipations?.length) { setTripProposals([]); return; }
+
+      const proposalIds = myParticipations.map(p => p.proposal_id);
+      const [{ data: proposalsData }, { data: datesData }, { data: allParts }] = await Promise.all([
+        supabase.from('trip_proposals').select('*').in('id', proposalIds).eq('status', 'pending'),
+        supabase.from('trip_proposal_dates').select('*').in('proposal_id', proposalIds).order('start_date'),
+        supabase.from('trip_proposal_participants').select('*').in('proposal_id', proposalIds),
+      ]);
+
+      if (!proposalsData?.length) { setTripProposals([]); return; }
+
+      const allUserIds = [...new Set([
+        ...proposalsData.map(p => p.created_by),
+        ...(allParts || []).map(p => p.user_id),
+      ])];
+      const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allUserIds });
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: p.display_name, avatar: p.avatar_url }]));
+
+      const mapped = proposalsData.map(prop => {
+        const myRow = myParticipations.find(p => p.proposal_id === prop.id)!;
+        const creator = profileMap.get(prop.created_by);
+        const propDates = (datesData || []).filter(d => d.proposal_id === prop.id);
+        const propParticipants = (allParts || [])
+          .filter(p => p.proposal_id === prop.id)
+          .map(p => ({ ...p, display_name: profileMap.get(p.user_id)?.name || 'Unknown', avatar_url: profileMap.get(p.user_id)?.avatar || null }));
+        const votedCount = propParticipants.filter(p => p.status === 'voted').length;
+
+        return {
+          id: `proposal-${prop.id}`,
+          proposalId: prop.id,
+          destination: prop.destination,
+          isCreator: prop.created_by === user.id,
+          creatorName: creator?.name || 'Someone',
+          dates: propDates,
+          participants: propParticipants,
+          votedCount,
+          totalVoters: propParticipants.length,
+          myVotedDateId: myRow.preferred_date_id,
+          isTripProposal: true,
+        };
+      });
+      setTripProposals(mapped);
+    })();
+  }, [user?.id]);
 
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
