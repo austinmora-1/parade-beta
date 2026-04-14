@@ -1311,16 +1311,18 @@ export async function upsertAvailabilityWithLocation(params: {
 
     const { error } = await adminClient
       .from('availability')
-      .upsert({ user_id: userId, date, ...slotUpdates, ...locationFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+      .upsert({ user_id: userId, date, ...slotUpdates, ...locationFields, ...slotLocFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
     if (!error) updatedCount++
   }
 
   // Upsert location-only dates
   for (const [date, city] of locationByDate) {
     if (busySlotsByDate.has(date)) continue
+    const slotLocs = slotLocationsByDate?.get(date)
+    const slotLocFields: Record<string, string | null> = slotLocs ? { ...slotLocs } : {}
     const { error } = await adminClient
       .from('availability')
-      .upsert({ user_id: userId, date, location_status: 'away', trip_location: city }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+      .upsert({ user_id: userId, date, location_status: 'away', trip_location: city, ...slotLocFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
     if (!error) updatedCount++
   }
 
