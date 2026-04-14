@@ -895,3 +895,314 @@ export interface PendingReturnTrip {
   destination: string
   departureDate: string
 }
+
+export interface ExistingTrip {
+  id: string
+  location: string
+  start_date: string
+  end_date: string
+  needs_return_date: boolean
+}
+
+// ── City Normalization (matches DB normalize_trip_city) ─────────────────────
+
+const CITY_ABBREV_MAP: Record<string, string> = {
+  NYC: 'new york city', SF: 'san francisco', LA: 'los angeles',
+  DC: 'washington dc', NOLA: 'new orleans', ATX: 'austin',
+  PHX: 'phoenix', CHI: 'chicago', BMORE: 'baltimore',
+  PHILLY: 'philadelphia', VEGAS: 'las vegas', BARCA: 'barcelona',
+  CDMX: 'mexico city', KL: 'kuala lumpur', HK: 'hong kong',
+}
+
+const AIRPORT_CITY_NORM: Record<string, string> = Object.fromEntries(
+  Object.entries(AIRPORT_CITY_MAP).map(([code, city]) => [code, city.toLowerCase()])
+)
+
+/**
+ * Normalize a city name to lowercase canonical form, matching the DB's
+ * normalize_trip_city() function output. Used for comparing cities across
+ * Edge Functions and the DB trigger.
+ */
+export function normalizeCityForComparison(location: string | null | undefined): string {
+  if (!location || !location.trim()) return ''
+  const trimmed = location.trim()
+  const upper = trimmed.toUpperCase()
+
+  // Check abbreviations
+  if (upper in CITY_ABBREV_MAP) return CITY_ABBREV_MAP[upper]
+
+  // Check airport codes
+  if (/^[A-Z]{3}$/.test(upper) && upper in AIRPORT_CITY_NORM) {
+    return AIRPORT_CITY_NORM[upper]
+  }
+
+  // Take first part before comma, lowercase, strip hotel brands
+  let normalized = trimmed.split(',')[0].toLowerCase().trim()
+  normalized = normalized
+    .replace(/\b(residence\s*inn|courtyard|marriott|hilton|hyatt|sheraton|westin|holiday\s*inn|hampton|doubletree|ritz|four\s*seasons|intercontinental|radisson|best\s*western|comfort\s*inn|la\s*quinta|airbnb|vrbo|hotel|motel|hostel|inn|lodge|resort|suites?|stay\s+at)\b/gi, '')
+    .replace(/\bby\s+(marriott|hilton|hyatt|wyndham|ihg|accor|choice)\b/gi, '')
+    .replace(/^\s*by\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return normalized
+}
+
+// ── Segment-Based Location Resolution ───────────────────────────────────────
+
+/**
+ * Resolves which city a user is in on each date, using a segment-based approach
+ * that supports multi-leg trips (e.g., JFK→SFO on Apr 13, SFO→DFW on Apr 17,
+ * DFW→JFK on Apr 24 produces two segments: SF Apr 13–16, Dallas Apr 17–23).
+ *
+ * Replaces the old binary outbound/return logic that was duplicated across
+ * google-calendar-sync, ical-sync, and calendar-sync-worker.
+ */
+export function resolveLocationsByDate(params: {
+  allFlights: FlightInfo[]
+  hotelStays: HotelStay[]
+  homeAddress: string | null
+  existingTrips: ExistingTrip[]
+}): {
+  locationByDate: Map<string, string>
+  returnHomeDates: Set<string>
+  outboundFlightDates: Set<string>
+  pendingReturnTrips: PendingReturnTrip[]
+} {
+  const { allFlights, hotelStays, homeAddress, existingTrips } = params
+
+  // Sort flights chronologically
+  const sortedFlights = [...allFlights].sort((a, b) => a.timestamp - b.timestamp)
+  console.log(`[FLIGHTS SORTED] ${sortedFlights.map(f => `${f.city}@${f.date}(ts=${f.timestamp})`).join(' → ')}`)
+
+  // Group flights by date, last flight on each date determines the outcome
+  const flightsByDate = new Map<string, FlightInfo[]>()
+  for (const f of sortedFlights) {
+    if (!flightsByDate.has(f.date)) flightsByDate.set(f.date, [])
+    flightsByDate.get(f.date)!.push(f)
+  }
+
+  // Determine return vs outbound per date (last flight wins)
+  const returnHomeDates = new Set<string>()
+  const outboundFlightDates = new Set<string>()
+  const flightCityByDate = new Map<string, string>() // date → destination city
+
+  for (const [date, flights] of flightsByDate) {
+    const lastFlight = flights[flights.length - 1]
+    if (lastFlight.isReturn) {
+      returnHomeDates.add(date)
+    } else if (lastFlight.city) {
+      outboundFlightDates.add(date)
+      flightCityByDate.set(date, lastFlight.city)
+    }
+  }
+
+  const allFlightDatesSet = new Set(sortedFlights.map(f => f.date))
+
+  // Build segments: each outbound flight starts a segment that ends when:
+  // 1. A different-city outbound flight occurs (segment ends day before)
+  // 2. A return-home flight occurs (segment ends day before return)
+  // 3. No terminating event within 30 days (one-way / pending return)
+  const outboundEntries = Array.from(flightCityByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
+  const locationByDate = new Map<string, string>()
+  const pendingReturnTrips: PendingReturnTrip[] = []
+
+  for (let i = 0; i < outboundEntries.length; i++) {
+    const [outDate, city] = outboundEntries[i]
+
+    // Set the flight date itself
+    locationByDate.set(outDate, city)
+
+    // Check if an existing manually-managed trip covers this flight
+    const resolvedTrip = existingTrips.find((trip) =>
+      !trip.needs_return_date &&
+      isLocationMatch(trip.location, city) &&
+      trip.start_date <= outDate &&
+      trip.end_date >= outDate
+    )
+
+    if (resolvedTrip) {
+      // Fill dates from the manual trip's range, stopping at any flight date
+      const current = new Date(outDate + 'T00:00:00Z')
+      current.setDate(current.getDate() + 1)
+      const manualEnd = new Date(resolvedTrip.end_date + 'T00:00:00Z')
+      while (current <= manualEnd) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        locationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+      continue
+    }
+
+    // Find the terminating event: next outbound to different city OR return home
+    let terminatingDate: string | null = null
+    const maxDate = new Date(outDate + 'T00:00:00Z')
+    maxDate.setDate(maxDate.getDate() + 30)
+    const maxDateStr = maxDate.toISOString().split('T')[0]
+
+    // Check next outbound flights to different cities
+    for (let j = i + 1; j < outboundEntries.length; j++) {
+      const [nextDate, nextCity] = outboundEntries[j]
+      if (nextDate > maxDateStr) break
+      if (normalizeCityForComparison(nextCity) !== normalizeCityForComparison(city)) {
+        terminatingDate = nextDate
+        break
+      }
+    }
+
+    // Check return flights
+    for (const rd of returnHomeDates) {
+      if (rd > outDate && rd <= maxDateStr) {
+        if (!terminatingDate || rd < terminatingDate) {
+          terminatingDate = rd
+        }
+      }
+    }
+
+    if (terminatingDate) {
+      // Fill intermediate dates up to (but not including) the terminating date
+      const current = new Date(outDate + 'T00:00:00Z')
+      current.setDate(current.getDate() + 1)
+      const termDate = new Date(terminatingDate + 'T00:00:00Z')
+      while (current < termDate) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        locationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+    } else {
+      // No terminating event found — fill 7 days and mark as pending return
+      const current = new Date(outDate + 'T00:00:00Z')
+      current.setDate(current.getDate() + 1)
+      for (let d = 0; d < 7; d++) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (allFlightDatesSet.has(dateStr)) break
+        locationByDate.set(dateStr, city)
+        current.setDate(current.getDate() + 1)
+      }
+      pendingReturnTrips.push({ destination: city, departureDate: outDate })
+    }
+  }
+
+  // Apply hotel stays (flight-derived locations take priority)
+  for (const stay of hotelStays) {
+    const dates = getDateRange(stay.startDate, stay.endDate)
+    for (const d of dates) {
+      if (!locationByDate.has(d)) locationByDate.set(d, stay.city)
+    }
+  }
+
+  console.log(`[LOCATION BY DATE] ${JSON.stringify(Object.fromEntries(locationByDate))}`)
+
+  return { locationByDate, returnHomeDates, outboundFlightDates, pendingReturnTrips }
+}
+
+// ── Shared Availability Upsert Logic ────────────────────────────────────────
+
+/**
+ * Upserts availability rows with location info, clears stale away statuses,
+ * handles pending return trips, and merges overlapping trips.
+ * Extracted to prevent drift across sync paths.
+ */
+export async function upsertAvailabilityWithLocation(params: {
+  adminClient: any
+  userId: string
+  busySlotsByDate: Map<string, Set<string>>
+  locationByDate: Map<string, string>
+  returnHomeDates: Set<string>
+  outboundFlightDates: Set<string>
+  pendingReturnTrips: PendingReturnTrip[]
+  homeAddress: string | null
+  syncRangeStart: string
+  syncRangeEnd: string
+}): Promise<number> {
+  const {
+    adminClient, userId, busySlotsByDate, locationByDate,
+    returnHomeDates, outboundFlightDates, pendingReturnTrips,
+    homeAddress, syncRangeStart, syncRangeEnd,
+  } = params
+
+  const { data: existingAvailabilityRows } = await adminClient
+    .from('availability')
+    .select('date, location_status, trip_location')
+    .eq('user_id', userId)
+    .gte('date', syncRangeStart)
+    .lte('date', syncRangeEnd)
+
+  const existingAvailabilityByDate = new Map(
+    (existingAvailabilityRows || []).map((row: any) => [row.date, row])
+  )
+
+  let updatedCount = 0
+
+  // Upsert busy slots with location
+  for (const [date, slots] of busySlotsByDate) {
+    const slotUpdates: Record<string, boolean> = {}
+    for (const slot of slots) slotUpdates[slot] = false
+
+    const locationCity = locationByDate.get(date)
+    const existingRow = existingAvailabilityByDate.get(date)
+    const isReturnDate = returnHomeDates.has(date)
+    const shouldClearStaleHomeAway = !locationCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
+    const shouldClearAfterReturn = !locationCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
+    const locationFields: Record<string, string | null> = {}
+    if (locationCity) {
+      locationFields.location_status = 'away'
+      locationFields.trip_location = locationCity
+    } else if (isReturnDate || shouldClearStaleHomeAway || shouldClearAfterReturn) {
+      locationFields.location_status = 'home'
+      locationFields.trip_location = null
+    }
+
+    const { error } = await adminClient
+      .from('availability')
+      .upsert({ user_id: userId, date, ...slotUpdates, ...locationFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+    if (!error) updatedCount++
+  }
+
+  // Upsert location-only dates
+  for (const [date, city] of locationByDate) {
+    if (busySlotsByDate.has(date)) continue
+    const { error } = await adminClient
+      .from('availability')
+      .upsert({ user_id: userId, date, location_status: 'away', trip_location: city }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+    if (!error) updatedCount++
+  }
+
+  // Clear stale away statuses
+  for (const existingRow of (existingAvailabilityRows || [])) {
+    if (busySlotsByDate.has(existingRow.date) || locationByDate.has(existingRow.date)) continue
+    const isReturnDate = returnHomeDates.has(existingRow.date)
+    const shouldClear = isReturnDate ||
+      (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
+      (existingRow.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(existingRow.date, returnHomeDates, outboundFlightDates))
+    if (shouldClear) {
+      await adminClient
+        .from('availability')
+        .upsert({ user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null }, { onConflict: 'user_id,date', ignoreDuplicates: false })
+    }
+  }
+
+  // Merge overlapping trips
+  await adminClient.rpc('merge_overlapping_trips', { p_user_id: userId })
+
+  // Handle pending return trips
+  if (pendingReturnTrips.length > 0) {
+    for (const pending of pendingReturnTrips) {
+      const { data: trips } = await adminClient
+        .from('trips')
+        .select('id')
+        .eq('user_id', userId)
+        .lte('start_date', pending.departureDate)
+        .gte('end_date', pending.departureDate)
+        .ilike('location', `%${pending.destination}%`)
+
+      if (trips && trips.length > 0) {
+        await adminClient.from('trips').update({ needs_return_date: true }).eq('id', trips[0].id)
+      }
+    }
+  }
+
+  return updatedCount
+}
