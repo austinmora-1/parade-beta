@@ -72,6 +72,18 @@ export function CalendarView({ onEditPlan, onDeletePlan, onCreatePlan }: Calenda
     return dayAvail?.locationStatus === 'away';
   };
 
+  const isDaySplitLocation = (date: Date): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayAvail = availabilityMap[dateStr];
+    if (!dayAvail?.slotLocations) return false;
+    const locs = Object.values(dayAvail.slotLocations).filter(Boolean);
+    if (locs.length === 0) return false;
+    // Split if there are multiple distinct locations or a null (in-transit) among set slots
+    const unique = new Set(locs);
+    const hasTransit = Object.values(dayAvail.slotLocations).some(v => v === null && v !== undefined);
+    return unique.size > 1 || hasTransit;
+  };
+
   // Get background color based on plan count and away status
   const getDayBgColor = (planCount: number, isSelected: boolean, isToday: boolean, isAway: boolean): string => {
     if (isSelected) return isAway ? 'bg-availability-away text-white' : 'bg-primary text-primary-foreground';
