@@ -306,7 +306,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         {locationLabel && (
           <span className={cn(
             "flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[120px]",
-            isAway ? "text-availability-away-foreground" : "text-muted-foreground/70"
+            isAway ? "text-availability-away-foreground text-secondary" : "text-muted-foreground/70"
           )}>
             {isAway ? <Plane className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
             {locationLabel}
