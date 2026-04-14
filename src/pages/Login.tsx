@@ -25,7 +25,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(hasInviteRedirect);
+  const [isSignUp, setIsSignUp] = useState(hasInviteRedirect || startInSignUp);
   const [forgotLoading, setForgotLoading] = useState(false);
 
   const navigateAfterAuth = () => {
