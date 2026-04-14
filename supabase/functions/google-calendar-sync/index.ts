@@ -1,13 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
-  formatTimeHHMM, getDateRange, AIRPORT_CITY_MAP, parseAllDayDate, getAllDayDateRange,
+  formatTimeHHMM, parseAllDayDate, getAllDayDateRange,
   resolveToCity, extractFlightDestination, isFlightEvent,
-  isCityMatchingHome, isLocationMatch, isDateAfterReturn,
+  isCityMatchingHome,
   isHotelEvent, extractHotelLocation,
-  normalizePlanTitle, makeContentKey,
   classifyActivity, reconcilePlans, fetchAllGoogleEvents,
-  type CalendarEvent, type FlightInfo, type HotelStay, type PendingReturnTrip,
+  resolveLocationsByDate, upsertAvailabilityWithLocation,
+  type CalendarEvent, type FlightInfo, type HotelStay,
 } from '../_shared/calendar-helpers.ts'
 
 const corsHeaders = {
@@ -22,7 +22,7 @@ async function handleEventsSync(params: {
   userId: string
   events: GCalEvent[]
   timezone?: string
-}): Promise<{ updatedCount: number; pendingReturnTrips: PendingReturnTrip[] }> {
+}): Promise<{ updatedCount: number; pendingReturnTrips: { destination: string; departureDate: string }[] }> {
   const { adminClient, userId, events, timezone } = params
 
   const { data: profileData } = await adminClient
@@ -39,7 +39,6 @@ async function handleEventsSync(params: {
   for (const event of events) {
     if (!event.start.dateTime || !event.end.dateTime) {
       if (event.start.date && event.end.date) {
-        // Parse all-day date strings directly to avoid timezone shift
         const startParsed = parseAllDayDate(event.start.date)
         const endDate = new Date(event.end.date + 'T12:00:00Z')
         endDate.setDate(endDate.getDate() - 1)
@@ -95,209 +94,32 @@ async function handleEventsSync(params: {
     }
   }
 
-  allFlights.sort((a, b) => a.timestamp - b.timestamp)
-  console.log(`[FLIGHTS SORTED] ${allFlights.map(f => `${f.city}@${f.date}(ts=${f.timestamp})`).join(' → ')}`)
-
-  const flightLocationByDate: Map<string, string> = new Map()
-  for (const flight of allFlights) {
-    if (flight.city && !flight.isReturn) {
-      flightLocationByDate.set(flight.date, flight.city)
-    }
-  }
-  console.log(`[FLIGHT LOCATIONS BY DATE] ${JSON.stringify(Object.fromEntries(flightLocationByDate))}`)
-
-  const allFlightDatesSet = new Set(allFlights.map(f => f.date))
-
+  // Fetch existing trips for resolveLocationsByDate
   const { data: existingTrips } = await adminClient
     .from('trips')
     .select('id, location, start_date, end_date, needs_return_date')
     .eq('user_id', userId)
 
-  const returnHomeDates = new Set<string>()
-  const outboundFlightDates = new Set<string>()
-  const flightsByDate = new Map<string, FlightInfo[]>()
-  for (const f of allFlights) {
-    if (!flightsByDate.has(f.date)) flightsByDate.set(f.date, [])
-    flightsByDate.get(f.date)!.push(f)
-  }
-  for (const [date, flights] of flightsByDate) {
-    const lastFlight = flights[flights.length - 1]
-    if (lastFlight.isReturn) {
-      returnHomeDates.add(date)
-      flightLocationByDate.delete(date)
-    } else if (lastFlight.city) {
-      outboundFlightDates.add(date)
-    }
-  }
-
-  const pendingReturnTrips: PendingReturnTrip[] = []
-  const outboundEntries = Array.from(flightLocationByDate.entries()).sort(([a], [b]) => a.localeCompare(b))
-
-  for (const [outDate, city] of outboundEntries) {
-    const resolvedTrip = (existingTrips || []).find((trip: any) =>
-      !trip.needs_return_date &&
-      isLocationMatch(trip.location, city) &&
-      trip.start_date <= outDate &&
-      trip.end_date >= outDate
-    )
-
-    if (resolvedTrip) {
-      const current = new Date(outDate + 'T00:00:00Z')
-      current.setDate(current.getDate() + 1)
-      const manualEnd = new Date(resolvedTrip.end_date + 'T00:00:00Z')
-      while (current <= manualEnd) {
-        const dateStr = current.toISOString().split('T')[0]
-        if (allFlightDatesSet.has(dateStr)) break
-        flightLocationByDate.set(dateStr, city)
-        current.setDate(current.getDate() + 1)
-      }
-      continue
-    }
-
-    let hasReturn = false
-    const outDateObj = new Date(outDate + 'T00:00:00Z')
-    const maxReturnDate = new Date(outDateObj)
-    maxReturnDate.setDate(maxReturnDate.getDate() + 30)
-    const maxReturnStr = maxReturnDate.toISOString().split('T')[0]
-
-    for (const rf of allFlights) {
-      if (rf.date > outDate && rf.date <= maxReturnStr && rf.isReturn) { hasReturn = true; break }
-      if (rf.date > outDate && rf.date <= maxReturnStr && !rf.isReturn && rf.city && rf.city !== city) { hasReturn = true; break }
-    }
-
-    if (hasReturn) {
-      const current = new Date(outDate)
-      current.setDate(current.getDate() + 1)
-      for (let i = 0; i < 30; i++) {
-        const dateStr = current.toISOString().split('T')[0]
-        if (allFlightDatesSet.has(dateStr)) break
-        flightLocationByDate.set(dateStr, city)
-        current.setDate(current.getDate() + 1)
-      }
-    } else {
-      const current = new Date(outDate)
-      current.setDate(current.getDate() + 1)
-      for (let i = 0; i < 7; i++) {
-        const dateStr = current.toISOString().split('T')[0]
-        if (allFlightDatesSet.has(dateStr)) break
-        flightLocationByDate.set(dateStr, city)
-        current.setDate(current.getDate() + 1)
-      }
-      pendingReturnTrips.push({ destination: city, departureDate: outDate })
-    }
-  }
-
-  // Apply hotel stays (flight dates take priority)
-  const hotelLocationByDate: Map<string, string> = new Map()
-  for (const stay of hotelStays) {
-    const dates = getDateRange(stay.startDate, stay.endDate)
-    for (const d of dates) {
-      if (!flightLocationByDate.has(d)) hotelLocationByDate.set(d, stay.city)
-    }
-  }
-
-  const allLocationByDate = new Map(flightLocationByDate)
-  for (const [d, city] of hotelLocationByDate) {
-    if (!allLocationByDate.has(d)) allLocationByDate.set(d, city)
-  }
+  // Use shared segment-based location resolution
+  const { locationByDate, returnHomeDates, outboundFlightDates, pendingReturnTrips } = resolveLocationsByDate({
+    allFlights,
+    hotelStays,
+    homeAddress,
+    existingTrips: existingTrips || [],
+  })
 
   const now = new Date()
   const threeMonthsAgo = new Date(now); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
   const threeMonthsAhead = new Date(now); threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3)
-
   const syncRangeStart = getDateString(threeMonthsAgo, timezone)
   const syncRangeEnd = getDateString(threeMonthsAhead, timezone)
-  const { data: existingAvailabilityRows } = await adminClient
-    .from('availability')
-    .select('date, location_status, trip_location')
-    .eq('user_id', userId)
-    .gte('date', syncRangeStart)
-    .lte('date', syncRangeEnd)
 
-  const existingAvailabilityByDate = new Map(
-    (existingAvailabilityRows || []).map((row: { date: string; location_status: string | null; trip_location: string | null }) => [row.date, row])
-  )
-
-  let updatedCount = 0
-  for (const [date, slots] of busySlotsByDate) {
-    const slotUpdates: Record<string, boolean> = {}
-    for (const slot of slots) slotUpdates[slot] = false
-
-    const locationCity = allLocationByDate.get(date)
-    const existingRow = existingAvailabilityByDate.get(date)
-    const isReturnDate = returnHomeDates.has(date)
-    const shouldClearStaleHomeAway = !locationCity && !!existingRow?.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)
-    const shouldClearAfterReturn = !locationCity && !isReturnDate && !!existingRow?.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(date, returnHomeDates, outboundFlightDates)
-    const locationFields: Record<string, string | null> = {}
-    if (locationCity) {
-      locationFields.location_status = 'away'
-      locationFields.trip_location = locationCity
-    } else if (isReturnDate || shouldClearStaleHomeAway || shouldClearAfterReturn) {
-      locationFields.location_status = 'home'
-      locationFields.trip_location = null
-    }
-
-    const { error: upsertError } = await adminClient
-      .from('availability')
-      .upsert({ user_id: userId, date, ...slotUpdates, ...locationFields }, { onConflict: 'user_id,date', ignoreDuplicates: false })
-
-    if (upsertError) console.error('Error upserting availability for', date, ':', upsertError)
-    else updatedCount++
-  }
-
-  for (const [date, city] of allLocationByDate) {
-    if (busySlotsByDate.has(date)) continue
-    const { error } = await adminClient
-      .from('availability')
-      .upsert({ user_id: userId, date, location_status: 'away', trip_location: city }, { onConflict: 'user_id,date', ignoreDuplicates: false })
-    if (error) console.error('Error upserting location for', date, ':', error)
-    else updatedCount++
-  }
-
-  for (const existingRow of (existingAvailabilityRows || [])) {
-    if (busySlotsByDate.has(existingRow.date) || allLocationByDate.has(existingRow.date)) continue
-    const isReturnDate = returnHomeDates.has(existingRow.date)
-    const shouldClear = isReturnDate ||
-      (existingRow.trip_location && isCityMatchingHome(existingRow.trip_location, homeAddress)) ||
-      (existingRow.trip_location && !isCityMatchingHome(existingRow.trip_location, homeAddress) && isDateAfterReturn(existingRow.date, returnHomeDates, outboundFlightDates))
-    if (shouldClear) {
-      const { error } = await adminClient
-        .from('availability')
-        .upsert({ user_id: userId, date: existingRow.date, location_status: 'home', trip_location: null }, { onConflict: 'user_id,date', ignoreDuplicates: false })
-      if (error) console.error('Error clearing stale location for', existingRow.date, ':', error)
-    }
-  }
-
-  await adminClient.rpc('merge_overlapping_trips', { p_user_id: userId })
-
-  if (pendingReturnTrips.length > 0) {
-    for (const pending of pendingReturnTrips) {
-      const { data: existingTrips } = await adminClient
-        .from('trips')
-        .select('id, needs_return_date')
-        .eq('user_id', userId)
-        .eq('start_date', pending.departureDate)
-        .ilike('location', `%${pending.destination}%`)
-
-      if (existingTrips && existingTrips.length > 0) {
-        await adminClient.from('trips').update({ needs_return_date: true }).eq('id', existingTrips[0].id)
-      }
-    }
-
-    for (const pending of pendingReturnTrips) {
-      const { data: trips } = await adminClient
-        .from('trips')
-        .select('id')
-        .eq('user_id', userId)
-        .lte('start_date', pending.departureDate)
-        .gte('end_date', pending.departureDate)
-        .ilike('location', `%${pending.destination}%`)
-
-      if (trips && trips.length > 0) {
-        await adminClient.from('trips').update({ needs_return_date: true }).eq('id', trips[0].id)
-      }
-    }
-  }
+  // Use shared availability upsert logic
+  const updatedCount = await upsertAvailabilityWithLocation({
+    adminClient, userId, busySlotsByDate, locationByDate,
+    returnHomeDates, outboundFlightDates, pendingReturnTrips,
+    homeAddress, syncRangeStart, syncRangeEnd,
+  })
 
   // ── Sync plans using shared reconciliation ──
   const incomingEventIds = new Set<string>()
@@ -316,7 +138,6 @@ async function handleEventsSync(params: {
       startTimeStr = formatTimeHHMM(startDate, timezone)
       endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
     } else if (event.start.date) {
-      // All-day event: parse date string directly to avoid timezone shift
       localDateStr = event.start.date
       hour = 12
       startTimeStr = null
