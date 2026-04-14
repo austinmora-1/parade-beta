@@ -568,7 +568,8 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
               onClick={() => {
                 if (step === 'confirm') setStep('weekends');
                 else if (step === 'weekends') { setStep('months'); setSelectedWeekends([]); }
-                else if (step === 'months') setStep('friends');
+                else if (step === 'months') setStep('type');
+                else if (step === 'type') setStep('friends');
               }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
