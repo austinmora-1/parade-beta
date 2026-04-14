@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isBefore, addDays, isSameDay } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -7,9 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
+import { MapPin, Users, Clock, CalendarCheck, Plane } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { supabase } from '@/integrations/supabase/client';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
