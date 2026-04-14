@@ -161,6 +161,38 @@ export const AIRPORT_CITY_MAP: Record<string, string> = {
   HAN: 'Hanoi', PNH: 'Phnom Penh', RGN: 'Yangon', CMB: 'Colombo',
 }
 
+// Map of well-known airport / terminal names to cities
+const AIRPORT_NAME_MAP: Record<string, string> = {
+  'new york kennedy': 'New York City',
+  'new york jfk': 'New York City',
+  'new york laguardia': 'New York City',
+  'new york newark': 'New York City',
+  'newark liberty': 'New York City',
+  'los angeles international': 'Los Angeles',
+  'san francisco international': 'San Francisco',
+  'chicago ohare': 'Chicago',
+  "chicago o'hare": 'Chicago',
+  'chicago midway': 'Chicago',
+  'dallas fort worth': 'Dallas',
+  'washington dulles': 'Washington DC',
+  'washington reagan': 'Washington DC',
+  'washington national': 'Washington DC',
+  'london heathrow': 'London',
+  'london gatwick': 'London',
+  'london stansted': 'London',
+  'london luton': 'London',
+  'london city': 'London',
+  'paris charles de gaulle': 'Paris',
+  'paris orly': 'Paris',
+  'tokyo narita': 'Tokyo',
+  'tokyo haneda': 'Tokyo',
+  'istanbul sabiha': 'Istanbul',
+  'milan malpensa': 'Milan',
+  'milan linate': 'Milan',
+  'rome fiumicino': 'Rome',
+  'berlin brandenburg': 'Berlin',
+}
+
 export function resolveToCity(location: string | null | undefined): string | null {
   if (!location || !location.trim()) return null
   const trimmed = location.trim()
@@ -169,6 +201,13 @@ export function resolveToCity(location: string | null | undefined): string | nul
     return AIRPORT_CITY_MAP[upper]
   }
   if (trimmed.length <= 4 && upper in AIRPORT_CITY_MAP) return AIRPORT_CITY_MAP[upper]
+  // Check airport-name map (e.g. "New York Kennedy" → "New York City")
+  const lower = trimmed.toLowerCase()
+  if (lower in AIRPORT_NAME_MAP) return AIRPORT_NAME_MAP[lower]
+  // Fuzzy: check if location starts with or contains a known airport name
+  for (const [name, city] of Object.entries(AIRPORT_NAME_MAP)) {
+    if (lower.startsWith(name) || lower.includes(name)) return city
+  }
   return trimmed
 }
 
