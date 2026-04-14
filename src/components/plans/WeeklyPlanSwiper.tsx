@@ -89,6 +89,7 @@ function ParticipantAvatarStack({ participants }: { participants: Friend[] }) {
 }
 
 
+interface WeeklyPlanSwiperProps {
   plans: Plan[];
   weekOffset: number;
   onWeekChange: (offset: number) => void;
