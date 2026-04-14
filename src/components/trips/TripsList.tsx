@@ -246,21 +246,38 @@ export function TripsList({ refreshKey }: TripsListProps) {
     );
   }
 
+  // Merge trips and proposals into a single chronologically sorted list
+  const sortedItems = useMemo(() => {
+    const items: { type: 'trip'; data: Trip; sortDate: string }[] = trips.map(t => ({
+      type: 'trip' as const, data: t, sortDate: t.start_date,
+    }));
+
+    const proposalItems = proposals.map(p => {
+      const earliestStart = p.dates.length > 0
+        ? [...p.dates].sort((a, b) => a.start_date.localeCompare(b.start_date))[0].start_date
+        : '9999-12-31';
+      return { type: 'proposal' as const, data: p, sortDate: earliestStart };
+    });
+
+    return [...items, ...proposalItems].sort((a, b) => a.sortDate.localeCompare(b.sortDate));
+  }, [trips, proposals]);
+
   return (
     <div className="space-y-2">
-      {/* Proposed trips — shown first with tentative styling */}
-      {proposals.map(proposal => (
-        <ProposalTripCard
-          key={`proposal-${proposal.id}`}
-          proposal={proposal}
-          currentUserId={user!.id}
-          voting={voting}
-          onVote={handleVote}
-        />
-      ))}
+      {sortedItems.map(item => {
+        if (item.type === 'proposal') {
+          return (
+            <ProposalTripCard
+              key={`proposal-${item.data.id}`}
+              proposal={item.data}
+              currentUserId={user!.id}
+              voting={voting}
+              onVote={handleVote}
+            />
+          );
+        }
 
-      {/* Confirmed trips */}
-      {trips.map((trip) => {
+        const trip = item.data as Trip;
         const startDate = new Date(trip.start_date + 'T00:00:00');
         const endDate = new Date(trip.end_date + 'T00:00:00');
         const duration = differenceInDays(endDate, startDate) + 1;
