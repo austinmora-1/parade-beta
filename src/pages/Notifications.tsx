@@ -7,7 +7,7 @@ import { useNotifications, dismissNotification } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, Sparkles, MapPin, CalendarPlus } from 'lucide-react';
+import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, Sparkles, MapPin, CalendarPlus, Plane } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
@@ -89,13 +89,22 @@ interface ProposedPlan {
   proposerAvatar: string | null;
   proposerUserId: string | null;
 }
+interface TripProposalNotification {
+  id: string;
+  proposal_id: string;
+  creator_name: string;
+  creator_avatar: string | null;
+  destination: string | null;
+  dates: { id: string; start_date: string; end_date: string; votes: number }[];
+  created_at: string;
+}
 
 export default function Notifications() {
   const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans, respondToProposal } = usePlannerStore();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchUnreadVibes, dismissedIds, dismissNotification: dismiss } = useNotifications();
+  const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchUnreadVibes, refetchTripProposals, dismissedIds, dismissNotification: dismiss } = useNotifications();
 
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -117,6 +126,9 @@ export default function Notifications() {
   const [proposedPlans, setProposedPlans] = useState<ProposedPlan[]>([]);
   const [proposedLoading, setProposedLoading] = useState(true);
   const [counterProposal, setCounterProposal] = useState<ProposedPlan | null>(null);
+
+  const [tripProposals, setTripProposals] = useState<TripProposalNotification[]>([]);
+  const [tripProposalsLoading, setTripProposalsLoading] = useState(true);
 
   const incomingRequests = friends.filter(f => f.status === 'pending' && f.isIncoming);
   const visibleIncomingRequests = incomingRequests.filter(f => !dismissedIds.has(`friend-${f.id}`));
@@ -141,6 +153,7 @@ export default function Notifications() {
       fetchParticipantRequestsData();
       fetchIncomingVibes();
       fetchProposedPlans();
+      fetchTripProposalsData();
     }
   }, [user]);
 
@@ -255,7 +268,58 @@ export default function Notifications() {
     setVibesLoading(false);
   };
 
-  const handleDismissVibe = async (recipientId: string) => {
+  const fetchTripProposalsData = async () => {
+    if (!user) { setTripProposalsLoading(false); return; }
+    // Get pending trip proposal participations
+    const { data: participations } = await supabase
+      .from('trip_proposal_participants')
+      .select('id, proposal_id, status')
+      .eq('user_id', user.id)
+      .eq('status', 'pending');
+
+    if (!participations?.length) { setTripProposals([]); setTripProposalsLoading(false); return; }
+
+    const proposalIds = [...new Set(participations.map(p => p.proposal_id))];
+    const { data: proposals } = await supabase
+      .from('trip_proposals')
+      .select('id, created_by, destination, status, created_at')
+      .in('id', proposalIds)
+      .eq('status', 'pending');
+
+    if (!proposals?.length) { setTripProposals([]); setTripProposalsLoading(false); return; }
+
+    // Get dates for all proposals
+    const { data: dates } = await supabase
+      .from('trip_proposal_dates')
+      .select('id, proposal_id, start_date, end_date, votes')
+      .in('proposal_id', proposals.map(p => p.id))
+      .order('start_date', { ascending: true });
+
+    // Get creator profiles
+    const creatorIds = [...new Set(proposals.map(p => p.created_by))];
+    const { data: profiles } = await supabase
+      .from('public_profiles')
+      .select('user_id, display_name, avatar_url')
+      .in('user_id', creatorIds);
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+
+    setTripProposals(proposals.map(proposal => {
+      const participation = participations.find(p => p.proposal_id === proposal.id);
+      const creator = profileMap.get(proposal.created_by);
+      const proposalDates = (dates || []).filter(d => d.proposal_id === proposal.id);
+      return {
+        id: participation!.id,
+        proposal_id: proposal.id,
+        creator_name: creator?.display_name || 'Someone',
+        creator_avatar: creator?.avatar_url || null,
+        destination: proposal.destination,
+        dates: proposalDates,
+        created_at: proposal.created_at,
+      };
+    }));
+    setTripProposalsLoading(false);
+  };
+
     dismiss(`vibe-${recipientId}`);
     // Also mark as read in the database
     await supabase
@@ -597,9 +661,10 @@ export default function Notifications() {
   const visibleParticipantRequests = participantRequests.filter(r => !dismissedIds.has(`participant-req-${r.id}`));
   const visibleVibes = incomingVibes.filter(v => !dismissedIds.has(`vibe-${v.id}`));
   const visibleProposedPlans = proposedPlans.filter(p => !dismissedIds.has(`proposal-${p.planId}`));
+  const visibleTripProposals = tripProposals.filter(t => !dismissedIds.has(`trip-proposal-${t.id}`));
 
-  const totalVisible = visibleIncomingRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length + visibleProposedPlans.length;
-  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && !proposedLoading;
+  const totalVisible = visibleIncomingRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length + visibleProposedPlans.length + visibleTripProposals.length;
+  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && !proposedLoading && !tripProposalsLoading;
 
   const clearAll = () => {
     visiblePlanInvitations.forEach(i => dismiss(`invite-${i.id}`));
@@ -608,6 +673,7 @@ export default function Notifications() {
     visibleParticipantRequests.forEach(r => dismiss(`participant-req-${r.id}`));
     visibleVibes.forEach(v => dismiss(`vibe-${v.id}`));
     visibleProposedPlans.forEach(p => dismiss(`proposal-${p.planId}`));
+    visibleTripProposals.forEach(t => dismiss(`trip-proposal-${t.id}`));
     visibleIncomingRequests.forEach(f => dismiss(`friend-${f.id}`));
   };
 
@@ -709,6 +775,73 @@ export default function Notifications() {
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
+                  </div>
+                </SwipeableDismiss>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
+      )}
+
+      {/* Trip Proposals Section */}
+      {(visibleTripProposals.length > 0 || tripProposalsLoading) && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+            <Plane className="h-4 w-4 text-primary md:h-5 md:w-5" />
+            Trip Proposals
+            {visibleTripProposals.length > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
+                {visibleTripProposals.length}
+              </span>
+            )}
+          </h2>
+
+          {tripProposalsLoading ? (
+            <div className="flex h-20 items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <AnimatePresence>
+              {visibleTripProposals.map((trip) => (
+                <SwipeableDismiss key={trip.id} onDismiss={() => dismiss(`trip-proposal-${trip.id}`)}>
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                          <Plane className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">{trip.creator_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            shared trip options{trip.destination ? ` to ${trip.destination}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <DismissButton id={`trip-proposal-${trip.id}`} />
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {trip.dates.map((d) => (
+                        <span key={d.id} className="inline-flex items-center gap-1 rounded-md bg-background border border-border px-2 py-1 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(d.start_date + 'T12:00:00'), 'MMM d')} – {format(new Date(d.end_date + 'T12:00:00'), 'MMM d')}
+                          {d.votes > 0 && (
+                            <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">
+                              {d.votes} {d.votes === 1 ? 'vote' : 'votes'}
+                            </Badge>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+
+                    <Button
+                      size="sm"
+                      className="w-full gap-1.5"
+                      onClick={() => navigate('/trips')}
+                    >
+                      <Plane className="h-4 w-4" />
+                      View & Vote
+                    </Button>
                   </div>
                 </SwipeableDismiss>
               ))}
