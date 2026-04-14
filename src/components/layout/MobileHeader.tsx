@@ -55,11 +55,9 @@ export function MobileHeader() {
           className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
           aria-label="Send feedback"
         >
-          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
-            <path d="M15.8 17.4A6 6 0 0 0 22 12c0-3.3-2.7-6-6-6" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
+          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 11a5 5 0 0 1 5-5h3a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H8l-3 3v-3a5 5 0 0 1-2-5Z" />
+            <path d="M13 8h3a5 5 0 0 1 5 5v0a5 5 0 0 1-2 4v3l-3-3h-1a5 5 0 0 1-4-2" />
           </svg>
         </button>
         <Link
