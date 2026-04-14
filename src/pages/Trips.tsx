@@ -99,6 +99,11 @@ export default function Trips() {
           loadPlans();
         }}
       />
+
+      <GuidedTripSheet
+        open={guidedTripOpen}
+        onOpenChange={setGuidedTripOpen}
+      />
     </div>
   );
 }
