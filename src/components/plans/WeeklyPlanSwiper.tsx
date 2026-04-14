@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share
 import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
+import { normalizeCity } from '@/lib/locationMatch';
 import { MapPin, Clock, Plane } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
@@ -264,10 +265,26 @@ function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAv
   // Check for split-location day
   if (avail?.slotLocations) {
     const locs = Object.values(avail.slotLocations).filter((v): v is string => !!v);
-    const unique = [...new Set(locs)];
+    // Normalize city names to deduplicate (e.g. "New York Kennedy" and "New York" both → "new york")
+    const normalizedLocs = locs.map(l => normalizeCity(l));
+    const unique = [...new Set(normalizedLocs)].filter(Boolean);
+    // Also check for in-transit (null among set slots)
     const hasTransit = Object.values(avail.slotLocations).some(v => v === null && v !== undefined);
     if (unique.length > 1 || (unique.length >= 1 && hasTransit)) {
-      return { label: unique.join(' → '), isSplit: true, isAway };
+      // Use the original (non-normalized) first occurrence of each unique city for display
+      const displayNames: string[] = [];
+      const seen = new Set<string>();
+      for (const loc of locs) {
+        const norm = normalizeCity(loc);
+        if (norm && !seen.has(norm)) {
+          seen.add(norm);
+          // Capitalize for display
+          displayNames.push(loc.length <= 4 ? loc : loc.replace(/\b\w/g, c => c.toUpperCase()));
+        }
+      }
+      if (displayNames.length > 1) {
+        return { label: displayNames.join(' → '), isSplit: true, isAway };
+      }
     }
   }
 
