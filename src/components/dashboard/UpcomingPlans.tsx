@@ -14,7 +14,7 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { supabase } from '@/integrations/supabase/client';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
-import { getCurrentTimeInTimezone } from '@/lib/timezone';
+import { getCurrentTimeInTimezone, getTimezoneAbbreviation } from '@/lib/timezone';
 import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
 
 function formatTime12(time: string): string {
