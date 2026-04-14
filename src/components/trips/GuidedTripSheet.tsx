@@ -191,9 +191,9 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
     return () => { cancelled = true; };
   }, [open, userId, step, monthOptions]);
 
-  // Fetch home addresses of selected friends when entering type step
+  // Fetch home addresses of selected friends when entering type step (for visit)
   useEffect(() => {
-    if (step !== 'type' || selectedFriends.length === 0) return;
+    if (step !== 'friends' || selectedFriends.length === 0) return;
     const friendUserIds = selectedFriends.map(f => f.friendUserId).filter(Boolean) as string[];
     if (friendUserIds.length === 0) return;
     supabase
