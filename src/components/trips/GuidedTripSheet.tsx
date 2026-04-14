@@ -502,13 +502,23 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
 
       // Send push notifications to participants (fire-and-forget)
       if (friendUserIds.length > 0) {
-        const destText = destination ? ` to ${destination}` : '';
         const senderName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Someone';
+        const isVisit = proposalType === 'visit';
+        const notifTitle = isVisit ? '🏠 Visit Proposal' : '✈️ Trip Proposal';
+        let notifBody: string;
+        if (isVisit && hostMode === 'hosting') {
+          notifBody = `${senderName} is hosting in ${destination || 'their city'} — vote on dates!`;
+        } else if (isVisit) {
+          notifBody = `${senderName} wants to plan a visit to ${destination || 'your city'}`;
+        } else {
+          const destText = destination ? ` to ${destination}` : '';
+          notifBody = `${senderName} shared trip options${destText} with you`;
+        }
         supabase.functions.invoke('send-push-notification', {
           body: {
             user_ids: friendUserIds,
-            title: '✈️ Trip Proposal',
-            body: `${senderName} shared trip options${destText} with you`,
+            title: notifTitle,
+            body: notifBody,
             url: '/trips',
           },
         }).catch(() => {});
@@ -521,7 +531,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
         scalar: 0.9,
       });
-      toast.success(`Trip options shared with ${friendNamesStr}! ✈️`);
+      const isVisitMsg = proposalType === 'visit';
+      toast.success(isVisitMsg
+        ? `Visit options shared with ${friendNamesStr}! 🏠`
+        : `Trip options shared with ${friendNamesStr}! ✈️`
+      );
       onOpenChange(false);
     } catch (err) {
       console.error('Failed to create trip proposal:', err);
