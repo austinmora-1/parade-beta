@@ -394,11 +394,12 @@ export function GuidedTripSheet({ open, onOpenChange }: GuidedTripSheetProps) {
       // Send push notifications to participants (fire-and-forget)
       if (friendUserIds.length > 0) {
         const destText = destination ? ` to ${destination}` : '';
+        const senderName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Someone';
         supabase.functions.invoke('send-push-notification', {
           body: {
             user_ids: friendUserIds,
             title: '✈️ Trip Proposal',
-            body: `${selectedFriends.length > 0 ? friendNamesStr.split(',')[0].trim() : 'Someone'} shared trip options${destText} with you`,
+            body: `${senderName} shared trip options${destText} with you`,
             url: '/trips',
           },
         }).catch(() => {});
