@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Plane } from 'lucide-react';
+import { Plus, Plane, Home } from 'lucide-react';
 import { TripsList } from '@/components/trips/TripsList';
 
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
@@ -17,6 +17,7 @@ export default function Trips() {
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const [tripDialogOpen, setTripDialogOpen] = useState(false);
   const [guidedTripOpen, setGuidedTripOpen] = useState(false);
+  const [guidedVisitOpen, setGuidedVisitOpen] = useState(false);
   const [tripsRefreshKey, setTripsRefreshKey] = useState(0);
   const [pendingReturnTrips, setPendingReturnTrips] = useState<PendingReturnTrip[]>([]);
   const [missingReturnOpen, setMissingReturnOpen] = useState(false);
@@ -62,6 +63,15 @@ export default function Trips() {
           </Button>
           <Button
             size="sm"
+            variant="default"
+            className="gap-2"
+            onClick={() => setGuidedVisitOpen(true)}
+          >
+            <Home className="h-4 w-4" />
+            <span className="hidden sm:inline">Plan a Visit</span>
+          </Button>
+          <Button
+            size="sm"
             variant="outline"
             className="gap-2"
             onClick={() => setTripDialogOpen(true)}
@@ -104,6 +114,12 @@ export default function Trips() {
       <GuidedTripSheet
         open={guidedTripOpen}
         onOpenChange={setGuidedTripOpen}
+      />
+
+      <GuidedTripSheet
+        open={guidedVisitOpen}
+        onOpenChange={setGuidedVisitOpen}
+        preSelectedType="visit"
       />
     </div>
   );
