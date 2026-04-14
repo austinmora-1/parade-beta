@@ -130,6 +130,10 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
           const slotInfo = TIME_SLOT_LABELS[slot];
           const isAvailable = status === 'available';
           const isBusy = status === 'busy';
+          const dayAvail = availabilityMap[format(selectedDate, 'yyyy-MM-dd')];
+          const slotLocation = dayAvail?.slotLocations?.[slot] || null;
+          const dayTripLoc = dayAvail?.tripLocation || null;
+          const showSlotLocation = slotLocation && slotLocation !== dayTripLoc;
 
           return (
             <div
@@ -164,6 +168,11 @@ export function DaySummaryDropdown({ selectedDate, isOpen, onOpenChange }: DaySu
                   isBusy && "text-foreground"
                 )}>
                   {slotInfo.label}
+                  {showSlotLocation && (
+                    <span className="ml-1 text-[10px] text-primary/70 font-normal">
+                      📍{slotLocation}
+                    </span>
+                  )}
                 </span>
 
                 {/* Quick add button for available slots */}
