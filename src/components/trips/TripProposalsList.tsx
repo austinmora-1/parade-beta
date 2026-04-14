@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Plane, Check, Calendar, MapPin, Users, ThumbsUp, Loader2 } from 'lucide-react';
+import { Plane, Check, Calendar, MapPin, Users, ThumbsUp, Loader2, Home } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,9 @@ interface TripProposal {
   participants: Participant[];
   myParticipantId: string;
   myVotedDateId: string | null;
+  proposal_type: string;
+  host_user_id: string | null;
+  host_name: string | null;
 }
 
 export function TripProposalsList() {
@@ -120,6 +123,9 @@ export function TripProposalsList() {
         participants: propParticipants,
         myParticipantId: myRow.id,
         myVotedDateId: myRow.preferred_date_id,
+        proposal_type: (prop as any).proposal_type || 'trip',
+        host_user_id: (prop as any).host_user_id || null,
+        host_name: (prop as any).host_user_id ? (profileMap.get((prop as any).host_user_id)?.name || null) : null,
       };
     });
 
