@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, MessageSquarePlus } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { useConversations } from '@/hooks/useChat';
@@ -55,7 +55,12 @@ export function MobileHeader() {
           className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
           aria-label="Send feedback"
         >
-          <MessageSquarePlus className="h-[18px] w-[18px]" />
+          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+            <path d="M15.8 17.4A6 6 0 0 0 22 12c0-3.3-2.7-6-6-6" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
         </button>
         <Link
           to="/notifications"
