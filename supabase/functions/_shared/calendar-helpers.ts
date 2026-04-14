@@ -190,6 +190,23 @@ export function extractFlightDestination(summary?: string): string | null {
   return null
 }
 
+/**
+ * Extract the departure city (first airport code) from a flight summary.
+ * Returns the resolved city name or null.
+ */
+export function extractFlightDepartureCity(summary?: string): string | null {
+  if (!summary) return null
+  const upper = summary.toUpperCase()
+  const codes = upper.match(/\b([A-Z]{3})\b/g)
+  if (codes) {
+    const airports = codes.filter(c => c in AIRPORT_CITY_MAP)
+    if (airports.length > 0) {
+      return AIRPORT_CITY_MAP[airports[0]]
+    }
+  }
+  return null
+}
+
 // Detect if an event is a flight — accepts either a CalendarEvent-like object or a plain summary string
 export function isFlightEvent(eventOrSummary: { summary?: string } | string | undefined): boolean {
   const summary = typeof eventOrSummary === 'string'
