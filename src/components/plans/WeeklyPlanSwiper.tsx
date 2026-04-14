@@ -30,7 +30,7 @@ interface WeeklyPlanSwiperProps {
 
 export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan }: WeeklyPlanSwiperProps) {
   const availabilityMap = usePlannerStore((s) => s.availabilityMap);
-  const profile = usePlannerStore((s) => s.profile);
+  const homeAddress = usePlannerStore((s) => s.homeAddress);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
@@ -249,7 +249,7 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         onEditPlan={onEditPlan}
         onCardTap={handleCardTap}
         availabilityMap={availabilityMap}
-        homeAddress={profile?.home_address ?? null}
+        homeAddress={homeAddress}
       />
     </div>
   );
