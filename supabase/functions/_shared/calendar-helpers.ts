@@ -897,8 +897,10 @@ export async function reconcilePlans(params: {
 
 export interface FlightInfo {
   date: string
-  timestamp: number
-  city: string | null
+  timestamp: number        // departure time (ms)
+  arrivalTimestamp: number  // arrival/landing time (ms)
+  city: string | null       // destination city
+  departureCity: string | null // origin city
   isReturn: boolean
 }
 
