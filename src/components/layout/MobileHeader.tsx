@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, MessagesSquare } from 'lucide-react';
+import { MessagesSquare } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
@@ -75,7 +75,7 @@ export function MobileHeader() {
       </div>
 
       {/* Right: feedback + inbox bell */}
-      <div className="w-[72px] flex items-center justify-end gap-1">
+      <div className="w-[36px] flex items-center justify-end">
         <button
           onClick={openFeedback}
           className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
@@ -83,18 +83,6 @@ export function MobileHeader() {
         >
           <MessagesSquare className="h-[18px] w-[18px]" />
         </button>
-        <Link
-          to="/notifications"
-          className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
-          aria-label="Inbox"
-        >
-          <Bell className="h-[18px] w-[18px]" />
-          {inboxCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-              {inboxCount > 9 ? '9+' : inboxCount}
-            </span>
-          )}
-        </Link>
       </div>
     </header>
   );
