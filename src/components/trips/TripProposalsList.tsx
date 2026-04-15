@@ -197,6 +197,20 @@ export function TripProposalsList() {
     }
   };
 
+  const handleDelete = async (proposalId: string) => {
+    try {
+      // Delete dates, participants, then proposal
+      await supabase.from('trip_proposal_dates').delete().eq('proposal_id', proposalId);
+      await supabase.from('trip_proposal_participants').delete().eq('proposal_id', proposalId);
+      await supabase.from('trip_proposals').delete().eq('id', proposalId);
+      toast.success('Proposal deleted');
+      await fetchProposals();
+    } catch (err) {
+      console.error('Delete failed:', err);
+      toast.error('Failed to delete proposal');
+    }
+  };
+
   if (loading) return null;
   if (proposals.length === 0) return null;
 
@@ -214,6 +228,8 @@ export function TripProposalsList() {
           currentUserId={user!.id}
           voting={voting}
           onVote={handleVote}
+          onDelete={handleDelete}
+          onRefresh={fetchProposals}
         />
       ))}
     </div>
