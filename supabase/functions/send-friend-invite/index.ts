@@ -54,7 +54,6 @@ const handler = async (req: Request): Promise<Response> => {
     const rateCheck = await checkRateLimit(adminClient, userId, 'send-friend-invite', 20, 3600);
     if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter!, corsHeaders);
 
-    const userId = claimsData.claims.sub;
     console.log('Authenticated user sending invite:', userId);
 
     const { email, inviterName = "A friend", customSubject, customMessage, customUrl }: InviteEmailRequest = await req.json();
