@@ -130,6 +130,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setActivity(null);
       setSelectedDate(null);
       setTimeSlot(null);
+      setSelectedSlots([]);
       setSending(false);
       setBestSlots([]);
       setShowCalendar(false);
