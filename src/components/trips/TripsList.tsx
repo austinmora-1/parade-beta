@@ -473,6 +473,32 @@ function ProposalTripCard({
     return sorted[0];
   }, [proposal.dates, bordaScores]);
 
+  const handleRankToggle = (dateId: string) => {
+    setMyRankings(prev => {
+      const existing = { ...prev };
+      if (dateId in existing) {
+        const removedRank = existing[dateId];
+        delete existing[dateId];
+        for (const [id, rank] of Object.entries(existing)) {
+          if (rank > removedRank) existing[id] = rank - 1;
+        }
+      } else {
+        existing[dateId] = Object.keys(existing).length + 1;
+      }
+      return existing;
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (Object.keys(myRankings).length === 0) {
+      toast.error('Please rank at least one date option');
+      return;
+    }
+    setIsSubmitting(true);
+    await onSubmitRankedVotes(proposal.id, myRankings, proposal.myParticipantId);
+    setIsSubmitting(false);
+  };
+
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editDestination, setEditDestination] = useState(proposal.destination || '');
