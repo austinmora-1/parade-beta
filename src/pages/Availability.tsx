@@ -64,7 +64,7 @@ export default function Availability() {
   const handleEditPlan = useCallback((plan: any) => {
     setEditPlan(plan);
     setPlanDefaultDate(plan.date);
-    setPlanDialogOpen(true);
+    setEditDialogOpen(true);
   }, []);
 
   const handleDeletePlan = useCallback((id: string) => {
@@ -115,7 +115,7 @@ export default function Availability() {
             size="sm"
             variant="outline"
             className="shrink-0 gap-2"
-            onClick={() => openPlanDialog()}
+            onClick={() => openNewPlan()}
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Plan</span>
@@ -142,9 +142,15 @@ export default function Availability() {
         onSharePlan={handleSharePlan}
       />
 
+      <GuidedPlanSheet
+        open={guidedPlanOpen}
+        onOpenChange={setGuidedPlanOpen}
+        preSelectedFriends={[]}
+      />
+
       <CreatePlanDialog
-        open={planDialogOpen}
-        onOpenChange={setPlanDialogOpen}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
         defaultDate={planDefaultDate}
         editPlan={editPlan}
       />
