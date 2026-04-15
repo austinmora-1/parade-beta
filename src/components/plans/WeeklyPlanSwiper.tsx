@@ -785,7 +785,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       className={cn(
-        "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col overflow-hidden",
+        "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col justify-between overflow-hidden",
         showTentativeStyle && "border-dashed border-muted-foreground/40",
         isPast && !showTentativeStyle && "bg-muted text-muted-foreground border-muted-foreground/20 shadow-none ring-0",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
@@ -798,7 +798,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
           Live
         </span>
       )}
-      <div className="flex items-start gap-2 mb-1.5 min-w-0">
+      <div className="flex items-start gap-2 min-w-0">
         {selectMode && (
           <Checkbox checked={selected} className="shrink-0 mt-0.5" />
         )}
@@ -842,12 +842,14 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
                 <span className="truncate">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
               </div>
             )}
-            {plan.participants.length > 0 && (
-              <ParticipantAvatarStack participants={plan.participants} />
-            )}
           </div>
         </div>
       </div>
+      {plan.participants.length > 0 && (
+        <div className="mt-2">
+          <ParticipantAvatarStack participants={plan.participants} />
+        </div>
+      )}
     </button>
   );
 }
