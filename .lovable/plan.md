@@ -1,44 +1,74 @@
 
 
-# plannerStore Split Refactor
+# Sprint 3 — Medium Priority Scalability Fixes
 
 ## Overview
-Extract duplicated mapping/transformation logic into reusable helpers, reducing `plannerStore.ts` from ~1,744 lines to ~700 lines. The Zustand store shape and public API stay identical — no consumer changes needed.
+Four issues targeting query performance, input safety, and caching. Issue 3.5 (migration squash) is skipped — too risky for an automated pass and better done manually. Issue 3.6 (profile visibility) is already resolved — profiles RLS already restricts to own + connected friends.
 
-## Architecture
+---
 
-The store contains three categories of duplicated heavy logic:
+## Issue 3.1: Dedicated Feed RPC
 
-1. **Plan mapping** (~120 lines duplicated between `loadAllData` and `loadPlans`) — raw DB row → `Plan` object with timezone conversion, participant resolution, dedup
-2. **Friend mapping** (~80 lines duplicated) — outgoing/incoming friendship merge, status-priority dedup
-3. **Availability mapping** (~60 lines duplicated between `loadAllData` and `loadProfileAndAvailability`/`loadAvailabilityForRange`) — DB row → `DayAvailability` with slot locations, defaults
+**Problem**: `FeedView.tsx` makes 3-4 sequential Supabase queries with per-row RLS evaluation. At scale this is O(all_plans).
 
-## File Plan
+**Changes**:
+1. **New migration** — Create `get_feed_plans(p_user_id uuid, p_limit int)` SECURITY DEFINER RPC that pre-joins friendships, plans, participants, and profiles server-side, scoped to last 30 days.
+2. **Update `src/components/feed/FeedView.tsx`** — Replace the 4-query waterfall (lines 43-151) with a single `supabase.rpc('get_feed_plans', ...)` call.
 
-```text
-src/stores/
-  plannerStore.ts          (1744→~700 lines) — state, setters, Supabase calls
-  helpers/
-    mapPlans.ts            (~130 lines) — mapRawPlanToModel(), buildParticipantsMap()
-    mapFriends.ts          (~80 lines)  — mapFriendships(), dedupeFriends()
-    mapAvailability.ts     (~90 lines)  — mapAvailabilityRow(), createDefaultAvailability(), buildAvailabilityMap()
-    types.ts               (~40 lines)  — DashboardData, DefaultAvailabilitySettings interfaces
+---
+
+## Issue 3.2: Add Missing Database Indexes
+
+**Problem**: Hot query patterns lack composite/partial indexes.
+
+**Changes**: Single migration adding 8 indexes:
+- `availability(user_id, date, location_status)`
+- `plan_participants(friend_id, status)`
+- `smart_nudges(user_id, nudge_type, friend_user_id)` partial
+- `plans(user_id, date, status)`
+- `plans(feed_visibility, date DESC)` partial
+- `hang_requests(user_id)` partial (pending only)
+- `plan_participants(friend_id)` partial (invited only)
+- `friendships(user_id, friend_user_id)` partial (connected only)
+
+Note: skip the `live_locations` index from the original plan — table was dropped.
+
+---
+
+## Issue 3.3: Input Validation with Zod
+
+**Problem**: No client-side validation before DB writes. Vulnerable to oversized payloads and bad data.
+
+**Changes**:
+1. **Create `src/lib/validation.ts`** — Zod schemas for Plan (title max 200, notes max 2000, duration 15-1440) and Friendship (name max 100).
+2. **Update `src/stores/plannerStore.ts`** — Validate in `addPlan` before inserting.
+3. **New migration** — Add CHECK constraints on `plans.title`, `plans.notes`, `plans.duration`, and `friendships.friend_name` lengths. Use validation triggers instead of CHECK for any time-based constraints.
+
+---
+
+## Issue 3.4: Configure QueryClient Defaults
+
+**Problem**: `new QueryClient()` on line 37 of `App.tsx` has zero config — staleTime is 0, causing redundant refetches.
+
+**Changes**: Update to:
+```typescript
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 ```
 
-## Steps
+---
 
-1. **Create `src/stores/helpers/types.ts`** — Move `DashboardData` and `DefaultAvailabilitySettings` interfaces out of the store.
-
-2. **Create `src/stores/helpers/mapAvailability.ts`** — Extract `createDefaultAvailability`, `buildAvailabilityMap`, `TIME_SLOT_HOURS`, and the shared availability-row-to-`DayAvailability` mapper used in three places.
-
-3. **Create `src/stores/helpers/mapPlans.ts`** — Extract the plan-row-to-`Plan` conversion (timezone handling, participant assembly, owner injection). Both `loadAllData` and `loadPlans` will call the same function.
-
-4. **Create `src/stores/helpers/mapFriends.ts`** — Extract outgoing/incoming friendship mapping and the two-pass dedup logic used identically in `loadAllData` and `loadFriends`.
-
-5. **Update `plannerStore.ts`** — Replace inline logic with imports from the helpers. No changes to the exported `usePlannerStore` API or state shape.
-
-## Risk Mitigation
-- Pure extraction refactor — no logic changes, no API changes
-- Every consumer file (`usePlannerStore(s => s.plans)`, etc.) continues working unchanged
-- Helpers are pure functions with no side effects — easy to unit test later
+## Execution Order
+1. Issue 3.4 (QueryClient) — 1 line change, instant win
+2. Issue 3.2 (Indexes) — migration only, no code changes
+3. Issue 3.1 (Feed RPC) — migration + FeedView rewrite
+4. Issue 3.3 (Validation) — new lib + store + migration
 
