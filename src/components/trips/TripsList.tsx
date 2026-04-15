@@ -682,8 +682,7 @@ function ProposalTripCard({
       setConverting(false);
     }
   };
-
-
+  const addDateOption = () => {
     const last = editDates[editDates.length - 1];
     const startDate = last ? new Date(last.start_date + 'T00:00:00') : new Date();
     const newStart = new Date(startDate);
