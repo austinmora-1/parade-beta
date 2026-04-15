@@ -1,81 +1,65 @@
 
 
-# Tech Debt & Dead Code Cleanup
+# Sprint 1 — Critical Scalability Fixes
 
-## Summary
-Clean up leftover vibe/Elly references, dead files, stale notification code, and outdated memory files across the codebase.
+## Overview
+Four critical issues that will cause hard failures at 5-50K users. Implementing all four in this pass.
 
-## 1. Delete Dead Files
-- `src/pages/Index.tsx` — unused placeholder page, never routed
-- `src/lib/constants.ts` — only contains `ELLY_USER_ID`, no longer imported
+---
 
-## 2. Remove Vibe Code from Notifications
+## Issue 1.1: Batch-Process Smart Nudges
 
-**`src/hooks/useNotifications.ts`**:
-- Remove `unreadVibesCount` from shared state (line 25)
-- Remove `fetchUnreadVibes` callback (lines 126-138)
-- Remove from useEffect calls (line 158), realtime subscription (lines 186-189), deps (line 199)
-- Remove `dismissedVibeCount` / `effectiveVibeCount` (lines 217, 226)
-- Remove from `totalNotifications` sum (line 229)
-- Remove `refetchUnreadVibes` from return (line 259)
+**Problem**: `smart-nudges` edge function loads ALL profiles, friendships, plans, and participants into memory and builds O(n²) pair maps. Will OOM at ~5-10K users.
 
-**`src/pages/Notifications.tsx`**:
-- Remove `IncomingVibe` interface (lines 69-77)
-- Remove `incomingVibes` / `vibesLoading` state (lines 123-124)
-- Remove `refetchUnreadVibes` from destructured hook (line 107)
-- Remove `fetchIncomingVibes()` call (line 154) and function definition (lines 220-268)
-- Remove `handleDismissVibe` function (lines 323-331)
-- Remove `visibleVibes` filtering (line 663) and from `totalVisible` / `isEmpty` checks (lines 667-668)
-- Remove entire "Incoming Vibes Section" render block (lines 919-982)
-- Remove `Sparkles` from icon imports (line 10) if not used elsewhere in file
+**Changes**:
+1. **New migration**: Create `last_hung_out_cache` table with composite PK `(user_id, friend_user_id)` and RLS for authenticated read
+2. **New edge function** `update-last-hung-out`: Daily cron job that computes shared plan dates in batches of 500 users, upserts into cache
+3. **Rewrite `smart-nudges/index.ts`**: Accept `batch_size`/`batch_offset` params, process 500 users at a time, read from cache instead of computing pairs, self-chain for remaining batches
 
-## 3. Remove Elly Toggle from Onboarding
+---
 
-**`src/components/onboarding/OnboardingWizard.tsx`**:
-- Remove `allowEllyHangouts` from `OnboardingData` interface (line 47)
-- Remove from initial state (line 92)
-- Remove `allow_elly_hangouts` from profile update (line 166)
+## Issue 1.2: Fix Plan Reminders N+1
 
-**`src/components/onboarding/steps/NotificationsPrivacyStep.tsx`**:
-- Remove the `allowEllyHangouts` toggle object from `privacyToggles` array (lines 43-48)
-- Remove `Bot` from lucide imports (line 6)
+**Problem**: `plan-reminders/index.ts` makes per-plan queries for participants, profiles, and push subscriptions inside a loop. Thousands of sequential DB roundtrips at scale.
 
-## 4. Update EllyWalkthrough Steps
+**Changes to `supabase/functions/plan-reminders/index.ts`**:
+- After filtering `plansInWindow`, batch-fetch ALL participants, profiles, and push subscriptions in 3 parallel queries
+- Build lookup maps (planId→participants, userId→profile, userId→subscriptions)
+- Replace inner per-plan queries with map lookups
+- Send push notifications in parallel batches of 50 using `Promise.allSettled`
+- Batch-delete expired subscriptions at the end
 
-**`src/components/onboarding/EllyWalkthrough.tsx`**:
-- Replace step 3 ("Sending Vibes") with content about sharing availability / setting your weekly intentions
-- Replace step 4 ("Meet Elly") with content about trips & travel planning
-- Remove `MessageCircle` and `Heart` from imports, add relevant replacements (e.g. `Globe`, `Users`)
+---
 
-## 5. Fix Empty State Copy
+## Issue 1.3: Consolidate Realtime Channels
 
-**`src/components/dashboard/UpcomingPlans.tsx`** (line 454):
-- Change `"Create a new plan or chat with Elly!"` to `"Make a plan to get started!"`
+**Problem**: Each user opens 4-6 Supabase Realtime channels. At 5K concurrent users = 25K+ channels, overwhelming Realtime infrastructure.
 
-**`src/components/dashboard/UpcomingPlansWidget.tsx`** (line 302):
-- Same copy fix
+**Changes**:
+1. **New file `src/hooks/useRealtimeHub.ts`**: Singleton channel manager that maintains one shared channel per user, dispatches events to registered handlers by table/event key
+2. **Refactor `src/hooks/useNotifications.ts`**: Replace `supabase.channel('notifications-shared')` with `useRealtimeHub` registration
+3. **Refactor `src/hooks/useFriendRequestNotifications.ts`**: Replace dedicated channel with `useRealtimeHub`
+4. **`src/components/plans/PlanComments.tsx`** and **`PlanPhotos.tsx`**: Convert per-plan realtime channels to 15-second polling intervals (only active on detail pages)
+5. **`src/components/dashboard/HangRequests.tsx`**: Convert to `useRealtimeHub` if it has its own channel
 
-## 6. Remove `vibe-media` from Storage Buckets
+---
 
-**`src/lib/storage.ts`** (line 5):
-- Change `['plan-photos', 'vibe-media']` to `['plan-photos']`
+## Issue 1.4: Fix Live Location Broadcast Storm
 
-## 7. Remove Debug console.log Statements
+**Problem**: `useLiveLocation` listens to ALL `live_locations` changes unfiltered. Every GPS update (every 1-5 seconds) from any user broadcasts to every client. No write throttling.
 
-**`src/hooks/useFriendRequestNotifications.ts`**: Remove 4 console.log calls (lines ~14, 28, 42, 47)
+**Changes to `src/hooks/useLiveLocation.ts`**:
+1. Add 30-second throttle on GPS writes via `lastUpdateRef`
+2. Replace realtime subscription with 30-second polling interval
+3. Scope `fetchFriendLocations` query to connected friend user IDs only (currently fetches all with `.neq('user_id', user.id)`)
+4. Remove `supabase.channel('live-locations')` entirely
 
-**`src/stores/plannerStore.ts`**: Remove "Friendship already exists" console.log
+---
 
-**`src/pages/ResetPassword.tsx`**: Remove `console.log('Auth event:', event)` (line ~47)
-
-## 8. Clean Up Memory Files
-
-Delete stale memory files and update index:
-- Delete `mem://features/elly-ai-assistant`
-- Delete `mem://features/friends-and-chat-integration`
-- Delete `mem://integrations/giphy-support`
-- Delete `mem://tech/storage-security-architecture` (references deleted buckets)
-- Update `mem://style/dialog-layout-patterns` to remove Send Vibe references
-- Update `mem://features/vibe-system-ui` to remove send/receive aspects
-- Update `mem://index.md` to remove stale entries
+## Technical Notes
+- The `last_hung_out_cache` table needs a database migration
+- Edge function changes deploy automatically
+- The realtime hub is a new shared singleton — careful cleanup on unmount
+- No UI changes — all fixes are infrastructure/backend
+- Issue 1.2 and 1.4 are lower effort; 1.1 and 1.3 are higher effort
 
