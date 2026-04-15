@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS, FeedVisibility } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { usePods } from '@/hooks/usePods';
