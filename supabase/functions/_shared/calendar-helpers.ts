@@ -430,7 +430,7 @@ export function classifyActivity(summary?: string, isFlight = false): string {
   if (/\b(drinks|happy\s*hour|bar|cocktail|cocktails|beer|beers|pub|brewery|nightclub|club)\b/.test(s)) return 'drinks'
   if (/\b(museum|exhibit|exhibition|gallery)\b/.test(s)) return 'museum'
   if (/\b(sightsee|sightseeing|tourist|tour)\b/.test(s)) return 'sightseeing'
-  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|eating|supper|bistro|diner|sushi|pizza|ramen|taco|tapas|dim\s*sum|buffet)\b/.test(s)) return 'dinner'
+  if (/\b(dinner|lunch|brunch|breakfast|restaurant|eat|eating|supper|bistro|diner|sushi|pizza|ramen|taco|tapas|dim\s*sum|buffet)\b/.test(s)) return 'get-food'
   if (/\b(concert|live\s*music|gig)\b/.test(s)) return 'concert'
   if (/\b(1[:\s]*1|one[\s-]*on[\s-]*one|catch\s*up|coffee|cafe|café|tea|espresso|latte|matcha)\b/.test(s)) return 'one-on-one'
   if (/\b(beach|shore|ocean|seaside)\b/.test(s)) return 'beach'
@@ -452,7 +452,7 @@ export function classifyActivity(summary?: string, isFlight = false): string {
   if (/\b(movie|movies|cinema|film|screening)\b/.test(s)) return 'movies'
   if (/\b(watch|tv|netflix|hulu|streaming|binge|show|series)\b/.test(s) && !/\b(sports|game|match)\b/.test(s)) return 'watching-tv'
   if (/\b(park|picnic|garden|botanical)\b/.test(s)) return 'park'
-  if (/\b(grill|grilling|bbq|barbecue|cookout)\b/.test(s)) return 'grilling'
+  if (/\b(shop|shopping|mall|outlet|retail|store)\b/.test(s)) return 'shopping'
   if (/\b(theater|theatre|play|musical|show|performance)\b/.test(s)) return 'movies'
   if (/\b(read|reading|book\s*club|library)\b/.test(s)) return 'reading'
 

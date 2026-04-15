@@ -27,7 +27,7 @@ function getActivityEmoji(activity: string): string {
     'one-on-one': '☕', beach: '🏖️', park: '🌳', gym: '💪',
     yoga: '🧘', running: '🏃', swimming: '🏊', surfing: '🏄',
     movies: '🎬', 'watching-movie': '🎬', 'watching-tv': '📺',
-    movies: '🎬', 'watching-movie': '🎬', 'watching-tv': '📺',
+    camping: '⛺', 'video-games': '🎮',
     'sports-event': '🏟️', dancing: '💃', shopping: '🛍️',
     'stand-up-comedy': '😂', 'theme-park': '🎢', facetime: '📱',
     volunteering: '🤝', 'wine-tasting': '🍷', 'listening-music': '🎧',
