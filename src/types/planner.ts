@@ -52,7 +52,6 @@ export type ActivityType =
   | 'amateur-djing'
   | 'flight'
   | 'hotel'
-  | 'shopping'
   // Custom (placeholder for user-defined)
   | 'custom';
 
