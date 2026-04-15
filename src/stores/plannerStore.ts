@@ -235,6 +235,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     const { userId } = get();
     if (!userId) return;
     
+    try {
+      validatePlan({ title: plan.title, notes: plan.notes, duration: plan.duration, activity: plan.activity });
+    } catch (err: any) {
+      console.error('Plan validation failed:', err.message);
+      return;
+    }
+    
     const locationStr = plan.location ? plan.location.name : null;
     const dateStr = format(plan.date, 'yyyy-MM-dd');
     const noonUtcDate = `${dateStr}T12:00:00+00:00`;
