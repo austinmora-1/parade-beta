@@ -134,6 +134,7 @@ export function useNotifications() {
     emitChange();
   }, [user]);
 
+  // Initial fetch
   useEffect(() => {
     fetchPendingHangs();
     fetchPendingPlanInvites();
@@ -141,6 +142,36 @@ export function useNotifications() {
     fetchNewPlanPhotos();
     fetchPendingParticipantRequests();
     fetchPendingTripProposals();
+  }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingParticipantRequests, fetchPendingTripProposals]);
+
+  // Visibility-aware polling: 30s when active, 2min when tab is hidden
+  useEffect(() => {
+    const refetchAll = () => {
+      fetchPendingHangs();
+      fetchPendingPlanInvites();
+      fetchPendingChangeRequests();
+      fetchNewPlanPhotos();
+      fetchPendingParticipantRequests();
+      fetchPendingTripProposals();
+    };
+
+    let timer: ReturnType<typeof setInterval>;
+
+    const startPolling = () => {
+      clearInterval(timer);
+      const interval = document.hidden ? 120_000 : 30_000;
+      timer = setInterval(refetchAll, interval);
+    };
+
+    const handleVisibility = () => startPolling();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    startPolling();
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingParticipantRequests, fetchPendingTripProposals]);
 
   // Use shared realtime hub instead of dedicated channel

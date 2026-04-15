@@ -29,6 +29,7 @@ function collectGoogleFlightsAndHotels(
   timezone?: string,
 ) {
   for (const event of events) {
+    try {
     if (!event.start.dateTime || !event.end.dateTime) {
       if (event.start.date && event.end.date) {
         const startParsed = parseAllDayDate(event.start.date)
@@ -47,7 +48,7 @@ function collectGoogleFlightsAndHotels(
           }
         }
       }
-      return // skip non-timed events for flight detection
+      continue // skip non-timed events for flight detection
     }
     const startTime = new Date(event.start.dateTime)
     const endTime = new Date(event.end.dateTime)
@@ -70,6 +71,14 @@ function collectGoogleFlightsAndHotels(
         hotelStays.push({ startDate: getDateString(startTime, timezone), endDate: getDateString(endTime, timezone), city: hotelCity })
       }
     }
+    } catch (err) {
+      console.warn('Skipping malformed Google event', {
+        eventId: event.id,
+        summary: event.summary?.slice(0, 50),
+        error: (err as Error).message,
+      })
+      // Continue processing remaining events
+    }
   }
 }
 
@@ -84,6 +93,7 @@ function collectICalFlightsAndHotels(
   userTimezone?: string,
 ) {
   for (const event of events) {
+    try {
     if (event.isAllDay) {
       const startDateStr = event.dtstart.toISOString().split('T')[0]
       const endExcl = new Date(event.dtend); endExcl.setDate(endExcl.getDate() - 1)
@@ -117,6 +127,12 @@ function collectICalFlightsAndHotels(
       if (hotelCity && !isCityMatchingHome(hotelCity, homeAddress)) {
         hotelStays.push({ startDate: getDateString(event.dtstart, userTimezone), endDate: getDateString(event.dtend, userTimezone), city: hotelCity })
       }
+    }
+    } catch (err) {
+      console.warn('Skipping malformed iCal event', {
+        summary: event.summary?.slice(0, 50),
+        error: (err as Error).message,
+      })
     }
   }
 }

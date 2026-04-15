@@ -4,11 +4,104 @@ import { addDays, startOfWeek, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserTimezone } from '@/lib/timezone';
 import { validatePlan } from '@/lib/validation';
+import { getCachedDashboard, setCachedDashboard } from '@/lib/dashboardCache';
 
 import type { DashboardData, DefaultAvailabilitySettings } from './helpers/types';
 import { createDefaultAvailability, mapAvailabilityRow, buildAvailabilityMap } from './helpers/mapAvailability';
 import { buildParticipantsMap, deduplicatePlanRows, mapRawPlanToModel } from './helpers/mapPlans';
 import { mapOutgoingFriendships, mapIncomingFriendships, dedupeFriends } from './helpers/mapFriends';
+
+// ── Transform raw RPC data into store state ─────────────────────────────────
+function transformDashboardData(rpcData: unknown, userId: string) {
+  const d = rpcData as unknown as DashboardData;
+
+  const participantsMap = buildParticipantsMap(d.plan_participants || []);
+  const profilesMap: Record<string, string> = {};
+  const profileAvatarsMap: Record<string, string | null> = {};
+  for (const p of (d.participant_profiles || [])) {
+    if (p.user_id) {
+      profilesMap[p.user_id] = p.display_name || 'Friend';
+      profileAvatarsMap[p.user_id] = p.avatar_url;
+    }
+  }
+
+  const profile = d.profile;
+  const homeAddr = profile?.home_address || null;
+  const explicitTz = profile?.timezone || null;
+
+  const availData = d.availability || [];
+  const todayStrForTz = format(new Date(), 'yyyy-MM-dd');
+  const todayAvailRaw = availData.find(a => a.date === todayStrForTz);
+  const todayLocStatus = (todayAvailRaw?.location_status as LocationStatus) || 'home';
+  const todayTripLoc = todayAvailRaw?.trip_location || undefined;
+  const viewerTimezone = getUserTimezone(todayLocStatus, homeAddr, todayTripLoc, explicitTz);
+
+  const plansData = deduplicatePlanRows(d.own_plans || [], d.participated_plans || []);
+  const plans: Plan[] = plansData.map((p: any) =>
+    mapRawPlanToModel(p, userId, participantsMap, profilesMap, profileAvatarsMap, viewerTimezone)
+  );
+
+  const outgoingAvatarMap = new Map<string, string | null>(
+    (d.outgoing_friend_profiles || []).map(p => [p.user_id, p.avatar_url])
+  );
+  const incomingProfilesMap = new Map(
+    (d.incoming_friend_profiles || []).map(p => [p.user_id, p])
+  );
+  const outgoingFriends = mapOutgoingFriendships(d.outgoing_friendships || [], outgoingAvatarMap);
+  const incomingFriends = mapIncomingFriendships(d.incoming_friendships || [], incomingProfilesMap);
+  const friends = dedupeFriends(outgoingFriends, incomingFriends);
+
+  const customTags = profile?.custom_vibe_tags || [];
+  const vibeGifUrl = profile?.vibe_gif_url || undefined;
+  const currentVibe = profile?.current_vibe
+    ? {
+        type: profile.current_vibe as VibeType,
+        customTags: profile.current_vibe === 'custom' ? customTags : undefined,
+        gifUrl: vibeGifUrl,
+      }
+    : null;
+
+  const defaultSettings: DefaultAvailabilitySettings = {
+    workDays: profile?.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+    workStartHour: profile?.default_work_start_hour ?? 9,
+    workEndHour: profile?.default_work_end_hour ?? 17,
+    defaultStatus: (profile?.default_availability_status as 'free' | 'unavailable') || 'free',
+    defaultVibes: profile?.default_vibes || [],
+  };
+
+  const availDataMap = new Map<string, typeof availData[0]>();
+  for (const a of availData) {
+    availDataMap.set(a.date, a);
+  }
+
+  const start = addDays(new Date(), -7);
+  const windowDays = 42;
+  const allDates = Array.from({ length: windowDays }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
+  const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
+    const existing = availDataMap.get(dateStr);
+    const date = addDays(start, i);
+    if (existing) return mapAvailabilityRow(existing, date);
+    return createDefaultAvailability(date, defaultSettings);
+  });
+
+  const availabilityMap = buildAvailabilityMap(availabilityWithDefaults);
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const todayAvail = availabilityMap[todayStr];
+  const todayLocationStatus = todayAvail?.locationStatus || 'home';
+
+  return {
+    plans,
+    friends,
+    availability: availabilityWithDefaults,
+    availabilityMap,
+    currentVibe,
+    locationStatus: todayLocationStatus,
+    defaultSettings,
+    homeAddress: homeAddr,
+    userTimezone: viewerTimezone,
+  };
+}
 
 interface PlannerState {
   plans: Plan[];
@@ -91,6 +184,21 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     }
     
     set({ isLoading: true });
+
+    // ── Stale-while-revalidate: serve cached data instantly ──────────────
+    try {
+      const cached = await getCachedDashboard(userId);
+      if (cached && Date.now() - cached.cachedAt < 5 * 60 * 1000) {
+        const stale = transformDashboardData(cached.data, userId);
+        set({ ...stale, isLoading: false, lastFetchedAt: cached.cachedAt });
+        // If cache is very fresh (< 2 min), skip network entirely
+        if (!force && Date.now() - cached.cachedAt < 120_000) {
+          return;
+        }
+      }
+    } catch {
+      // Cache miss is fine — proceed to network
+    }
     
     try {
       let rpcData: any = null;
@@ -123,103 +231,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         return;
       }
 
-      const d = rpcData as unknown as DashboardData;
-
-      // ── Participant profiles ─────────────────────────────────────────────
-      const participantsMap = buildParticipantsMap(d.plan_participants || []);
-
-      const profilesMap: Record<string, string> = {};
-      const profileAvatarsMap: Record<string, string | null> = {};
-      for (const p of (d.participant_profiles || [])) {
-        if (p.user_id) {
-          profilesMap[p.user_id] = p.display_name || 'Friend';
-          profileAvatarsMap[p.user_id] = p.avatar_url;
-        }
-      }
-
-      // ── Profile & timezone ───────────────────────────────────────────────
-      const profile = d.profile;
-      const homeAddr = profile?.home_address || null;
-      const explicitTz = profile?.timezone || null;
-
-      const availData = d.availability || [];
-      const todayStrForTz = format(new Date(), 'yyyy-MM-dd');
-      const todayAvailRaw = availData.find(a => a.date === todayStrForTz);
-      const todayLocStatus = (todayAvailRaw?.location_status as LocationStatus) || 'home';
-      const todayTripLoc = todayAvailRaw?.trip_location || undefined;
-      const viewerTimezone = getUserTimezone(todayLocStatus, homeAddr, todayTripLoc, explicitTz);
-
-      // ── Plans ────────────────────────────────────────────────────────────
-      const plansData = deduplicatePlanRows(d.own_plans || [], d.participated_plans || []);
-      const plans: Plan[] = plansData.map((p: any) =>
-        mapRawPlanToModel(p, userId, participantsMap, profilesMap, profileAvatarsMap, viewerTimezone)
-      );
-
-      // ── Friends ──────────────────────────────────────────────────────────
-      const outgoingAvatarMap = new Map<string, string | null>(
-        (d.outgoing_friend_profiles || []).map(p => [p.user_id, p.avatar_url])
-      );
-      const incomingProfilesMap = new Map(
-        (d.incoming_friend_profiles || []).map(p => [p.user_id, p])
-      );
-      const outgoingFriends = mapOutgoingFriendships(d.outgoing_friendships || [], outgoingAvatarMap);
-      const incomingFriends = mapIncomingFriendships(d.incoming_friendships || [], incomingProfilesMap);
-      const friends = dedupeFriends(outgoingFriends, incomingFriends);
-
-      // ── Vibe & default settings ──────────────────────────────────────────
-      const customTags = profile?.custom_vibe_tags || [];
-      const vibeGifUrl = profile?.vibe_gif_url || undefined;
-      const currentVibe = profile?.current_vibe
-        ? {
-            type: profile.current_vibe as VibeType,
-            customTags: profile.current_vibe === 'custom' ? customTags : undefined,
-            gifUrl: vibeGifUrl,
-          }
-        : null;
-
-      const defaultSettings: DefaultAvailabilitySettings = {
-        workDays: profile?.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        workStartHour: profile?.default_work_start_hour ?? 9,
-        workEndHour: profile?.default_work_end_hour ?? 17,
-        defaultStatus: (profile?.default_availability_status as 'free' | 'unavailable') || 'free',
-        defaultVibes: profile?.default_vibes || [],
-      };
-
-      // ── Availability ─────────────────────────────────────────────────────
-      const availDataMap = new Map<string, typeof availData[0]>();
-      for (const a of availData) {
-        availDataMap.set(a.date, a);
-      }
-
-      const start = addDays(new Date(), -7);
-      const windowDays = 42;
-      const allDates = Array.from({ length: windowDays }, (_, i) => format(addDays(start, i), 'yyyy-MM-dd'));
-      const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
-        const existing = availDataMap.get(dateStr);
-        const date = addDays(start, i);
-        if (existing) return mapAvailabilityRow(existing, date);
-        return createDefaultAvailability(date, defaultSettings);
-      });
-
-      const availabilityMap = buildAvailabilityMap(availabilityWithDefaults);
-
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const todayAvail = availabilityMap[todayStr];
-      const todayLocationStatus = todayAvail?.locationStatus || 'home';
-
+      const transformed = transformDashboardData(rpcData, userId);
       set({
-        plans,
-        friends,
-        availability: availabilityWithDefaults,
-        availabilityMap,
-        currentVibe,
-        locationStatus: todayLocationStatus,
-        defaultSettings,
-        homeAddress: homeAddr,
-        userTimezone: viewerTimezone,
+        ...transformed,
         isLoading: false,
         lastFetchedAt: Date.now(),
       });
+
+      // Persist to IndexedDB for next page load (fire-and-forget)
+      setCachedDashboard(userId, rpcData).catch(() => {});
 
     } catch (error) {
       console.error('loadAllData error:', error);
