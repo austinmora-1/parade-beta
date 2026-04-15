@@ -327,6 +327,10 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 
 // --- Collapsible past days section ---
 
+function formatCity(s: string): string {
+  return s.length <= 4 ? s : s.replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeAddress: string | null): { label: string; isSplit: boolean; isAway: boolean } | null {
   const avail = availabilityMap[dateKey];
   const isAway = avail?.locationStatus === 'away';
