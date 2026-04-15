@@ -17,7 +17,7 @@ import { normalizeCity, citiesMatch } from '@/lib/locationMatch';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
-import { SlotCalendarPicker } from '@/components/plans/SlotCalendarPicker';
+import { SlotCalendarPicker, SelectedSlotEntry } from '@/components/plans/SlotCalendarPicker';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 
 interface GuidedPlanSheetProps {
