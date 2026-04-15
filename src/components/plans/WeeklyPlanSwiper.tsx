@@ -114,6 +114,7 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const weekStart = useMemo(() => {
     const base = startOfWeek(new Date(), { weekStartsOn: 1 });
