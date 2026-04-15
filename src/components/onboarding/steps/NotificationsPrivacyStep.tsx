@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { OnboardingData } from '../OnboardingWizard';
 import { HomeScreenStep } from './HomeScreenStep';
 import { NotificationsStep } from './NotificationsStep';
-import { Eye, MapPin, Sparkles, Users, MessageCircle, Bot } from 'lucide-react';
+import { Eye, MapPin, Sparkles, Users, MessageCircle } from 'lucide-react';
 
 interface NotificationsPrivacyStepProps {
   data: OnboardingData;
@@ -43,14 +43,6 @@ export function NotificationsPrivacyStep({ data, updateData }: NotificationsPriv
       description: 'Friends can propose hangouts',
       checked: data.allowAllHangRequests,
       onChange: (checked: boolean) => updateData({ allowAllHangRequests: checked }),
-    },
-    {
-      id: 'allowEllyHangouts',
-      icon: Bot,
-      title: 'Allow Elly to Set Up Hangouts',
-      description: 'Let our AI assistant suggest plans',
-      checked: data.allowEllyHangouts,
-      onChange: (checked: boolean) => updateData({ allowEllyHangouts: checked }),
     },
     {
       id: 'discoverable',

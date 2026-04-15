@@ -44,7 +44,6 @@ export interface OnboardingData {
   showVibeStatus: boolean;
   discoverable: boolean;
   allowAllHangRequests: boolean;
-  allowEllyHangouts: boolean;
 }
 
 const STEPS = [
@@ -89,7 +88,6 @@ export function OnboardingWizard() {
     showVibeStatus: true,
     discoverable: true,
     allowAllHangRequests: true,
-    allowEllyHangouts: true,
   });
   const [profileLoaded, setProfileLoaded] = useState(false);
 
@@ -163,7 +161,6 @@ export function OnboardingWizard() {
         show_vibe_status: data.showVibeStatus,
         discoverable: data.discoverable,
         allow_all_hang_requests: data.allowAllHangRequests,
-        allow_elly_hangouts: data.allowEllyHangouts,
         default_work_days: data.workDays,
         default_work_start_hour: data.workStartHour,
         default_work_end_hour: data.workEndHour,
