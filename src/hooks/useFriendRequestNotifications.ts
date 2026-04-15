@@ -12,8 +12,6 @@ export function useFriendRequestNotifications() {
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('Setting up friend request notifications for user:', user.id);
-
     const channel = supabase
       .channel('friend-requests')
       .on(
@@ -25,7 +23,7 @@ export function useFriendRequestNotifications() {
           filter: `friend_user_id=eq.${user.id}`,
         },
         async (payload) => {
-          console.log('New friend request received:', payload);
+          
           
           const newRequest = payload.new as {
             id: string;
@@ -49,12 +47,9 @@ export function useFriendRequestNotifications() {
           loadFriends();
         }
       )
-      .subscribe((status) => {
-        console.log('Friend request subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
-      console.log('Cleaning up friend request notifications');
       supabase.removeChannel(channel);
     };
   }, [user?.id, toast, loadFriends]);

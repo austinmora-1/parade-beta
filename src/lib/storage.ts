@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SIGNED_URL_EXPIRY = 3600; // 1 hour
-const PRIVATE_BUCKETS = ['plan-photos', 'vibe-media'];
+const PRIVATE_BUCKETS = ['plan-photos'];
 
 const urlCache = new Map<string, { url: string; expiresAt: number }>();
 

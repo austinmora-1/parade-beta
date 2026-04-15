@@ -979,7 +979,6 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         .maybeSingle();
       
       if (existing) {
-        console.log('Friendship already exists:', existing.id, existing.status);
         return;
       }
     }

@@ -41,7 +41,6 @@ export default function ResetPassword() {
 
     // Listen for auth state changes (important for processing the recovery token)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event);
       if (event === 'PASSWORD_RECOVERY') {
         setIsValidSession(true);
         setIsVerifying(false);

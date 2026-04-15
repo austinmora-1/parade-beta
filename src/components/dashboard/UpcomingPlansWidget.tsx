@@ -299,7 +299,7 @@ export function UpcomingPlansWidget() {
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <div className="mb-3 text-4xl">📅</div>
       <p className="text-muted-foreground">No upcoming plans this week</p>
-      <p className="text-sm text-muted-foreground">Create a new plan or chat with Elly!</p>
+      <p className="text-sm text-muted-foreground">Make a plan to get started!</p>
     </div>
   ) : (
     <div className="space-y-4">
