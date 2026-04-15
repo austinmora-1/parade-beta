@@ -259,7 +259,7 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   'amateur-djing': { label: 'Amateur DJing', icon: '🎧', lucideIcon: Disc3, color: 'activity-errands', vibeType: 'productive' },
   'flight': { label: 'Flight', icon: '✈️', lucideIcon: Plane, color: 'activity-events', vibeType: 'productive' },
   'hotel': { label: 'Hotel / Stay', icon: '🏨', lucideIcon: Home, color: 'activity-events', vibeType: 'productive' },
-  'shopping': { label: 'Shopping', icon: '🛍️', lucideIcon: ShoppingBag, color: 'activity-shopping', vibeType: 'productive' },
+  
   // Custom placeholder
   'custom': { label: 'Custom', icon: '✨', lucideIcon: Sparkles, color: 'primary', vibeType: 'social' },
 };
