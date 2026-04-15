@@ -885,6 +885,11 @@ export async function reconcilePlans(params: {
   // Upsert: skip enriched, update existing, content-dedup, insert new
   const toInsert: any[] = []
   for (const [eventId, planRow] of planRowsByEventId) {
+    // Skip event IDs that were consumed by a merged plan
+    if (mergedEventIds.has(eventId)) {
+      console.log(`[MERGE-SKIP] Event "${eventId}" was merged into another plan, skipping`)
+      continue
+    }
     const existing = existingByEventId.get(eventId)
     if (existing) {
       if (enrichedPlanIds.has(existing.id) || existing.manually_edited) continue
