@@ -333,26 +333,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       if (participantRows.length > 0) {
         await supabase.from('plan_participants').insert(participantRows);
 
-        try {
-          const { data: sessionData } = await supabase.auth.getSession();
+        // Fire-and-forget: all post-creation notifications happen async server-side
+        supabase.auth.getSession().then(({ data: sessionData }) => {
           const token = sessionData?.session?.access_token;
+          if (!token) return;
           const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-          const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', userId).single();
-          const senderName = profile?.display_name || 'Someone';
-
-          fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
+          fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              user_ids: participantRows.map(r => r.friend_id),
-              title: 'New Plan Invite! 📅',
-              body: `${senderName} invited you to "${plan.title}"`,
-              url: `/plan/${data.id}`,
+              plan_id: data.id,
+              creator_id: userId,
+              participant_ids: participantRows.map(r => r.friend_id),
+              plan_title: plan.title,
             }),
           }).catch(() => {});
-        } catch (err) {
-          console.error('Push notification error:', err);
-        }
+        }).catch(() => {});
       }
     }
     
