@@ -90,20 +90,8 @@ export function HangRequests() {
     }
   }, [user]);
 
-  // Realtime subscription to keep data fresh
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel('hang-requests-dashboard')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'hang_requests' },
-        () => { fetchRequests(); }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  // Use shared realtime hub instead of dedicated channel
+  useRealtimeHub('hang_requests', '*', () => fetchRequests());
 
   const fetchRequests = async () => {
     const { data: hangRequests, error } = await supabase
