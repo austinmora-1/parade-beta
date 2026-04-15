@@ -1052,7 +1052,11 @@ function ProposalTripCard({
 
         {/* Date options with ranked vote buttons */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
+          <button
+            type="button"
+            className="w-full flex items-center justify-between"
+            onClick={() => setRankingsCollapsed(c => !c)}
+          >
             <div className="flex items-center gap-1.5">
               <span className={cn(
                 "text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0",
@@ -1064,90 +1068,102 @@ function ProposalTripCard({
               </span>
               <span className="text-[10px] text-muted-foreground">{votedCount}/{totalVoters} voted</span>
             </div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Rank dates
-            </p>
-          </div>
-          <p className="text-[10px] text-muted-foreground">
-            Drag to reorder · Top = most preferred
-          </p>
-          <Reorder.Group
-            axis="y"
-            values={rankedDateIds}
-            onReorder={setRankedDateIds}
-            className="space-y-1"
-          >
-            {rankedDateIds.map((dateId, i) => {
-              const d = proposal.dates.find(dd => dd.id === dateId);
-              if (!d) return null;
-              const rank = i + 1;
-              const count = voteCounts.get(d.id) || 0;
-              const score = bordaScores.get(d.id) || 0;
-              const startDate = new Date(d.start_date + 'T00:00:00');
-              const endDate = new Date(d.end_date + 'T00:00:00');
-              const isWinner = allVoted && winningDate?.id === d.id;
-              const maxScore = Math.max(...Array.from(bordaScores.values()), 1);
-              const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
+            <div className="flex items-center gap-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Rank dates
+              </p>
+              <ChevronDown className={cn(
+                "h-3 w-3 text-muted-foreground transition-transform",
+                rankingsCollapsed && "-rotate-90"
+              )} />
+            </div>
+          </button>
 
-              return (
-                <Reorder.Item
-                  key={dateId}
-                  value={dateId}
-                  className={cn(
-                    "relative flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors overflow-hidden cursor-grab active:cursor-grabbing touch-none",
-                    isWinner
-                      ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                      : "border-border hover:border-primary/30"
-                  )}
+          <AnimatePresence initial={false}>
+            {!rankingsCollapsed && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <p className="text-[10px] text-muted-foreground mb-1.5">
+                  Drag to reorder · Top = most preferred
+                </p>
+                <Reorder.Group
+                  axis="y"
+                  values={rankedDateIds}
+                  onReorder={setRankedDateIds}
+                  className="space-y-1"
                 >
-                  {/* Score bar background */}
-                  <div
-                    className="absolute inset-y-0 left-0 bg-primary/10 transition-all pointer-events-none"
-                    style={{ width: `${barWidth}%` }}
-                  />
+                  {rankedDateIds.map((dateId, i) => {
+                    const d = proposal.dates.find(dd => dd.id === dateId);
+                    if (!d) return null;
+                    const rank = i + 1;
+                    const count = voteCounts.get(d.id) || 0;
+                    const score = bordaScores.get(d.id) || 0;
+                    const startDate = new Date(d.start_date + 'T00:00:00');
+                    const endDate = new Date(d.end_date + 'T00:00:00');
+                    const isWinner = allVoted && winningDate?.id === d.id;
+                    const maxScore = Math.max(...Array.from(bordaScores.values()), 1);
+                    const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
 
-                  <GripVertical className="relative h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                    return (
+                      <Reorder.Item
+                        key={dateId}
+                        value={dateId}
+                        className={cn(
+                          "relative flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors overflow-hidden cursor-grab active:cursor-grabbing touch-none",
+                          isWinner
+                            ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                            : "border-border hover:border-primary/30"
+                        )}
+                      >
+                        <div
+                          className="absolute inset-y-0 left-0 bg-primary/10 transition-all pointer-events-none"
+                          style={{ width: `${barWidth}%` }}
+                        />
+                        <GripVertical className="relative h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                        <div className="relative flex h-5 w-5 items-center justify-center rounded-md border border-primary bg-primary text-primary-foreground text-[10px] font-bold shrink-0">
+                          {rank}
+                        </div>
+                        {isWinner && (
+                          <Trophy className="relative h-3 w-3 text-primary shrink-0" />
+                        )}
+                        <span className={cn(
+                          "relative flex-1 text-[11px] font-medium truncate",
+                          isWinner && "text-primary"
+                        )}>
+                          {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
+                        </span>
+                        {count > 0 && (
+                          <span className={cn(
+                            "relative text-[9px] font-medium shrink-0",
+                            isWinner ? "text-primary" : "text-muted-foreground"
+                          )}>
+                            {count}/{totalVoters} · {score}pts
+                          </span>
+                        )}
+                      </Reorder.Item>
+                    );
+                  })}
+                </Reorder.Group>
 
-                  {/* Rank badge */}
-                  <div className="relative flex h-5 w-5 items-center justify-center rounded-md border border-primary bg-primary text-primary-foreground text-[10px] font-bold shrink-0">
-                    {rank}
-                  </div>
-
-                  {isWinner && (
-                    <Trophy className="relative h-3 w-3 text-primary shrink-0" />
-                  )}
-                  <span className={cn(
-                    "relative flex-1 text-[11px] font-medium truncate",
-                    isWinner && "text-primary"
-                  )}>
-                    {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
-                  </span>
-                  {count > 0 && (
-                    <span className={cn(
-                      "relative text-[9px] font-medium shrink-0",
-                      isWinner ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {count}/{totalVoters} · {score}pts
-                    </span>
-                  )}
-                </Reorder.Item>
-              );
-            })}
-          </Reorder.Group>
-
-          {/* Save button */}
-          {hasUnsavedChanges && (
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || voting === proposal.id}
-              className="w-full"
-              size="sm"
-            >
-              {(isSubmitting || voting === proposal.id) ? (
-                <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving...</>
-              ) : 'Save Rankings'}
-            </Button>
-          )}
+                {hasUnsavedChanges && (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || voting === proposal.id}
+                    className="w-full mt-1.5"
+                    size="sm"
+                  >
+                    {(isSubmitting || voting === proposal.id) ? (
+                      <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving...</>
+                    ) : 'Save Rankings'}
+                  </Button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
