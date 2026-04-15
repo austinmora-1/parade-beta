@@ -450,6 +450,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
     setRecurrenceWeekOfMonth(1);
     setParticipantAvailability([]);
     setShowMoreOptions(false);
+    setIsMultiOption(false);
+    setProposalOptions([]);
     // showCustomTime removed from new UI
   };
 
