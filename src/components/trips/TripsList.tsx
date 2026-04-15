@@ -901,72 +901,74 @@ function ProposalTripCard({
             </p>
           </div>
           <p className="text-[10px] text-muted-foreground">
-            {hasVoted ? 'Tap to update your rankings.' : 'Tap dates in order of preference (1st = most preferred)'}
+            Drag to reorder · Top = most preferred
           </p>
-          {proposal.dates.map(d => {
-            const myRank = myRankings[d.id];
-            const count = voteCounts.get(d.id) || 0;
-            const score = bordaScores.get(d.id) || 0;
-            const startDate = new Date(d.start_date + 'T00:00:00');
-            const endDate = new Date(d.end_date + 'T00:00:00');
-            const isWinner = allVoted && winningDate?.id === d.id;
-            const maxScore = Math.max(...Array.from(bordaScores.values()), 1);
-            const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
+          <Reorder.Group
+            axis="y"
+            values={rankedDateIds}
+            onReorder={setRankedDateIds}
+            className="space-y-1"
+          >
+            {rankedDateIds.map((dateId, i) => {
+              const d = proposal.dates.find(dd => dd.id === dateId);
+              if (!d) return null;
+              const rank = i + 1;
+              const count = voteCounts.get(d.id) || 0;
+              const score = bordaScores.get(d.id) || 0;
+              const startDate = new Date(d.start_date + 'T00:00:00');
+              const endDate = new Date(d.end_date + 'T00:00:00');
+              const isWinner = allVoted && winningDate?.id === d.id;
+              const maxScore = Math.max(...Array.from(bordaScores.values()), 1);
+              const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
 
-            return (
-              <button
-                key={d.id}
-                onClick={() => handleRankToggle(d.id)}
-                className={cn(
-                  "relative w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all overflow-hidden",
-                  isWinner
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                    : myRank
-                      ? "border-primary/60 bg-primary/5"
-                      : "border-border hover:border-primary/30 hover:bg-primary/5"
-                )}
-              >
-                {/* Score bar background */}
-                <div
-                  className="absolute inset-y-0 left-0 bg-primary/10 transition-all"
-                  style={{ width: `${barWidth}%` }}
-                />
+              return (
+                <Reorder.Item
+                  key={dateId}
+                  value={dateId}
+                  className={cn(
+                    "relative flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors overflow-hidden cursor-grab active:cursor-grabbing touch-none",
+                    isWinner
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                      : "border-border hover:border-primary/30"
+                  )}
+                >
+                  {/* Score bar background */}
+                  <div
+                    className="absolute inset-y-0 left-0 bg-primary/10 transition-all pointer-events-none"
+                    style={{ width: `${barWidth}%` }}
+                  />
 
-                {/* Rank badge */}
-                <div className={cn(
-                  "relative flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold shrink-0",
-                  myRank
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-muted text-muted-foreground"
-                )}>
-                  {myRank || '—'}
-                </div>
+                  <GripVertical className="relative h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
 
-                {isWinner && (
-                  <Trophy className="relative h-3.5 w-3.5 text-primary shrink-0" />
-                )}
-                <span className={cn(
-                  "relative flex-1 text-xs font-medium",
-                  isWinner && "text-primary"
-                )}>
-                  {format(startDate, 'EEE, MMM d')} – {format(endDate, 'MMM d')}
-                </span>
-                <div className="relative flex items-center gap-1.5 shrink-0">
+                  {/* Rank badge */}
+                  <div className="relative flex h-5 w-5 items-center justify-center rounded-md border border-primary bg-primary text-primary-foreground text-[10px] font-bold shrink-0">
+                    {rank}
+                  </div>
+
+                  {isWinner && (
+                    <Trophy className="relative h-3 w-3 text-primary shrink-0" />
+                  )}
+                  <span className={cn(
+                    "relative flex-1 text-[11px] font-medium truncate",
+                    isWinner && "text-primary"
+                  )}>
+                    {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
+                  </span>
                   {count > 0 && (
                     <span className={cn(
-                      "text-[10px] font-medium",
+                      "relative text-[9px] font-medium shrink-0",
                       isWinner ? "text-primary" : "text-muted-foreground"
                     )}>
                       {count}/{totalVoters} · {score}pts
                     </span>
                   )}
-                </div>
-              </button>
-            );
-          })}
+                </Reorder.Item>
+              );
+            })}
+          </Reorder.Group>
 
-          {/* Submit / Update button */}
-          {Object.keys(myRankings).length > 0 && (
+          {/* Save button */}
+          {hasUnsavedChanges && (
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting || voting === proposal.id}
@@ -974,8 +976,8 @@ function ProposalTripCard({
               size="sm"
             >
               {(isSubmitting || voting === proposal.id) ? (
-                <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Submitting...</>
-              ) : hasVoted ? 'Update Rankings' : 'Submit Rankings'}
+                <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving...</>
+              ) : 'Save Rankings'}
             </Button>
           )}
         </div>
