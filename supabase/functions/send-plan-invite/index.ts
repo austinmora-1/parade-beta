@@ -22,12 +22,12 @@ interface PlanInviteRequest {
 
 function getActivityEmoji(activity: string): string {
   const map: Record<string, string> = {
-    drinks: '🍻', dinner: '🍽️', concert: '🎵', hiking: '🥾',
+    drinks: '🍻', 'get-food': '🍽️', concert: '🎵', hiking: '🥾',
     'hanging-out': '✨', museum: '🏛️', sightseeing: '📸',
     'one-on-one': '☕', beach: '🏖️', park: '🌳', gym: '💪',
     yoga: '🧘', running: '🏃', swimming: '🏊', surfing: '🏄',
     movies: '🎬', 'watching-movie': '🎬', 'watching-tv': '📺',
-    grilling: '🔥', camping: '⛺', 'video-games': '🎮',
+    movies: '🎬', 'watching-movie': '🎬', 'watching-tv': '📺',
     'sports-event': '🏟️', dancing: '💃', shopping: '🛍️',
     'stand-up-comedy': '😂', 'theme-park': '🎢', facetime: '📱',
     volunteering: '🤝', 'wine-tasting': '🍷', 'listening-music': '🎧',
