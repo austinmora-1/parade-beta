@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { GuidedPlanSheet } from '@/components/plans/GuidedPlanSheet';
 import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
 import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,8 @@ export default function Availability() {
   const rawPlans = usePlannerStore((s) => s.plans);
   const { displayPlans: plans } = useDisplayPlans(rawPlans);
   const deletePlan = usePlannerStore((s) => s.deletePlan);
-  const [planDialogOpen, setPlanDialogOpen] = useState(false);
+  const [guidedPlanOpen, setGuidedPlanOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
   const [editPlan, setEditPlan] = useState<any>(undefined);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -31,10 +33,8 @@ export default function Availability() {
   const [sharePlanId, setSharePlanId] = useState<string | null>(null);
   const [sharePlanTitle, setSharePlanTitle] = useState('');
 
-  const openPlanDialog = (date?: Date) => {
-    setPlanDefaultDate(date);
-    setEditPlan(undefined);
-    setPlanDialogOpen(true);
+  const openNewPlan = () => {
+    setGuidedPlanOpen(true);
   };
 
   const isConnected = isGcalConnected || isIcalConnected;
@@ -64,7 +64,7 @@ export default function Availability() {
   const handleEditPlan = useCallback((plan: any) => {
     setEditPlan(plan);
     setPlanDefaultDate(plan.date);
-    setPlanDialogOpen(true);
+    setEditDialogOpen(true);
   }, []);
 
   const handleDeletePlan = useCallback((id: string) => {
@@ -115,7 +115,7 @@ export default function Availability() {
             size="sm"
             variant="outline"
             className="shrink-0 gap-2"
-            onClick={() => openPlanDialog()}
+            onClick={() => openNewPlan()}
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Add Plan</span>
@@ -142,9 +142,15 @@ export default function Availability() {
         onSharePlan={handleSharePlan}
       />
 
+      <GuidedPlanSheet
+        open={guidedPlanOpen}
+        onOpenChange={setGuidedPlanOpen}
+        preSelectedFriends={[]}
+      />
+
       <CreatePlanDialog
-        open={planDialogOpen}
-        onOpenChange={setPlanDialogOpen}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
         defaultDate={planDefaultDate}
         editPlan={editPlan}
       />
