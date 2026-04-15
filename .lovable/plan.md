@@ -1,43 +1,44 @@
 
 
-# Sprint 2 — High Priority Scalability Fixes
+# plannerStore Split Refactor
 
 ## Overview
-Five issues that cause performance degradation at 20-50K users. Implementing 2.1–2.3 and 2.5 now; 2.4 deferred.
+Extract duplicated mapping/transformation logic into reusable helpers, reducing `plannerStore.ts` from ~1,744 lines to ~700 lines. The Zustand store shape and public API stay identical — no consumer changes needed.
 
----
+## Architecture
 
-## ✅ Issue 2.1: Add Date Bounds to `get_dashboard_data` RPC (DONE)
+The store contains three categories of duplicated heavy logic:
 
-- Migration: Added `v_plan_start` (14 days ago) filter to own_plans and participated_plans CTEs
-- Client: Increased dashboard cache from 30s to 2min in plannerStore.ts
+1. **Plan mapping** (~120 lines duplicated between `loadAllData` and `loadPlans`) — raw DB row → `Plan` object with timezone conversion, participant resolution, dedup
+2. **Friend mapping** (~80 lines duplicated) — outgoing/incoming friendship merge, status-priority dedup
+3. **Availability mapping** (~60 lines duplicated between `loadAllData` and `loadProfileAndAvailability`/`loadAvailabilityForRange`) — DB row → `DayAvailability` with slot locations, defaults
 
-## ✅ Issue 2.2: Add Rate Limiting to Edge Functions (DONE)
+## File Plan
 
-- Created `rate_limit_log` table with RLS (service-role only)
-- Created shared `_shared/rate-limiter.ts` utility
-- Applied to 6 functions: send-sms-invite (10/hr), send-friend-invite (20/hr), send-hang-request (20/hr), send-plan-invite (30/hr), send-push-notification (50/hr), submit-feedback (10/hr)
+```text
+src/stores/
+  plannerStore.ts          (1744→~700 lines) — state, setters, Supabase calls
+  helpers/
+    mapPlans.ts            (~130 lines) — mapRawPlanToModel(), buildParticipantsMap()
+    mapFriends.ts          (~80 lines)  — mapFriendships(), dedupeFriends()
+    mapAvailability.ts     (~90 lines)  — mapAvailabilityRow(), createDefaultAvailability(), buildAvailabilityMap()
+    types.ts               (~40 lines)  — DashboardData, DefaultAvailabilitySettings interfaces
+```
 
-## ✅ Issue 2.3: Add Route-Level Code Splitting (DONE)
+## Steps
 
-- Converted 11 eager page imports to `lazy()` in App.tsx
-- All pages now code-split; existing `<Suspense>` wrapper handles loading
+1. **Create `src/stores/helpers/types.ts`** — Move `DashboardData` and `DefaultAvailabilitySettings` interfaces out of the store.
 
-## ✅ Issue 2.5: Add Structured Logging (DONE)
+2. **Create `src/stores/helpers/mapAvailability.ts`** — Extract `createDefaultAvailability`, `buildAvailabilityMap`, `TIME_SLOT_HOURS`, and the shared availability-row-to-`DayAvailability` mapper used in three places.
 
-- Created shared `_shared/logger.ts` utility with structured JSON output
-- Available for all edge functions to import
+3. **Create `src/stores/helpers/mapPlans.ts`** — Extract the plan-row-to-`Plan` conversion (timezone handling, participant assembly, owner injection). Both `loadAllData` and `loadPlans` will call the same function.
 
-## 🔲 Issue 2.4: Split Monolithic plannerStore.ts (DEFERRED)
+4. **Create `src/stores/helpers/mapFriends.ts`** — Extract outgoing/incoming friendship mapping and the two-pass dedup logic used identically in `loadAllData` and `loadFriends`.
 
-- 1,744-line Zustand store needs splitting into profile/friends/availability/plans stores
-- High-risk refactor touching 50+ components — needs dedicated sprint
-- Recommend doing as a standalone task with careful testing
+5. **Update `plannerStore.ts`** — Replace inline logic with imports from the helpers. No changes to the exported `usePlannerStore` API or state shape.
 
----
+## Risk Mitigation
+- Pure extraction refactor — no logic changes, no API changes
+- Every consumer file (`usePlannerStore(s => s.plans)`, etc.) continues working unchanged
+- Helpers are pure functions with no side effects — easy to unit test later
 
-## Completed from Sprint 1
-- ✅ Issue 1.1: Removed smart-nudges entirely (dead feature)
-- ✅ Issue 1.2: Plan reminders N+1 fix (done previously)
-- ✅ Issue 1.3: Realtime hub consolidation (done previously)
-- ✅ Issue 1.4: Live location removed entirely (dead feature)
