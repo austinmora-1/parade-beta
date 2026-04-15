@@ -1845,6 +1845,16 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_cache: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          home_address: string | null
+          timezone: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
