@@ -151,10 +151,39 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
   if (compact) {
     return (
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             {totalVoters}/{totalExpected} voted
           </span>
+          {voterProfiles.length > 0 && (
+            <div className="flex -space-x-1">
+              {voterProfiles.map(p => {
+                const voted = voterIds.has(p.userId);
+                return (
+                  <TooltipProvider key={p.userId} delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="relative">
+                          <Avatar className={cn("h-4 w-4 border border-background", !voted && "opacity-40 grayscale")}>
+                            <AvatarImage src={p.avatar || getElephantAvatar(p.name)} />
+                            <AvatarFallback className="text-[6px]">{p.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          {voted && (
+                            <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="h-1.5 w-1.5 text-primary-foreground" />
+                            </span>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-[10px] py-0.5 px-1.5">
+                        {p.name.split(' ')[0]} {voted ? '✓' : '—'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap gap-1">
           {sortedOptions.map(opt => {
@@ -202,13 +231,48 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
     );
   }
 
-  // Full view for PlanDetail
-  return (
+    return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Vote for Times</h3>
         <span className="text-xs text-muted-foreground">{totalVoters}/{totalExpected} voted</span>
       </div>
+
+      {/* Voter indicator avatars */}
+      {voterProfiles.length > 0 && (
+        <div className="flex items-center gap-2">
+          <div className="flex -space-x-1.5">
+            {voterProfiles.map(p => {
+              const voted = voterIds.has(p.userId);
+              return (
+                <TooltipProvider key={p.userId} delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative">
+                        <Avatar className={cn("h-6 w-6 border-2 border-background", !voted && "opacity-40 grayscale")}>
+                          <AvatarImage src={p.avatar || getElephantAvatar(p.name)} />
+                          <AvatarFallback className="text-[8px]">{p.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {voted && (
+                          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary flex items-center justify-center ring-1 ring-background">
+                            <Check className="h-1.5 w-1.5 text-primary-foreground" />
+                          </span>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs py-0.5 px-2">
+                      {p.name.split(' ')[0]} — {voted ? 'Voted' : 'Hasn\'t voted'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })}
+          </div>
+          <span className="text-[10px] text-muted-foreground">
+            {totalVoters === totalExpected ? 'Everyone voted!' : `${totalExpected - totalVoters} remaining`}
+          </span>
+        </div>
+      )}
 
       <p className="text-xs text-muted-foreground">
         {hasVoted ? 'You\'ve voted! Tap to update your rankings.' : 'Tap options in order of preference (1st = most preferred)'}
