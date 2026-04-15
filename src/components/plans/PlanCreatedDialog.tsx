@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/dialog';
 import { ACTIVITY_CONFIG, ActivityType, TIME_SLOT_LABELS, TimeSlot, Friend } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { usePlannerStore } from '@/stores/plannerStore';
+import { getTimezoneAbbreviation } from '@/lib/timezone';
 
 interface PlanSummary {
   title: string;
@@ -38,6 +40,8 @@ function formatTime12(time: string) {
 }
 
 export function PlanCreatedDialog({ open, onOpenChange, plan }: PlanCreatedDialogProps) {
+  const userTimezone = usePlannerStore((s) => s.userTimezone);
+
   if (!plan) return null;
 
   const activityConfig = ACTIVITY_CONFIG[plan.activity as ActivityType];
@@ -78,6 +82,7 @@ export function PlanCreatedDialog({ open, onOpenChange, plan }: PlanCreatedDialo
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {timeLabelStr}
+              <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(userTimezone)}</span>
             </span>
             {plan.location && (
               <span className="flex items-center gap-1 truncate">

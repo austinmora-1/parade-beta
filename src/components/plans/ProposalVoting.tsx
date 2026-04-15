@@ -16,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getTimezoneAbbreviation } from '@/lib/timezone';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -39,8 +40,11 @@ interface ProposalVotingProps {
   voterProfiles?: VoterProfile[];
 }
 
+const userTimezoneSelector = (s: any) => s.userTimezone;
+
 export function ProposalVoting({ planId, isOwner, participantCount, compact = false, voterProfiles = [] }: ProposalVotingProps) {
   const userId = usePlannerStore((s) => s.userId);
+  const userTimezone = usePlannerStore(userTimezoneSelector);
   const { loadProposalData, submitVotes, finalizePlan, computeScores, isLoading } = usePlanProposals();
   const [options, setOptions] = useState<PlanProposalOption[]>([]);
   const [votes, setVotes] = useState<PlanProposalVote[]>([]);
@@ -354,6 +358,7 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
                   <span className="text-xs text-muted-foreground">
                     {opt.startTime ? formatTime12(opt.startTime) : slotLabel?.label}
                     {slotLabel && !opt.startTime && <span className="ml-1 opacity-60">({slotLabel.time})</span>}
+                    <span className="ml-1 opacity-60">{getTimezoneAbbreviation(userTimezone)}</span>
                   </span>
                 </div>
 
