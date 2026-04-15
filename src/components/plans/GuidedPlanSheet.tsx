@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TimeSlot, ActivityType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +27,7 @@ interface GuidedPlanSheetProps {
   preSelectedFriends: { userId: string; name: string; avatar?: string }[];
 }
 
-type Step = 'activity' | 'time' | 'confirm';
+type Step = 'friends' | 'activity' | 'time' | 'confirm';
 
 const SUGGESTED_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
   { id: 'drinks', emoji: '🍹', label: 'Drinks' },
