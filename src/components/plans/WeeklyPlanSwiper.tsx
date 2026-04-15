@@ -327,6 +327,10 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 
 // --- Collapsible past days section ---
 
+function formatCity(s: string): string {
+  return s.length <= 4 ? s : s.replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeAddress: string | null): { label: string; isSplit: boolean; isAway: boolean } | null {
   const avail = availabilityMap[dateKey];
   const isAway = avail?.locationStatus === 'away';
@@ -368,6 +372,7 @@ function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAv
   }
 
   // Fallback: detect transition by comparing with adjacent days' trip_location
+  // Only show arrows on the actual transition day (first or last day at a location)
   if (avail?.tripLocation || isAway) {
     const currentLoc = avail?.tripLocation || null;
     const currentNorm = currentLoc ? normalizeCity(currentLoc) : (homeCity ? normalizeCity(homeCity) : '');
@@ -380,19 +385,30 @@ function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAv
     const nextLoc = getNextDayLocation(dateKey, availabilityMap, homeCity);
     const nextNorm = nextLoc ? normalizeCity(nextLoc) : '';
 
-    // Transition: current differs from previous AND it's the first day at this location
-    // (i.e., previous day was a different city)
-    if (currentLoc && prevNorm && currentNorm && prevNorm !== currentNorm) {
-      // Also check if previous day's location is not the same as current (true transition)
-      const prevDisplay = prevLoc && prevLoc.length <= 4 ? prevLoc : (prevLoc || '').replace(/\b\w/g, c => c.toUpperCase());
-      const currentDisplay = currentLoc.length <= 4 ? currentLoc : currentLoc.replace(/\b\w/g, c => c.toUpperCase());
+    const arrivedToday = prevNorm && currentNorm && prevNorm !== currentNorm;
+    const leavingToday = nextNorm && currentNorm && nextNorm !== currentNorm;
+
+    // Only show transition arrow if BOTH sides differ (true travel day)
+    // OR if it's the first day (arrived) but not also leaving same day to yet another city
+    if (currentLoc && arrivedToday && leavingToday) {
+      // Single-day stopover: show prev → current → next? Just show prev → next via current
+      const prevDisplay = formatCity(prevLoc || '');
+      const currentDisplay = formatCity(currentLoc);
+      const nextDisplay = formatCity(nextLoc || '');
+      return { label: `${prevDisplay} → ${currentDisplay} → ${nextDisplay}`, isSplit: true, isAway };
+    }
+
+    if (currentLoc && arrivedToday && !leavingToday) {
+      // First day at this location — show arrival transition
+      const prevDisplay = formatCity(prevLoc || '');
+      const currentDisplay = formatCity(currentLoc);
       return { label: `${prevDisplay} → ${currentDisplay}`, isSplit: true, isAway };
     }
 
-    // Transition: current differs from next AND it's the last day at this location
-    if (currentLoc && nextNorm && currentNorm && nextNorm !== currentNorm) {
-      const currentDisplay = currentLoc.length <= 4 ? currentLoc : currentLoc.replace(/\b\w/g, c => c.toUpperCase());
-      const nextDisplay = nextLoc && nextLoc.length <= 4 ? nextLoc : (nextLoc || '').replace(/\b\w/g, c => c.toUpperCase());
+    if (currentLoc && !arrivedToday && leavingToday) {
+      // Last day at this location — show departure transition
+      const currentDisplay = formatCity(currentLoc);
+      const nextDisplay = formatCity(nextLoc || '');
       return { label: `${currentDisplay} → ${nextDisplay}`, isSplit: true, isAway };
     }
   }
