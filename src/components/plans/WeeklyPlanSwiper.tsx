@@ -785,7 +785,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       className={cn(
-        "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col",
+        "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col overflow-hidden",
         showTentativeStyle && "border-dashed border-muted-foreground/40",
         isPast && !showTentativeStyle && "bg-muted text-muted-foreground border-muted-foreground/20 shadow-none ring-0",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
@@ -810,7 +810,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-1.5 min-w-0">
-            <span className={cn("text-sm font-semibold leading-tight truncate min-w-0", showTentativeStyle && "text-muted-foreground")}>{displayTitle}</span>
+            <span className={cn("text-sm font-semibold leading-tight truncate block", showTentativeStyle && "text-muted-foreground")}>{displayTitle}</span>
             {hasPendingChange && (
               <span className="shrink-0 rounded-full bg-muted border border-muted-foreground/20 px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground whitespace-nowrap mt-0.5">
                 Proposed
