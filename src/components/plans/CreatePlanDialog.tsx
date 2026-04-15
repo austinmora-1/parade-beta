@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { usePlanProposals, ProposalOptionInput } from '@/hooks/usePlanProposals';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
-import { CalendarIcon, MapPin, Users, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat, ChevronDown, CircleCheck, CircleHelp, Lightbulb } from 'lucide-react';
+import { CalendarIcon, MapPin, Users, Search, Loader2, AlertTriangle, Eye, Globe, Lock, Repeat, ChevronDown, CircleCheck, CircleHelp, Lightbulb, ListPlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
@@ -110,6 +111,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
   const { pods } = usePods();
   const { createRecurringPlan } = useRecurringPlans();
+  const { createProposalOptions } = usePlanProposals();
   const [title, setTitle] = useState('');
   const [selectedVibe, setSelectedVibe] = useState<VibeType>('social');
   const [activity, setActivity] = useState<ActivityType | string>('drinks');
@@ -141,6 +143,10 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   } | null>(null);
   const [_showCustomTime, _setShowCustomTime] = useState(false); // kept for edit sync
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  
+  // Multi-option proposal state
+  const [isMultiOption, setIsMultiOption] = useState(false);
+  const [proposalOptions, setProposalOptions] = useState<ProposalOptionInput[]>([]);
   
   // Shared plan change request state
   const [participantAvailability, setParticipantAvailability] = useState<{ userId: string; name: string; available: boolean }[]>([]);
@@ -294,6 +300,62 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   const effectiveTitle = title || getAutoTitle();
 
   const handleSubmit = async () => {
+    // Handle multi-option proposal creation
+    if (isMultiOption && proposalOptions.length >= 2 && !editPlan) {
+      const allParticipants = [
+        ...friends.filter((f) => selectedFriends.includes(f.id)).map(f => ({ ...f, role: 'participant' as const })),
+        ...friends.filter((f) => subscriberFriends.includes(f.id)).map(f => ({ ...f, role: 'subscriber' as const })),
+      ];
+
+      // Create the plan with first option's date, status 'proposed', proposal_status 'voting'
+      const firstOpt = proposalOptions[0];
+      const planData = {
+        title: effectiveTitle,
+        activity,
+        date: firstOpt.date,
+        timeSlot: firstOpt.timeSlot,
+        duration: parseInt(duration) || 60,
+        startTime: firstOpt.startTime || undefined,
+        endTime: endTime || undefined,
+        location: locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined,
+        participants: allParticipants,
+        notes,
+        status: 'proposed' as PlanStatus,
+        feedVisibility,
+      };
+
+      // Use addPlan which returns the created plan
+      await addPlan(planData);
+      
+      // Get the newly created plan ID from the store
+      const { plans: updatedPlans } = usePlannerStore.getState();
+      const createdPlan = updatedPlans[updatedPlans.length - 1];
+      
+      if (createdPlan) {
+        // Set proposal_status to 'voting'
+        await supabase.from('plans').update({ proposal_status: 'voting' } as any).eq('id', createdPlan.id);
+        
+        // Create proposal options
+        await createProposalOptions(createdPlan.id, proposalOptions);
+      }
+
+      setCreatedPlanSummary({
+        title: effectiveTitle,
+        activity,
+        date: firstOpt.date,
+        timeSlot: firstOpt.timeSlot,
+        startTime: firstOpt.startTime,
+        duration: parseInt(duration) || 60,
+        location: locationName || undefined,
+        participants: allParticipants,
+        status: 'proposed',
+      });
+
+      onOpenChange(false);
+      resetForm();
+      return;
+    }
+
     // Handle recurring plan creation
     if (isRecurring && !editPlan) {
       try {
@@ -444,6 +506,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
     setRecurrenceWeekOfMonth(1);
     setParticipantAvailability([]);
     setShowMoreOptions(false);
+    setIsMultiOption(false);
+    setProposalOptions([]);
     // showCustomTime removed from new UI
   };
 
@@ -675,6 +739,82 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
               </div>
             </div>
           </div>
+          )}
+
+          {/* ── Multi-Option Proposal Toggle ── */}
+          {!editPlan && !isParticipantEditor && !isMultiDay && selectedFriends.length > 0 && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isMultiOption}
+                  onChange={(e) => {
+                    setIsMultiOption(e.target.checked);
+                    if (e.target.checked) {
+                      setProposalOptions([{ date, timeSlot, startTime: startTime || undefined }]);
+                      setPlanStatus('proposed');
+                    } else {
+                      setProposalOptions([]);
+                    }
+                  }}
+                  className="rounded border-border"
+                />
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <ListPlus className="h-3 w-3" />
+                  Propose multiple times
+                </span>
+              </label>
+
+              {isMultiOption && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Time options ({proposalOptions.length}/5)
+                  </p>
+                  <div className="space-y-1.5">
+                    {proposalOptions.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1.5 text-xs">
+                        <span className="font-bold text-primary w-4 shrink-0">#{i + 1}</span>
+                        <span className="font-medium">
+                          {isToday(opt.date) ? 'Today' : isTomorrow(opt.date) ? 'Tomorrow' : format(opt.date, 'EEE, MMM d')}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {opt.startTime ? (() => {
+                            const [h, m] = opt.startTime!.split(':').map(Number);
+                            const ampm = h >= 12 ? 'pm' : 'am';
+                            const hour12 = h % 12 || 12;
+                            return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                          })() : TIME_SLOT_LABELS[opt.timeSlot]?.label}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setProposalOptions(prev => prev.filter((_, j) => j !== i))}
+                          className="ml-auto text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {proposalOptions.length < 5 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-7 text-xs gap-1"
+                      onClick={() => {
+                        setProposalOptions(prev => [...prev, { date, timeSlot, startTime: startTime || undefined }]);
+                      }}
+                    >
+                      <ListPlus className="h-3 w-3" />
+                      Add current date/time as option
+                    </Button>
+                  )}
+                  <p className="text-[10px] text-muted-foreground">
+                    Change the date & time above, then tap "Add" to include it. Friends will rank their preferences.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
 
           {/* ── Status ── */}
@@ -1076,12 +1216,14 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
               size="sm" 
               className="flex-1" 
               onClick={handleSubmit} 
-              disabled={isProposing}
+              disabled={isProposing || (isMultiOption && proposalOptions.length < 2)}
             >
               {isProposing ? (
                 <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Proposing...</>
               ) : needsProposal ? (
                 'Propose Change'
+              ) : isMultiOption ? (
+                `Propose ${proposalOptions.length} Options`
               ) : editPlan ? (
                 'Save'
               ) : (

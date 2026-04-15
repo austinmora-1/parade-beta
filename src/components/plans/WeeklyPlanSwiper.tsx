@@ -2,6 +2,7 @@ import { useMemo, useRef, useCallback, useState, useEffect, Fragment } from 'rea
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2, Check, Eye } from 'lucide-react';
 import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS, Friend } from '@/types/planner';
+import { ProposalVoting } from '@/components/plans/ProposalVoting';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { normalizeCity } from '@/lib/locationMatch';

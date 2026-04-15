@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
+import { ProposalVoting } from '@/components/plans/ProposalVoting';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -452,6 +453,17 @@ export default function PlanDetail() {
         {plan && (
           <div className="-mb-0">
             <PlanPhotos planId={plan.id} />
+          </div>
+        )}
+
+        {/* Proposal Voting (for multi-option proposals) */}
+        {plan && plan.status === 'proposed' && (
+          <div className="p-5 pb-0">
+            <ProposalVoting
+              planId={plan.id}
+              isOwner={isOwner}
+              participantCount={participants.length}
+            />
           </div>
         )}
 
