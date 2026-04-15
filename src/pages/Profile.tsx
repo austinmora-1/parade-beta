@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getPlanDisplayTitle } from '@/lib/planTitle';
+import { getCompactPlanTitle, getPlanDisplayTitle } from '@/lib/planTitle';
 import { Link, useNavigate } from 'react-router-dom';
 import { format, isPast, isSameDay, isAfter } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -793,7 +793,7 @@ export default function Profile() {
                 {pastPlans.map((plan) => {
                   const activityConfig = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG] || { label: 'Activity', icon: '✨', color: 'activity-misc', vibeType: 'social' as const, category: 'staying-in' as const };
                   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot as TimeSlot];
-                  const displayTitle = getPlanDisplayTitle(plan);
+                  const displayTitle = getCompactPlanTitle(plan);
 
                   const formatTime12 = (time: string) => {
                     const [h, m] = time.split(':').map(Number);

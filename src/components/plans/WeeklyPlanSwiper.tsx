@@ -3,7 +3,7 @@ import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2, Check, Eye } from 'lucide-react';
 import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS, Friend } from '@/types/planner';
 import { ProposalVoting } from '@/components/plans/ProposalVoting';
-import { getPlanDisplayTitle } from '@/lib/planTitle';
+import { getCompactPlanTitle, getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { normalizeCity } from '@/lib/locationMatch';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
@@ -757,7 +757,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
   const userTimezone = usePlannerStore((s) => s.userTimezone);
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
-  const displayTitle = getPlanDisplayTitle(plan);
+  const displayTitle = getCompactPlanTitle(plan);
   const isTentative = plan.status === 'tentative';
   const isPendingRsvp = plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
   const hasPendingChange = !!plan.pendingChange;

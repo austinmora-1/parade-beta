@@ -5,7 +5,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { useDisplayPlans } from '@/hooks/useDisplayPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
-import { getPlanDisplayTitle } from '@/lib/planTitle';
+import { getCompactPlanTitle, getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
 import { MapPin, Users, Clock, CalendarCheck, Plane } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
@@ -265,7 +265,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
   const renderPlanCard = (plan: any) => {
     const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
     const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
-    const displayTitle = getPlanDisplayTitle(plan);
+    const displayTitle = getCompactPlanTitle(plan);
     const timeStatus = getPlanTimeStatus(plan, userTimezone);
     const isInProgress = timeStatus === 'in-progress';
     const isOwner = !plan.userId || plan.userId === userId;
