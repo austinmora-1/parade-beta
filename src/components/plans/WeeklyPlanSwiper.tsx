@@ -453,7 +453,45 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         )}
       </div>
       {dayPlans.length > 0 ? (
-        <div className="px-3 mt-1 mb-3">
+        <div className="px-3 mt-1 mb-3 space-y-1.5">
+          {/* Inline selection action bar */}
+          {selectionActions && dayPlans.some(p => selectedIds.has(p.id)) && (
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 border border-primary/20 px-2 py-1.5"
+              >
+                <span className="text-[10px] font-medium text-primary mr-auto">
+                  {selectionActions.selectedCount} selected
+                </span>
+                {selectionActions.onEdit && (
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onEdit}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                )}
+                {selectionActions.onMerge && (
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onMerge}>
+                    <Merge className="h-3 w-3" />
+                  </Button>
+                )}
+                {selectionActions.onShare && (
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onShare}>
+                    <Share2 className="h-3 w-3" />
+                  </Button>
+                )}
+                {selectionActions.onDelete && (
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={selectionActions.onDelete}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onExit}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </motion.div>
+            </AnimatePresence>
+          )}
           {dayPlans.length === 1 ? (
             <PlanCardCompact
               plan={dayPlans[0]}
