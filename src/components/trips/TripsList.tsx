@@ -1035,9 +1035,18 @@ function ProposalTripCard({
               </span>
             )}
           </div>
-          <span className="text-[10px] text-muted-foreground truncate">
+          <span className="text-[10px] text-muted-foreground truncate flex-1">
             {proposal.participants.map(p => p.display_name.split(' ')[0]).join(', ')}
           </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 shrink-0"
+            onClick={() => setAddParticipantOpen(true)}
+            title="Add participant"
+          >
+            <UserPlus className="h-3 w-3" />
+          </Button>
         </div>
 
         {/* Date options with ranked vote buttons */}
