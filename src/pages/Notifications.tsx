@@ -590,19 +590,19 @@ export default function Notifications() {
   const visiblePendingChanges = pendingChanges.filter(c => !dismissedIds.has(`change-${c.id}`));
   const visibleRecentPhotos = recentPhotos.filter(p => !dismissedIds.has(`photo-${p.id}`));
   const visibleParticipantRequests = participantRequests.filter(r => !dismissedIds.has(`participant-req-${r.id}`));
-  const visibleVibes = incomingVibes.filter(v => !dismissedIds.has(`vibe-${v.id}`));
+  
   const visibleProposedPlans = proposedPlans.filter(p => !dismissedIds.has(`proposal-${p.planId}`));
   const visibleTripProposals = tripProposals.filter(t => !dismissedIds.has(`trip-proposal-${t.id}`));
 
-  const totalVisible = visibleIncomingRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleVibes.length + visibleProposedPlans.length + visibleTripProposals.length;
-  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && !proposedLoading && !tripProposalsLoading;
+  const totalVisible = visibleIncomingRequests.length + visiblePlanInvitations.length + visiblePendingChanges.length + visibleRecentPhotos.length + visibleParticipantRequests.length + visibleProposedPlans.length + visibleTripProposals.length;
+  const isEmpty = totalVisible === 0 && dismissedFriendRequestCount === 0 && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !proposedLoading && !tripProposalsLoading;
 
   const clearAll = () => {
     visiblePlanInvitations.forEach(i => dismiss(`invite-${i.id}`));
     visiblePendingChanges.forEach(c => dismiss(`change-${c.id}`));
     visibleRecentPhotos.forEach(p => dismiss(`photo-${p.id}`));
     visibleParticipantRequests.forEach(r => dismiss(`participant-req-${r.id}`));
-    visibleVibes.forEach(v => dismiss(`vibe-${v.id}`));
+    
     visibleProposedPlans.forEach(p => dismiss(`proposal-${p.planId}`));
     visibleTripProposals.forEach(t => dismiss(`trip-proposal-${t.id}`));
     visibleIncomingRequests.forEach(f => dismiss(`friend-${f.id}`));
@@ -846,70 +846,6 @@ export default function Notifications() {
         </div>
       )}
 
-      {/* Incoming Vibes Section */}
-      {(visibleVibes.length > 0 || vibesLoading) && (
-        <div>
-          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
-            <Sparkles className="h-4 w-4 text-primary md:h-5 md:w-5" />
-            Incoming Vibes
-            {visibleVibes.length > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
-                {visibleVibes.length}
-              </span>
-            )}
-          </h2>
-
-          {vibesLoading ? (
-            <div className="flex h-20 items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <AnimatePresence>
-              {visibleVibes.map((vibe) => {
-                const vibeConfig = VIBE_CONFIG[vibe.vibe_type as keyof typeof VIBE_CONFIG];
-                return (
-                  <SwipeableDismiss key={vibe.id} onDismiss={() => handleDismissVibe(vibe.id)}>
-                    <div
-                      className="rounded-2xl border border-border bg-card p-4 shadow-soft cursor-pointer hover:bg-muted/30 transition-colors"
-                      onClick={() => { handleDismissVibe(vibe.id); navigate(`/?vibe=${vibe.vibe_send_id}`); }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={vibe.sender_avatar || undefined} />
-                            <AvatarFallback className={getAvatarColor(vibe.sender_name)}>
-                              {getInitials(vibe.sender_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0">
-                            <p className="font-medium text-sm">
-                              <span className="text-primary">{vibe.sender_name}</span> sent you a vibe
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-sm">{vibeConfig ? <vibeConfig.icon className="h-3.5 w-3.5" /> : '✨'}</span>
-                              <span className="text-xs text-muted-foreground capitalize">{vibeConfig?.label || vibe.vibe_type}</span>
-                              {vibe.message && (
-                                <span className="text-xs text-muted-foreground truncate">· {vibe.message}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDismissVibe(vibe.id); }}
-                          className="rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted transition-colors"
-                          aria-label="Dismiss vibe"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </SwipeableDismiss>
-                );
-              })}
-            </AnimatePresence>
-          )}
-        </div>
-      )}
 
       {(visiblePlanInvitations.length > 0 || planInvitesLoading) && (
         <div>
@@ -1201,7 +1137,7 @@ export default function Notifications() {
       )}
 
       {/* Empty state */}
-      {isEmpty && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && !vibesLoading && incomingRequests.length === 0 && (
+      {isEmpty && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && incomingRequests.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
           <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">🔔</div>
           <h3 className="font-display text-base font-semibold md:text-lg">No new notifications</h3>
