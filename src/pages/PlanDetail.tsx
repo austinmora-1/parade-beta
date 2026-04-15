@@ -346,43 +346,6 @@ export default function PlanDetail() {
     navigate('/plans');
   };
 
-  const handleStartChat = async () => {
-    if (!user || !plan) return;
-    const participantUserIds = plan.participants
-      .map(p => p.friendUserId)
-      .filter((id): id is string => !!id && id !== user.id);
-
-    if (participantUserIds.length === 0) {
-      toast.info('No participants to chat with.');
-      return;
-    }
-
-    setIsCreatingChat(true);
-    try {
-      let conversationId: string | null = null;
-
-      if (participantUserIds.length === 1) {
-        // DM for 1-on-1 plans
-        conversationId = await createDM(participantUserIds[0]);
-      } else {
-        // Group chat for multi-participant plans
-        conversationId = await createGroup(
-          plan.title,
-          participantUserIds
-        );
-      }
-
-      if (conversationId) {
-        navigate('/interact', { state: { conversationId } });
-      }
-    } catch (err) {
-      console.error('Failed to create chat:', err);
-      toast.error('Could not start chat. Please try again.');
-    } finally {
-      setIsCreatingChat(false);
-    }
-  };
-
   const handleAcceptChange = async (changeRequestId: string) => {
     setIsRespondingToChange(true);
     const success = await respondToChange(changeRequestId, 'accepted');
