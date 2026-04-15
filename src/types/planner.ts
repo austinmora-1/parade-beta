@@ -198,7 +198,7 @@ export interface CustomActivity {
   vibeType: VibeType;
 }
 
-import { Wine, Sparkles, Landmark, Compass, Utensils, Music, User, Umbrella, Smile, Eye, Megaphone, Tent, Gamepad2, Video, Trophy, Sword, Drama, PartyPopper, Theater, Zap, Headphones, Clapperboard, TreePine, Tv, Flame, Film, BookOpen, Waves as WavesIcon, Footprints, Dumbbell, PersonStanding, Home, Mountain, PawPrint, GlassWater, Dog, Heart, Disc3, Plane, ShoppingBag, Users, Coffee, Activity, Target, Pencil } from 'lucide-react';
+import { Wine, Sparkles, Landmark, Compass, Utensils, Music, User, Umbrella, Smile, Eye, Megaphone, Tent, Gamepad2, Video, Trophy, Sword, Drama, PartyPopper, Theater, Zap, Headphones, Clapperboard, TreePine, Tv, Film, BookOpen, Waves as WavesIcon, Footprints, Dumbbell, PersonStanding, Home, Mountain, PawPrint, GlassWater, Dog, Heart, Disc3, Plane, ShoppingBag, Users, Coffee, Activity, Target, Pencil } from 'lucide-react';
 
 export const VIBE_CONFIG: Record<VibeType, { label: string; icon: LucideIcon; color: string; description: string }> = {
   social: { label: 'Social', icon: Users, color: 'vibe-social', description: 'Hanging out with friends' },
