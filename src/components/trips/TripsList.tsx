@@ -522,6 +522,19 @@ function ProposalTripCard({
                 </div>
               )}
             </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+              {earliestStart && latestEnd && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {format(new Date(earliestStart + 'T00:00:00'), 'MMM d')} – {format(new Date(latestEnd + 'T00:00:00'), 'MMM d')}
+                </span>
+              )}
+              <span>·</span>
+              <span>{isCreator ? 'You proposed' : `${proposal.creator_name}`}</span>
+              <span>·</span>
+              <span>{votedCount}/{totalVoters} voted</span>
+            </div>
+          </div>
         </div>
 
         {/* Participants row */}
