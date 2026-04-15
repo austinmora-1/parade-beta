@@ -733,8 +733,8 @@ function ProposalTripCard({
           transition={{ delay: 0.6 }}
           className="flex justify-center -space-x-2"
         >
-          {proposal.participants.map(p => (
-            <Avatar key={p.id} className="h-7 w-7 border-2 border-background">
+          {proposal.participants.map((p, i) => (
+            <Avatar key={p.id} className="h-7 w-7 border-2 border-background" style={{ zIndex: proposal.participants.length - i }}>
               <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
               <AvatarFallback className="text-[8px]">{p.display_name.charAt(0)}</AvatarFallback>
             </Avatar>
@@ -855,10 +855,10 @@ function ProposalTripCard({
             {[...proposal.participants]
               .sort((a, b) => (voterIds.has(b.user_id) ? 1 : 0) - (voterIds.has(a.user_id) ? 1 : 0))
               .slice(0, 5)
-              .map(p => {
+              .map((p, i, arr) => {
               const hasVotedTrip = voterIds.has(p.user_id);
               return (
-                <div key={p.id} className={cn("relative", hasVotedTrip && "z-10")}>
+                <div key={p.id} className="relative" style={{ zIndex: arr.length - i }}>
                   <Avatar className={cn("h-5 w-5 border-2 border-background", !hasVotedTrip && "opacity-60")}>
                     <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
                     <AvatarFallback className="text-[7px]">{p.display_name.charAt(0)}</AvatarFallback>
