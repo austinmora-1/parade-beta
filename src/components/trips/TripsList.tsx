@@ -697,9 +697,6 @@ function ProposalTripCard({
     </>
   );
 }
-  const votedCount = proposal.participants.filter(p => p.status === 'voted').length;
-  const isVisit = proposal.proposal_type === 'visit';
-  const isHost = proposal.host_user_id === currentUserId;
 
   // Determine earliest/latest dates from options for display
   const allStarts = proposal.dates.map(d => d.start_date).sort();
