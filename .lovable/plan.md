@@ -1,89 +1,81 @@
 
 
-# Remove Chat Messaging, Vibe Sending, and Elly Chat
+# Tech Debt & Dead Code Cleanup
 
 ## Summary
-Remove all peer-to-peer chat, vibe sending/receiving, Elly AI chat, and the /chat route. Keep the VibeSelector (personal vibe status on dashboard) and GifPicker (used by VibeSelector).
+Clean up leftover vibe/Elly references, dead files, stale notification code, and outdated memory files across the codebase.
 
-## Files to Delete
+## 1. Delete Dead Files
+- `src/pages/Index.tsx` — unused placeholder page, never routed
+- `src/lib/constants.ts` — only contains `ELLY_USER_ID`, no longer imported
 
-**Components:**
-- `src/components/chat/ChatView.tsx`
-- `src/components/chat/ChatAttachMenu.tsx`
-- `src/components/chat/ChatImageUpload.tsx`
-- `src/components/chat/ConversationList.tsx`
-- `src/components/chat/EllyChatView.tsx`
-- `src/components/chat/MessageActions.tsx`
-- `src/components/chat/MessageReactions.tsx`
-- `src/components/chat/NewChatDialog.tsx`
-- `src/components/chat/ReplyPreview.tsx`
-- `src/components/vibes/SendVibeDialog.tsx`
-- `src/components/vibes/VibeComments.tsx`
-- `src/components/vibes/VibeDetailDialog.tsx`
-- `src/components/vibes/VibeLocationInput.tsx`
-- `src/components/vibes/VibeReactions.tsx`
-- `src/components/dashboard/ReceivedVibes.tsx`
-- `src/components/dashboard/SentVibes.tsx`
-- `src/components/dashboard/EllyWidget.tsx`
-- `src/components/friends/SharedVibeHistory.tsx`
+## 2. Remove Vibe Code from Notifications
 
-**Hooks:**
-- `src/hooks/useChat.ts`
-- `src/hooks/useVibes.ts`
-- `src/hooks/useEllyChat.ts`
+**`src/hooks/useNotifications.ts`**:
+- Remove `unreadVibesCount` from shared state (line 25)
+- Remove `fetchUnreadVibes` callback (lines 126-138)
+- Remove from useEffect calls (line 158), realtime subscription (lines 186-189), deps (line 199)
+- Remove `dismissedVibeCount` / `effectiveVibeCount` (lines 217, 226)
+- Remove from `totalNotifications` sum (line 229)
+- Remove `refetchUnreadVibes` from return (line 259)
 
-**Utils:**
-- `src/lib/vibeNotifications.ts`
+**`src/pages/Notifications.tsx`**:
+- Remove `IncomingVibe` interface (lines 69-77)
+- Remove `incomingVibes` / `vibesLoading` state (lines 123-124)
+- Remove `refetchUnreadVibes` from destructured hook (line 107)
+- Remove `fetchIncomingVibes()` call (line 154) and function definition (lines 220-268)
+- Remove `handleDismissVibe` function (lines 323-331)
+- Remove `visibleVibes` filtering (line 663) and from `totalVisible` / `isEmpty` checks (lines 667-668)
+- Remove entire "Incoming Vibes Section" render block (lines 919-982)
+- Remove `Sparkles` from icon imports (line 10) if not used elsewhere in file
 
-**Pages:**
-- `src/pages/Chat.tsx`
+## 3. Remove Elly Toggle from Onboarding
 
-**Edge Functions (delete code + deployed functions):**
-- `supabase/functions/chat-with-elly/`
-- `supabase/functions/elly-conversation-assist/`
-- `supabase/functions/giphy-search/`
+**`src/components/onboarding/OnboardingWizard.tsx`**:
+- Remove `allowEllyHangouts` from `OnboardingData` interface (line 47)
+- Remove from initial state (line 92)
+- Remove `allow_elly_hangouts` from profile update (line 166)
 
-## Files to Modify
+**`src/components/onboarding/steps/NotificationsPrivacyStep.tsx`**:
+- Remove the `allowEllyHangouts` toggle object from `privacyToggles` array (lines 43-48)
+- Remove `Bot` from lucide imports (line 6)
 
-1. **`src/App.tsx`** — Remove `Chat` import and `/chat` route.
+## 4. Update EllyWalkthrough Steps
 
-2. **`src/components/layout/MobileHeader.tsx`** — Remove `useConversations` import, `unreadChats` calculation, and chat count from `inboxCount`. Remove the chat icon/link if present.
+**`src/components/onboarding/EllyWalkthrough.tsx`**:
+- Replace step 3 ("Sending Vibes") with content about sharing availability / setting your weekly intentions
+- Replace step 4 ("Meet Elly") with content about trips & travel planning
+- Remove `MessageCircle` and `Heart` from imports, add relevant replacements (e.g. `Globe`, `Users`)
 
-3. **`src/components/dashboard/VibeSelector.tsx`** — Remove `SendVibeDialog` import and the "Send Vibe" button/dialog. Keep the personal vibe status selector. Remove `GifPicker` import if only used for vibe sending (check: it's used for personal vibe GIF — keep it).
+## 5. Fix Empty State Copy
 
-4. **`src/components/feed/FeedView.tsx`** — Remove vibe-related imports (`useVibes`, `VibeReactions`, `VibeDetailDialog`) and all vibe rendering logic from the feed. Keep plan-based feed items.
+**`src/components/dashboard/UpcomingPlans.tsx`** (line 454):
+- Change `"Create a new plan or chat with Elly!"` to `"Make a plan to get started!"`
 
-5. **`src/components/friends/FriendPanel.tsx`** — Remove the "chat" tab, `ChatView` import, `useConversations` import, and `ChatEmptyState`. Panel becomes profile-only.
+**`src/components/dashboard/UpcomingPlansWidget.tsx`** (line 302):
+- Same copy fix
 
-6. **`src/components/friends/PodPanel.tsx`** — Remove `ChatView` import, `useConversations`, and chat tab/view. Keep pod member management.
+## 6. Remove `vibe-media` from Storage Buckets
 
-7. **`src/components/friends/FriendProfileContent.tsx`** — Remove "Message" button and `SharedVibeHistory` section.
+**`src/lib/storage.ts`** (line 5):
+- Change `['plan-photos', 'vibe-media']` to `['plan-photos']`
 
-8. **`src/components/friends/FriendListRow.tsx`** — Remove `conversation` prop and unread badge logic tied to chat.
+## 7. Remove Debug console.log Statements
 
-9. **`src/pages/Friends.tsx`** — Remove `useConversations` import, `dmByFriendUserId` lookup, and conversation props passed to `FriendListRow` and `FriendPanel`.
+**`src/hooks/useFriendRequestNotifications.ts`**: Remove 4 console.log calls (lines ~14, 28, 42, 47)
 
-10. **`src/pages/FriendProfile.tsx`** — Remove `useConversations` import, `createDM`, and `onMessageClick` handler.
+**`src/stores/plannerStore.ts`**: Remove "Friendship already exists" console.log
 
-11. **`src/pages/PlanDetail.tsx`** — Remove group chat creation flow from plan detail (navigate to `/interact`).
+**`src/pages/ResetPassword.tsx`**: Remove `console.log('Auth event:', event)` (line ~47)
 
-12. **`src/components/feedback/FloatingFeedbackButton.tsx`** — Remove `SendVibeDialog` import and "Send Vibe" action from the FAB menu.
+## 8. Clean Up Memory Files
 
-13. **`src/hooks/useNotifications.ts`** — Remove vibe-related notification counting (`vibe_send_recipients` queries and realtime subscriptions).
-
-14. **`src/components/dashboard/HomeTabs.tsx`** — Check if it references vibes/chat; remove if so.
-
-15. **`src/lib/storage.ts`** — Remove `'chat-images'` from `PRIVATE_BUCKETS` (keep `'vibe-media'` only if still needed for personal vibe GIFs, otherwise remove too).
-
-## Components to Keep
-- `src/components/chat/GifPicker.tsx` — Still used by VibeSelector for personal vibe GIFs
-- `src/components/chat/EmojiPicker.tsx` — May be used elsewhere; keep if referenced outside chat
-- `src/components/dashboard/VibeSelector.tsx` — Personal vibe status (stripped of send-vibe)
-- `src/components/dashboard/FriendVibeStrip.tsx` — Shows friend vibe statuses on dashboard
-
-## Technical Notes
-- The `EmojiPicker` is only used by `EllyChatView` and `ChatAttachMenu` (both being deleted). It can be deleted too.
-- Edge functions will be deleted from both code and deployed state using the delete tool.
-- No database migrations needed — tables remain but are simply unused.
-- The plannerStore vibe state (`currentVibe`, `setVibe`, `addCustomVibe`, `removeCustomVibe`) stays since the VibeSelector is kept.
+Delete stale memory files and update index:
+- Delete `mem://features/elly-ai-assistant`
+- Delete `mem://features/friends-and-chat-integration`
+- Delete `mem://integrations/giphy-support`
+- Delete `mem://tech/storage-security-architecture` (references deleted buckets)
+- Update `mem://style/dialog-layout-patterns` to remove Send Vibe references
+- Update `mem://features/vibe-system-ui` to remove send/receive aspects
+- Update `mem://index.md` to remove stale entries
 
