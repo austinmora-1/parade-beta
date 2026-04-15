@@ -596,7 +596,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     setSending(true);
 
     try {
-      const firstFriend = preSelectedFriends[0];
+      const firstFriend = effectiveFriends[0];
       const hasMultipleOptions = selectedSlots.length > 1;
 
       await proposePlan({
