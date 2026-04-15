@@ -484,7 +484,7 @@ function ProposalTripCard({
   }
 
   const CardIcon = isVisit ? Home : Plane;
-  const badgeLabel = isVisit ? 'Visit' : 'Proposed';
+  const badgeLabel = 'Proposed';
 
   return (
     <>
@@ -504,9 +504,7 @@ function ProposalTripCard({
               <span className="font-medium text-sm truncate text-muted-foreground">
                 {cardTitle}
               </span>
-              <span className="text-[10px] font-semibold bg-muted border border-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
-                {badgeLabel}
-              </span>
+              
               {isCreator && (
                 <div className="flex items-center gap-0 shrink-0 ml-auto">
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
@@ -558,10 +556,15 @@ function ProposalTripCard({
         {/* Date options with vote buttons */}
         <div className="space-y-1">
           <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold bg-muted border border-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
+                {badgeLabel}
+              </span>
+              <span className="text-[10px] text-muted-foreground">{votedCount}/{totalVoters} voted</span>
+            </div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Vote for dates
             </p>
-            <span className="text-[10px] text-muted-foreground">{votedCount}/{totalVoters} voted</span>
           </div>
           {proposal.dates.map(d => {
             const isMyVote = proposal.myVotedDateId === d.id;
