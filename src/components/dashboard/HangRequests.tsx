@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useRealtimeHub } from '@/hooks/useRealtimeHub';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CollapsibleWidget } from './CollapsibleWidget';

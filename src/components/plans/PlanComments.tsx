@@ -75,24 +75,11 @@ export function PlanComments({ planId, compact = false }: PlanCommentsProps) {
     loadComments();
   }, [loadComments]);
 
-  // Realtime subscription
+  // Poll for new comments every 15 seconds (replaces per-plan realtime channel)
   useEffect(() => {
-    const channel = supabase
-      .channel(`plan-comments-${planId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'plan_comments',
-          filter: `plan_id=eq.${planId}`,
-        },
-        () => loadComments()
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [planId, loadComments]);
+    const interval = setInterval(loadComments, 15_000);
+    return () => clearInterval(interval);
+  }, [loadComments]);
 
   // Auto-scroll on new comments
   useEffect(() => {
