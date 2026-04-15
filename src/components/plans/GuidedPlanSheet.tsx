@@ -181,10 +181,10 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
   // Fetch availability + best slots when moving to time step
   const fetchBestSlots = useCallback(async () => {
-    if (preSelectedFriends.length === 0) return;
+    if (effectiveFriends.length === 0) return;
     setLoadingSlots(true);
 
-    const userIds = preSelectedFriends.map(f => f.userId);
+    const userIds = effectiveFriends.map(f => f.userId);
     const scanDays = Array.from({ length: 180 }, (_, i) => addDays(new Date(), i));
     const startDate = format(scanDays[0], 'yyyy-MM-dd');
     const endDate = format(scanDays[179], 'yyyy-MM-dd');
@@ -514,7 +514,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const grouped = Array.from(cityGroups.values()).flat();
     setBestSlots(grouped);
     setLoadingSlots(false);
-  }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
+  }, [effectiveFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
   // When step changes to 'time', fetch best slots (covers full 180-day window)
   useEffect(() => {
@@ -524,7 +524,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   }, [step]);
 
   const getSlotStatusForDate = useCallback((date: Date, slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | null => {
-    if (preSelectedFriends.length === 0) return null;
+    if (effectiveFriends.length === 0) return null;
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayAvail = friendMultiDayAvail[dateStr];
     if (!dayAvail) return null;
@@ -540,7 +540,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     if (iAmFree && avail.free > 0) return 'some-free';
     if (!iAmFree || avail.free === 0) return 'none-free';
     return null;
-  }, [friendMultiDayAvail, preSelectedFriends, myAvailabilityMap, myPlans]);
+  }, [friendMultiDayAvail, effectiveFriends, myAvailabilityMap, myPlans]);
 
   const handleSelectActivity = (act: ActivityType) => {
     setActivity(act);
