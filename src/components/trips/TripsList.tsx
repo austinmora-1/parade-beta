@@ -1235,6 +1235,15 @@ function ProposalTripCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddParticipantDialog
+        open={addParticipantOpen}
+        onOpenChange={setAddParticipantOpen}
+        targetType="proposal"
+        targetId={proposal.id}
+        existingParticipantIds={proposal.participants.map(p => p.user_id)}
+        onAdded={onRefresh}
+      />
     </>
   );
 }
