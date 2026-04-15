@@ -557,9 +557,12 @@ function ProposalTripCard({
 
         {/* Date options with vote buttons */}
         <div className="space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Vote for dates
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Vote for dates
+            </p>
+            <span className="text-[10px] text-muted-foreground">{votedCount}/{totalVoters} voted</span>
+          </div>
           {proposal.dates.map(d => {
             const isMyVote = proposal.myVotedDateId === d.id;
             const isVoting = voting === `${proposal.id}:${d.id}`;
