@@ -74,6 +74,29 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
     return ids;
   }, [votes]);
 
+  // How many unique users ranked each option (simple count, not Borda)
+  const voteCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const opt of options) counts.set(opt.id, 0);
+    // Group by option, count distinct users
+    const optionUsers = new Map<string, Set<string>>();
+    for (const v of votes) {
+      if (!optionUsers.has(v.optionId)) optionUsers.set(v.optionId, new Set());
+      optionUsers.get(v.optionId)!.add(v.userId);
+    }
+    for (const [optId, users] of optionUsers) counts.set(optId, users.size);
+    return counts;
+  }, [options, votes]);
+
+  // Sort voter profiles: voted first (so checkmarks are visible in the stack)
+  const sortedVoterProfiles = useMemo(() => {
+    return [...voterProfiles].sort((a, b) => {
+      const aVoted = voterIds.has(a.userId) ? 1 : 0;
+      const bVoted = voterIds.has(b.userId) ? 1 : 0;
+      return bVoted - aVoted; // voted first
+    });
+  }, [voterProfiles, voterIds]);
+
   const hasVoted = userId ? voterIds.has(userId) : false;
   const totalVoters = voterIds.size;
   // +1 for the organizer
