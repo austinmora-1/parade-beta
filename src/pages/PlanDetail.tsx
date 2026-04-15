@@ -93,7 +93,7 @@ export default function PlanDetail() {
   const { user } = useAuth();
   const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends, userTimezone } = usePlannerStore();
   const { profile: currentUserProfile } = useCurrentUserProfile();
-  const { createGroup, createDM } = useConversations();
+  
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const { pods } = usePods();
 
