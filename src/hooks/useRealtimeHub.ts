@@ -99,8 +99,8 @@ export function useRealtimeHub(
     registrations.push(registration);
     refCount++;
 
-    // Rebuild the channel with the new registration
-    rebuildChannel(user.id);
+    // Debounced rebuild — batches all registrations from initial mount cascade
+    scheduleRebuild(user.id);
 
     return () => {
       registrations = registrations.filter(r => r !== registration);
@@ -115,8 +115,8 @@ export function useRealtimeHub(
         currentUserId = null;
         refCount = 0;
       } else if (user.id === currentUserId) {
-        // Rebuild without this registration
-        rebuildChannel(user.id);
+        // Debounced rebuild without this registration
+        scheduleRebuild(user.id);
       }
     };
   }, [user, table, event, filter]);
