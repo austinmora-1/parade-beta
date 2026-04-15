@@ -507,35 +507,21 @@ function ProposalTripCard({
               <span className="text-[10px] font-semibold bg-muted border border-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
                 {badgeLabel}
               </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-              {earliestStart && latestEnd && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {format(new Date(earliestStart + 'T00:00:00'), 'MMM d')} – {format(new Date(latestEnd + 'T00:00:00'), 'MMM d')}
-                </span>
+              {isCreator && (
+                <div className="flex items-center gap-0 shrink-0 ml-auto">
+                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
+                    setEditDestination(proposal.destination || '');
+                    setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
+                    setEditOpen(true);
+                  }}>
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               )}
-              <span>·</span>
-              <span>{isCreator ? 'You proposed' : `${proposal.creator_name}`}</span>
-              <span>·</span>
-              <span>{votedCount}/{totalVoters} voted</span>
             </div>
-          </div>
-
-          {isCreator && (
-            <div className="flex items-center gap-0.5 shrink-0">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                setEditDestination(proposal.destination || '');
-                setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
-                setEditOpen(true);
-              }}>
-                <Edit2 className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* Participants row */}
