@@ -8,6 +8,14 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
@@ -16,14 +24,22 @@ function formatTime12(time: string): string {
   return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
 }
 
+export interface VoterProfile {
+  userId: string;
+  name: string;
+  avatar?: string;
+}
+
 interface ProposalVotingProps {
   planId: string;
   isOwner: boolean;
   participantCount: number;
   compact?: boolean;
+  /** Profiles of all participants + organizer for voter indicators */
+  voterProfiles?: VoterProfile[];
 }
 
-export function ProposalVoting({ planId, isOwner, participantCount, compact = false }: ProposalVotingProps) {
+export function ProposalVoting({ planId, isOwner, participantCount, compact = false, voterProfiles = [] }: ProposalVotingProps) {
   const userId = usePlannerStore((s) => s.userId);
   const { loadProposalData, submitVotes, finalizePlan, computeScores, isLoading } = usePlanProposals();
   const [options, setOptions] = useState<PlanProposalOption[]>([]);
