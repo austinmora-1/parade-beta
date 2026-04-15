@@ -10,17 +10,17 @@ import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { usePlannerStore } from "@/stores/plannerStore";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 
-import Availability from "./pages/Availability";
-import Friends from "./pages/Friends";
-import Settings from "./pages/Settings";
-import Notifications from "./pages/Notifications";
-import Profile from "./pages/Profile";
-import FriendProfile from "./pages/FriendProfile";
-import PlanInvite from "./pages/PlanInvite";
-import NotFound from "./pages/NotFound";
-import Invite from "./pages/Invite";
-import Share from "./pages/Share";
-import ResetPassword from "./pages/ResetPassword";
+const Availability = lazy(() => import("./pages/Availability"));
+const Friends = lazy(() => import("./pages/Friends"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Profile = lazy(() => import("./pages/Profile"));
+const FriendProfile = lazy(() => import("./pages/FriendProfile"));
+const PlanInvite = lazy(() => import("./pages/PlanInvite"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Invite = lazy(() => import("./pages/Invite"));
+const Share = lazy(() => import("./pages/Share"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 import { usePostHogPageView } from "@/hooks/usePostHog";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
