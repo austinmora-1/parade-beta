@@ -808,41 +808,41 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
         >
           <ActivityIcon config={activityConfig} size={16} />
         </div>
-        <div className="flex-1 min-w-0 flex items-start gap-1.5">
-          <span className={cn("text-sm font-semibold leading-tight break-words [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden", showTentativeStyle && "text-muted-foreground")}>{displayTitle}</span>
-          {hasPendingChange && (
-            <span className="shrink-0 rounded-full bg-muted border border-muted-foreground/20 px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground whitespace-nowrap mt-0.5">
-              Proposed
-            </span>
-          )}
-          {isPendingRsvp && !hasPendingChange && (
-            <span className="shrink-0 rounded-full bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap mt-0.5">
-              RSVP
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="text-[11px] text-muted-foreground space-y-0.5">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 shrink-0">
-            <Clock className="h-3 w-3 shrink-0" />
-            {plan.startTime
-              ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
-              : timeSlotConfig.time}
-            <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(userTimezone)}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start gap-1.5">
+            <span className={cn("text-sm font-semibold leading-tight truncate", showTentativeStyle && "text-muted-foreground")}>{displayTitle}</span>
+            {hasPendingChange && (
+              <span className="shrink-0 rounded-full bg-muted border border-muted-foreground/20 px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground whitespace-nowrap mt-0.5">
+                Proposed
+              </span>
+            )}
+            {isPendingRsvp && !hasPendingChange && (
+              <span className="shrink-0 rounded-full bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[8px] font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap mt-0.5">
+                RSVP
+              </span>
+            )}
           </div>
-          {plan.location && (
-            <div className="flex items-center gap-1 truncate min-w-0">
-              <MapPin className="h-3 w-3 shrink-0" />
-              <span className="truncate">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
+          <div className="text-[11px] text-muted-foreground mt-0.5 space-y-0.5">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3 shrink-0" />
+              <span>
+                {plan.startTime
+                  ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
+                  : timeSlotConfig.time}
+              </span>
+              <span className="text-muted-foreground/60">{getTimezoneAbbreviation(userTimezone)}</span>
             </div>
-          )}
+            {plan.location && (
+              <div className="flex items-center gap-1 truncate min-w-0">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
+              </div>
+            )}
+            {plan.participants.length > 0 && (
+              <ParticipantAvatarStack participants={plan.participants} />
+            )}
+          </div>
         </div>
-        {plan.participants.length > 0 && (
-          <ParticipantAvatarStack participants={plan.participants} />
-        )}
-      </div>
     </button>
   );
 }
