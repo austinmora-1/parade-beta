@@ -908,26 +908,25 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
             </div>
           </div>
 
-          <DialogFooter className="flex-row gap-2 sm:justify-between">
+          <DialogFooter className="grid gap-2" style={{ gridTemplateColumns: isEditing ? '1fr 1fr 1fr' : '1fr 1fr' }}>
             {isEditing && (
               <Button 
                 variant="destructive" 
-                size="sm"
                 onClick={() => setDeleteDialogOpen(true)}
                 disabled={isLoading}
-                className="gap-1 flex-1"
+                className="gap-1 w-full h-10"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete
               </Button>
             )}
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full h-10">
               Cancel
             </Button>
             <Button 
               onClick={handleSave} 
               disabled={!startDate || !endDate || isLoading}
-              className="flex-1 bg-[hsl(152,40%,39%)] hover:bg-[hsl(152,40%,33%)] text-white"
+              className="w-full h-10 bg-[hsl(152,40%,39%)] hover:bg-[hsl(152,40%,33%)] text-white"
             >
               {isLoading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Trip')}
             </Button>
