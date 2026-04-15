@@ -136,6 +136,11 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
           isTripProposal: true,
         };
       });
+      mapped.sort((a, b) => {
+        const aDate = a.dates[0]?.start_date || '';
+        const bDate = b.dates[0]?.start_date || '';
+        return aDate.localeCompare(bDate);
+      });
       setTripProposals(mapped);
     })();
   }, [user?.id]);
