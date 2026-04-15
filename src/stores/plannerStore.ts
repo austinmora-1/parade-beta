@@ -3,6 +3,7 @@ import { Plan, Friend, DayAvailability, Vibe, TimeSlot, LocationStatus, Activity
 import { addDays, startOfWeek, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserTimezone } from '@/lib/timezone';
+import { validatePlan } from '@/lib/validation';
 
 import type { DashboardData, DefaultAvailabilitySettings } from './helpers/types';
 import { createDefaultAvailability, mapAvailabilityRow, buildAvailabilityMap } from './helpers/mapAvailability';
