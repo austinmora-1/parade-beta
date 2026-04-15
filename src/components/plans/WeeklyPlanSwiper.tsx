@@ -50,7 +50,7 @@ function ParticipantAvatarStack({ participants }: { participants: Friend[] }) {
   const overflow = sorted.length - maxVisible;
 
   return (
-    <div className="flex items-center mt-1">
+    <div className="flex items-center">
       {visible.map((p, i) => {
         const rsvp = getRsvpStyle(p.rsvpStatus, p.role);
         const RsvpIcon = rsvp.icon;
