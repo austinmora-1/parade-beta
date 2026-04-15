@@ -344,18 +344,52 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
                 />
 
                 <DetailPicker
-                  label="Time"
+                  label="Time Slot"
                   plans={selectedPlans}
                   value={chosenTimeSlot}
                   onChange={setChosenTimeSlot}
                   renderOption={(plan) => (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : TIME_SLOT_LABELS[plan.timeSlot]?.time}
+                      {TIME_SLOT_LABELS[plan.timeSlot]?.label || plan.timeSlot}
                     </span>
                   )}
-                  dedup={(plan) => `${plan.timeSlot}-${plan.startTime || ''}`}
+                  dedup={(plan) => plan.timeSlot}
                 />
+
+                {selectedPlans.some(p => p.startTime) && (
+                  <DetailPicker
+                    label="Start Time"
+                    plans={selectedPlans.filter(p => p.startTime)}
+                    value={chosenStartTime}
+                    onChange={setChosenStartTime}
+                    renderOption={(plan) => (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatTime12(plan.startTime!)}
+                      </span>
+                    )}
+                    allowNone
+                    dedup={(plan) => plan.startTime || ''}
+                  />
+                )}
+
+                {selectedPlans.some(p => p.endTime) && (
+                  <DetailPicker
+                    label="End Time"
+                    plans={selectedPlans.filter(p => p.endTime)}
+                    value={chosenEndTime}
+                    onChange={setChosenEndTime}
+                    renderOption={(plan) => (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatTime12(plan.endTime!)}
+                      </span>
+                    )}
+                    allowNone
+                    dedup={(plan) => plan.endTime || ''}
+                  />
+                )}
 
                 {selectedPlans.some(p => p.location) && (
                   <DetailPicker
