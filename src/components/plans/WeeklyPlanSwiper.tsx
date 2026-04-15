@@ -93,6 +93,15 @@ function ParticipantAvatarStack({ participants }: { participants: Friend[] }) {
 }
 
 
+interface SelectionActions {
+  selectedCount: number;
+  onEdit?: () => void;
+  onMerge?: () => void;
+  onShare?: () => void;
+  onDelete?: () => void;
+  onExit: () => void;
+}
+
 interface WeeklyPlanSwiperProps {
   plans: Plan[];
   weekOffset: number;
@@ -289,52 +298,7 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         </Button>
       </div>
 
-      {/* Selection action banner */}
-      <AnimatePresence>
-        {selectMode && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="rounded-xl bg-primary/10 border border-primary/20 px-3 py-2 space-y-2"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-primary">
-                {selectedIds.size} plan{selectedIds.size !== 1 ? 's' : ''} selected
-              </span>
-              <Button variant="ghost" size="sm" className="h-7 px-2" onClick={exitSelectMode}>
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            <div className="flex items-center gap-1">
-              {selectedIds.size === 1 && onEditPlan && (
-                <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-[11px] flex-1 min-w-0" onClick={handleEditSelected}>
-                  <Pencil className="h-3 w-3 shrink-0" />
-                  Edit
-                </Button>
-              )}
-              {selectedIds.size >= 1 && onMergeSelected && (
-                <Button variant="outline" size="sm" className={cn("h-7 gap-1 px-2 text-[11px] flex-1 min-w-0", selectedIds.size === 1 && "border-primary/40 text-primary")} onClick={handleMerge}>
-                  <Merge className="h-3 w-3 shrink-0" />
-                  {selectedIds.size >= 2 ? `Merge` : 'Merge'}
-                </Button>
-              )}
-              {selectedIds.size === 1 && onSharePlan && (
-                <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-[11px] flex-1 min-w-0" onClick={handleShareSelected}>
-                  <Share2 className="h-3 w-3 shrink-0" />
-                  Share
-                </Button>
-              )}
-              {onDeletePlan && (
-                <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-[11px] flex-1 min-w-0 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30" onClick={handleDeleteSelected}>
-                  <Trash2 className="h-3 w-3 shrink-0" />
-                  Delete
-                </Button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Selection actions are now rendered inline above selected cards */}
 
       {/* Days with plan cards */}
       <PastDaysCollapsible
@@ -348,6 +312,14 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         onCardTap={handleCardTap}
         availabilityMap={availabilityMap}
         homeAddress={homeAddress}
+        selectionActions={selectMode ? {
+          selectedCount: selectedIds.size,
+          onEdit: selectedIds.size === 1 && onEditPlan ? handleEditSelected : undefined,
+          onMerge: selectedIds.size >= 1 && onMergeSelected ? handleMerge : undefined,
+          onShare: selectedIds.size === 1 && onSharePlan ? handleShareSelected : undefined,
+          onDelete: onDeletePlan ? handleDeleteSelected : undefined,
+          onExit: exitSelectMode,
+        } : undefined}
       />
     </div>
   );
@@ -433,7 +405,7 @@ function getPreviousDayLocation(dateKey: string, availabilityMap: Record<string,
   return homeAddress?.split(',')[0]?.trim() || null;
 }
 
-function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress }: {
+function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress, selectionActions }: {
   day: Date;
   dayPlans: Plan[];
   isToday: boolean;
@@ -445,6 +417,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   onCardTap: (id: string) => void;
   availabilityMap: Record<string, DayAvailability>;
   homeAddress: string | null;
+  selectionActions?: SelectionActions;
 }) {
   const key = format(day, 'yyyy-MM-dd');
   const locInfo = getLocationLabel(key, availabilityMap, homeAddress);
@@ -480,7 +453,45 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
         )}
       </div>
       {dayPlans.length > 0 ? (
-        <div className="px-3 mt-1 mb-3">
+        <div className="px-3 mt-1 mb-3 space-y-1.5">
+          {/* Inline selection action bar */}
+          {selectionActions && dayPlans.some(p => selectedIds.has(p.id)) && (
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 border border-primary/20 px-2 py-1.5"
+              >
+                <span className="text-[10px] font-medium text-primary mr-auto">
+                  {selectionActions.selectedCount} selected
+                </span>
+                {selectionActions.onEdit && (
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onEdit}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                )}
+                {selectionActions.onMerge && (
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onMerge}>
+                    <Merge className="h-3 w-3" />
+                  </Button>
+                )}
+                {selectionActions.onShare && (
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onShare}>
+                    <Share2 className="h-3 w-3" />
+                  </Button>
+                )}
+                {selectionActions.onDelete && (
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={selectionActions.onDelete}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onExit}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </motion.div>
+            </AnimatePresence>
+          )}
           {dayPlans.length === 1 ? (
             <PlanCardCompact
               plan={dayPlans[0]}
@@ -507,7 +518,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   );
 }
 
-function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress }: {
+function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress, selectionActions }: {
   weekDays: Date[];
   today: Date;
   plansByDay: Map<string, Plan[]>;
@@ -518,6 +529,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
   onCardTap: (id: string) => void;
   availabilityMap: Record<string, DayAvailability>;
   homeAddress: string | null;
+  selectionActions?: SelectionActions;
 }) {
   const [showPast, setShowPast] = useState(false);
 
@@ -567,6 +579,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
                 onCardTap={onCardTap}
                 availabilityMap={availabilityMap}
                 homeAddress={homeAddress}
+                selectionActions={selectionActions}
               />
             </motion.div>
           );
@@ -591,6 +604,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
             onCardTap={onCardTap}
             availabilityMap={availabilityMap}
             homeAddress={homeAddress}
+            selectionActions={selectionActions}
           />
         );
       })}
