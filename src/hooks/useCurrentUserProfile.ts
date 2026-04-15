@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 interface CurrentUserProfile {
   display_name: string | null;
   avatar_url: string | null;
+  location_status: string | null;
+  timezone: string | null;
 }
 
 // Global state to share profile across components
@@ -51,7 +53,7 @@ export function useCurrentUserProfile() {
       setIsLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, avatar_url')
+        .select('display_name, avatar_url, location_status, timezone')
         .eq('user_id', session.user.id)
         .single();
 
@@ -65,7 +67,7 @@ export function useCurrentUserProfile() {
   const updateProfile = useCallback((updates: Partial<CurrentUserProfile>) => {
     const newProfile = globalProfile 
       ? { ...globalProfile, ...updates }
-      : { display_name: null, avatar_url: null, ...updates };
+      : { display_name: null, avatar_url: null, location_status: null, timezone: null, ...updates };
     notifyListeners(newProfile);
   }, []);
 
@@ -75,7 +77,7 @@ export function useCurrentUserProfile() {
 
     const { data } = await supabase
       .from('profiles')
-      .select('display_name, avatar_url')
+      .select('display_name, avatar_url, location_status, timezone')
       .eq('user_id', session.user.id)
       .single();
 
