@@ -120,7 +120,7 @@ export default function Friends() {
     if (connectedFriendUserIds.length === 0) return;
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     Promise.all([
-      supabase.from('profiles').select('user_id, current_vibe, custom_vibe_tags, home_address').in('user_id', connectedFriendUserIds),
+      supabase.from('friend_profiles').select('user_id, current_vibe, custom_vibe_tags, home_address').in('user_id', connectedFriendUserIds),
       supabase.from('availability').select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location').in('user_id', connectedFriendUserIds).eq('date', todayStr),
     ]).then(([profileRes, availRes]) => {
       const vibeMap: Record<string, { vibe: string | null; icon: string | null }> = {};

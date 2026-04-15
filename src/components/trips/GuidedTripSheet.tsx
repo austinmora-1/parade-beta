@@ -198,7 +198,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
     const friendUserIds = selectedFriends.map(f => f.friendUserId).filter(Boolean) as string[];
     if (friendUserIds.length === 0) return;
     supabase
-      .from('profiles')
+      .from('friend_profiles')
       .select('user_id, home_address')
       .in('user_id', friendUserIds)
       .then(({ data }) => {
@@ -304,7 +304,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
     ] = await Promise.all([
       supabase.from('availability').select('*').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate),
       supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
-      supabase.from('profiles').select('user_id, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, preferred_social_days, preferred_social_times').in('user_id', allUserIds),
+      supabase.from('friend_profiles').select('user_id, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, preferred_social_days, preferred_social_times').in('user_id', allUserIds),
       supabase.from('trips').select('user_id, location, start_date, end_date').in('user_id', allUserIds).gte('end_date', startDate).lte('start_date', endDate),
       supabase.from('plan_participants').select('friend_id, plan_id, status, plans!inner(date, time_slot, status)').in('friend_id', allUserIds).in('status', ['accepted', 'invited']),
     ]);
@@ -706,7 +706,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                         onClick={() => {
                           setHostMode('hosting');
                           setHostUserId(userId || null);
-                          supabase.from('profiles').select('home_address').eq('user_id', userId!).single()
+                          supabase.from('friend_profiles').select('home_address').eq('user_id', userId!).single()
                             .then(({ data }) => {
                               if (data?.home_address) setDestination(data.home_address);
                             });
