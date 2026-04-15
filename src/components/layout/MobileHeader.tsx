@@ -17,7 +17,7 @@ export function MobileHeader() {
   const { conversations } = useConversations();
   const { profile } = useCurrentUserProfile();
   const navigate = useNavigate();
-  const { availability, userTimezone } = usePlannerStore();
+  const { availabilityMap, userTimezone } = usePlannerStore();
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -30,12 +30,12 @@ export function MobileHeader() {
   // Derive current city from today's availability (trip location when away, home address when home)
   const currentCity = useMemo(() => {
     const todayKey = format(new Date(), 'yyyy-MM-dd');
-    const todayAvail = availability.get(todayKey);
+    const todayAvail = availabilityMap[todayKey];
     if (todayAvail?.locationStatus === 'away' && todayAvail?.tripLocation) {
       return todayAvail.tripLocation.split(',')[0];
     }
     return profile?.home_address?.split(',')[0] || 'Set location';
-  }, [availability, profile?.home_address]);
+  }, [availabilityMap, profile?.home_address]);
 
   return (
     <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
