@@ -709,6 +709,79 @@ export type Database = {
           },
         ]
       }
+      plan_proposal_options: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          plan_id: string
+          sort_order: number
+          start_time: string | null
+          time_slot: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          plan_id: string
+          sort_order?: number
+          start_time?: string | null
+          time_slot: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          plan_id?: string
+          sort_order?: number
+          start_time?: string | null
+          time_slot?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_proposal_options_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_proposal_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          rank: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          rank: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          rank?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_proposal_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "plan_proposal_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_reminders_sent: {
         Row: {
           created_at: string
@@ -751,6 +824,7 @@ export type Database = {
           location: string | null
           manually_edited: boolean
           notes: string | null
+          proposal_status: string | null
           proposed_by: string | null
           recurring_plan_id: string | null
           source: string | null
@@ -775,6 +849,7 @@ export type Database = {
           location?: string | null
           manually_edited?: boolean
           notes?: string | null
+          proposal_status?: string | null
           proposed_by?: string | null
           recurring_plan_id?: string | null
           source?: string | null
@@ -799,6 +874,7 @@ export type Database = {
           location?: string | null
           manually_edited?: boolean
           notes?: string | null
+          proposal_status?: string | null
           proposed_by?: string | null
           recurring_plan_id?: string | null
           source?: string | null
