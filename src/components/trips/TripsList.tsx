@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Plane, MapPin, Calendar, ChevronRight, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper } from 'lucide-react';
+import { GripVertical, Plane, MapPin, Calendar, ChevronRight, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -658,7 +658,30 @@ function ProposalTripCard({
       setDeleteOpen(false);
     }
   };
-
+  const [converting, setConverting] = useState(false);
+  const handleConvertType = async () => {
+    setConverting(true);
+    try {
+      const newType = isVisit ? 'trip' : 'visit';
+      const updates: any = { proposal_type: newType, updated_at: new Date().toISOString() };
+      // When converting to visit, clear host; when converting to trip, set creator as host
+      if (newType === 'visit') {
+        // Find a non-creator participant to be the host (person being visited)
+        const otherParticipant = proposal.participants.find(p => p.user_id !== currentUserId);
+        updates.host_user_id = otherParticipant?.user_id || null;
+      } else {
+        updates.host_user_id = null;
+      }
+      await supabase.from('trip_proposals').update(updates).eq('id', proposal.id);
+      toast.success(newType === 'visit' ? 'Converted to visit 🏠' : 'Converted to trip ✈️');
+      await onRefresh();
+    } catch (err) {
+      console.error('Convert failed:', err);
+      toast.error('Failed to convert');
+    } finally {
+      setConverting(false);
+    }
+  };
   const addDateOption = () => {
     const last = editDates[editDates.length - 1];
     const startDate = last ? new Date(last.start_date + 'T00:00:00') : new Date();
@@ -823,6 +846,16 @@ function ProposalTripCard({
               
               {isCreator && (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    disabled={converting}
+                    onClick={handleConvertType}
+                    title={isVisit ? 'Convert to trip' : 'Convert to visit'}
+                  >
+                    {converting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowLeftRight className="h-3 w-3" />}
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
                     setEditDestination(proposal.destination || '');
                     setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
