@@ -662,11 +662,15 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     }
   };
 
-  const stepTitle = step === 'activity'
-    ? `What do you want to do with ${friendNamesStr}?`
-    : step === 'time'
-      ? `When works for ${activityLabel.toLowerCase()}?`
-      : 'Look good?';
+  const stepTitle = step === 'friends'
+    ? 'Who do you want to hang with?'
+    : step === 'activity'
+      ? `What do you want to do with ${friendNamesStr}?`
+      : step === 'time'
+        ? `When works for ${activityLabel.toLowerCase()}?`
+        : 'Look good?';
+
+  const firstStep = needsFriendStep ? 'friends' : 'activity';
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -675,11 +679,12 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         style={viewport ? { maxHeight: `${Math.min(viewport.height * 0.9, window.innerHeight * 0.9)}px` } : undefined}
       >
         <DrawerHeader className="pb-2 relative">
-          {step !== 'activity' && (
+          {step !== firstStep && (
             <button
               onClick={() => {
                 if (step === 'confirm') { setStep('time'); setShowCalendar(false); }
                 else if (step === 'time') setStep('activity');
+                else if (step === 'activity' && needsFriendStep) setStep('friends');
               }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -691,18 +696,20 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           </DrawerTitle>
         </DrawerHeader>
 
-        {/* Friend avatars strip */}
-        <div className="flex items-center justify-center gap-1 px-4 pb-3">
-          <div className="flex -space-x-2">
-            {preSelectedFriends.slice(0, 5).map(f => (
-              <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
-                <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-            ))}
+        {/* Friend avatars strip - show when past friends step */}
+        {step !== 'friends' && effectiveFriends.length > 0 && (
+          <div className="flex items-center justify-center gap-1 px-4 pb-3">
+            <div className="flex -space-x-2">
+              {effectiveFriends.slice(0, 5).map(f => (
+                <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
+                  <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                  <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
           </div>
-          <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
-        </div>
+        )}
 
         <div className="px-4 pb-2 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
