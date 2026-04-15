@@ -548,34 +548,31 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       role: 'participant',
     });
 
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const { data: senderProfile } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('user_id', userId)
-        .single();
-      const senderName = senderProfile?.display_name || 'Someone';
-      const { TIME_SLOT_LABELS: TSL } = await import('@/types/planner');
-      const timeLabel = TSL[proposal.timeSlot]?.label || proposal.timeSlot;
-      const dateLabel = format(proposal.date, 'EEE, MMM d');
-
-      fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: proposal.recipientFriendId,
-          title: `${senderName} wants to make plans 🎉`,
-          body: `${activityConfig?.label || proposal.activity} · ${dateLabel} · ${timeLabel}`,
-          url: `/notifications`,
-          icon: '/icon-192.png',
-        }),
-      }).catch(() => {});
-    } catch (e) {
-      console.error('Push notification error in proposePlan:', e);
-    }
+    // Fire-and-forget: proposal notification via on-plan-created
+    (async () => {
+      try {
+        const { TIME_SLOT_LABELS: TSL } = await import('@/types/planner');
+        const timeLabel = TSL[proposal.timeSlot]?.label || proposal.timeSlot;
+        const dateLabel = format(proposal.date, 'EEE, MMM d');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        if (!token) return;
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan_id: data.id,
+            creator_id: userId,
+            participant_ids: [proposal.recipientFriendId],
+            plan_title: proposal.title || activityConfig?.label || proposal.activity,
+            notification_title: undefined, // let server build from creator name
+            notification_body: `${activityConfig?.label || proposal.activity} · ${dateLabel} · ${timeLabel}`,
+            notification_url: '/notifications',
+          }),
+        }).catch(() => {});
+      } catch {}
+    })();
 
     await get().loadAllData();
   },
