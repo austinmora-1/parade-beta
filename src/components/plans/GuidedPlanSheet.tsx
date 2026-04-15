@@ -112,6 +112,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [activity, setActivity] = useState<ActivityType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<SelectedSlotEntry[]>([]);
   const [sending, setSending] = useState(false);
   const [bestSlots, setBestSlots] = useState<BestSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
