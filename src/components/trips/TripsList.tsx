@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Plane, MapPin, Calendar, ChevronRight, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight } from 'lucide-react';
+import { GripVertical, Plane, MapPin, Calendar, ChevronRight, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +19,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { AddParticipantDialog } from './AddParticipantDialog';
 
 interface Trip {
   id: string;
@@ -371,12 +372,12 @@ function TripCard({
   onConverted: () => Promise<void>;
 }) {
   const [converting, setConverting] = useState(false);
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
 
   const handleConvertToVisit = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setConverting(true);
     try {
-      // Create a trip proposal from this trip
       const { data: proposal, error: propError } = await supabase
         .from('trip_proposals')
         .insert({
@@ -390,21 +391,18 @@ function TripCard({
 
       if (propError || !proposal) throw propError;
 
-      // Add date option
       await supabase.from('trip_proposal_dates').insert({
         proposal_id: proposal.id,
         start_date: trip.start_date,
         end_date: trip.end_date,
       });
 
-      // Add creator as participant
       await supabase.from('trip_proposal_participants').insert({
         proposal_id: proposal.id,
         user_id: currentUserId,
         status: 'accepted',
       });
 
-      // Delete original trip
       await supabase.from('trips').delete().eq('id', trip.id);
 
       toast.success('Converted to visit proposal');
@@ -463,6 +461,16 @@ function TripCard({
         variant="ghost"
         size="icon"
         className="h-7 w-7 shrink-0"
+        onClick={(e) => { e.stopPropagation(); setAddParticipantOpen(true); }}
+        title="Add participant"
+      >
+        <UserPlus className="h-3.5 w-3.5" />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0"
         disabled={converting}
         onClick={handleConvertToVisit}
         title="Convert to visit"
@@ -471,6 +479,15 @@ function TripCard({
       </Button>
 
       <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+
+      <AddParticipantDialog
+        open={addParticipantOpen}
+        onOpenChange={setAddParticipantOpen}
+        targetType="trip"
+        targetId={trip.id}
+        existingParticipantIds={[currentUserId, ...trip.priority_friend_ids]}
+        onAdded={onConverted}
+      />
     </div>
   );
 }
@@ -594,6 +611,7 @@ function ProposalTripCard({
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [editDestination, setEditDestination] = useState(proposal.destination || '');
   const [editDates, setEditDates] = useState(
     proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date }))
@@ -1017,9 +1035,18 @@ function ProposalTripCard({
               </span>
             )}
           </div>
-          <span className="text-[10px] text-muted-foreground truncate">
+          <span className="text-[10px] text-muted-foreground truncate flex-1">
             {proposal.participants.map(p => p.display_name.split(' ')[0]).join(', ')}
           </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 shrink-0"
+            onClick={() => setAddParticipantOpen(true)}
+            title="Add participant"
+          >
+            <UserPlus className="h-3 w-3" />
+          </Button>
         </div>
 
         {/* Date options with ranked vote buttons */}
@@ -1208,6 +1235,15 @@ function ProposalTripCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddParticipantDialog
+        open={addParticipantOpen}
+        onOpenChange={setAddParticipantOpen}
+        targetType="proposal"
+        targetId={proposal.id}
+        existingParticipantIds={proposal.participants.map(p => p.user_id)}
+        onAdded={onRefresh}
+      />
     </>
   );
 }
