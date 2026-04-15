@@ -1216,12 +1216,14 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
               size="sm" 
               className="flex-1" 
               onClick={handleSubmit} 
-              disabled={isProposing}
+              disabled={isProposing || (isMultiOption && proposalOptions.length < 2)}
             >
               {isProposing ? (
                 <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Proposing...</>
               ) : needsProposal ? (
                 'Propose Change'
+              ) : isMultiOption ? (
+                `Propose ${proposalOptions.length} Options`
               ) : editPlan ? (
                 'Save'
               ) : (
