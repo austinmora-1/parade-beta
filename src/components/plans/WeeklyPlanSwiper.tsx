@@ -405,7 +405,7 @@ function getPreviousDayLocation(dateKey: string, availabilityMap: Record<string,
   return homeAddress?.split(',')[0]?.trim() || null;
 }
 
-function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress }: {
+function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress, selectionActions }: {
   day: Date;
   dayPlans: Plan[];
   isToday: boolean;
@@ -417,6 +417,7 @@ function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggl
   onCardTap: (id: string) => void;
   availabilityMap: Record<string, DayAvailability>;
   homeAddress: string | null;
+  selectionActions?: SelectionActions;
 }) {
   const key = format(day, 'yyyy-MM-dd');
   const locInfo = getLocationLabel(key, availabilityMap, homeAddress);
@@ -540,6 +541,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
                 onCardTap={onCardTap}
                 availabilityMap={availabilityMap}
                 homeAddress={homeAddress}
+                selectionActions={selectionActions}
               />
             </motion.div>
           );
@@ -564,6 +566,7 @@ function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, selected
             onCardTap={onCardTap}
             availabilityMap={availabilityMap}
             homeAddress={homeAddress}
+            selectionActions={selectionActions}
           />
         );
       })}
