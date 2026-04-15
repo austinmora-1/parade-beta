@@ -425,7 +425,30 @@ function ProposalTripCard({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Vote counts per date (number of unique users who ranked each date)
+  // Borda count scores per date option
+  const bordaScores = useMemo(() => {
+    const scores = new Map<string, number>();
+    for (const d of proposal.dates) scores.set(d.id, 0);
+
+    // Group votes by user
+    const byUser = new Map<string, TripVote[]>();
+    for (const v of proposal.votes) {
+      if (!byUser.has(v.user_id)) byUser.set(v.user_id, []);
+      byUser.get(v.user_id)!.push(v);
+    }
+
+    const n = proposal.dates.length;
+    for (const userVotes of byUser.values()) {
+      for (const v of userVotes) {
+        // Borda: rank 1 gets n points, rank 2 gets n-1, etc.
+        const pts = n - v.rank + 1;
+        scores.set(v.date_id, (scores.get(v.date_id) || 0) + pts);
+      }
+    }
+    return scores;
+  }, [proposal.votes, proposal.dates]);
+
+  // Also keep simple vote counts for display
   const voteCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const d of proposal.dates) counts.set(d.id, 0);
@@ -438,43 +461,17 @@ function ProposalTripCard({
     return counts;
   }, [proposal.votes, proposal.dates]);
 
-  const handleRankToggle = (dateId: string) => {
-    setMyRankings(prev => {
-      const existing = { ...prev };
-      if (dateId in existing) {
-        const removedRank = existing[dateId];
-        delete existing[dateId];
-        for (const [id, rank] of Object.entries(existing)) {
-          if (rank > removedRank) existing[id] = rank - 1;
-        }
-      } else {
-        existing[dateId] = Object.keys(existing).length + 1;
-      }
-      return existing;
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (Object.keys(myRankings).length === 0) {
-      toast.error('Please rank at least one date option');
-      return;
-    }
-    setIsSubmitting(true);
-    await onSubmitRankedVotes(proposal.id, myRankings, proposal.myParticipantId);
-    setIsSubmitting(false);
-  };
-
-  // Find winning date by vote count (ties broken by earliest)
+  // Find winning date by Borda score (ties broken by earliest)
   const winningDate = useMemo(() => {
     if (proposal.dates.length === 0) return null;
     const sorted = [...proposal.dates].sort((a, b) => {
-      const aCount = voteCounts.get(a.id) || 0;
-      const bCount = voteCounts.get(b.id) || 0;
-      if (bCount !== aCount) return bCount - aCount;
+      const aScore = bordaScores.get(a.id) || 0;
+      const bScore = bordaScores.get(b.id) || 0;
+      if (bScore !== aScore) return bScore - aScore;
       return a.start_date.localeCompare(b.start_date);
     });
     return sorted[0];
-  }, [proposal.dates, voteCounts]);
+  }, [proposal.dates, bordaScores]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
