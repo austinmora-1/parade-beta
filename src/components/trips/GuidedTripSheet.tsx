@@ -992,31 +992,33 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
                       Destination (optional)
                     </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        placeholder="Where to?"
-                        value={destination}
-                        onChange={e => setDestination(e.target.value)}
-                        className="pl-9 h-9 text-sm"
-                      />
-                    </div>
+                    <CityAutocomplete
+                      value={destination}
+                      onChange={setDestination}
+                      placeholder="Where to?"
+                      compact
+                      types="(cities)"
+                    />
                   </div>
                 ) : (
                   <div>
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
-                      {hostMode === 'hosting' ? 'Your city' : "Friend's city"}
+                      {hostMode === 'hosting' ? 'Hosting in your city' : "Friend's city"}
                     </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input
-                        placeholder="City"
+                    {hostMode === 'hosting' && destination ? (
+                      <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-sm">{destination}</span>
+                      </div>
+                    ) : (
+                      <CityAutocomplete
                         value={destination}
-                        onChange={e => setDestination(e.target.value)}
-                        className="pl-9 h-9 text-sm bg-muted/50"
-                        readOnly={hostMode === 'hosting' && !!destination}
+                        onChange={setDestination}
+                        placeholder="Search for a city..."
+                        compact
+                        types="(cities)"
                       />
-                    </div>
+                    )}
                   </div>
                 )}
 
