@@ -7,6 +7,7 @@ interface CurrentUserProfile {
   avatar_url: string | null;
   location_status: string | null;
   timezone: string | null;
+  home_address: string | null;
 }
 
 // Global state to share profile across components
@@ -53,7 +54,7 @@ export function useCurrentUserProfile() {
       setIsLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, avatar_url, location_status, timezone')
+        .select('display_name, avatar_url, location_status, timezone, home_address')
         .eq('user_id', session.user.id)
         .single();
 
@@ -67,7 +68,7 @@ export function useCurrentUserProfile() {
   const updateProfile = useCallback((updates: Partial<CurrentUserProfile>) => {
     const newProfile = globalProfile 
       ? { ...globalProfile, ...updates }
-      : { display_name: null, avatar_url: null, location_status: null, timezone: null, ...updates };
+      : { display_name: null, avatar_url: null, location_status: null, timezone: null, home_address: null, ...updates };
     notifyListeners(newProfile);
   }, []);
 
@@ -77,7 +78,7 @@ export function useCurrentUserProfile() {
 
     const { data } = await supabase
       .from('profiles')
-      .select('display_name, avatar_url, location_status, timezone')
+      .select('display_name, avatar_url, location_status, timezone, home_address')
       .eq('user_id', session.user.id)
       .single();
 
