@@ -288,6 +288,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
               currentUserId={user!.id}
               voting={voting}
               onVote={handleVote}
+              onRefresh={fetchProposals}
             />
           );
         }
