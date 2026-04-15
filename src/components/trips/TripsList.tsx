@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper } from 'lucide-react';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { GripVertical, Plane, MapPin, Calendar, ChevronRight, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -413,34 +413,62 @@ function ProposalTripCard({
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
 
-  // Local rankings state for ranked voting
-  const [myRankings, setMyRankings] = useState<Record<string, number>>(() => {
-    const existing: Record<string, number> = {};
-    for (const v of proposal.votes) {
-      if (v.user_id === currentUserId) {
-        existing[v.date_id] = v.rank;
-      }
+  // Ordered list of date IDs for drag ranking (top = #1)
+  const [rankedDateIds, setRankedDateIds] = useState<string[]>(() => {
+    const myVotes = proposal.votes.filter(v => v.user_id === currentUserId);
+    if (myVotes.length > 0) {
+      // Restore previous order from saved ranks
+      return [...myVotes].sort((a, b) => a.rank - b.rank).map(v => v.date_id);
     }
-    return existing;
+    // Default: all dates in original order
+    return proposal.dates.map(d => d.id);
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Derive myRankings from ordered list
+  const myRankings = useMemo(() => {
+    const r: Record<string, number> = {};
+    rankedDateIds.forEach((id, i) => { r[id] = i + 1; });
+    return r;
+  }, [rankedDateIds]);
+
+  // Track if rankings changed from saved state
+  const savedRankings = useMemo(() => {
+    const r: Record<string, number> = {};
+    for (const v of proposal.votes) {
+      if (v.user_id === currentUserId) r[v.date_id] = v.rank;
+    }
+    return r;
+  }, [proposal.votes, currentUserId]);
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (!hasVoted) return true; // Never voted, always show save
+    if (Object.keys(savedRankings).length !== rankedDateIds.length) return true;
+    return rankedDateIds.some((id, i) => savedRankings[id] !== i + 1);
+  }, [savedRankings, rankedDateIds, hasVoted]);
+
+  const handleSubmit = async () => {
+    if (rankedDateIds.length === 0) {
+      toast.error('Please rank at least one date option');
+      return;
+    }
+    setIsSubmitting(true);
+    await onSubmitRankedVotes(proposal.id, myRankings, proposal.myParticipantId);
+    setIsSubmitting(false);
+  };
 
   // Borda count scores per date option
   const bordaScores = useMemo(() => {
     const scores = new Map<string, number>();
     for (const d of proposal.dates) scores.set(d.id, 0);
-
-    // Group votes by user
     const byUser = new Map<string, TripVote[]>();
     for (const v of proposal.votes) {
       if (!byUser.has(v.user_id)) byUser.set(v.user_id, []);
       byUser.get(v.user_id)!.push(v);
     }
-
     const n = proposal.dates.length;
     for (const userVotes of byUser.values()) {
       for (const v of userVotes) {
-        // Borda: rank 1 gets n points, rank 2 gets n-1, etc.
         const pts = n - v.rank + 1;
         scores.set(v.date_id, (scores.get(v.date_id) || 0) + pts);
       }
@@ -448,7 +476,6 @@ function ProposalTripCard({
     return scores;
   }, [proposal.votes, proposal.dates]);
 
-  // Also keep simple vote counts for display
   const voteCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const d of proposal.dates) counts.set(d.id, 0);
@@ -461,7 +488,6 @@ function ProposalTripCard({
     return counts;
   }, [proposal.votes, proposal.dates]);
 
-  // Find winning date by Borda score (ties broken by earliest)
   const winningDate = useMemo(() => {
     if (proposal.dates.length === 0) return null;
     const sorted = [...proposal.dates].sort((a, b) => {
@@ -472,32 +498,6 @@ function ProposalTripCard({
     });
     return sorted[0];
   }, [proposal.dates, bordaScores]);
-
-  const handleRankToggle = (dateId: string) => {
-    setMyRankings(prev => {
-      const existing = { ...prev };
-      if (dateId in existing) {
-        const removedRank = existing[dateId];
-        delete existing[dateId];
-        for (const [id, rank] of Object.entries(existing)) {
-          if (rank > removedRank) existing[id] = rank - 1;
-        }
-      } else {
-        existing[dateId] = Object.keys(existing).length + 1;
-      }
-      return existing;
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (Object.keys(myRankings).length === 0) {
-      toast.error('Please rank at least one date option');
-      return;
-    }
-    setIsSubmitting(true);
-    await onSubmitRankedVotes(proposal.id, myRankings, proposal.myParticipantId);
-    setIsSubmitting(false);
-  };
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -901,72 +901,74 @@ function ProposalTripCard({
             </p>
           </div>
           <p className="text-[10px] text-muted-foreground">
-            {hasVoted ? 'Tap to update your rankings.' : 'Tap dates in order of preference (1st = most preferred)'}
+            Drag to reorder · Top = most preferred
           </p>
-          {proposal.dates.map(d => {
-            const myRank = myRankings[d.id];
-            const count = voteCounts.get(d.id) || 0;
-            const score = bordaScores.get(d.id) || 0;
-            const startDate = new Date(d.start_date + 'T00:00:00');
-            const endDate = new Date(d.end_date + 'T00:00:00');
-            const isWinner = allVoted && winningDate?.id === d.id;
-            const maxScore = Math.max(...Array.from(bordaScores.values()), 1);
-            const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
+          <Reorder.Group
+            axis="y"
+            values={rankedDateIds}
+            onReorder={setRankedDateIds}
+            className="space-y-1"
+          >
+            {rankedDateIds.map((dateId, i) => {
+              const d = proposal.dates.find(dd => dd.id === dateId);
+              if (!d) return null;
+              const rank = i + 1;
+              const count = voteCounts.get(d.id) || 0;
+              const score = bordaScores.get(d.id) || 0;
+              const startDate = new Date(d.start_date + 'T00:00:00');
+              const endDate = new Date(d.end_date + 'T00:00:00');
+              const isWinner = allVoted && winningDate?.id === d.id;
+              const maxScore = Math.max(...Array.from(bordaScores.values()), 1);
+              const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
 
-            return (
-              <button
-                key={d.id}
-                onClick={() => handleRankToggle(d.id)}
-                className={cn(
-                  "relative w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all overflow-hidden",
-                  isWinner
-                    ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                    : myRank
-                      ? "border-primary/60 bg-primary/5"
-                      : "border-border hover:border-primary/30 hover:bg-primary/5"
-                )}
-              >
-                {/* Score bar background */}
-                <div
-                  className="absolute inset-y-0 left-0 bg-primary/10 transition-all"
-                  style={{ width: `${barWidth}%` }}
-                />
+              return (
+                <Reorder.Item
+                  key={dateId}
+                  value={dateId}
+                  className={cn(
+                    "relative flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors overflow-hidden cursor-grab active:cursor-grabbing touch-none",
+                    isWinner
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                      : "border-border hover:border-primary/30"
+                  )}
+                >
+                  {/* Score bar background */}
+                  <div
+                    className="absolute inset-y-0 left-0 bg-primary/10 transition-all pointer-events-none"
+                    style={{ width: `${barWidth}%` }}
+                  />
 
-                {/* Rank badge */}
-                <div className={cn(
-                  "relative flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold shrink-0",
-                  myRank
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-muted text-muted-foreground"
-                )}>
-                  {myRank || '—'}
-                </div>
+                  <GripVertical className="relative h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
 
-                {isWinner && (
-                  <Trophy className="relative h-3.5 w-3.5 text-primary shrink-0" />
-                )}
-                <span className={cn(
-                  "relative flex-1 text-xs font-medium",
-                  isWinner && "text-primary"
-                )}>
-                  {format(startDate, 'EEE, MMM d')} – {format(endDate, 'MMM d')}
-                </span>
-                <div className="relative flex items-center gap-1.5 shrink-0">
+                  {/* Rank badge */}
+                  <div className="relative flex h-5 w-5 items-center justify-center rounded-md border border-primary bg-primary text-primary-foreground text-[10px] font-bold shrink-0">
+                    {rank}
+                  </div>
+
+                  {isWinner && (
+                    <Trophy className="relative h-3 w-3 text-primary shrink-0" />
+                  )}
+                  <span className={cn(
+                    "relative flex-1 text-[11px] font-medium truncate",
+                    isWinner && "text-primary"
+                  )}>
+                    {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
+                  </span>
                   {count > 0 && (
                     <span className={cn(
-                      "text-[10px] font-medium",
+                      "relative text-[9px] font-medium shrink-0",
                       isWinner ? "text-primary" : "text-muted-foreground"
                     )}>
                       {count}/{totalVoters} · {score}pts
                     </span>
                   )}
-                </div>
-              </button>
-            );
-          })}
+                </Reorder.Item>
+              );
+            })}
+          </Reorder.Group>
 
-          {/* Submit / Update button */}
-          {Object.keys(myRankings).length > 0 && (
+          {/* Save button */}
+          {hasUnsavedChanges && (
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting || voting === proposal.id}
@@ -974,8 +976,8 @@ function ProposalTripCard({
               size="sm"
             >
               {(isSubmitting || voting === proposal.id) ? (
-                <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Submitting...</>
-              ) : hasVoted ? 'Update Rankings' : 'Submit Rankings'}
+                <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Saving...</>
+              ) : 'Save Rankings'}
             </Button>
           )}
         </div>
