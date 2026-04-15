@@ -305,7 +305,6 @@ export function UpcomingPlansWidget() {
     <div className="space-y-4">
       {myPlans.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Your Plans</h4>
           <div className="space-y-1.5">{myPlans.map(renderPlanCard)}</div>
         </div>
       )}
