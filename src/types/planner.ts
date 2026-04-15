@@ -8,7 +8,7 @@ export type ActivityType =
   | 'hanging-out'
   | 'museum'
   | 'sightseeing'
-  | 'dinner'
+  | 'get-food'
   | 'concert'
   | 'one-on-one'
   | 'beach'
@@ -30,7 +30,7 @@ export type ActivityType =
   | 'watching-movie'
   | 'park'
   | 'watching-tv'
-  | 'grilling'
+  | 'shopping'
   | 'movies'
   | 'black-hole'
   | 'reading'
@@ -215,7 +215,7 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   'hanging-out': { label: 'Hanging Out', icon: '🤙', lucideIcon: Smile, color: 'activity-events', vibeType: 'social' },
   'museum': { label: 'Going to a Museum', icon: '🏛️', lucideIcon: Landmark, color: 'activity-events', vibeType: 'social' },
   'sightseeing': { label: 'Sightseeing', icon: '🧭', lucideIcon: Compass, color: 'activity-events', vibeType: 'social' },
-  'dinner': { label: 'Getting Dinner', icon: '🍽️', lucideIcon: Utensils, color: 'activity-food', vibeType: 'social' },
+  'get-food': { label: 'Get Food', icon: '🍽️', lucideIcon: Utensils, color: 'activity-food', vibeType: 'social' },
   'concert': { label: 'Concert', icon: '🎵', lucideIcon: Music, color: 'activity-events', vibeType: 'social' },
   'one-on-one': { label: '1:1 Time', icon: '👥', lucideIcon: User, color: 'activity-events', vibeType: 'social' },
   'beach': { label: 'Going to the Beach', icon: '🏖️', lucideIcon: Umbrella, color: 'activity-events', vibeType: 'social' },
@@ -237,7 +237,7 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   'watching-movie': { label: 'Watching a Movie', icon: '🎬', lucideIcon: Clapperboard, color: 'activity-movies', vibeType: 'chill' },
   'park': { label: 'Going to the Park', icon: '🌳', lucideIcon: TreePine, color: 'activity-me-time', vibeType: 'chill' },
   'watching-tv': { label: 'Watching TV', icon: '📺', lucideIcon: Tv, color: 'activity-watching', vibeType: 'chill' },
-  'grilling': { label: 'Grilling', icon: '🔥', lucideIcon: Flame, color: 'activity-food', vibeType: 'chill' },
+  'shopping': { label: 'Shopping', icon: '🛍️', lucideIcon: ShoppingBag, color: 'activity-shopping', vibeType: 'chill' },
   'movies': { label: 'Going to the Movies', icon: '🎥', lucideIcon: Film, color: 'activity-movies', vibeType: 'chill' },
   'black-hole': { label: 'In a Black Hole', icon: '🕳️', lucideIcon: Sparkles, color: 'activity-me-time', vibeType: 'chill' },
   'reading': { label: 'Reading', icon: '📚', lucideIcon: BookOpen, color: 'activity-reading', vibeType: 'chill' },
