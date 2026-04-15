@@ -45,6 +45,13 @@ interface ProposalParticipant {
   avatar_url: string | null;
 }
 
+interface TripVote {
+  id: string;
+  date_id: string;
+  user_id: string;
+  rank: number;
+}
+
 interface TripProposal {
   id: string;
   created_by: string;
@@ -57,6 +64,7 @@ interface TripProposal {
   participants: ProposalParticipant[];
   myParticipantId: string;
   myVotedDateId: string | null;
+  votes: TripVote[];
   proposal_type: string;
   host_user_id: string | null;
   host_name: string | null;
