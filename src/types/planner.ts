@@ -97,6 +97,24 @@ export interface PendingChange {
   proposedBy: string;
 }
 
+export interface PlanProposalOption {
+  id: string;
+  planId: string;
+  date: Date;
+  timeSlot: TimeSlot;
+  startTime?: string;
+  sortOrder: number;
+}
+
+export interface PlanProposalVote {
+  id: string;
+  optionId: string;
+  userId: string;
+  rank: number;
+}
+
+export type ProposalStatus = 'voting' | 'decided' | null;
+
 export interface Plan {
   id: string;
   userId?: string; // owner of the plan
@@ -121,6 +139,9 @@ export interface Plan {
   pendingChange?: PendingChange; // proposed time/date change awaiting acceptance
   sourceTimezone?: string; // IANA timezone where the plan was created or synced from
   source?: string; // origin: 'manual', 'google-calendar', 'apple-calendar', etc.
+  proposalStatus?: ProposalStatus; // multi-option proposal voting status
+  proposalOptions?: PlanProposalOption[]; // date/slot options for voting
+  proposalVotes?: PlanProposalVote[]; // ranked votes from participants
 }
 
 export interface Vibe {
