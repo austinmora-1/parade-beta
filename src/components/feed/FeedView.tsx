@@ -39,80 +39,41 @@ export function FeedView() {
   const currentUserId = user?.id || '';
   const [friendPublicPlans, setFriendPublicPlans] = useState<any[]>([]);
 
-  // Fetch friends' public plans AND plans user participates in - full history
+  // Fetch friends' public plans via single RPC call
   useEffect(() => {
     if (!user?.id) return;
-    const now = new Date();
     (async () => {
-      const { data: sharedData } = await supabase
-        .from('plans')
-        .select('*')
-        .neq('feed_visibility', 'private')
-        .neq('user_id', user.id)
-        .lt('date', now.toISOString())
-        .order('date', { ascending: false })
-        .limit(100);
-
-      const { data: participatedPlanIds } = await supabase
-        .from('plan_participants')
-        .select('plan_id')
-        .eq('friend_id', user.id);
-
-      let participatedPlans: any[] = [];
-      if (participatedPlanIds && participatedPlanIds.length > 0) {
-        const ids = participatedPlanIds.map(p => p.plan_id);
-        const { data: pPlans } = await supabase
-          .from('plans')
-          .select('*')
-          .in('id', ids)
-          .neq('user_id', user.id)
-          .lt('date', now.toISOString())
-          .order('date', { ascending: false })
-          .limit(100);
-        participatedPlans = pPlans || [];
-      }
-
-      const allPlans = [...(sharedData || []), ...participatedPlans];
-      const seen = new Set<string>();
-      const deduped = allPlans.filter(p => {
-        if (seen.has(p.id)) return false;
-        seen.add(p.id);
-        return true;
+      const { data, error } = await supabase.rpc('get_feed_plans', {
+        p_user_id: user.id,
+        p_limit: 100,
       });
 
-      const planIds = deduped.map(p => p.id);
-      let participantsMap: Record<string, any[]> = {};
-      if (planIds.length > 0) {
-        const { data: pData } = await supabase
-          .from('plan_participants')
-          .select('plan_id, friend_id, status, role')
-          .in('plan_id', planIds);
-        for (const pp of (pData || [])) {
-          if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
-          participantsMap[pp.plan_id].push(pp);
+      if (error || !data) {
+        console.error('Feed RPC error:', error);
+        setFriendPublicPlans([]);
+        return;
+      }
+
+      const feedData = data as any;
+      const plansArr: any[] = feedData.plans || [];
+      const participantsArr: any[] = feedData.participants || [];
+      const profilesArr: any[] = feedData.profiles || [];
+
+      // Build lookup maps
+      const profilesMap: Record<string, { name: string; avatar?: string }> = {};
+      for (const p of profilesArr) {
+        if (p.user_id) {
+          profilesMap[p.user_id] = { name: p.display_name || 'Friend', avatar: p.avatar_url || undefined };
         }
       }
 
-      const ownerIds = [...new Set(deduped.map(p => p.user_id))];
-      const allUserIds = new Set([...ownerIds]);
-      for (const pps of Object.values(participantsMap)) {
-        for (const pp of pps) allUserIds.add(pp.friend_id);
-      }
-      
-      let profilesMap: Record<string, { name: string; avatar?: string }> = {};
-      if (allUserIds.size > 0) {
-        const { data: profiles } = await supabase
-          .from('public_profiles')
-          .select('user_id, display_name, avatar_url')
-          .in('user_id', Array.from(allUserIds));
-        for (const p of (profiles || [])) {
-          if (p.user_id) {
-            profilesMap[p.user_id] = { name: p.display_name || 'Friend', avatar: p.avatar_url || undefined };
-          }
-        }
+      const participantsMap: Record<string, any[]> = {};
+      for (const pp of participantsArr) {
+        if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
+        participantsMap[pp.plan_id].push(pp);
       }
 
-      const mapped = deduped.map(p => {
+      const mapped = plansArr.map(p => {
         const planDate = new Date(p.date);
         const pps = (participantsMap[p.id] || []).filter((pp: any) => pp.friend_id !== user.id);
         const ownerProfile = profilesMap[p.user_id];

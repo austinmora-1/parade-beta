@@ -34,7 +34,16 @@ const TripDetail = lazy(() => import("./pages/TripDetail"));
 const Trips = lazy(() => import("./pages/Trips"));
 const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

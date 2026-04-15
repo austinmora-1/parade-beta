@@ -1823,6 +1823,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_feed_plans: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: Json
+      }
       get_plan_invite_details: {
         Args: { p_token: string }
         Returns: {

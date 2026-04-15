@@ -3,6 +3,7 @@ import { Plan, Friend, DayAvailability, Vibe, TimeSlot, LocationStatus, Activity
 import { addDays, startOfWeek, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserTimezone } from '@/lib/timezone';
+import { validatePlan } from '@/lib/validation';
 
 import type { DashboardData, DefaultAvailabilitySettings } from './helpers/types';
 import { createDefaultAvailability, mapAvailabilityRow, buildAvailabilityMap } from './helpers/mapAvailability';
@@ -234,6 +235,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   addPlan: async (plan) => {
     const { userId } = get();
     if (!userId) return;
+    
+    try {
+      validatePlan({ title: plan.title, notes: plan.notes, duration: plan.duration, activity: plan.activity });
+    } catch (err: any) {
+      console.error('Plan validation failed:', err.message);
+      return;
+    }
     
     const locationStr = plan.location ? plan.location.name : null;
     const dateStr = format(plan.date, 'yyyy-MM-dd');
