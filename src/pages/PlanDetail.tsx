@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2 } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS, FeedVisibility } from '@/types/planner';
@@ -94,7 +93,7 @@ export default function PlanDetail() {
   const { user } = useAuth();
   const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends, userTimezone } = usePlannerStore();
   const { profile: currentUserProfile } = useCurrentUserProfile();
-  const { createGroup, createDM } = useConversations();
+  
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const { pods } = usePods();
 
@@ -102,7 +101,7 @@ export default function PlanDetail() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isRespondingToChange, setIsRespondingToChange] = useState(false);
-  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [suggestDialogOpen, setSuggestDialogOpen] = useState(false);
   const [acceptingInvite, setAcceptingInvite] = useState(false);
@@ -345,43 +344,6 @@ export default function PlanDetail() {
       toast.success('Plan deleted.');
     }
     navigate('/plans');
-  };
-
-  const handleStartChat = async () => {
-    if (!user || !plan) return;
-    const participantUserIds = plan.participants
-      .map(p => p.friendUserId)
-      .filter((id): id is string => !!id && id !== user.id);
-
-    if (participantUserIds.length === 0) {
-      toast.info('No participants to chat with.');
-      return;
-    }
-
-    setIsCreatingChat(true);
-    try {
-      let conversationId: string | null = null;
-
-      if (participantUserIds.length === 1) {
-        // DM for 1-on-1 plans
-        conversationId = await createDM(participantUserIds[0]);
-      } else {
-        // Group chat for multi-participant plans
-        conversationId = await createGroup(
-          plan.title,
-          participantUserIds
-        );
-      }
-
-      if (conversationId) {
-        navigate('/interact', { state: { conversationId } });
-      }
-    } catch (err) {
-      console.error('Failed to create chat:', err);
-      toast.error('Could not start chat. Please try again.');
-    } finally {
-      setIsCreatingChat(false);
-    }
   };
 
   const handleAcceptChange = async (changeRequestId: string) => {
@@ -793,18 +755,6 @@ export default function PlanDetail() {
               </Button>
             )}
 
-            {plan.participants.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handleStartChat}
-                disabled={isCreatingChat}
-              >
-                <MessageCircle className="h-4 w-4" />
-                {isCreatingChat ? 'Creating...' : 'Chat'}
-              </Button>
-            )}
 
             <Button
               variant="ghost"

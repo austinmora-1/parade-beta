@@ -12,7 +12,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 
 import Availability from "./pages/Availability";
 import Friends from "./pages/Friends";
-import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
@@ -136,7 +135,6 @@ const AppRoutes = () => {
       
       <Route path="/availability" element={<ErrorBoundary scope="Availability"><Availability /></ErrorBoundary>} />
       <Route path="/friends" element={<ErrorBoundary scope="Friends"><Friends /></ErrorBoundary>} />
-      <Route path="/chat" element={<ErrorBoundary scope="Chat"><Chat /></ErrorBoundary>} />
       <Route path="/notifications" element={<ErrorBoundary scope="Notifications"><Notifications /></ErrorBoundary>} />
       <Route path="/profile" element={<ErrorBoundary scope="Profile"><Profile /></ErrorBoundary>} />
       <Route path="/friend/:userId" element={<ErrorBoundary scope="FriendProfile"><FriendProfile /></ErrorBoundary>} />

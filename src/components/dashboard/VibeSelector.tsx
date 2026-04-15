@@ -4,7 +4,6 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { X, Plus, Sparkles, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { GifPicker } from '@/components/chat/GifPicker';
 
 const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
@@ -20,7 +19,7 @@ export function VibeSelector() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [customText, setCustomText] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
-  const [sendVibeOpen, setSendVibeOpen] = useState(false);
+  
 
   const vibeTypes = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
 
@@ -292,7 +291,6 @@ export function VibeSelector() {
         </AnimatePresence>
       </div>
 
-      <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
     </>
   );
 }
