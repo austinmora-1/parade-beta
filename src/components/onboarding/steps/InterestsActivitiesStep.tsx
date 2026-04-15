@@ -24,7 +24,7 @@ const VIBE_SECTIONS = [
     color: 'bg-pink-500/10 text-pink-400 ring-pink-500/30',
     activeColor: 'bg-pink-500 text-white',
     activities: [
-      '🍸 Drinks', '🍽️ Dinner', '☕ Coffee', '🍳 Brunch',
+      '🍸 Drinks', '🍽️ Get Food', '☕ Coffee', '🍳 Brunch',
       '🎤 Karaoke', '💃 Dancing', '🍕 Cooking', '🍷 Wine Tasting',
       '🎭 Theater', '🎪 Events', '🛍️ Shopping',
       '🎵 Live Music',

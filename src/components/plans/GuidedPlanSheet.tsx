@@ -30,7 +30,7 @@ type Step = 'activity' | 'time' | 'confirm';
 
 const SUGGESTED_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
   { id: 'drinks', emoji: '🍹', label: 'Drinks' },
-  { id: 'dinner', emoji: '🍽️', label: 'Dinner' },
+  { id: 'get-food', emoji: '🍽️', label: 'Get Food' },
   { id: 'hanging-out', emoji: '🤙', label: 'Hangout' },
   { id: 'concert', emoji: '🎵', label: 'Concert' },
   { id: 'movies', emoji: '🎥', label: 'Movies' },
@@ -38,7 +38,7 @@ const SUGGESTED_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[]
   { id: 'park', emoji: '🌳', label: 'Park' },
   { id: 'hiking', emoji: '🥾', label: 'Hiking' },
   { id: 'yoga', emoji: '🧘', label: 'Yoga' },
-  { id: 'grilling', emoji: '🔥', label: 'Grilling' },
+  { id: 'shopping', emoji: '🛍️', label: 'Shopping' },
 ];
 
 interface BestSlot {
