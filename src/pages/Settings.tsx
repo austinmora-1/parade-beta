@@ -1092,9 +1092,9 @@ export default function Settings() {
         </div>
         <button
           onClick={openFeedback}
-          className="text-xs text-muted-foreground hover:text-primary hover:underline"
+          className="text-xs text-muted-foreground hover:text-primary hover:underline flex items-center gap-1"
         >
-          Let us know what you think!
+          💬 Let us know what you think!
         </button>
       </div>
     </div>
