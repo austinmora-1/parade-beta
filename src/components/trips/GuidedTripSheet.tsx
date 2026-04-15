@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X, Home,
 } from 'lucide-react';
+import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { cn } from '@/lib/utils';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter,
