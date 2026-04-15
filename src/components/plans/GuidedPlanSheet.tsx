@@ -507,16 +507,38 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   };
 
   const handleSelectSlot = (bs: BestSlot) => {
+    // Toggle slot in multi-select
+    const exists = selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot);
+    if (exists) {
+      setSelectedSlots(prev => prev.filter(s => !(isSameDay(s.date, bs.date) && s.slot === bs.slot)));
+    } else {
+      setSelectedSlots(prev => [...prev, { date: bs.date, slot: bs.slot }]);
+    }
     setSelectedDate(bs.date);
     setTimeSlot(bs.slot);
     setSelectedSharedCity(bs.sharedCity);
-    setStep('confirm');
   };
 
   const handleCalendarSelect = (date: Date, slot: TimeSlot) => {
+    // In multi-select calendar mode, just focus the date
     setSelectedDate(date);
     setTimeSlot(slot);
-    setShowCalendar(false);
+  };
+
+  const handleCalendarToggleSlot = (date: Date, slot: TimeSlot) => {
+    const exists = selectedSlots.some(s => isSameDay(s.date, date) && s.slot === slot);
+    if (exists) {
+      setSelectedSlots(prev => prev.filter(s => !(isSameDay(s.date, date) && s.slot === slot)));
+    } else {
+      setSelectedSlots(prev => [...prev, { date, slot }]);
+    }
+  };
+
+  const handleProceedToConfirm = () => {
+    if (selectedSlots.length === 0) return;
+    // Use first selected slot as the primary date/slot
+    setSelectedDate(selectedSlots[0].date);
+    setTimeSlot(selectedSlots[0].slot);
     setStep('confirm');
   };
 
