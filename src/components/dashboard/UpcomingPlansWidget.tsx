@@ -1,0 +1,339 @@
+import { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { format, isBefore, addDays, isSameDay } from 'date-fns';
+import { usePlannerStore } from '@/stores/plannerStore';
+import { useDisplayPlans } from '@/hooks/useDisplayPlans';
+import { useAuth } from '@/hooks/useAuth';
+import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
+import { getCompactPlanTitle } from '@/lib/planTitle';
+import { cn } from '@/lib/utils';
+import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
+import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { CollapsibleWidget } from './CollapsibleWidget';
+import { getCurrentTimeInTimezone, getTimezoneAbbreviation } from '@/lib/timezone';
+import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
+
+function formatTime12(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const hour12 = h % 12 || 12;
+  return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
+}
+
+const TIME_SLOT_HOURS: Record<string, { start: number; end: number }> = {
+  'early-morning': { start: 6, end: 9 },
+  'late-morning': { start: 9, end: 12 },
+  'early-afternoon': { start: 12, end: 15 },
+  'late-afternoon': { start: 15, end: 18 },
+  'evening': { start: 18, end: 22 },
+  'late-night': { start: 22, end: 26 },
+};
+
+function parseTimeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+type PlanStatus = 'upcoming' | 'in-progress';
+
+function getPlanTimeStatus(plan: { date: Date; timeSlot: TimeSlot; startTime?: string; endTime?: string; duration?: number }, timezone: string): PlanStatus | null {
+  const now = new Date();
+  if (!isSameDay(plan.date, now)) return 'upcoming';
+  const { hours: currentHour, minutes: currentMinutes } = getCurrentTimeInTimezone(timezone);
+  if (plan.startTime) {
+    const startMin = parseTimeToMinutes(plan.startTime);
+    const endMin = plan.endTime ? parseTimeToMinutes(plan.endTime) : startMin + (plan.duration || 60);
+    if (currentMinutes < startMin) return 'upcoming';
+    if (currentMinutes >= startMin && currentMinutes < endMin) return 'in-progress';
+    return null;
+  }
+  const slotHours = TIME_SLOT_HOURS[plan.timeSlot];
+  if (!slotHours) return 'upcoming';
+  const effectiveEnd = slotHours.end > 24 ? slotHours.end - 24 : slotHours.end;
+  const isLateNight = slotHours.end > 24;
+  if (isLateNight) {
+    if (currentHour >= slotHours.start || currentHour < effectiveEnd) return 'in-progress';
+    if (currentHour < slotHours.start && currentHour >= effectiveEnd) return null;
+    return 'upcoming';
+  }
+  if (currentHour < slotHours.start) return 'upcoming';
+  if (currentHour >= slotHours.start && currentHour < slotHours.end) return 'in-progress';
+  return null;
+}
+
+export function UpcomingPlansWidget() {
+  const { plans: rawPlans, userTimezone, userId } = usePlannerStore();
+  const { displayPlans: plans } = useDisplayPlans(rawPlans);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
+
+  const timeSlotOrder: Record<string, number> = {
+    'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
+    'late-afternoon': 3, 'evening': 4, 'late-night': 5,
+  };
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const now = new Date();
+    const weekFromNow = addDays(now, 7);
+    (async () => {
+      const { data } = await supabase
+        .from('plans')
+        .select('*')
+        .neq('feed_visibility', 'private')
+        .neq('user_id', user.id)
+        .gte('date', now.toISOString())
+        .lte('date', weekFromNow.toISOString())
+        .order('date', { ascending: true })
+        .limit(20);
+
+      if (data && data.length > 0) {
+        const planIds = data.map(p => p.id);
+        let participantsMap: Record<string, any[]> = {};
+        const { data: pData } = await supabase
+          .from('plan_participants')
+          .select('plan_id, friend_id, status, role')
+          .in('plan_id', planIds);
+        for (const pp of (pData || [])) {
+          if (!participantsMap[pp.plan_id]) participantsMap[pp.plan_id] = [];
+          participantsMap[pp.plan_id].push(pp);
+        }
+
+        const allUserIds = new Set(data.map(p => p.user_id));
+        for (const pps of Object.values(participantsMap)) {
+          for (const pp of pps) allUserIds.add(pp.friend_id);
+        }
+
+        let profilesMap: Record<string, { name: string; avatar?: string }> = {};
+        if (allUserIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('public_profiles')
+            .select('user_id, display_name, avatar_url')
+            .in('user_id', Array.from(allUserIds));
+          for (const p of (profiles || [])) {
+            if (p.user_id) {
+              profilesMap[p.user_id] = { name: p.display_name || 'Friend', avatar: p.avatar_url || undefined };
+            }
+          }
+        }
+
+        const mapped = data.map(p => {
+          const planDate = new Date(p.date);
+          const pps = (participantsMap[p.id] || []).filter((pp: any) => pp.friend_id !== user.id);
+          const ownerProfile = profilesMap[p.user_id];
+          return {
+            id: p.id,
+            userId: p.user_id,
+            title: p.title,
+            activity: p.activity,
+            date: new Date(planDate.getUTCFullYear(), planDate.getUTCMonth(), planDate.getUTCDate()),
+            endDate: p.end_date ? (() => { const ed = new Date(p.end_date); return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate()); })() : undefined,
+            timeSlot: p.time_slot as TimeSlot,
+            duration: p.duration,
+            startTime: p.start_time || undefined,
+            endTime: p.end_time || undefined,
+            location: p.location ? { id: p.id, name: p.location, address: '' } : undefined,
+            notes: p.notes || undefined,
+            status: p.status,
+            feedVisibility: p.feed_visibility || 'private',
+            sourceTimezone: p.source_timezone || undefined,
+            isFriendPlan: true,
+            ownerName: ownerProfile?.name || 'Someone',
+            participants: [
+              { id: p.user_id, name: ownerProfile?.name || 'Someone', avatar: ownerProfile?.avatar, friendUserId: p.user_id, status: 'connected', role: 'participant' as const },
+              ...pps.map((pp: any) => ({
+                id: pp.friend_id,
+                name: profilesMap[pp.friend_id]?.name || 'Friend',
+                avatar: profilesMap[pp.friend_id]?.avatar,
+                friendUserId: pp.friend_id,
+                status: 'connected',
+                role: (pp.role || 'participant') as string,
+              })),
+            ],
+          };
+        });
+        setFriendUpcomingPlans(mapped);
+      }
+    })();
+  }, [user?.id]);
+
+  const upcomingPlans = useMemo(() => {
+    const now = new Date();
+    const weekFromNow = addDays(now, 7);
+    const ownPlans = plans.filter((p) => {
+      const effectiveEndDate = p.endDate || p.date;
+      if (!isSameDay(p.date, now) && !isSameDay(effectiveEndDate, now)) {
+        return (p.date > now && isBefore(p.date, weekFromNow)) ||
+               (p.endDate && p.date <= now && effectiveEndDate >= now);
+      }
+      const status = getPlanTimeStatus(p, userTimezone);
+      return status !== null;
+    });
+    const ownPlanIds = new Set(ownPlans.map(p => p.id));
+    const friendPlans = friendUpcomingPlans.filter(p => !ownPlanIds.has(p.id));
+    return [...ownPlans, ...friendPlans]
+      .sort((a, b) => {
+        const dateDiff = a.date.getTime() - b.date.getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
+      })
+      .slice(0, 8);
+  }, [plans, friendUpcomingPlans, userTimezone]);
+
+  const myPlans = upcomingPlans.filter(p => !p.isFriendPlan);
+  const friendPlans = upcomingPlans.filter(p => p.isFriendPlan);
+
+  const renderPlanCard = (plan: any) => {
+    const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
+    const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
+    const displayTitle = getCompactPlanTitle(plan);
+    const timeStatus = getPlanTimeStatus(plan, userTimezone);
+    const isInProgress = timeStatus === 'in-progress';
+    const isOwner = !plan.userId || plan.userId === userId;
+    const isPendingRsvp = !isOwner && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
+    const hasPendingChange = !!plan.pendingChange;
+    const isTentative = plan.status === 'tentative' || isPendingRsvp || hasPendingChange;
+
+    return (
+      <div
+        key={plan.id}
+        onClick={() => navigate(`/plan/${plan.id}`)}
+        className={cn(
+          "rounded-xl border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer group",
+          isInProgress ? "bg-primary/8 hover:bg-primary/12 shadow-sm" : "bg-muted/30 hover:bg-muted/50",
+          isTentative && "border-dashed border border-muted-foreground/30 opacity-70",
+        )}
+        style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <ActivityIcon config={activityConfig} size={18} />
+              <span className="text-sm font-medium truncate">{displayTitle}</span>
+              {hasPendingChange && (
+                <span className="rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground shrink-0">
+                  Proposed change
+                </span>
+              )}
+              {isPendingRsvp && !hasPendingChange && (
+                <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                  Pending RSVP
+                </span>
+              )}
+            </div>
+            {plan.isFriendPlan && plan.ownerName && (
+              <div className="text-[10px] text-muted-foreground ml-[26px]">
+                {plan.ownerName}'s plan
+              </div>
+            )}
+            <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
+              <span className="flex items-center gap-0.5 shrink-0">
+                <Clock className="h-3 w-3" />
+                {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig.time}
+                <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(userTimezone)}</span>
+              </span>
+            </div>
+            {plan.location && (
+              <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[140px]">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-end justify-between gap-1.5 shrink-0 self-stretch">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {isSameDay(plan.date, new Date())
+                ? (plan.endDate ? `Today – ${format(plan.endDate, 'MMM d')}` : 'Today')
+                : (plan.endDate
+                  ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
+                  : format(plan.date, 'EEE, MMM d'))}
+            </span>
+            {(() => {
+              const visibleParticipants = plan.participants.filter((p: any) => p.role !== 'subscriber');
+              if (visibleParticipants.length === 0) return null;
+              const shown = visibleParticipants.slice(0, 4);
+              const extra = visibleParticipants.length - shown.length;
+              return (
+                <div className="flex items-center -space-x-1.5">
+                  {shown.map((p: any, i: number) => (
+                    <Avatar key={p.friendUserId || i} className="h-5 w-5 border-[1.5px] border-card">
+                      {p.avatar ? <AvatarImage src={p.avatar} alt={p.name} className="object-cover" /> : null}
+                      <AvatarFallback className="text-[8px] bg-muted">{p.name?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {extra > 0 && (
+                    <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-[1.5px] border-card text-[8px] font-medium text-muted-foreground">
+                      +{extra}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+            {isInProgress && (
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider animate-pulse-soft">
+                Live
+              </span>
+            )}
+          </div>
+        </div>
+        {(() => {
+          const isOwner = !plan.userId || plan.userId === userId;
+          const myRsvp = plan.myRsvpStatus;
+          const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
+          const showRsvp = !isOwner && userId && !planIsPast;
+          if (!showRsvp) return null;
+          return (
+            <div className="mt-2 pt-2 border-t border-border/50" onClick={e => e.stopPropagation()}>
+              <PlanRsvpButtons planId={plan.id} userId={userId} currentStatus={myRsvp} compact />
+            </div>
+          );
+        })()}
+      </div>
+    );
+  };
+
+  const content = upcomingPlans.length === 0 ? (
+    <div className="flex flex-col items-center justify-center py-6 text-center">
+      <div className="mb-3 text-4xl">📅</div>
+      <p className="text-muted-foreground">No upcoming plans this week</p>
+      <p className="text-sm text-muted-foreground">Create a new plan or chat with Elly!</p>
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {myPlans.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Your Plans</h4>
+          <div className="space-y-1.5">{myPlans.map(renderPlanCard)}</div>
+        </div>
+      )}
+      {friendPlans.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            Friends' Plans
+          </h4>
+          <div className="space-y-1.5">{friendPlans.map(renderPlanCard)}</div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <CollapsibleWidget
+      title="Upcoming Plans"
+      icon={<CalendarCheck className="h-4 w-4 text-primary" />}
+      badge={
+        upcomingPlans.length > 0 ? (
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            {upcomingPlans.length}
+          </span>
+        ) : undefined
+      }
+    >
+      {content}
+    </CollapsibleWidget>
+  );
+}
