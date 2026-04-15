@@ -717,11 +717,20 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 className="space-y-4"
               >
                 {/* Activity badge */}
-                <div className="flex justify-center">
+                <div className="flex items-center justify-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-medium">
                     {activityEmoji} {activityLabel}
                   </span>
+                  {selectedSlots.length > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold">
+                      {selectedSlots.length} selected
+                    </span>
+                  )}
                 </div>
+
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Select one or more time slots to propose
+                </p>
 
                 {loadingSlots ? (
                   <div className="flex flex-col items-center gap-2 py-8">
@@ -762,7 +771,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                                  <span className="text-[10px] font-normal ml-1">({g.slots.length} times)</span>
                                </div>
                                {g.slots.map((bs, i) => (
-                                 <SlotCard key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`} bs={bs} i={i} onSelect={handleSelectSlot} />
+                                 <SlotCard
+                                   key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
+                                   bs={bs} i={i} onSelect={handleSelectSlot}
+                                   isSelected={selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot)}
+                                 />
                                ))}
                              </div>
                            ))}
@@ -770,7 +783,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                        ) : (
                          <div className="space-y-2">
                            {bestSlots.map((bs, i) => (
-                             <SlotCard key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`} bs={bs} i={i} onSelect={handleSelectSlot} />
+                             <SlotCard
+                               key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
+                               bs={bs} i={i} onSelect={handleSelectSlot}
+                               isSelected={selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot)}
+                             />
                            ))}
                          </div>
                        );
@@ -798,7 +815,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
               </motion.div>
             )}
 
-            {/* STEP 2b: Calendar picker */}
+            {/* STEP 2b: Calendar picker (multi-select) */}
             {step === 'time' && showCalendar && (
               <motion.div
                 key="calendar"
@@ -807,13 +824,20 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-3"
               >
-                <button
-                  onClick={() => setShowCalendar(false)}
-                  className="flex items-center gap-1 text-xs text-primary font-medium"
-                >
-                  <ArrowLeft className="h-3 w-3" />
-                  Back to suggestions
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setShowCalendar(false)}
+                    className="flex items-center gap-1 text-xs text-primary font-medium"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Back to suggestions
+                  </button>
+                  {selectedSlots.length > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold">
+                      {selectedSlots.length} selected
+                    </span>
+                  )}
+                </div>
                 <SlotCalendarPicker
                   selectedDate={selectedDate}
                   selectedSlot={timeSlot}
@@ -821,6 +845,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   getSlotStatus={getSlotStatusForDate}
                   hasFriends={true}
                   days={180}
+                  multiSelect={true}
+                  selectedSlots={selectedSlots}
+                  onToggleSlot={handleCalendarToggleSlot}
                 />
               </motion.div>
             )}
@@ -848,50 +875,70 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
                   <div className="h-px bg-border" />
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">When</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {selectedDate && (
-                          isSameDay(selectedDate, new Date())
-                            ? 'Today'
-                            : isSameDay(selectedDate, addDays(new Date(), 1))
-                              ? 'Tomorrow'
-                              : format(selectedDate, 'EEE, MMM d')
-                        )}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{timeSlot && SLOT_LABELS[timeSlot]}</p>
-                      {selectedSharedCity && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] text-primary mt-0.5">
-                          <MapPin className="h-2.5 w-2.5" />
-                          {selectedSharedCity}
-                        </span>
-                      )}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {selectedSlots.length > 1 ? `Proposed times (${selectedSlots.length} options)` : 'When'}
+                    </p>
+                    <div className={cn("space-y-1.5", selectedSlots.length > 3 && "max-h-[120px] overflow-y-auto")}>
+                      {selectedSlots.map((s, i) => {
+                        const dayLabel = isSameDay(s.date, new Date())
+                          ? 'Today'
+                          : isSameDay(s.date, addDays(new Date(), 1))
+                            ? 'Tomorrow'
+                            : format(s.date, 'EEE, MMM d');
+                        return (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <span className="text-primary font-semibold text-xs">{i + 1}.</span>
+                            <span className="font-medium text-foreground">{dayLabel}</span>
+                            <span className="text-muted-foreground">·</span>
+                            <span className="text-muted-foreground text-xs">{SLOT_LABELS[s.slot]}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">With</p>
-                      <div className="flex -space-x-1.5 mt-1">
-                        {preSelectedFriends.slice(0, 4).map(f => (
-                          <Avatar key={f.userId} className="h-6 w-6 border-2 border-background">
-                            <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                            <AvatarFallback className="text-[7px]">{f.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                        ))}
-                      </div>
+                  </div>
+
+                  <div className="h-px bg-border" />
+
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">With</p>
+                    <div className="flex -space-x-1.5">
+                      {preSelectedFriends.slice(0, 4).map(f => (
+                        <Avatar key={f.userId} className="h-6 w-6 border-2 border-background">
+                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                          <AvatarFallback className="text-[7px]">{f.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      ))}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-primary dark:text-primary">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium">
-                    💡 Proposed
+                    {selectedSlots.length > 1 ? '🗳️ Vote' : '💡 Proposed'}
                   </span>
-                  <span className="text-muted-foreground">— confirmed when they accept</span>
+                  <span className="text-muted-foreground">
+                    {selectedSlots.length > 1
+                      ? '— friends will vote on their preferred time'
+                      : '— confirmed when they accept'}
+                  </span>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+
+        {/* Footer with Continue or Submit button */}
+        {step === 'time' && selectedSlots.length > 0 && (
+          <DrawerFooter className="pt-2">
+            <Button
+              onClick={handleProceedToConfirm}
+              className="w-full gap-2"
+            >
+              Continue with {selectedSlots.length} {selectedSlots.length === 1 ? 'time' : 'times'} →
+            </Button>
+          </DrawerFooter>
+        )}
 
         {step === 'confirm' && (
           <DrawerFooter className="pt-2">
@@ -905,7 +952,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
               ) : (
                 <Check className="h-4 w-4" />
               )}
-              Send Plan Suggestion →
+              {selectedSlots.length > 1
+                ? `Send ${selectedSlots.length} Time Options →`
+                : 'Send Plan Suggestion →'}
             </Button>
           </DrawerFooter>
         )}
