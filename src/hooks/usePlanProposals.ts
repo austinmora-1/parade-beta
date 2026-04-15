@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { PlanProposalOption, PlanProposalVote, TimeSlot } from '@/types/planner';
 import { format } from 'date-fns';
+import { convertTimeBetweenTimezones } from '@/lib/timezone';
 
 export interface ProposalOptionInput {
   date: Date;
@@ -52,12 +53,22 @@ export function usePlanProposals() {
 
     const options: PlanProposalOption[] = (optionsData as any[]).map(o => {
       const d = new Date(o.date);
+      const optionDate = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      let startTime = o.start_time || undefined;
+      
+      // Convert start_time to the user's current timezone if needed
+      const userTimezone = usePlannerStore.getState().userTimezone;
+      if (startTime && o.source_timezone && o.source_timezone !== userTimezone) {
+        const converted = convertTimeBetweenTimezones(startTime, optionDate, o.source_timezone, userTimezone);
+        startTime = converted.time;
+      }
+      
       return {
         id: o.id,
         planId: o.plan_id,
-        date: new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+        date: optionDate,
         timeSlot: o.time_slot as TimeSlot,
-        startTime: o.start_time || undefined,
+        startTime,
         sortOrder: o.sort_order,
       };
     });
