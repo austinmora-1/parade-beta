@@ -13,6 +13,9 @@ export interface LiveLocation {
   updated_at: string;
 }
 
+const GPS_WRITE_THROTTLE_MS = 30_000; // 30 seconds between GPS writes
+const POLL_INTERVAL_MS = 30_000; // Poll friend locations every 30 seconds
+
 export function useLiveLocation() {
   const { user } = useAuth();
   const [isSharing, setIsSharing] = useState(false);
@@ -20,7 +23,16 @@ export function useLiveLocation() {
   const [friendLocations, setFriendLocations] = useState<LiveLocation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  const lastWriteRef = useRef<number>(0);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { plans, friends } = usePlannerStore();
+
+  // Get connected friend user IDs for scoped queries
+  const connectedFriendIds = useMemo(() => {
+    return friends
+      .filter(f => f.status === 'connected' && f.friendUserId)
+      .map(f => f.friendUserId!);
+  }, [friends]);
 
   // Check if user has any plan starting within the next 1 hour
   const hasUpcomingPlanSoon = useMemo(() => {
@@ -67,30 +79,53 @@ export function useLiveLocation() {
     check();
   }, [user]);
 
-  // Fetch friend locations
+  // Fetch friend locations — scoped to connected friends only
   const fetchFriendLocations = useCallback(async () => {
-    if (!user) return;
+    if (!user || connectedFriendIds.length === 0) {
+      setFriendLocations([]);
+      return;
+    }
     const { data } = await supabase
       .from('live_locations')
       .select('user_id, latitude, longitude, accuracy, label, updated_at')
-      .neq('user_id', user.id);
+      .in('user_id', connectedFriendIds);
     if (data) {
       setFriendLocations(data as LiveLocation[]);
     }
-  }, [user]);
+  }, [user, connectedFriendIds]);
 
-  // Subscribe to realtime friend location updates
+  // Poll friend locations instead of realtime subscription
   useEffect(() => {
-    if (!user) return;
+    if (!user || connectedFriendIds.length === 0) return;
+
     fetchFriendLocations();
-    const channel = supabase
-      .channel('live-locations')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_locations' }, () => {
-        fetchFriendLocations();
+    pollIntervalRef.current = setInterval(fetchFriendLocations, POLL_INTERVAL_MS);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [user, connectedFriendIds, fetchFriendLocations]);
+
+  // Throttled GPS write
+  const writeLocation = useCallback(async (coords: GeolocationCoordinates) => {
+    if (!user) return;
+    const now = Date.now();
+    if (now - lastWriteRef.current < GPS_WRITE_THROTTLE_MS) return;
+    lastWriteRef.current = now;
+
+    await supabase
+      .from('live_locations')
+      .update({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy,
+        updated_at: new Date().toISOString(),
       })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, fetchFriendLocations]);
+      .eq('user_id', user.id);
+  }, [user]);
 
   const startSharing = useCallback(async (selectedIds: string[] | null) => {
     if (!user || !navigator.geolocation) return false;
@@ -114,18 +149,9 @@ export function useLiveLocation() {
           if (!error) {
             setIsSharing(true);
             setSharedWith(selectedIds);
+            lastWriteRef.current = Date.now();
             watchIdRef.current = navigator.geolocation.watchPosition(
-              async (p) => {
-                await supabase
-                  .from('live_locations')
-                  .update({
-                    latitude: p.coords.latitude,
-                    longitude: p.coords.longitude,
-                    accuracy: p.coords.accuracy,
-                    updated_at: new Date().toISOString(),
-                  })
-                  .eq('user_id', user.id);
-              },
+              (p) => writeLocation(p.coords),
               () => {},
               { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000 }
             );
@@ -140,7 +166,7 @@ export function useLiveLocation() {
         { enableHighAccuracy: true, timeout: 10000 }
       );
     });
-  }, [user]);
+  }, [user, writeLocation]);
 
   const updateSharedWith = useCallback(async (selectedIds: string[] | null) => {
     if (!user) return;

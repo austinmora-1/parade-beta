@@ -6,7 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Map time slots to start hours (used when no specific start_time is set)
 const TIME_SLOT_START_HOUR: Record<string, number> = {
   'early-morning': 6,
   'late-morning': 9,
@@ -16,7 +15,7 @@ const TIME_SLOT_START_HOUR: Record<string, number> = {
   'late-night': 22,
 };
 
-// ── City → IANA timezone map (mirrors src/lib/timezone.ts) ──────────────
+// ── City → IANA timezone map ──
 const CITY_TZ: Record<string, string> = {
   'new york': 'America/New_York', nyc: 'America/New_York', manhattan: 'America/New_York',
   brooklyn: 'America/New_York', queens: 'America/New_York', bronx: 'America/New_York',
@@ -112,7 +111,6 @@ function getTimezoneForCity(location: string | null | undefined): string {
   return FALLBACK;
 }
 
-/** Get current local time (hours, minutes) in a given IANA timezone. */
 function getNowInTimezone(tz: string): { hours: number; minutes: number; dateStr: string } {
   const now = new Date();
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -129,22 +127,28 @@ function getNowInTimezone(tz: string): { hours: number; minutes: number; dateStr
     if (p.type === 'month') month = p.value;
     if (p.type === 'day') day = p.value;
   }
-  // Handle midnight edge case (Intl can return 24 for midnight in hour24)
   if (h === 24) h = 0;
   return { hours: h, minutes: m, dateStr: `${year}-${month}-${day}` };
 }
 
-/** Resolve a user's effective timezone from their profile + today's availability. */
 function resolveUserTimezone(
   profile: { home_address: string | null; location_status: string | null } | undefined,
   todayAvail: { location_status: string | null; trip_location: string | null } | undefined,
 ): string {
-  // Today's availability location_status takes precedence (it's the daily override)
   const locStatus = todayAvail?.location_status ?? profile?.location_status ?? 'home';
   if (locStatus === 'away' && todayAvail?.trip_location) {
     return getTimezoneForCity(todayAvail.trip_location);
   }
   return getTimezoneForCity(profile?.home_address);
+}
+
+function formatTime12(time: string): string {
+  const parts = time.split(':').map(Number);
+  const h = parts[0];
+  const m = parts[1] || 0;
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m > 0 ? `${h12}:${String(m).padStart(2, '0')}${ampm}` : `${h12}${ampm}`;
 }
 
 Deno.serve(async (req) => {
@@ -177,8 +181,7 @@ Deno.serve(async (req) => {
       pushConfig.vapid_private_key
     );
 
-    // Plans are stored with dates at noon UTC. To catch plans for "today" across
-    // all timezones (UTC-12 to UTC+14), we widen the window by ±1 day.
+    // Wide window for timezone coverage
     const now = new Date();
     const yesterdayStart = new Date(now);
     yesterdayStart.setUTCDate(yesterdayStart.getUTCDate() - 1);
@@ -187,7 +190,7 @@ Deno.serve(async (req) => {
     tomorrowEnd.setUTCDate(tomorrowEnd.getUTCDate() + 1);
     tomorrowEnd.setUTCHours(23, 59, 59, 999);
 
-    // Fetch candidate plans (wide window — we'll filter per-user timezone below)
+    // Fetch candidate plans
     const { data: candidatePlans, error: plansError } = await admin
       .from('plans')
       .select('id, user_id, title, date, time_slot, start_time, activity')
@@ -197,8 +200,7 @@ Deno.serve(async (req) => {
     if (plansError) {
       console.error('Error fetching plans:', plansError);
       return new Response(JSON.stringify({ error: plansError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -208,10 +210,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Collect all unique user IDs (owners) to look up their timezones
+    // Collect owner IDs and fetch profiles + availability in parallel
     const ownerIds = [...new Set(candidatePlans.map(p => p.user_id))];
-
-    // Fetch profiles and today's availability for all owners in parallel
     const [profilesRes, availRes] = await Promise.all([
       admin.from('profiles').select('user_id, home_address, location_status').in('user_id', ownerIds),
       admin.from('availability').select('user_id, location_status, trip_location, date').in('user_id', ownerIds),
@@ -222,40 +222,28 @@ Deno.serve(async (req) => {
       profileMap.set(p.user_id, { home_address: p.home_address, location_status: p.location_status });
     }
 
-    // Build map of userId → today's availability row (per their local timezone "today")
-    // We'll resolve per-user below since "today" depends on their timezone
     const availByUser = new Map<string, Array<{ location_status: string | null; trip_location: string | null; date: string }>>();
     for (const a of (availRes.data || [])) {
       if (!availByUser.has(a.user_id)) availByUser.set(a.user_id, []);
       availByUser.get(a.user_id)!.push(a);
     }
 
-    // For each plan, determine if it falls in the 25-35 min reminder window
-    // using the plan OWNER's local timezone
+    // Filter plans to those in the 25-35 min reminder window
     const plansInWindow: typeof candidatePlans = [];
 
     for (const plan of candidatePlans) {
       const profile = profileMap.get(plan.user_id);
-      // Find today's availability for this user
-      // First resolve their timezone to know what "today" is for them
-      // Use a preliminary timezone from profile to figure out local date
       const prelimTz = getTimezoneForCity(profile?.home_address);
       const localNow = getNowInTimezone(prelimTz);
-
-      // Find matching availability row for their local today
       const userAvails = availByUser.get(plan.user_id) || [];
       const todayAvail = userAvails.find(a => a.date === localNow.dateStr);
-
-      // Now resolve the final timezone (may differ if user is away)
       const userTz = resolveUserTimezone(profile, todayAvail ?? undefined);
       const localTime = getNowInTimezone(userTz);
 
-      // Check if this plan's date matches the user's local "today"
       const planDate = new Date(plan.date);
       const planDateStr = `${planDate.getUTCFullYear()}-${String(planDate.getUTCMonth() + 1).padStart(2, '0')}-${String(planDate.getUTCDate()).padStart(2, '0')}`;
       if (planDateStr !== localTime.dateStr) continue;
 
-      // Determine plan start in local minutes
       let planStartMinutes: number;
       if (plan.start_time) {
         const parts = plan.start_time.split(':').map(Number);
@@ -279,77 +267,77 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get plan IDs to check which reminders were already sent
-    const planIds = plansInWindow.map((p) => p.id);
+    const planIds = plansInWindow.map(p => p.id);
 
-    const { data: alreadySent } = await admin
-      .from('plan_reminders_sent')
-      .select('plan_id, user_id')
-      .in('plan_id', planIds);
+    // ── BATCH FETCH: participants, profiles, subscriptions, already-sent ──
+    const [alreadySentRes, allParticipantsRes] = await Promise.all([
+      admin.from('plan_reminders_sent').select('plan_id, user_id').in('plan_id', planIds),
+      admin.from('plan_participants').select('plan_id, friend_id').in('plan_id', planIds).eq('status', 'accepted'),
+    ]);
 
     const sentSet = new Set(
-      (alreadySent || []).map((r) => `${r.plan_id}:${r.user_id}`)
+      (alreadySentRes.data || []).map(r => `${r.plan_id}:${r.user_id}`)
     );
 
-    // For each plan, collect all users who should be notified
+    // Build planId → participant set
+    const participantsByPlan = new Map<string, Set<string>>();
+    for (const plan of plansInWindow) {
+      if (!participantsByPlan.has(plan.id)) participantsByPlan.set(plan.id, new Set());
+      participantsByPlan.get(plan.id)!.add(plan.user_id);
+    }
+    for (const pp of (allParticipantsRes.data || [])) {
+      participantsByPlan.get(pp.plan_id)?.add(pp.friend_id);
+    }
+
+    // Collect all user IDs that need profiles and subscriptions
+    const allUserIds = new Set<string>();
+    for (const [, members] of participantsByPlan) {
+      for (const uid of members) allUserIds.add(uid);
+    }
+    const allUserIdsArr = Array.from(allUserIds);
+
+    // Batch fetch profiles and push subscriptions
+    const [profilesForReminders, subsRes] = await Promise.all([
+      admin.from('profiles').select('user_id, plan_reminders').in('user_id', allUserIdsArr),
+      admin.from('push_subscriptions').select('*').in('user_id', allUserIdsArr),
+    ]);
+
+    const reminderEnabledUsers = new Set(
+      (profilesForReminders.data || [])
+        .filter(p => p.plan_reminders !== false)
+        .map(p => p.user_id)
+    );
+
+    // Build userId → subscriptions map
+    const subsByUser = new Map<string, Array<any>>();
+    for (const sub of (subsRes.data || [])) {
+      if (!subsByUser.has(sub.user_id)) subsByUser.set(sub.user_id, []);
+      subsByUser.get(sub.user_id)!.push(sub);
+    }
+
+    // ── SEND NOTIFICATIONS ──
     let totalSent = 0;
     const remindersToInsert: { plan_id: string; user_id: string }[] = [];
+    const expiredSubIds: string[] = [];
+    const pushPromises: Promise<void>[] = [];
 
     for (const plan of plansInWindow) {
-      const usersToNotify = new Set<string>();
-      usersToNotify.add(plan.user_id);
+      const members = participantsByPlan.get(plan.id) || new Set();
 
-      // Get participants
-      const { data: participants } = await admin
-        .from('plan_participants')
-        .select('friend_id')
-        .eq('plan_id', plan.id)
-        .eq('status', 'accepted');
-
-      if (participants) {
-        for (const p of participants) {
-          usersToNotify.add(p.friend_id);
-        }
-      }
-
-      // Check user preference for plan_reminders
-      const userIds = Array.from(usersToNotify);
-      const { data: profiles } = await admin
-        .from('profiles')
-        .select('user_id, plan_reminders')
-        .in('user_id', userIds);
-
-      const reminderEnabledUsers = new Set(
-        (profiles || [])
-          .filter((p) => p.plan_reminders !== false)
-          .map((p) => p.user_id)
-      );
-
-      for (const userId of usersToNotify) {
+      for (const userId of members) {
         const key = `${plan.id}:${userId}`;
         if (sentSet.has(key)) continue;
         if (!reminderEnabledUsers.has(userId)) continue;
 
-        // Get push subscriptions for this user
-        const { data: subs } = await admin
-          .from('push_subscriptions')
-          .select('*')
-          .eq('user_id', userId);
+        remindersToInsert.push({ plan_id: plan.id, user_id: userId });
 
-        if (!subs || subs.length === 0) {
-          remindersToInsert.push({ plan_id: plan.id, user_id: userId });
-          continue;
-        }
+        const subs = subsByUser.get(userId);
+        if (!subs || subs.length === 0) continue;
 
-        const startTimeDisplay = plan.start_time
-          ? formatTime12(plan.start_time)
-          : null;
-
+        const startTimeDisplay = plan.start_time ? formatTime12(plan.start_time) : null;
         const payload = JSON.stringify({
           title: `📅 ${plan.title}`,
-          body: startTimeDisplay
-            ? `Starting in 30 minutes at ${startTimeDisplay}`
-            : `Starting soon`,
+          body: startTimeDisplay ? `Starting in 30 minutes at ${startTimeDisplay}` : `Starting soon`,
           url: `/plan/${plan.id}`,
           icon: '/icon-192.png',
           badge: '/favicon.png',
@@ -357,34 +345,35 @@ Deno.serve(async (req) => {
         });
 
         for (const sub of subs) {
-          try {
-            await webpush.sendNotification(
-              {
-                endpoint: sub.endpoint,
-                keys: { p256dh: sub.p256dh, auth: sub.auth },
-              },
+          pushPromises.push(
+            webpush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
               payload
-            );
-            totalSent++;
-          } catch (err: any) {
-            console.error('Push error:', err.statusCode, err.message);
-            if (err.statusCode === 404 || err.statusCode === 410) {
-              await admin
-                .from('push_subscriptions')
-                .delete()
-                .eq('id', sub.id);
-            }
-          }
+            ).then(() => { totalSent++; })
+            .catch((err: any) => {
+              if (err.statusCode === 404 || err.statusCode === 410) {
+                expiredSubIds.push(sub.id);
+              }
+            })
+          );
         }
-
-        remindersToInsert.push({ plan_id: plan.id, user_id: userId });
       }
     }
 
-    // Mark reminders as sent
-    if (remindersToInsert.length > 0) {
-      await admin.from('plan_reminders_sent').insert(remindersToInsert);
+    // Send all push notifications in parallel (batches of 50)
+    for (let i = 0; i < pushPromises.length; i += 50) {
+      await Promise.allSettled(pushPromises.slice(i, i + 50));
     }
+
+    // Batch operations: insert reminders sent, delete expired subs
+    const [insertResult] = await Promise.all([
+      remindersToInsert.length > 0
+        ? admin.from('plan_reminders_sent').insert(remindersToInsert)
+        : Promise.resolve(null),
+      expiredSubIds.length > 0
+        ? admin.from('push_subscriptions').delete().in('id', expiredSubIds)
+        : Promise.resolve(null),
+    ]);
 
     console.log(`Plan reminders: processed ${plansInWindow.length} plans, sent ${totalSent} notifications`);
 
@@ -392,7 +381,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ processed: plansInWindow.length, sent: totalSent }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Plan reminders error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
@@ -400,12 +389,3 @@ Deno.serve(async (req) => {
     });
   }
 });
-
-function formatTime12(time: string): string {
-  const parts = time.split(':').map(Number);
-  const h = parts[0];
-  const m = parts[1] || 0;
-  const ampm = h >= 12 ? 'pm' : 'am';
-  const hour12 = h % 12 || 12;
-  return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')}${ampm}`;
-}

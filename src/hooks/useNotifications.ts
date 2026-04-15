@@ -2,6 +2,7 @@ import { useMemo, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useRealtimeHub } from '@/hooks/useRealtimeHub';
 
 const DISMISSED_KEY = 'notifications_dismissed';
 
@@ -142,45 +143,17 @@ export function useNotifications() {
     fetchPendingTripProposals();
   }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingParticipantRequests, fetchPendingTripProposals]);
 
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel('notifications-shared')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'hang_requests', filter: `user_id=eq.${user.id}` },
-        () => { fetchPendingHangs(); }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'plan_participants', filter: `friend_id=eq.${user.id}` },
-        () => { fetchPendingPlanInvites(); }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'plan_change_responses', filter: `participant_id=eq.${user.id}` },
-        () => { fetchPendingChangeRequests(); }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'plan_photos' },
-        () => { fetchNewPlanPhotos(); }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'trip_proposal_participants', filter: `user_id=eq.${user.id}` },
-        () => { fetchPendingTripProposals(); }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user, fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingTripProposals]);
+  // Use shared realtime hub instead of dedicated channel
+  useRealtimeHub('hang_requests', '*', () => fetchPendingHangs(), user ? `user_id=eq.${user.id}` : undefined);
+  useRealtimeHub('plan_participants', '*', () => fetchPendingPlanInvites(), user ? `friend_id=eq.${user.id}` : undefined);
+  useRealtimeHub('plan_change_responses', '*', () => fetchPendingChangeRequests(), user ? `participant_id=eq.${user.id}` : undefined);
+  useRealtimeHub('plan_photos', 'INSERT', () => fetchNewPlanPhotos());
+  useRealtimeHub('trip_proposal_participants', '*', () => fetchPendingTripProposals(), user ? `user_id=eq.${user.id}` : undefined);
 
   const incomingRequestsCount = useMemo(() => {
     return friends.filter(f => f.status === 'pending' && f.isIncoming).length;
   }, [friends]);
 
-  // Count dismissed items per category to subtract from badge
   const dismissed = state.dismissedIds;
   const dismissedFriendCount = useMemo(() => {
     return friends.filter(f => f.status === 'pending' && f.isIncoming && dismissed.has(`friend-${f.id}`)).length;
@@ -203,7 +176,6 @@ export function useNotifications() {
 
   const totalNotifications = effectiveFriendCount + effectiveHangCount + effectiveInviteCount + effectiveChangeCount + effectivePhotoCount + effectiveParticipantReqCount + effectiveTripProposalCount;
 
-  // Sync PWA app badge with notification count
   useEffect(() => {
     if ('setAppBadge' in navigator) {
       if (totalNotifications > 0) {
