@@ -416,12 +416,13 @@ export function getUserTimezone(
   tripLocation: string | null | undefined,
   explicitTimezone?: string | null,
 ): string {
-  // If user has explicitly set a timezone, always use it
-  if (explicitTimezone) {
-    return explicitTimezone;
-  }
+  // When traveling, trip location timezone always wins
   if (locationStatus === 'away' && tripLocation) {
     return getTimezoneForCity(tripLocation);
+  }
+  // If user has explicitly set a timezone, use it when home
+  if (explicitTimezone) {
+    return explicitTimezone;
   }
   return getTimezoneForCity(homeAddress);
 }
