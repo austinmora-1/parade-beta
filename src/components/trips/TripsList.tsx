@@ -750,7 +750,7 @@ function ProposalTripCard({
                   Top pick: {format(new Date(winningDate.start_date + 'T00:00:00'), 'EEE, MMM d')} – {format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}
                 </span>
                 <span className="text-[10px] font-medium text-primary ml-auto">
-                  {winningDate.votes} vote{winningDate.votes !== 1 ? 's' : ''}
+                  {voteCounts.get(winningDate.id) || 0}/{totalVoters} votes
                 </span>
               </div>
               <Button
