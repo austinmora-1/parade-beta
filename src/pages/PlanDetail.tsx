@@ -456,6 +456,17 @@ export default function PlanDetail() {
           </div>
         )}
 
+        {/* Proposal Voting (for multi-option proposals) */}
+        {plan && plan.status === 'proposed' && (
+          <div className="p-5 pb-0">
+            <ProposalVoting
+              planId={plan.id}
+              isOwner={isOwner}
+              participantCount={participants.length}
+            />
+          </div>
+        )}
+
         <div className="p-5 space-y-5">
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
