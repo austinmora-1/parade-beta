@@ -3,11 +3,10 @@ import { Bell, MessagesSquare } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { useConversations } from '@/hooks/useChat';
-import { useAuth } from '@/hooks/useAuth';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { cn } from '@/lib/utils';
+import { getTimezoneAbbreviation } from '@/lib/timezone';
 
 export function MobileHeader() {
   const { openFeedback } = useFeedback();
@@ -27,11 +26,11 @@ export function MobileHeader() {
 
   return (
     <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
-      {/* Left: avatar → profile */}
-      <div className="w-[72px] flex items-center">
+      {/* Left: avatar + status */}
+      <div className="flex items-center gap-2 min-w-0" style={{ width: 'auto' }}>
         <button
           onClick={() => navigate('/profile')}
-          className="flex h-8 w-8 items-center justify-center"
+          className="flex h-8 w-8 items-center justify-center shrink-0"
           aria-label="My profile"
         >
           <Avatar className="h-8 w-8">
@@ -41,6 +40,14 @@ export function MobileHeader() {
             </AvatarFallback>
           </Avatar>
         </button>
+        <div className="flex flex-col leading-tight min-w-0">
+          <span className="text-[11px] font-medium text-sidebar-foreground capitalize truncate">
+            📍 {profile?.location_status === 'away' ? 'Away' : 'Home'}
+          </span>
+          <span className="text-[10px] text-sidebar-foreground/60 truncate">
+            {getTimezoneAbbreviation(profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone)}
+          </span>
+        </div>
       </div>
 
       {/* Center: wordmark */}
