@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
+import { ProposalVoting } from '@/components/plans/ProposalVoting';
 import {
   AlertDialog,
   AlertDialogAction,
