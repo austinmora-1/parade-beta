@@ -93,6 +93,15 @@ function ParticipantAvatarStack({ participants }: { participants: Friend[] }) {
 }
 
 
+interface SelectionActions {
+  selectedCount: number;
+  onEdit?: () => void;
+  onMerge?: () => void;
+  onShare?: () => void;
+  onDelete?: () => void;
+  onExit: () => void;
+}
+
 interface WeeklyPlanSwiperProps {
   plans: Plan[];
   weekOffset: number;
