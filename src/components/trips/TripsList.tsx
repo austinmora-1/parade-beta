@@ -484,7 +484,7 @@ function ProposalTripCard({
   }
 
   const CardIcon = isVisit ? Home : Plane;
-  const badgeLabel = isVisit ? 'Visit' : 'Proposed';
+  const badgeLabel = 'Proposed';
 
   return (
     <>
