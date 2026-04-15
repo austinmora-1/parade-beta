@@ -372,12 +372,12 @@ function TripCard({
   onConverted: () => Promise<void>;
 }) {
   const [converting, setConverting] = useState(false);
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
 
   const handleConvertToVisit = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setConverting(true);
     try {
-      // Create a trip proposal from this trip
       const { data: proposal, error: propError } = await supabase
         .from('trip_proposals')
         .insert({
@@ -391,21 +391,18 @@ function TripCard({
 
       if (propError || !proposal) throw propError;
 
-      // Add date option
       await supabase.from('trip_proposal_dates').insert({
         proposal_id: proposal.id,
         start_date: trip.start_date,
         end_date: trip.end_date,
       });
 
-      // Add creator as participant
       await supabase.from('trip_proposal_participants').insert({
         proposal_id: proposal.id,
         user_id: currentUserId,
         status: 'accepted',
       });
 
-      // Delete original trip
       await supabase.from('trips').delete().eq('id', trip.id);
 
       toast.success('Converted to visit proposal');
