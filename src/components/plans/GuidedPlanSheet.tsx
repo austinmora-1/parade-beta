@@ -59,7 +59,7 @@ const SLOT_LABELS: Record<string, string> = {
 };
 
 
-function SlotCard({ bs, i, onSelect }: { bs: BestSlot; i: number; onSelect: (bs: BestSlot) => void }) {
+function SlotCard({ bs, i, onSelect, isSelected }: { bs: BestSlot; i: number; onSelect: (bs: BestSlot) => void; isSelected?: boolean }) {
   const dayLabel = isSameDay(bs.date, new Date())
     ? 'Today'
     : isSameDay(bs.date, addDays(new Date(), 1))
@@ -74,11 +74,22 @@ function SlotCard({ bs, i, onSelect }: { bs: BestSlot; i: number; onSelect: (bs:
       onClick={() => onSelect(bs)}
       className={cn(
         "w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all",
-        bs.status === 'all-free'
-          ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
-          : "border-border hover:border-primary/30 hover:bg-primary/5"
+        isSelected
+          ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+          : bs.status === 'all-free'
+            ? "border-availability-available/40 bg-availability-available/5 hover:bg-availability-available/10"
+            : "border-border hover:border-primary/30 hover:bg-primary/5"
       )}
     >
+      {/* Selection indicator */}
+      <div className={cn(
+        "flex items-center justify-center h-5 w-5 rounded-full border-2 shrink-0 transition-all",
+        isSelected
+          ? "bg-primary border-primary text-primary-foreground"
+          : "border-muted-foreground/30"
+      )}>
+        {isSelected && <Check className="h-3 w-3" />}
+      </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground">{dayLabel}</p>
         <div className="flex items-center gap-2">
