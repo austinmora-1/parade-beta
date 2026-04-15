@@ -7,12 +7,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageCircle, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
-import { SharedVibeHistory } from '@/components/friends/SharedVibeHistory';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 
@@ -65,10 +64,9 @@ interface SharedPlan {
 interface FriendProfileContentProps {
   userId: string;
   showBackButton?: boolean;
-  onMessageClick?: () => void;
 }
 
-export function FriendProfileContent({ userId, showBackButton = true, onMessageClick }: FriendProfileContentProps) {
+export function FriendProfileContent({ userId, showBackButton = true }: FriendProfileContentProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { availabilityMap: myAvailabilityMap, plans: myPlans } = usePlannerStore();
@@ -468,21 +466,6 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
       {/* Action Buttons */}
       <div className="flex gap-2">
         <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 flex-1 text-xs h-8"
-          onClick={() => {
-            if (onMessageClick) {
-              onMessageClick();
-            } else if (userId) {
-              navigate('/interact');
-            }
-          }}
-        >
-          <MessageCircle className="h-3.5 w-3.5" />
-          Message
-        </Button>
-        <Button
           variant="default"
           size="sm"
           className="gap-1.5 flex-1 text-xs h-8"
@@ -656,9 +639,6 @@ export function FriendProfileContent({ userId, showBackButton = true, onMessageC
           </div>
         )}
       </div>
-
-      {/* Shared Vibe History */}
-      <SharedVibeHistory friendUserId={userId} />
 
       {/* Upcoming Plans */}
       <div className="rounded-2xl border border-border bg-card shadow-soft">

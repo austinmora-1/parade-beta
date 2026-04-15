@@ -1,12 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { FriendProfileContent } from '@/components/friends/FriendProfileContent';
-import { useConversations } from '@/hooks/useChat';
-import { useNavigate } from 'react-router-dom';
 
 export default function FriendProfile() {
   const { userId } = useParams<{ userId: string }>();
-  const navigate = useNavigate();
-  const { createDM } = useConversations();
 
   if (!userId) {
     return (
@@ -23,10 +19,6 @@ export default function FriendProfile() {
       <FriendProfileContent
         userId={userId}
         showBackButton={true}
-        onMessageClick={async () => {
-          const id = await createDM(userId);
-          if (id) navigate('/interact');
-        }}
       />
     </div>
   );

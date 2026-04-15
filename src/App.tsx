@@ -12,7 +12,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 
 import Availability from "./pages/Availability";
 import Friends from "./pages/Friends";
-import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";

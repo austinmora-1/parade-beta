@@ -2,7 +2,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Bell, MessagesSquare } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
-import { useConversations } from '@/hooks/useChat';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
@@ -14,7 +13,6 @@ import { format } from 'date-fns';
 export function MobileHeader() {
   const { openFeedback } = useFeedback();
   const { totalNotifications } = useNotifications();
-  const { conversations } = useConversations();
   const { profile } = useCurrentUserProfile();
   const navigate = useNavigate();
   const { availabilityMap, userTimezone } = usePlannerStore();
@@ -24,8 +22,7 @@ export function MobileHeader() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const unreadChats = conversations.filter(c => c.unread_count > 0).length;
-  const inboxCount = totalNotifications + unreadChats;
+  const inboxCount = totalNotifications;
 
   // Derive current city from today's availability (trip location when away, home address when home)
   const { currentCity, currentTimezone } = useMemo(() => {

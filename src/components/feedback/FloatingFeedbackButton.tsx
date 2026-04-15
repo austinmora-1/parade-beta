@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, CalendarPlus, PlaneTakeoff, UserPlus, Zap } from 'lucide-react';
+import { Plus, CalendarPlus, PlaneTakeoff, UserPlus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,7 +7,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
-import { SendVibeDialog } from '@/components/vibes/SendVibeDialog';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -16,7 +15,6 @@ export function FloatingFeedbackButton() {
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   const [inviteFriendOpen, setInviteFriendOpen] = useState(false);
   const [tripOpen, setTripOpen] = useState(false);
-  const [sendVibeOpen, setSendVibeOpen] = useState(false);
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
   return (
@@ -35,10 +33,6 @@ export function FloatingFeedbackButton() {
             <CalendarPlus className="h-4 w-4" />
             Make a Plan
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSendVibeOpen(true)} className="gap-2">
-            <Zap className="h-4 w-4" />
-            Send Vibe
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setTripOpen(true)} className="gap-2">
             <PlaneTakeoff className="h-4 w-4" />
             Add a Trip
@@ -53,7 +47,6 @@ export function FloatingFeedbackButton() {
       <QuickPlanSheet open={quickPlanOpen} onOpenChange={setQuickPlanOpen} />
       <InviteFriendDialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen} />
       <AddTripDialog open={tripOpen} onOpenChange={setTripOpen} onTripAdded={() => loadProfileAndAvailability()} />
-      <SendVibeDialog open={sendVibeOpen} onOpenChange={setSendVibeOpen} />
     </>
   );
 }
