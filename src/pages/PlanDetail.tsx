@@ -755,18 +755,6 @@ export default function PlanDetail() {
               </Button>
             )}
 
-            {plan.participants.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handleStartChat}
-                disabled={isCreatingChat}
-              >
-                <MessageCircle className="h-4 w-4" />
-                {isCreatingChat ? 'Creating...' : 'Chat'}
-              </Button>
-            )}
 
             <Button
               variant="ghost"
