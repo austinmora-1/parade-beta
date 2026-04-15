@@ -387,45 +387,6 @@ export type Database = {
         }
         Relationships: []
       }
-      live_locations: {
-        Row: {
-          accuracy: number | null
-          created_at: string
-          expires_at: string
-          id: string
-          label: string | null
-          latitude: number
-          longitude: number
-          shared_with: string[] | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          accuracy?: number | null
-          created_at?: string
-          expires_at?: string
-          id?: string
-          label?: string | null
-          latitude: number
-          longitude: number
-          shared_with?: string[] | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          accuracy?: number | null
-          created_at?: string
-          expires_at?: string
-          id?: string
-          label?: string | null
-          latitude?: number
-          longitude?: number
-          shared_with?: string[] | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       message_reactions: {
         Row: {
           created_at: string
