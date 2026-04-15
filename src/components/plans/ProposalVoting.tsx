@@ -74,6 +74,29 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
     return ids;
   }, [votes]);
 
+  // How many unique users ranked each option (simple count, not Borda)
+  const voteCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const opt of options) counts.set(opt.id, 0);
+    // Group by option, count distinct users
+    const optionUsers = new Map<string, Set<string>>();
+    for (const v of votes) {
+      if (!optionUsers.has(v.optionId)) optionUsers.set(v.optionId, new Set());
+      optionUsers.get(v.optionId)!.add(v.userId);
+    }
+    for (const [optId, users] of optionUsers) counts.set(optId, users.size);
+    return counts;
+  }, [options, votes]);
+
+  // Sort voter profiles: voted first (so checkmarks are visible in the stack)
+  const sortedVoterProfiles = useMemo(() => {
+    return [...voterProfiles].sort((a, b) => {
+      const aVoted = voterIds.has(a.userId) ? 1 : 0;
+      const bVoted = voterIds.has(b.userId) ? 1 : 0;
+      return bVoted - aVoted; // voted first
+    });
+  }, [voterProfiles, voterIds]);
+
   const hasVoted = userId ? voterIds.has(userId) : false;
   const totalVoters = voterIds.size;
   // +1 for the organizer
@@ -157,14 +180,14 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
           </span>
           {voterProfiles.length > 0 && (
             <div className="flex -space-x-1">
-              {voterProfiles.map(p => {
+              {sortedVoterProfiles.map(p => {
                 const voted = voterIds.has(p.userId);
                 return (
                   <TooltipProvider key={p.userId} delayDuration={200}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="relative">
-                          <Avatar className={cn("h-4 w-4 border border-background", !voted && "opacity-40 grayscale")}>
+                        <div className={cn("relative", voted && "z-10")}>
+                          <Avatar className={cn("h-4 w-4 border border-background", !voted && "opacity-60")}>
                             <AvatarImage src={p.avatar || getElephantAvatar(p.name)} />
                             <AvatarFallback className="text-[6px]">{p.name.charAt(0)}</AvatarFallback>
                           </Avatar>
@@ -209,8 +232,10 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
                 <span className="text-muted-foreground/60">
                   {TIME_SLOT_LABELS[opt.timeSlot]?.label || opt.timeSlot}
                 </span>
-                {score > 0 && (
-                  <span className="rounded-full bg-primary/15 px-1 text-[8px] font-bold text-primary">{score}</span>
+                {(voteCounts.get(opt.id) || 0) > 0 && (
+                  <span className="rounded-full bg-primary/15 px-1 text-[8px] font-bold text-primary">
+                    {voteCounts.get(opt.id)}/{totalExpected}
+                  </span>
                 )}
               </button>
             );
@@ -242,14 +267,14 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
       {voterProfiles.length > 0 && (
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1.5">
-            {voterProfiles.map(p => {
+            {sortedVoterProfiles.map(p => {
               const voted = voterIds.has(p.userId);
               return (
                 <TooltipProvider key={p.userId} delayDuration={200}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="relative">
-                        <Avatar className={cn("h-6 w-6 border-2 border-background", !voted && "opacity-40 grayscale")}>
+                      <div className={cn("relative", voted && "z-10")}>
+                        <Avatar className={cn("h-6 w-6 border-2 border-background", !voted && "opacity-60")}>
                           <AvatarImage src={p.avatar || getElephantAvatar(p.name)} />
                           <AvatarFallback className="text-[8px]">{p.name.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -281,10 +306,11 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
       <div className="space-y-2">
         {sortedOptions.map(opt => {
           const score = scores.get(opt.id) || 0;
+          const count = voteCounts.get(opt.id) || 0;
           const isTop = opt.id === topOptionId && totalVoters > 0;
           const myRank = myRankings[opt.id];
-          const maxScore = Math.max(...Array.from(scores.values()), 1);
-          const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
+          const maxCount = Math.max(...Array.from(voteCounts.values()), 1);
+          const barWidth = count > 0 ? (count / maxCount) * 100 : 0;
           const slotLabel = TIME_SLOT_LABELS[opt.timeSlot];
 
           return (
@@ -333,8 +359,8 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
 
                 {/* Score */}
                 <div className="text-right shrink-0">
-                  <div className="text-sm font-bold text-primary">{score}</div>
-                  <div className="text-[10px] text-muted-foreground">pts</div>
+                  <div className="text-sm font-bold text-primary">{count}/{totalExpected}</div>
+                  <div className="text-[10px] text-muted-foreground">votes</div>
                 </div>
               </div>
             </motion.button>
