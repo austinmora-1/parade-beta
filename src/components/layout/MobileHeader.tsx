@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
@@ -37,7 +38,8 @@ export function MobileHeader() {
   return (
     <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
       {/* Left: location status */}
-      <div className="flex items-center gap-2 min-w-0" style={{ width: 'auto' }}>
+      <div className="flex items-center gap-1.5 min-w-0" style={{ width: 'auto' }}>
+        <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
         <div className="flex flex-col leading-tight min-w-0">
           <span className="text-[11px] font-medium text-sidebar-foreground truncate">
             {currentCity}
