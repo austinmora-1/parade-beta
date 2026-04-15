@@ -736,12 +736,22 @@ function ProposalTripCard({
         {/* Participants row */}
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1.5">
-            {proposal.participants.slice(0, 5).map(p => (
-              <Avatar key={p.id} className="h-5 w-5 border-2 border-background">
-                <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
-                <AvatarFallback className="text-[7px]">{p.display_name.charAt(0)}</AvatarFallback>
-              </Avatar>
-            ))}
+            {proposal.participants.slice(0, 5).map(p => {
+              const hasVotedTrip = p.status === 'voted';
+              return (
+                <div key={p.id} className="relative">
+                  <Avatar className={cn("h-5 w-5 border-2 border-background", !hasVotedTrip && "opacity-40 grayscale")}>
+                    <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
+                    <AvatarFallback className="text-[7px]">{p.display_name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  {hasVotedTrip && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="h-1.5 w-1.5 text-primary-foreground" />
+                    </span>
+                  )}
+                </div>
+              );
+            })}
             {proposal.participants.length > 5 && (
               <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-2 border-background text-[8px] font-medium text-muted-foreground">
                 +{proposal.participants.length - 5}

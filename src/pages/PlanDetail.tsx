@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS, FeedVisibility } from '@/types/planner';
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { usePods } from '@/hooks/usePods';
@@ -92,6 +93,7 @@ export default function PlanDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends, userTimezone } = usePlannerStore();
+  const { profile: currentUserProfile } = useCurrentUserProfile();
   const { createGroup, createDM } = useConversations();
   const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
   const { pods } = usePods();
@@ -463,6 +465,18 @@ export default function PlanDetail() {
               planId={plan.id}
               isOwner={isOwner}
               participantCount={participants.length}
+              voterProfiles={[
+                ...(plan.userId ? [{
+                  userId: plan.userId,
+                  name: isOwner ? 'You' : (currentUserProfile?.display_name || 'Organizer'),
+                  avatar: isOwner ? (currentUserProfile?.avatar_url || undefined) : undefined,
+                }] : []),
+                ...participants.map((p: any) => ({
+                  userId: p.friendUserId || p.id,
+                  name: p.name,
+                  avatar: p.avatar,
+                })),
+              ]}
             />
           </div>
         )}
