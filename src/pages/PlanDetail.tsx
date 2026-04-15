@@ -463,6 +463,14 @@ export default function PlanDetail() {
               planId={plan.id}
               isOwner={isOwner}
               participantCount={participants.length}
+              voterProfiles={[
+                ...(plan.userId ? [{ userId: plan.userId, name: 'You', avatar: undefined }] : []),
+                ...participants.map((p: any) => ({
+                  userId: p.friendUserId || p.id,
+                  name: p.name,
+                  avatar: p.avatar,
+                })),
+              ]}
             />
           </div>
         )}
