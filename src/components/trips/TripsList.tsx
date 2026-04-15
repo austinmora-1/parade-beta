@@ -906,11 +906,12 @@ function ProposalTripCard({
           {proposal.dates.map(d => {
             const myRank = myRankings[d.id];
             const count = voteCounts.get(d.id) || 0;
+            const score = bordaScores.get(d.id) || 0;
             const startDate = new Date(d.start_date + 'T00:00:00');
             const endDate = new Date(d.end_date + 'T00:00:00');
             const isWinner = allVoted && winningDate?.id === d.id;
-            const maxCount = Math.max(...Array.from(voteCounts.values()), 1);
-            const barWidth = count > 0 ? (count / maxCount) * 100 : 0;
+            const maxScore = Math.max(...Array.from(bordaScores.values()), 1);
+            const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
 
             return (
               <button
@@ -956,7 +957,7 @@ function ProposalTripCard({
                       "text-[10px] font-medium",
                       isWinner ? "text-primary" : "text-muted-foreground"
                     )}>
-                      {count}/{totalVoters}
+                      {count}/{totalVoters} · {score}pts
                     </span>
                   )}
                 </div>
