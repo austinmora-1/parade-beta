@@ -111,6 +111,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   const { proposeChange, checkParticipantAvailability } = usePlanChangeRequests();
   const { pods } = usePods();
   const { createRecurringPlan } = useRecurringPlans();
+  const { createProposalOptions } = usePlanProposals();
   const [title, setTitle] = useState('');
   const [selectedVibe, setSelectedVibe] = useState<VibeType>('social');
   const [activity, setActivity] = useState<ActivityType | string>('drinks');
@@ -142,6 +143,10 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   } | null>(null);
   const [_showCustomTime, _setShowCustomTime] = useState(false); // kept for edit sync
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  
+  // Multi-option proposal state
+  const [isMultiOption, setIsMultiOption] = useState(false);
+  const [proposalOptions, setProposalOptions] = useState<ProposalOptionInput[]>([]);
   
   // Shared plan change request state
   const [participantAvailability, setParticipantAvailability] = useState<{ userId: string; name: string; available: boolean }[]>([]);
