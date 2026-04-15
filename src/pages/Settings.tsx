@@ -288,6 +288,7 @@ function PushNotificationsToggle() {
 
 export default function Settings() {
   const { signOut, session } = useAuth();
+  const { openFeedback } = useFeedback();
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
