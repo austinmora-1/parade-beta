@@ -843,6 +843,7 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
             )}
           </div>
         </div>
+      </div>
     </button>
   );
 }
