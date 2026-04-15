@@ -117,6 +117,8 @@ interface PlannerState {
   defaultSettings: DefaultAvailabilitySettings | null;
   homeAddress: string | null;
   userTimezone: string;
+  hasMorePlans: boolean;
+  isLoadingMore: boolean;
   
   setUserId: (userId: string | null) => void;
   loadAllData: (force?: boolean) => Promise<void>;
@@ -124,6 +126,7 @@ interface PlannerState {
   loadFriends: () => Promise<void>;
   loadPlans: () => Promise<void>;
   loadProfileAndAvailability: () => Promise<void>;
+  loadMorePlans: () => Promise<void>;
   
   addPlan: (plan: Omit<Plan, 'id' | 'createdAt'>) => Promise<void>;
   updatePlan: (id: string, updates: Partial<Plan>) => Promise<void>;
