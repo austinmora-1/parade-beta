@@ -550,30 +550,35 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     : `Hang with ${friendNames.join(', ')}`;
 
   const handleSubmit = async () => {
-    if (!activity || !selectedDate || !timeSlot) return;
+    if (!activity || selectedSlots.length === 0) return;
+    const primarySlot = selectedSlots[0];
     setSending(true);
 
     try {
       const firstFriend = preSelectedFriends[0];
+      const hasMultipleOptions = selectedSlots.length > 1;
+
       await proposePlan({
         recipientFriendId: firstFriend.userId,
         activity: activity,
-        date: selectedDate,
-        timeSlot: timeSlot,
+        date: primarySlot.date,
+        timeSlot: primarySlot.slot,
         title: autoTitle,
       });
 
-      if (preSelectedFriends.length > 1) {
-        const { data: latestPlan } = await supabase
-          .from('plans')
-          .select('id')
-          .eq('user_id', userId || '')
-          .eq('status', 'proposed')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+      // Get the newly created plan
+      const { data: latestPlan } = await supabase
+        .from('plans')
+        .select('id')
+        .eq('user_id', userId || '')
+        .eq('status', 'proposed')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-        if (latestPlan) {
+      if (latestPlan) {
+        // Add additional participants
+        if (preSelectedFriends.length > 1) {
           const additionalParticipants = preSelectedFriends.slice(1).map(f => ({
             plan_id: latestPlan.id,
             friend_id: f.userId,
@@ -581,6 +586,21 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
             role: 'participant',
           }));
           await supabase.from('plan_participants').insert(additionalParticipants);
+        }
+
+        // If multiple time options selected, create proposal options for voting
+        if (hasMultipleOptions) {
+          await supabase.from('plans').update({
+            proposal_status: 'voting',
+          }).eq('id', latestPlan.id);
+
+          const proposalOptions = selectedSlots.map((s, i) => ({
+            plan_id: latestPlan.id,
+            date: `${format(s.date, 'yyyy-MM-dd')}T12:00:00+00:00`,
+            time_slot: s.slot,
+            sort_order: i,
+          }));
+          await supabase.from('plan_proposal_options').insert(proposalOptions);
         }
       }
 
