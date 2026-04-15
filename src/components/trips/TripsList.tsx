@@ -868,6 +868,20 @@ function ProposalTripCard({
                   </Button>
                 </div>
               )}
+              {!isCreator && (
+                <div className="flex items-center gap-1 shrink-0 ml-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    disabled={converting}
+                    onClick={handleConvertType}
+                    title={isVisit ? 'Convert to trip' : 'Convert to visit'}
+                  >
+                    {converting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowLeftRight className="h-3 w-3" />}
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
               {earliestStart && latestEnd && (
