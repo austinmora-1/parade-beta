@@ -176,9 +176,6 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
     try {
       await addPlan(mergedPlanPreview);
 
-      // If any source plans were imported from a calendar, mark the new merged plan as manually edited
-      // so that the next calendar sync doesn't re-create the deleted source events
-
       // Get the newly created plan (last one added)
       const latestPlans = usePlannerStore.getState().plans;
       const newPlan = latestPlans.find(p =>
@@ -187,15 +184,30 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
       );
 
       if (newPlan) {
-        // Check if any of the selected plans were imported
+        // Collect source_event_ids from all source plans so future calendar syncs
+        // recognise these events as already handled and don't re-create them
         const selectedIds = selectedPlans.map(p => p.id);
         const { data: sourceRows } = await supabase
           .from('plans')
-          .select('id, source')
+          .select('id, source, source_event_id')
           .in('id', selectedIds);
-        const anyImported = (sourceRows || []).some((r: any) => r.source === 'gcal' || r.source === 'ical');
-        if (anyImported) {
-          await supabase.from('plans').update({ manually_edited: true } as any).eq('id', newPlan.id);
+
+        const collectedEventIds = (sourceRows || [])
+          .map((r: any) => r.source_event_id)
+          .filter(Boolean) as string[];
+
+        const anyImported = (sourceRows || []).some(
+          (r: any) => r.source === 'gcal' || r.source === 'ical'
+        );
+
+        // Mark merged plan as manually_edited (protects from sync overwrite)
+        // and store consumed source_event_ids so sync skips them
+        const updateFields: Record<string, any> = { manually_edited: true };
+        if (collectedEventIds.length > 0) {
+          updateFields.merged_source_event_ids = collectedEventIds;
+        }
+        if (anyImported || collectedEventIds.length > 0) {
+          await supabase.from('plans').update(updateFields).eq('id', newPlan.id);
         }
       }
 
