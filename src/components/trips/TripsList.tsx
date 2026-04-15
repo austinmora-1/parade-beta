@@ -461,6 +461,16 @@ function TripCard({
         variant="ghost"
         size="icon"
         className="h-7 w-7 shrink-0"
+        onClick={(e) => { e.stopPropagation(); setAddParticipantOpen(true); }}
+        title="Add participant"
+      >
+        <UserPlus className="h-3.5 w-3.5" />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0"
         disabled={converting}
         onClick={handleConvertToVisit}
         title="Convert to visit"
@@ -469,6 +479,15 @@ function TripCard({
       </Button>
 
       <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+
+      <AddParticipantDialog
+        open={addParticipantOpen}
+        onOpenChange={setAddParticipantOpen}
+        targetType="trip"
+        targetId={trip.id}
+        existingParticipantIds={[currentUserId, ...trip.priority_friend_ids]}
+        onAdded={onConverted}
+      />
     </div>
   );
 }
