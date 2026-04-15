@@ -306,10 +306,11 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
       <div className="space-y-2">
         {sortedOptions.map(opt => {
           const score = scores.get(opt.id) || 0;
+          const count = voteCounts.get(opt.id) || 0;
           const isTop = opt.id === topOptionId && totalVoters > 0;
           const myRank = myRankings[opt.id];
-          const maxScore = Math.max(...Array.from(scores.values()), 1);
-          const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
+          const maxCount = Math.max(...Array.from(voteCounts.values()), 1);
+          const barWidth = count > 0 ? (count / maxCount) * 100 : 0;
           const slotLabel = TIME_SLOT_LABELS[opt.timeSlot];
 
           return (
@@ -358,8 +359,8 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
 
                 {/* Score */}
                 <div className="text-right shrink-0">
-                  <div className="text-sm font-bold text-primary">{score}</div>
-                  <div className="text-[10px] text-muted-foreground">pts</div>
+                  <div className="text-sm font-bold text-primary">{count}/{totalExpected}</div>
+                  <div className="text-[10px] text-muted-foreground">votes</div>
                 </div>
               </div>
             </motion.button>
