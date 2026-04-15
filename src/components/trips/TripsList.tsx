@@ -425,7 +425,30 @@ function ProposalTripCard({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Vote counts per date (number of unique users who ranked each date)
+  // Borda count scores per date option
+  const bordaScores = useMemo(() => {
+    const scores = new Map<string, number>();
+    for (const d of proposal.dates) scores.set(d.id, 0);
+
+    // Group votes by user
+    const byUser = new Map<string, TripVote[]>();
+    for (const v of proposal.votes) {
+      if (!byUser.has(v.user_id)) byUser.set(v.user_id, []);
+      byUser.get(v.user_id)!.push(v);
+    }
+
+    const n = proposal.dates.length;
+    for (const userVotes of byUser.values()) {
+      for (const v of userVotes) {
+        // Borda: rank 1 gets n points, rank 2 gets n-1, etc.
+        const pts = n - v.rank + 1;
+        scores.set(v.date_id, (scores.get(v.date_id) || 0) + pts);
+      }
+    }
+    return scores;
+  }, [proposal.votes, proposal.dates]);
+
+  // Also keep simple vote counts for display
   const voteCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const d of proposal.dates) counts.set(d.id, 0);
@@ -437,6 +460,18 @@ function ProposalTripCard({
     for (const [dateId, users] of dateUsers) counts.set(dateId, users.size);
     return counts;
   }, [proposal.votes, proposal.dates]);
+
+  // Find winning date by Borda score (ties broken by earliest)
+  const winningDate = useMemo(() => {
+    if (proposal.dates.length === 0) return null;
+    const sorted = [...proposal.dates].sort((a, b) => {
+      const aScore = bordaScores.get(a.id) || 0;
+      const bScore = bordaScores.get(b.id) || 0;
+      if (bScore !== aScore) return bScore - aScore;
+      return a.start_date.localeCompare(b.start_date);
+    });
+    return sorted[0];
+  }, [proposal.dates, bordaScores]);
 
   const handleRankToggle = (dateId: string) => {
     setMyRankings(prev => {
@@ -463,18 +498,6 @@ function ProposalTripCard({
     await onSubmitRankedVotes(proposal.id, myRankings, proposal.myParticipantId);
     setIsSubmitting(false);
   };
-
-  // Find winning date by vote count (ties broken by earliest)
-  const winningDate = useMemo(() => {
-    if (proposal.dates.length === 0) return null;
-    const sorted = [...proposal.dates].sort((a, b) => {
-      const aCount = voteCounts.get(a.id) || 0;
-      const bCount = voteCounts.get(b.id) || 0;
-      if (bCount !== aCount) return bCount - aCount;
-      return a.start_date.localeCompare(b.start_date);
-    });
-    return sorted[0];
-  }, [proposal.dates, voteCounts]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -883,11 +906,12 @@ function ProposalTripCard({
           {proposal.dates.map(d => {
             const myRank = myRankings[d.id];
             const count = voteCounts.get(d.id) || 0;
+            const score = bordaScores.get(d.id) || 0;
             const startDate = new Date(d.start_date + 'T00:00:00');
             const endDate = new Date(d.end_date + 'T00:00:00');
             const isWinner = allVoted && winningDate?.id === d.id;
-            const maxCount = Math.max(...Array.from(voteCounts.values()), 1);
-            const barWidth = count > 0 ? (count / maxCount) * 100 : 0;
+            const maxScore = Math.max(...Array.from(bordaScores.values()), 1);
+            const barWidth = score > 0 ? (score / maxScore) * 100 : 0;
 
             return (
               <button
@@ -933,7 +957,7 @@ function ProposalTripCard({
                       "text-[10px] font-medium",
                       isWinner ? "text-primary" : "text-muted-foreground"
                     )}>
-                      {count}/{totalVoters}
+                      {count}/{totalVoters} · {score}pts
                     </span>
                   )}
                 </div>
