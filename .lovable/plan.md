@@ -1,76 +1,89 @@
 
 
-## Plan: Trip vs Visit Sub-track
+# Remove Chat Messaging, Vibe Sending, and Elly Chat
 
-### Overview
+## Summary
+Remove all peer-to-peer chat, vibe sending/receiving, Elly AI chat, and the /chat route. Keep the VibeSelector (personal vibe status on dashboard) and GifPicker (used by VibeSelector).
 
-Add a "Trip or Visit?" type selector to the trip proposal system. A **Trip** means the group is traveling to a non-home destination. A **Visit** means one person is hosting at their home base and others are traveling to them (or vice versa). The system reuses all existing proposal infrastructure (date voting, availability analysis, participant management) but adapts language, icons, and destination logic based on the type.
+## Files to Delete
 
-### Database Changes
+**Components:**
+- `src/components/chat/ChatView.tsx`
+- `src/components/chat/ChatAttachMenu.tsx`
+- `src/components/chat/ChatImageUpload.tsx`
+- `src/components/chat/ConversationList.tsx`
+- `src/components/chat/EllyChatView.tsx`
+- `src/components/chat/MessageActions.tsx`
+- `src/components/chat/MessageReactions.tsx`
+- `src/components/chat/NewChatDialog.tsx`
+- `src/components/chat/ReplyPreview.tsx`
+- `src/components/vibes/SendVibeDialog.tsx`
+- `src/components/vibes/VibeComments.tsx`
+- `src/components/vibes/VibeDetailDialog.tsx`
+- `src/components/vibes/VibeLocationInput.tsx`
+- `src/components/vibes/VibeReactions.tsx`
+- `src/components/dashboard/ReceivedVibes.tsx`
+- `src/components/dashboard/SentVibes.tsx`
+- `src/components/dashboard/EllyWidget.tsx`
+- `src/components/friends/SharedVibeHistory.tsx`
 
-**Migration: Add `proposal_type` and `host_user_id` columns to `trip_proposals`**
+**Hooks:**
+- `src/hooks/useChat.ts`
+- `src/hooks/useVibes.ts`
+- `src/hooks/useEllyChat.ts`
 
-```sql
-ALTER TABLE public.trip_proposals
-  ADD COLUMN proposal_type text NOT NULL DEFAULT 'trip',  -- 'trip' | 'visit'
-  ADD COLUMN host_user_id uuid;  -- the person whose home base is the destination (for visits)
-```
+**Utils:**
+- `src/lib/vibeNotifications.ts`
 
-No new tables needed — the existing `trip_proposals`, `trip_proposal_dates`, and `trip_proposal_participants` tables handle everything.
+**Pages:**
+- `src/pages/Chat.tsx`
 
-### Frontend Changes
+**Edge Functions (delete code + deployed functions):**
+- `supabase/functions/chat-with-elly/`
+- `supabase/functions/elly-conversation-assist/`
+- `supabase/functions/giphy-search/`
 
-#### 1. GuidedTripSheet — Add type selection step (`src/components/trips/GuidedTripSheet.tsx`)
+## Files to Modify
 
-- Insert a new step **after friend selection** and **before months**: `'type'`
-- Step flow becomes: `friends → type → months → weekends → confirm`
-- The type step offers two cards:
-  - **"Plan a Trip"** (Plane icon) — "Travel somewhere together" → sets `proposalType = 'trip'`
-  - **"Plan a Visit"** (Home icon) — "Visit a friend's city or host them at yours" → sets `proposalType = 'visit'`
-- When "Visit" is selected, show a sub-choice: **"I'm hosting"** (destination auto-set to current user's home_address) vs **"I'm visiting"** (show a picker of selected friends' home cities as destination options)
-- For visits, the destination field on the confirm step is pre-filled and read-only (set to the host's home city)
-- On submit, write `proposal_type` and `host_user_id` to the `trip_proposals` row
+1. **`src/App.tsx`** — Remove `Chat` import and `/chat` route.
 
-#### 2. TripsList — Differentiate Trip vs Visit cards (`src/components/trips/TripsList.tsx`)
+2. **`src/components/layout/MobileHeader.tsx`** — Remove `useConversations` import, `unreadChats` calculation, and chat count from `inboxCount`. Remove the chat icon/link if present.
 
-- Read `proposal_type` and `host_user_id` from the proposal data
-- **Visit proposals** show:
-  - Home icon instead of Plane icon
-  - Title: "Visit to {city}" or "{host_name} is hosting in {city}" instead of "Trip to {destination}"
-  - Badge: "Visit" instead of "Proposed"
-- **Trip proposals** remain unchanged (Plane icon, "Trip to {destination}", "Proposed" badge)
+3. **`src/components/dashboard/VibeSelector.tsx`** — Remove `SendVibeDialog` import and the "Send Vibe" button/dialog. Keep the personal vibe status selector. Remove `GifPicker` import if only used for vibe sending (check: it's used for personal vibe GIF — keep it).
 
-#### 3. TripProposalsList (dashboard widget) — Same language updates (`src/components/trips/TripProposalsList.tsx`)
+4. **`src/components/feed/FeedView.tsx`** — Remove vibe-related imports (`useVibes`, `VibeReactions`, `VibeDetailDialog`) and all vibe rendering logic from the feed. Keep plan-based feed items.
 
-- Mirror the same icon/title/badge logic as TripsList
+5. **`src/components/friends/FriendPanel.tsx`** — Remove the "chat" tab, `ChatView` import, `useConversations` import, and `ChatEmptyState`. Panel becomes profile-only.
 
-#### 4. Push notification language (`src/components/trips/GuidedTripSheet.tsx` submit handler)
+6. **`src/components/friends/PodPanel.tsx`** — Remove `ChatView` import, `useConversations`, and chat tab/view. Keep pod member management.
 
-- Trip: `"{name} shared trip options to {dest} with you"` (existing)
-- Visit: `"{name} wants to plan a visit to {city}"` or `"{name} is hosting in {city} — vote on dates!"`
+7. **`src/components/friends/FriendProfileContent.tsx`** — Remove "Message" button and `SharedVibeHistory` section.
 
-#### 5. Trips page — Add "Plan a Visit" button (`src/pages/Trips.tsx`)
+8. **`src/components/friends/FriendListRow.tsx`** — Remove `conversation` prop and unread badge logic tied to chat.
 
-- Add a second button alongside "Plan a Trip": **"Plan a Visit"** with Home icon
-- Opens the same GuidedTripSheet but with `preSelectedType = 'visit'` prop to skip the type step or pre-select it
+9. **`src/pages/Friends.tsx`** — Remove `useConversations` import, `dmByFriendUserId` lookup, and conversation props passed to `FriendListRow` and `FriendPanel`.
 
-### Files to Modify
+10. **`src/pages/FriendProfile.tsx`** — Remove `useConversations` import, `createDM`, and `onMessageClick` handler.
 
-| File | Change |
-|---|---|
-| `supabase/migrations/` | New migration adding `proposal_type` and `host_user_id` columns |
-| `src/components/trips/GuidedTripSheet.tsx` | Add type step, host selection, adapt language and submission |
-| `src/components/trips/TripsList.tsx` | Read proposal_type, adapt icons/titles/badges |
-| `src/components/trips/TripProposalsList.tsx` | Same icon/title/badge adaptation |
-| `src/pages/Trips.tsx` | Add "Plan a Visit" button |
+11. **`src/pages/PlanDetail.tsx`** — Remove group chat creation flow from plan detail (navigate to `/interact`).
 
-### Language Summary
+12. **`src/components/feedback/FloatingFeedbackButton.tsx`** — Remove `SendVibeDialog` import and "Send Vibe" action from the FAB menu.
 
-| Context | Trip | Visit (hosting) | Visit (visiting) |
-|---|---|---|---|
-| Card title | "Trip to {dest}" | "{host} is hosting in {city}" | "Visit to {city}" |
-| Icon | ✈️ Plane | 🏠 Home | 🏠 Home |
-| Badge | Proposed | Visit | Visit |
-| Notification | "shared trip options" | "is hosting in {city}" | "wants to visit {city}" |
-| Confirm emoji | ✈️ | 🏠 | 🏠 |
+13. **`src/hooks/useNotifications.ts`** — Remove vibe-related notification counting (`vibe_send_recipients` queries and realtime subscriptions).
+
+14. **`src/components/dashboard/HomeTabs.tsx`** — Check if it references vibes/chat; remove if so.
+
+15. **`src/lib/storage.ts`** — Remove `'chat-images'` from `PRIVATE_BUCKETS` (keep `'vibe-media'` only if still needed for personal vibe GIFs, otherwise remove too).
+
+## Components to Keep
+- `src/components/chat/GifPicker.tsx` — Still used by VibeSelector for personal vibe GIFs
+- `src/components/chat/EmojiPicker.tsx` — May be used elsewhere; keep if referenced outside chat
+- `src/components/dashboard/VibeSelector.tsx` — Personal vibe status (stripped of send-vibe)
+- `src/components/dashboard/FriendVibeStrip.tsx` — Shows friend vibe statuses on dashboard
+
+## Technical Notes
+- The `EmojiPicker` is only used by `EllyChatView` and `ChatAttachMenu` (both being deleted). It can be deleted too.
+- Edge functions will be deleted from both code and deployed state using the delete tool.
+- No database migrations needed — tables remain but are simply unused.
+- The plannerStore vibe state (`currentVibe`, `setVibe`, `addCustomVibe`, `removeCustomVibe`) stays since the VibeSelector is kept.
 
