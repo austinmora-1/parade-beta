@@ -137,6 +137,15 @@ export function TripsList({ refreshKey }: TripsListProps) {
       return;
     }
 
+    // Fetch ranked votes from trip_proposal_votes
+    const allDateIds = (datesData || []).map(d => d.id);
+    const { data: votesData } = allDateIds.length > 0
+      ? await supabase
+          .from('trip_proposal_votes' as any)
+          .select('*')
+          .in('date_id', allDateIds)
+      : { data: [] };
+
     const allUserIds = [
       ...new Set([
         ...proposalsData.map(p => p.created_by),
@@ -153,6 +162,11 @@ export function TripsList({ refreshKey }: TripsListProps) {
       const myRow = myParticipations.find(p => p.proposal_id === prop.id)!;
       const creator = profileMap.get(prop.created_by);
       const propDates = (datesData || []).filter(d => d.proposal_id === prop.id);
+      const propDateIds = new Set(propDates.map(d => d.id));
+      const propVotes: TripVote[] = ((votesData as any[]) || [])
+        .filter(v => propDateIds.has(v.date_id))
+        .map(v => ({ id: v.id, date_id: v.date_id, user_id: v.user_id, rank: v.rank }));
+
       const propParticipants = (allParticipants || [])
         .filter(p => p.proposal_id === prop.id)
         .map(p => {
@@ -176,6 +190,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
         participants: propParticipants,
         myParticipantId: myRow.id,
         myVotedDateId: myRow.preferred_date_id,
+        votes: propVotes,
         proposal_type: (prop as any).proposal_type || 'trip',
         host_user_id: (prop as any).host_user_id || null,
         host_name: (prop as any).host_user_id ? (profileMap.get((prop as any).host_user_id)?.name || null) : null,
