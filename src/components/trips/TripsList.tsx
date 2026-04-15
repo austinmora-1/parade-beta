@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay } from 'date-fns';
-import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, ThumbsUp, Loader2, Users, Home } from 'lucide-react';
+import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, ThumbsUp, Loader2, Users, Home, Edit2, Trash2, Plus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Trip {
   id: string;
@@ -279,6 +288,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
               currentUserId={user!.id}
               voting={voting}
               onVote={handleVote}
+              onRefresh={fetchProposals}
             />
           );
         }
@@ -347,11 +357,13 @@ function ProposalTripCard({
   currentUserId,
   voting,
   onVote,
+  onRefresh,
 }: {
   proposal: TripProposal;
   currentUserId: string;
   voting: string | null;
   onVote: (proposalId: string, dateId: string, participantId: string) => void;
+  onRefresh: () => Promise<void>;
 }) {
   const isCreator = proposal.created_by === currentUserId;
   const totalVoters = proposal.participants.length;
@@ -359,13 +371,105 @@ function ProposalTripCard({
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
 
-  // Determine earliest/latest dates from options for display
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editDestination, setEditDestination] = useState(proposal.destination || '');
+  const [editDates, setEditDates] = useState(
+    proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date }))
+  );
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    try {
+      await supabase
+        .from('trip_proposals')
+        .update({ destination: editDestination.trim() || null, updated_at: new Date().toISOString() })
+        .eq('id', proposal.id);
+
+      const existingIds = proposal.dates.map(d => d.id);
+      const editIds = editDates.filter(d => d.id && existingIds.includes(d.id)).map(d => d.id);
+      const removedIds = existingIds.filter(id => !editIds.includes(id));
+
+      if (removedIds.length > 0) {
+        for (const rid of removedIds) {
+          await supabase
+            .from('trip_proposal_participants')
+            .update({ preferred_date_id: null, status: 'pending' })
+            .eq('proposal_id', proposal.id)
+            .eq('preferred_date_id', rid);
+        }
+        await supabase.from('trip_proposal_dates').delete().in('id', removedIds);
+      }
+
+      for (const d of editDates) {
+        if (d.id && existingIds.includes(d.id)) {
+          await supabase
+            .from('trip_proposal_dates')
+            .update({ start_date: d.start_date, end_date: d.end_date })
+            .eq('id', d.id);
+        } else {
+          await supabase.from('trip_proposal_dates').insert({
+            proposal_id: proposal.id,
+            start_date: d.start_date,
+            end_date: d.end_date,
+          });
+        }
+      }
+
+      toast.success('Proposal updated');
+      setEditOpen(false);
+      await onRefresh();
+    } catch (err) {
+      console.error('Save failed:', err);
+      toast.error('Failed to update proposal');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await supabase.from('trip_proposal_dates').delete().eq('proposal_id', proposal.id);
+      await supabase.from('trip_proposal_participants').delete().eq('proposal_id', proposal.id);
+      await supabase.from('trip_proposals').delete().eq('id', proposal.id);
+      toast.success('Proposal deleted');
+      await onRefresh();
+    } catch (err) {
+      console.error('Delete failed:', err);
+      toast.error('Failed to delete proposal');
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
+    }
+  };
+
+  const addDateOption = () => {
+    const last = editDates[editDates.length - 1];
+    const startDate = last ? new Date(last.start_date + 'T00:00:00') : new Date();
+    const newStart = new Date(startDate);
+    newStart.setDate(newStart.getDate() + 7);
+    const newEnd = new Date(newStart);
+    newEnd.setDate(newEnd.getDate() + 2);
+    setEditDates([...editDates, {
+      id: '',
+      start_date: format(newStart, 'yyyy-MM-dd'),
+      end_date: format(newEnd, 'yyyy-MM-dd'),
+    }]);
+  };
+
+  const removeDateOption = (index: number) => {
+    if (editDates.length <= 1) return;
+    setEditDates(editDates.filter((_, i) => i !== index));
+  };
+
   const allStarts = proposal.dates.map(d => d.start_date).sort();
   const allEnds = proposal.dates.map(d => d.end_date).sort();
   const earliestStart = allStarts[0];
   const latestEnd = allEnds[allEnds.length - 1];
 
-  // Build title
   let cardTitle: string;
   if (isVisit) {
     if (isHost) {
@@ -383,110 +487,215 @@ function ProposalTripCard({
   const badgeLabel = isVisit ? 'Visit' : 'Proposed';
 
   return (
-    <div
-      className={cn(
-        "w-full rounded-xl border border-dashed border-muted-foreground/40 bg-card p-3 shadow-soft text-left transition-all space-y-2.5"
-      )}
-    >
-      {/* Card header — matches trip card layout */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary shrink-0">
-          <CardIcon className="h-5 w-5" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="font-medium text-sm truncate text-muted-foreground">
-              {cardTitle}
-            </span>
-            <span className="text-[10px] font-semibold bg-muted border border-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
-              {badgeLabel}
-            </span>
+    <>
+      <div
+        className={cn(
+          "w-full rounded-xl border border-dashed border-muted-foreground/40 bg-card p-3 shadow-soft text-left transition-all space-y-2.5"
+        )}
+      >
+        {/* Card header */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary shrink-0">
+            <CardIcon className="h-5 w-5" />
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-            {earliestStart && latestEnd && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {format(new Date(earliestStart + 'T00:00:00'), 'MMM d')} – {format(new Date(latestEnd + 'T00:00:00'), 'MMM d')}
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium text-sm truncate text-muted-foreground">
+                {cardTitle}
               </span>
-            )}
-            <span>·</span>
-            <span>{isCreator ? 'You proposed' : `${proposal.creator_name}`}</span>
-            <span>·</span>
-            <span>{votedCount}/{totalVoters} voted</span>
+              <span className="text-[10px] font-semibold bg-muted border border-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
+                {badgeLabel}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+              {earliestStart && latestEnd && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {format(new Date(earliestStart + 'T00:00:00'), 'MMM d')} – {format(new Date(latestEnd + 'T00:00:00'), 'MMM d')}
+                </span>
+              )}
+              <span>·</span>
+              <span>{isCreator ? 'You proposed' : `${proposal.creator_name}`}</span>
+              <span>·</span>
+              <span>{votedCount}/{totalVoters} voted</span>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Participants row */}
-      <div className="flex items-center gap-2">
-        <div className="flex -space-x-1.5">
-          {proposal.participants.slice(0, 5).map(p => (
-            <Avatar key={p.id} className="h-5 w-5 border-2 border-background">
-              <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
-              <AvatarFallback className="text-[7px]">{p.display_name.charAt(0)}</AvatarFallback>
-            </Avatar>
-          ))}
-          {proposal.participants.length > 5 && (
-            <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-2 border-background text-[8px] font-medium text-muted-foreground">
-              +{proposal.participants.length - 5}
-            </span>
+          {isCreator && (
+            <div className="flex items-center gap-0.5 shrink-0">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                setEditDestination(proposal.destination || '');
+                setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
+                setEditOpen(true);
+              }}>
+                <Edit2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           )}
         </div>
-        <span className="text-[10px] text-muted-foreground truncate">
-          {proposal.participants.map(p => p.display_name.split(' ')[0]).join(', ')}
-        </span>
-      </div>
 
-      {/* Date options with vote buttons */}
-      <div className="space-y-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Vote for dates
-        </p>
-        {proposal.dates.map(d => {
-          const isMyVote = proposal.myVotedDateId === d.id;
-          const isVoting = voting === `${proposal.id}:${d.id}`;
-          const startDate = new Date(d.start_date + 'T00:00:00');
-          const endDate = new Date(d.end_date + 'T00:00:00');
-
-          return (
-            <button
-              key={d.id}
-              onClick={() => {
-                if (!isMyVote) onVote(proposal.id, d.id, proposal.myParticipantId);
-              }}
-              disabled={isVoting}
-              className={cn(
-                "w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all",
-                isMyVote
-                  ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                  : "border-border hover:border-primary/30 hover:bg-primary/5"
-              )}
-            >
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="flex-1 text-xs font-medium">
-                {format(startDate, 'EEE, MMM d')} – {format(endDate, 'MMM d')}
+        {/* Participants row */}
+        <div className="flex items-center gap-2">
+          <div className="flex -space-x-1.5">
+            {proposal.participants.slice(0, 5).map(p => (
+              <Avatar key={p.id} className="h-5 w-5 border-2 border-background">
+                <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
+                <AvatarFallback className="text-[7px]">{p.display_name.charAt(0)}</AvatarFallback>
+              </Avatar>
+            ))}
+            {proposal.participants.length > 5 && (
+              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-2 border-background text-[8px] font-medium text-muted-foreground">
+                +{proposal.participants.length - 5}
               </span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {d.votes > 0 && (
-                  <span className="text-[10px] font-medium text-muted-foreground">
-                    {d.votes} vote{d.votes !== 1 ? 's' : ''}
-                  </span>
+            )}
+          </div>
+          <span className="text-[10px] text-muted-foreground truncate">
+            {proposal.participants.map(p => p.display_name.split(' ')[0]).join(', ')}
+          </span>
+        </div>
+
+        {/* Date options with vote buttons */}
+        <div className="space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Vote for dates
+          </p>
+          {proposal.dates.map(d => {
+            const isMyVote = proposal.myVotedDateId === d.id;
+            const isVoting = voting === `${proposal.id}:${d.id}`;
+            const startDate = new Date(d.start_date + 'T00:00:00');
+            const endDate = new Date(d.end_date + 'T00:00:00');
+
+            return (
+              <button
+                key={d.id}
+                onClick={() => {
+                  if (!isMyVote) onVote(proposal.id, d.id, proposal.myParticipantId);
+                }}
+                disabled={isVoting}
+                className={cn(
+                  "w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all",
+                  isMyVote
+                    ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                    : "border-border hover:border-primary/30 hover:bg-primary/5"
                 )}
-                {isVoting ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                ) : isMyVote ? (
-                  <span className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
-                    <Check className="h-2.5 w-2.5 text-primary-foreground" />
-                  </span>
-                ) : (
-                  <ThumbsUp className="h-3.5 w-3.5 text-muted-foreground/40" />
-                )}
-              </div>
-            </button>
-          );
-        })}
+              >
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="flex-1 text-xs font-medium">
+                  {format(startDate, 'EEE, MMM d')} – {format(endDate, 'MMM d')}
+                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {d.votes > 0 && (
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      {d.votes} vote{d.votes !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {isVoting ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  ) : isMyVote ? (
+                    <span className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                    </span>
+                  ) : (
+                    <ThumbsUp className="h-3.5 w-3.5 text-muted-foreground/40" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Proposal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Destination</label>
+              <Input
+                value={editDestination}
+                onChange={e => setEditDestination(e.target.value)}
+                placeholder="Where to?"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground">Date Options</label>
+                <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs" onClick={addDateOption}>
+                  <Plus className="h-3 w-3" /> Add
+                </Button>
+              </div>
+              {editDates.map((d, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={d.start_date}
+                    onChange={e => {
+                      const updated = [...editDates];
+                      updated[i] = { ...updated[i], start_date: e.target.value };
+                      setEditDates(updated);
+                    }}
+                    className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+                  />
+                  <span className="text-xs text-muted-foreground">–</span>
+                  <input
+                    type="date"
+                    value={d.end_date}
+                    onChange={e => {
+                      const updated = [...editDates];
+                      updated[i] = { ...updated[i], end_date: e.target.value };
+                      setEditDates(updated);
+                    }}
+                    className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+                  />
+                  {editDates.length > 1 && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-destructive" onClick={() => removeDateOption(i)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleSaveEdit} disabled={saving}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Proposal</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this trip proposal and all votes. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
+
+
