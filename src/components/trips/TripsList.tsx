@@ -413,84 +413,42 @@ function ProposalTripCard({
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
 
-  // Local rankings state for ranked voting
-  const [myRankings, setMyRankings] = useState<Record<string, number>>(() => {
-    const existing: Record<string, number> = {};
-    for (const v of proposal.votes) {
-      if (v.user_id === currentUserId) {
-        existing[v.date_id] = v.rank;
-      }
+  // Ordered list of date IDs for drag ranking (top = #1)
+  const [rankedDateIds, setRankedDateIds] = useState<string[]>(() => {
+    const myVotes = proposal.votes.filter(v => v.user_id === currentUserId);
+    if (myVotes.length > 0) {
+      // Restore previous order from saved ranks
+      return [...myVotes].sort((a, b) => a.rank - b.rank).map(v => v.date_id);
     }
-    return existing;
+    // Default: all dates in original order
+    return proposal.dates.map(d => d.id);
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Borda count scores per date option
-  const bordaScores = useMemo(() => {
-    const scores = new Map<string, number>();
-    for (const d of proposal.dates) scores.set(d.id, 0);
+  // Derive myRankings from ordered list
+  const myRankings = useMemo(() => {
+    const r: Record<string, number> = {};
+    rankedDateIds.forEach((id, i) => { r[id] = i + 1; });
+    return r;
+  }, [rankedDateIds]);
 
-    // Group votes by user
-    const byUser = new Map<string, TripVote[]>();
+  // Track if rankings changed from saved state
+  const savedRankings = useMemo(() => {
+    const r: Record<string, number> = {};
     for (const v of proposal.votes) {
-      if (!byUser.has(v.user_id)) byUser.set(v.user_id, []);
-      byUser.get(v.user_id)!.push(v);
+      if (v.user_id === currentUserId) r[v.date_id] = v.rank;
     }
+    return r;
+  }, [proposal.votes, currentUserId]);
 
-    const n = proposal.dates.length;
-    for (const userVotes of byUser.values()) {
-      for (const v of userVotes) {
-        // Borda: rank 1 gets n points, rank 2 gets n-1, etc.
-        const pts = n - v.rank + 1;
-        scores.set(v.date_id, (scores.get(v.date_id) || 0) + pts);
-      }
-    }
-    return scores;
-  }, [proposal.votes, proposal.dates]);
-
-  // Also keep simple vote counts for display
-  const voteCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const d of proposal.dates) counts.set(d.id, 0);
-    const dateUsers = new Map<string, Set<string>>();
-    for (const v of proposal.votes) {
-      if (!dateUsers.has(v.date_id)) dateUsers.set(v.date_id, new Set());
-      dateUsers.get(v.date_id)!.add(v.user_id);
-    }
-    for (const [dateId, users] of dateUsers) counts.set(dateId, users.size);
-    return counts;
-  }, [proposal.votes, proposal.dates]);
-
-  // Find winning date by Borda score (ties broken by earliest)
-  const winningDate = useMemo(() => {
-    if (proposal.dates.length === 0) return null;
-    const sorted = [...proposal.dates].sort((a, b) => {
-      const aScore = bordaScores.get(a.id) || 0;
-      const bScore = bordaScores.get(b.id) || 0;
-      if (bScore !== aScore) return bScore - aScore;
-      return a.start_date.localeCompare(b.start_date);
-    });
-    return sorted[0];
-  }, [proposal.dates, bordaScores]);
-
-  const handleRankToggle = (dateId: string) => {
-    setMyRankings(prev => {
-      const existing = { ...prev };
-      if (dateId in existing) {
-        const removedRank = existing[dateId];
-        delete existing[dateId];
-        for (const [id, rank] of Object.entries(existing)) {
-          if (rank > removedRank) existing[id] = rank - 1;
-        }
-      } else {
-        existing[dateId] = Object.keys(existing).length + 1;
-      }
-      return existing;
-    });
-  };
+  const hasUnsavedChanges = useMemo(() => {
+    if (!hasVoted) return true; // Never voted, always show save
+    if (Object.keys(savedRankings).length !== rankedDateIds.length) return true;
+    return rankedDateIds.some((id, i) => savedRankings[id] !== i + 1);
+  }, [savedRankings, rankedDateIds, hasVoted]);
 
   const handleSubmit = async () => {
-    if (Object.keys(myRankings).length === 0) {
+    if (rankedDateIds.length === 0) {
       toast.error('Please rank at least one date option');
       return;
     }
