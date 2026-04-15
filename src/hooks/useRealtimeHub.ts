@@ -16,6 +16,7 @@ let channel: ReturnType<typeof supabase.channel> | null = null;
 let currentUserId: string | null = null;
 let registrations: Registration[] = [];
 let refCount = 0;
+let rebuildTimer: ReturnType<typeof setTimeout> | null = null;
 
 function rebuildChannel(userId: string) {
   if (channel) {
@@ -61,6 +62,14 @@ function rebuildChannel(userId: string) {
 
   ch.subscribe();
   channel = ch;
+}
+
+function scheduleRebuild(userId: string) {
+  if (rebuildTimer) clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(() => {
+    rebuildChannel(userId);
+    rebuildTimer = null;
+  }, 100); // 100ms debounce — batches all registrations from initial mount
 }
 
 /**
