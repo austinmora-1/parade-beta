@@ -169,6 +169,7 @@ async function handleEventsSync(params: {
       source_event_id: event.id,
       start_time: startTimeStr,
       end_time: endTimeStr,
+      source_timezone: timezone || null,
     })
   }
 
