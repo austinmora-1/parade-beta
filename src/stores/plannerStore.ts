@@ -257,6 +257,46 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     set({ lastFetchedAt: null });
     await get().loadAllData();
   },
+
+  loadMorePlans: async () => {
+    const { userId, plans, isLoadingMore } = get();
+    if (!userId || isLoadingMore) return;
+
+    // Find the oldest plan's createdAt as cursor
+    const oldest = plans.reduce<Date | null>((min, p) => {
+      if (!p.createdAt) return min;
+      return !min || p.createdAt < min ? p.createdAt : min;
+    }, null);
+
+    if (!oldest) return;
+
+    set({ isLoadingMore: true });
+    try {
+      const { data: rpcData, error } = await supabase.rpc('get_dashboard_data' as any, {
+        p_user_id: userId,
+        p_plan_cursor: oldest.toISOString(),
+      });
+
+      if (error || !rpcData) {
+        console.error('loadMorePlans error:', error);
+        set({ isLoadingMore: false });
+        return;
+      }
+
+      const more = transformDashboardData(rpcData, userId);
+      const existingIds = new Set(plans.map(p => p.id));
+      const newPlans = more.plans.filter(p => !existingIds.has(p.id));
+
+      set((state) => ({
+        plans: [...state.plans, ...newPlans],
+        hasMorePlans: more.hasMorePlans,
+        isLoadingMore: false,
+      }));
+    } catch (err) {
+      console.error('loadMorePlans error:', err);
+      set({ isLoadingMore: false });
+    }
+  },
   
   addPlan: async (plan) => {
     const { userId } = get();
