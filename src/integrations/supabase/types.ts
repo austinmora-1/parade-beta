@@ -363,6 +363,30 @@ export type Database = {
         }
         Relationships: []
       }
+      last_hung_out_cache: {
+        Row: {
+          friend_user_id: string
+          last_plan_date: string
+          last_plan_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          friend_user_id: string
+          last_plan_date: string
+          last_plan_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          friend_user_id?: string
+          last_plan_date?: string
+          last_plan_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       live_locations: {
         Row: {
           accuracy: number | null
