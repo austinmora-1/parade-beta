@@ -11,7 +11,7 @@ import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare,
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
-import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
+import { TIME_SLOT_LABELS, TimeSlot, ACTIVITY_CONFIG, ActivityType } from '@/types/planner';
 import { SwipeableDismiss } from '@/components/ui/SwipeableDismiss';
 import { AnimatePresence } from 'framer-motion';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
