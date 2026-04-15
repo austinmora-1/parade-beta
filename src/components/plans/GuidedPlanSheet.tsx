@@ -1016,7 +1016,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">With</p>
                     <div className="flex -space-x-1.5">
-                      {preSelectedFriends.slice(0, 4).map(f => (
+                      {effectiveFriends.slice(0, 4).map(f => (
                         <Avatar key={f.userId} className="h-6 w-6 border-2 border-background">
                           <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
                           <AvatarFallback className="text-[7px]">{f.name.charAt(0)}</AvatarFallback>
