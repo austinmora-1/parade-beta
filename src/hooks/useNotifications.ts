@@ -22,7 +22,6 @@ let sharedState = {
   pendingChangeRequestsCount: 0,
   newPlanPhotosCount: 0,
   pendingParticipantRequestsCount: 0,
-  unreadVibesCount: 0,
   pendingTripProposalsCount: 0,
   dismissedIds: loadDismissedIds(),
 };
@@ -103,7 +102,6 @@ export function useNotifications() {
 
   const fetchPendingParticipantRequests = useCallback(async () => {
     if (!user) return;
-    // Count pending participant requests for plans the user organizes
     const { data: ownedPlans } = await supabase
       .from('plans')
       .select('id')
@@ -120,20 +118,6 @@ export function useNotifications() {
       .in('plan_id', planIds)
       .eq('status', 'pending');
     sharedState = { ...sharedState, pendingParticipantRequestsCount: count ?? 0 };
-    emitChange();
-  }, [user]);
-
-  const fetchUnreadVibes = useCallback(async () => {
-    if (!user) return;
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count } = await supabase
-      .from('vibe_send_recipients')
-      .select('*, vibe_sends!inner(created_at)', { count: 'exact', head: true })
-      .eq('recipient_id', user.id)
-      .is('read_at', null)
-      .is('dismissed_at', null)
-      .gte('vibe_sends.created_at', oneDayAgo);
-    sharedState = { ...sharedState, unreadVibesCount: count ?? 0 };
     emitChange();
   }, [user]);
 
@@ -155,9 +139,8 @@ export function useNotifications() {
     fetchPendingChangeRequests();
     fetchNewPlanPhotos();
     fetchPendingParticipantRequests();
-    fetchUnreadVibes();
     fetchPendingTripProposals();
-  }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingParticipantRequests, fetchUnreadVibes, fetchPendingTripProposals]);
+  }, [fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingParticipantRequests, fetchPendingTripProposals]);
 
   useEffect(() => {
     if (!user) return;
@@ -185,18 +168,13 @@ export function useNotifications() {
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'vibe_send_recipients', filter: `recipient_id=eq.${user.id}` },
-        () => { fetchUnreadVibes(); }
-      )
-      .on(
-        'postgres_changes',
         { event: '*', schema: 'public', table: 'trip_proposal_participants', filter: `user_id=eq.${user.id}` },
         () => { fetchPendingTripProposals(); }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchUnreadVibes, fetchPendingTripProposals]);
+  }, [user, fetchPendingHangs, fetchPendingPlanInvites, fetchPendingChangeRequests, fetchNewPlanPhotos, fetchPendingTripProposals]);
 
   const incomingRequestsCount = useMemo(() => {
     return friends.filter(f => f.status === 'pending' && f.isIncoming).length;
@@ -208,13 +186,11 @@ export function useNotifications() {
     return friends.filter(f => f.status === 'pending' && f.isIncoming && dismissed.has(`friend-${f.id}`)).length;
   }, [friends, dismissed]);
 
-  // We can't know exact dismissed IDs for count-based queries, so we count by prefix
   const dismissedHangCount = useMemo(() => [...dismissed].filter(id => id.startsWith('hang-')).length, [dismissed]);
   const dismissedInviteCount = useMemo(() => [...dismissed].filter(id => id.startsWith('invite-')).length, [dismissed]);
   const dismissedChangeCount = useMemo(() => [...dismissed].filter(id => id.startsWith('change-')).length, [dismissed]);
   const dismissedPhotoCount = useMemo(() => [...dismissed].filter(id => id.startsWith('photo-')).length, [dismissed]);
   const dismissedParticipantReqCount = useMemo(() => [...dismissed].filter(id => id.startsWith('participant-req-')).length, [dismissed]);
-  const dismissedVibeCount = useMemo(() => [...dismissed].filter(id => id.startsWith('vibe-')).length, [dismissed]);
   const dismissedTripProposalCount = useMemo(() => [...dismissed].filter(id => id.startsWith('trip-proposal-')).length, [dismissed]);
 
   const effectiveHangCount = Math.max(0, state.pendingHangRequestsCount - dismissedHangCount);
@@ -223,10 +199,9 @@ export function useNotifications() {
   const effectivePhotoCount = Math.max(0, state.newPlanPhotosCount - dismissedPhotoCount);
   const effectiveFriendCount = Math.max(0, incomingRequestsCount - dismissedFriendCount);
   const effectiveParticipantReqCount = Math.max(0, state.pendingParticipantRequestsCount - dismissedParticipantReqCount);
-  const effectiveVibeCount = Math.max(0, state.unreadVibesCount - dismissedVibeCount);
   const effectiveTripProposalCount = Math.max(0, state.pendingTripProposalsCount - dismissedTripProposalCount);
 
-  const totalNotifications = effectiveFriendCount + effectiveHangCount + effectiveInviteCount + effectiveChangeCount + effectivePhotoCount + effectiveParticipantReqCount + effectiveVibeCount + effectiveTripProposalCount;
+  const totalNotifications = effectiveFriendCount + effectiveHangCount + effectiveInviteCount + effectiveChangeCount + effectivePhotoCount + effectiveParticipantReqCount + effectiveTripProposalCount;
 
   // Sync PWA app badge with notification count
   useEffect(() => {
@@ -246,7 +221,6 @@ export function useNotifications() {
     pendingChangeRequestsCount: state.pendingChangeRequestsCount,
     newPlanPhotosCount: state.newPlanPhotosCount,
     pendingParticipantRequestsCount: state.pendingParticipantRequestsCount,
-    unreadVibesCount: state.unreadVibesCount,
     pendingTripProposalsCount: state.pendingTripProposalsCount,
     dismissedIds: state.dismissedIds,
     totalNotifications,
@@ -256,7 +230,6 @@ export function useNotifications() {
     refetchChangeRequests: fetchPendingChangeRequests,
     refetchPlanPhotos: fetchNewPlanPhotos,
     refetchParticipantRequests: fetchPendingParticipantRequests,
-    refetchUnreadVibes: fetchUnreadVibes,
     refetchTripProposals: fetchPendingTripProposals,
   };
 }

@@ -7,7 +7,7 @@ import { useNotifications, dismissNotification } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, Sparkles, MapPin, CalendarPlus, Plane } from 'lucide-react';
+import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, MapPin, CalendarPlus, Plane } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
@@ -66,15 +66,6 @@ interface ParticipantRequest {
   created_at: string;
 }
 
-interface IncomingVibe {
-  id: string;
-  vibe_send_id: string;
-  sender_name: string;
-  sender_avatar: string | null;
-  vibe_type: string;
-  message: string | null;
-  created_at: string;
-}
 
 interface ProposedPlan {
   planId: string;
@@ -104,7 +95,7 @@ export default function Notifications() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchUnreadVibes, refetchTripProposals, dismissedIds, dismissNotification: dismiss } = useNotifications();
+  const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchTripProposals, dismissedIds, dismissNotification: dismiss } = useNotifications();
 
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -120,8 +111,6 @@ export default function Notifications() {
   const [participantRequests, setParticipantRequests] = useState<ParticipantRequest[]>([]);
   const [participantReqLoading, setParticipantReqLoading] = useState(true);
 
-  const [incomingVibes, setIncomingVibes] = useState<IncomingVibe[]>([]);
-  const [vibesLoading, setVibesLoading] = useState(true);
 
   const [proposedPlans, setProposedPlans] = useState<ProposedPlan[]>([]);
   const [proposedLoading, setProposedLoading] = useState(true);
@@ -151,7 +140,7 @@ export default function Notifications() {
       fetchPendingChanges();
       fetchRecentPhotos();
       fetchParticipantRequestsData();
-      fetchIncomingVibes();
+      
       fetchProposedPlans();
       fetchTripProposalsData();
     }
@@ -217,56 +206,6 @@ export default function Notifications() {
     setUpdating(null);
   };
 
-  const fetchIncomingVibes = async () => {
-    if (!user) { setVibesLoading(false); return; }
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: recipients } = await supabase
-      .from('vibe_send_recipients')
-      .select('id, vibe_send_id, created_at, read_at, dismissed_at')
-      .eq('recipient_id', user.id)
-      .is('read_at', null)
-      .is('dismissed_at', null)
-      .gte('created_at', oneDayAgo)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (!recipients || recipients.length === 0) {
-      setIncomingVibes([]);
-      setVibesLoading(false);
-      return;
-    }
-
-    const vibeSendIds = recipients.map(r => r.vibe_send_id);
-    const { data: vibeSends } = await supabase
-      .from('vibe_sends')
-      .select('id, sender_id, vibe_type, message, created_at')
-      .in('id', vibeSendIds);
-
-    const senderIds = [...new Set((vibeSends || []).map(v => v.sender_id))];
-    const { data: profiles } = await supabase
-      .from('public_profiles')
-      .select('user_id, display_name, avatar_url')
-      .in('user_id', senderIds);
-    const profileMap: Record<string, { name: string; avatar: string | null }> = {};
-    for (const p of (profiles || [])) {
-      if (p.user_id) profileMap[p.user_id] = { name: p.display_name || 'Someone', avatar: p.avatar_url };
-    }
-
-    setIncomingVibes(recipients.map(r => {
-      const vs = (vibeSends || []).find(v => v.id === r.vibe_send_id);
-      const sender = vs ? profileMap[vs.sender_id] : undefined;
-      return {
-        id: r.id,
-        vibe_send_id: r.vibe_send_id,
-        sender_name: sender?.name || 'Someone',
-        sender_avatar: sender?.avatar || null,
-        vibe_type: vs?.vibe_type || 'custom',
-        message: vs?.message || null,
-        created_at: vs?.created_at || r.created_at,
-      };
-    }));
-    setVibesLoading(false);
-  };
 
   const fetchTripProposalsData = async () => {
     if (!user) { setTripProposalsLoading(false); return; }
@@ -320,15 +259,6 @@ export default function Notifications() {
     setTripProposalsLoading(false);
   };
 
-  const handleDismissVibe = async (recipientId: string) => {
-    dismiss(`vibe-${recipientId}`);
-    // Also mark as read in the database
-    await supabase
-      .from('vibe_send_recipients')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', recipientId);
-    await refetchUnreadVibes();
-  };
 
   const fetchRecentPhotos = async () => {
     if (!user) { setPhotosLoading(false); return; }
