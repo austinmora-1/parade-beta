@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, ThumbsUp, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper } from 'lucide-react';
+import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -45,6 +45,13 @@ interface ProposalParticipant {
   avatar_url: string | null;
 }
 
+interface TripVote {
+  id: string;
+  date_id: string;
+  user_id: string;
+  rank: number;
+}
+
 interface TripProposal {
   id: string;
   created_by: string;
@@ -57,6 +64,7 @@ interface TripProposal {
   participants: ProposalParticipant[];
   myParticipantId: string;
   myVotedDateId: string | null;
+  votes: TripVote[];
   proposal_type: string;
   host_user_id: string | null;
   host_name: string | null;
@@ -129,6 +137,15 @@ export function TripsList({ refreshKey }: TripsListProps) {
       return;
     }
 
+    // Fetch ranked votes from trip_proposal_votes
+    const allDateIds = (datesData || []).map(d => d.id);
+    const { data: votesData } = allDateIds.length > 0
+      ? await supabase
+          .from('trip_proposal_votes' as any)
+          .select('*')
+          .in('date_id', allDateIds)
+      : { data: [] };
+
     const allUserIds = [
       ...new Set([
         ...proposalsData.map(p => p.created_by),
@@ -145,6 +162,11 @@ export function TripsList({ refreshKey }: TripsListProps) {
       const myRow = myParticipations.find(p => p.proposal_id === prop.id)!;
       const creator = profileMap.get(prop.created_by);
       const propDates = (datesData || []).filter(d => d.proposal_id === prop.id);
+      const propDateIds = new Set(propDates.map(d => d.id));
+      const propVotes: TripVote[] = ((votesData as any[]) || [])
+        .filter(v => propDateIds.has(v.date_id))
+        .map(v => ({ id: v.id, date_id: v.date_id, user_id: v.user_id, rank: v.rank }));
+
       const propParticipants = (allParticipants || [])
         .filter(p => p.proposal_id === prop.id)
         .map(p => {
@@ -168,6 +190,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
         participants: propParticipants,
         myParticipantId: myRow.id,
         myVotedDateId: myRow.preferred_date_id,
+        votes: propVotes,
         proposal_type: (prop as any).proposal_type || 'trip',
         host_user_id: (prop as any).host_user_id || null,
         host_name: (prop as any).host_user_id ? (profileMap.get((prop as any).host_user_id)?.name || null) : null,
@@ -194,36 +217,44 @@ export function TripsList({ refreshKey }: TripsListProps) {
     };
   }, [fetchTrips, fetchProposals]);
 
-  const handleVote = async (proposalId: string, dateId: string, participantId: string) => {
-    setVoting(`${proposalId}:${dateId}`);
+  const handleSubmitRankedVotes = async (
+    proposalId: string,
+    rankings: Record<string, number>, // dateId -> rank
+    participantId: string
+  ) => {
+    if (!user) return;
+    setVoting(proposalId);
     try {
-      const { error: updateErr } = await supabase
-        .from('trip_proposal_participants')
-        .update({ preferred_date_id: dateId, status: 'voted' })
-        .eq('id', participantId);
-
-      if (updateErr) throw updateErr;
-
       const proposal = proposals.find(p => p.id === proposalId);
-      const oldVotedDateId = proposal?.myVotedDateId;
+      if (!proposal) throw new Error('Proposal not found');
 
-      if (oldVotedDateId && oldVotedDateId !== dateId) {
-        const oldDate = proposal?.dates.find(d => d.id === oldVotedDateId);
-        if (oldDate) {
-          await supabase
-            .from('trip_proposal_dates')
-            .update({ votes: Math.max(0, oldDate.votes - 1) })
-            .eq('id', oldVotedDateId);
-        }
+      // Get all date IDs for this proposal
+      const dateIds = proposal.dates.map(d => d.id);
+
+      // Delete existing votes for this user on these dates
+      await supabase
+        .from('trip_proposal_votes' as any)
+        .delete()
+        .in('date_id', dateIds)
+        .eq('user_id', user.id);
+
+      // Insert new ranked votes
+      const rows = Object.entries(rankings).map(([dateId, rank]) => ({
+        date_id: dateId,
+        user_id: user.id,
+        rank,
+      }));
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from('trip_proposal_votes' as any).insert(rows);
+        if (error) throw error;
       }
 
-      if (oldVotedDateId !== dateId) {
-        const newDate = proposal?.dates.find(d => d.id === dateId);
-        await supabase
-          .from('trip_proposal_dates')
-          .update({ votes: (newDate?.votes || 0) + 1 })
-          .eq('id', dateId);
-      }
+      // Also update participant status to 'voted'
+      await supabase
+        .from('trip_proposal_participants')
+        .update({ status: 'voted' })
+        .eq('id', participantId);
 
       confetti({
         particleCount: 40,
@@ -232,7 +263,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
         colors: ['#3D8C6C', '#F59E0B', '#3B82F6'],
         scalar: 0.8,
       });
-      toast.success('Vote recorded! ✈️');
+      toast.success('Rankings submitted! ✈️');
       await fetchProposals();
     } catch (err) {
       console.error('Vote failed:', err);
@@ -288,7 +319,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
               proposal={item.data}
               currentUserId={user!.id}
               voting={voting}
-              onVote={handleVote}
+              onSubmitRankedVotes={handleSubmitRankedVotes}
               onRefresh={fetchProposals}
             />
           );
@@ -357,21 +388,93 @@ function ProposalTripCard({
   proposal,
   currentUserId,
   voting,
-  onVote,
+  onSubmitRankedVotes,
   onRefresh,
 }: {
   proposal: TripProposal;
   currentUserId: string;
   voting: string | null;
-  onVote: (proposalId: string, dateId: string, participantId: string) => void;
+  onSubmitRankedVotes: (proposalId: string, rankings: Record<string, number>, participantId: string) => Promise<void>;
   onRefresh: () => Promise<void>;
 }) {
   const isCreator = proposal.created_by === currentUserId;
   const totalVoters = proposal.participants.length;
-  const votedCount = proposal.participants.filter(p => p.status === 'voted').length;
+  
+  // Determine who has voted based on trip_proposal_votes
+  const voterIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const v of proposal.votes) ids.add(v.user_id);
+    return ids;
+  }, [proposal.votes]);
+  
+  const votedCount = voterIds.size;
   const allVoted = votedCount === totalVoters && totalVoters > 0;
+  const hasVoted = voterIds.has(currentUserId);
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
+
+  // Local rankings state for ranked voting
+  const [myRankings, setMyRankings] = useState<Record<string, number>>(() => {
+    const existing: Record<string, number> = {};
+    for (const v of proposal.votes) {
+      if (v.user_id === currentUserId) {
+        existing[v.date_id] = v.rank;
+      }
+    }
+    return existing;
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Vote counts per date (number of unique users who ranked each date)
+  const voteCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const d of proposal.dates) counts.set(d.id, 0);
+    const dateUsers = new Map<string, Set<string>>();
+    for (const v of proposal.votes) {
+      if (!dateUsers.has(v.date_id)) dateUsers.set(v.date_id, new Set());
+      dateUsers.get(v.date_id)!.add(v.user_id);
+    }
+    for (const [dateId, users] of dateUsers) counts.set(dateId, users.size);
+    return counts;
+  }, [proposal.votes, proposal.dates]);
+
+  const handleRankToggle = (dateId: string) => {
+    setMyRankings(prev => {
+      const existing = { ...prev };
+      if (dateId in existing) {
+        const removedRank = existing[dateId];
+        delete existing[dateId];
+        for (const [id, rank] of Object.entries(existing)) {
+          if (rank > removedRank) existing[id] = rank - 1;
+        }
+      } else {
+        existing[dateId] = Object.keys(existing).length + 1;
+      }
+      return existing;
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (Object.keys(myRankings).length === 0) {
+      toast.error('Please rank at least one date option');
+      return;
+    }
+    setIsSubmitting(true);
+    await onSubmitRankedVotes(proposal.id, myRankings, proposal.myParticipantId);
+    setIsSubmitting(false);
+  };
+
+  // Find winning date by vote count (ties broken by earliest)
+  const winningDate = useMemo(() => {
+    if (proposal.dates.length === 0) return null;
+    const sorted = [...proposal.dates].sort((a, b) => {
+      const aCount = voteCounts.get(a.id) || 0;
+      const bCount = voteCounts.get(b.id) || 0;
+      if (bCount !== aCount) return bCount - aCount;
+      return a.start_date.localeCompare(b.start_date);
+    });
+    return sorted[0];
+  }, [proposal.dates, voteCounts]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -383,16 +486,6 @@ function ProposalTripCard({
   const [deleting, setDeleting] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [justFinalized, setJustFinalized] = useState(false);
-
-  // Find winning date (most votes, ties broken by earliest)
-  const winningDate = useMemo(() => {
-    if (proposal.dates.length === 0) return null;
-    const sorted = [...proposal.dates].sort((a, b) => {
-      if (b.votes !== a.votes) return b.votes - a.votes;
-      return a.start_date.localeCompare(b.start_date);
-    });
-    return sorted[0];
-  }, [proposal.dates]);
 
   const handleFinalize = async () => {
     if (!winningDate || !isCreator) return;
@@ -657,7 +750,7 @@ function ProposalTripCard({
                   Top pick: {format(new Date(winningDate.start_date + 'T00:00:00'), 'EEE, MMM d')} – {format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}
                 </span>
                 <span className="text-[10px] font-medium text-primary ml-auto">
-                  {winningDate.votes} vote{winningDate.votes !== 1 ? 's' : ''}
+                  {voteCounts.get(winningDate.id) || 0}/{totalVoters} votes
                 </span>
               </div>
               <Button
@@ -737,10 +830,10 @@ function ProposalTripCard({
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1.5">
             {[...proposal.participants]
-              .sort((a, b) => (b.status === 'voted' ? 1 : 0) - (a.status === 'voted' ? 1 : 0))
+              .sort((a, b) => (voterIds.has(b.user_id) ? 1 : 0) - (voterIds.has(a.user_id) ? 1 : 0))
               .slice(0, 5)
               .map(p => {
-              const hasVotedTrip = p.status === 'voted';
+              const hasVotedTrip = voterIds.has(p.user_id);
               return (
                 <div key={p.id} className={cn("relative", hasVotedTrip && "z-10")}>
                   <Avatar className={cn("h-5 w-5 border-2 border-background", !hasVotedTrip && "opacity-60")}>
@@ -766,8 +859,8 @@ function ProposalTripCard({
           </span>
         </div>
 
-        {/* Date options with vote buttons */}
-        <div className="space-y-1">
+        {/* Date options with ranked vote buttons */}
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className={cn(
@@ -781,66 +874,86 @@ function ProposalTripCard({
               <span className="text-[10px] text-muted-foreground">{votedCount}/{totalVoters} voted</span>
             </div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Vote for dates
+              Rank dates
             </p>
           </div>
+          <p className="text-[10px] text-muted-foreground">
+            {hasVoted ? 'Tap to update your rankings.' : 'Tap dates in order of preference (1st = most preferred)'}
+          </p>
           {proposal.dates.map(d => {
-            const isMyVote = proposal.myVotedDateId === d.id;
-            const isVoting = voting === `${proposal.id}:${d.id}`;
+            const myRank = myRankings[d.id];
+            const count = voteCounts.get(d.id) || 0;
             const startDate = new Date(d.start_date + 'T00:00:00');
             const endDate = new Date(d.end_date + 'T00:00:00');
             const isWinner = allVoted && winningDate?.id === d.id;
+            const maxCount = Math.max(...Array.from(voteCounts.values()), 1);
+            const barWidth = count > 0 ? (count / maxCount) * 100 : 0;
 
             return (
               <button
                 key={d.id}
-                onClick={() => {
-                  if (!isMyVote) onVote(proposal.id, d.id, proposal.myParticipantId);
-                }}
-                disabled={isVoting}
+                onClick={() => handleRankToggle(d.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all",
+                  "relative w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all overflow-hidden",
                   isWinner
                     ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                    : isMyVote
+                    : myRank
                       ? "border-primary/60 bg-primary/5"
                       : "border-border hover:border-primary/30 hover:bg-primary/5"
                 )}
               >
+                {/* Score bar background */}
+                <div
+                  className="absolute inset-y-0 left-0 bg-primary/10 transition-all"
+                  style={{ width: `${barWidth}%` }}
+                />
+
+                {/* Rank badge */}
+                <div className={cn(
+                  "relative flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold shrink-0",
+                  myRank
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-muted text-muted-foreground"
+                )}>
+                  {myRank || '—'}
+                </div>
+
                 {isWinner && (
-                  <Trophy className="h-3.5 w-3.5 text-primary shrink-0" />
-                )}
-                {!isWinner && (
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <Trophy className="relative h-3.5 w-3.5 text-primary shrink-0" />
                 )}
                 <span className={cn(
-                  "flex-1 text-xs font-medium",
+                  "relative flex-1 text-xs font-medium",
                   isWinner && "text-primary"
                 )}>
                   {format(startDate, 'EEE, MMM d')} – {format(endDate, 'MMM d')}
                 </span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {d.votes > 0 && (
+                <div className="relative flex items-center gap-1.5 shrink-0">
+                  {count > 0 && (
                     <span className={cn(
                       "text-[10px] font-medium",
                       isWinner ? "text-primary" : "text-muted-foreground"
                     )}>
-                      {d.votes} vote{d.votes !== 1 ? 's' : ''}
+                      {count}/{totalVoters}
                     </span>
-                  )}
-                  {isVoting ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  ) : isMyVote ? (
-                    <span className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="h-2.5 w-2.5 text-primary-foreground" />
-                    </span>
-                  ) : (
-                    <ThumbsUp className="h-3.5 w-3.5 text-muted-foreground/40" />
                   )}
                 </div>
               </button>
             );
           })}
+
+          {/* Submit / Update button */}
+          {Object.keys(myRankings).length > 0 && (
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || voting === proposal.id}
+              className="w-full"
+              size="sm"
+            >
+              {(isSubmitting || voting === proposal.id) ? (
+                <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Submitting...</>
+              ) : hasVoted ? 'Update Rankings' : 'Submit Rankings'}
+            </Button>
+          )}
         </div>
       </div>
 
