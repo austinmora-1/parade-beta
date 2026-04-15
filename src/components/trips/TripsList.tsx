@@ -476,6 +476,17 @@ function ProposalTripCard({
     return sorted[0];
   }, [proposal.dates, voteCounts]);
 
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editDestination, setEditDestination] = useState(proposal.destination || '');
+  const [editDates, setEditDates] = useState(
+    proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date }))
+  );
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [justFinalized, setJustFinalized] = useState(false);
+
   const handleFinalize = async () => {
     if (!winningDate || !isCreator) return;
     setFinalizing(true);
