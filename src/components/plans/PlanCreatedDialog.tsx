@@ -40,8 +40,9 @@ function formatTime12(time: string) {
 }
 
 export function PlanCreatedDialog({ open, onOpenChange, plan }: PlanCreatedDialogProps) {
-  if (!plan) return null;
   const userTimezone = usePlannerStore((s) => s.userTimezone);
+
+  if (!plan) return null;
 
   const activityConfig = ACTIVITY_CONFIG[plan.activity as ActivityType];
   const activeParticipants = plan.participants.filter(p => p.role !== 'subscriber');
