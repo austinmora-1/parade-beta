@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { getTimezoneAbbreviation, getBrowserTimezone } from '@/lib/timezone';
 
 interface PlanInviteData {
   invite_id: string;
@@ -176,9 +177,10 @@ export default function PlanInvite() {
                     {invite.plan_start_time && invite.plan_end_time && ' – '}
                     {invite.plan_end_time && formatTime12(invite.plan_end_time)}
                     {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
+                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(getBrowserTimezone())}</span>
                   </>
                 ) : timeSlotConfig ? (
-                  <>{timeSlotConfig.label} ({timeSlotConfig.time})</>
+                  <>{timeSlotConfig.label} ({timeSlotConfig.time}) <span className="text-muted-foreground/60">{getTimezoneAbbreviation(getBrowserTimezone())}</span></>
                 ) : (
                   invite.plan_time_slot
                 )}
