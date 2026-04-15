@@ -830,10 +830,10 @@ function ProposalTripCard({
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1.5">
             {[...proposal.participants]
-              .sort((a, b) => (b.status === 'voted' ? 1 : 0) - (a.status === 'voted' ? 1 : 0))
+              .sort((a, b) => (voterIds.has(b.user_id) ? 1 : 0) - (voterIds.has(a.user_id) ? 1 : 0))
               .slice(0, 5)
               .map(p => {
-              const hasVotedTrip = p.status === 'voted';
+              const hasVotedTrip = voterIds.has(p.user_id);
               return (
                 <div key={p.id} className={cn("relative", hasVotedTrip && "z-10")}>
                   <Avatar className={cn("h-5 w-5 border-2 border-background", !hasVotedTrip && "opacity-60")}>
