@@ -100,6 +100,7 @@ function transformDashboardData(rpcData: unknown, userId: string) {
     defaultSettings,
     homeAddress: homeAddr,
     userTimezone: viewerTimezone,
+    hasMorePlans: !!(d as any).has_more_plans,
   };
 }
 
