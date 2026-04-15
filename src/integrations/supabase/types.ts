@@ -1683,6 +1683,138 @@ export type Database = {
       }
     }
     Views: {
+      friend_profiles: {
+        Row: {
+          allow_all_hang_requests: boolean | null
+          allow_elly_hangouts: boolean | null
+          allowed_hang_request_friend_ids: string[] | null
+          avatar_url: string | null
+          bio: string | null
+          cover_photo_url: string | null
+          created_at: string | null
+          current_vibe: string | null
+          custom_activities: Json | null
+          custom_vibe_tags: string[] | null
+          default_availability_status: string | null
+          default_vibes: string[] | null
+          default_work_days: string[] | null
+          default_work_end_hour: number | null
+          default_work_start_hour: number | null
+          discoverable: boolean | null
+          display_name: string | null
+          first_name: string | null
+          friend_requests_notifications: boolean | null
+          home_address: string | null
+          id: string | null
+          interests: string[] | null
+          last_name: string | null
+          location_status: string | null
+          neighborhood: string | null
+          onboarding_completed: boolean | null
+          plan_invitations_notifications: boolean | null
+          plan_reminders: boolean | null
+          preferred_social_days: string[] | null
+          preferred_social_times: string[] | null
+          share_code: string | null
+          show_availability: boolean | null
+          show_location: boolean | null
+          show_vibe_status: boolean | null
+          social_cap: number | null
+          social_goals: string[] | null
+          timezone: string | null
+          updated_at: string | null
+          user_id: string | null
+          vibe_gif_url: string | null
+          walkthrough_completed: boolean | null
+        }
+        Insert: {
+          allow_all_hang_requests?: boolean | null
+          allow_elly_hangouts?: boolean | null
+          allowed_hang_request_friend_ids?: string[] | null
+          avatar_url?: string | null
+          bio?: string | null
+          cover_photo_url?: string | null
+          created_at?: string | null
+          current_vibe?: string | null
+          custom_activities?: Json | null
+          custom_vibe_tags?: string[] | null
+          default_availability_status?: string | null
+          default_vibes?: string[] | null
+          default_work_days?: string[] | null
+          default_work_end_hour?: number | null
+          default_work_start_hour?: number | null
+          discoverable?: boolean | null
+          display_name?: string | null
+          first_name?: string | null
+          friend_requests_notifications?: boolean | null
+          home_address?: string | null
+          id?: string | null
+          interests?: string[] | null
+          last_name?: string | null
+          location_status?: string | null
+          neighborhood?: string | null
+          onboarding_completed?: boolean | null
+          plan_invitations_notifications?: boolean | null
+          plan_reminders?: boolean | null
+          preferred_social_days?: string[] | null
+          preferred_social_times?: string[] | null
+          share_code?: string | null
+          show_availability?: boolean | null
+          show_location?: boolean | null
+          show_vibe_status?: boolean | null
+          social_cap?: number | null
+          social_goals?: string[] | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vibe_gif_url?: string | null
+          walkthrough_completed?: boolean | null
+        }
+        Update: {
+          allow_all_hang_requests?: boolean | null
+          allow_elly_hangouts?: boolean | null
+          allowed_hang_request_friend_ids?: string[] | null
+          avatar_url?: string | null
+          bio?: string | null
+          cover_photo_url?: string | null
+          created_at?: string | null
+          current_vibe?: string | null
+          custom_activities?: Json | null
+          custom_vibe_tags?: string[] | null
+          default_availability_status?: string | null
+          default_vibes?: string[] | null
+          default_work_days?: string[] | null
+          default_work_end_hour?: number | null
+          default_work_start_hour?: number | null
+          discoverable?: boolean | null
+          display_name?: string | null
+          first_name?: string | null
+          friend_requests_notifications?: boolean | null
+          home_address?: string | null
+          id?: string | null
+          interests?: string[] | null
+          last_name?: string | null
+          location_status?: string | null
+          neighborhood?: string | null
+          onboarding_completed?: boolean | null
+          plan_invitations_notifications?: boolean | null
+          plan_reminders?: boolean | null
+          preferred_social_days?: string[] | null
+          preferred_social_times?: string[] | null
+          share_code?: string | null
+          show_availability?: boolean | null
+          show_location?: boolean | null
+          show_vibe_status?: boolean | null
+          social_cap?: number | null
+          social_goals?: string[] | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vibe_gif_url?: string | null
+          walkthrough_completed?: boolean | null
+        }
+        Relationships: []
+      }
       friendships_incoming: {
         Row: {
           created_at: string | null
