@@ -66,7 +66,7 @@ interface ProfileData {
 export default function Profile() {
   const { session } = useAuth();
   const { updateProfile: updateGlobalProfile } = useCurrentUserProfile();
-  const { plans, friends, deletePlan } = usePlannerStore();
+  const { plans, friends, deletePlan, userTimezone } = usePlannerStore();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -821,7 +821,7 @@ export default function Profile() {
                               <Clock className="h-3 w-3" />
                               {plan.startTime ? formatTime12(plan.startTime) + (plan.endTime ? ` – ${formatTime12(plan.endTime)}` : '') : timeSlotConfig?.time || plan.timeSlot}
                             </span>
-                            <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(usePlannerStore.getState().userTimezone)}</span>
+                            <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(userTimezone)}</span>
                           </div>
                           {plan.location && (
                             <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
