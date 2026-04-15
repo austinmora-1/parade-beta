@@ -217,36 +217,44 @@ export function TripsList({ refreshKey }: TripsListProps) {
     };
   }, [fetchTrips, fetchProposals]);
 
-  const handleVote = async (proposalId: string, dateId: string, participantId: string) => {
-    setVoting(`${proposalId}:${dateId}`);
+  const handleSubmitRankedVotes = async (
+    proposalId: string,
+    rankings: Record<string, number>, // dateId -> rank
+    participantId: string
+  ) => {
+    if (!user) return;
+    setVoting(proposalId);
     try {
-      const { error: updateErr } = await supabase
-        .from('trip_proposal_participants')
-        .update({ preferred_date_id: dateId, status: 'voted' })
-        .eq('id', participantId);
-
-      if (updateErr) throw updateErr;
-
       const proposal = proposals.find(p => p.id === proposalId);
-      const oldVotedDateId = proposal?.myVotedDateId;
+      if (!proposal) throw new Error('Proposal not found');
 
-      if (oldVotedDateId && oldVotedDateId !== dateId) {
-        const oldDate = proposal?.dates.find(d => d.id === oldVotedDateId);
-        if (oldDate) {
-          await supabase
-            .from('trip_proposal_dates')
-            .update({ votes: Math.max(0, oldDate.votes - 1) })
-            .eq('id', oldVotedDateId);
-        }
+      // Get all date IDs for this proposal
+      const dateIds = proposal.dates.map(d => d.id);
+
+      // Delete existing votes for this user on these dates
+      await supabase
+        .from('trip_proposal_votes' as any)
+        .delete()
+        .in('date_id', dateIds)
+        .eq('user_id', user.id);
+
+      // Insert new ranked votes
+      const rows = Object.entries(rankings).map(([dateId, rank]) => ({
+        date_id: dateId,
+        user_id: user.id,
+        rank,
+      }));
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from('trip_proposal_votes' as any).insert(rows);
+        if (error) throw error;
       }
 
-      if (oldVotedDateId !== dateId) {
-        const newDate = proposal?.dates.find(d => d.id === dateId);
-        await supabase
-          .from('trip_proposal_dates')
-          .update({ votes: (newDate?.votes || 0) + 1 })
-          .eq('id', dateId);
-      }
+      // Also update participant status to 'voted'
+      await supabase
+        .from('trip_proposal_participants')
+        .update({ status: 'voted' })
+        .eq('id', participantId);
 
       confetti({
         particleCount: 40,
@@ -255,7 +263,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
         colors: ['#3D8C6C', '#F59E0B', '#3B82F6'],
         scalar: 0.8,
       });
-      toast.success('Vote recorded! ✈️');
+      toast.success('Rankings submitted! ✈️');
       await fetchProposals();
     } catch (err) {
       console.error('Vote failed:', err);
