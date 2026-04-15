@@ -135,7 +135,6 @@ const AppRoutes = () => {
       
       <Route path="/availability" element={<ErrorBoundary scope="Availability"><Availability /></ErrorBoundary>} />
       <Route path="/friends" element={<ErrorBoundary scope="Friends"><Friends /></ErrorBoundary>} />
-      <Route path="/chat" element={<ErrorBoundary scope="Chat"><Chat /></ErrorBoundary>} />
       <Route path="/notifications" element={<ErrorBoundary scope="Notifications"><Notifications /></ErrorBoundary>} />
       <Route path="/profile" element={<ErrorBoundary scope="Profile"><Profile /></ErrorBoundary>} />
       <Route path="/friend/:userId" element={<ErrorBoundary scope="FriendProfile"><FriendProfile /></ErrorBoundary>} />

@@ -5,7 +5,6 @@ import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
 import { FriendListRow } from '@/components/friends/FriendListRow';
 import { FriendPanel } from '@/components/friends/FriendPanel';
-import { PodPanel } from '@/components/friends/PodPanel';
 import { PodSection } from '@/components/friends/PodSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { usePods } from '@/hooks/usePods';
-import { useConversations } from '@/hooks/useChat';
+import { format } from 'date-fns';
 import { format } from 'date-fns';
 import { TimeSlot, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { Pod } from '@/hooks/usePods';
@@ -92,7 +91,6 @@ export default function Friends() {
   const { user } = useAuth();
   const { toast } = useToast();
   const podsHook = usePods();
-  const { conversations } = useConversations();
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<PublicProfile[]>([]);
@@ -102,8 +100,6 @@ export default function Friends() {
   // FriendPanel state
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeFriendId, setActiveFriendId] = useState<string | null>(null);
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
-
   // PodPanel state
   const [podPanelOpen, setPodPanelOpen] = useState(false);
   const [activePod, setActivePod] = useState<Pod | null>(null);
