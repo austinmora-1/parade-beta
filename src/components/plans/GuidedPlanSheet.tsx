@@ -713,6 +713,82 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
         <div className="px-4 pb-2 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
+            {/* STEP 0: Friend selection */}
+            {step === 'friends' && (
+              <motion.div
+                key="friends"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-3"
+              >
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search friends..."
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                  />
+                </div>
+
+                {chosenFriends.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {chosenFriends.map(f => (
+                      <button
+                        key={f.userId}
+                        onClick={() => toggleFriend({ friendUserId: f.userId, name: f.name, avatar: f.avatar, status: 'connected' } as any)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                      >
+                        <Avatar className="h-4 w-4">
+                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                          <AvatarFallback className="text-[6px]">{f.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {f.name.split(' ')[0]}
+                        <span className="text-primary/60">×</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-1 max-h-[280px] overflow-y-auto">
+                  {filteredFriends.length > 0 ? filteredFriends.map(f => {
+                    const isChosen = chosenFriends.some(c => c.userId === f.friendUserId);
+                    return (
+                      <button
+                        key={f.friendUserId}
+                        onClick={() => toggleFriend(f)}
+                        className={cn(
+                          "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
+                          isChosen
+                            ? "bg-primary/10 border border-primary/20"
+                            : "hover:bg-muted/50 border border-transparent"
+                        )}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                          <AvatarFallback className="text-xs">{f.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium flex-1">{f.name}</span>
+                        <div className={cn(
+                          "flex items-center justify-center h-5 w-5 rounded-full border-2 shrink-0 transition-all",
+                          isChosen
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-muted-foreground/30"
+                        )}>
+                          {isChosen && <Check className="h-3 w-3" />}
+                        </div>
+                      </button>
+                    );
+                  }) : (
+                    <div className="text-center py-6">
+                      <p className="text-xs text-muted-foreground">No friends found</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {/* STEP 1: Activity selection */}
             {step === 'activity' && (
               <motion.div
