@@ -300,6 +300,62 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   const effectiveTitle = title || getAutoTitle();
 
   const handleSubmit = async () => {
+    // Handle multi-option proposal creation
+    if (isMultiOption && proposalOptions.length >= 2 && !editPlan) {
+      const allParticipants = [
+        ...friends.filter((f) => selectedFriends.includes(f.id)).map(f => ({ ...f, role: 'participant' as const })),
+        ...friends.filter((f) => subscriberFriends.includes(f.id)).map(f => ({ ...f, role: 'subscriber' as const })),
+      ];
+
+      // Create the plan with first option's date, status 'proposed', proposal_status 'voting'
+      const firstOpt = proposalOptions[0];
+      const planData = {
+        title: effectiveTitle,
+        activity,
+        date: firstOpt.date,
+        timeSlot: firstOpt.timeSlot,
+        duration: parseInt(duration) || 60,
+        startTime: firstOpt.startTime || undefined,
+        endTime: endTime || undefined,
+        location: locationName ? { id: crypto.randomUUID(), name: locationName, address: '' } : undefined,
+        participants: allParticipants,
+        notes,
+        status: 'proposed' as PlanStatus,
+        feedVisibility,
+      };
+
+      // Use addPlan which returns the created plan
+      await addPlan(planData);
+      
+      // Get the newly created plan ID from the store
+      const { plans: updatedPlans } = usePlannerStore.getState();
+      const createdPlan = updatedPlans[updatedPlans.length - 1];
+      
+      if (createdPlan) {
+        // Set proposal_status to 'voting'
+        await supabase.from('plans').update({ proposal_status: 'voting' } as any).eq('id', createdPlan.id);
+        
+        // Create proposal options
+        await createProposalOptions(createdPlan.id, proposalOptions);
+      }
+
+      setCreatedPlanSummary({
+        title: effectiveTitle,
+        activity,
+        date: firstOpt.date,
+        timeSlot: firstOpt.timeSlot,
+        startTime: firstOpt.startTime,
+        duration: parseInt(duration) || 60,
+        location: locationName || undefined,
+        participants: allParticipants,
+        status: 'proposed',
+      });
+
+      onOpenChange(false);
+      resetForm();
+      return;
+    }
+
     // Handle recurring plan creation
     if (isRecurring && !editPlan) {
       try {
