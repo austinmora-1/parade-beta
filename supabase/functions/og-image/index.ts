@@ -35,7 +35,7 @@ const ACTIVITY_EMOJI: Record<string, string> = {
   chores: "🧹", errands: "🏃", shopping: "🛍️", doctor: "🏥",
   flight: "✈️", custom: "✨",
   // Legacy/additional mappings
-  dinner: "🍽️", lunch: "🍽️", brunch: "🥂", breakfast: "☕",
+  'get-food': "🍽️", lunch: "🍽️", brunch: "🥂", breakfast: "☕",
   "happy-hour": "🍸", movie: "🎬", concert: "🎵", "live-music": "🎵",
   hiking: "🥾", biking: "🚴", running: "🏃", yoga: "🧘",
   gym: "💪", swimming: "🏊", climbing: "🧗", tennis: "🎾",
@@ -58,7 +58,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   chores: "Chores", errands: "Errands", shopping: "Shopping", doctor: "Appointment",
   flight: "Flight", custom: "Custom",
   // Legacy/additional mappings
-  dinner: "Dinner", lunch: "Lunch", brunch: "Brunch", breakfast: "Breakfast",
+  'get-food': "Get Food", lunch: "Lunch", brunch: "Brunch", breakfast: "Breakfast",
   "happy-hour": "Happy Hour", movie: "Movie", concert: "Concert", "live-music": "Live Music",
   hiking: "Hiking", biking: "Biking", running: "Running", yoga: "Yoga",
   gym: "Gym", swimming: "Swimming", climbing: "Climbing", tennis: "Tennis",
