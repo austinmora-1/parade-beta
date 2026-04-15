@@ -859,8 +859,8 @@ function ProposalTripCard({
           </span>
         </div>
 
-        {/* Date options with vote buttons */}
-        <div className="space-y-1">
+        {/* Date options with ranked vote buttons */}
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className={cn(
@@ -874,66 +874,86 @@ function ProposalTripCard({
               <span className="text-[10px] text-muted-foreground">{votedCount}/{totalVoters} voted</span>
             </div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Vote for dates
+              Rank dates
             </p>
           </div>
+          <p className="text-[10px] text-muted-foreground">
+            {hasVoted ? 'Tap to update your rankings.' : 'Tap dates in order of preference (1st = most preferred)'}
+          </p>
           {proposal.dates.map(d => {
-            const isMyVote = proposal.myVotedDateId === d.id;
-            const isVoting = voting === `${proposal.id}:${d.id}`;
+            const myRank = myRankings[d.id];
+            const count = voteCounts.get(d.id) || 0;
             const startDate = new Date(d.start_date + 'T00:00:00');
             const endDate = new Date(d.end_date + 'T00:00:00');
             const isWinner = allVoted && winningDate?.id === d.id;
+            const maxCount = Math.max(...Array.from(voteCounts.values()), 1);
+            const barWidth = count > 0 ? (count / maxCount) * 100 : 0;
 
             return (
               <button
                 key={d.id}
-                onClick={() => {
-                  if (!isMyVote) onVote(proposal.id, d.id, proposal.myParticipantId);
-                }}
-                disabled={isVoting}
+                onClick={() => handleRankToggle(d.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all",
+                  "relative w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all overflow-hidden",
                   isWinner
                     ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                    : isMyVote
+                    : myRank
                       ? "border-primary/60 bg-primary/5"
                       : "border-border hover:border-primary/30 hover:bg-primary/5"
                 )}
               >
+                {/* Score bar background */}
+                <div
+                  className="absolute inset-y-0 left-0 bg-primary/10 transition-all"
+                  style={{ width: `${barWidth}%` }}
+                />
+
+                {/* Rank badge */}
+                <div className={cn(
+                  "relative flex h-6 w-6 items-center justify-center rounded-md border text-xs font-bold shrink-0",
+                  myRank
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-muted text-muted-foreground"
+                )}>
+                  {myRank || '—'}
+                </div>
+
                 {isWinner && (
-                  <Trophy className="h-3.5 w-3.5 text-primary shrink-0" />
-                )}
-                {!isWinner && (
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <Trophy className="relative h-3.5 w-3.5 text-primary shrink-0" />
                 )}
                 <span className={cn(
-                  "flex-1 text-xs font-medium",
+                  "relative flex-1 text-xs font-medium",
                   isWinner && "text-primary"
                 )}>
                   {format(startDate, 'EEE, MMM d')} – {format(endDate, 'MMM d')}
                 </span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {d.votes > 0 && (
+                <div className="relative flex items-center gap-1.5 shrink-0">
+                  {count > 0 && (
                     <span className={cn(
                       "text-[10px] font-medium",
                       isWinner ? "text-primary" : "text-muted-foreground"
                     )}>
-                      {d.votes} vote{d.votes !== 1 ? 's' : ''}
+                      {count}/{totalVoters}
                     </span>
-                  )}
-                  {isVoting ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  ) : isMyVote ? (
-                    <span className="h-4 w-4 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="h-2.5 w-2.5 text-primary-foreground" />
-                    </span>
-                  ) : (
-                    <ThumbsUp className="h-3.5 w-3.5 text-muted-foreground/40" />
                   )}
                 </div>
               </button>
             );
           })}
+
+          {/* Submit / Update button */}
+          {Object.keys(myRankings).length > 0 && (
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || voting === proposal.id}
+              className="w-full"
+              size="sm"
+            >
+              {(isSubmitting || voting === proposal.id) ? (
+                <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Submitting...</>
+              ) : hasVoted ? 'Update Rankings' : 'Submit Rankings'}
+            </Button>
+          )}
         </div>
       </div>
 
