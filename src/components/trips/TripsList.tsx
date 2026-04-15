@@ -846,6 +846,16 @@ function ProposalTripCard({
               
               {isCreator && (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    disabled={converting}
+                    onClick={handleConvertType}
+                    title={isVisit ? 'Convert to trip' : 'Convert to visit'}
+                  >
+                    {converting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowLeftRight className="h-3 w-3" />}
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
                     setEditDestination(proposal.destination || '');
                     setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
