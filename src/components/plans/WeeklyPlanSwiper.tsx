@@ -303,6 +303,14 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         onCardTap={handleCardTap}
         availabilityMap={availabilityMap}
         homeAddress={homeAddress}
+        selectionActions={selectMode ? {
+          selectedCount: selectedIds.size,
+          onEdit: selectedIds.size === 1 && onEditPlan ? handleEditSelected : undefined,
+          onMerge: selectedIds.size >= 1 && onMergeSelected ? handleMerge : undefined,
+          onShare: selectedIds.size === 1 && onSharePlan ? handleShareSelected : undefined,
+          onDelete: onDeletePlan ? handleDeleteSelected : undefined,
+          onExit: exitSelectMode,
+        } : undefined}
       />
     </div>
   );
