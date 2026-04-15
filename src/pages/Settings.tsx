@@ -15,6 +15,7 @@ import {
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
 import { DeleteAccountDialog } from '@/components/settings/DeleteAccountDialog';
@@ -1082,10 +1083,18 @@ export default function Settings() {
         </AccordionItem>
       </Accordion>
 
-      <div className="flex justify-center gap-4 pt-2 pb-4">
-        <a href="/privacy" className="text-xs text-muted-foreground hover:text-primary hover:underline">Privacy Policy</a>
-        <span className="text-xs text-muted-foreground">·</span>
-        <a href="/terms" className="text-xs text-muted-foreground hover:text-primary hover:underline">Terms of Service</a>
+      <div className="flex flex-col items-center gap-2 pt-2 pb-4">
+        <div className="flex justify-center gap-4">
+          <a href="/privacy" className="text-xs text-muted-foreground hover:text-primary hover:underline">Privacy Policy</a>
+          <span className="text-xs text-muted-foreground">·</span>
+          <a href="/terms" className="text-xs text-muted-foreground hover:text-primary hover:underline">Terms of Service</a>
+        </div>
+        <button
+          onClick={openFeedback}
+          className="text-xs text-muted-foreground hover:text-primary hover:underline"
+        >
+          Let us know what you think!
+        </button>
       </div>
     </div>
   );
