@@ -66,32 +66,9 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
   useEffect(() => {
     fetchPhotos();
 
-    // Real-time subscription for new photos
-    const channel = supabase
-      .channel(`plan-photos:${planId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'plan_photos',
-          filter: `plan_id=eq.${planId}`,
-        },
-        () => { fetchPhotos(); }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'plan_photos',
-          filter: `plan_id=eq.${planId}`,
-        },
-        () => { fetchPhotos(); }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    // Poll for new photos every 15 seconds (replaces per-plan realtime channel)
+    const interval = setInterval(fetchPhotos, 15_000);
+    return () => clearInterval(interval);
   }, [planId]);
 
   // Resolve signed URLs whenever photos change
