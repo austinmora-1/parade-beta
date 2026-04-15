@@ -267,14 +267,14 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
       {voterProfiles.length > 0 && (
         <div className="flex items-center gap-2">
           <div className="flex -space-x-1.5">
-            {voterProfiles.map(p => {
+            {sortedVoterProfiles.map(p => {
               const voted = voterIds.has(p.userId);
               return (
                 <TooltipProvider key={p.userId} delayDuration={200}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="relative">
-                        <Avatar className={cn("h-6 w-6 border-2 border-background", !voted && "opacity-40 grayscale")}>
+                      <div className={cn("relative", voted && "z-10")}>
+                        <Avatar className={cn("h-6 w-6 border-2 border-background", !voted && "opacity-60")}>
                           <AvatarImage src={p.avatar || getElephantAvatar(p.name)} />
                           <AvatarFallback className="text-[8px]">{p.name.charAt(0)}</AvatarFallback>
                         </Avatar>
