@@ -405,12 +405,9 @@ function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAv
       return { label: `${prevDisplay} → ${currentDisplay}`, isSplit: true, isAway };
     }
 
-    if (currentLoc && !arrivedToday && leavingToday) {
-      // Last day at this location — show departure transition
-      const currentDisplay = formatCity(currentLoc);
-      const nextDisplay = formatCity(nextLoc || '');
-      return { label: `${currentDisplay} → ${nextDisplay}`, isSplit: true, isAway };
-    }
+    // Note: we intentionally do NOT show a departure arrow on the last day at a location
+    // in the fallback path. The actual travel day (next day) will show the transition
+    // via its own per-slot location data or arrival detection.
   }
 
   // Not a transition — check for home-to-away transition (first away day)
