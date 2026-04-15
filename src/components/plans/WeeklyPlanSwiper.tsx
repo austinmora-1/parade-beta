@@ -330,31 +330,27 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeAddress: string | null): { label: string; isSplit: boolean; isAway: boolean } | null {
   const avail = availabilityMap[dateKey];
   const isAway = avail?.locationStatus === 'away';
+  const homeCity = homeAddress?.split(',')[0]?.trim() || null;
 
-  // Check for split-location day
+  // Check for split-location day via per-slot locations
   if (avail?.slotLocations) {
     const locs = Object.values(avail.slotLocations).filter((v): v is string => !!v);
-    // Normalize city names to deduplicate (e.g. "New York Kennedy" and "New York" both → "new york")
     const normalizedLocs = locs.map(l => normalizeCity(l));
     const unique = [...new Set(normalizedLocs)].filter(Boolean);
-    // Also check for in-transit (null among set slots)
     const hasTransit = Object.values(avail.slotLocations).some(v => v === null && v !== undefined);
     if (unique.length > 1 || (unique.length >= 1 && hasTransit)) {
-      // Use the original (non-normalized) first occurrence of each unique city for display
       const displayNames: string[] = [];
       const seen = new Set<string>();
       for (const loc of locs) {
         const norm = normalizeCity(loc);
         if (norm && !seen.has(norm)) {
           seen.add(norm);
-          // Capitalize for display
           displayNames.push(loc.length <= 4 ? loc : loc.replace(/\b\w/g, c => c.toUpperCase()));
         }
       }
 
-      // If only one city found in slots but there's transit, infer departure from previous day
       if (displayNames.length === 1 && hasTransit) {
-        const prevDayDeparture = getPreviousDayLocation(dateKey, availabilityMap, homeAddress);
+        const prevDayDeparture = getPreviousDayLocation(dateKey, availabilityMap, homeCity);
         if (prevDayDeparture) {
           const prevNorm = normalizeCity(prevDayDeparture);
           const currentNorm = normalizeCity(displayNames[0]);
@@ -371,24 +367,63 @@ function getLocationLabel(dateKey: string, availabilityMap: Record<string, DayAv
     }
   }
 
+  // Fallback: detect transition by comparing with adjacent days' trip_location
+  if (avail?.tripLocation || isAway) {
+    const currentLoc = avail?.tripLocation || null;
+    const currentNorm = currentLoc ? normalizeCity(currentLoc) : (homeCity ? normalizeCity(homeCity) : '');
+
+    // Check previous day
+    const prevLoc = getPreviousDayLocation(dateKey, availabilityMap, homeCity);
+    const prevNorm = prevLoc ? normalizeCity(prevLoc) : '';
+
+    // Check next day
+    const nextLoc = getNextDayLocation(dateKey, availabilityMap, homeCity);
+    const nextNorm = nextLoc ? normalizeCity(nextLoc) : '';
+
+    // Transition: current differs from previous AND it's the first day at this location
+    // (i.e., previous day was a different city)
+    if (currentLoc && prevNorm && currentNorm && prevNorm !== currentNorm) {
+      // Also check if previous day's location is not the same as current (true transition)
+      const prevDisplay = prevLoc && prevLoc.length <= 4 ? prevLoc : (prevLoc || '').replace(/\b\w/g, c => c.toUpperCase());
+      const currentDisplay = currentLoc.length <= 4 ? currentLoc : currentLoc.replace(/\b\w/g, c => c.toUpperCase());
+      return { label: `${prevDisplay} → ${currentDisplay}`, isSplit: true, isAway };
+    }
+
+    // Transition: current differs from next AND it's the last day at this location
+    if (currentLoc && nextNorm && currentNorm && nextNorm !== currentNorm) {
+      const currentDisplay = currentLoc.length <= 4 ? currentLoc : currentLoc.replace(/\b\w/g, c => c.toUpperCase());
+      const nextDisplay = nextLoc && nextLoc.length <= 4 ? nextLoc : (nextLoc || '').replace(/\b\w/g, c => c.toUpperCase());
+      return { label: `${currentDisplay} → ${nextDisplay}`, isSplit: true, isAway };
+    }
+  }
+
+  // Not a transition — check for home-to-away transition (first away day)
+  if (!isAway && !avail?.tripLocation) {
+    const nextLoc = getNextDayLocation(dateKey, availabilityMap, homeCity);
+    const nextNorm = nextLoc ? normalizeCity(nextLoc) : '';
+    const homeNorm = homeCity ? normalizeCity(homeCity) : '';
+    if (nextNorm && homeNorm && nextNorm !== homeNorm) {
+      // Next day is away to a different city — but don't mark this day as transition
+      // Just show home
+    }
+  }
+
   if (isAway && avail?.tripLocation) {
     return { label: avail.tripLocation, isSplit: false, isAway: true };
   }
-  if (homeAddress) {
-    const parts = homeAddress.split(',');
-    const city = parts[0]?.trim();
-    if (city) return { label: city, isSplit: false, isAway: false };
+  if (homeCity) {
+    return { label: homeCity, isSplit: false, isAway: false };
   }
   return null;
 }
 
 /** Look up the previous day's last known location from availability data */
-function getPreviousDayLocation(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeAddress: string | null): string | null {
+function getPreviousDayLocation(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeCity: string | null): string | null {
   const d = new Date(dateKey + 'T12:00:00Z');
   d.setDate(d.getDate() - 1);
   const prevKey = d.toISOString().split('T')[0];
   const prevAvail = availabilityMap[prevKey];
-  if (!prevAvail) return homeAddress?.split(',')[0]?.trim() || null;
+  if (!prevAvail) return homeCity || null;
 
   // Check slot locations in reverse order for the last known location
   if (prevAvail.slotLocations) {
@@ -402,7 +437,32 @@ function getPreviousDayLocation(dateKey: string, availabilityMap: Record<string,
   // Fall back to trip_location
   if (prevAvail.tripLocation) return prevAvail.tripLocation;
 
-  return homeAddress?.split(',')[0]?.trim() || null;
+  return homeCity || null;
+}
+
+/** Look up the next day's first known location from availability data */
+function getNextDayLocation(dateKey: string, availabilityMap: Record<string, DayAvailability>, homeCity: string | null): string | null {
+  const d = new Date(dateKey + 'T12:00:00Z');
+  d.setDate(d.getDate() + 1);
+  const nextKey = d.toISOString().split('T')[0];
+  const nextAvail = availabilityMap[nextKey];
+  if (!nextAvail) return homeCity || null;
+
+  // Check slot locations in order for the first known location
+  if (nextAvail.slotLocations) {
+    const slotKeys = ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+    for (const key of slotKeys) {
+      const val = (nextAvail.slotLocations as Record<string, string | null>)[key];
+      if (val) return val;
+    }
+  }
+
+  if (nextAvail.tripLocation) return nextAvail.tripLocation;
+
+  // If next day is 'home', return the home city
+  if (nextAvail.locationStatus === 'home') return homeCity || null;
+
+  return homeCity || null;
 }
 
 function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds, toggleSelect, onEditPlan, onCardTap, availabilityMap, homeAddress, selectionActions }: {
