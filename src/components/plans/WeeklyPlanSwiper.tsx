@@ -937,31 +937,29 @@ function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPas
               </span>
             )}
           </div>
-          <div className="flex items-center justify-between gap-2 mt-0.5">
-            <div className="text-[11px] text-muted-foreground space-y-0.5 min-w-0">
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3 shrink-0" />
-                <span>
-                  {plan.startTime
-                    ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
-                    : timeSlotConfig.time}
-                </span>
-                <span className="text-muted-foreground/60">{getTimezoneAbbreviation(userTimezone)}</span>
-              </div>
-              {plan.location && (
-                <div className="flex items-center gap-1 truncate min-w-0">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
-                </div>
-              )}
+          <div className="text-[11px] text-muted-foreground mt-0.5 space-y-0.5 min-w-0">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3 shrink-0" />
+              <span>
+                {plan.startTime
+                  ? `${formatTime12(plan.startTime)}${plan.endTime ? ` – ${formatTime12(plan.endTime)}` : ''}`
+                  : timeSlotConfig.time}
+              </span>
+              <span className="text-muted-foreground/60">{getTimezoneAbbreviation(userTimezone)}</span>
             </div>
-            {plan.participants.length > 0 && (
-              <div className="shrink-0">
-                <ParticipantAvatarStack participants={plan.participants} />
+            {plan.location && (
+              <div className="flex items-center gap-1 truncate min-w-0">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
               </div>
             )}
           </div>
         </div>
+        {plan.participants.length > 0 && (
+          <div className="shrink-0 self-center">
+            <ParticipantAvatarStack participants={plan.participants} />
+          </div>
+        )}
       </div>
     </button>
   );
