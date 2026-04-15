@@ -901,6 +901,7 @@ export async function reconcilePlans(params: {
         start_time: planRow.start_time,
         end_time: planRow.end_time,
         ...(planRow.location !== undefined ? { location: planRow.location } : {}),
+        ...(planRow.source_timezone !== undefined ? { source_timezone: planRow.source_timezone } : {}),
       }).eq('id', existing.id)
     } else {
       // Content-based dedup
