@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, ThumbsUp, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper } from 'lucide-react';
+import { Plane, MapPin, Calendar, ChevronRight, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
