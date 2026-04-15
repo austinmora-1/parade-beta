@@ -1946,7 +1946,9 @@ export type Database = {
           trip_b_start: string
         }[]
       }
-      get_dashboard_data: { Args: { p_user_id: string }; Returns: Json }
+      get_dashboard_data:
+        | { Args: { p_user_id: string }; Returns: Json }
+        | { Args: { p_plan_cursor?: string; p_user_id: string }; Returns: Json }
       get_display_names_for_users: {
         Args: { p_user_ids: string[] }
         Returns: {

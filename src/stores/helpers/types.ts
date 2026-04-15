@@ -74,6 +74,7 @@ export interface DashboardData {
     home_address: string | null;
     timezone: string | null;
   } | null;
+  has_more_plans?: boolean;
 }
 
 export interface DefaultAvailabilitySettings {

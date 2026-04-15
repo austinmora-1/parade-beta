@@ -100,6 +100,7 @@ function transformDashboardData(rpcData: unknown, userId: string) {
     defaultSettings,
     homeAddress: homeAddr,
     userTimezone: viewerTimezone,
+    hasMorePlans: !!(d as any).has_more_plans,
   };
 }
 
@@ -116,6 +117,8 @@ interface PlannerState {
   defaultSettings: DefaultAvailabilitySettings | null;
   homeAddress: string | null;
   userTimezone: string;
+  hasMorePlans: boolean;
+  isLoadingMore: boolean;
   
   setUserId: (userId: string | null) => void;
   loadAllData: (force?: boolean) => Promise<void>;
@@ -123,6 +126,7 @@ interface PlannerState {
   loadFriends: () => Promise<void>;
   loadPlans: () => Promise<void>;
   loadProfileAndAvailability: () => Promise<void>;
+  loadMorePlans: () => Promise<void>;
   
   addPlan: (plan: Omit<Plan, 'id' | 'createdAt'>) => Promise<void>;
   updatePlan: (id: string, updates: Partial<Plan>) => Promise<void>;
@@ -169,6 +173,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   defaultSettings: null,
   homeAddress: null,
   userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  hasMorePlans: false,
+  isLoadingMore: false,
   
   setUserId: (userId) => set({ userId }),
   
@@ -250,6 +256,46 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   forceRefresh: async () => {
     set({ lastFetchedAt: null });
     await get().loadAllData();
+  },
+
+  loadMorePlans: async () => {
+    const { userId, plans, isLoadingMore } = get();
+    if (!userId || isLoadingMore) return;
+
+    // Find the oldest plan's createdAt as cursor
+    const oldest = plans.reduce<Date | null>((min, p) => {
+      if (!p.createdAt) return min;
+      return !min || p.createdAt < min ? p.createdAt : min;
+    }, null);
+
+    if (!oldest) return;
+
+    set({ isLoadingMore: true });
+    try {
+      const { data: rpcData, error } = await supabase.rpc('get_dashboard_data' as any, {
+        p_user_id: userId,
+        p_plan_cursor: oldest.toISOString(),
+      });
+
+      if (error || !rpcData) {
+        console.error('loadMorePlans error:', error);
+        set({ isLoadingMore: false });
+        return;
+      }
+
+      const more = transformDashboardData(rpcData, userId);
+      const existingIds = new Set(plans.map(p => p.id));
+      const newPlans = more.plans.filter(p => !existingIds.has(p.id));
+
+      set((state) => ({
+        plans: [...state.plans, ...newPlans],
+        hasMorePlans: more.hasMorePlans,
+        isLoadingMore: false,
+      }));
+    } catch (err) {
+      console.error('loadMorePlans error:', err);
+      set({ isLoadingMore: false });
+    }
   },
   
   addPlan: async (plan) => {
@@ -333,26 +379,22 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       if (participantRows.length > 0) {
         await supabase.from('plan_participants').insert(participantRows);
 
-        try {
-          const { data: sessionData } = await supabase.auth.getSession();
+        // Fire-and-forget: all post-creation notifications happen async server-side
+        supabase.auth.getSession().then(({ data: sessionData }) => {
           const token = sessionData?.session?.access_token;
+          if (!token) return;
           const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-          const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', userId).single();
-          const senderName = profile?.display_name || 'Someone';
-
-          fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
+          fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              user_ids: participantRows.map(r => r.friend_id),
-              title: 'New Plan Invite! 📅',
-              body: `${senderName} invited you to "${plan.title}"`,
-              url: `/plan/${data.id}`,
+              plan_id: data.id,
+              creator_id: userId,
+              participant_ids: participantRows.map(r => r.friend_id),
+              plan_title: plan.title,
             }),
           }).catch(() => {});
-        } catch (err) {
-          console.error('Push notification error:', err);
-        }
+        }).catch(() => {});
       }
     }
     
@@ -552,34 +594,31 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       role: 'participant',
     });
 
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const { data: senderProfile } = await supabase
-        .from('profiles')
-        .select('display_name')
-        .eq('user_id', userId)
-        .single();
-      const senderName = senderProfile?.display_name || 'Someone';
-      const { TIME_SLOT_LABELS: TSL } = await import('@/types/planner');
-      const timeLabel = TSL[proposal.timeSlot]?.label || proposal.timeSlot;
-      const dateLabel = format(proposal.date, 'EEE, MMM d');
-
-      fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: proposal.recipientFriendId,
-          title: `${senderName} wants to make plans 🎉`,
-          body: `${activityConfig?.label || proposal.activity} · ${dateLabel} · ${timeLabel}`,
-          url: `/notifications`,
-          icon: '/icon-192.png',
-        }),
-      }).catch(() => {});
-    } catch (e) {
-      console.error('Push notification error in proposePlan:', e);
-    }
+    // Fire-and-forget: proposal notification via on-plan-created
+    (async () => {
+      try {
+        const { TIME_SLOT_LABELS: TSL } = await import('@/types/planner');
+        const timeLabel = TSL[proposal.timeSlot]?.label || proposal.timeSlot;
+        const dateLabel = format(proposal.date, 'EEE, MMM d');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        if (!token) return;
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan_id: data.id,
+            creator_id: userId,
+            participant_ids: [proposal.recipientFriendId],
+            plan_title: proposal.title || activityConfig?.label || proposal.activity,
+            notification_title: undefined, // let server build from creator name
+            notification_body: `${activityConfig?.label || proposal.activity} · ${dateLabel} · ${timeLabel}`,
+            notification_url: '/notifications',
+          }),
+        }).catch(() => {});
+      } catch {}
+    })();
 
     await get().loadAllData();
   },
