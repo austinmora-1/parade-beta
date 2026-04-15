@@ -7,7 +7,7 @@ import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { getTimezoneAbbreviation } from '@/lib/timezone';
+import { getTimezoneAbbreviation, getTimezoneForCity } from '@/lib/timezone';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 
@@ -28,14 +28,21 @@ export function MobileHeader() {
   const inboxCount = totalNotifications + unreadChats;
 
   // Derive current city from today's availability (trip location when away, home address when home)
-  const currentCity = useMemo(() => {
+  const { currentCity, currentTimezone } = useMemo(() => {
     const todayKey = format(new Date(), 'yyyy-MM-dd');
     const todayAvail = availabilityMap[todayKey];
     if (todayAvail?.locationStatus === 'away' && todayAvail?.tripLocation) {
-      return todayAvail.tripLocation.split(',')[0];
+      return {
+        currentCity: todayAvail.tripLocation.split(',')[0],
+        currentTimezone: getTimezoneForCity(todayAvail.tripLocation),
+      };
     }
-    return profile?.home_address?.split(',')[0] || 'Set location';
-  }, [availabilityMap, profile?.home_address]);
+    const homeAddress = profile?.home_address;
+    return {
+      currentCity: homeAddress?.split(',')[0] || 'Set location',
+      currentTimezone: homeAddress ? getTimezoneForCity(homeAddress) : userTimezone,
+    };
+  }, [availabilityMap, profile?.home_address, userTimezone]);
 
   return (
     <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
@@ -58,7 +65,7 @@ export function MobileHeader() {
             {currentCity}
           </span>
           <span className="text-[10px] text-sidebar-foreground/60 truncate">
-            {getTimezoneAbbreviation(userTimezone)}
+            {getTimezoneAbbreviation(currentTimezone)}
           </span>
         </div>
       </div>
