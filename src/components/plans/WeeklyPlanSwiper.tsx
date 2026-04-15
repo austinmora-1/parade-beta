@@ -1,6 +1,6 @@
 import { useMemo, useRef, useCallback, useState, useEffect, Fragment } from 'react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2, Check, Eye } from 'lucide-react';
+import { format, startOfWeek, addDays, isSameDay, differenceInCalendarWeeks } from 'date-fns';
+import { ChevronLeft, ChevronRight, ChevronDown, Merge, X, Pencil, Trash2, Share2, Check, Eye, CalendarDays } from 'lucide-react';
 import { Plan, DayAvailability, ACTIVITY_CONFIG, TIME_SLOT_LABELS, Friend } from '@/types/planner';
 import { ProposalVoting } from '@/components/plans/ProposalVoting';
 import { getCompactPlanTitle, getPlanDisplayTitle } from '@/lib/planTitle';
@@ -18,6 +18,8 @@ import {
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlannerStore } from '@/stores/plannerStore';
 
@@ -112,6 +114,7 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const weekStart = useMemo(() => {
     const base = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -249,9 +252,31 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onWeekChange(weekOffset - 1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">{weekLabel}</span>
-          {!isThisWeek && (
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger asChild>
+            <button className="flex items-center gap-1.5 hover:bg-accent rounded-lg px-2 py-1 transition-colors">
+              <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm font-semibold">{weekLabel}</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              mode="single"
+              selected={weekStart}
+              onSelect={(date) => {
+                if (date) {
+                  const base = startOfWeek(new Date(), { weekStartsOn: 1 });
+                  const target = startOfWeek(date, { weekStartsOn: 1 });
+                  const diff = differenceInCalendarWeeks(target, base, { weekStartsOn: 1 });
+                  onWeekChange(diff);
+                }
+                setCalendarOpen(false);
+              }}
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+        {!isThisWeek && (
             <button
               onClick={() => onWeekChange(0)}
               className="text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
@@ -259,7 +284,6 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
               Today
             </button>
           )}
-        </div>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onWeekChange(weekOffset + 1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
