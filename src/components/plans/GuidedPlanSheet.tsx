@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, TimeSlot, ActivityType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +27,7 @@ interface GuidedPlanSheetProps {
   preSelectedFriends: { userId: string; name: string; avatar?: string }[];
 }
 
-type Step = 'activity' | 'time' | 'confirm';
+type Step = 'friends' | 'activity' | 'time' | 'confirm';
 
 const SUGGESTED_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
   { id: 'drinks', emoji: '🍹', label: 'Drinks' },
@@ -119,7 +120,14 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
 
-  const [step, setStep] = useState<Step>('activity');
+  const needsFriendStep = preSelectedFriends.length === 0;
+  const [chosenFriends, setChosenFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
+  const [friendSearch, setFriendSearch] = useState('');
+
+  // The effective friends list (pre-selected or user-chosen)
+  const effectiveFriends = needsFriendStep ? chosenFriends : preSelectedFriends;
+
+  const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'activity');
   const [activity, setActivity] = useState<ActivityType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
@@ -131,13 +139,33 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
   const [selectedSharedCity, setSelectedSharedCity] = useState<string>('');
 
-  const friendNames = preSelectedFriends.map(f => f.name.split(' ')[0]);
+  const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
+
+  // Connected friends for the selection step
+  const connectedFriends = useMemo(() =>
+    friends.filter(f => f.status === 'connected' && f.friendUserId),
+    [friends]
+  );
+
+  const filteredFriends = useMemo(() => {
+    if (!friendSearch.trim()) return connectedFriends;
+    const q = friendSearch.toLowerCase();
+    return connectedFriends.filter(f => f.name.toLowerCase().includes(q));
+  }, [connectedFriends, friendSearch]);
+
+  const toggleFriend = (f: typeof connectedFriends[0]) => {
+    setChosenFriends(prev => {
+      const exists = prev.some(p => p.userId === f.friendUserId);
+      if (exists) return prev.filter(p => p.userId !== f.friendUserId);
+      return [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }];
+    });
+  };
 
   // Reset on open
   useEffect(() => {
     if (open) {
-      setStep('activity');
+      setStep(needsFriendStep ? 'friends' : 'activity');
       setActivity(null);
       setSelectedDate(null);
       setTimeSlot(null);
@@ -146,15 +174,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setBestSlots([]);
       setShowCalendar(false);
       setFriendMultiDayAvail({});
+      setChosenFriends([]);
+      setFriendSearch('');
     }
-  }, [open]);
+  }, [open, needsFriendStep]);
 
   // Fetch availability + best slots when moving to time step
   const fetchBestSlots = useCallback(async () => {
-    if (preSelectedFriends.length === 0) return;
+    if (effectiveFriends.length === 0) return;
     setLoadingSlots(true);
 
-    const userIds = preSelectedFriends.map(f => f.userId);
+    const userIds = effectiveFriends.map(f => f.userId);
     const scanDays = Array.from({ length: 180 }, (_, i) => addDays(new Date(), i));
     const startDate = format(scanDays[0], 'yyyy-MM-dd');
     const endDate = format(scanDays[179], 'yyyy-MM-dd');
@@ -484,7 +514,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     const grouped = Array.from(cityGroups.values()).flat();
     setBestSlots(grouped);
     setLoadingSlots(false);
-  }, [preSelectedFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
+  }, [effectiveFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
   // When step changes to 'time', fetch best slots (covers full 180-day window)
   useEffect(() => {
@@ -494,7 +524,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   }, [step]);
 
   const getSlotStatusForDate = useCallback((date: Date, slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | null => {
-    if (preSelectedFriends.length === 0) return null;
+    if (effectiveFriends.length === 0) return null;
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayAvail = friendMultiDayAvail[dateStr];
     if (!dayAvail) return null;
@@ -510,7 +540,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     if (iAmFree && avail.free > 0) return 'some-free';
     if (!iAmFree || avail.free === 0) return 'none-free';
     return null;
-  }, [friendMultiDayAvail, preSelectedFriends, myAvailabilityMap, myPlans]);
+  }, [friendMultiDayAvail, effectiveFriends, myAvailabilityMap, myPlans]);
 
   const handleSelectActivity = (act: ActivityType) => {
     setActivity(act);
@@ -566,7 +596,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     setSending(true);
 
     try {
-      const firstFriend = preSelectedFriends[0];
+      const firstFriend = effectiveFriends[0];
       const hasMultipleOptions = selectedSlots.length > 1;
 
       await proposePlan({
@@ -589,8 +619,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
       if (latestPlan) {
         // Add additional participants
-        if (preSelectedFriends.length > 1) {
-          const additionalParticipants = preSelectedFriends.slice(1).map(f => ({
+        if (effectiveFriends.length > 1) {
+          const additionalParticipants = effectiveFriends.slice(1).map(f => ({
             plan_id: latestPlan.id,
             friend_id: f.userId,
             status: 'invited',
@@ -632,11 +662,15 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     }
   };
 
-  const stepTitle = step === 'activity'
-    ? `What do you want to do with ${friendNamesStr}?`
-    : step === 'time'
-      ? `When works for ${activityLabel.toLowerCase()}?`
-      : 'Look good?';
+  const stepTitle = step === 'friends'
+    ? 'Who do you want to hang with?'
+    : step === 'activity'
+      ? `What do you want to do with ${friendNamesStr}?`
+      : step === 'time'
+        ? `When works for ${activityLabel.toLowerCase()}?`
+        : 'Look good?';
+
+  const firstStep = needsFriendStep ? 'friends' : 'activity';
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -645,11 +679,12 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         style={viewport ? { maxHeight: `${Math.min(viewport.height * 0.9, window.innerHeight * 0.9)}px` } : undefined}
       >
         <DrawerHeader className="pb-2 relative">
-          {step !== 'activity' && (
+          {step !== firstStep && (
             <button
               onClick={() => {
                 if (step === 'confirm') { setStep('time'); setShowCalendar(false); }
                 else if (step === 'time') setStep('activity');
+                else if (step === 'activity' && needsFriendStep) setStep('friends');
               }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -661,21 +696,99 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           </DrawerTitle>
         </DrawerHeader>
 
-        {/* Friend avatars strip */}
-        <div className="flex items-center justify-center gap-1 px-4 pb-3">
-          <div className="flex -space-x-2">
-            {preSelectedFriends.slice(0, 5).map(f => (
-              <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
-                <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-            ))}
+        {/* Friend avatars strip - show when past friends step */}
+        {step !== 'friends' && effectiveFriends.length > 0 && (
+          <div className="flex items-center justify-center gap-1 px-4 pb-3">
+            <div className="flex -space-x-2">
+              {effectiveFriends.slice(0, 5).map(f => (
+                <Avatar key={f.userId} className="h-7 w-7 border-2 border-background">
+                  <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                  <AvatarFallback className="text-[9px]">{f.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
           </div>
-          <span className="text-xs text-muted-foreground ml-2">{friendNamesStr}</span>
-        </div>
+        )}
 
         <div className="px-4 pb-2 overflow-y-auto flex-1 min-h-0">
           <AnimatePresence mode="wait">
+            {/* STEP 0: Friend selection */}
+            {step === 'friends' && (
+              <motion.div
+                key="friends"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-3"
+              >
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search friends..."
+                    value={friendSearch}
+                    onChange={(e) => setFriendSearch(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                  />
+                </div>
+
+                {chosenFriends.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {chosenFriends.map(f => (
+                      <button
+                        key={f.userId}
+                        onClick={() => toggleFriend({ friendUserId: f.userId, name: f.name, avatar: f.avatar, status: 'connected' } as any)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                      >
+                        <Avatar className="h-4 w-4">
+                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                          <AvatarFallback className="text-[6px]">{f.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {f.name.split(' ')[0]}
+                        <span className="text-primary/60">×</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-1 max-h-[280px] overflow-y-auto">
+                  {filteredFriends.length > 0 ? filteredFriends.map(f => {
+                    const isChosen = chosenFriends.some(c => c.userId === f.friendUserId);
+                    return (
+                      <button
+                        key={f.friendUserId}
+                        onClick={() => toggleFriend(f)}
+                        className={cn(
+                          "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
+                          isChosen
+                            ? "bg-primary/10 border border-primary/20"
+                            : "hover:bg-muted/50 border border-transparent"
+                        )}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                          <AvatarFallback className="text-xs">{f.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium flex-1">{f.name}</span>
+                        <div className={cn(
+                          "flex items-center justify-center h-5 w-5 rounded-full border-2 shrink-0 transition-all",
+                          isChosen
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-muted-foreground/30"
+                        )}>
+                          {isChosen && <Check className="h-3 w-3" />}
+                        </div>
+                      </button>
+                    );
+                  }) : (
+                    <div className="text-center py-6">
+                      <p className="text-xs text-muted-foreground">No friends found</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {/* STEP 1: Activity selection */}
             {step === 'activity' && (
               <motion.div
@@ -903,7 +1016,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">With</p>
                     <div className="flex -space-x-1.5">
-                      {preSelectedFriends.slice(0, 4).map(f => (
+                      {effectiveFriends.slice(0, 4).map(f => (
                         <Avatar key={f.userId} className="h-6 w-6 border-2 border-background">
                           <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
                           <AvatarFallback className="text-[7px]">{f.name.charAt(0)}</AvatarFallback>
@@ -929,6 +1042,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         </div>
 
         {/* Footer with Continue or Submit button */}
+        {step === 'friends' && chosenFriends.length > 0 && (
+          <DrawerFooter className="pt-2">
+            <Button
+              onClick={() => setStep('activity')}
+              className="w-full gap-2"
+            >
+              Continue with {chosenFriends.length} {chosenFriends.length === 1 ? 'friend' : 'friends'} →
+            </Button>
+          </DrawerFooter>
+        )}
+
         {step === 'time' && selectedSlots.length > 0 && (
           <DrawerFooter className="pt-2">
             <Button
