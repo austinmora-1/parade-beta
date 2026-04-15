@@ -140,7 +140,7 @@ export function NewHangRequestDialog({ trigger, open: controlledOpen, onOpenChan
           .gte('date', `${today}T00:00:00`)
           .lte('date', `${weekOut}T23:59:59`),
         supabase
-          .from('profiles')
+          .from('friend_profiles')
           .select('default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status')
           .eq('user_id', selectedFriend.friendUserId!)
           .single(),
@@ -235,7 +235,7 @@ export function NewHangRequestDialog({ trigger, open: controlledOpen, onOpenChan
     setSending(true);
     try {
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('friend_profiles')
         .select('share_code')
         .eq('user_id', selectedFriend.friendUserId!)
         .single();
