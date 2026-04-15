@@ -7,6 +7,7 @@ interface CurrentUserProfile {
   avatar_url: string | null;
   location_status: string | null;
   timezone: string | null;
+  home_address: string | null;
 }
 
 // Global state to share profile across components
