@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limiter.ts';
+import { createLogger, generateRequestId } from '../_shared/logger.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +38,11 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userId = claimsData.claims.sub as string;
+    const adminClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const rateCheck = await checkRateLimit(adminClient, userId, 'send-sms-invite', 10, 3600);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter!, corsHeaders);
 
     // Parse and validate input
     const { phone, inviteUrl, inviterName, planTitle } = await req.json();

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limiter.ts';
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -54,6 +55,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const authenticatedUserId = claimsData.claims.sub;
+    const adminClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const rateCheck = await checkRateLimit(adminClient, authenticatedUserId as string, 'send-hang-request', 20, 3600);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter!, corsHeaders);
+
     console.log('Authenticated user sending hang request:', authenticatedUserId);
 
     const payload: HangRequestPayload = await req.json();

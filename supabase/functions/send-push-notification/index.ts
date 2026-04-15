@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limiter.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,6 +44,9 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const rateCheck = await checkRateLimit(adminClient, user.id, 'send-push-notification', 50, 3600);
+    if (!rateCheck.allowed) return rateLimitResponse(rateCheck.retryAfter!, corsHeaders);
 
     const body = await req.json();
     const { title, body: notifBody, url, image } = body;

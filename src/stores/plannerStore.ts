@@ -225,7 +225,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     }
 
     // Skip if fetched less than 30s ago (unless forced)
-    if (!force && lastFetchedAt && Date.now() - lastFetchedAt < 30_000) {
+    if (!force && lastFetchedAt && Date.now() - lastFetchedAt < 120_000) {
       return;
     }
     
