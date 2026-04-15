@@ -120,7 +120,14 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
 
-  const [step, setStep] = useState<Step>('activity');
+  const needsFriendStep = preSelectedFriends.length === 0;
+  const [chosenFriends, setChosenFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
+  const [friendSearch, setFriendSearch] = useState('');
+
+  // The effective friends list (pre-selected or user-chosen)
+  const effectiveFriends = needsFriendStep ? chosenFriends : preSelectedFriends;
+
+  const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'activity');
   const [activity, setActivity] = useState<ActivityType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
@@ -132,13 +139,33 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
   const [selectedSharedCity, setSelectedSharedCity] = useState<string>('');
 
-  const friendNames = preSelectedFriends.map(f => f.name.split(' ')[0]);
+  const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
+
+  // Connected friends for the selection step
+  const connectedFriends = useMemo(() =>
+    friends.filter(f => f.status === 'connected' && f.friendUserId),
+    [friends]
+  );
+
+  const filteredFriends = useMemo(() => {
+    if (!friendSearch.trim()) return connectedFriends;
+    const q = friendSearch.toLowerCase();
+    return connectedFriends.filter(f => f.name.toLowerCase().includes(q));
+  }, [connectedFriends, friendSearch]);
+
+  const toggleFriend = (f: typeof connectedFriends[0]) => {
+    setChosenFriends(prev => {
+      const exists = prev.some(p => p.userId === f.friendUserId);
+      if (exists) return prev.filter(p => p.userId !== f.friendUserId);
+      return [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }];
+    });
+  };
 
   // Reset on open
   useEffect(() => {
     if (open) {
-      setStep('activity');
+      setStep(needsFriendStep ? 'friends' : 'activity');
       setActivity(null);
       setSelectedDate(null);
       setTimeSlot(null);
@@ -147,8 +174,10 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setBestSlots([]);
       setShowCalendar(false);
       setFriendMultiDayAvail({});
+      setChosenFriends([]);
+      setFriendSearch('');
     }
-  }, [open]);
+  }, [open, needsFriendStep]);
 
   // Fetch availability + best slots when moving to time step
   const fetchBestSlots = useCallback(async () => {
