@@ -611,6 +611,7 @@ function ProposalTripCard({
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [editDestination, setEditDestination] = useState(proposal.destination || '');
   const [editDates, setEditDates] = useState(
     proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date }))
