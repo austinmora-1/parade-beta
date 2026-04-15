@@ -741,6 +741,82 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
           </div>
           )}
 
+          {/* ── Multi-Option Proposal Toggle ── */}
+          {!editPlan && !isParticipantEditor && !isMultiDay && selectedFriends.length > 0 && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isMultiOption}
+                  onChange={(e) => {
+                    setIsMultiOption(e.target.checked);
+                    if (e.target.checked) {
+                      setProposalOptions([{ date, timeSlot, startTime: startTime || undefined }]);
+                      setPlanStatus('proposed');
+                    } else {
+                      setProposalOptions([]);
+                    }
+                  }}
+                  className="rounded border-border"
+                />
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <ListPlus className="h-3 w-3" />
+                  Propose multiple times
+                </span>
+              </label>
+
+              {isMultiOption && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5 space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Time options ({proposalOptions.length}/5)
+                  </p>
+                  <div className="space-y-1.5">
+                    {proposalOptions.map((opt, i) => (
+                      <div key={i} className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1.5 text-xs">
+                        <span className="font-bold text-primary w-4 shrink-0">#{i + 1}</span>
+                        <span className="font-medium">
+                          {isToday(opt.date) ? 'Today' : isTomorrow(opt.date) ? 'Tomorrow' : format(opt.date, 'EEE, MMM d')}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {opt.startTime ? (() => {
+                            const [h, m] = opt.startTime!.split(':').map(Number);
+                            const ampm = h >= 12 ? 'pm' : 'am';
+                            const hour12 = h % 12 || 12;
+                            return m === 0 ? `${hour12}${ampm}` : `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
+                          })() : TIME_SLOT_LABELS[opt.timeSlot]?.label}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setProposalOptions(prev => prev.filter((_, j) => j !== i))}
+                          className="ml-auto text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {proposalOptions.length < 5 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-7 text-xs gap-1"
+                      onClick={() => {
+                        setProposalOptions(prev => [...prev, { date, timeSlot, startTime: startTime || undefined }]);
+                      }}
+                    >
+                      <ListPlus className="h-3 w-3" />
+                      Add current date/time as option
+                    </Button>
+                  )}
+                  <p className="text-[10px] text-muted-foreground">
+                    Change the date & time above, then tap "Add" to include it. Friends will rank their preferences.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Status ── */}
           {!isParticipantEditor && (
           <div className="space-y-1">
