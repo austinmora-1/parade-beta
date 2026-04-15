@@ -373,6 +373,14 @@ function TripCard({
 }) {
   const [converting, setConverting] = useState(false);
   const [addParticipantOpen, setAddParticipantOpen] = useState(false);
+  const [friendProfiles, setFriendProfiles] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
+
+  useEffect(() => {
+    if (trip.priority_friend_ids.length === 0) return;
+    supabase
+      .rpc('get_display_names_for_users', { p_user_ids: trip.priority_friend_ids })
+      .then(({ data }) => { if (data) setFriendProfiles(data); });
+  }, [trip.priority_friend_ids]);
 
   const handleConvertToVisit = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -419,66 +427,84 @@ function TripCard({
     <div
       onClick={onNavigate}
       className={cn(
-        "w-full flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-soft",
-        "hover:bg-muted/50 transition-colors text-left group cursor-pointer"
+        "w-full rounded-xl border border-border bg-card p-3 shadow-soft",
+        "hover:bg-muted/50 transition-colors text-left group cursor-pointer space-y-2"
       )}
     >
-      <div className={cn(
-        "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
-        isOngoing ? "bg-primary/15 text-primary" : "bg-availability-away/15 text-availability-away"
-      )}>
-        <Plane className="h-5 w-5" />
-      </div>
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
+          isOngoing ? "bg-primary/15 text-primary" : "bg-availability-away/15 text-availability-away"
+        )}>
+          <Plane className="h-5 w-5" />
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <span className="font-medium text-sm truncate">
-            {trip.location || 'Unknown destination'}
-          </span>
-          {isOngoing && (
-            <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full shrink-0">
-              NOW
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="font-medium text-sm truncate">
+              {trip.location || 'Unknown destination'}
             </span>
-          )}
+            {isOngoing && (
+              <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full shrink-0">
+                NOW
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
+            </span>
+            <span>·</span>
+            <span>{duration} {duration === 1 ? 'day' : 'days'}</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
-          </span>
-          <span>·</span>
-          <span>{duration} {duration === 1 ? 'day' : 'days'}</span>
-          {trip.priority_friend_ids.length > 0 && (
-            <>
-              <span>·</span>
-              <span>{trip.priority_friend_ids.length} {trip.priority_friend_ids.length === 1 ? 'friend' : 'friends'}</span>
-            </>
-          )}
-        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          onClick={(e) => { e.stopPropagation(); setAddParticipantOpen(true); }}
+          title="Add participant"
+        >
+          <UserPlus className="h-3.5 w-3.5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          disabled={converting}
+          onClick={handleConvertToVisit}
+          title="Convert to visit"
+        >
+          {converting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowLeftRight className="h-3.5 w-3.5" />}
+        </Button>
+
+        <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
       </div>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 shrink-0"
-        onClick={(e) => { e.stopPropagation(); setAddParticipantOpen(true); }}
-        title="Add participant"
-      >
-        <UserPlus className="h-3.5 w-3.5" />
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 shrink-0"
-        disabled={converting}
-        onClick={handleConvertToVisit}
-        title="Convert to visit"
-      >
-        {converting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowLeftRight className="h-3.5 w-3.5" />}
-      </Button>
-
-      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+      {/* Participant avatars */}
+      {friendProfiles.length > 0 && (
+        <div className="flex items-center gap-2">
+          <div className="flex -space-x-1.5">
+            {friendProfiles.slice(0, 5).map((p, i, arr) => (
+              <Avatar key={p.user_id} className="h-5 w-5 border-2 border-background" style={{ zIndex: arr.length - i }}>
+                <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
+                <AvatarFallback className="text-[7px]">{(p.display_name || '?')[0]}</AvatarFallback>
+              </Avatar>
+            ))}
+            {friendProfiles.length > 5 && (
+              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-2 border-background text-[8px] font-medium text-muted-foreground">
+                +{friendProfiles.length - 5}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] text-muted-foreground truncate">
+            {friendProfiles.map(p => (p.display_name || 'Friend').split(' ')[0]).join(', ')}
+          </span>
+        </div>
+      )}
 
       <AddParticipantDialog
         open={addParticipantOpen}
