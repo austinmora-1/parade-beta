@@ -531,8 +531,6 @@ function ProposalTripCard({
               )}
               <span>·</span>
               <span>{isCreator ? 'You proposed' : `${proposal.creator_name}`}</span>
-              <span>·</span>
-              <span>{votedCount}/{totalVoters} voted</span>
             </div>
           </div>
         </div>
