@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Plane, Check, Calendar, MapPin, Users, ThumbsUp, Loader2, Home } from 'lucide-react';
+import { Plane, Check, Calendar, MapPin, Users, ThumbsUp, Loader2, Home, Edit2, Trash2, Plus, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ProposalDate {
   id: string;
