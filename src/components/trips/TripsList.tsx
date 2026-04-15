@@ -506,7 +506,7 @@ function ProposalTripCard({
               </span>
               
               {isCreator && (
-                <div className="flex items-center gap-0 shrink-0 ml-auto">
+                <div className="flex items-center gap-1 shrink-0 ml-auto">
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
                     setEditDestination(proposal.destination || '');
                     setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
