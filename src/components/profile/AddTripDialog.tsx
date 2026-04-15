@@ -915,24 +915,22 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
                 size="sm"
                 onClick={() => setDeleteDialogOpen(true)}
                 disabled={isLoading}
-                className="gap-1"
+                className="gap-1 flex-1"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete
               </Button>
             )}
-            <div className="flex gap-2 ml-auto">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSave} 
-                disabled={!startDate || !endDate || isLoading}
-                className="bg-availability-away hover:bg-availability-away/90"
-              >
-                {isLoading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Trip')}
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSave} 
+              disabled={!startDate || !endDate || isLoading}
+              className="flex-1 bg-[hsl(152,40%,39%)] hover:bg-[hsl(152,40%,33%)] text-white"
+            >
+              {isLoading ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Trip')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
