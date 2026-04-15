@@ -504,9 +504,7 @@ function ProposalTripCard({
               <span className="font-medium text-sm truncate text-muted-foreground">
                 {cardTitle}
               </span>
-              <span className="text-[10px] font-semibold bg-muted border border-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
-                {badgeLabel}
-              </span>
+              {isCreator && !isCreator ? null : null}
               {isCreator && (
                 <div className="flex items-center gap-0 shrink-0 ml-auto">
                   <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
