@@ -823,6 +823,7 @@ export type Database = {
           id: string
           location: string | null
           manually_edited: boolean
+          merged_source_event_ids: string[] | null
           notes: string | null
           proposal_status: string | null
           proposed_by: string | null
@@ -848,6 +849,7 @@ export type Database = {
           id?: string
           location?: string | null
           manually_edited?: boolean
+          merged_source_event_ids?: string[] | null
           notes?: string | null
           proposal_status?: string | null
           proposed_by?: string | null
@@ -873,6 +875,7 @@ export type Database = {
           id?: string
           location?: string | null
           manually_edited?: boolean
+          merged_source_event_ids?: string[] | null
           notes?: string | null
           proposal_status?: string | null
           proposed_by?: string | null

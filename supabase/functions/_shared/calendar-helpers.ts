@@ -836,17 +836,22 @@ export async function reconcilePlans(params: {
     .eq('user_id', userId)
     .eq('source', source)
 
-  // Also fetch ALL plans for content-based dedup
+  // Also fetch ALL plans for content-based dedup and merged event ID tracking
   const { data: allUserPlans } = await adminClient
     .from('plans')
-    .select('id, source, source_event_id, title, date, start_time, manually_edited')
+    .select('id, source, source_event_id, title, date, start_time, manually_edited, merged_source_event_ids')
     .eq('user_id', userId)
 
   const contentLookup = new Map<string, any>()
+  // Build a set of event IDs consumed by merged plans — these should never be re-created
+  const mergedEventIds = new Set<string>()
   for (const p of (allUserPlans || [])) {
     const nt = normalizePlanTitle(p.title)
     const key = makeContentKey(nt, p.date, p.start_time)
     if (!contentLookup.has(key)) contentLookup.set(key, p)
+    if (p.merged_source_event_ids && Array.isArray(p.merged_source_event_ids)) {
+      for (const eid of p.merged_source_event_ids) mergedEventIds.add(eid)
+    }
   }
 
   // Find enriched plan IDs: manually_edited OR has participants
@@ -880,6 +885,11 @@ export async function reconcilePlans(params: {
   // Upsert: skip enriched, update existing, content-dedup, insert new
   const toInsert: any[] = []
   for (const [eventId, planRow] of planRowsByEventId) {
+    // Skip event IDs that were consumed by a merged plan
+    if (mergedEventIds.has(eventId)) {
+      console.log(`[MERGE-SKIP] Event "${eventId}" was merged into another plan, skipping`)
+      continue
+    }
     const existing = existingByEventId.get(eventId)
     if (existing) {
       if (enrichedPlanIds.has(existing.id) || existing.manually_edited) continue

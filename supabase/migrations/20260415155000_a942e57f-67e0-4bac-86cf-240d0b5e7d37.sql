@@ -1,0 +1,1 @@
+ALTER TABLE public.plans ADD COLUMN merged_source_event_ids text[] DEFAULT '{}'::text[];
