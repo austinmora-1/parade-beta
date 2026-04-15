@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, LayoutDashboard, Heart, Calendar, MessageCircle, X } from 'lucide-react';
+import { Sparkles, ArrowRight, LayoutDashboard, Calendar, Globe, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,18 +30,18 @@ const STEPS: WalkthroughStep[] = [
     tip: "Share your availability link so anyone can request to hang with you.",
   },
   {
-    icon: <Heart className="h-5 w-5" />,
-    title: "Sending Vibes",
-    message: "Let friends know what you're feeling! Use the Vibe Selector on your dashboard to broadcast your mood, add a GIF, or share your location. Send to all friends, a pod, or specific people.",
-    emoji: "💚",
-    tip: "Friends can react to your vibes with emoji and comments!",
+    icon: <Sparkles className="h-5 w-5" />,
+    title: "Sharing Availability",
+    message: "Set your weekly intentions and mark when you're free. Friends can see your availability and propose plans for open slots. The more you share, the easier it is to connect!",
+    emoji: "🗓️",
+    tip: "Set default work hours so your free time fills in automatically.",
   },
   {
-    icon: <MessageCircle className="h-5 w-5" />,
-    title: "Meet Elly, Your AI Assistant",
-    message: "I'm Elly! 👋 Chat with me from the dashboard widget or mention @Elly in any group chat. I can help find times that work for everyone, create plans, and coordinate hangouts automatically.",
-    emoji: "✨",
-    tip: "Try asking me 'When are we all free this weekend?' in a group chat!",
+    icon: <Globe className="h-5 w-5" />,
+    title: "Trips & Travel",
+    message: "Heading somewhere? Add a trip and Parade will update your availability and location status automatically. Friends visiting your city — or vice versa — will get surfaced so you never miss a chance to meet up.",
+    emoji: "✈️",
+    tip: "Trip proposals let you vote on dates with friends before committing!",
   },
 ];
 
