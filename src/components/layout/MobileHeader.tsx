@@ -1,7 +1,4 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessagesSquare } from 'lucide-react';
-import { useNotifications } from '@/hooks/useNotifications';
-import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
@@ -11,8 +8,6 @@ import { useMemo } from 'react';
 import { format } from 'date-fns';
 
 export function MobileHeader() {
-  const { openFeedback } = useFeedback();
-  const { totalNotifications } = useNotifications();
   const { profile } = useCurrentUserProfile();
   const navigate = useNavigate();
   const { availabilityMap, userTimezone } = usePlannerStore();
@@ -21,8 +16,6 @@ export function MobileHeader() {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
-
-  const inboxCount = totalNotifications;
 
   // Derive current city from today's availability (trip location when away, home address when home)
   const { currentCity, currentTimezone } = useMemo(() => {
@@ -74,16 +67,8 @@ export function MobileHeader() {
         </Link>
       </div>
 
-      {/* Right: feedback + inbox bell */}
-      <div className="w-[36px] flex items-center justify-end">
-        <button
-          onClick={openFeedback}
-          className="relative flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/80 transition-colors hover:text-sidebar-foreground"
-          aria-label="Send feedback"
-        >
-          <MessagesSquare className="h-[18px] w-[18px]" />
-        </button>
-      </div>
+      {/* Right: spacer to balance layout */}
+      <div className="w-8" />
     </header>
   );
 }
