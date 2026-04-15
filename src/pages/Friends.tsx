@@ -5,7 +5,7 @@ import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
 import { FriendListRow } from '@/components/friends/FriendListRow';
 import { FriendPanel } from '@/components/friends/FriendPanel';
-import { PodSection } from '@/components/friends/PodSection';
+import { PodPanel } from '@/components/friends/PodPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserPlus, Search, Users, Loader2 } from 'lucide-react';
@@ -17,7 +17,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { usePods } from '@/hooks/usePods';
-import { format } from 'date-fns';
 import { format } from 'date-fns';
 import { TimeSlot, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { Pod } from '@/hooks/usePods';
@@ -160,16 +159,6 @@ export default function Friends() {
     });
   }, [connectedFriendUserIds]);
 
-  // DM conversation lookup
-  const dmByFriendUserId = useMemo(() => {
-    const map = new Map<string, typeof conversations[0]>();
-    for (const c of conversations) {
-      if (c.type !== 'dm') continue;
-      const other = c.participants.find(p => p.user_id !== user?.id);
-      if (other) map.set(other.user_id, c);
-    }
-    return map;
-  }, [conversations, user?.id]);
 
   // Search for users when query changes
   useEffect(() => {
@@ -278,9 +267,8 @@ export default function Friends() {
     toast({ title: 'Request declined', description: friend ? `Declined request from ${friend.name}` : 'Friend request declined' });
   };
 
-  const handleOpenFriend = (friendUserId: string, conversationId?: string) => {
+  const handleOpenFriend = (friendUserId: string) => {
     setActiveFriendId(friendUserId);
-    setActiveChatId(conversationId || null);
     setPanelOpen(true);
   };
 
@@ -413,7 +401,6 @@ export default function Friends() {
                 <FriendListRow
                   key={friend.id}
                   friend={friend}
-                  conversation={fuid ? dmByFriendUserId.get(fuid) || null : null}
                   isAvailableToday={fuid ? friendAvailMap[fuid] : false}
                   currentVibe={fuid ? friendVibeMap[fuid]?.vibe : null}
                   vibeIcon={fuid ? friendVibeMap[fuid]?.icon : null}
@@ -468,7 +455,6 @@ export default function Friends() {
       {/* Friend Panel */}
       <FriendPanel
         friendUserId={activeFriendId}
-        initialConversationId={activeChatId}
         open={panelOpen}
         onOpenChange={setPanelOpen}
       />

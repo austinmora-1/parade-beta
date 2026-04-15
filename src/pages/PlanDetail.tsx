@@ -4,7 +4,6 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Edit, MessageCircle, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { useConversations } from '@/hooks/useChat';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS, FeedVisibility } from '@/types/planner';
