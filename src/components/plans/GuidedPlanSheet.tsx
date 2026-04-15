@@ -619,8 +619,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
       if (latestPlan) {
         // Add additional participants
-        if (preSelectedFriends.length > 1) {
-          const additionalParticipants = preSelectedFriends.slice(1).map(f => ({
+        if (effectiveFriends.length > 1) {
+          const additionalParticipants = effectiveFriends.slice(1).map(f => ({
             plan_id: latestPlan.id,
             friend_id: f.userId,
             status: 'invited',
@@ -1042,6 +1042,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         </div>
 
         {/* Footer with Continue or Submit button */}
+        {step === 'friends' && chosenFriends.length > 0 && (
+          <DrawerFooter className="pt-2">
+            <Button
+              onClick={() => setStep('activity')}
+              className="w-full gap-2"
+            >
+              Continue with {chosenFriends.length} {chosenFriends.length === 1 ? 'friend' : 'friends'} →
+            </Button>
+          </DrawerFooter>
+        )}
+
         {step === 'time' && selectedSlots.length > 0 && (
           <DrawerFooter className="pt-2">
             <Button
