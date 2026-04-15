@@ -232,8 +232,10 @@ export function ProposalVoting({ planId, isOwner, participantCount, compact = fa
                 <span className="text-muted-foreground/60">
                   {TIME_SLOT_LABELS[opt.timeSlot]?.label || opt.timeSlot}
                 </span>
-                {score > 0 && (
-                  <span className="rounded-full bg-primary/15 px-1 text-[8px] font-bold text-primary">{score}</span>
+                {(voteCounts.get(opt.id) || 0) > 0 && (
+                  <span className="rounded-full bg-primary/15 px-1 text-[8px] font-bold text-primary">
+                    {voteCounts.get(opt.id)}/{totalExpected}
+                  </span>
                 )}
               </button>
             );
