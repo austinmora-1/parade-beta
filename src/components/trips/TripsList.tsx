@@ -388,42 +388,93 @@ function ProposalTripCard({
   proposal,
   currentUserId,
   voting,
-  onVote,
+  onSubmitRankedVotes,
   onRefresh,
 }: {
   proposal: TripProposal;
   currentUserId: string;
   voting: string | null;
-  onVote: (proposalId: string, dateId: string, participantId: string) => void;
+  onSubmitRankedVotes: (proposalId: string, rankings: Record<string, number>, participantId: string) => Promise<void>;
   onRefresh: () => Promise<void>;
 }) {
   const isCreator = proposal.created_by === currentUserId;
   const totalVoters = proposal.participants.length;
-  const votedCount = proposal.participants.filter(p => p.status === 'voted').length;
+  
+  // Determine who has voted based on trip_proposal_votes
+  const voterIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const v of proposal.votes) ids.add(v.user_id);
+    return ids;
+  }, [proposal.votes]);
+  
+  const votedCount = voterIds.size;
   const allVoted = votedCount === totalVoters && totalVoters > 0;
+  const hasVoted = voterIds.has(currentUserId);
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editDestination, setEditDestination] = useState(proposal.destination || '');
-  const [editDates, setEditDates] = useState(
-    proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date }))
-  );
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [finalizing, setFinalizing] = useState(false);
-  const [justFinalized, setJustFinalized] = useState(false);
+  // Local rankings state for ranked voting
+  const [myRankings, setMyRankings] = useState<Record<string, number>>(() => {
+    const existing: Record<string, number> = {};
+    for (const v of proposal.votes) {
+      if (v.user_id === currentUserId) {
+        existing[v.date_id] = v.rank;
+      }
+    }
+    return existing;
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Find winning date (most votes, ties broken by earliest)
+  // Vote counts per date (number of unique users who ranked each date)
+  const voteCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const d of proposal.dates) counts.set(d.id, 0);
+    const dateUsers = new Map<string, Set<string>>();
+    for (const v of proposal.votes) {
+      if (!dateUsers.has(v.date_id)) dateUsers.set(v.date_id, new Set());
+      dateUsers.get(v.date_id)!.add(v.user_id);
+    }
+    for (const [dateId, users] of dateUsers) counts.set(dateId, users.size);
+    return counts;
+  }, [proposal.votes, proposal.dates]);
+
+  const handleRankToggle = (dateId: string) => {
+    setMyRankings(prev => {
+      const existing = { ...prev };
+      if (dateId in existing) {
+        const removedRank = existing[dateId];
+        delete existing[dateId];
+        for (const [id, rank] of Object.entries(existing)) {
+          if (rank > removedRank) existing[id] = rank - 1;
+        }
+      } else {
+        existing[dateId] = Object.keys(existing).length + 1;
+      }
+      return existing;
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (Object.keys(myRankings).length === 0) {
+      toast.error('Please rank at least one date option');
+      return;
+    }
+    setIsSubmitting(true);
+    await onSubmitRankedVotes(proposal.id, myRankings, proposal.myParticipantId);
+    setIsSubmitting(false);
+  };
+
+  // Find winning date by vote count (ties broken by earliest)
   const winningDate = useMemo(() => {
     if (proposal.dates.length === 0) return null;
     const sorted = [...proposal.dates].sort((a, b) => {
-      if (b.votes !== a.votes) return b.votes - a.votes;
+      const aCount = voteCounts.get(a.id) || 0;
+      const bCount = voteCounts.get(b.id) || 0;
+      if (bCount !== aCount) return bCount - aCount;
       return a.start_date.localeCompare(b.start_date);
     });
     return sorted[0];
-  }, [proposal.dates]);
+  }, [proposal.dates, voteCounts]);
 
   const handleFinalize = async () => {
     if (!winningDate || !isCreator) return;
