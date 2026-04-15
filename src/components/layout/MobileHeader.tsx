@@ -6,7 +6,10 @@ import { useConversations } from '@/hooks/useChat';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { usePlannerStore } from '@/stores/plannerStore';
 import { getTimezoneAbbreviation } from '@/lib/timezone';
+import { useMemo } from 'react';
+import { format } from 'date-fns';
 
 export function MobileHeader() {
   const { openFeedback } = useFeedback();
@@ -14,6 +17,7 @@ export function MobileHeader() {
   const { conversations } = useConversations();
   const { profile } = useCurrentUserProfile();
   const navigate = useNavigate();
+  const { availability, userTimezone } = usePlannerStore();
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -21,8 +25,17 @@ export function MobileHeader() {
   };
 
   const unreadChats = conversations.filter(c => c.unread_count > 0).length;
-  // Inbox badge = notifications + unread chat messages
   const inboxCount = totalNotifications + unreadChats;
+
+  // Derive current city from today's availability (trip location when away, home address when home)
+  const currentCity = useMemo(() => {
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    const todayAvail = availability.get(todayKey);
+    if (todayAvail?.locationStatus === 'away' && todayAvail?.tripLocation) {
+      return todayAvail.tripLocation.split(',')[0];
+    }
+    return profile?.home_address?.split(',')[0] || 'Set location';
+  }, [availability, profile?.home_address]);
 
   return (
     <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
@@ -42,10 +55,10 @@ export function MobileHeader() {
         </button>
         <div className="flex flex-col leading-tight min-w-0">
           <span className="text-[11px] font-medium text-sidebar-foreground truncate">
-            {profile?.home_address?.split(',')[0] || 'Set location'}
+            {currentCity}
           </span>
           <span className="text-[10px] text-sidebar-foreground/60 truncate">
-            {getTimezoneAbbreviation(profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone)}
+            {getTimezoneAbbreviation(userTimezone)}
           </span>
         </div>
       </div>
