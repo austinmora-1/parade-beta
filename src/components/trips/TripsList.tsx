@@ -369,6 +369,7 @@ function ProposalTripCard({
   const isCreator = proposal.created_by === currentUserId;
   const totalVoters = proposal.participants.length;
   const votedCount = proposal.participants.filter(p => p.status === 'voted').length;
+  const allVoted = votedCount === totalVoters && totalVoters > 0;
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
 
@@ -380,6 +381,101 @@ function ProposalTripCard({
   );
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [justFinalized, setJustFinalized] = useState(false);
+
+  // Find winning date (most votes, ties broken by earliest)
+  const winningDate = useMemo(() => {
+    if (proposal.dates.length === 0) return null;
+    const sorted = [...proposal.dates].sort((a, b) => {
+      if (b.votes !== a.votes) return b.votes - a.votes;
+      return a.start_date.localeCompare(b.start_date);
+    });
+    return sorted[0];
+  }, [proposal.dates]);
+
+  const handleFinalize = async () => {
+    if (!winningDate || !isCreator) return;
+    setFinalizing(true);
+    try {
+      // Create the actual trip
+      const { error: tripErr } = await supabase.from('trips').insert({
+        user_id: currentUserId,
+        location: proposal.destination?.trim() || null,
+        start_date: winningDate.start_date,
+        end_date: winningDate.end_date,
+        available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
+        priority_friend_ids: proposal.participants
+          .filter(p => p.user_id !== currentUserId)
+          .map(p => p.user_id),
+      });
+      if (tripErr) throw tripErr;
+
+      // Set availability to away for the winning dates
+      const startDate = new Date(winningDate.start_date + 'T00:00:00');
+      const endDate = new Date(winningDate.end_date + 'T00:00:00');
+      const days: Date[] = [];
+      let current = startDate;
+      while (current <= endDate) {
+        days.push(new Date(current));
+        current = addDays(current, 1);
+      }
+
+      const availRows = days.map(d => ({
+        user_id: currentUserId,
+        date: format(d, 'yyyy-MM-dd'),
+        location_status: 'away' as const,
+        trip_location: proposal.destination?.trim() || null,
+        early_morning: true, late_morning: true, early_afternoon: true,
+        late_afternoon: true, evening: true, late_night: true,
+      }));
+      await supabase.from('availability').upsert(availRows, { onConflict: 'user_id,date', ignoreDuplicates: false });
+
+      // Mark proposal as finalized
+      await supabase
+        .from('trip_proposals')
+        .update({ status: 'finalized' })
+        .eq('id', proposal.id);
+
+      // Send push notification to participants
+      const friendUserIds = proposal.participants
+        .filter(p => p.user_id !== currentUserId)
+        .map(p => p.user_id);
+      if (friendUserIds.length > 0) {
+        const dateLabel = `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`;
+        supabase.functions.invoke('send-push-notification', {
+          body: {
+            user_ids: friendUserIds,
+            title: isVisit ? '🏠 Visit Confirmed!' : '✈️ Trip Confirmed!',
+            body: `${proposal.destination || 'Your trip'} is locked in for ${dateLabel}!`,
+            url: '/trips',
+          },
+        }).catch(() => {});
+      }
+
+      // Celebration!
+      setJustFinalized(true);
+      confetti({
+        particleCount: 120,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
+        scalar: 1,
+      });
+      toast.success(isVisit ? 'Visit confirmed! 🏠🎉' : 'Trip confirmed! ✈️🎉');
+
+      // Refresh after a short delay to show the animation
+      setTimeout(() => {
+        onRefresh();
+        window.dispatchEvent(new Event('trips:updated'));
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to finalize:', err);
+      toast.error('Something went wrong. Try again?');
+    } finally {
+      setFinalizing(false);
+    }
+  };
 
   const handleSaveEdit = async () => {
     setSaving(true);
@@ -485,18 +581,121 @@ function ProposalTripCard({
   }
 
   const CardIcon = isVisit ? Home : Plane;
-  const badgeLabel = 'Proposed';
+
+  // Finalized celebration state
+  if (justFinalized && winningDate) {
+    return (
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="w-full rounded-xl border-2 border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-background p-4 shadow-soft text-center space-y-3 overflow-hidden relative"
+      >
+        <motion.div
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+          className="text-4xl"
+        >
+          {isVisit ? '🏠' : '✈️'}
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <p className="text-lg font-bold text-foreground">{isVisit ? 'Visit Confirmed!' : 'Trip Confirmed!'}</p>
+          <p className="text-sm text-primary font-semibold mt-1">
+            {proposal.destination || 'Your destination'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {format(new Date(winningDate.start_date + 'T00:00:00'), 'EEE, MMM d')} – {format(new Date(winningDate.end_date + 'T00:00:00'), 'EEE, MMM d')}
+          </p>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="flex justify-center -space-x-2"
+        >
+          {proposal.participants.map(p => (
+            <Avatar key={p.id} className="h-7 w-7 border-2 border-background">
+              <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
+              <AvatarFallback className="text-[8px]">{p.display_name.charAt(0)}</AvatarFallback>
+            </Avatar>
+          ))}
+        </motion.div>
+      </motion.div>
+    );
+  }
 
   return (
     <>
       <div
         className={cn(
-          "w-full rounded-xl border border-dashed border-muted-foreground/40 bg-card p-3 shadow-soft text-left transition-all space-y-2.5"
+          "w-full rounded-xl border bg-card p-3 shadow-soft text-left transition-all space-y-2.5",
+          allVoted
+            ? "border-primary/40 border-solid bg-gradient-to-br from-primary/[0.06] to-background"
+            : "border-dashed border-muted-foreground/40"
         )}
       >
+        {/* All voted banner */}
+        <AnimatePresence>
+          {allVoted && isCreator && winningDate && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="rounded-lg bg-primary/10 border border-primary/20 p-3 space-y-2"
+            >
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold text-primary">Everyone has voted!</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Sparkles className="h-3.5 w-3.5 text-primary/70" />
+                <span className="font-medium text-foreground">
+                  Top pick: {format(new Date(winningDate.start_date + 'T00:00:00'), 'EEE, MMM d')} – {format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}
+                </span>
+                <span className="text-[10px] font-medium text-primary ml-auto">
+                  {winningDate.votes} vote{winningDate.votes !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <Button
+                size="sm"
+                className="w-full gap-2"
+                onClick={handleFinalize}
+                disabled={finalizing}
+              >
+                {finalizing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <PartyPopper className="h-3.5 w-3.5" />
+                )}
+                {isVisit ? 'Confirm Visit' : 'Confirm Trip'}
+              </Button>
+            </motion.div>
+          )}
+          {allVoted && !isCreator && winningDate && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="rounded-lg bg-primary/10 border border-primary/20 p-2.5 flex items-center gap-2"
+            >
+              <Trophy className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="text-[11px] text-primary font-medium">
+                All votes in! Waiting for {proposal.creator_name.split(' ')[0]} to confirm.
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Card header */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary shrink-0">
+          <div className={cn(
+            "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
+            allVoted ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
+          )}>
             <CardIcon className="h-5 w-5" />
           </div>
 
@@ -558,8 +757,13 @@ function ProposalTripCard({
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-semibold bg-muted border border-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
-                {badgeLabel}
+              <span className={cn(
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0",
+                allVoted
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-muted border border-muted-foreground/20 text-muted-foreground"
+              )}>
+                {allVoted ? '✓ All voted' : 'Proposed'}
               </span>
               <span className="text-[10px] text-muted-foreground">{votedCount}/{totalVoters} voted</span>
             </div>
@@ -572,6 +776,7 @@ function ProposalTripCard({
             const isVoting = voting === `${proposal.id}:${d.id}`;
             const startDate = new Date(d.start_date + 'T00:00:00');
             const endDate = new Date(d.end_date + 'T00:00:00');
+            const isWinner = allVoted && winningDate?.id === d.id;
 
             return (
               <button
@@ -582,18 +787,31 @@ function ProposalTripCard({
                 disabled={isVoting}
                 className={cn(
                   "w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all",
-                  isMyVote
+                  isWinner
                     ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                    : "border-border hover:border-primary/30 hover:bg-primary/5"
+                    : isMyVote
+                      ? "border-primary/60 bg-primary/5"
+                      : "border-border hover:border-primary/30 hover:bg-primary/5"
                 )}
               >
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span className="flex-1 text-xs font-medium">
+                {isWinner && (
+                  <Trophy className="h-3.5 w-3.5 text-primary shrink-0" />
+                )}
+                {!isWinner && (
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                )}
+                <span className={cn(
+                  "flex-1 text-xs font-medium",
+                  isWinner && "text-primary"
+                )}>
                   {format(startDate, 'EEE, MMM d')} – {format(endDate, 'MMM d')}
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {d.votes > 0 && (
-                    <span className="text-[10px] font-medium text-muted-foreground">
+                    <span className={cn(
+                      "text-[10px] font-medium",
+                      isWinner ? "text-primary" : "text-muted-foreground"
+                    )}>
                       {d.votes} vote{d.votes !== 1 ? 's' : ''}
                     </span>
                   )}
