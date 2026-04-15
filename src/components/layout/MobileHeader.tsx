@@ -41,8 +41,8 @@ export function MobileHeader() {
           </Avatar>
         </button>
         <div className="flex flex-col leading-tight min-w-0">
-          <span className="text-[11px] font-medium text-sidebar-foreground capitalize truncate">
-            📍 {profile?.location_status === 'away' ? 'Away' : 'Home'}
+          <span className="text-[11px] font-medium text-sidebar-foreground truncate">
+            {profile?.home_address?.split(',')[0] || 'Set location'}
           </span>
           <span className="text-[10px] text-sidebar-foreground/60 truncate">
             {getTimezoneAbbreviation(profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone)}
