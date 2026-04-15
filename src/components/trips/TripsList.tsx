@@ -349,6 +349,132 @@ export function TripsList({ refreshKey }: TripsListProps) {
   );
 }
 
+/* ── Regular trip card with conversion support ── */
+
+function TripCard({
+  trip,
+  startDate,
+  endDate,
+  duration,
+  isOngoing,
+  currentUserId,
+  onNavigate,
+  onConverted,
+}: {
+  trip: Trip;
+  startDate: Date;
+  endDate: Date;
+  duration: number;
+  isOngoing: boolean;
+  currentUserId: string;
+  onNavigate: () => void;
+  onConverted: () => Promise<void>;
+}) {
+  const [converting, setConverting] = useState(false);
+
+  const handleConvertToVisit = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConverting(true);
+    try {
+      // Create a trip proposal from this trip
+      const { data: proposal, error: propError } = await supabase
+        .from('trip_proposals')
+        .insert({
+          created_by: currentUserId,
+          destination: trip.location,
+          proposal_type: 'visit',
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (propError || !proposal) throw propError;
+
+      // Add date option
+      await supabase.from('trip_proposal_dates').insert({
+        proposal_id: proposal.id,
+        start_date: trip.start_date,
+        end_date: trip.end_date,
+      });
+
+      // Add creator as participant
+      await supabase.from('trip_proposal_participants').insert({
+        proposal_id: proposal.id,
+        user_id: currentUserId,
+        status: 'accepted',
+      });
+
+      // Delete original trip
+      await supabase.from('trips').delete().eq('id', trip.id);
+
+      toast.success('Converted to visit proposal');
+      await onConverted();
+    } catch (err) {
+      console.error('Error converting trip:', err);
+      toast.error('Failed to convert trip');
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onNavigate}
+      className={cn(
+        "w-full flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-soft",
+        "hover:bg-muted/50 transition-colors text-left group cursor-pointer"
+      )}
+    >
+      <div className={cn(
+        "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
+        isOngoing ? "bg-primary/15 text-primary" : "bg-availability-away/15 text-availability-away"
+      )}>
+        <Plane className="h-5 w-5" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-sm truncate">
+            {trip.location || 'Unknown destination'}
+          </span>
+          {isOngoing && (
+            <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full shrink-0">
+              NOW
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
+          </span>
+          <span>·</span>
+          <span>{duration} {duration === 1 ? 'day' : 'days'}</span>
+          {trip.priority_friend_ids.length > 0 && (
+            <>
+              <span>·</span>
+              <span>{trip.priority_friend_ids.length} {trip.priority_friend_ids.length === 1 ? 'friend' : 'friends'}</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0"
+        disabled={converting}
+        onClick={handleConvertToVisit}
+        title="Convert to visit"
+      >
+        {converting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowLeftRight className="h-3.5 w-3.5" />}
+      </Button>
+
+      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+    </div>
+  );
+}
+
 /* ── Proposal rendered as a trip card with dashed tentative border ── */
 
 function ProposalTripCard({
