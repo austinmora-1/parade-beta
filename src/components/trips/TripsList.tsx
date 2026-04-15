@@ -697,7 +697,6 @@ function ProposalTripCard({
     </>
   );
 }
-  const totalVoters = proposal.participants.length;
   const votedCount = proposal.participants.filter(p => p.status === 'voted').length;
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
