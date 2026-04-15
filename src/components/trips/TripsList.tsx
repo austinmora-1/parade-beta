@@ -534,6 +534,7 @@ function ProposalTripCard({
     return proposal.dates.map(d => d.id);
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rankingsCollapsed, setRankingsCollapsed] = useState(hasVoted);
 
   // Derive myRankings from ordered list
   const myRankings = useMemo(() => {
