@@ -332,50 +332,17 @@ export function TripsList({ refreshKey }: TripsListProps) {
         const isOngoing = !isAfter(startOfDay(startDate), startOfDay(new Date()));
 
         return (
-          <button
+          <TripCard
             key={trip.id}
-            onClick={() => navigate(`/trip/${trip.id}`)}
-            className={cn(
-              "w-full flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-soft",
-              "hover:bg-muted/50 transition-colors text-left group"
-            )}
-          >
-            <div className={cn(
-              "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
-              isOngoing ? "bg-primary/15 text-primary" : "bg-availability-away/15 text-availability-away"
-            )}>
-              <Plane className="h-5 w-5" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="font-medium text-sm truncate">
-                  {trip.location || 'Unknown destination'}
-                </span>
-                {isOngoing && (
-                  <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full shrink-0">
-                    NOW
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
-                </span>
-                <span>·</span>
-                <span>{duration} {duration === 1 ? 'day' : 'days'}</span>
-                {trip.priority_friend_ids.length > 0 && (
-                  <>
-                    <span>·</span>
-                    <span>{trip.priority_friend_ids.length} {trip.priority_friend_ids.length === 1 ? 'friend' : 'friends'}</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
-          </button>
+            trip={trip}
+            startDate={startDate}
+            endDate={endDate}
+            duration={duration}
+            isOngoing={isOngoing}
+            currentUserId={user!.id}
+            onNavigate={() => navigate(`/trip/${trip.id}`)}
+            onConverted={async () => { await fetchTrips(); await fetchProposals(); }}
+          />
         );
       })}
     </div>
