@@ -1422,6 +1422,60 @@ export type Database = {
           },
         ]
       }
+      trip_proposal_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string | null
+          id: string
+          invite_token: string
+          invited_by: string
+          proposal_id: string
+          status: string
+          trip_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          invite_token?: string
+          invited_by: string
+          proposal_id: string
+          status?: string
+          trip_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          proposal_id?: string
+          status?: string
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_proposal_invites_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_proposal_invites_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_proposal_participants: {
         Row: {
           created_at: string
@@ -1979,6 +2033,7 @@ export type Database = {
         Returns: undefined
       }
       accept_plan_invite: { Args: { p_token: string }; Returns: string }
+      accept_trip_invite: { Args: { p_token: string }; Returns: Json }
       approve_participant_request: {
         Args: { p_request_id: string }
         Returns: undefined
@@ -2112,6 +2167,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_trip_invite_details: { Args: { p_token: string }; Returns: Json }
       get_vibe_recipient_names: {
         Args: { p_vibe_send_id: string }
         Returns: {
