@@ -611,14 +611,19 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
               value={activity}
               onValueChange={(v) => {
                 setActivity(v);
-                const config = ACTIVITY_CONFIG[v as ActivityType];
+                const config = getActivityConfig(v, customActivities);
                 if (config) setSelectedVibe(config.vibeType);
               }}
             >
               <SelectTrigger className="h-10 text-sm">
                 <SelectValue>
                   {(() => {
-                    const config = ACTIVITY_CONFIG[activity as ActivityType];
+                    if (activity === 'tbd') return (
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <CircleHelp className="h-4 w-4" /> TBD
+                      </span>
+                    );
+                    const config = getActivityConfig(activity, customActivities);
                     if (!config) return activity;
                     return (
                       <span className="flex items-center gap-2">
@@ -630,6 +635,29 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="max-h-64">
+                {/* TBD option */}
+                <SelectItem value="tbd" className="text-sm">
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    ❓ TBD — decide later
+                  </span>
+                </SelectItem>
+
+                {/* Custom activities */}
+                {customActivities.length > 0 && (
+                  <div>
+                    <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Your Activities
+                    </div>
+                    {customActivities.map((ca) => (
+                      <SelectItem key={ca.id} value={ca.id} className="text-sm">
+                        <span className="flex items-center gap-2">
+                          {ca.icon} {ca.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </div>
+                )}
+
                 {getAllVibes().map((vibe) => {
                   const vibeConfig = VIBE_CONFIG[vibe];
                   const activities = getActivitiesByVibe(vibe);
