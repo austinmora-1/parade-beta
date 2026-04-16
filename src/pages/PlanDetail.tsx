@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2 } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2, X } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -330,6 +330,22 @@ export default function PlanDetail() {
     }
   };
 
+  const handleRemoveParticipant = async (friendUserId: string, friendName: string) => {
+    if (!plan || !isOwner) return;
+    try {
+      const { error } = await supabase
+        .from('plan_participants')
+        .delete()
+        .eq('plan_id', plan.id)
+        .eq('friend_id', friendUserId);
+      if (error) throw error;
+      toast.success(`Removed ${friendName}`);
+      await loadPlans();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove participant');
+    }
+  };
+
   const displayTitle = plan ? getPlanDisplayTitle(plan) : displayPlan.title;
 
   const handleDelete = async () => {
@@ -633,7 +649,20 @@ export default function PlanDetail() {
                         </Avatar>
                         <span className="text-sm hover:underline">{p.name}</span>
                       </FriendLink>
-                      <span className={`text-xs ${rsvpColor}`}>{rsvpLabel}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs ${rsvpColor}`}>{rsvpLabel}</span>
+                        {isOwner && p.friendUserId && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveParticipant(p.friendUserId, p.name)}
+                            title="Remove participant"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
