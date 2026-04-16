@@ -464,17 +464,6 @@ function TripCard({
 
         <Button
           variant="ghost"
-          size="sm"
-          className="h-7 px-2 shrink-0 gap-1 text-xs"
-          onClick={(e) => { e.stopPropagation(); onNavigate(); }}
-          title="Suggest & vote on activities"
-        >
-          <Vote className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Activities</span>
-        </Button>
-
-        <Button
-          variant="ghost"
           size="icon"
           className="h-7 w-7 shrink-0"
           onClick={(e) => { e.stopPropagation(); setAddParticipantOpen(true); }}
