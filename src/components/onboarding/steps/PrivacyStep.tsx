@@ -36,14 +36,6 @@ export function PrivacyStep({ data, updateData }: PrivacyStepProps) {
       checked: data.showVibeStatus,
       onChange: (checked: boolean) => updateData({ showVibeStatus: checked }),
     },
-    {
-      id: 'discoverable',
-      icon: Users,
-      title: 'Make me discoverable',
-      description: 'Friends can find you by searching your name or email',
-      checked: data.discoverable,
-      onChange: (checked: boolean) => updateData({ discoverable: checked }),
-    },
   ];
 
   return (
