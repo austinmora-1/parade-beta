@@ -368,6 +368,14 @@ export default function TripDetail() {
         )}
       </div>
 
+      {/* Activity suggestions for confirmed shared trips */}
+      {trip.proposal_id && (
+        <TripActivities
+          proposalId={trip.proposal_id}
+          participantCount={proposalParticipantCount}
+        />
+      )}
+
       {/* Edit Dialog */}
       {editOpen && (
         <Suspense fallback={null}>
