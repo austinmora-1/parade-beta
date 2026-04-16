@@ -5,12 +5,29 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { Sun, Moon, Sunset, Coffee, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTimezoneForCity } from '@/lib/timezone';
+import { useTheme } from 'next-themes';
 
 function getGreetingConfig(hour: number) {
-  if (hour >= 5 && hour < 12) return { greeting: 'Good morning', icon: Coffee, emoji: '☀️', gradient: 'from-amber-400/20 to-orange-300/10' };
-  if (hour >= 12 && hour < 17) return { greeting: 'Good afternoon', icon: Sun, emoji: '🌤️', gradient: 'from-sky-400/15 to-blue-300/10' };
-  if (hour >= 17 && hour < 21) return { greeting: 'Good evening', icon: Sunset, emoji: '🌅', gradient: 'from-orange-400/15 to-pink-300/10' };
-  return { greeting: 'Night owl mode', icon: Moon, emoji: '🌙', gradient: 'from-indigo-400/15 to-purple-300/10' };
+  if (hour >= 5 && hour < 12) return {
+    greeting: 'Good morning', icon: Coffee, emoji: '☀️',
+    lightGradient: 'linear-gradient(135deg, rgba(251,191,36,0.35) 0%, rgba(251,146,60,0.25) 40%, rgba(244,114,182,0.15) 100%)',
+    darkGradient: 'linear-gradient(135deg, rgba(14,116,144,0.3) 0%, rgba(30,64,175,0.2) 50%, rgba(20,184,166,0.15) 100%)',
+  };
+  if (hour >= 12 && hour < 17) return {
+    greeting: 'Good afternoon', icon: Sun, emoji: '🌤️',
+    lightGradient: 'linear-gradient(135deg, rgba(56,189,248,0.3) 0%, rgba(34,211,238,0.2) 40%, rgba(52,211,153,0.18) 100%)',
+    darkGradient: 'linear-gradient(135deg, rgba(30,58,138,0.3) 0%, rgba(22,78,99,0.2) 50%, rgba(6,78,59,0.15) 100%)',
+  };
+  if (hour >= 17 && hour < 21) return {
+    greeting: 'Good evening', icon: Sunset, emoji: '🌅',
+    lightGradient: 'linear-gradient(135deg, rgba(251,146,60,0.35) 0%, rgba(244,114,182,0.25) 40%, rgba(167,139,250,0.18) 100%)',
+    darkGradient: 'linear-gradient(135deg, rgba(49,46,129,0.3) 0%, rgba(88,28,135,0.2) 50%, rgba(30,41,59,0.15) 100%)',
+  };
+  return {
+    greeting: 'Night owl mode', icon: Moon, emoji: '🌙',
+    lightGradient: 'linear-gradient(135deg, rgba(167,139,250,0.3) 0%, rgba(129,140,248,0.22) 45%, rgba(96,165,250,0.15) 100%)',
+    darkGradient: 'linear-gradient(135deg, rgba(15,23,42,0.35) 0%, rgba(30,27,75,0.25) 50%, rgba(76,29,149,0.15) 100%)',
+  };
 }
 
 function getContextMessage(planCount: number, friendCount: number, hour: number): string {
@@ -23,6 +40,7 @@ function getContextMessage(planCount: number, friendCount: number, hour: number)
 export function GreetingHeader() {
   const { profile } = useCurrentUserProfile();
   const { plans, friends, availabilityMap, userTimezone } = usePlannerStore();
+  const { resolvedTheme } = useTheme();
 
   const config = useMemo(() => {
     const hour = new Date().getHours();
@@ -56,7 +74,14 @@ export function GreetingHeader() {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="relative overflow-hidden rounded-2xl w-full"
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} rounded-2xl`} />
+      <div
+        className="absolute inset-0 rounded-2xl"
+        style={{
+          background: resolvedTheme === 'dark'
+            ? config.darkGradient
+            : config.lightGradient,
+        }}
+      />
       
       <div className="relative px-4 py-2">
         <h2 className="text-lg font-display text-foreground">
