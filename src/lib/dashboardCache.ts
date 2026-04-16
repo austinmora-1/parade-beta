@@ -47,6 +47,23 @@ export async function setCachedDashboard(userId: string, data: unknown): Promise
   }
 }
 
+export async function patchCachedDashboard(
+  userId: string,
+  patcher: (data: any) => any
+): Promise<void> {
+  try {
+    const cached = await getCachedDashboard(userId);
+    if (!cached) return;
+    const next = patcher(cached.data);
+    if (!next) return;
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put({ data: next, cachedAt: cached.cachedAt } satisfies CachedDashboard, userId);
+  } catch {
+    // Silently fail
+  }
+}
+
 export async function clearDashboardCache(): Promise<void> {
   try {
     const db = await openDB();

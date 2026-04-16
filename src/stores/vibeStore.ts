@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import { Vibe, VibeType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
+import { patchCachedDashboard } from '@/lib/dashboardCache';
+
+function patchVibeInCache(userId: string, vibe: Vibe | null) {
+  patchCachedDashboard(userId, (data: any) => {
+    if (!data?.profile) return data;
+    return {
+      ...data,
+      profile: {
+        ...data.profile,
+        current_vibe: vibe?.type || null,
+        vibe_gif_url: vibe?.gifUrl || null,
+        custom_vibe_tags: vibe?.customTags || [],
+      },
+    };
+  }).catch(() => {});
+}
 
 export interface VibeState {
   currentVibe: Vibe | null;
@@ -35,6 +51,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
       return;
     }
     set({ currentVibe: vibe });
+    patchVibeInCache(userId, vibe);
   },
 
   addCustomVibe: async (tag, userId) => {
@@ -58,6 +75,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
       return;
     }
     set({ currentVibe: newVibe });
+    patchVibeInCache(userId, newVibe);
   },
 
   removeCustomVibe: async (tag, userId) => {
@@ -79,7 +97,9 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
         console.error('Error removing custom vibe:', error);
         return;
       }
-      set({ currentVibe: keepVibe ? { type: vibeType, customTags: [], gifUrl } : null });
+      const next = keepVibe ? { type: vibeType, customTags: [], gifUrl } : null;
+      set({ currentVibe: next });
+      patchVibeInCache(userId, next);
     } else {
       const { error } = await supabase
         .from('profiles')
@@ -89,7 +109,9 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
         console.error('Error removing custom vibe:', error);
         return;
       }
-      set({ currentVibe: { type: vibeType, customTags: newTags, gifUrl } });
+      const next = { type: vibeType, customTags: newTags, gifUrl };
+      set({ currentVibe: next });
+      patchVibeInCache(userId, next);
     }
   },
 }));

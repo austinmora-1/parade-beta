@@ -60,7 +60,7 @@ export function transformDashboardData(rpcData: unknown, userId: string) {
   const currentVibe = profile?.current_vibe
     ? {
         type: profile.current_vibe as VibeType,
-        customTags: profile.current_vibe === 'custom' ? customTags : undefined,
+        customTags: customTags.length > 0 ? customTags : undefined,
         gifUrl: vibeGifUrl,
       }
     : null;
