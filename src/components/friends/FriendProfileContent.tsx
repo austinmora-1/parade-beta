@@ -185,24 +185,30 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
       const today = format(new Date(), 'yyyy-MM-dd');
       const weekOut = format(addDays(new Date(), 6), 'yyyy-MM-dd');
 
-      const { data: availData } = await supabase
-        .from('availability')
-        .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
-        .eq('user_id', userId)
-        .gte('date', today)
-        .lte('date', weekOut)
-        .order('date');
+      // Only fetch availability if the friend has shared it
+      if (friendShowsAvailability) {
+        const { data: availData } = await supabase
+          .from('availability')
+          .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
+          .eq('user_id', userId)
+          .gte('date', today)
+          .lte('date', weekOut)
+          .order('date');
 
-      if (availData) {
-        const mapped: AvailabilityDay[] = availData.map((row: any) => ({
-          date: row.date,
-          slots: Object.fromEntries(
-            TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot]] !== false])
-          ) as Record<TimeSlot, boolean>,
-          location_status: row.location_status,
-          trip_location: row.trip_location,
-        }));
-        setAvailability(mapped);
+        if (availData) {
+          const mapped: AvailabilityDay[] = availData.map((row: any) => ({
+            date: row.date,
+            slots: Object.fromEntries(
+              TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot]] !== false])
+            ) as Record<TimeSlot, boolean>,
+            location_status: row.location_status,
+            trip_location: row.trip_location,
+          }));
+          setAvailability(mapped);
+        }
+      } else {
+        setAvailability([]);
+      }
       }
 
       if (user) {
