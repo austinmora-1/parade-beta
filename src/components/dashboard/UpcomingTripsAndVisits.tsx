@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CollapsibleWidget } from './CollapsibleWidget';
+import { formatDisplayName } from '@/lib/formatName';
 
 export function UpcomingTripsAndVisits() {
   const { user } = useAuth();
@@ -49,7 +50,7 @@ export function UpcomingTripsAndVisits() {
       if (allFriendIds.length > 0) {
         const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allFriendIds });
         for (const p of (profiles || [])) {
-          profileMap.set(p.user_id, { name: p.display_name, avatar: p.avatar_url });
+          profileMap.set(p.user_id, { name: formatDisplayName({ firstName: (p as any).first_name, lastName: (p as any).last_name, displayName: p.display_name }), avatar: p.avatar_url });
         }
       }
 
