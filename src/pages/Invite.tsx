@@ -18,6 +18,7 @@ const Invite = () => {
   const navigate = useNavigate();
   const { user, loading, signUp } = useAuth();
   const inviterName = searchParams.get("ref") || "A friend";
+  const inviterUserId = searchParams.get("from") || null;
 
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
@@ -37,9 +38,47 @@ const Invite = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      // Fire-and-forget Loops sync
-      if (data?.user?.id) {
-        supabase.functions.invoke('sync-user-to-loops', { body: { user_id: data.user.id } }).catch(() => {});
+      const newUserId = data?.user?.id;
+      if (newUserId) {
+        // Fire-and-forget Loops sync
+        supabase.functions.invoke('sync-user-to-loops', { body: { user_id: newUserId } }).catch(() => {});
+
+        // Auto-create friendship with the inviter
+        if (inviterUserId) {
+          // Create bidirectional friendship: inviter → new user (connected)
+          supabase.from('friendships').insert({
+            user_id: inviterUserId,
+            friend_user_id: newUserId,
+            friend_name: signupName || signupEmail.split('@')[0],
+            status: 'connected',
+          }).then(() => {});
+
+          // Create reciprocal: new user → inviter (connected)
+          supabase.from('friendships').insert({
+            user_id: newUserId,
+            friend_user_id: inviterUserId,
+            friend_name: decodeURIComponent(inviterName),
+            status: 'connected',
+          }).then(() => {});
+
+          // Notify the inviter via push
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          supabase.auth.getSession().then(({ data: sessionData }) => {
+            const token = sessionData?.session?.access_token;
+            if (token) {
+              fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  user_id: inviterUserId,
+                  title: '🎉 Your friend joined Parade!',
+                  body: `${signupName || signupEmail.split('@')[0]} just signed up and you're now connected!`,
+                  url: '/friends',
+                }),
+              }).catch(() => {});
+            }
+          });
+        }
       }
       toast.success("Account created! Let's get you set up.");
       navigate("/onboarding");

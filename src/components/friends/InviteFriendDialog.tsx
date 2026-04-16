@@ -44,7 +44,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
 
   const inviterName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
-  const inviteLink = `https://helloparade.app/invite.html?ref=${encodeURIComponent(inviterName)}`;
+  const inviteLink = `https://helloparade.app/invite.html?ref=${encodeURIComponent(inviterName)}&from=${user?.id || ''}`;
 
   // Memoize to prevent infinite re-render loop
   const existingFriendUserIds = useMemo(
@@ -162,7 +162,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
 
       if (email.trim()) {
         const { error } = await supabase.functions.invoke('send-friend-invite', {
-          body: { email: email.trim(), inviterName },
+          body: { email: email.trim(), inviterName, inviterUserId: user?.id },
         });
         if (error) throw error;
       }
