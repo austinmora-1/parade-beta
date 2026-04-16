@@ -1059,7 +1059,7 @@ function ProposalTripCard({
               {proposal.dates.length > 1 ? (
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {proposal.dates.length} date options
+                  {proposal.dates.length} options
                 </span>
               ) : earliestStart && latestEnd && (
                 <span className="flex items-center gap-1">
