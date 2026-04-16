@@ -77,7 +77,7 @@ export function GreetingHeader() {
       <div
         className="absolute inset-0 rounded-2xl"
         style={{
-          background: document.documentElement.classList.contains('dark')
+          background: resolvedTheme === 'dark'
             ? config.darkGradient
             : config.lightGradient,
         }}
