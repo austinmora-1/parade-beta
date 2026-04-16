@@ -59,6 +59,7 @@ export default function TripDetail() {
   const [loading, setLoading] = useState(true);
   const [friendProfiles, setFriendProfiles] = useState<FriendProfile[]>([]);
   const [companionProfiles, setCompanionProfiles] = useState<FriendProfile[]>([]);
+  const [proposalParticipantCount, setProposalParticipantCount] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -99,6 +100,17 @@ export default function TripDetail() {
         if (cProfiles) setCompanionProfiles(cProfiles);
       } else {
         setCompanionProfiles([]);
+      }
+
+      // If linked to a shared proposal, fetch participant count for activity-vote context
+      if ((data as any).proposal_id) {
+        const { count } = await supabase
+          .from('trip_proposal_participants')
+          .select('*', { count: 'exact', head: true })
+          .eq('proposal_id', (data as any).proposal_id);
+        setProposalParticipantCount(count || 0);
+      } else {
+        setProposalParticipantCount(0);
       }
 
       setLoading(false);
