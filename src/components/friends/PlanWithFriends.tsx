@@ -246,7 +246,7 @@ export function PlanWithFriends({ friends }: PlanWithFriendsProps) {
                   </div>
                 </motion.button>
               </motion.div>
-            )}
+            </>
           )}
         </AnimatePresence>
 
