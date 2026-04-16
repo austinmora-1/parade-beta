@@ -817,6 +817,14 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     </div>
                   )}
                 </div>
+
+                {/* Just me button */}
+                <button
+                  onClick={() => { setSoloMode(true); setStep('activity'); }}
+                  className="flex items-center justify-center gap-1.5 w-full py-2.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  Just me — no friends needed
+                </button>
               </motion.div>
             )}
 
@@ -969,13 +977,15 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 className="space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => setShowCalendar(false)}
-                    className="flex items-center gap-1 text-xs text-primary font-medium"
-                  >
-                    <ArrowLeft className="h-3 w-3" />
-                    Back to suggestions
-                  </button>
+                  {hasFriends && (
+                    <button
+                      onClick={() => setShowCalendar(false)}
+                      className="flex items-center gap-1 text-xs text-primary font-medium"
+                    >
+                      <ArrowLeft className="h-3 w-3" />
+                      Back to suggestions
+                    </button>
+                  )}
                   {selectedSlots.length > 0 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold">
                       {selectedSlots.length} selected
@@ -986,10 +996,10 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   selectedDate={selectedDate}
                   selectedSlot={timeSlot}
                   onSelect={handleCalendarSelect}
-                  getSlotStatus={getSlotStatusForDate}
-                  hasFriends={true}
+                  getSlotStatus={hasFriends ? getSlotStatusForDate : undefined}
+                  hasFriends={hasFriends}
                   days={180}
-                  multiSelect={true}
+                  multiSelect={!soloMode}
                   selectedSlots={selectedSlots}
                   onToggleSlot={handleCalendarToggleSlot}
                 />
@@ -1012,7 +1022,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">{autoTitle}</p>
                       <p className="text-xs text-muted-foreground">
-                        Proposed plan with {friendNamesStr}
+                        {hasFriends ? `Proposed plan with ${friendNamesStr}` : 'Solo plan — invite friends later'}
                       </p>
                     </div>
                   </div>
@@ -1042,29 +1052,34 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     </div>
                   </div>
 
-                  <div className="h-px bg-border" />
-
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">With</p>
-                    <div className="flex -space-x-1.5">
-                      {effectiveFriends.slice(0, 4).map(f => (
-                        <Avatar key={f.userId} className="h-6 w-6 border-2 border-background">
-                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                          <AvatarFallback className="text-[7px]">{f.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      ))}
-                    </div>
-                  </div>
+                  {hasFriends && (
+                    <>
+                      <div className="h-px bg-border" />
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">With</p>
+                        <div className="flex -space-x-1.5">
+                          {effectiveFriends.slice(0, 4).map(f => (
+                            <Avatar key={f.userId} className="h-6 w-6 border-2 border-background">
+                              <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                              <AvatarFallback className="text-[7px]">{f.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-primary dark:text-primary">
                   <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-medium">
-                    {selectedSlots.length > 1 ? '🗳️ Vote' : '💡 Proposed'}
+                    {!hasFriends ? '✅ Confirmed' : selectedSlots.length > 1 ? '🗳️ Vote' : '💡 Proposed'}
                   </span>
                   <span className="text-muted-foreground">
-                    {selectedSlots.length > 1
-                      ? '— friends will vote on their preferred time'
-                      : '— confirmed when they accept'}
+                    {!hasFriends
+                      ? '— you can invite friends anytime'
+                      : selectedSlots.length > 1
+                        ? '— friends will vote on their preferred time'
+                        : '— confirmed when they accept'}
                   </span>
                 </div>
               </motion.div>
@@ -1073,10 +1088,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         </div>
 
         {/* Footer with Continue or Submit button */}
-        {step === 'friends' && chosenFriends.length > 0 && (
+        {step === 'friends' && (
           <DrawerFooter className="pt-2">
             <Button
               onClick={() => setStep('activity')}
+              disabled={chosenFriends.length === 0}
               className="w-full gap-2"
             >
               Continue with {chosenFriends.length} {chosenFriends.length === 1 ? 'friend' : 'friends'} →
@@ -1107,9 +1123,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
               ) : (
                 <Check className="h-4 w-4" />
               )}
-              {selectedSlots.length > 1
-                ? `Send ${selectedSlots.length} Time Options →`
-                : 'Send Plan Suggestion →'}
+              {!hasFriends
+                ? 'Create Plan →'
+                : selectedSlots.length > 1
+                  ? `Send ${selectedSlots.length} Time Options →`
+                  : 'Send Plan Suggestion →'}
             </Button>
           </DrawerFooter>
         )}
