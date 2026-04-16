@@ -1,74 +1,115 @@
 
 
-# Sprint 3 — Medium Priority Scalability Fixes
+# Sprint C: Store Split + Component Decomposition
 
-## Overview
-Four issues targeting query performance, input safety, and caching. Issue 3.5 (migration squash) is skipped — too risky for an automated pass and better done manually. Issue 3.6 (profile visibility) is already resolved — profiles RLS already restricts to own + connected friends.
+## Summary
 
----
-
-## Issue 3.1: Dedicated Feed RPC
-
-**Problem**: `FeedView.tsx` makes 3-4 sequential Supabase queries with per-row RLS evaluation. At scale this is O(all_plans).
-
-**Changes**:
-1. **New migration** — Create `get_feed_plans(p_user_id uuid, p_limit int)` SECURITY DEFINER RPC that pre-joins friendships, plans, participants, and profiles server-side, scoped to last 30 days.
-2. **Update `src/components/feed/FeedView.tsx`** — Replace the 4-query waterfall (lines 43-151) with a single `supabase.rpc('get_feed_plans', ...)` call.
+Two high-impact refactors: (1) split the 1200-line `plannerStore.ts` into 4 focused domain stores with a backward-compatible facade, and (2) decompose the 6 largest components (1000+ lines each) and lazy-load their dialog children.
 
 ---
 
-## Issue 3.2: Add Missing Database Indexes
+## C3.1 — Split plannerStore into 4 Domain Stores + Facade
 
-**Problem**: Hot query patterns lack composite/partial indexes.
+The current monolith has 4 clear domains mixed together. Every selector re-renders on any state change. Splitting lets Zustand skip re-renders when unrelated state changes.
 
-**Changes**: Single migration adding 8 indexes:
-- `availability(user_id, date, location_status)`
-- `plan_participants(friend_id, status)`
-- `smart_nudges(user_id, nudge_type, friend_user_id)` partial
-- `plans(user_id, date, status)`
-- `plans(feed_visibility, date DESC)` partial
-- `hang_requests(user_id)` partial (pending only)
-- `plan_participants(friend_id)` partial (invited only)
-- `friendships(user_id, friend_user_id)` partial (connected only)
+### New files
 
-Note: skip the `live_locations` index from the original plan — table was dropped.
+| File | Domain | State | Actions |
+|------|--------|-------|---------|
+| `src/stores/plansStore.ts` | Plans | `plans`, `hasMorePlans`, `isLoadingMore` | `addPlan`, `updatePlan`, `deletePlan`, `proposePlan`, `respondToProposal`, `loadPlans`, `loadMorePlans` |
+| `src/stores/friendsStore.ts` | Friends | `friends` | `addFriend`, `updateFriend`, `acceptFriendRequest`, `removeFriend`, `loadFriends` |
+| `src/stores/availabilityStore.ts` | Availability | `availability`, `availabilityMap`, `locationStatus`, `defaultSettings`, `homeAddress` | `setAvailability`, `setLocationStatus`, `getLocationStatusForDate`, `setVibeForDate`, `getVibeForDate`, `loadAvailabilityForRange`, `initializeWeekAvailability`, `loadProfileAndAvailability` |
+| `src/stores/vibeStore.ts` | Vibe/Profile | `currentVibe`, `userTimezone` | `setVibe`, `addCustomVibe`, `removeCustomVibe` |
 
----
+### Facade (keeps existing imports working)
 
-## Issue 3.3: Input Validation with Zod
+`src/stores/plannerStore.ts` becomes a thin re-export:
 
-**Problem**: No client-side validation before DB writes. Vulnerable to oversized payloads and bad data.
-
-**Changes**:
-1. **Create `src/lib/validation.ts`** — Zod schemas for Plan (title max 200, notes max 2000, duration 15-1440) and Friendship (name max 100).
-2. **Update `src/stores/plannerStore.ts`** — Validate in `addPlan` before inserting.
-3. **New migration** — Add CHECK constraints on `plans.title`, `plans.notes`, `plans.duration`, and `friendships.friend_name` lengths. Use validation triggers instead of CHECK for any time-based constraints.
-
----
-
-## Issue 3.4: Configure QueryClient Defaults
-
-**Problem**: `new QueryClient()` on line 37 of `App.tsx` has zero config — staleTime is 0, causing redundant refetches.
-
-**Changes**: Update to:
 ```typescript
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 2 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      retry: 2,
-      refetchOnWindowFocus: false,
-    },
-  },
+export const usePlannerStore = create<PlannerState>((set, get) => {
+  // Subscribe to all 4 stores, merge state
+  // Delegate actions to domain stores
 });
 ```
+
+This means **zero changes needed in the 50+ consumer files initially**. Consumers can be migrated to direct imports incrementally later.
+
+### Orchestration
+
+- `loadAllData` stays in the facade — it calls the dashboard RPC and distributes results to each domain store via `.setState()`.
+- `forceRefresh` resets all stores' `lastFetchedAt`.
+- The IndexedDB cache logic stays in the facade.
+
+### Shared state
+
+- `userId` and `isLoading` live in the facade since they're cross-cutting.
+- Domain stores accept `userId` as a parameter to their async actions rather than storing it.
+
+---
+
+## C4.1 — Giant Component Decomposition
+
+Target the 6 components over 900 lines:
+
+| Component | Lines | Split strategy |
+|-----------|-------|----------------|
+| `CreatePlanDialog.tsx` (1245) | Extract: `PlanFormFields`, `ParticipantPicker`, `DateTimePicker`, `RecurrenceConfig` |
+| `GuidedTripSheet.tsx` (1231) | Extract: `TripStepDates`, `TripStepDestination`, `TripStepParticipants`, `TripStepReview` |
+| `Settings.tsx` (1102) | Extract: `SettingsProfile`, `SettingsCalendar`, `SettingsNotifications`, `SettingsPrivacy`, `SettingsDanger` |
+| `GuidedPlanSheet.tsx` (1088) | Extract: `PlanStepActivity`, `PlanStepWhen`, `PlanStepWho`, `PlanStepDetails` |
+| `WeeklyPlanSwiper.tsx` (966) | Extract: `DayColumn`, `PlanCard`, `SwiperControls` |
+| `Profile.tsx` (902) | Extract: `ProfileHeader`, `ProfileStats`, `ProfileTripsList`, `ProfilePlanHistory` |
+
+Each parent component becomes an orchestrator (~100-200 lines) that imports sub-components.
+
+---
+
+## C4.2 — Lazy Dialogs
+
+Wrap infrequently-used dialogs with `React.lazy` + `Suspense`:
+
+- `CreatePlanDialog`
+- `GuidedPlanSheet`
+- `GuidedTripSheet`
+- `MergePlansDialog`
+- `InviteToPlanDialog`
+- `SuggestFriendDialog`
+- `InviteFriendDialog`
+- `AddTripDialog`
+- `ImageCropDialog`
+- `DeleteAccountDialog`
+- `ShareDialog`
+
+Pattern:
+```typescript
+const LazyCreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
+
+// In JSX:
+{editDialogOpen && (
+  <Suspense fallback={null}>
+    <LazyCreatePlanDialog ... />
+  </Suspense>
+)}
+```
+
+Conditionally render on the `open` prop so the chunk isn't fetched until the dialog is actually opened.
 
 ---
 
 ## Execution Order
-1. Issue 3.4 (QueryClient) — 1 line change, instant win
-2. Issue 3.2 (Indexes) — migration only, no code changes
-3. Issue 3.1 (Feed RPC) — migration + FeedView rewrite
-4. Issue 3.3 (Validation) — new lib + store + migration
+
+1. **C4.2 — Lazy dialogs** (lowest risk, immediate bundle win, no logic changes)
+2. **C4.1 — Component decomposition** (pure extraction, no behavior changes)
+3. **C3.1 — Store split** (highest risk, do last with tests)
+
+Each step is independently shippable and testable.
+
+---
+
+## Technical Notes
+
+- All extracted sub-components go in the same directory as their parent (e.g., `src/components/plans/create-plan/PlanFormFields.tsx`).
+- The store facade preserves the exact `PlannerState` interface so TypeScript catches any missed fields.
+- Lazy imports use default exports for compatibility with `React.lazy`.
+- The helper files (`mapAvailability.ts`, `mapPlans.ts`, `mapFriends.ts`, `types.ts`) stay as-is — they're already well-factored.
 
