@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { X, Plus, Sparkles, Pencil, CalendarHeart, ChevronRight } from 'lucide-react';
+import { X, Sparkles, Pencil, CalendarHeart, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GifPicker } from '@/components/chat/GifPicker';
 import { useWeeklyIntentions } from '@/hooks/useWeeklyIntentions';
