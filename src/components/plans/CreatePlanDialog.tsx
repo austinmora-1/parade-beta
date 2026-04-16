@@ -309,7 +309,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
 
   // Auto-generate title from activity
   const getAutoTitle = () => {
-    const config = ACTIVITY_CONFIG[activity as ActivityType];
+    if (activity === 'tbd') return 'TBD';
+    const config = getActivityConfig(activity, customActivities);
     return config ? config.label : activity;
   };
 
