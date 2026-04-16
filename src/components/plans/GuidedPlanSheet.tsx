@@ -518,27 +518,51 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       return (slotOrder[a.slot] || 0) - (slotOrder[b.slot] || 0);
     });
 
-    // Group by city, take up to 3 per city, flatten
-    const cityGroups = new Map<string, BestSlot[]>();
-    for (const r of results) {
-      const key = r.sharedCity || 'Unknown';
-      if (!cityGroups.has(key)) cityGroups.set(key, []);
-      const group = cityGroups.get(key)!;
-      if (group.length < 3) group.push(r);
-    }
-    const grouped = Array.from(cityGroups.values()).flat();
-    setBestSlots(grouped);
+    // Take the top 3 suggestions overall
+    setBestSlots(results.slice(0, 3));
     setLoadingSlots(false);
   }, [effectiveFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
-  // When step changes to 'time', fetch best slots (covers full 180-day window)
+  // Compute solo best slots (user's free slots where no existing plan)
+  const computeSoloBestSlots = useCallback(() => {
+    const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+    const scanDays = Array.from({ length: 30 }, (_, i) => addDays(new Date(), i));
+    const results: BestSlot[] = [];
+
+    for (const day of scanDays) {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const myDay = myAvailabilityMap[dateStr];
+
+      for (const slot of allSlots) {
+        const myFree = myDay ? myDay.slots[slot] : true;
+        const hasPlan = myPlans.some(p => isSameDay(p.date, day) && p.timeSlot === slot);
+        if (myFree && !hasPlan) {
+          results.push({
+            date: day,
+            slot,
+            status: 'all-free',
+            freeCount: 1,
+            total: 0,
+            sharedCity: '',
+          });
+        }
+        if (results.length >= 3) break;
+      }
+      if (results.length >= 3) break;
+    }
+    return results;
+  }, [myAvailabilityMap, myPlans]);
+
+  // When step changes to 'time', fetch best slots
   useEffect(() => {
     if (step === 'time') {
       if (hasFriends) {
         fetchBestSlots();
       } else {
-        // Solo mode: go straight to calendar
-        setShowCalendar(true);
+        // Solo mode: compute 3 free slots
+        setLoadingSlots(true);
+        const soloSlots = computeSoloBestSlots();
+        setBestSlots(soloSlots);
         setLoadingSlots(false);
       }
     }
@@ -1023,61 +1047,29 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         <div className="flex items-center gap-1.5 justify-center">
                           <Sparkles className="h-3.5 w-3.5 text-primary" />
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Suggested times
+                            {hasFriends ? 'Best times for everyone' : 'You\'re free'}
                           </p>
                         </div>
-                     {(() => {
-                       // Group bestSlots by sharedCity
-                       const groups: { city: string; slots: BestSlot[] }[] = [];
-                       const seen = new Map<string, number>();
-                       for (const bs of bestSlots) {
-                         const key = bs.sharedCity || 'Unknown';
-                         if (!seen.has(key)) {
-                           seen.set(key, groups.length);
-                           groups.push({ city: key, slots: [] });
-                         }
-                         groups[seen.get(key)!].slots.push(bs);
-                       }
-                       const multiCity = groups.length > 1;
-
-                       return multiCity ? (
-                         <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
-                           {groups.map((g) => (
-                             <div key={g.city} className="snap-start shrink-0 w-[85%] space-y-2">
-                               <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                                 <MapPin className="h-3 w-3 text-primary" />
-                                 In {g.city}
-                                 <span className="text-[10px] font-normal ml-1">({g.slots.length} times)</span>
-                               </div>
-                               {g.slots.map((bs, i) => (
-                                 <SlotCard
-                                   key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
-                                   bs={bs} i={i} onSelect={handleSelectSlot}
-                                   isSelected={selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot)}
-                                 />
-                               ))}
-                             </div>
-                           ))}
-                         </div>
-                       ) : (
-                         <div className="space-y-2">
-                           {bestSlots.map((bs, i) => (
-                             <SlotCard
-                               key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
-                               bs={bs} i={i} onSelect={handleSelectSlot}
-                               isSelected={selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot)}
-                             />
-                           ))}
-                         </div>
-                       );
-                     })()}
+                        <div className="space-y-2">
+                          {bestSlots.map((bs, i) => (
+                            <SlotCard
+                              key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
+                              bs={bs} i={i} onSelect={handleSelectSlot}
+                              isSelected={selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot)}
+                            />
+                          ))}
+                        </div>
                       </>
                     ) : (
                       <div className="flex flex-col items-center gap-2 py-6 text-center">
-                        <span className="text-2xl">🌎</span>
-                        <p className="text-sm font-medium text-foreground">No overlapping times found</p>
+                        <span className="text-2xl">{hasFriends ? '🌎' : '📅'}</span>
+                        <p className="text-sm font-medium text-foreground">
+                          {hasFriends ? 'No overlapping times found' : 'No free slots found'}
+                        </p>
                         <p className="text-xs text-muted-foreground max-w-[240px]">
-                          It looks like you and {friendNamesStr} won't be in the same city in the next 6 months based on your schedules.
+                          {hasFriends
+                            ? `It looks like you and ${friendNamesStr} won't be in the same city in the next 6 months.`
+                            : 'Your schedule looks packed! Pick a time manually below.'}
                         </p>
                       </div>
                     )}
@@ -1104,15 +1096,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 className="space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  {hasFriends && (
-                    <button
-                      onClick={() => setShowCalendar(false)}
-                      className="flex items-center gap-1 text-xs text-primary font-medium"
-                    >
-                      <ArrowLeft className="h-3 w-3" />
-                      Back to suggestions
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setShowCalendar(false)}
+                    className="flex items-center gap-1 text-xs text-primary font-medium"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Back to suggestions
+                  </button>
                   {selectedSlots.length > 0 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold">
                       {selectedSlots.length} selected
