@@ -1056,7 +1056,12 @@ function ProposalTripCard({
               )}
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-              {earliestStart && latestEnd && (
+              {proposal.dates.length > 1 ? (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {proposal.dates.length} date options
+                </span>
+              ) : earliestStart && latestEnd && (
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
                   {format(new Date(earliestStart + 'T00:00:00'), 'MMM d')} – {format(new Date(latestEnd + 'T00:00:00'), 'MMM d')}
