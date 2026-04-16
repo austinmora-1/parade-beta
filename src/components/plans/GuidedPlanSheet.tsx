@@ -1092,15 +1092,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 className="space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  {hasFriends && (
-                    <button
-                      onClick={() => setShowCalendar(false)}
-                      className="flex items-center gap-1 text-xs text-primary font-medium"
-                    >
-                      <ArrowLeft className="h-3 w-3" />
-                      Back to suggestions
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setShowCalendar(false)}
+                    className="flex items-center gap-1 text-xs text-primary font-medium"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Back to suggestions
+                  </button>
                   {selectedSlots.length > 0 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold">
                       {selectedSlots.length} selected
