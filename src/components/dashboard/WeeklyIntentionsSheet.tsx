@@ -10,8 +10,8 @@ import { format, parseISO, addDays } from 'date-fns';
 import { X, Plus } from 'lucide-react';
 
 const ENERGY_LEVELS = [
-  { value: 'low', label: 'Low-key', emoji: '🌙', desc: 'Recharging this week' },
-  { value: 'medium', label: 'Balanced', emoji: '☀️', desc: 'A couple good hangs' },
+  { value: 'low', label: 'Low-key', emoji: '🛋️', desc: 'Recharging this week' },
+  { value: 'medium', label: 'Balanced', emoji: '⚖️', desc: 'A couple good hangs' },
   { value: 'high', label: 'All in', emoji: '🔥', desc: 'Let\'s see everyone' },
 ];
 
