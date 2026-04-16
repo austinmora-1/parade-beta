@@ -109,6 +109,7 @@ function SlotCard({ bs, i, onSelect, isSelected }: { bs: BestSlot; i: number; on
 }
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
+  const { session } = useAuth();
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
 
