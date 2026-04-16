@@ -159,11 +159,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Look up creator name and plan details
-    const [creatorResult, planResult] = await Promise.all([
-      admin.from('profiles').select('display_name, first_name, last_name').eq('user_id', creator_id).single(),
-      admin.from('plans').select('activity, date, time_slot, start_time, end_time, location').eq('id', plan_id).single(),
-    ]);
+    // Look up creator name and plan details (if plan type)
+    const creatorResult = await admin.from('profiles').select('display_name, first_name, last_name').eq('user_id', creator_id).single();
+    const planResult = notifType === 'plan' && plan_id
+      ? await admin.from('plans').select('activity, date, time_slot, start_time, end_time, location').eq('id', plan_id).single()
+      : { data: null };
 
     const cp = creatorResult.data;
     const creatorName = cp?.first_name
@@ -173,9 +173,23 @@ Deno.serve(async (req) => {
     const plan = planResult.data;
 
     // --- PUSH NOTIFICATIONS ---
-    const title = notification_title || 'New Plan Invite! 📅';
-    const notifBody = notification_body || `${creatorName} invited you to "${plan_title}"`;
-    const url = notification_url || `/plan/${plan_id}`;
+    let defaultTitle: string;
+    let defaultBody: string;
+    let defaultUrl: string;
+
+    if (notifType === 'trip') {
+      defaultTitle = '✈️ Trip Invite!';
+      defaultBody = `${creatorName} added you to a trip${trip_location ? ` to ${trip_location}` : ''}`;
+      defaultUrl = '/trips';
+    } else {
+      defaultTitle = 'New Plan Invite! 📅';
+      defaultBody = `${creatorName} invited you to "${plan_title}"`;
+      defaultUrl = `/plan/${plan_id}`;
+    }
+
+    const title = notification_title || defaultTitle;
+    const notifBody = notification_body || defaultBody;
+    const url = notification_url || defaultUrl;
 
     let pushSent = 0;
 
