@@ -54,7 +54,7 @@ export function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds
         </span>
         {locInfo && (
           <span className={cn(
-            "flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[140px]",
+            "flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[200px]",
             locInfo.isSplit ? "text-amber-600 dark:text-amber-400" : locInfo.isAway ? "text-availability-away-foreground text-secondary" : "text-muted-foreground/70"
           )}>
             {locInfo.isSplit ? <Plane className="h-2.5 w-2.5 shrink-0" /> : locInfo.isAway ? <Plane className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
