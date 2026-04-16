@@ -5,7 +5,9 @@ import { TripsList } from '@/components/trips/TripsList';
 
 import { MissingReturnDialog, PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 import { TripConflictDialog, TripConflict } from '@/components/trips/TripConflictDialog';
-const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
+const GuidedTripSheet = lazy(() =>
+  import('@/components/trips/GuidedTripSheet').then((m) => ({ default: m.GuidedTripSheet })),
+);
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';

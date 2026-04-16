@@ -8,8 +8,12 @@ import { getTimezoneForCity } from '@/lib/timezone';
 import { formatCityForDisplay } from '@/lib/formatCity';
 import { useTheme } from 'next-themes';
 
-const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
-const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
+const GuidedPlanSheet = lazy(() =>
+  import('@/components/plans/GuidedPlanSheet').then((m) => ({ default: m.GuidedPlanSheet })),
+);
+const GuidedTripSheet = lazy(() =>
+  import('@/components/trips/GuidedTripSheet').then((m) => ({ default: m.GuidedTripSheet })),
+);
 const InviteFriendDialog = lazy(() => import('@/components/friends/InviteFriendDialog'));
 
 function getGreetingConfig(hour: number) {
