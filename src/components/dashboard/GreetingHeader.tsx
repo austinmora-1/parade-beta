@@ -66,9 +66,6 @@ export function GreetingHeader() {
           <MapPin className="h-3 w-3 text-primary" />
           <span className="text-xs">{currentCity}</span>
         </div>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {config.context}
-        </p>
       </div>
     </motion.div>
   );
