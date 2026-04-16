@@ -579,6 +579,19 @@ function ProposalTripCard({
     // Default: all dates in original order
     return proposal.dates.map(d => d.id);
   });
+
+  // Keep rankedDateIds in sync when dates are added/removed on the proposal.
+  // Preserves existing user ordering, appends new dates at the end, drops removed ones.
+  useEffect(() => {
+    const validIds = new Set(proposal.dates.map(d => d.id));
+    const allIds = proposal.dates.map(d => d.id);
+    setRankedDateIds(prev => {
+      const filtered = prev.filter(id => validIds.has(id));
+      const missing = allIds.filter(id => !filtered.includes(id));
+      if (missing.length === 0 && filtered.length === prev.length) return prev;
+      return [...filtered, ...missing];
+    });
+  }, [proposal.dates]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rankingsCollapsed, setRankingsCollapsed] = useState(hasVoted);
 
