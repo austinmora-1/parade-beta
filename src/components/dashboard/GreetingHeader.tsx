@@ -90,34 +90,34 @@ export function GreetingHeader() {
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-2xl w-full"
-      >
-        <div
-          className="absolute inset-0 rounded-2xl"
-          style={{
-            background: resolvedTheme === 'dark'
-              ? config.darkGradient
-              : config.lightGradient,
-          }}
-        />
+      <div className="relative">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="relative overflow-hidden rounded-2xl w-full"
+        >
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              background: resolvedTheme === 'dark'
+                ? config.darkGradient
+                : config.lightGradient,
+            }}
+          />
 
-        <div className="relative px-4 py-2 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-display text-foreground">
-              {config.greeting}
-            </h2>
-            <div className="flex items-center gap-1 text-muted-foreground -mt-0.5">
-              <MapPin className="h-3 w-3 text-primary" />
-              <span className="text-xs">{currentCity}</span>
+          <div className="relative px-4 py-2 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-display text-foreground">
+                {config.greeting}
+              </h2>
+              <div className="flex items-center gap-1 text-muted-foreground -mt-0.5">
+                <MapPin className="h-3 w-3 text-primary" />
+                <span className="text-xs">{currentCity}</span>
+              </div>
             </div>
-          </div>
 
-          {/* FAB */}
-          <div className="relative">
+            {/* FAB */}
             <button
               onClick={() => setMenuOpen(prev => !prev)}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-90"
@@ -126,35 +126,36 @@ export function GreetingHeader() {
                 <Plus className="h-5 w-5" />
               </motion.div>
             </button>
-
-            <AnimatePresence>
-              {menuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: -4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -4 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 z-50 w-44 rounded-xl border border-border bg-popover p-1 shadow-lg"
-                  >
-                    {menuItems.map(({ key, label, icon: ItemIcon }) => (
-                      <button
-                        key={key}
-                        onClick={() => handleSelect(key)}
-                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors hover:bg-accent"
-                      >
-                        <ItemIcon className="h-4 w-4 text-primary" />
-                        {label}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+
+        {/* Dropdown rendered outside overflow-hidden */}
+        <AnimatePresence>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border border-border bg-popover p-1 shadow-lg"
+              >
+                {menuItems.map(({ key, label, icon: ItemIcon }) => (
+                  <button
+                    key={key}
+                    onClick={() => handleSelect(key)}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors hover:bg-accent"
+                  >
+                    <ItemIcon className="h-4 w-4 text-primary" />
+                    {label}
+                  </button>
+                ))}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Sheets / Dialogs */}
       {planOpen && (
