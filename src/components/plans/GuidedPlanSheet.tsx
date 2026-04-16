@@ -563,9 +563,26 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     return null;
   }, [friendMultiDayAvail, effectiveFriends, myAvailabilityMap, myPlans]);
 
-  const handleSelectActivity = (act: ActivityType) => {
+  const handleSelectActivity = (act: ActivityType | string) => {
     setActivity(act);
     setStep('time');
+  };
+
+  const handleSaveCustomActivity = async () => {
+    if (!customLabel.trim() || !session?.user) return;
+    const newActivity: CustomActivity = {
+      id: `custom-${Date.now()}`,
+      label: customLabel.trim(),
+      icon: customEmoji,
+      vibeType: 'social',
+    };
+    const updated = [...customActivities, newActivity];
+    setCustomActivities(updated);
+    await supabase.from('profiles').update({ custom_activities: updated as any }).eq('user_id', session.user.id);
+    setShowCustomInput(false);
+    setCustomLabel('');
+    setCustomEmoji('✨');
+    handleSelectActivity(newActivity.id);
   };
 
   const handleSelectSlot = (bs: BestSlot) => {
