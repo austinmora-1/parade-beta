@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, addMonths } from 'date-fns';
+import { format, addMonths, isWithinInterval, startOfDay } from 'date-fns';
 import { Plane, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -152,6 +153,12 @@ export function UpcomingTripsAndVisits() {
                   <span className="text-sm font-medium truncate">
                     {trip.location ? `Trip to ${trip.location.split(',')[0]}` : 'Trip'}
                   </span>
+                  {isWithinInterval(startOfDay(new Date()), {
+                    start: startOfDay(new Date(trip.start_date + 'T00:00:00')),
+                    end: startOfDay(new Date(trip.end_date + 'T00:00:00')),
+                  }) && (
+                    <Badge variant="default" className="text-[9px] px-1.5 py-0 shrink-0">In Progress</Badge>
+                  )}
                 </div>
                 <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                   <span className="flex items-center gap-0.5">
