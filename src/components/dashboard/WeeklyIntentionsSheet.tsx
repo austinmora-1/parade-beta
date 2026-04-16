@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { WeeklyIntention } from '@/hooks/useWeeklyIntentions';
 import { format, parseISO, addDays } from 'date-fns';
+import { X, Plus } from 'lucide-react';
 
 const ENERGY_LEVELS = [
   { value: 'low', label: 'Low-key', emoji: '🌙', desc: 'Recharging this week' },
@@ -14,7 +15,6 @@ const ENERGY_LEVELS = [
   { value: 'high', label: 'All in', emoji: '🔥', desc: 'Let\'s see everyone' },
 ];
 
-const HANGOUT_OPTIONS = [1, 2, 3, 4, 5];
 const VIBE_TYPES = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
 
 const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: string }> = {
@@ -24,6 +24,15 @@ const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: strin
   productive: { bg: 'hsl(49 60% 93%)',  text: 'hsl(49 50% 38%)',  border: 'hsl(49 50% 80%)' },
 };
 
+const SUGGESTIONS = [
+  'Try a new restaurant',
+  'Reconnect with an old friend',
+  'Host a game night',
+  'Go for a hike',
+  'Coffee catch-up',
+  'Cook dinner together',
+];
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,19 +41,25 @@ interface Props {
   onSave: (values: { social_energy: string; target_hangouts: number; vibes: string[]; notes: string }) => Promise<void>;
 }
 
+/** Parse notes string into items array */
+function parseItems(notes: string): string[] {
+  if (!notes) return [];
+  return notes.split('\n').map(s => s.trim()).filter(Boolean);
+}
+
 export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart, onSave }: Props) {
   const [energy, setEnergy] = useState(intention?.social_energy || 'medium');
-  const [hangouts, setHangouts] = useState(intention?.target_hangouts || 2);
   const [vibes, setVibes] = useState<string[]>(intention?.vibes || []);
-  const [notes, setNotes] = useState(intention?.notes || '');
+  const [items, setItems] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setEnergy(intention?.social_energy || 'medium');
-      setHangouts(intention?.target_hangouts || 2);
       setVibes(intention?.vibes || []);
-      setNotes(intention?.notes || '');
+      setItems(parseItems(intention?.notes || ''));
+      setInputValue('');
     }
   }, [open, intention]);
 
@@ -52,10 +67,23 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
     setVibes(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
   };
 
+  const addItem = useCallback((text: string) => {
+    const trimmed = text.trim();
+    if (trimmed && !items.includes(trimmed)) {
+      setItems(prev => [...prev, trimmed]);
+    }
+    setInputValue('');
+  }, [items]);
+
+  const removeItem = useCallback((idx: number) => {
+    setItems(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave({ social_energy: energy, target_hangouts: hangouts, vibes, notes });
+      const notes = items.join('\n');
+      await onSave({ social_energy: energy, target_hangouts: items.length || 1, vibes, notes });
       toast.success('Intentions saved! 🎯');
       onOpenChange(false);
     } catch {
@@ -67,6 +95,9 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
   const weekEnd = format(addDays(parseISO(weekStart), 6), 'MMM d');
   const weekStartLabel = format(parseISO(weekStart), 'MMM d');
+
+  // Filter out suggestions already added
+  const availableSuggestions = SUGGESTIONS.filter(s => !items.includes(s));
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -95,27 +126,6 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
                   <span className="text-xl">{e.emoji}</span>
                   <span className="text-sm font-medium">{e.label}</span>
                   <span className="text-[11px] text-muted-foreground">{e.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Target Hangouts */}
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">How many times do you want to see your people?</label>
-            <div className="flex gap-2">
-              {HANGOUT_OPTIONS.map(n => (
-                <button
-                  key={n}
-                  onClick={() => setHangouts(n)}
-                  className={cn(
-                    'h-10 w-10 rounded-full border-2 text-sm font-semibold transition-all',
-                    hangouts === n
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-card text-foreground hover:border-primary/40'
-                  )}
-                >
-                  {n === 5 ? '5+' : n}
                 </button>
               ))}
             </div>
@@ -151,16 +161,67 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
             </div>
           </div>
 
-          {/* Notes */}
+          {/* Things to do — multi-input */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Anything specific on your mind?</label>
-            <Textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Reconnect with an old friend, try that new spot downtown…"
-              className="resize-none"
-              rows={2}
-            />
+            <label className="text-sm font-medium text-foreground mb-2 block">Anything you want to do this week?</label>
+
+            {/* Added items */}
+            {items.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2.5">
+                {items.map((item, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
+                  >
+                    {item}
+                    <button
+                      onClick={() => removeItem(idx)}
+                      className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Input row */}
+            <div className="flex gap-2">
+              <Input
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { e.preventDefault(); addItem(inputValue); }
+                }}
+                placeholder="e.g. Try that new taco spot…"
+                className="flex-1 text-sm"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => addItem(inputValue)}
+                disabled={!inputValue.trim()}
+                className="shrink-0"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Quick suggestions */}
+            {availableSuggestions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {availableSuggestions.slice(0, 4).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => addItem(s)}
+                    className="rounded-full border border-dashed border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+                  >
+                    + {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
