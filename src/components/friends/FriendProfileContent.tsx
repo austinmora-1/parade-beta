@@ -8,13 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock, Sparkles, EyeOff, Send, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { toast } from '@/hooks/use-toast';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
