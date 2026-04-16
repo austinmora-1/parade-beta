@@ -25,7 +25,7 @@ const navItems = [
 export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile } = useCurrentUserProfile();
+  const { profile, formattedName } = useCurrentUserProfile();
   const [createPlanOpen, setCreatePlanOpen] = useState(false);
 
   const getInitials = (name: string | null | undefined) => {
@@ -98,14 +98,14 @@ export function Sidebar() {
             className="flex flex-1 items-center gap-2.5 min-w-0 rounded-lg p-1 transition-colors hover:bg-sidebar-accent/50"
           >
             <Avatar className="h-8 w-8 shrink-0">
-              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
+              <AvatarImage src={profile?.avatar_url || undefined} alt={formattedName || 'Profile'} />
               <AvatarFallback className="bg-primary/15 text-[11px] font-semibold text-primary">
-                {getInitials(profile?.display_name)}
+                {getInitials(formattedName)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 text-left">
               <p className="truncate text-xs font-semibold text-sidebar-foreground leading-tight">
-                {profile?.display_name || 'My Profile'}
+                {formattedName || 'My Profile'}
               </p>
               <p className="text-[10px] text-sidebar-foreground/50 leading-tight">View profile</p>
             </div>
