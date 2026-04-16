@@ -209,7 +209,7 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
       } else {
         setAvailability([]);
       }
-      }
+
 
       if (user) {
         const { data: myPlansWithFriend } = await supabase
