@@ -94,6 +94,7 @@ export function MobileNav() {
                 </AvatarFallback>
               </Avatar>
             </div>
+            <span className="text-[10px] invisible">Me</span>
           </button>
         </LayoutGroup>
       </div>
