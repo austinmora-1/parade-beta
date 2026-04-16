@@ -22,14 +22,24 @@ const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: strin
 const ENERGY_EMOJI: Record<string, string> = { low: '🌙', medium: '☀️', high: '🔥' };
 
 export function VibeAndIntentionsCard() {
-  const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
+  const { currentVibe, setVibe, addCustomVibe, removeCustomVibe, plans: rawPlans } = usePlannerStore();
   const { intention, loading, upsertIntention, weekStart, completedHangouts } = useWeeklyIntentions();
+  const { displayPlans } = useDisplayPlans(rawPlans);
   const [vibeMenuOpen, setVibeMenuOpen] = useState(false);
   const [customText, setCustomText] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const vibeTypes = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
+  const plansOnDeck = useMemo(() => {
+    const now = new Date();
+    const weekFromNow = addDays(now, 7);
+    return displayPlans.filter(p => {
+      const effectiveEnd = p.endDate || p.date;
+      return (p.date > now && isBefore(p.date, weekFromNow)) ||
+             (isSameDay(p.date, now)) ||
+             (p.endDate && p.date <= now && effectiveEnd >= now);
+    }).length;
+  }, [displayPlans]);
 
   const handleVibeSelect = useCallback((value: string) => {
     const existingTags = currentVibe?.customTags;
