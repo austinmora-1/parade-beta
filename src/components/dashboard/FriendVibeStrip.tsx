@@ -252,7 +252,7 @@ function FriendVibeItem({ data, onNavigate, onFriendTap }: { data: FriendVibe; o
               />
             </div>
 
-            <span className="text-[11px] font-medium text-foreground truncate w-full text-center leading-tight">
+            <span className="font-medium text-foreground truncate w-full text-center leading-tight text-xs">
               {friend.name.split(' ')[0]}
             </span>
           </button>
