@@ -523,14 +523,46 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     setLoadingSlots(false);
   }, [effectiveFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
-  // When step changes to 'time', fetch best slots (covers full 180-day window)
+  // Compute solo best slots (user's free slots where no existing plan)
+  const computeSoloBestSlots = useCallback(() => {
+    const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
+    const scanDays = Array.from({ length: 30 }, (_, i) => addDays(new Date(), i));
+    const results: BestSlot[] = [];
+
+    for (const day of scanDays) {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const myDay = myAvailabilityMap[dateStr];
+
+      for (const slot of allSlots) {
+        const myFree = myDay ? myDay.slots[slot] : true;
+        const hasPlan = myPlans.some(p => isSameDay(p.date, day) && p.timeSlot === slot);
+        if (myFree && !hasPlan) {
+          results.push({
+            date: day,
+            slot,
+            status: 'all-free',
+            freeCount: 1,
+            total: 0,
+            sharedCity: '',
+          });
+        }
+        if (results.length >= 3) break;
+      }
+      if (results.length >= 3) break;
+    }
+    return results;
+  }, [myAvailabilityMap, myPlans]);
+
+  // When step changes to 'time', fetch best slots
   useEffect(() => {
     if (step === 'time') {
       if (hasFriends) {
         fetchBestSlots();
       } else {
-        // Solo mode: go straight to calendar
-        setShowCalendar(true);
+        // Solo mode: compute 3 free slots
+        setLoadingSlots(true);
+        const soloSlots = computeSoloBestSlots();
+        setBestSlots(soloSlots);
         setLoadingSlots(false);
       }
     }
