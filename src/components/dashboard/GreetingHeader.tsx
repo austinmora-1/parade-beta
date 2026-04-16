@@ -87,7 +87,7 @@ export function GreetingHeader() {
         <h2 className="text-lg font-display text-foreground">
           {config.greeting}
         </h2>
-        <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
+        <div className="flex items-center gap-1 text-muted-foreground -mt-0.5">
           <MapPin className="h-3 w-3 text-primary" />
           <span className="text-xs">{currentCity}</span>
         </div>
