@@ -134,9 +134,27 @@ export function VibeAndIntentionsCard() {
                 {currentVibe.gifUrl && (
                   <span className="text-[10px] text-muted-foreground">+ GIF</span>
                 )}
+                {plansOnDeck > 0 && (
+                  <span className="text-[10px] text-muted-foreground">·</span>
+                )}
+                {plansOnDeck > 0 && (
+                  <span className="text-xs font-medium text-primary">
+                    {plansOnDeck} plan{plansOnDeck !== 1 ? 's' : ''} on deck
+                  </span>
+                )}
               </div>
             ) : (
-              <span className="text-sm font-medium text-muted-foreground">What's your vibe?</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-muted-foreground">What's your vibe?</span>
+                {plansOnDeck > 0 && (
+                  <span className="text-[10px] text-muted-foreground">·</span>
+                )}
+                {plansOnDeck > 0 && (
+                  <span className="text-xs font-medium text-primary">
+                    {plansOnDeck} plan{plansOnDeck !== 1 ? 's' : ''} on deck
+                  </span>
+                )}
+              </div>
             )}
           </div>
           <motion.div
