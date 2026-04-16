@@ -122,8 +122,8 @@ export function GreetingHeader() {
               onClick={() => setMenuOpen(prev => !prev)}
               className="relative flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-90"
               style={{
-                background: 'linear-gradient(135deg, #FF6B5B 0%, #FFAD9E 25%, #FFE156 50%, #A8E6CF 75%, #9DD4F0 100%)',
-                boxShadow: '0 4px 12px -2px rgba(255, 107, 91, 0.4), 0 2px 6px -1px rgba(157, 212, 240, 0.3)',
+                background: 'linear-gradient(135deg, #E63946 0%, #F4845F 25%, #F4B942 50%, #3D8C6C 75%, #2A6F97 100%)',
+                boxShadow: '0 4px 14px -2px rgba(230, 57, 70, 0.5), 0 2px 6px -1px rgba(42, 111, 151, 0.4)',
               }}
             >
               <motion.div animate={{ rotate: menuOpen ? 45 : 0 }} transition={{ duration: 0.2 }}>
