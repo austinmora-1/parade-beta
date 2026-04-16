@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
@@ -8,6 +8,8 @@ import { GifPicker } from '@/components/chat/GifPicker';
 import { useWeeklyIntentions } from '@/hooks/useWeeklyIntentions';
 import { WeeklyIntentionsSheet } from './WeeklyIntentionsSheet';
 import { Progress } from '@/components/ui/progress';
+import { useDisplayPlans } from '@/hooks/useDisplayPlans';
+import { addDays, isBefore, isSameDay } from 'date-fns';
 
 const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
   social:     { bg: 'hsl(5 60% 95%)',   text: 'hsl(5 50% 45%)',   border: 'hsl(5 50% 85%)',   iconBg: 'bg-[hsl(5_80%_65%)]' },
@@ -20,12 +22,24 @@ const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: strin
 const ENERGY_EMOJI: Record<string, string> = { low: '🌙', medium: '☀️', high: '🔥' };
 
 export function VibeAndIntentionsCard() {
-  const { currentVibe, setVibe, addCustomVibe, removeCustomVibe } = usePlannerStore();
+  const { currentVibe, setVibe, addCustomVibe, removeCustomVibe, plans: rawPlans } = usePlannerStore();
   const { intention, loading, upsertIntention, weekStart, completedHangouts } = useWeeklyIntentions();
+  const { displayPlans } = useDisplayPlans(rawPlans);
   const [vibeMenuOpen, setVibeMenuOpen] = useState(false);
   const [customText, setCustomText] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const plansOnDeck = useMemo(() => {
+    const now = new Date();
+    const weekFromNow = addDays(now, 7);
+    return displayPlans.filter(p => {
+      const effectiveEnd = p.endDate || p.date;
+      return (p.date > now && isBefore(p.date, weekFromNow)) ||
+             (isSameDay(p.date, now)) ||
+             (p.endDate && p.date <= now && effectiveEnd >= now);
+    }).length;
+  }, [displayPlans]);
 
   const vibeTypes = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
 
@@ -120,9 +134,27 @@ export function VibeAndIntentionsCard() {
                 {currentVibe.gifUrl && (
                   <span className="text-[10px] text-muted-foreground">+ GIF</span>
                 )}
+                {plansOnDeck > 0 && (
+                  <span className="text-[10px] text-muted-foreground">·</span>
+                )}
+                {plansOnDeck > 0 && (
+                  <span className="text-xs font-medium text-primary">
+                    {plansOnDeck} plan{plansOnDeck !== 1 ? 's' : ''} on deck
+                  </span>
+                )}
               </div>
             ) : (
-              <span className="text-sm font-medium text-muted-foreground">What's your vibe?</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-muted-foreground">What's your vibe?</span>
+                {plansOnDeck > 0 && (
+                  <span className="text-[10px] text-muted-foreground">·</span>
+                )}
+                {plansOnDeck > 0 && (
+                  <span className="text-xs font-medium text-primary">
+                    {plansOnDeck} plan{plansOnDeck !== 1 ? 's' : ''} on deck
+                  </span>
+                )}
+              </div>
             )}
           </div>
           <motion.div
