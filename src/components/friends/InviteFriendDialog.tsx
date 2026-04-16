@@ -162,7 +162,7 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
 
       if (email.trim()) {
         const { error } = await supabase.functions.invoke('send-friend-invite', {
-          body: { email: email.trim(), inviterName },
+          body: { email: email.trim(), inviterName, inviterUserId: user?.id },
         });
         if (error) throw error;
       }

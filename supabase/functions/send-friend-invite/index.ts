@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
-    const inviteUrl = customUrl || `https://helloparade.app/invite?ref=${encodeURIComponent(inviterName)}`;
+    const inviteUrl = customUrl || `https://helloparade.app/invite.html?ref=${encodeURIComponent(inviterName)}&from=${encodeURIComponent(userId)}`;
     const emailSubject = customSubject || `${inviterName} invited you to Parade`;
     const ctaText = customUrl ? 'View Plan & Join' : 'Join Parade';
 
