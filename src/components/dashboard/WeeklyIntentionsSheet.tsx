@@ -124,7 +124,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
                   )}
                 >
                   <span className="text-xl">{e.emoji}</span>
-                  <span className="text-sm font-medium">{e.label}</span>
+                  <span className="text-sm font-medium font-display">{e.label}</span>
                   <span className="text-[11px] text-muted-foreground">{e.desc}</span>
                 </button>
               ))}
