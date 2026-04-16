@@ -90,6 +90,9 @@ export default function Dashboard() {
         <GreetingHeader />
       </motion.div>
 
+      {/* Dark mode suggestion after 9 PM */}
+      <DarkModePrompt />
+
       {/* Vibe + Weekly Intentions (consolidated) */}
       <motion.div variants={fadeUp}>
         <VibeAndIntentionsCard />
