@@ -629,9 +629,10 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       } else {
         // Solo mode: compute 3 free slots
         setLoadingSlots(true);
-        const soloSlots = computeSoloBestSlots();
-        setBestSlots(soloSlots);
-        setLoadingSlots(false);
+        computeSoloBestSlots().then(soloSlots => {
+          setBestSlots(soloSlots);
+          setLoadingSlots(false);
+        });
       }
     }
   }, [step]);
