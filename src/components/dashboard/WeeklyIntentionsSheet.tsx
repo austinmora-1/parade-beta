@@ -9,9 +9,9 @@ import { WeeklyIntention } from '@/hooks/useWeeklyIntentions';
 import { format, parseISO, addDays } from 'date-fns';
 
 const ENERGY_LEVELS = [
-  { value: 'low', label: 'Low', emoji: '🌙', desc: 'Quiet week' },
-  { value: 'medium', label: 'Medium', emoji: '☀️', desc: 'Balanced' },
-  { value: 'high', label: 'High', emoji: '🔥', desc: 'Let\'s go!' },
+  { value: 'low', label: 'Low-key', emoji: '🌙', desc: 'Recharging this week' },
+  { value: 'medium', label: 'Balanced', emoji: '☀️', desc: 'A couple good hangs' },
+  { value: 'high', label: 'All in', emoji: '🔥', desc: 'Let\'s see everyone' },
 ];
 
 const HANGOUT_OPTIONS = [1, 2, 3, 4, 5];
