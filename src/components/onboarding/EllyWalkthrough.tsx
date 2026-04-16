@@ -25,7 +25,7 @@ const STEPS: WalkthroughStep[] = [
   {
     icon: <Calendar className="h-5 w-5" />,
     title: "Making Plans",
-    message: "Head to the Plans page for a swipeable week-by-week view of your schedule. Tap '+ New Plan' to launch the guided planner — pick friends, a vibe, and a time slot, and we'll surface who's free and nearby.",
+    message: "Head to the Plans page for a swipeable week-by-week view of your schedule. Tap '+ New Plan' to launch the guided planner — pick friends, a vibe, and a time slot, and we'll surface who's free nearby.",
     emoji: "📅",
     tip: "Connect Google or Apple Calendar to sync events automatically every 2 hours.",
   },
