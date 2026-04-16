@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Sun, Moon, Sunset, Coffee, Sparkles } from 'lucide-react';
+import { Sun, Moon, Sunset, Coffee, MapPin } from 'lucide-react';
+import { format } from 'date-fns';
+import { getTimezoneForCity } from '@/lib/timezone';
 
 function getGreetingConfig(hour: number) {
   if (hour >= 5 && hour < 12) return { greeting: 'Good morning', icon: Coffee, emoji: '☀️', gradient: 'from-amber-400/20 to-orange-300/10' };
@@ -22,7 +24,7 @@ function getContextMessage(planCount: number, friendCount: number, hour: number)
 
 export function GreetingHeader() {
   const { profile } = useCurrentUserProfile();
-  const { plans, friends } = usePlannerStore();
+  const { plans, friends, availabilityMap, userTimezone } = usePlannerStore();
 
   const config = useMemo(() => {
     const hour = new Date().getHours();
@@ -34,9 +36,18 @@ export function GreetingHeader() {
     const connectedFriends = friends.filter(f => f.status === 'connected').length;
     const greetConfig = getGreetingConfig(hour);
     const context = getContextMessage(upcomingCount, connectedFriends, hour);
-    const firstName = profile?.display_name?.split(' ')[0] || '';
-    return { ...greetConfig, context, firstName };
-  }, [profile?.display_name, plans, friends]);
+    return { ...greetConfig, context };
+  }, [plans, friends]);
+
+  const currentCity = useMemo(() => {
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    const todayAvail = availabilityMap[todayKey];
+    if (todayAvail?.locationStatus === 'away' && todayAvail?.tripLocation) {
+      return todayAvail.tripLocation.split(',')[0];
+    }
+    const homeAddress = profile?.home_address;
+    return homeAddress?.split(',')[0] || 'Set location';
+  }, [availabilityMap, profile?.home_address]);
 
   const Icon = config.icon;
 
@@ -50,9 +61,15 @@ export function GreetingHeader() {
       <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} rounded-2xl`} />
       
       <div className="relative px-4 py-2">
-        <h2 className="text-lg font-display text-foreground">
-          {config.greeting}{config.firstName ? `, ${config.firstName}` : ''}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-display text-foreground">
+            {config.greeting}
+          </h2>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 text-primary" />
+            <span className="text-xs">{currentCity}</span>
+          </div>
+        </div>
         <p className="text-sm text-muted-foreground mt-0">
           {config.context}
         </p>

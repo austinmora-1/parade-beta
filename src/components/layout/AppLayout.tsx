@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
-import { MobileHeader } from './MobileHeader';
 import { PullToRefresh } from './PullToRefresh';
 import { FeedbackProvider } from '@/components/feedback/FeedbackContext';
 import { FeedbackPanel } from '@/components/feedback/FeedbackPanel';
@@ -26,7 +25,6 @@ export function AppLayout() {
     <FeedbackProvider>
       <div className="min-h-screen bg-background">
         <Sidebar />
-        <MobileHeader />
         <main className="min-h-screen md:ml-56">
           <PullToRefresh onRefresh={handleRefresh}>
             <div className="p-4 pb-24 md:p-8 md:pb-8">
