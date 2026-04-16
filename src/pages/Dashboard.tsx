@@ -89,9 +89,9 @@ export default function Dashboard() {
         <GreetingHeader />
       </motion.div>
 
-      {/* Weekly intentions */}
+      {/* Vibe + Weekly Intentions (consolidated) */}
       <motion.div variants={fadeUp}>
-        <WeeklyIntentionsSummary />
+        <VibeAndIntentionsCard />
       </motion.div>
 
       {/* Who's around — the social hook */}
@@ -107,11 +107,6 @@ export default function Dashboard() {
           onRemoveFriend={handleRemoveFriend}
           onClear={handleClear}
         />
-      </motion.div>
-
-      {/* Set your own vibe */}
-      <motion.div variants={fadeUp}>
-        <VibeSelector />
       </motion.div>
 
       {/* Upcoming Plans & Feed */}
