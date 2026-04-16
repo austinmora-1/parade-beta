@@ -13,6 +13,7 @@ import { VibeAndIntentionsCard } from '@/components/dashboard/VibeAndIntentionsC
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
+import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -88,6 +89,9 @@ export default function Dashboard() {
       <motion.div variants={fadeUp}>
         <GreetingHeader />
       </motion.div>
+
+      {/* Dark mode suggestion after 9 PM */}
+      <DarkModePrompt />
 
       {/* Vibe + Weekly Intentions (consolidated) */}
       <motion.div variants={fadeUp}>
