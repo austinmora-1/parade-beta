@@ -383,8 +383,26 @@ export default function PlanDetail() {
     try {
       const { error } = await supabase
         .from('plan_participants')
-        .insert({ plan_id: plan.id, friend_id: friendUserId, status: 'accepted', role: 'participant' });
+        .insert({ plan_id: plan.id, friend_id: friendUserId, status: 'invited', role: 'participant' });
       if (error) throw error;
+
+      // Notify the newly added participant via push + email
+      supabase.auth.getSession().then(({ data: sessionData }) => {
+        const token = sessionData?.session?.access_token;
+        if (!token || !user) return;
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan_id: plan.id,
+            creator_id: user.id,
+            participant_ids: [friendUserId],
+            plan_title: plan.title,
+          }),
+        }).catch(() => {});
+      }).catch(() => {});
+
       toast.success('Friend added to plan!');
       setFriendSearch('');
       setAddFriendOpen(false);
