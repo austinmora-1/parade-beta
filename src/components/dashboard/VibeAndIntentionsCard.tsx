@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
-import { X, Plus, Sparkles, Pencil, CalendarHeart, ChevronRight } from 'lucide-react';
+import { X, Sparkles, Pencil, CalendarHeart, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GifPicker } from '@/components/chat/GifPicker';
 import { useWeeklyIntentions } from '@/hooks/useWeeklyIntentions';
@@ -157,12 +157,6 @@ export function VibeAndIntentionsCard() {
               </div>
             )}
           </div>
-          <motion.div
-            animate={{ rotate: vibeMenuOpen ? 45 : 0 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-          >
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </motion.div>
         </motion.button>
 
         {/* Vibe menu dropdown */}
