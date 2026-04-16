@@ -62,7 +62,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <ElephantLoader />
       </div>
     );
   }
@@ -80,7 +80,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <ElephantLoader />
       </div>
     );
   }
@@ -94,7 +94,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const LazyFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="animate-pulse text-muted-foreground">Loading...</div>
+    <ElephantLoader />
   </div>
 );
 
