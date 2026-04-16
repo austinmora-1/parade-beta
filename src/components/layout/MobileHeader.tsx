@@ -36,9 +36,16 @@ export function MobileHeader() {
   }, [availabilityMap, profile?.home_address, userTimezone]);
 
   return (
-    <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden">
+    <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden relative">
+      {/* Center: wordmark (absolutely positioned for true center) */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <Link to="/" className="flex items-center justify-center leading-none pointer-events-auto">
+          <ParadeWordmark size="md" className="leading-none" />
+        </Link>
+      </div>
+
       {/* Left: location status */}
-      <div className="flex items-center gap-1.5 min-w-0" style={{ width: 'auto' }}>
+      <div className="flex items-center gap-1.5 min-w-0 z-10">
         <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
         <div className="flex flex-col leading-tight min-w-0">
           <span className="text-[11px] font-medium text-sidebar-foreground truncate">
@@ -50,17 +57,12 @@ export function MobileHeader() {
         </div>
       </div>
 
-      {/* Center: wordmark */}
-      <div className="flex-1 flex items-center justify-center">
-        <Link to="/" className="flex items-center justify-center leading-none">
-          <ParadeWordmark size="md" className="leading-none" />
-        </Link>
-      </div>
+      <div className="flex-1" />
 
       {/* Right: avatar */}
       <button
         onClick={() => navigate('/profile')}
-        className="flex h-8 w-8 items-center justify-center shrink-0"
+        className="flex h-8 w-8 items-center justify-center shrink-0 z-10"
         aria-label="My profile"
       >
         <Avatar className="h-8 w-8">
