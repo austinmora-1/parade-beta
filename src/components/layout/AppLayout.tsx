@@ -26,7 +26,6 @@ export function AppLayout() {
     <FeedbackProvider>
       <div className="min-h-screen bg-background">
         <Sidebar />
-        <MobileHeader />
         <main className="min-h-screen md:ml-56">
           <PullToRefresh onRefresh={handleRefresh}>
             <div className="p-4 pb-24 md:p-8 md:pb-8">
