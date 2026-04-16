@@ -39,7 +39,7 @@ const STEPS: WalkthroughStep[] = [
   {
     icon: <Sparkles className="h-5 w-5" />,
     title: "Your Social Health",
-    message: "Parade helps you stay intentional about your social life. During onboarding you set your baseline preferences — preferred days, social cap, and the vibes you're craving. Each week, revisit your intentions to set a hangout target and check in on your social health.",
+    message: "Parade helps you stay intentional about your social life. During onboarding you set your baseline preferences — preferred days, social cap, and the vibes you're craving. Each week, we'll help you check in on your social battery and set some intentions for the week to keep you on track.",
     emoji: "💛",
     tip: "Tap 'Weekly Intentions' on the dashboard every Sunday to recalibrate for the week ahead.",
   },
