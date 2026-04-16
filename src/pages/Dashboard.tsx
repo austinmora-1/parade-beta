@@ -9,11 +9,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
-import { VibeSelector } from '@/components/dashboard/VibeSelector';
-import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
+import { VibeAndIntentionsCard } from '@/components/dashboard/VibeAndIntentionsCard';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
-import { WeeklyIntentionsSummary } from '@/components/dashboard/WeeklyIntentionsSummary';
+import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 
 const stagger = {
   hidden: { opacity: 0 },
