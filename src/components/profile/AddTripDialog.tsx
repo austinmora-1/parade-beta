@@ -486,6 +486,24 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
             await supabase.from('trip_participants').insert(
               travelCompanionIds.map(fid => ({ trip_id: newTrip.id, friend_user_id: fid }))
             );
+
+            // Notify trip participants via push + email
+            supabase.auth.getSession().then(({ data: sessionData }) => {
+              const token = sessionData?.session?.access_token;
+              if (!token) return;
+              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+              fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'trip',
+                  creator_id: session.user.id,
+                  participant_ids: travelCompanionIds,
+                  trip_location: location.trim() || null,
+                  trip_dates: `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`,
+                }),
+              }).catch(() => {});
+            }).catch(() => {});
           }
         }
       }
