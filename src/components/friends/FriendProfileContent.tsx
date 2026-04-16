@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { normalizeCity } from '@/lib/locationMatch';
+import { formatDisplayName } from '@/lib/formatName';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +32,8 @@ const SLOT_TO_DB_COL: Record<TimeSlot, string> = {
 
 interface FriendProfileData {
   display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   avatar_url: string | null;
   bio: string | null;
   current_vibe: string | null;
@@ -138,6 +141,12 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
         .eq('user_id', userId)
         .single();
 
+      const { data: nameData } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', userId)
+        .single();
+
       const { data: fullProfile } = await supabase
         .from('profiles')
         .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url, home_address')
@@ -146,6 +155,8 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
 
       setProfile({
         display_name: profileData?.display_name || null,
+        first_name: (nameData as any)?.first_name || null,
+        last_name: (nameData as any)?.last_name || null,
         avatar_url: profileData?.avatar_url || null,
         bio: profileData?.bio || null,
         current_vibe: fullProfile?.current_vibe || null,
