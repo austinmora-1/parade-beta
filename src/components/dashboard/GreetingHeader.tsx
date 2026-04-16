@@ -61,16 +61,14 @@ export function GreetingHeader() {
       <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} rounded-2xl`} />
       
       <div className="relative px-4 py-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-display text-foreground">
-            {config.greeting}
-          </h2>
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs">{currentCity}</span>
-          </div>
+        <h2 className="text-lg font-display text-foreground">
+          {config.greeting}
+        </h2>
+        <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
+          <MapPin className="h-3 w-3 text-primary" />
+          <span className="text-xs">{currentCity}</span>
         </div>
-        <p className="text-sm text-muted-foreground mt-0">
+        <p className="text-sm text-muted-foreground mt-0.5">
           {config.context}
         </p>
       </div>
