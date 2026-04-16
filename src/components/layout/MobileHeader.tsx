@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
+import { MapPin, Settings } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
@@ -59,19 +59,28 @@ export function MobileHeader() {
 
       <div className="flex-1" />
 
-      {/* Right: avatar */}
-      <button
-        onClick={() => navigate('/profile')}
-        className="flex h-8 w-8 items-center justify-center shrink-0 z-10"
-        aria-label="My profile"
-      >
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
-          <AvatarFallback className="bg-primary/15 text-[11px] font-semibold text-primary">
-            {getInitials(profile?.display_name)}
-          </AvatarFallback>
-        </Avatar>
-      </button>
+      {/* Right: settings + avatar */}
+      <div className="flex items-center gap-1 z-10">
+        <button
+          onClick={() => navigate('/settings')}
+          className="flex h-8 w-8 items-center justify-center shrink-0"
+          aria-label="Settings"
+        >
+          <Settings className="h-5 w-5 text-sidebar-foreground" />
+        </button>
+        <button
+          onClick={() => navigate('/profile')}
+          className="flex h-8 w-8 items-center justify-center shrink-0"
+          aria-label="My profile"
+        >
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
+            <AvatarFallback className="bg-primary/15 text-[11px] font-semibold text-primary">
+              {getInitials(profile?.display_name)}
+            </AvatarFallback>
+          </Avatar>
+        </button>
+      </div>
     </header>
   );
 }
