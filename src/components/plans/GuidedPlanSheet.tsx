@@ -1047,7 +1047,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         <div className="flex items-center gap-1.5 justify-center">
                           <Sparkles className="h-3.5 w-3.5 text-primary" />
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            Suggested times
+                            {hasFriends ? 'Best times for everyone' : 'You\'re free'}
                           </p>
                         </div>
                      {(() => {
