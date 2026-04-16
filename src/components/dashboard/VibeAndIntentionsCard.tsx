@@ -263,7 +263,7 @@ export function VibeAndIntentionsCard() {
                 <span className="text-lg">{energyEmoji}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground">
-                    This week's goal
+                    {goalMet ? 'You showed up this week ✨' : 'Showing up for your people'}
                   </p>
                   <div className="mt-1 flex items-center gap-2.5">
                     <Progress
@@ -289,8 +289,8 @@ export function VibeAndIntentionsCard() {
                   <CalendarHeart className="h-4 w-4 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">Set weekly intentions</p>
-                  <p className="text-xs text-muted-foreground">Plan your social energy</p>
+                  <p className="text-sm font-medium text-foreground">How social are we feeling?</p>
+                  <p className="text-xs text-muted-foreground">Set your intentions for the week</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </>

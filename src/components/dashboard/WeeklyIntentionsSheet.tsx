@@ -9,9 +9,9 @@ import { WeeklyIntention } from '@/hooks/useWeeklyIntentions';
 import { format, parseISO, addDays } from 'date-fns';
 
 const ENERGY_LEVELS = [
-  { value: 'low', label: 'Low', emoji: '🌙', desc: 'Quiet week' },
-  { value: 'medium', label: 'Medium', emoji: '☀️', desc: 'Balanced' },
-  { value: 'high', label: 'High', emoji: '🔥', desc: 'Let\'s go!' },
+  { value: 'low', label: 'Low-key', emoji: '🌙', desc: 'Recharging this week' },
+  { value: 'medium', label: 'Balanced', emoji: '☀️', desc: 'A couple good hangs' },
+  { value: 'high', label: 'All in', emoji: '🔥', desc: 'Let\'s see everyone' },
 ];
 
 const HANGOUT_OPTIONS = [1, 2, 3, 4, 5];
@@ -72,14 +72,14 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-y-auto pb-8">
         <SheetHeader className="pb-2">
-          <SheetTitle className="text-lg">Weekly Intentions</SheetTitle>
+          <SheetTitle className="text-lg font-display">How's your week looking?</SheetTitle>
           <p className="text-sm text-muted-foreground">{weekStartLabel} – {weekEnd}</p>
         </SheetHeader>
 
         <div className="space-y-5 pt-2">
           {/* Energy Level */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Social energy</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">How much social energy do you have?</label>
             <div className="grid grid-cols-3 gap-2">
               {ENERGY_LEVELS.map(e => (
                 <button
@@ -102,7 +102,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
           {/* Target Hangouts */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">How many hangouts?</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">How many times do you want to see your people?</label>
             <div className="flex gap-2">
               {HANGOUT_OPTIONS.map(n => (
                 <button
@@ -123,7 +123,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
           {/* Vibes */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Vibes for the week</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">What kind of hangs sound good?</label>
             <div className="flex flex-wrap gap-2">
               {VIBE_TYPES.map(type => {
                 const config = VIBE_CONFIG[type];
@@ -153,18 +153,18 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
           {/* Notes */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Any goals? (optional)</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">Anything specific on your mind?</label>
             <Textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Try a new restaurant, reconnect with an old friend…"
+              placeholder="Reconnect with an old friend, try that new spot downtown…"
               className="resize-none"
               rows={2}
             />
           </div>
 
           <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
-            {saving ? 'Saving…' : intention ? 'Update intentions' : 'Set intentions 🎯'}
+            {saving ? 'Saving…' : intention ? 'Update intentions' : 'Let\'s do this 🎯'}
           </Button>
         </div>
       </SheetContent>
