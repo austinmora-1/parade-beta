@@ -41,12 +41,41 @@ export function TripActivities({ proposalId, participantCount }: Props) {
   } = useTripActivities(proposalId);
 
   const [adding, setAdding] = useState(false);
+  const [mode, setMode] = useState<'pick' | 'custom'>('pick');
+  const [search, setSearch] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [voteOpen, setVoteOpen] = useState(false);
   const [draftRanking, setDraftRanking] = useState<string[]>([]);
   const [savingVotes, setSavingVotes] = useState(false);
+
+  const filteredStandard = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return STANDARD_ACTIVITIES;
+    return STANDARD_ACTIVITIES.filter(a => a.label.toLowerCase().includes(q));
+  }, [search]);
+
+  const resetForm = () => {
+    setAdding(false);
+    setMode('pick');
+    setSearch('');
+    setTitle('');
+    setDescription('');
+  };
+
+  const handlePickStandard = async (activity: StandardActivity) => {
+    if (submitting) return;
+    setSubmitting(true);
+    const ok = await addSuggestion(activity.label, '');
+    setSubmitting(false);
+    if (ok) {
+      resetForm();
+      toast.success(`${activity.label} added`);
+    } else {
+      toast.error('Failed to add activity');
+    }
+  };
 
   const sortedByScore: ActivitySuggestion[] = useMemo(() => {
     return [...suggestions].sort((a, b) => {
