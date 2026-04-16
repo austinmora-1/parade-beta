@@ -133,10 +133,20 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { plan_id, creator_id, participant_ids, plan_title, notification_title, notification_body, notification_url } = body;
+    const { plan_id, creator_id, participant_ids, plan_title, notification_title, notification_body, notification_url, type, trip_location, trip_dates } = body;
 
-    if (!plan_id || !creator_id || !plan_title) {
-      return new Response(JSON.stringify({ error: 'plan_id, creator_id, and plan_title required' }), {
+    // Support both plan and trip notifications
+    const notifType = type || 'plan';
+
+    if (!creator_id || !participant_ids?.length) {
+      return new Response(JSON.stringify({ error: 'creator_id and participant_ids required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (notifType === 'plan' && (!plan_id || !plan_title)) {
+      return new Response(JSON.stringify({ error: 'plan_id and plan_title required for plan notifications' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
