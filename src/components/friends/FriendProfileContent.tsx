@@ -8,13 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock, Sparkles } from 'lucide-react';
+import { ArrowLeft, MapPin, Home, Plane, ChevronDown, CalendarPlus, Calendar, Clock, Sparkles, EyeOff, Send, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { useLastHungOut } from '@/hooks/useLastHungOut';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { toast } from '@/hooks/use-toast';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning', 'late-morning', 'early-afternoon',
@@ -43,6 +44,7 @@ interface FriendProfileData {
   cover_photo_url: string | null;
   vibe_gif_url: string | null;
   home_address: string | null;
+  show_availability: boolean;
 }
 
 interface AvailabilityDay {
@@ -85,6 +87,8 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   const [quickPlanDate, setQuickPlanDate] = useState<Date | undefined>(undefined);
   const [quickPlanSlot, setQuickPlanSlot] = useState<TimeSlot | undefined>(undefined);
+  const [requestingAvailability, setRequestingAvailability] = useState(false);
+  const [availabilityRequested, setAvailabilityRequested] = useState(false);
 
   const friendFormattedName = useMemo(() => profile ? formatDisplayName({
     firstName: profile.first_name,
@@ -156,9 +160,11 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
 
       const { data: fullProfile } = await supabase
         .from('profiles')
-        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url, home_address')
+        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url, home_address, show_availability')
         .eq('user_id', userId)
         .single();
+
+      const friendShowsAvailability = (fullProfile as any)?.show_availability !== false;
 
       setProfile({
         display_name: profileData?.display_name || null,
@@ -173,30 +179,37 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
         cover_photo_url: (fullProfile as any)?.cover_photo_url || null,
         vibe_gif_url: (fullProfile as any)?.vibe_gif_url || null,
         home_address: fullProfile?.home_address || null,
+        show_availability: friendShowsAvailability,
       });
 
       const today = format(new Date(), 'yyyy-MM-dd');
       const weekOut = format(addDays(new Date(), 6), 'yyyy-MM-dd');
 
-      const { data: availData } = await supabase
-        .from('availability')
-        .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
-        .eq('user_id', userId)
-        .gte('date', today)
-        .lte('date', weekOut)
-        .order('date');
+      // Only fetch availability if the friend has shared it
+      if (friendShowsAvailability) {
+        const { data: availData } = await supabase
+          .from('availability')
+          .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
+          .eq('user_id', userId)
+          .gte('date', today)
+          .lte('date', weekOut)
+          .order('date');
 
-      if (availData) {
-        const mapped: AvailabilityDay[] = availData.map((row: any) => ({
-          date: row.date,
-          slots: Object.fromEntries(
-            TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot]] !== false])
-          ) as Record<TimeSlot, boolean>,
-          location_status: row.location_status,
-          trip_location: row.trip_location,
-        }));
-        setAvailability(mapped);
+        if (availData) {
+          const mapped: AvailabilityDay[] = availData.map((row: any) => ({
+            date: row.date,
+            slots: Object.fromEntries(
+              TIME_SLOT_ORDER.map(slot => [slot, row[SLOT_TO_DB_COL[slot]] !== false])
+            ) as Record<TimeSlot, boolean>,
+            location_status: row.location_status,
+            trip_location: row.trip_location,
+          }));
+          setAvailability(mapped);
+        }
+      } else {
+        setAvailability([]);
       }
+
 
       if (user) {
         const { data: myPlansWithFriend } = await supabase
@@ -296,6 +309,30 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
       else next.add(key);
       return next;
     });
+  };
+
+  const handleRequestAvailability = async () => {
+    if (!user || requestingAvailability || availabilityRequested) return;
+    setRequestingAvailability(true);
+    try {
+      const { error } = await supabase.functions.invoke('request-availability', {
+        body: { friendUserId: userId },
+      });
+      if (error) throw error;
+      setAvailabilityRequested(true);
+      toast({
+        title: 'Request sent',
+        description: `${friendFormattedName || 'Your friend'} will be notified.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Could not send request',
+        description: err?.message || 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRequestingAvailability(false);
+    }
   };
 
   if (loading) {
@@ -511,7 +548,38 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
 
         {availabilityOpen && (
           <div className="px-4 pb-4 md:px-6 md:pb-6">
-            {availability.length === 0 ? (
+            {!profile.show_availability ? (
+              <div className="py-6 text-center space-y-3">
+                <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                  <EyeOff className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Availability is private</p>
+                  <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                    {friendFormattedName || 'This friend'} hasn't shared their availability. You can ask them to share it with you.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={availabilityRequested ? 'outline' : 'default'}
+                  className="gap-1.5 text-xs h-8"
+                  disabled={requestingAvailability || availabilityRequested}
+                  onClick={handleRequestAvailability}
+                >
+                  {availabilityRequested ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      Request sent
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-3.5 w-3.5" />
+                      {requestingAvailability ? 'Sending…' : 'Request availability'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : availability.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-3xl mb-2">📅</p>
                 <p className="text-sm text-muted-foreground">
