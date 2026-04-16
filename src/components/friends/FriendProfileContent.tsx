@@ -160,9 +160,11 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
 
       const { data: fullProfile } = await supabase
         .from('profiles')
-        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url, home_address')
+        .select('current_vibe, custom_vibe_tags, location_status, share_code, cover_photo_url, vibe_gif_url, home_address, show_availability')
         .eq('user_id', userId)
         .single();
+
+      const friendShowsAvailability = (fullProfile as any)?.show_availability !== false;
 
       setProfile({
         display_name: profileData?.display_name || null,
@@ -177,6 +179,7 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
         cover_photo_url: (fullProfile as any)?.cover_photo_url || null,
         vibe_gif_url: (fullProfile as any)?.vibe_gif_url || null,
         home_address: fullProfile?.home_address || null,
+        show_availability: friendShowsAvailability,
       });
 
       const today = format(new Date(), 'yyyy-MM-dd');
