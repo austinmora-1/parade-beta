@@ -510,9 +510,9 @@ function TripCard({
         ) : <div />}
 
         <Button
-          variant="default"
+          variant="secondary"
           size="sm"
-          className="h-7 px-2.5 shrink-0 gap-1 text-xs ml-auto"
+          className="h-7 px-2.5 shrink-0 gap-1 text-xs ml-auto bg-primary/15 text-primary hover:bg-primary/25"
           onClick={(e) => { e.stopPropagation(); onNavigate(); }}
         >
           <Sparkles className="h-3.5 w-3.5" />
