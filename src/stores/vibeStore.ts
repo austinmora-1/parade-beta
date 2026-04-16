@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import { Vibe, VibeType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
+import { patchCachedDashboard } from '@/lib/dashboardCache';
+
+function patchVibeInCache(userId: string, vibe: Vibe | null) {
+  patchCachedDashboard(userId, (data: any) => {
+    if (!data?.profile) return data;
+    return {
+      ...data,
+      profile: {
+        ...data.profile,
+        current_vibe: vibe?.type || null,
+        vibe_gif_url: vibe?.gifUrl || null,
+        custom_vibe_tags: vibe?.customTags || [],
+      },
+    };
+  }).catch(() => {});
+}
 
 export interface VibeState {
   currentVibe: Vibe | null;
