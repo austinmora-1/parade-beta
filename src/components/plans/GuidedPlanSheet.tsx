@@ -1062,10 +1062,14 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                       </>
                     ) : (
                       <div className="flex flex-col items-center gap-2 py-6 text-center">
-                        <span className="text-2xl">🌎</span>
-                        <p className="text-sm font-medium text-foreground">No overlapping times found</p>
+                        <span className="text-2xl">{hasFriends ? '🌎' : '📅'}</span>
+                        <p className="text-sm font-medium text-foreground">
+                          {hasFriends ? 'No overlapping times found' : 'No free slots found'}
+                        </p>
                         <p className="text-xs text-muted-foreground max-w-[240px]">
-                          It looks like you and {friendNamesStr} won't be in the same city in the next 6 months based on your schedules.
+                          {hasFriends
+                            ? `It looks like you and ${friendNamesStr} won't be in the same city in the next 6 months.`
+                            : 'Your schedule looks packed! Pick a time manually below.'}
                         </p>
                       </div>
                     )}
