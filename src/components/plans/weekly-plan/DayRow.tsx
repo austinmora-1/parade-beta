@@ -41,20 +41,20 @@ export function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds
     <div className={cn("rounded-xl transition-colors")}>
       <div className={cn("flex items-center gap-2 px-3 py-1.5 relative z-10", isToday && "text-primary")}>
         <span className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shrink-0",
+          "flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold shrink-0",
           isToday ? "bg-primary text-primary-foreground" : "text-muted-foreground"
         )}>
           {format(day, 'd')}
         </span>
         <span className={cn(
-          "text-xs font-medium",
+          "text-sm font-medium",
           isToday ? "text-primary font-semibold" : "text-muted-foreground"
         )}>
           {format(day, 'EEEE')}
         </span>
         {locInfo && (
           <span className={cn(
-            "flex items-center gap-0.5 text-[10px] font-medium truncate max-w-[200px]",
+            "flex items-center gap-0.5 text-xs font-medium truncate max-w-[200px]",
             locInfo.isSplit ? "text-amber-600 dark:text-amber-400" : locInfo.isAway ? "text-availability-away-foreground text-secondary" : "text-muted-foreground/70"
           )}>
             {locInfo.isSplit ? <Plane className="h-2.5 w-2.5 shrink-0" /> : locInfo.isAway ? <Plane className="h-2.5 w-2.5 shrink-0" /> : <MapPin className="h-2.5 w-2.5 shrink-0" />}
