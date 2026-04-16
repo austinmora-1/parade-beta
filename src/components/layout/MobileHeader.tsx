@@ -66,7 +66,7 @@ export function MobileHeader() {
           className="flex h-8 w-8 items-center justify-center shrink-0"
           aria-label="Settings"
         >
-          <Settings className="h-5 w-5 text-sidebar-foreground/50" />
+          <Settings className="h-5 w-5 text-sidebar-foreground/50" strokeWidth={1.5} />
         </button>
         <button
           onClick={() => navigate('/profile')}
