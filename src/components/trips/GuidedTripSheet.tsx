@@ -23,6 +23,7 @@ import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { useAuth } from '@/hooks/useAuth';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
+import { InviteToTripDialog } from './InviteToTripDialog';
 
 interface PreSelectedFriend {
   userId: string;
