@@ -157,12 +157,6 @@ export function VibeAndIntentionsCard() {
               </div>
             )}
           </div>
-          <motion.div
-            animate={{ rotate: vibeMenuOpen ? 45 : 0 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-          >
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </motion.div>
         </motion.button>
 
         {/* Vibe menu dropdown */}
