@@ -1,115 +1,39 @@
 
+## Conflict analysis: Performance plan vs. Sprint roadmap
 
-# Sprint C: Store Split + Component Decomposition
+I cross-referenced my proposed Phases 1–3 against the Sprint plan in the attached doc. Short answer: **no conflicts, all complementary.** Details below.
 
-## Summary
+### Sprint plan scope (relevant items)
+- **Sprint 1**: smart-nudges batching, plan-reminders N+1 fix, realtime channel cleanup, live-location throttle
+- **Sprint 2**: date bounds on `get_dashboard_data`, rate limiter, **lazy imports in App/routes**, **split plannerStore into 4 stores**, structured logging
+- **Sprint 3**: `get_feed_plans` RPC, composite indexes, validation, error boundaries
+- Sprint 4+: backups, monitoring
 
-Two high-impact refactors: (1) split the 1200-line `plannerStore.ts` into 4 focused domain stores with a backward-compatible facade, and (2) decompose the 6 largest components (1000+ lines each) and lazy-load their dialog children.
+### My proposed phases vs. Sprint plan
 
----
+| My phase | Sprint item | Conflict? | Notes |
+|---|---|---|---|
+| **1.1** Lazy-load dashboard widgets (`HomeTabs`, `QuickPlanDrop`, `EllyWalkthrough`) | Sprint 2 lazy-import work targets `App.tsx` routes | **None** — complementary | Sprint plan lazies routes; mine lazies in-page widgets. Stack cleanly. |
+| **1.2** Vite `manualChunks` (vendor splitting) | Not in Sprint plan | **None** | Pure additive build config. |
+| **1.3** Font optimization in `index.html` | Not in Sprint plan | **None** | HTML-only change. |
+| **2.1** Extend `get_dashboard_data` RPC (add vibe/proposals/friend-plans) | Sprint 2.1 adds **date bounds** to same RPC | **Mild overlap, no conflict** | Both edit the same RPC. Order matters: do Sprint 2.1 (date bounds) first, then layer my additions on top. Otherwise we'd rewrite the RPC twice. |
+| **2.2** Dedupe widget fetches via `lastFetchedAt` gate | Sprint 2 splits plannerStore into 4 stores | **Mild overlap** | If store split lands first, my gate moves into the new sub-stores (e.g., `dashboardStore.lastFetchedAt`). Trivial port. |
+| **3.1** Fix Badge ref warning | Not in Sprint plan | **None** | |
+| **3.2** Preconnect to Supabase URL | Not in Sprint plan | **None** | |
 
-## C3.1 — Split plannerStore into 4 Domain Stores + Facade
+### Recommended sequencing
+To avoid rework on the RPC and store changes:
 
-The current monolith has 4 clear domains mixed together. Every selector re-renders on any state change. Splitting lets Zustand skip re-renders when unrelated state changes.
+1. **Now (safe, zero overlap)**: Phase 1.1 + 1.2 + 1.3 + Phase 3 — lazy widgets, chunking, fonts, Badge fix, preconnect.
+2. **After Sprint 2.1 (RPC date bounds)**: layer Phase 2.1 additions onto the same RPC in one migration.
+3. **After Sprint 2 store split**: port Phase 2.2 dedupe gate into the new dashboard sub-store.
 
-### New files
+### Bonus: my plan accelerates two Sprint goals
+- Phase 2.1 collapses 3 widget fetches into the RPC — directly furthers Sprint 2's "reduce dashboard query waterfall" theme.
+- Phase 1.2 chunking helps the lazy-import work in Sprint 2 by ensuring lazy chunks are actually small.
 
-| File | Domain | State | Actions |
-|------|--------|-------|---------|
-| `src/stores/plansStore.ts` | Plans | `plans`, `hasMorePlans`, `isLoadingMore` | `addPlan`, `updatePlan`, `deletePlan`, `proposePlan`, `respondToProposal`, `loadPlans`, `loadMorePlans` |
-| `src/stores/friendsStore.ts` | Friends | `friends` | `addFriend`, `updateFriend`, `acceptFriendRequest`, `removeFriend`, `loadFriends` |
-| `src/stores/availabilityStore.ts` | Availability | `availability`, `availabilityMap`, `locationStatus`, `defaultSettings`, `homeAddress` | `setAvailability`, `setLocationStatus`, `getLocationStatusForDate`, `setVibeForDate`, `getVibeForDate`, `loadAvailabilityForRange`, `initializeWeekAvailability`, `loadProfileAndAvailability` |
-| `src/stores/vibeStore.ts` | Vibe/Profile | `currentVibe`, `userTimezone` | `setVibe`, `addCustomVibe`, `removeCustomVibe` |
-
-### Facade (keeps existing imports working)
-
-`src/stores/plannerStore.ts` becomes a thin re-export:
-
-```typescript
-export const usePlannerStore = create<PlannerState>((set, get) => {
-  // Subscribe to all 4 stores, merge state
-  // Delegate actions to domain stores
-});
-```
-
-This means **zero changes needed in the 50+ consumer files initially**. Consumers can be migrated to direct imports incrementally later.
-
-### Orchestration
-
-- `loadAllData` stays in the facade — it calls the dashboard RPC and distributes results to each domain store via `.setState()`.
-- `forceRefresh` resets all stores' `lastFetchedAt`.
-- The IndexedDB cache logic stays in the facade.
-
-### Shared state
-
-- `userId` and `isLoading` live in the facade since they're cross-cutting.
-- Domain stores accept `userId` as a parameter to their async actions rather than storing it.
-
----
-
-## C4.1 — Giant Component Decomposition
-
-Target the 6 components over 900 lines:
-
-| Component | Lines | Split strategy |
-|-----------|-------|----------------|
-| `CreatePlanDialog.tsx` (1245) | Extract: `PlanFormFields`, `ParticipantPicker`, `DateTimePicker`, `RecurrenceConfig` |
-| `GuidedTripSheet.tsx` (1231) | Extract: `TripStepDates`, `TripStepDestination`, `TripStepParticipants`, `TripStepReview` |
-| `Settings.tsx` (1102) | Extract: `SettingsProfile`, `SettingsCalendar`, `SettingsNotifications`, `SettingsPrivacy`, `SettingsDanger` |
-| `GuidedPlanSheet.tsx` (1088) | Extract: `PlanStepActivity`, `PlanStepWhen`, `PlanStepWho`, `PlanStepDetails` |
-| `WeeklyPlanSwiper.tsx` (966) | Extract: `DayColumn`, `PlanCard`, `SwiperControls` |
-| `Profile.tsx` (902) | Extract: `ProfileHeader`, `ProfileStats`, `ProfileTripsList`, `ProfilePlanHistory` |
-
-Each parent component becomes an orchestrator (~100-200 lines) that imports sub-components.
-
----
-
-## C4.2 — Lazy Dialogs
-
-Wrap infrequently-used dialogs with `React.lazy` + `Suspense`:
-
-- `CreatePlanDialog`
-- `GuidedPlanSheet`
-- `GuidedTripSheet`
-- `MergePlansDialog`
-- `InviteToPlanDialog`
-- `SuggestFriendDialog`
-- `InviteFriendDialog`
-- `AddTripDialog`
-- `ImageCropDialog`
-- `DeleteAccountDialog`
-- `ShareDialog`
-
-Pattern:
-```typescript
-const LazyCreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
-
-// In JSX:
-{editDialogOpen && (
-  <Suspense fallback={null}>
-    <LazyCreatePlanDialog ... />
-  </Suspense>
-)}
-```
-
-Conditionally render on the `open` prop so the chunk isn't fetched until the dialog is actually opened.
-
----
-
-## Execution Order
-
-1. **C4.2 — Lazy dialogs** (lowest risk, immediate bundle win, no logic changes)
-2. **C4.1 — Component decomposition** (pure extraction, no behavior changes)
-3. **C3.1 — Store split** (highest risk, do last with tests)
-
-Each step is independently shippable and testable.
-
----
-
-## Technical Notes
-
-- All extracted sub-components go in the same directory as their parent (e.g., `src/components/plans/create-plan/PlanFormFields.tsx`).
-- The store facade preserves the exact `PlannerState` interface so TypeScript catches any missed fields.
-- Lazy imports use default exports for compatibility with `React.lazy`.
-- The helper files (`mapAvailability.ts`, `mapPlans.ts`, `mapFriends.ts`, `types.ts`) stay as-is — they're already well-factored.
-
+### Decision needed
+Pick one:
+- **A**: Proceed now with Phase 1 + 3 only (zero conflict, no DB/store changes). Defer Phase 2 until Sprint 2.1 lands.
+- **B**: Proceed with all phases now, accepting that the RPC and store-gate code may need a small refactor when Sprint 2 lands.
+- **C**: Pause perf work entirely until Sprint 2 is implemented, then do everything together.
