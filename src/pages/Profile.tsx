@@ -50,6 +50,7 @@ import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '@/types/plann
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { formatDisplayName } from '@/lib/formatName';
 
 const ImageCropDialog = lazy(() => import('@/components/profile/ImageCropDialog'));
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
