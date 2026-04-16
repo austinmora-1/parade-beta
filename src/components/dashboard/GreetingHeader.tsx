@@ -56,7 +56,14 @@ export function GreetingHeader() {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="relative overflow-hidden rounded-2xl w-full"
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${config.lightGradient} dark:${config.darkGradient} rounded-2xl`} />
+      <div
+        className="absolute inset-0 rounded-2xl"
+        style={{
+          background: document.documentElement.classList.contains('dark')
+            ? config.darkGradient
+            : config.lightGradient,
+        }}
+      />
       
       <div className="relative px-4 py-2">
         <h2 className="text-lg font-display text-foreground">
