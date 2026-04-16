@@ -75,6 +75,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
       return;
     }
     set({ currentVibe: newVibe });
+    patchVibeInCache(userId, newVibe);
   },
 
   removeCustomVibe: async (tag, userId) => {
