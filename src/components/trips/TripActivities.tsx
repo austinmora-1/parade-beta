@@ -9,6 +9,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG, VibeType } from '@/types/planner';
+
+interface StandardActivity {
+  id: ActivityType;
+  label: string;
+  icon: string;
+  vibeType: VibeType;
+}
+
+const STANDARD_ACTIVITIES: StandardActivity[] = (Object.entries(ACTIVITY_CONFIG) as [ActivityType, (typeof ACTIVITY_CONFIG)[ActivityType]][])
+  .filter(([id]) => id !== 'custom' && id !== 'flight' && id !== 'hotel')
+  .map(([id, cfg]) => ({ id, label: cfg.label, icon: cfg.icon, vibeType: cfg.vibeType }));
 
 interface Props {
   proposalId: string;
