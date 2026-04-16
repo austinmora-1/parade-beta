@@ -18,9 +18,9 @@ const STEPS: WalkthroughStep[] = [
   {
     icon: <LayoutDashboard className="h-5 w-5" />,
     title: "Your Home Base",
-    message: "This is your dashboard — your command center. See upcoming plans, weekly availability, friend activity, and your vibe status all in one place. Widgets are collapsible so you can customize your view.",
+    message: "This is your dashboard — your command center. Set your vibe and weekly intentions, see which friends are around, drop a quick plan, and check what's coming up — all in one place.",
     emoji: "🏠",
-    tip: "Tap any widget header to expand or collapse it.",
+    tip: "Tap a friend in the vibe strip to start staging a plan with them.",
   },
   {
     icon: <Calendar className="h-5 w-5" />,
