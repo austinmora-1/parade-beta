@@ -144,7 +144,7 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
   return (
     <>
       <div className="space-y-2">
-        <h2 className="flex items-center gap-1.5 font-semibold text-muted-foreground text-sm">
+        <h2 className="flex items-center gap-1.5 font-semibold text-sm text-inherit">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           Plan with Friends
         </h2>
