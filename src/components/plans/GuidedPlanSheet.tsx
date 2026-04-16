@@ -611,8 +611,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     setStep('confirm');
   };
 
-  const activityLabel = activity ? (SUGGESTED_ACTIVITIES.find(a => a.id === activity)?.label || ACTIVITY_CONFIG[activity]?.label || activity) : '';
-  const activityEmoji = activity ? (SUGGESTED_ACTIVITIES.find(a => a.id === activity)?.emoji || '📅') : '';
+  const activityLabel = activity === TBD_ACTIVITY_ID ? TBD_LABEL : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.label || customActivities.find(a => a.id === activity)?.label || activity) : '';
+  const activityEmoji = activity === TBD_ACTIVITY_ID ? TBD_EMOJI : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.icon || customActivities.find(a => a.id === activity)?.icon || '📅') : '';
 
   const autoTitle = activity
     ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : activityLabel)
