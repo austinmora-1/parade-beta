@@ -134,9 +134,10 @@ export const useAvailabilityStore = create<AvailabilityState & AvailabilityActio
     }
 
     const todayStr = format(new Date(), 'yyyy-MM-dd');
-    if (dateStr === todayStr && vibe) {
+    const isToday = dateStr === todayStr;
+    if (isToday && vibe) {
       setCurrentVibe({ type: vibe });
-    } else if (dateStr === todayStr && !vibe) {
+    } else if (isToday && !vibe) {
       setCurrentVibe(null);
     }
 
@@ -146,6 +147,18 @@ export const useAvailabilityStore = create<AvailabilityState & AvailabilityActio
 
     if (error) {
       console.error('Error setting vibe for date:', error);
+    }
+
+    // When the target is today, also persist to profile so the dashboard
+    // (which reads from profile.current_vibe) doesn't overwrite it on refresh.
+    if (isToday) {
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({ current_vibe: vibe || null })
+        .eq('user_id', userId);
+      if (profileErr) {
+        console.error('Error syncing today vibe to profile:', profileErr);
+      }
     }
   },
 
