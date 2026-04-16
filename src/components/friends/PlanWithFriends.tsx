@@ -282,7 +282,7 @@ export function PlanWithFriends({ friends }: PlanWithFriendsProps) {
       </div>
 
       {/* Suggested friends */}
-      {visibleSuggestions.length > 0 && !hasStaged && (
+      {visibleSuggestions.length > 0 && (
         <div className="mt-2.5">
           <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
             <Sparkles className="h-3 w-3" />
