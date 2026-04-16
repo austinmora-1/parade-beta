@@ -570,9 +570,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   };
 
   const handleCalendarSelect = (date: Date, slot: TimeSlot) => {
-    // In multi-select calendar mode, just focus the date
-    setSelectedDate(date);
-    setTimeSlot(slot);
+    if (soloMode) {
+      // Solo mode: single select, go straight to confirm
+      setSelectedDate(date);
+      setTimeSlot(slot);
+      setSelectedSlots([{ date, slot }]);
+    } else {
+      // In multi-select calendar mode, just focus the date
+      setSelectedDate(date);
+      setTimeSlot(slot);
+    }
   };
 
   const handleCalendarToggleSlot = (date: Date, slot: TimeSlot) => {
