@@ -51,6 +51,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { formatDisplayName } from '@/lib/formatName';
+import { formatCityForDisplay } from '@/lib/formatCity';
 
 const ImageCropDialog = lazy(() => import('@/components/profile/ImageCropDialog'));
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
