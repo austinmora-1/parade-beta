@@ -247,7 +247,7 @@ Deno.serve(async (req) => {
     // --- EMAIL NOTIFICATIONS ---
     let emailsSent = 0;
 
-    if (RESEND_API_KEY && plan) {
+    if (RESEND_API_KEY) {
       // Get participant emails
       const { data: authUsers } = await admin.auth.admin.listUsers();
       const targetEmails = new Map<string, string>();
@@ -260,70 +260,127 @@ Deno.serve(async (req) => {
       }
 
       if (targetEmails.size > 0) {
-        // Format plan details
-        const planDate = plan.date
-          ? new Date(plan.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-          : 'TBD';
+        let subject: string;
+        let html: string;
+        let plainText: string;
 
-        let planTime = TIME_SLOT_LABELS[plan.time_slot] || plan.time_slot || 'TBD';
-        if (plan.start_time) {
-          const formatTime = (t: string) => {
-            const [h, m] = t.split(':').map(Number);
-            const ampm = h >= 12 ? 'pm' : 'am';
-            const hr = h % 12 || 12;
-            return m ? `${hr}:${m.toString().padStart(2, '0')}${ampm}` : `${hr}${ampm}`;
-          };
-          planTime = plan.end_time
-            ? `${formatTime(plan.start_time)} – ${formatTime(plan.end_time)}`
-            : formatTime(plan.start_time);
+        if (notifType === 'trip') {
+          // Trip invite email
+          const tripLoc = trip_location || 'a trip';
+          subject = `${creatorName} added you to a trip${trip_location ? ` to ${trip_location}` : ''} ✈️`;
+          const tripUrl = 'https://helloparade.app/trips';
+
+          html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="color-scheme" content="light"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#ffffff;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;padding:40px 20px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;">
+        <tr><td style="background-color:#1a2e22;padding:0;text-align:center;"><img src="https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/og-pages/email-wordmark.png" alt="Parade" width="560" style="display:block;width:100%;max-width:560px;height:auto;" /></td></tr>
+        <tr><td style="padding:36px 30px;">
+          <p style="margin:0 0 20px;font-size:16px;color:#18181b;line-height:1.7;">Hey there 👋</p>
+          <p style="margin:0 0 24px;font-size:16px;color:#3f3f46;line-height:1.7;"><strong style="color:#18181b;">${creatorName}</strong> added you to a trip on Parade:</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f7f5;border-radius:12px;margin:0 0 28px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 12px;font-size:20px;font-weight:700;color:#1a2b22;">✈️ ${tripLoc}</p>
+              ${trip_dates ? `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="padding:6px 0;vertical-align:top;"><span style="font-size:14px;">📅</span></td><td style="padding:6px 0 6px 8px;font-size:15px;color:#3f3f46;line-height:1.5;">${trip_dates}</td></tr></table>` : ''}
+            </td></tr>
+          </table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center" style="padding:0 0 28px;">
+              <a href="${tripUrl}" style="display:inline-block;background-color:#55C78E;color:#111E16;text-decoration:none;font-size:16px;font-weight:600;padding:14px 36px;border-radius:12px;">View Trip Details</a>
+            </td></tr>
+          </table>
+          <p style="margin:0;font-size:12px;color:#8a9b92;">If you weren't expecting this, no worries — just ignore this email.</p>
+        </td></tr>
+        <tr><td style="padding:0;text-align:center;background-color:#1a6e4a;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-image:url('https://womtzaraskisayzskafe.supabase.co/storage/v1/object/public/og-pages/email-footer-confetti.png');background-size:cover;background-position:center;">
+            <tr><td style="padding:28px 30px;text-align:center;">
+              <p style="margin:0 0 6px;font-size:13px;color:#ffffff;font-weight:500;">Sent via Parade</p>
+              <p style="margin:0;font-size:12px;"><a href="https://helloparade.app" style="color:rgba(255,255,255,0.7);text-decoration:none;">helloparade.app</a></p>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+          plainText = `Hey there!\n\n${creatorName} added you to a trip on Parade:\n\n✈️ ${tripLoc}${trip_dates ? `\n📅 ${trip_dates}` : ''}\n\nView Trip Details: ${tripUrl}\n\nSent via Parade — helloparade.app`;
+        } else if (plan) {
+          // Plan invite email
+          const planDate = plan.date
+            ? new Date(plan.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+            : 'TBD';
+
+          let planTime = TIME_SLOT_LABELS[plan.time_slot] || plan.time_slot || 'TBD';
+          if (plan.start_time) {
+            const formatTime = (t: string) => {
+              const [h, m] = t.split(':').map(Number);
+              const ampm = h >= 12 ? 'pm' : 'am';
+              const hr = h % 12 || 12;
+              return m ? `${hr}:${m.toString().padStart(2, '0')}${ampm}` : `${hr}${ampm}`;
+            };
+            planTime = plan.end_time
+              ? `${formatTime(plan.start_time)} – ${formatTime(plan.end_time)}`
+              : formatTime(plan.start_time);
+          }
+
+          const planUrl = `https://helloparade.app/plan/${plan_id}`;
+          const emoji = getActivityEmoji(plan.activity);
+          subject = `${creatorName} invited you to "${plan_title}" ${emoji}`;
+
+          html = buildPlanInviteHtml(
+            creatorName,
+            plan_title,
+            plan.activity,
+            planDate,
+            planTime,
+            plan.location,
+            planUrl,
+          );
+
+          plainText = `Hey there!\n\n${creatorName} invited you to a plan on Parade:\n\n${emoji} ${plan_title}\n📅 ${planDate}\n🕐 ${planTime}${plan.location ? `\n📍 ${plan.location}` : ''}\n\nView Plan & RSVP: ${planUrl}\n\nSent via Parade — helloparade.app`;
+        } else {
+          // No plan data available, skip email
+          subject = '';
+          html = '';
+          plainText = '';
         }
 
-        const planUrl = `https://helloparade.app/plan/${plan_id}`;
-        const emoji = getActivityEmoji(plan.activity);
-        const subject = `${creatorName} invited you to "${plan_title}" ${emoji}`;
-
-        const html = buildPlanInviteHtml(
-          creatorName,
-          plan_title,
-          plan.activity,
-          planDate,
-          planTime,
-          plan.location,
-          planUrl,
-        );
-
-        const plainText = `Hey there!\n\n${creatorName} invited you to a plan on Parade:\n\n${emoji} ${plan_title}\n📅 ${planDate}\n🕐 ${planTime}${plan.location ? `\n📍 ${plan.location}` : ''}\n\nView Plan & RSVP: ${planUrl}\n\nSent via Parade — helloparade.app`;
-
-        await Promise.allSettled(
-          Array.from(targetEmails.entries()).map(async ([_, email]) => {
-            try {
-              const res = await fetch("https://api.resend.com/emails", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${RESEND_API_KEY}`,
-                },
-                body: JSON.stringify({
-                  from: "Parade <hello@helloparade.app>",
-                  reply_to: "hello@helloparade.app",
-                  to: [email],
-                  subject,
-                  headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
-                  html,
-                  text: plainText,
-                }),
-              });
-              if (res.ok) emailsSent++;
-              else log.warn('Email send failed', { email: email.slice(0, 3) + '...', status: res.status });
-            } catch (err) {
-              log.warn('Email send error', { error: String(err) });
-            }
-          })
-        );
+        if (subject && html) {
+          await Promise.allSettled(
+            Array.from(targetEmails.entries()).map(async ([_, email]) => {
+              try {
+                const res = await fetch("https://api.resend.com/emails", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${RESEND_API_KEY}`,
+                  },
+                  body: JSON.stringify({
+                    from: "Parade <hello@helloparade.app>",
+                    reply_to: "hello@helloparade.app",
+                    to: [email],
+                    subject,
+                    headers: { "X-Entity-Ref-ID": crypto.randomUUID() },
+                    html,
+                    text: plainText,
+                  }),
+                });
+                if (res.ok) emailsSent++;
+                else log.warn('Email send failed', { email: email.slice(0, 3) + '...', status: res.status });
+              } catch (err) {
+                log.warn('Email send error', { error: String(err) });
+              }
+            })
+          );
+        }
       }
     }
 
-    log.info('Plan post-processing complete', { plan_id, pushSent, emailsSent, targets: targetIds.length });
+    log.info('Post-processing complete', { plan_id, notifType, pushSent, emailsSent, targets: targetIds.length });
 
     return new Response(JSON.stringify({ sent: pushSent, emails_sent: emailsSent }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
