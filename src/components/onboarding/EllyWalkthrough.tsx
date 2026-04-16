@@ -146,24 +146,11 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
               </button>
 
               <div className="p-6">
-                {/* Elly avatar + step icon */}
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/40">
-                    <Sparkles className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg",
-                      "bg-primary/10 text-primary"
-                    )}>
-                      {current.icon}
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Elly · Step {step + 1} of {STEPS.length}
-                      </p>
-                    </div>
-                  </div>
+                {/* Step indicator */}
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Step {step + 1} of {STEPS.length}
+                  </p>
                 </div>
 
                 {/* Content */}
