@@ -41,6 +41,8 @@ export function VibeAndIntentionsCard() {
     }).length;
   }, [displayPlans]);
 
+  const vibeTypes = (Object.keys(VIBE_CONFIG) as VibeType[]).filter(t => t !== 'custom');
+
   const handleVibeSelect = useCallback((value: string) => {
     const existingTags = currentVibe?.customTags;
     const existingGif = currentVibe?.gifUrl;
