@@ -649,7 +649,20 @@ export default function PlanDetail() {
                         </Avatar>
                         <span className="text-sm hover:underline">{p.name}</span>
                       </FriendLink>
-                      <span className={`text-xs ${rsvpColor}`}>{rsvpLabel}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs ${rsvpColor}`}>{rsvpLabel}</span>
+                        {isOwner && p.friendUserId && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveParticipant(p.friendUserId, p.name)}
+                            title="Remove participant"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
