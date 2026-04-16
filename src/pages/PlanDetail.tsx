@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Edit, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2 } from 'lucide-react';
@@ -19,14 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
 import { PlanPhotos } from '@/components/plans/PlanPhotos';
 import { PlanComments } from '@/components/plans/PlanComments';
-import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
-import { SuggestFriendDialog } from '@/components/plans/SuggestFriendDialog';
-import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
+
+const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
+const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDialog'));
+const SuggestFriendDialog = lazy(() => import('@/components/plans/SuggestFriendDialog'));
+const MergePlansDialog = lazy(() => import('@/components/plans/MergePlansDialog'));
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -776,44 +777,54 @@ export default function PlanDetail() {
       </div>
 
       {/* Edit dialog */}
-      {plan && (
-        <CreatePlanDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          editPlan={plan}
-          onChangeProposed={refetchChangeRequests}
-        />
+      {plan && editDialogOpen && (
+        <Suspense fallback={null}>
+          <CreatePlanDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            editPlan={plan}
+            onChangeProposed={refetchChangeRequests}
+          />
+        </Suspense>
       )}
 
       {/* Invite dialog */}
-      {plan && (
-        <InviteToPlanDialog
-          open={inviteDialogOpen}
-          onOpenChange={setInviteDialogOpen}
-          planId={plan.id}
-          planTitle={displayTitle}
-        />
+      {plan && inviteDialogOpen && (
+        <Suspense fallback={null}>
+          <InviteToPlanDialog
+            open={inviteDialogOpen}
+            onOpenChange={setInviteDialogOpen}
+            planId={plan.id}
+            planTitle={displayTitle}
+          />
+        </Suspense>
       )}
 
       {/* Suggest friend dialog (for non-organizers) */}
-      {plan && !isOwner && (
-        <SuggestFriendDialog
-          open={suggestDialogOpen}
-          onOpenChange={setSuggestDialogOpen}
-          planId={plan.id}
-          planTitle={displayTitle}
-          existingParticipantIds={participants.map((p: any) => p.friendUserId).filter(Boolean)}
-          organizerId={plan.userId || ''}
-        />
+      {plan && !isOwner && suggestDialogOpen && (
+        <Suspense fallback={null}>
+          <SuggestFriendDialog
+            open={suggestDialogOpen}
+            onOpenChange={setSuggestDialogOpen}
+            planId={plan.id}
+            planTitle={displayTitle}
+            existingParticipantIds={participants.map((p: any) => p.friendUserId).filter(Boolean)}
+            organizerId={plan.userId || ''}
+          />
+        </Suspense>
       )}
 
       {/* Merge dialog */}
-      <MergePlansDialog
-        open={mergeOpen}
-        onOpenChange={setMergeOpen}
-        preselectedPlanIds={mergeSelectedIds}
-        onMerged={() => navigate('/availability')}
-      />
+      {mergeOpen && (
+        <Suspense fallback={null}>
+          <MergePlansDialog
+            open={mergeOpen}
+            onOpenChange={setMergeOpen}
+            preselectedPlanIds={mergeSelectedIds}
+            onMerged={() => navigate('/availability')}
+          />
+        </Suspense>
+      )}
 
       {/* Delete confirm */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

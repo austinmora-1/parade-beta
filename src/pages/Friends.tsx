@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
+
+const InviteFriendDialog = lazy(() => import('@/components/friends/InviteFriendDialog'));
 import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
 import { FriendListRow } from '@/components/friends/FriendListRow';
@@ -451,7 +452,11 @@ export default function Friends() {
         </div>
       )}
 
-      <InviteFriendDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} />
+      {inviteDialogOpen && (
+        <Suspense fallback={null}>
+          <InviteFriendDialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} />
+        </Suspense>
+      )}
 
       {/* Friend Panel */}
       <FriendPanel

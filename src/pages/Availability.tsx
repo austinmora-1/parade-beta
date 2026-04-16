@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
-import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
-import { GuidedPlanSheet } from '@/components/plans/GuidedPlanSheet';
-import { MergePlansDialog } from '@/components/plans/MergePlansDialog';
-import { InviteToPlanDialog } from '@/components/plans/InviteToPlanDialog';
+
+const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
+const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
+const MergePlansDialog = lazy(() => import('@/components/plans/MergePlansDialog'));
+const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDialog'));
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus } from 'lucide-react';
@@ -142,32 +143,46 @@ export default function Availability() {
         onSharePlan={handleSharePlan}
       />
 
-      <GuidedPlanSheet
-        open={guidedPlanOpen}
-        onOpenChange={setGuidedPlanOpen}
-        preSelectedFriends={[]}
-      />
+      {guidedPlanOpen && (
+        <Suspense fallback={null}>
+          <GuidedPlanSheet
+            open={guidedPlanOpen}
+            onOpenChange={setGuidedPlanOpen}
+            preSelectedFriends={[]}
+          />
+        </Suspense>
+      )}
 
-      <CreatePlanDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        defaultDate={planDefaultDate}
-        editPlan={editPlan}
-      />
+      {editDialogOpen && (
+        <Suspense fallback={null}>
+          <CreatePlanDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            defaultDate={planDefaultDate}
+            editPlan={editPlan}
+          />
+        </Suspense>
+      )}
 
-      <MergePlansDialog
-        open={mergeOpen}
-        onOpenChange={setMergeOpen}
-        preselectedPlanIds={mergePreselected}
-      />
+      {mergeOpen && (
+        <Suspense fallback={null}>
+          <MergePlansDialog
+            open={mergeOpen}
+            onOpenChange={setMergeOpen}
+            preselectedPlanIds={mergePreselected}
+          />
+        </Suspense>
+      )}
 
       {sharePlanId && (
-        <InviteToPlanDialog
-          open={!!sharePlanId}
-          onOpenChange={(open) => { if (!open) setSharePlanId(null); }}
-          planId={sharePlanId}
-          planTitle={sharePlanTitle}
-        />
+        <Suspense fallback={null}>
+          <InviteToPlanDialog
+            open={!!sharePlanId}
+            onOpenChange={(open) => { if (!open) setSharePlanId(null); }}
+            planId={sharePlanId}
+            planTitle={sharePlanTitle}
+          />
+        </Suspense>
       )}
     </div>
   );

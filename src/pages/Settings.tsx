@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { toast } from 'sonner';
 import { CalendarIntegration } from '@/components/settings/CalendarIntegration';
-import { DeleteAccountDialog } from '@/components/settings/DeleteAccountDialog';
+const DeleteAccountDialog = lazy(() => import('@/components/settings/DeleteAccountDialog'));
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
