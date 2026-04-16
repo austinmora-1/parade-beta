@@ -7,17 +7,24 @@ const STATUS_PRIORITY: Record<string, number> = { connected: 3, pending: 2, invi
 export const mapOutgoingFriendships = (
   rows: any[],
   avatarMap: Map<string, string | null>,
+  profilesMap?: Map<string, any>,
 ): Friend[] =>
-  rows.map(f => ({
-    id: f.id,
-    name: f.friend_name,
-    email: f.friend_email || undefined,
-    avatar: f.friend_user_id ? (avatarMap.get(f.friend_user_id) || undefined) : undefined,
-    friendUserId: f.friend_user_id || undefined,
-    status: f.status as 'connected' | 'pending' | 'invited',
-    isIncoming: false,
-    isPodMember: f.is_pod_member || false,
-  }));
+  rows.map(f => {
+    const prof = f.friend_user_id ? profilesMap?.get(f.friend_user_id) : null;
+    const name = prof
+      ? formatDisplayName({ firstName: prof.first_name, lastName: prof.last_name, displayName: prof.display_name || f.friend_name })
+      : f.friend_name;
+    return {
+      id: f.id,
+      name,
+      email: f.friend_email || undefined,
+      avatar: f.friend_user_id ? (avatarMap.get(f.friend_user_id) || undefined) : undefined,
+      friendUserId: f.friend_user_id || undefined,
+      status: f.status as 'connected' | 'pending' | 'invited',
+      isIncoming: false,
+      isPodMember: f.is_pod_member || false,
+    };
+  });
 
 /** Map raw incoming friendship rows + profile map to Friend[] */
 export const mapIncomingFriendships = (
