@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { TripActivities } from '@/components/trips/TripActivities';
 
 const TRIPS_UPDATED_EVENT = 'trips:updated';
 
@@ -34,6 +35,7 @@ interface TripRow {
   end_date: string;
   priority_friend_ids: string[];
   available_slots: string[];
+  proposal_id: string | null;
 }
 
 interface FriendProfile {
