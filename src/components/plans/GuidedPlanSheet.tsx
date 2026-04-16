@@ -494,22 +494,22 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       return false;
     }
 
-    // Sort: chronologically first, then prefer no-existing-plans, then social preference, then all-free > some-free
+    // Sort: social preference first, then chronologically, then no-existing-plans, then all-free > some-free
     const slotOrder: Record<string, number> = { 'late-morning': 0, 'early-afternoon': 1, 'late-afternoon': 2, 'evening': 3, 'late-night': 4 };
     results.sort((a, b) => {
-      // 1. Chronological (soonest first)
-      const dateDiff = a.date.getTime() - b.date.getTime();
-      if (dateDiff !== 0) return dateDiff;
-
-      // 2. Prefer slots where nobody has existing plans
-      const aPlan = hasExistingPlan(a.date, a.slot);
-      const bPlan = hasExistingPlan(b.date, b.slot);
-      if (aPlan !== bPlan) return aPlan ? 1 : -1;
-
-      // 3. Social preference score (higher is better)
+      // 1. Social preference score (higher is better) — prioritize preferred days/times
       const aScore = getSocialPreferenceScore(a.date, a.slot);
       const bScore = getSocialPreferenceScore(b.date, b.slot);
       if (aScore !== bScore) return bScore - aScore;
+
+      // 2. Chronological (soonest first)
+      const dateDiff = a.date.getTime() - b.date.getTime();
+      if (dateDiff !== 0) return dateDiff;
+
+      // 3. Prefer slots where nobody has existing plans
+      const aPlan = hasExistingPlan(a.date, a.slot);
+      const bPlan = hasExistingPlan(b.date, b.slot);
+      if (aPlan !== bPlan) return aPlan ? 1 : -1;
 
       // 4. All-free beats some-free
       if (a.status !== b.status) return a.status === 'all-free' ? -1 : 1;
@@ -518,17 +518,74 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       return (slotOrder[a.slot] || 0) - (slotOrder[b.slot] || 0);
     });
 
-    // Take the top 3 suggestions overall
-    setBestSlots(results.slice(0, 3));
+    // Deduplicate: one slot per day (pick best-scored slot per day)
+    const seenDays = new Set<string>();
+    const deduped: BestSlot[] = [];
+    for (const r of results) {
+      const dayKey = format(r.date, 'yyyy-MM-dd');
+      if (seenDays.has(dayKey)) continue;
+      seenDays.add(dayKey);
+      deduped.push(r);
+      if (deduped.length >= 3) break;
+    }
+
+    setBestSlots(deduped);
     setLoadingSlots(false);
   }, [effectiveFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
-  // Compute solo best slots (user's free slots where no existing plan)
-  const computeSoloBestSlots = useCallback(() => {
+  // Compute solo best slots (user's free slots where no existing plan, scored by social preferences)
+  const computeSoloBestSlots = useCallback(async () => {
     const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
     const scanDays = Array.from({ length: 30 }, (_, i) => addDays(new Date(), i));
-    const results: BestSlot[] = [];
+    const DAY_NAMES_LOWER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const DEFAULT_SOCIAL_DAYS = ['friday', 'saturday', 'sunday'];
+    const DEFAULT_SOCIAL_TIMES = ['evening'];
 
+    // Fetch user's social preferences from profile
+    let prefDays: string[] = DEFAULT_SOCIAL_DAYS;
+    let prefTimes: string[] = DEFAULT_SOCIAL_TIMES;
+    if (userId) {
+      const { data } = await supabase.from('profiles')
+        .select('preferred_social_days, preferred_social_times')
+        .eq('user_id', userId).single();
+      if (data) {
+        if ((data as any).preferred_social_days?.length) prefDays = (data as any).preferred_social_days;
+        if ((data as any).preferred_social_times?.length) prefTimes = (data as any).preferred_social_times;
+      }
+    }
+
+    // Map onboarding time categories to specific slots
+    const timeToSlots: Record<string, TimeSlot[]> = {
+      'morning': ['late-morning'],
+      'afternoon': ['early-afternoon', 'late-afternoon'],
+      'evening': ['evening'],
+      'late-night': ['late-night'],
+    };
+
+    function getPreferenceScore(date: Date, slot: TimeSlot): number {
+      const dayName = DAY_NAMES_LOWER[date.getDay()];
+      let score = 0;
+
+      // Check day-specific slot prefs ("day:time" format)
+      const daySlotMatch = prefTimes.some(t => t === `${dayName}:${slot}` || t.endsWith(`:${slot}`));
+      if (daySlotMatch) score += 2;
+
+      // Check general day preference
+      const validDays = prefDays.filter(d => DAY_NAMES_LOWER.includes(d));
+      if (validDays.length === 0 || validDays.includes(dayName)) score += 1;
+
+      // Check general time preference (map onboarding categories to slots)
+      const bareTimes = prefTimes.filter(t => !t.includes(':'));
+      for (const bt of bareTimes) {
+        const mapped = timeToSlots[bt];
+        if (mapped?.includes(slot)) { score += 1; break; }
+      }
+
+      return score;
+    }
+
+    // Collect all free candidate slots
+    const candidates: (BestSlot & { score: number })[] = [];
     for (const day of scanDays) {
       const dateStr = format(day, 'yyyy-MM-dd');
       const myDay = myAvailabilityMap[dateStr];
@@ -537,21 +594,32 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         const myFree = myDay ? myDay.slots[slot] : true;
         const hasPlan = myPlans.some(p => isSameDay(p.date, day) && p.timeSlot === slot);
         if (myFree && !hasPlan) {
-          results.push({
-            date: day,
-            slot,
-            status: 'all-free',
-            freeCount: 1,
-            total: 0,
-            sharedCity: '',
+          candidates.push({
+            date: day, slot, status: 'all-free', freeCount: 1, total: 0, sharedCity: '',
+            score: getPreferenceScore(day, slot),
           });
         }
-        if (results.length >= 3) break;
       }
+    }
+
+    // Sort by preference score desc, then chronological
+    candidates.sort((a, b) => {
+      if (a.score !== b.score) return b.score - a.score;
+      return a.date.getTime() - b.date.getTime();
+    });
+
+    // One slot per day
+    const seenDays = new Set<string>();
+    const results: BestSlot[] = [];
+    for (const c of candidates) {
+      const dayKey = format(c.date, 'yyyy-MM-dd');
+      if (seenDays.has(dayKey)) continue;
+      seenDays.add(dayKey);
+      results.push(c);
       if (results.length >= 3) break;
     }
     return results;
-  }, [myAvailabilityMap, myPlans]);
+  }, [myAvailabilityMap, myPlans, userId]);
 
   // When step changes to 'time', fetch best slots
   useEffect(() => {
@@ -561,9 +629,10 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       } else {
         // Solo mode: compute 3 free slots
         setLoadingSlots(true);
-        const soloSlots = computeSoloBestSlots();
-        setBestSlots(soloSlots);
-        setLoadingSlots(false);
+        computeSoloBestSlots().then(soloSlots => {
+          setBestSlots(soloSlots);
+          setLoadingSlots(false);
+        });
       }
     }
   }, [step]);
