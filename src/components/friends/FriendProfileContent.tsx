@@ -398,16 +398,16 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
               className="h-20 w-20 border-4 border-background shadow-lg md:h-24 md:w-24 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
               onClick={() => setShowAvatarLightbox(true)}
             >
-              <AvatarImage src={profile.avatar_url || undefined} alt={profile.display_name || 'User'} />
+              <AvatarImage src={profile.avatar_url || undefined} alt={friendFormattedName || 'User'} />
               <AvatarFallback className="bg-primary/20 text-primary text-lg md:text-xl font-display font-semibold">
-                {getInitials(profile.display_name)}
+                {getInitials(friendFormattedName)}
               </AvatarFallback>
             </Avatar>
           </div>
 
           <div className="min-w-0">
             <h1 className="font-display text-xl font-bold md:text-2xl truncate">
-              {profile.display_name || 'User'}
+              {friendFormattedName || 'User'}
             </h1>
             {profile.bio && (
               <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{profile.bio}</p>
@@ -723,19 +723,19 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
         <DialogContent className="max-w-xs sm:max-w-sm p-2 bg-background/95 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 py-2">
             {profile.avatar_url ? (
-              <img
+                <img
                 src={profile.avatar_url}
-                alt={profile.display_name || 'User'}
+                alt={friendFormattedName || 'User'}
                 className="h-56 w-56 rounded-full object-cover ring-2 ring-border shadow-lg"
               />
             ) : (
               <div className="h-56 w-56 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-border shadow-lg">
                 <span className="text-5xl font-display font-semibold text-primary">
-                  {getInitials(profile.display_name)}
+                  {getInitials(friendFormattedName)}
                 </span>
               </div>
             )}
-            <p className="font-display font-semibold text-base">{profile.display_name || 'User'}</p>
+            <p className="font-display font-semibold text-base">{friendFormattedName || 'User'}</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -751,7 +751,7 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
         }}
         preSelectedFriend={userId ? {
           userId,
-          name: profile?.display_name || 'Friend',
+          name: friendFormattedName || 'Friend',
           avatar: profile?.avatar_url || undefined,
         } : undefined}
         preSelectedDate={quickPlanDate}
