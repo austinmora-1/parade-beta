@@ -641,23 +641,11 @@ export default function Profile() {
                   <Bell className="h-5 w-5" />
                 </Button>
               </Link>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <Settings className="h-5 w-5" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-72 p-3">
-                  <AppearanceToggle />
-                  <div className="mt-3 border-t border-border pt-3">
-                    <Link to="/settings">
-                      <Button variant="outline" size="sm" className="w-full">
-                        All settings
-                      </Button>
-                    </Link>
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <Link to="/settings">
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </Link>
             </div>
           </div>
 
