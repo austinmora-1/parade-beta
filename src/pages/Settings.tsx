@@ -795,18 +795,6 @@ export default function Settings() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Appearance */}
-        <AccordionItem value="appearance" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
-          <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
-            <div className="flex items-center gap-2">
-              <Palette className="h-4 w-4 text-primary" />
-              <span className="font-display text-sm font-semibold">Appearance</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-3">
-            <AppearanceToggle />
-          </AccordionContent>
-        </AccordionItem>
 
         {/* Account / Logout */}
         <AccordionItem value="account" className="rounded-xl border border-destructive/20 bg-card shadow-soft overflow-hidden">
