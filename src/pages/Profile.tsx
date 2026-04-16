@@ -636,17 +636,20 @@ export default function Profile() {
               </button>
             </div>
             
-            <div className="flex items-center gap-1">
-              <Link to="/notifications">
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Bell className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/settings">
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Settings className="h-5 w-5" />
-                </Button>
-              </Link>
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-1">
+                <Link to="/notifications">
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Bell className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link to="/settings">
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+              <AppearanceQuickToggles />
             </div>
           </div>
 
