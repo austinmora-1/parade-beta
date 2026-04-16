@@ -162,6 +162,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     });
   };
 
+  // Load custom activities from profile
+  useEffect(() => {
+    if (!session?.user) return;
+    supabase.from('profiles').select('custom_activities').eq('user_id', session.user.id).single()
+      .then(({ data }) => {
+        if (data?.custom_activities) {
+          setCustomActivities(data.custom_activities as unknown as CustomActivity[]);
+        }
+      });
+  }, [session?.user]);
+
   // Reset on open
   useEffect(() => {
     if (open) {
@@ -177,6 +188,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setChosenFriends([]);
       setFriendSearch('');
       setSoloMode(false);
+      setShowCustomInput(false);
+      setCustomLabel('');
+      setActivitySearch('');
     }
   }, [open, needsFriendStep]);
 
