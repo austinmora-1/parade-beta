@@ -229,7 +229,7 @@ export const ACTIVITY_CONFIG: Record<ActivityType, ActivityConfig> = {
   'larping': { label: 'LARPing', icon: '⚔️', lucideIcon: Sword, color: 'activity-events', vibeType: 'social' },
   'ballet': { label: 'Ballet / Dance', icon: '🩰', lucideIcon: Drama, color: 'activity-events', vibeType: 'social' },
   'dancing': { label: 'Dancing', icon: '💃', lucideIcon: PartyPopper, color: 'activity-events', vibeType: 'social' },
-  'opera': { label: 'Opera', icon: '🎭', lucideIcon: Theater, color: 'activity-events', vibeType: 'social' },
+  'opera': { label: 'Going to a Show', icon: '🎭', lucideIcon: Theater, color: 'activity-events', vibeType: 'social' },
   'comic-con': { label: 'Comic-Con', icon: '🦸', lucideIcon: Zap, color: 'activity-events', vibeType: 'social' },
   // Chill activities (ranked)
   'listening-music': { label: 'Listening to Music', icon: '🎧', lucideIcon: Headphones, color: 'activity-me-time', vibeType: 'chill' },
