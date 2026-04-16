@@ -87,7 +87,7 @@ export function MobileNav() {
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
-              <Avatar className={cn('relative h-6 w-6', isProfileActive && 'ring-2 ring-sidebar-primary')}>
+              <Avatar className={cn('relative h-9 w-9', isProfileActive && 'ring-2 ring-sidebar-primary')}>
                 <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
                 <AvatarFallback className="bg-primary/15 text-[9px] font-semibold text-primary">
                   {getInitials(profile?.display_name)}
