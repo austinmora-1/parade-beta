@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2 } from 'lucide-react';
+import { ArrowLeft, Edit, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2, X } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -327,6 +327,22 @@ export default function PlanDetail() {
       toast.error(err.message || 'Failed to update RSVP');
     } finally {
       setIsUpdatingRsvp(false);
+    }
+  };
+
+  const handleRemoveParticipant = async (friendUserId: string, friendName: string) => {
+    if (!plan || !isOwner) return;
+    try {
+      const { error } = await supabase
+        .from('plan_participants')
+        .delete()
+        .eq('plan_id', plan.id)
+        .eq('friend_id', friendUserId);
+      if (error) throw error;
+      toast.success(`Removed ${friendName}`);
+      await loadPlans();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove participant');
     }
   };
 
