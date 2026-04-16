@@ -296,62 +296,6 @@ export default function Friends() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search by name, email, or phone..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 h-9"
-        />
-        {isSearching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
-      </div>
-
-      {/* Search Results */}
-      {searchQuery.trim().length >= 2 && searchResults.length > 0 && (
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-          <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-primary">
-            <Search className="h-3.5 w-3.5" />
-            People on Parade
-          </h2>
-          <div className="space-y-1.5">
-            {searchResults.map((profile) => (
-              <div key={profile.user_id} className="flex items-center justify-between rounded-lg bg-card p-2 shadow-soft">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={profile.avatar_url || undefined} />
-                    <AvatarFallback className={cn("text-[10px]", getAvatarColor(profile.display_name || 'U'))}>
-                      {getInitials(profile.display_name || 'User')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-xs">{profile.display_name || 'User'}</p>
-                    {profile.bio && <p className="text-[10px] text-muted-foreground line-clamp-1">{profile.bio}</p>}
-                  </div>
-                </div>
-                <Button size="sm" onClick={() => handleSendFriendRequest(profile)} disabled={sendingRequest === profile.user_id} className="gap-1 h-7 text-xs px-2">
-                  {sendingRequest === profile.user_id ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3 w-3" />}
-                  Add
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* No Results */}
-      {searchQuery.trim().length >= 2 && !isSearching && searchResults.length === 0 && filteredFriends.length === 0 && (
-        <div className="rounded-xl border border-border bg-card p-4 text-center shadow-soft">
-          <div className="text-2xl mb-1">🔍</div>
-          <h3 className="text-sm font-semibold">No one found</h3>
-          <p className="mt-1 text-xs text-muted-foreground">Can't find "{searchQuery}"? Invite them!</p>
-          <Button onClick={() => setInviteDialogOpen(true)} size="sm" variant="outline" className="mt-2 gap-1.5 text-xs">
-            <UserPlus className="h-3.5 w-3.5" />
-            Send Invite
-          </Button>
-        </div>
-      )}
 
       {/* Group Scheduler */}
       <GroupScheduler friends={friends} />
