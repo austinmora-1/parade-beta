@@ -18,14 +18,14 @@
     --popover: 30 100% 97%;
     --popover-foreground: 20 15% 20%;
 
-    /* Parade Green #3D8C6C */
-    --primary: 152 39% 39%;
+    /* Parade Coral #FF6B5B — Primary (V2) */
+    --primary: 5 100% 68%;
     --primary-foreground: 0 0% 100%;
-    /* Meadow Green #72C4A2 */
-    --primary-glow: 152 39% 61%;
+    /* Sunset Peach #FFAD9E */
+    --primary-glow: 9 100% 81%;
 
-    /* Parade Coral #FF6B5B */
-    --secondary: 5 100% 68%;
+    /* Parade Green #3D8C6C — Secondary (V2) */
+    --secondary: 152 39% 39%;
     --secondary-foreground: 0 0% 100%;
 
     /* Warm cream variant */
@@ -41,7 +41,7 @@
 
     --border: 30 30% 90%;
     --input: 30 30% 90%;
-    --ring: 152 39% 39%;
+    --ring: 5 100% 68%;
 
     --radius: 1rem;
 
@@ -69,7 +69,7 @@
     --activity-shopping: 9 100% 81%;
     --activity-doctor: 0 60% 55%;
 
-    /* Availability colors */
+    /* Availability colors — green still signals "free/available" */
     --available: 152 39% 39%;
     --available-light: 152 40% 92%;
     --partial: 49 100% 67%;
@@ -87,9 +87,9 @@
     --vibe-athletic: 152 56% 78%;
     --vibe-productive: 49 100% 67%;
 
-    /* Gradients — coral-led warm palette */
-    --gradient-primary: linear-gradient(135deg, hsl(152 39% 39%), hsl(152 39% 61%));
-    --gradient-secondary: linear-gradient(135deg, hsl(5 100% 68%), hsl(9 100% 81%));
+    /* Gradients — coral-led primary, green secondary (V2) */
+    --gradient-primary: linear-gradient(135deg, hsl(5 100% 68%), hsl(9 100% 81%));
+    --gradient-secondary: linear-gradient(135deg, hsl(152 39% 39%), hsl(152 39% 61%));
     --gradient-card: linear-gradient(145deg, hsl(30 50% 99%), hsl(30 40% 97%));
     --gradient-hero: linear-gradient(160deg, hsl(5 100% 68%), hsl(9 100% 81%), hsl(152 39% 39%));
     --gradient-wordmark: linear-gradient(
@@ -111,12 +111,12 @@
     /* Warm cream sidebar */
     --sidebar-background: 30 50% 97%;
     --sidebar-foreground: 20 15% 20%;
-    --sidebar-primary: 152 39% 39%;
+    --sidebar-primary: 5 100% 68%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 9 100% 95%;
     --sidebar-accent-foreground: 5 80% 45%;
     --sidebar-border: 30 30% 88%;
-    --sidebar-ring: 152 39% 39%;
+    --sidebar-ring: 5 100% 68%;
   }
 
   .dark {
@@ -130,13 +130,13 @@
     --popover: 20 12% 14%;
     --popover-foreground: 30 20% 90%;
 
-    /* Parade Green — slightly brighter for dark */
-    --primary: 152 39% 45%;
+    /* Parade Coral — Primary (V2), tuned for dark */
+    --primary: 5 85% 62%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 152 39% 55%;
+    --primary-glow: 9 80% 72%;
 
-    /* Coral muted for dark */
-    --secondary: 5 85% 62%;
+    /* Parade Green — Secondary (V2), brighter for dark */
+    --secondary: 152 39% 45%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 20 12% 18%;
@@ -150,7 +150,7 @@
 
     --border: 20 10% 18%;
     --input: 20 10% 20%;
-    --ring: 152 39% 45%;
+    --ring: 5 85% 62%;
 
     /* Dark mode availability colors */
     --available-light: 152 35% 18%;
@@ -165,19 +165,19 @@
     --shadow-lg: 0 16px 48px -12px hsl(0 0% 0% / 0.5);
     --shadow-glow: 0 0 40px hsl(5 85% 62% / 0.15);
 
-    --gradient-primary: linear-gradient(135deg, hsl(152 39% 40%), hsl(152 39% 50%));
-    --gradient-secondary: linear-gradient(135deg, hsl(5 85% 55%), hsl(9 80% 65%));
+    --gradient-primary: linear-gradient(135deg, hsl(5 85% 55%), hsl(9 80% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(152 39% 40%), hsl(152 39% 50%));
     --gradient-card: linear-gradient(145deg, hsl(20 12% 14%), hsl(20 10% 10%));
     --gradient-hero: linear-gradient(160deg, hsl(5 85% 55%), hsl(9 80% 65%), hsl(152 39% 40%));
 
     --sidebar-background: 20 15% 8%;
     --sidebar-foreground: 30 20% 90%;
-    --sidebar-primary: 152 39% 45%;
+    --sidebar-primary: 5 85% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 5 40% 18%;
     --sidebar-accent-foreground: 9 80% 80%;
     --sidebar-border: 20 10% 16%;
-    --sidebar-ring: 152 39% 45%;
+    --sidebar-ring: 5 85% 62%;
   }
 
 }
@@ -239,11 +239,11 @@
   .parade-wordmark {
     font-family: 'Bungee Shade', sans-serif;
     font-weight: 400;
-    color: hsl(152 39% 39%);
+    color: hsl(5 100% 68%);
   }
 
   :root:not(.dark) .parade-wordmark {
-    color: hsl(152 39% 39%);
+    color: hsl(5 100% 68%);
   }
 
   .shadow-soft {
