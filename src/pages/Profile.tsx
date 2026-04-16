@@ -603,9 +603,9 @@ export default function Profile() {
           <div className="-mt-10 mb-3 flex items-end justify-between md:-mt-12">
             <div className="relative group">
               <Avatar className="h-20 w-20 border-4 border-background shadow-lg md:h-24 md:w-24">
-                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'User'} />
+                <AvatarImage src={profile?.avatar_url || undefined} alt={formatDisplayName({ firstName: profile?.first_name, lastName: profile?.last_name, displayName: profile?.display_name })} />
                 <AvatarFallback className="bg-primary text-xl text-primary-foreground md:text-2xl">
-                  {getInitials(profile?.display_name)}
+                  {getInitials(formatDisplayName({ firstName: profile?.first_name, lastName: profile?.last_name, displayName: profile?.display_name }))}
                 </AvatarFallback>
               </Avatar>
               
@@ -694,7 +694,7 @@ export default function Profile() {
                   className="group flex items-center gap-2 text-left"
                 >
                   <h1 className="font-display text-lg font-bold md:text-xl group-hover:text-primary transition-colors">
-                    {profile?.display_name || 'Your Name'}
+                    {formatDisplayName({ firstName: profile?.first_name, lastName: profile?.last_name, displayName: profile?.display_name }) || 'Your Name'}
                   </h1>
                   <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
