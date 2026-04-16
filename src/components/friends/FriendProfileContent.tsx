@@ -311,6 +311,30 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
     });
   };
 
+  const handleRequestAvailability = async () => {
+    if (!user || requestingAvailability || availabilityRequested) return;
+    setRequestingAvailability(true);
+    try {
+      const { error } = await supabase.functions.invoke('request-availability', {
+        body: { friendUserId: userId },
+      });
+      if (error) throw error;
+      setAvailabilityRequested(true);
+      toast({
+        title: 'Request sent',
+        description: `${friendFormattedName || 'Your friend'} will be notified.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Could not send request',
+        description: err?.message || 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRequestingAvailability(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="animate-fade-in space-y-6">
