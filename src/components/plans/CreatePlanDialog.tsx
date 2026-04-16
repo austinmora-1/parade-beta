@@ -46,8 +46,11 @@ import {
   PlanStatus,
   FeedVisibility,
   getActivitiesByVibe,
-  getAllVibes
+  getAllVibes,
+  CustomActivity,
+  getActivityConfig,
 } from '@/types/planner';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { usePods } from '@/hooks/usePods';
