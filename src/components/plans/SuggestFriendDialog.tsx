@@ -145,3 +145,4 @@ export function SuggestFriendDialog({
     </Dialog>
   );
 }
+export default SuggestFriendDialog;

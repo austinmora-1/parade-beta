@@ -643,3 +643,4 @@ function DetailPicker({ label, plans, value, onChange, renderOption, allowNone, 
     </div>
   );
 }
+export default MergePlansDialog;

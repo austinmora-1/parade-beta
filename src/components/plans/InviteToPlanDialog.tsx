@@ -261,3 +261,4 @@ export function InviteToPlanDialog({ open, onOpenChange, planId, planTitle }: In
     </Dialog>
   );
 }
+export default InviteToPlanDialog;

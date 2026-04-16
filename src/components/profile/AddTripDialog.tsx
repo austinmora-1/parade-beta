@@ -953,3 +953,4 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
     </>
   );
 }
+export default AddTripDialog;
