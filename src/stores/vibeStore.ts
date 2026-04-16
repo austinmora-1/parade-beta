@@ -97,7 +97,9 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
         console.error('Error removing custom vibe:', error);
         return;
       }
-      set({ currentVibe: keepVibe ? { type: vibeType, customTags: [], gifUrl } : null });
+      const next = keepVibe ? { type: vibeType, customTags: [], gifUrl } : null;
+      set({ currentVibe: next });
+      patchVibeInCache(userId, next);
     } else {
       const { error } = await supabase
         .from('profiles')
@@ -107,7 +109,9 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
         console.error('Error removing custom vibe:', error);
         return;
       }
-      set({ currentVibe: { type: vibeType, customTags: newTags, gifUrl } });
+      const next = { type: vibeType, customTags: newTags, gifUrl };
+      set({ currentVibe: next });
+      patchVibeInCache(userId, next);
     }
   },
 }));
