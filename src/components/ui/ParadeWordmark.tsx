@@ -21,7 +21,7 @@ export function ParadeWordmark({ className, size = 'xl' }: ParadeWordmarkProps) 
         className
       )}
     >
-      p
+      parade
     </span>
   );
 }
