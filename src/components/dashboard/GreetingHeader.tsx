@@ -40,6 +40,7 @@ function getContextMessage(planCount: number, friendCount: number, hour: number)
 export function GreetingHeader() {
   const { profile } = useCurrentUserProfile();
   const { plans, friends, availabilityMap, userTimezone } = usePlannerStore();
+  const { resolvedTheme } = useTheme();
 
   const config = useMemo(() => {
     const hour = new Date().getHours();
