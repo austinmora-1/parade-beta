@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, addMonths, isWithinInterval, startOfDay } from 'date-fns';
-import { Plane, Clock } from 'lucide-react';
+import { Plane, Clock, Home } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -204,7 +204,11 @@ export function UpcomingTripsAndVisits() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+                    {isVisit ? (
+                      <Home className="h-[18px] w-[18px] text-primary shrink-0" />
+                    ) : (
+                      <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+                    )}
                     <span className="text-sm font-medium truncate text-muted-foreground">
                       {proposal.destination
                         ? `${isVisit ? 'Visit' : 'Trip'} to ${proposal.destination}`
