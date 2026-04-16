@@ -9,7 +9,6 @@ import { usePlannerStore } from '@/stores/plannerStore';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
-import { usePlannerStore } from '@/stores/plannerStore';
 
 export interface StagedFriend {
   userId: string;

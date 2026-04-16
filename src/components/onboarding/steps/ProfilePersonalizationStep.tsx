@@ -9,7 +9,6 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { supabase } from '@/integrations/supabase/client';
 
 const ImageCropDialog = lazy(() => import('@/components/profile/ImageCropDialog'));
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
