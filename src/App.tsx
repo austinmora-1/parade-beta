@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { ColorSchemeProvider } from "@/hooks/useColorScheme";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { usePlannerStore } from "@/stores/plannerStore";
@@ -164,6 +165,7 @@ const App = () => (
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={['light', 'dark']}>
+          <ColorSchemeProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -171,6 +173,7 @@ const App = () => (
               <AppRoutes />
             </BrowserRouter>
           </TooltipProvider>
+          </ColorSchemeProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </AuthProvider>
