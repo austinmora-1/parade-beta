@@ -1,115 +1,77 @@
 
 
-# Sprint C: Store Split + Component Decomposition
+## Goal
 
-## Summary
+Allow users to share a Plan or a Trip/Visit invite via a public link that works for non-users, triggered from:
+1. The **Share** action on a Plan card or Trip/Visit card (and detail pages)
+2. **During creation** in the Guided Plan / Guided Trip sheets ("Generate shareable link")
 
-Two high-impact refactors: (1) split the 1200-line `plannerStore.ts` into 4 focused domain stores with a backward-compatible facade, and (2) decompose the 6 largest components (1000+ lines each) and lazy-load their dialog children.
+## What's already built (reuse)
 
----
+Plans already have most of this:
+- `InviteToPlanDialog` generates a token-based link via the `plan_invites` table
+- `/plan-invite/:token` page (`src/pages/PlanInvite.tsx`)
+- `public/invite.html` redirector with OG tags for link previews
+- Wired to plan cards (`onSharePlan`) and `PlanDetail`
 
-## C3.1 — Split plannerStore into 4 Domain Stores + Facade
+## What's missing / to build
 
-The current monolith has 4 clear domains mixed together. Every selector re-renders on any state change. Splitting lets Zustand skip re-renders when unrelated state changes.
+### 1. Trip/Visit invite infrastructure (new — mirrors plan_invites)
 
-### New files
+**New table `trip_proposal_invites`**:
+- `id`, `proposal_id` (FK trip_proposals), `trip_id` (FK trips, nullable for finalized trips), `invite_token` (unique), `invited_by`, `email` (nullable), `status` (`pending` / `accepted`), `accepted_by`, `accepted_at`, `created_at`
+- RLS: creator manages own invites; public read by token via SECURITY DEFINER RPCs
 
-| File | Domain | State | Actions |
-|------|--------|-------|---------|
-| `src/stores/plansStore.ts` | Plans | `plans`, `hasMorePlans`, `isLoadingMore` | `addPlan`, `updatePlan`, `deletePlan`, `proposePlan`, `respondToProposal`, `loadPlans`, `loadMorePlans` |
-| `src/stores/friendsStore.ts` | Friends | `friends` | `addFriend`, `updateFriend`, `acceptFriendRequest`, `removeFriend`, `loadFriends` |
-| `src/stores/availabilityStore.ts` | Availability | `availability`, `availabilityMap`, `locationStatus`, `defaultSettings`, `homeAddress` | `setAvailability`, `setLocationStatus`, `getLocationStatusForDate`, `setVibeForDate`, `getVibeForDate`, `loadAvailabilityForRange`, `initializeWeekAvailability`, `loadProfileAndAvailability` |
-| `src/stores/vibeStore.ts` | Vibe/Profile | `currentVibe`, `userTimezone` | `setVibe`, `addCustomVibe`, `removeCustomVibe` |
+**New RPCs**:
+- `get_trip_invite_details(p_token)` — returns destination, date options, host name/avatar, participant count, status. Public.
+- `accept_trip_invite(p_token)` — adds caller to `trip_proposal_participants` (or `trips` if finalized) and marks invite accepted. Auth required.
 
-### Facade (keeps existing imports working)
+### 2. New page `/trip-invite/:token` (`src/pages/TripInvite.tsx`)
 
-`src/stores/plannerStore.ts` becomes a thin re-export:
+Mirrors `PlanInvite.tsx`:
+- Public — fetches details via the new RPC
+- Shows destination, proposed dates, host + invitee count, Parade branding
+- **Non-user flow**: full read-only details; signup/login required only to RSVP/rank dates (gates the action button only)
+- After signup → returns to `/trip-invite/:token` → auto-accepts → redirects to `/trip/:id`
 
-```typescript
-export const usePlannerStore = create<PlannerState>((set, get) => {
-  // Subscribe to all 4 stores, merge state
-  // Delegate actions to domain stores
-});
-```
+Update `public/invite.html` to also handle `?tt=<token>` and redirect to `/trip-invite/...`. Add the route in `App.tsx`.
 
-This means **zero changes needed in the 50+ consumer files initially**. Consumers can be migrated to direct imports incrementally later.
+### 3. New `InviteToTripDialog` component
 
-### Orchestration
+Same UX as `InviteToPlanDialog` (email / SMS / Generate Link). Reuses the existing `send-sms-invite` edge function and adds a parallel `send-trip-invite` edge function for branded email (mirrors `send-plan-invite`).
 
-- `loadAllData` stays in the facade — it calls the dashboard RPC and distributes results to each domain store via `.setState()`.
-- `forceRefresh` resets all stores' `lastFetchedAt`.
-- The IndexedDB cache logic stays in the facade.
+### 4. Wire up triggers
 
-### Shared state
+- **Trip cards** (`TripsList.tsx`): add a small Share icon next to the existing UserPlus / Convert icons on both confirmed trips and proposal cards
+- **Trip detail** (`TripDetail.tsx`): add a Share button in the header
+- **GuidedTripSheet**: after a proposal/trip is created, surface a "Plan Created" follow-up dialog with the shareable link (copy + email + SMS)
+- **GuidedPlanSheet**: same — surface the link in a follow-up summary dialog after creation, reusing `InviteToPlanDialog`
 
-- `userId` and `isLoading` live in the facade since they're cross-cutting.
-- Domain stores accept `userId` as a parameter to their async actions rather than storing it.
+This consistent post-create dialog means users can immediately share with non-Parade friends without needing to find the card again.
 
----
+### 5. OG image
 
-## C4.1 — Giant Component Decomposition
+Reuse the existing `og-invite-image` edge function. Future enhancement (not v1): render destination/dates dynamically.
 
-Target the 6 components over 900 lines:
+## File change summary
 
-| Component | Lines | Split strategy |
-|-----------|-------|----------------|
-| `CreatePlanDialog.tsx` (1245) | Extract: `PlanFormFields`, `ParticipantPicker`, `DateTimePicker`, `RecurrenceConfig` |
-| `GuidedTripSheet.tsx` (1231) | Extract: `TripStepDates`, `TripStepDestination`, `TripStepParticipants`, `TripStepReview` |
-| `Settings.tsx` (1102) | Extract: `SettingsProfile`, `SettingsCalendar`, `SettingsNotifications`, `SettingsPrivacy`, `SettingsDanger` |
-| `GuidedPlanSheet.tsx` (1088) | Extract: `PlanStepActivity`, `PlanStepWhen`, `PlanStepWho`, `PlanStepDetails` |
-| `WeeklyPlanSwiper.tsx` (966) | Extract: `DayColumn`, `PlanCard`, `SwiperControls` |
-| `Profile.tsx` (902) | Extract: `ProfileHeader`, `ProfileStats`, `ProfileTripsList`, `ProfilePlanHistory` |
+**New**:
+- `supabase/migrations/<ts>_trip_invites.sql`
+- `src/pages/TripInvite.tsx`
+- `src/components/trips/InviteToTripDialog.tsx`
+- `supabase/functions/send-trip-invite/index.ts`
 
-Each parent component becomes an orchestrator (~100-200 lines) that imports sub-components.
+**Modified**:
+- `public/invite.html` — handle `?tt=` token
+- `src/App.tsx` — add `/trip-invite/:token` route
+- `src/components/trips/TripsList.tsx` — Share icon on trip + proposal cards
+- `src/pages/TripDetail.tsx` — Share button in header
+- `src/components/trips/GuidedTripSheet.tsx` — post-create share dialog
+- `src/components/plans/GuidedPlanSheet.tsx` — post-create share dialog (reuses existing infra)
 
----
+## Behavior summary
 
-## C4.2 — Lazy Dialogs
-
-Wrap infrequently-used dialogs with `React.lazy` + `Suspense`:
-
-- `CreatePlanDialog`
-- `GuidedPlanSheet`
-- `GuidedTripSheet`
-- `MergePlansDialog`
-- `InviteToPlanDialog`
-- `SuggestFriendDialog`
-- `InviteFriendDialog`
-- `AddTripDialog`
-- `ImageCropDialog`
-- `DeleteAccountDialog`
-- `ShareDialog`
-
-Pattern:
-```typescript
-const LazyCreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
-
-// In JSX:
-{editDialogOpen && (
-  <Suspense fallback={null}>
-    <LazyCreatePlanDialog ... />
-  </Suspense>
-)}
-```
-
-Conditionally render on the `open` prop so the chunk isn't fetched until the dialog is actually opened.
-
----
-
-## Execution Order
-
-1. **C4.2 — Lazy dialogs** (lowest risk, immediate bundle win, no logic changes)
-2. **C4.1 — Component decomposition** (pure extraction, no behavior changes)
-3. **C3.1 — Store split** (highest risk, do last with tests)
-
-Each step is independently shippable and testable.
-
----
-
-## Technical Notes
-
-- All extracted sub-components go in the same directory as their parent (e.g., `src/components/plans/create-plan/PlanFormFields.tsx`).
-- The store facade preserves the exact `PlannerState` interface so TypeScript catches any missed fields.
-- Lazy imports use default exports for compatibility with `React.lazy`.
-- The helper files (`mapAvailability.ts`, `mapPlans.ts`, `mapFriends.ts`, `types.ts`) stay as-is — they're already well-factored.
+- **Non-user opens link** → sees full plan/trip details (read-only). Clicking "Join" prompts signup → auto-accepts on return.
+- **Existing user opens link** → auto-redirected to `/plan/:id` or `/trip/:id`, added as participant.
+- **Creator** can grab a shareable link from: (a) the Share action on the card, (b) the detail page header, or (c) the post-create summary dialog.
 
