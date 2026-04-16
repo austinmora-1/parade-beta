@@ -123,7 +123,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const hasFriends = effectiveFriends.length > 0;
 
   const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'activity');
-  const [activity, setActivity] = useState<ActivityType | null>(null);
+  const [activity, setActivity] = useState<ActivityType | string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<SelectedSlotEntry[]>([]);
@@ -133,6 +133,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [showCalendar, setShowCalendar] = useState(false);
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
   const [selectedSharedCity, setSelectedSharedCity] = useState<string>('');
+  const [customActivities, setCustomActivities] = useState<CustomActivity[]>([]);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customLabel, setCustomLabel] = useState('');
+  const [customEmoji, setCustomEmoji] = useState('✨');
+  const [activitySearch, setActivitySearch] = useState('');
 
   const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
