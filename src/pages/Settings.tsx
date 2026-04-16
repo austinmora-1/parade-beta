@@ -30,7 +30,7 @@ import { format, addDays, startOfWeek } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { getTimezoneForCity, getTimezoneAbbreviation } from '@/lib/timezone';
 import { TimezoneCombobox } from '@/components/settings/TimezoneCombobox';
-import { AppearanceToggle } from '@/components/settings/AppearanceToggle';
+
 import { PushNotificationsToggle } from '@/components/settings/PushNotificationsToggle';
 
 // Helper function for formatting time
