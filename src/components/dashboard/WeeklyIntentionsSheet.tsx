@@ -110,7 +110,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
         <div className="space-y-5 pt-2">
           {/* Energy Level */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">How much social energy do you have?</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">How's your social battery?</label>
             <div className="grid grid-cols-3 gap-2">
               {ENERGY_LEVELS.map(e => (
                 <button
