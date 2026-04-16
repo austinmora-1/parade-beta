@@ -159,7 +159,7 @@ export function GreetingHeader() {
       {/* Sheets / Dialogs */}
       {planOpen && (
         <Suspense fallback={null}>
-          <GuidedPlanSheet open={planOpen} onOpenChange={setPlanOpen} />
+          <GuidedPlanSheet open={planOpen} onOpenChange={setPlanOpen} preSelectedFriends={[]} />
         </Suspense>
       )}
       {tripOpen && (
