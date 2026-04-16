@@ -24,10 +24,10 @@ const STEPS: WalkthroughStep[] = [
   },
   {
     icon: <Calendar className="h-5 w-5" />,
-    title: "Creating Plans",
-    message: "Tap '+ New Plan' on the dashboard or head to the Plans page to create hangouts. Pick friends, a time slot, and a location. Friends can also send you hang requests when they see you're free!",
+    title: "Making Plans",
+    message: "Head to the Plans page for a swipeable week-by-week view of your schedule. Tap '+ New Plan' to launch the guided planner — pick friends, a vibe, and a time slot, and we'll surface who's free and nearby.",
     emoji: "📅",
-    tip: "Share your availability link so anyone can request to hang with you.",
+    tip: "Connect Google or Apple Calendar to sync events automatically every 2 hours.",
   },
   {
     icon: <Sparkles className="h-5 w-5" />,
