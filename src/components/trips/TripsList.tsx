@@ -1051,8 +1051,8 @@ function ProposalTripCard({
                     <AvatarFallback className="text-[7px]">{p.display_name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   {hasVotedTrip && (
-                    <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary flex items-center justify-center">
-                      <Check className="h-1.5 w-1.5 text-primary-foreground" />
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full flex items-center justify-center bg-emerald-500">
+                      <Check className="h-1.5 w-1.5 text-primary-foreground bg-green-500 border-emerald-500" />
                     </span>
                   )}
                 </div>
