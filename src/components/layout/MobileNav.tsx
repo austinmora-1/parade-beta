@@ -94,12 +94,6 @@ export function MobileNav() {
                 </AvatarFallback>
               </Avatar>
             </div>
-            <span className={cn(
-              'text-[10px] font-medium transition-colors duration-150',
-              isProfileActive ? 'text-sidebar-primary' : 'text-sidebar-foreground/45'
-            )}>
-              Me
-            </span>
           </button>
         </LayoutGroup>
       </div>
