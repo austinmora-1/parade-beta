@@ -123,9 +123,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const needsFriendStep = preSelectedFriends.length === 0;
   const [chosenFriends, setChosenFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
+  const [soloMode, setSoloMode] = useState(false);
 
   // The effective friends list (pre-selected or user-chosen)
-  const effectiveFriends = needsFriendStep ? chosenFriends : preSelectedFriends;
+  const effectiveFriends = soloMode ? [] : (needsFriendStep ? chosenFriends : preSelectedFriends);
+  const hasFriends = effectiveFriends.length > 0;
 
   const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'activity');
   const [activity, setActivity] = useState<ActivityType | null>(null);
