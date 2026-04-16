@@ -518,16 +518,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       return (slotOrder[a.slot] || 0) - (slotOrder[b.slot] || 0);
     });
 
-    // Group by city, take up to 3 per city, flatten
-    const cityGroups = new Map<string, BestSlot[]>();
-    for (const r of results) {
-      const key = r.sharedCity || 'Unknown';
-      if (!cityGroups.has(key)) cityGroups.set(key, []);
-      const group = cityGroups.get(key)!;
-      if (group.length < 3) group.push(r);
-    }
-    const grouped = Array.from(cityGroups.values()).flat();
-    setBestSlots(grouped);
+    // Take the top 3 suggestions overall
+    setBestSlots(results.slice(0, 3));
     setLoadingSlots(false);
   }, [effectiveFriends, myAvailabilityMap, myPlans, homeAddress, userId]);
 
