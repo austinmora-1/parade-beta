@@ -86,7 +86,6 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
           .from('public_profiles')
           .select('user_id, display_name, avatar_url, bio')
           .ilike('display_name', `%${query}%`)
-          .eq('discoverable', true)
           .limit(20);
 
         const merged = new Map<string, SearchResult>();
