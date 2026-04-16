@@ -50,6 +50,7 @@ import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '@/types/plann
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { formatDisplayName } from '@/lib/formatName';
 
 const ImageCropDialog = lazy(() => import('@/components/profile/ImageCropDialog'));
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
@@ -59,6 +60,8 @@ import { CalendarCheck } from 'lucide-react';
 
 interface ProfileData {
   display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   avatar_url: string | null;
   bio: string | null;
   home_address: string | null;
@@ -100,7 +103,7 @@ export default function Profile() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('display_name, avatar_url, bio, home_address, cover_photo_url')
+          .select('display_name, first_name, last_name, avatar_url, bio, home_address, cover_photo_url')
           .eq('user_id', session.user.id)
           .single();
 
@@ -600,9 +603,9 @@ export default function Profile() {
           <div className="-mt-10 mb-3 flex items-end justify-between md:-mt-12">
             <div className="relative group">
               <Avatar className="h-20 w-20 border-4 border-background shadow-lg md:h-24 md:w-24">
-                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'User'} />
+                <AvatarImage src={profile?.avatar_url || undefined} alt={formatDisplayName({ firstName: profile?.first_name, lastName: profile?.last_name, displayName: profile?.display_name })} />
                 <AvatarFallback className="bg-primary text-xl text-primary-foreground md:text-2xl">
-                  {getInitials(profile?.display_name)}
+                  {getInitials(formatDisplayName({ firstName: profile?.first_name, lastName: profile?.last_name, displayName: profile?.display_name }))}
                 </AvatarFallback>
               </Avatar>
               
@@ -691,7 +694,7 @@ export default function Profile() {
                   className="group flex items-center gap-2 text-left"
                 >
                   <h1 className="font-display text-lg font-bold md:text-xl group-hover:text-primary transition-colors">
-                    {profile?.display_name || 'Your Name'}
+                    {formatDisplayName({ firstName: profile?.first_name, lastName: profile?.last_name, displayName: profile?.display_name }) || 'Your Name'}
                   </h1>
                   <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>

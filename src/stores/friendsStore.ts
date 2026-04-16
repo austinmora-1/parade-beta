@@ -188,14 +188,15 @@ export const useFriendsStore = create<FriendsState & FriendsActions>((set, get) 
         ? supabase.rpc('get_display_names_for_users', { p_user_ids: incomingUserIds })
         : Promise.resolve({ data: [] as any[] }),
       outgoingUserIds.length > 0
-        ? supabase.from('public_profiles').select('user_id, avatar_url').in('user_id', outgoingUserIds)
+        ? supabase.rpc('get_display_names_for_users', { p_user_ids: outgoingUserIds })
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
     const incomingProfilesMap = new Map((incomingProfilesResult.data || []).map((p: any) => [p.user_id, p]));
+    const outgoingProfilesMap = new Map((outgoingProfilesResult.data || []).map((p: any) => [p.user_id, p]));
     const outgoingAvatarMap = new Map<string, string | null>((outgoingProfilesResult.data || []).map((p: any) => [p.user_id, p.avatar_url]));
 
-    const outgoingFriends = mapOutgoingFriendships(outgoingData || [], outgoingAvatarMap);
+    const outgoingFriends = mapOutgoingFriendships(outgoingData || [], outgoingAvatarMap, outgoingProfilesMap);
     const incomingFriends = mapIncomingFriendships(incomingData || [], incomingProfilesMap);
     const friends = dedupeFriends(outgoingFriends, incomingFriends);
 

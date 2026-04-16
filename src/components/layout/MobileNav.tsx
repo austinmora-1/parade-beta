@@ -20,7 +20,7 @@ const navItems = [
 export function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile } = useCurrentUserProfile();
+  const { profile, formattedName } = useCurrentUserProfile();
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -88,9 +88,9 @@ export function MobileNav() {
                 />
               )}
               <Avatar className={cn('relative h-9 w-9', isProfileActive && 'ring-2 ring-sidebar-primary')}>
-                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
+                <AvatarImage src={profile?.avatar_url || undefined} alt={formattedName || 'Profile'} />
                 <AvatarFallback className="bg-primary/15 text-[9px] font-semibold text-primary">
-                  {getInitials(profile?.display_name)}
+                  {getInitials(formattedName)}
                 </AvatarFallback>
               </Avatar>
             </div>

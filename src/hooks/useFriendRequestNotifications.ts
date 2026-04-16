@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useRealtimeHub } from '@/hooks/useRealtimeHub';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDisplayName } from '@/lib/formatName';
 
 export function useFriendRequestNotifications() {
   const { user } = useAuth();
@@ -23,7 +24,8 @@ export function useFriendRequestNotifications() {
       const { data: profiles } = await supabase
         .rpc('get_display_names_for_users', { p_user_ids: [newRequest.user_id] });
 
-      const requesterName = (profiles as any)?.[0]?.display_name || 'Someone';
+      const p = (profiles as any)?.[0];
+      const requesterName = p ? formatDisplayName({ firstName: p.first_name, lastName: p.last_name, displayName: p.display_name }) : 'Someone';
 
       toast({
         title: 'New Friend Request! 🎉',

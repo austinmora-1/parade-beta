@@ -1964,6 +1964,8 @@ export type Database = {
         Returns: {
           avatar_url: string
           display_name: string
+          first_name: string
+          last_name: string
           user_id: string
         }[]
       }

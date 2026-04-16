@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import { format } from 'date-fns';
 
 export function MobileHeader() {
-  const { profile } = useCurrentUserProfile();
+  const { profile, formattedName } = useCurrentUserProfile();
   const navigate = useNavigate();
   const { availabilityMap, userTimezone } = usePlannerStore();
 
@@ -74,9 +74,9 @@ export function MobileHeader() {
           aria-label="My profile"
         >
           <Avatar className="h-8 w-8">
-            <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.display_name || 'Profile'} />
+            <AvatarImage src={profile?.avatar_url || undefined} alt={formattedName || 'Profile'} />
             <AvatarFallback className="bg-primary/15 text-[11px] font-semibold text-primary">
-              {getInitials(profile?.display_name)}
+              {getInitials(formattedName)}
             </AvatarFallback>
           </Avatar>
         </button>
