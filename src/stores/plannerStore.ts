@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import { Plan, Friend, DayAvailability, Vibe, TimeSlot, LocationStatus, ActivityType, VibeType, PlanStatus } from '@/types/planner';
-import { addDays, startOfWeek, format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { getUserTimezone } from '@/lib/timezone';
-import { validatePlan } from '@/lib/validation';
 import { getCachedDashboard, setCachedDashboard } from '@/lib/dashboardCache';
 
 import type { DashboardData, DefaultAvailabilitySettings } from './helpers/types';
@@ -11,8 +10,13 @@ import { createDefaultAvailability, mapAvailabilityRow, buildAvailabilityMap } f
 import { buildParticipantsMap, deduplicatePlanRows, mapRawPlanToModel } from './helpers/mapPlans';
 import { mapOutgoingFriendships, mapIncomingFriendships, dedupeFriends } from './helpers/mapFriends';
 
-// ── Transform raw RPC data into store state ─────────────────────────────────
-function transformDashboardData(rpcData: unknown, userId: string) {
+import { usePlansStore } from './plansStore';
+import { useFriendsStore } from './friendsStore';
+import { useAvailabilityStore } from './availabilityStore';
+import { useVibeStore } from './vibeStore';
+
+// ── Transform raw RPC data into store state (exported for loadMorePlans) ─────
+export function transformDashboardData(rpcData: unknown, userId: string) {
   const d = rpcData as unknown as DashboardData;
 
   const participantsMap = buildParticipantsMap(d.plan_participants || []);
@@ -104,6 +108,7 @@ function transformDashboardData(rpcData: unknown, userId: string) {
   };
 }
 
+// ── Facade interface (unchanged from before) ─────────────────────────────────
 interface PlannerState {
   plans: Plan[];
   friends: Friend[];
@@ -160,1042 +165,289 @@ interface PlannerState {
   initializeWeekAvailability: () => Promise<void>;
 }
 
-export const usePlannerStore = create<PlannerState>((set, get) => ({
-  plans: [],
-  friends: [],
-  availability: [],
-  availabilityMap: {},
-  currentVibe: null,
-  locationStatus: 'home',
-  isLoading: true,
-  userId: null,
-  lastFetchedAt: null,
-  defaultSettings: null,
-  homeAddress: null,
-  userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  hasMorePlans: false,
-  isLoadingMore: false,
-  
-  setUserId: (userId) => set({ userId }),
-  
-  loadAllData: async (force) => {
-    const { userId, lastFetchedAt } = get();
-    if (!userId) {
-      set({ isLoading: false });
-      return;
-    }
+// ── Helper: sync domain stores → facade ──────────────────────────────────────
+function syncFromDomainStores(set: (partial: Partial<PlannerState>) => void) {
+  const plans = usePlansStore.getState();
+  const friends = useFriendsStore.getState();
+  const avail = useAvailabilityStore.getState();
+  const vibe = useVibeStore.getState();
+  set({
+    plans: plans.plans,
+    hasMorePlans: plans.hasMorePlans,
+    isLoadingMore: plans.isLoadingMore,
+    friends: friends.friends,
+    availability: avail.availability,
+    availabilityMap: avail.availabilityMap,
+    locationStatus: avail.locationStatus,
+    defaultSettings: avail.defaultSettings,
+    homeAddress: avail.homeAddress,
+    currentVibe: vibe.currentVibe,
+    userTimezone: vibe.userTimezone,
+  });
+}
 
-    if (!force && lastFetchedAt && Date.now() - lastFetchedAt < 120_000) {
-      return;
-    }
-    
-    set({ isLoading: true });
+// ── Facade store ─────────────────────────────────────────────────────────────
+export const usePlannerStore = create<PlannerState>((set, get) => {
+  // Subscribe to domain store changes and mirror into facade
+  usePlansStore.subscribe(() => syncFromDomainStores(set));
+  useFriendsStore.subscribe(() => syncFromDomainStores(set));
+  useAvailabilityStore.subscribe(() => syncFromDomainStores(set));
+  useVibeStore.subscribe(() => syncFromDomainStores(set));
 
-    // ── Stale-while-revalidate: serve cached data instantly ──────────────
-    try {
-      const cached = await getCachedDashboard(userId);
-      if (cached && Date.now() - cached.cachedAt < 5 * 60 * 1000) {
-        const stale = transformDashboardData(cached.data, userId);
-        set({ ...stale, isLoading: false, lastFetchedAt: cached.cachedAt });
-        // If cache is very fresh (< 2 min), skip network entirely
-        if (!force && Date.now() - cached.cachedAt < 120_000) {
+  return {
+    // ── State (initial values) ──────────────────────────────────────────────
+    plans: [],
+    friends: [],
+    availability: [],
+    availabilityMap: {},
+    currentVibe: null,
+    locationStatus: 'home',
+    isLoading: true,
+    userId: null,
+    lastFetchedAt: null,
+    defaultSettings: null,
+    homeAddress: null,
+    userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    hasMorePlans: false,
+    isLoadingMore: false,
+
+    // ── Cross-cutting ───────────────────────────────────────────────────────
+    setUserId: (userId) => set({ userId }),
+
+    loadAllData: async (force) => {
+      const { userId, lastFetchedAt } = get();
+      if (!userId) {
+        set({ isLoading: false });
+        return;
+      }
+
+      if (!force && lastFetchedAt && Date.now() - lastFetchedAt < 120_000) {
+        return;
+      }
+
+      set({ isLoading: true });
+
+      // Stale-while-revalidate
+      try {
+        const cached = await getCachedDashboard(userId);
+        if (cached && Date.now() - cached.cachedAt < 5 * 60 * 1000) {
+          const stale = transformDashboardData(cached.data, userId);
+          // Push to domain stores
+          usePlansStore.setState({ plans: stale.plans, hasMorePlans: stale.hasMorePlans });
+          useFriendsStore.setState({ friends: stale.friends });
+          useAvailabilityStore.setState({
+            availability: stale.availability,
+            availabilityMap: stale.availabilityMap,
+            locationStatus: stale.locationStatus,
+            defaultSettings: stale.defaultSettings,
+            homeAddress: stale.homeAddress,
+          });
+          useVibeStore.setState({ currentVibe: stale.currentVibe, userTimezone: stale.userTimezone });
+          set({ isLoading: false, lastFetchedAt: cached.cachedAt });
+          if (!force && Date.now() - cached.cachedAt < 120_000) {
+            return;
+          }
+        }
+      } catch {
+        // Cache miss
+      }
+
+      try {
+        let rpcData: any = null;
+        let lastError: any = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const { data, error } = await supabase.rpc('get_dashboard_data' as any, {
+            p_user_id: userId,
+          });
+          if (!error) {
+            rpcData = data;
+            break;
+          }
+          lastError = error;
+          console.warn(`get_dashboard_data attempt ${attempt + 1} failed:`, error.message);
+          if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        }
+
+        if (!rpcData) {
+          console.error('get_dashboard_data failed after retries:', lastError);
+          try {
+            await Promise.all([
+              get().loadFriends(),
+              get().loadPlans(),
+              get().loadProfileAndAvailability(),
+            ]);
+          } catch (fallbackErr) {
+            console.error('Fallback loaders also failed:', fallbackErr);
+          }
+          set({ isLoading: false, lastFetchedAt: Date.now() });
           return;
         }
-      }
-    } catch {
-      // Cache miss is fine — proceed to network
-    }
-    
-    try {
-      let rpcData: any = null;
-      let lastError: any = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const { data, error } = await supabase.rpc('get_dashboard_data' as any, {
-          p_user_id: userId,
-        });
-        if (!error) {
-          rpcData = data;
-          break;
-        }
-        lastError = error;
-        console.warn(`get_dashboard_data attempt ${attempt + 1} failed:`, error.message);
-        if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-      }
 
-      if (!rpcData) {
-        console.error('get_dashboard_data failed after retries:', lastError);
-        try {
-          await Promise.all([
-            get().loadFriends(),
-            get().loadPlans(),
-            get().loadProfileAndAvailability(),
-          ]);
-        } catch (fallbackErr) {
-          console.error('Fallback loaders also failed:', fallbackErr);
-        }
+        const transformed = transformDashboardData(rpcData, userId);
+        // Push to domain stores
+        usePlansStore.setState({ plans: transformed.plans, hasMorePlans: transformed.hasMorePlans });
+        useFriendsStore.setState({ friends: transformed.friends });
+        useAvailabilityStore.setState({
+          availability: transformed.availability,
+          availabilityMap: transformed.availabilityMap,
+          locationStatus: transformed.locationStatus,
+          defaultSettings: transformed.defaultSettings,
+          homeAddress: transformed.homeAddress,
+        });
+        useVibeStore.setState({ currentVibe: transformed.currentVibe, userTimezone: transformed.userTimezone });
         set({ isLoading: false, lastFetchedAt: Date.now() });
-        return;
+
+        setCachedDashboard(userId, rpcData).catch(() => {});
+      } catch (error) {
+        console.error('loadAllData error:', error);
+        set({ isLoading: false });
       }
+    },
 
-      const transformed = transformDashboardData(rpcData, userId);
-      set({
-        ...transformed,
-        isLoading: false,
-        lastFetchedAt: Date.now(),
-      });
+    forceRefresh: async () => {
+      set({ lastFetchedAt: null });
+      await get().loadAllData();
+    },
 
-      // Persist to IndexedDB for next page load (fire-and-forget)
-      setCachedDashboard(userId, rpcData).catch(() => {});
+    // ── Delegated to domain stores ──────────────────────────────────────────
+    loadMorePlans: async () => {
+      const { userId } = get();
+      if (!userId) return;
+      await usePlansStore.getState().loadMorePlans(userId);
+    },
 
-    } catch (error) {
-      console.error('loadAllData error:', error);
-      set({ isLoading: false });
-    }
-  },
-
-  forceRefresh: async () => {
-    set({ lastFetchedAt: null });
-    await get().loadAllData();
-  },
-
-  loadMorePlans: async () => {
-    const { userId, plans, isLoadingMore } = get();
-    if (!userId || isLoadingMore) return;
-
-    // Find the oldest plan's createdAt as cursor
-    const oldest = plans.reduce<Date | null>((min, p) => {
-      if (!p.createdAt) return min;
-      return !min || p.createdAt < min ? p.createdAt : min;
-    }, null);
-
-    if (!oldest) return;
-
-    set({ isLoadingMore: true });
-    try {
-      const { data: rpcData, error } = await supabase.rpc('get_dashboard_data' as any, {
-        p_user_id: userId,
-        p_plan_cursor: oldest.toISOString(),
-      });
-
-      if (error || !rpcData) {
-        console.error('loadMorePlans error:', error);
-        set({ isLoadingMore: false });
-        return;
-      }
-
-      const more = transformDashboardData(rpcData, userId);
-      const existingIds = new Set(plans.map(p => p.id));
-      const newPlans = more.plans.filter(p => !existingIds.has(p.id));
-
-      set((state) => ({
-        plans: [...state.plans, ...newPlans],
-        hasMorePlans: more.hasMorePlans,
-        isLoadingMore: false,
+    addPlan: async (plan) => {
+      const { userId, userTimezone } = get();
+      if (!userId) return;
+      await usePlansStore.getState().addPlan(plan, userId, userTimezone, () => ({
+        availability: useAvailabilityStore.getState().availability,
+        availabilityMap: useAvailabilityStore.getState().availabilityMap,
+        defaultSettings: useAvailabilityStore.getState().defaultSettings,
       }));
-    } catch (err) {
-      console.error('loadMorePlans error:', err);
-      set({ isLoadingMore: false });
-    }
-  },
-  
-  addPlan: async (plan) => {
-    const { userId } = get();
-    if (!userId) return;
-    
-    try {
-      validatePlan({ title: plan.title, notes: plan.notes, duration: plan.duration, activity: plan.activity });
-    } catch (err: any) {
-      console.error('Plan validation failed:', err.message);
-      return;
-    }
-    
-    const locationStr = plan.location ? plan.location.name : null;
-    const dateStr = format(plan.date, 'yyyy-MM-dd');
-    const noonUtcDate = `${dateStr}T12:00:00+00:00`;
-    const endDateStr = plan.endDate ? format(plan.endDate, 'yyyy-MM-dd') : null;
-    const noonUtcEndDate = endDateStr ? `${endDateStr}T12:00:00+00:00` : null;
-    
-    const { userTimezone } = get();
-    const { data, error } = await supabase
-      .from('plans')
-      .insert({
-        user_id: userId,
-        title: plan.title,
-        activity: plan.activity,
-        date: noonUtcDate,
-        end_date: noonUtcEndDate,
-        time_slot: plan.timeSlot,
-        duration: plan.duration,
-        start_time: plan.startTime || null,
-        end_time: plan.endTime || null,
-        location: locationStr,
-        notes: plan.notes,
-        status: (plan.participants && plan.participants.length > 0 && (!plan.status || plan.status === 'confirmed'))
-          ? 'proposed'
-          : (plan.status || 'confirmed'),
-        source_timezone: userTimezone,
-        feed_visibility: plan.feedVisibility || 'private',
-      } as any)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error adding plan:', error);
-      return;
-    }
-    
-    const newPlanDateRaw = new Date(data.date);
-    const newPlan: Plan = {
-      id: data.id,
-      title: data.title,
-      activity: data.activity as ActivityType,
-      date: new Date(newPlanDateRaw.getUTCFullYear(), newPlanDateRaw.getUTCMonth(), newPlanDateRaw.getUTCDate()),
-      endDate: (data as any).end_date ? (() => {
-        const ed = new Date((data as any).end_date);
-        return new Date(ed.getUTCFullYear(), ed.getUTCMonth(), ed.getUTCDate());
-      })() : undefined,
-      timeSlot: data.time_slot as TimeSlot,
-      duration: data.duration,
-      startTime: (data as any).start_time || undefined,
-      endTime: (data as any).end_time || undefined,
-      location: data.location ? { id: data.id, name: data.location, address: '' } : undefined,
-      notes: data.notes || undefined,
-      status: (data as any).status as PlanStatus || 'confirmed',
-      feedVisibility: (data as any).feed_visibility || 'private',
-      participants: plan.participants || [],
-      createdAt: new Date(data.created_at),
-    };
-    
-    if (plan.participants && plan.participants.length > 0) {
-      const participantRows = plan.participants
-        .filter(p => p.friendUserId)
-        .map(p => ({
-          plan_id: data.id,
-          friend_id: p.friendUserId!,
-          status: 'invited',
-          role: p.role || 'participant',
-        }));
-      
-      if (participantRows.length > 0) {
-        await supabase.from('plan_participants').insert(participantRows);
+    },
 
-        // Fire-and-forget: all post-creation notifications happen async server-side
-        supabase.auth.getSession().then(({ data: sessionData }) => {
-          const token = sessionData?.session?.access_token;
-          if (!token) return;
-          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-          fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              plan_id: data.id,
-              creator_id: userId,
-              participant_ids: participantRows.map(r => r.friend_id),
-              plan_title: plan.title,
-            }),
-          }).catch(() => {});
-        }).catch(() => {});
-      }
-    }
-    
-    set((state) => ({ plans: [...state.plans, newPlan] }));
-    
-    const effectiveStatus = (plan.participants && plan.participants.length > 0 && (!plan.status || plan.status === 'confirmed'))
-      ? 'proposed' : (plan.status || 'confirmed');
-    if (effectiveStatus === 'confirmed') {
-      const slotColumn = plan.timeSlot.replace('-', '_');
-      await supabase
-        .from('availability')
-        .upsert({
-          user_id: userId,
-          date: dateStr,
-          [slotColumn]: false,
-        }, { onConflict: 'user_id,date' });
-      
-      const { availability, availabilityMap, defaultSettings } = get();
-      const existing = availabilityMap[dateStr];
-      if (existing) {
-        const updatedEntry = {
-          ...existing,
-          slots: { ...existing.slots, [plan.timeSlot]: false },
-        };
-        const updated = availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
-        set({ availability: updated, availabilityMap: { ...availabilityMap, [dateStr]: updatedEntry } });
-      } else {
-        const newAvailability = createDefaultAvailability(plan.date, defaultSettings);
-        newAvailability.slots[plan.timeSlot] = false;
-        set({ 
-          availability: [...availability, newAvailability],
-          availabilityMap: { ...availabilityMap, [dateStr]: newAvailability },
-        });
-      }
-    }
-  },
-  
-  updatePlan: async (id, updates) => {
-    const dbUpdates: Record<string, unknown> = {};
-    if (updates.title) dbUpdates.title = updates.title;
-    if (updates.activity) dbUpdates.activity = updates.activity;
-    if (updates.date) {
-      const dateStr = format(updates.date, 'yyyy-MM-dd');
-      dbUpdates.date = `${dateStr}T12:00:00+00:00`;
-    }
-    if (updates.endDate !== undefined) {
-      dbUpdates.end_date = updates.endDate ? `${format(updates.endDate, 'yyyy-MM-dd')}T12:00:00+00:00` : null;
-    }
-    if (updates.timeSlot) dbUpdates.time_slot = updates.timeSlot;
-    if (updates.duration) dbUpdates.duration = updates.duration;
-    if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime || null;
-    if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime || null;
-    if (updates.location !== undefined) dbUpdates.location = updates.location?.name || null;
-    if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-    if (updates.status) dbUpdates.status = updates.status;
-    if (updates.feedVisibility !== undefined) dbUpdates.feed_visibility = updates.feedVisibility;
+    updatePlan: async (id, updates) => {
+      const { userId } = get();
+      if (!userId) return;
+      await usePlansStore.getState().updatePlan(id, updates, userId);
+    },
 
-    const { data: planRow } = await supabase.from('plans').select('source').eq('id', id).single();
-    if (planRow?.source && (planRow.source === 'gcal' || planRow.source === 'ical')) {
-      dbUpdates.manually_edited = true;
-    }
+    deletePlan: async (id) => {
+      const { userId } = get();
+      if (!userId) return;
+      await usePlansStore.getState().deletePlan(id, userId, () => ({
+        availability: useAvailabilityStore.getState().availability,
+        availabilityMap: useAvailabilityStore.getState().availabilityMap,
+      }));
+    },
 
-    const { error } = await supabase
-      .from('plans')
-      .update(dbUpdates)
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error updating plan:', error);
-      return;
-    }
-    
-    if (updates.participants) {
-      const { data: existingParticipants } = await supabase
-        .from('plan_participants')
-        .select('id, friend_id, status, role, responded_at')
-        .eq('plan_id', id);
+    proposePlan: async (proposal) => {
+      const { userId, userTimezone } = get();
+      if (!userId) return;
+      await usePlansStore.getState().proposePlan(proposal, userId, userTimezone, () => get().loadAllData());
+    },
 
-      const existingMap = new Map((existingParticipants || []).map(p => [p.friend_id, p]));
-      const desiredIds = new Set(
-        updates.participants.filter(p => p.friendUserId).map(p => p.friendUserId!)
-      );
+    respondToProposal: async (planId, participantRowId, response) => {
+      await usePlansStore.getState().respondToProposal(planId, participantRowId, response, () => get().loadAllData());
+    },
 
-      const toDelete = (existingParticipants || []).filter(p => !desiredIds.has(p.friend_id));
-      if (toDelete.length > 0) {
-        await supabase.from('plan_participants').delete().in('id', toDelete.map(p => p.id));
-      }
+    addFriend: async (friend) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useFriendsStore.getState().addFriend(friend, userId);
+    },
 
-      const toInsert = updates.participants
-        .filter(p => p.friendUserId && !existingMap.has(p.friendUserId))
-        .map(p => ({
-          plan_id: id,
-          friend_id: p.friendUserId!,
-          status: 'invited',
-          role: p.role || 'participant',
-        }));
+    updateFriend: async (id, updates) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useFriendsStore.getState().updateFriend(id, updates, userId);
+    },
 
-      if (toInsert.length > 0) {
-        await supabase.from('plan_participants').insert(toInsert);
-      }
-    }
-    
-    set((state) => ({
-      plans: state.plans.map((p) => p.id === id ? { ...p, ...updates } : p),
-    }));
-  },
-  
-  deletePlan: async (id) => {
-    const { userId, plans: currentPlans } = get();
-    const planToDelete = currentPlans.find(p => p.id === id);
-    
-    const isOwner = !planToDelete?.userId || planToDelete.userId === userId;
-    
-    if (isOwner) {
-      await supabase.from('plan_participants').delete().eq('plan_id', id);
-      const { error } = await supabase.from('plans').delete().eq('id', id);
-      if (error) {
-        console.error('Error deleting plan:', error);
-        return;
-      }
-    } else {
-      const { error } = await supabase
-        .from('plan_participants')
-        .update({ status: 'declined', responded_at: new Date().toISOString() })
-        .eq('plan_id', id)
-        .eq('friend_id', userId!);
-      if (error) {
-        console.error('Error declining plan:', error);
-        return;
-      }
-    }
-    
-    set((state) => ({ plans: state.plans.filter((p) => p.id !== id) }));
-    
-    if (planToDelete && userId) {
-      const dateStr = format(planToDelete.date, 'yyyy-MM-dd');
-      const remainingPlans = currentPlans.filter(
-        p => p.id !== id && format(p.date, 'yyyy-MM-dd') === dateStr && p.timeSlot === planToDelete.timeSlot
-      );
-      
-      if (remainingPlans.length === 0) {
-        const slotColumn = planToDelete.timeSlot.replace('-', '_');
-        await supabase
-          .from('availability')
-          .upsert({ user_id: userId, date: dateStr, [slotColumn]: true }, { onConflict: 'user_id,date' });
-        
-        const existingEntry = get().availabilityMap[dateStr];
-        if (existingEntry) {
-          const updatedEntry = { ...existingEntry, slots: { ...existingEntry.slots, [planToDelete.timeSlot]: true } };
-          const updated = get().availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
-          set({ availability: updated, availabilityMap: { ...get().availabilityMap, [dateStr]: updatedEntry } });
-        }
-      }
-    }
-  },
+    acceptFriendRequest: async (friendshipId, requesterUserId) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useFriendsStore.getState().acceptFriendRequest(friendshipId, requesterUserId, userId);
+    },
 
-  proposePlan: async (proposal) => {
-    const { userId, userTimezone } = get();
-    if (!userId) return;
+    removeFriend: async (id) => {
+      await useFriendsStore.getState().removeFriend(id);
+    },
 
-    const dateStr = format(proposal.date, 'yyyy-MM-dd');
-    const noonUtcDate = `${dateStr}T12:00:00+00:00`;
+    setAvailability: async (date, slot, available) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useAvailabilityStore.getState().setAvailability(date, slot, available, userId);
+    },
 
-    const activityConfig = (await import('@/types/planner')).ACTIVITY_CONFIG[proposal.activity as ActivityType];
-    const autoTitle = proposal.title || (activityConfig ? activityConfig.label : proposal.activity);
+    setLocationStatus: async (status, date) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useAvailabilityStore.getState().setLocationStatus(status, userId, date);
+    },
 
-    const { data, error } = await supabase
-      .from('plans')
-      .insert({
-        user_id: userId,
-        title: autoTitle,
-        activity: proposal.activity,
-        date: noonUtcDate,
-        time_slot: proposal.timeSlot,
-        duration: 60,
-        location: proposal.location || null,
-        notes: proposal.note || null,
-        status: 'proposed',
-        proposed_by: userId,
-        feed_visibility: 'private',
-        source_timezone: userTimezone,
-      } as any)
-      .select()
-      .single();
+    getLocationStatusForDate: (date) => {
+      return useAvailabilityStore.getState().getLocationStatusForDate(date);
+    },
 
-    if (error) {
-      console.error('proposePlan error:', error);
-      const { toast } = await import('sonner');
-      toast.error('Could not send proposal. Try again.');
-      return;
-    }
-
-    await supabase.from('plan_participants').insert({
-      plan_id: data.id,
-      friend_id: proposal.recipientFriendId,
-      status: 'invited',
-      role: 'participant',
-    });
-
-    // Fire-and-forget: proposal notification via on-plan-created
-    (async () => {
-      try {
-        const { TIME_SLOT_LABELS: TSL } = await import('@/types/planner');
-        const timeLabel = TSL[proposal.timeSlot]?.label || proposal.timeSlot;
-        const dateLabel = format(proposal.date, 'EEE, MMM d');
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
-        if (!token) return;
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            plan_id: data.id,
-            creator_id: userId,
-            participant_ids: [proposal.recipientFriendId],
-            plan_title: proposal.title || activityConfig?.label || proposal.activity,
-            notification_title: undefined, // let server build from creator name
-            notification_body: `${activityConfig?.label || proposal.activity} · ${dateLabel} · ${timeLabel}`,
-            notification_url: '/notifications',
-          }),
-        }).catch(() => {});
-      } catch {}
-    })();
-
-    await get().loadAllData();
-  },
-
-  respondToProposal: async (planId, participantRowId, response) => {
-    if (response === 'declined') {
-      await supabase
-        .from('plan_participants')
-        .update({ status: 'declined', responded_at: new Date().toISOString() })
-        .eq('id', participantRowId);
-      return;
-    }
-
-    await supabase.from('plans').update({ status: 'confirmed' }).eq('id', planId);
-    await supabase
-      .from('plan_participants')
-      .update({ status: 'accepted', responded_at: new Date().toISOString() })
-      .eq('id', participantRowId);
-
-    await get().loadAllData();
-  },
-
-  addFriend: async (friend) => {
-    const { userId } = get();
-    if (!userId) return;
-    
-    if (friend.friendUserId) {
-      const { data: existing } = await supabase
-        .from('friendships')
-        .select('id, status')
-        .eq('user_id', userId)
-        .eq('friend_user_id', friend.friendUserId)
-        .maybeSingle();
-      if (existing) return;
-    }
-    
-    const { data, error } = await supabase
-      .from('friendships')
-      .insert({
-        user_id: userId,
-        friend_name: friend.name,
-        friend_email: friend.email || null,
-        friend_user_id: friend.friendUserId || null,
-        status: friend.status,
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error adding friend:', error);
-      return;
-    }
-
-    if (friend.friendUserId && friend.status === 'pending') {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const { data: profile } = await supabase.from('profiles').select('display_name').eq('user_id', userId).single();
-        const senderName = profile?.display_name || 'Someone';
-
-        fetch(`https://${projectId}.supabase.co/functions/v1/send-push-notification`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: friend.friendUserId,
-            title: 'New Friend Request! 🎉',
-            body: `${senderName} wants to connect with you`,
-            url: '/notifications',
-          }),
-        }).catch(() => {});
-      } catch (err) {
-        console.error('Push notification error:', err);
-      }
-    }
-    
-    const newFriend: Friend = {
-      id: data.id,
-      name: data.friend_name,
-      email: data.friend_email || undefined,
-      friendUserId: data.friend_user_id || undefined,
-      status: data.status as 'connected' | 'pending' | 'invited',
-    };
-    
-    set((state) => ({ friends: [...state.friends, newFriend] }));
-  },
-  
-  updateFriend: async (id, updates) => {
-    const { userId } = get();
-    const friend = get().friends.find(f => f.id === id);
-    const dbUpdates: Record<string, unknown> = {};
-    if (updates.name) dbUpdates.friend_name = updates.name;
-    if (updates.email !== undefined) dbUpdates.friend_email = updates.email;
-    if (updates.status) dbUpdates.status = updates.status;
-    if (updates.isPodMember !== undefined) dbUpdates.is_pod_member = updates.isPodMember;
-    
-    let targetId = id;
-    if (friend?.isIncoming && userId && friend.friendUserId) {
-      const { data: existingRow } = await supabase
-        .from('friendships')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('friend_user_id', friend.friendUserId)
-        .maybeSingle();
-      
-      if (existingRow) {
-        targetId = existingRow.id;
-      } else {
-        const { data: newRow, error: insertError } = await supabase
-          .from('friendships')
-          .insert({
-            user_id: userId,
-            friend_user_id: friend.friendUserId,
-            friend_name: friend.name,
-            status: 'connected',
-            is_pod_member: updates.isPodMember ?? false,
-          })
-          .select()
-          .single();
-        
-        if (insertError || !newRow) {
-          console.error('Error creating reciprocal friendship:', insertError);
-          return;
-        }
-        
-        set((state) => ({
-          friends: state.friends.map((f) => f.id === id ? { ...f, ...updates, id: newRow.id, isIncoming: false } : f),
-        }));
-        return;
-      }
-    }
-    
-    const { error } = await supabase.from('friendships').update(dbUpdates).eq('id', targetId);
-    if (error) {
-      console.error('Error updating friend:', error);
-      return;
-    }
-    
-    set((state) => ({
-      friends: state.friends.map((f) => f.id === id ? { ...f, ...updates } : f),
-    }));
-  },
-  
-  acceptFriendRequest: async (friendshipId: string, requesterUserId: string) => {
-    const { userId } = get();
-    if (!userId) return;
-    
-    const { error } = await supabase.rpc('accept_friend_request', {
-      p_friendship_id: friendshipId,
-      p_requester_user_id: requesterUserId,
-    });
-    
-    if (error) {
-      console.error('Error accepting friend request:', error);
-      return;
-    }
-    
-    set((state) => ({
-      friends: state.friends.map((f) => 
-        f.id === friendshipId ? { ...f, status: 'connected' as const } : f
-      ),
-    }));
-  },
-  
-  removeFriend: async (id) => {
-    const { error } = await supabase.rpc('remove_friendship', { p_friendship_id: id });
-    if (error) {
-      console.error('Error removing friend:', error);
-      return;
-    }
-    set((state) => ({ friends: state.friends.filter((f) => f.id !== id) }));
-  },
-  
-  setAvailability: async (date, slot, available) => {
-    const { userId, availability, availabilityMap, defaultSettings } = get();
-    if (!userId) return;
-    
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const slotColumn = slot.replace('-', '_');
-    
-    const { error } = await supabase
-      .from('availability')
-      .upsert({ user_id: userId, date: dateStr, [slotColumn]: available }, { onConflict: 'user_id,date' });
-    
-    if (error) {
-      console.error('Error setting availability:', error);
-      return;
-    }
-    
-    const existing = availabilityMap[dateStr];
-    if (existing) {
-      const updatedEntry = { ...existing, slots: { ...existing.slots, [slot]: available } };
-      const updated = availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
-      set({ availability: updated, availabilityMap: { ...availabilityMap, [dateStr]: updatedEntry } });
-    } else {
-      const newAvailability = createDefaultAvailability(date, defaultSettings);
-      newAvailability.slots[slot] = available;
-      set({ 
-        availability: [...availability, newAvailability],
-        availabilityMap: { ...availabilityMap, [dateStr]: newAvailability },
+    setVibeForDate: async (date, vibe) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useAvailabilityStore.getState().setVibeForDate(date, vibe, userId, (v) => {
+        useVibeStore.setState({ currentVibe: v });
       });
-    }
-  },
-  
-  setLocationStatus: async (status, date) => {
-    const { userId, availability, availabilityMap, defaultSettings } = get();
-    if (!userId) return;
-    
-    const targetDate = date || new Date();
-    const dateStr = format(targetDate, 'yyyy-MM-dd');
-    
-    const { error } = await supabase
-      .from('availability')
-      .upsert({ user_id: userId, date: dateStr, location_status: status }, { onConflict: 'user_id,date' });
-    
-    if (error) {
-      console.error('Error setting location:', error);
-      return;
-    }
-    
-    const existing = availabilityMap[dateStr];
-    if (existing) {
-      const updatedEntry = { ...existing, locationStatus: status };
-      const updated = availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
-      set({ availability: updated, availabilityMap: { ...availabilityMap, [dateStr]: updatedEntry } });
-    } else {
-      const newAvailability = createDefaultAvailability(targetDate, defaultSettings);
-      newAvailability.locationStatus = status;
-      set({ 
-        availability: [...availability, newAvailability],
-        availabilityMap: { ...availabilityMap, [dateStr]: newAvailability },
+    },
+
+    getVibeForDate: (date) => {
+      return useAvailabilityStore.getState().getVibeForDate(date);
+    },
+
+    setVibe: async (vibe) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useVibeStore.getState().setVibe(vibe, userId);
+    },
+
+    addCustomVibe: async (tag) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useVibeStore.getState().addCustomVibe(tag, userId);
+    },
+
+    removeCustomVibe: async (tag) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useVibeStore.getState().removeCustomVibe(tag, userId);
+    },
+
+    loadAvailabilityForRange: async (startDate, endDate) => {
+      const { userId } = get();
+      if (!userId) return;
+      await useAvailabilityStore.getState().loadAvailabilityForRange(startDate, endDate, userId);
+    },
+
+    initializeWeekAvailability: async () => {
+      const { userId } = get();
+      await useAvailabilityStore.getState().initializeWeekAvailability(userId, async () => {
+        if (userId) await useAvailabilityStore.getState().loadProfileAndAvailability(userId);
       });
-    }
-    
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    if (dateStr === todayStr) {
-      set({ locationStatus: status });
-    }
-  },
-  
-  getLocationStatusForDate: (date) => {
-    const { availabilityMap } = get();
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return availabilityMap[dateStr]?.locationStatus || 'home';
-  },
-  
-  getVibeForDate: (date) => {
-    const { availabilityMap } = get();
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return availabilityMap[dateStr]?.vibe || null;
-  },
+    },
 
-  setVibeForDate: async (date, vibe) => {
-    const { userId, availability, availabilityMap, defaultSettings } = get();
-    if (!userId) return;
-    
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const existing = availabilityMap[dateStr];
-    
-    if (existing) {
-      const updatedEntry = { ...existing, vibe };
-      const updated = availability.map(a => format(a.date, 'yyyy-MM-dd') === dateStr ? updatedEntry : a);
-      set({ availability: updated, availabilityMap: { ...availabilityMap, [dateStr]: updatedEntry } });
-    } else {
-      const newAvailability = createDefaultAvailability(date, defaultSettings);
-      newAvailability.vibe = vibe;
-      set({ 
-        availability: [...availability, newAvailability],
-        availabilityMap: { ...availabilityMap, [dateStr]: newAvailability },
-      });
-    }
-    
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    if (dateStr === todayStr && vibe) {
-      set({ currentVibe: { type: vibe } });
-    } else if (dateStr === todayStr && !vibe) {
-      set({ currentVibe: null });
-    }
-    
-    const { error } = await supabase
-      .from('availability')
-      .upsert({ user_id: userId, date: dateStr, vibe: vibe } as any, { onConflict: 'user_id,date' });
-    
-    if (error) {
-      console.error('Error setting vibe for date:', error);
-    }
-  },
-  
-  setVibe: async (vibe) => {
-    const { userId } = get();
-    if (!userId) return;
-    
-    const { error } = await supabase
-      .from('profiles')
-      .update({ current_vibe: vibe?.type || null, vibe_gif_url: vibe?.gifUrl || null })
-      .eq('user_id', userId);
-    
-    if (error) {
-      console.error('Error setting vibe:', error);
-      return;
-    }
-    set({ currentVibe: vibe });
-  },
-  
-  addCustomVibe: async (tag) => {
-    const { userId, currentVibe } = get();
-    if (!userId) return;
-    
-    const existingTags = currentVibe?.customTags || [];
-    if (existingTags.includes(tag)) return;
-    
-    const newTags = [...existingTags, tag];
-    const vibeType = currentVibe?.type || 'custom';
-    const newVibe: Vibe = { type: vibeType, customTags: newTags, gifUrl: currentVibe?.gifUrl };
-    
-    const { error } = await supabase
-      .from('profiles')
-      .update({ current_vibe: vibeType, custom_vibe_tags: newTags })
-      .eq('user_id', userId);
-    
-    if (error) {
-      console.error('Error adding custom vibe:', error);
-      return;
-    }
-    set({ currentVibe: newVibe });
-  },
-  
-  removeCustomVibe: async (tag) => {
-    const { userId, currentVibe } = get();
-    if (!userId) return;
-    
-    const existingTags = currentVibe?.customTags || [];
-    const newTags = existingTags.filter(t => t !== tag);
-    const gifUrl = currentVibe?.gifUrl;
-    const vibeType = currentVibe?.type || 'custom';
-    
-    if (newTags.length === 0) {
-      const keepVibe = vibeType !== 'custom' || !!gifUrl;
-      const { error } = await supabase
-        .from('profiles')
-        .update({ current_vibe: keepVibe ? vibeType : null, custom_vibe_tags: [] })
-        .eq('user_id', userId);
-      if (error) {
-        console.error('Error removing custom vibe:', error);
-        return;
-      }
-      set({ currentVibe: keepVibe ? { type: vibeType, customTags: [], gifUrl } : null });
-    } else {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ custom_vibe_tags: newTags })
-        .eq('user_id', userId);
-      if (error) {
-        console.error('Error removing custom vibe:', error);
-        return;
-      }
-      set({ currentVibe: { type: vibeType, customTags: newTags, gifUrl } });
-    }
-  },
-  
-  loadAvailabilityForRange: async (startDate: Date, endDate: Date) => {
-    const { userId, defaultSettings, availabilityMap: existingMap } = get();
-    if (!userId) return;
+    loadFriends: async () => {
+      const { userId } = get();
+      if (!userId) return;
+      await useFriendsStore.getState().loadFriends(userId);
+    },
 
-    const startStr = format(startDate, 'yyyy-MM-dd');
-    const endStr = format(endDate, 'yyyy-MM-dd');
+    loadPlans: async () => {
+      const { userId, userTimezone } = get();
+      if (!userId) return;
+      await usePlansStore.getState().loadPlans(userId, userTimezone);
+    },
 
-    let allCovered = true;
-    let checkDate = startDate;
-    while (checkDate <= endDate) {
-      if (!existingMap[format(checkDate, 'yyyy-MM-dd')]) { allCovered = false; break; }
-      checkDate = addDays(checkDate, 1);
-    }
-    if (allCovered) return;
-
-    const { data, error } = await supabase
-      .from('availability')
-      .select('date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location, vibe')
-      .eq('user_id', userId)
-      .gte('date', startStr)
-      .lte('date', endStr);
-
-    if (error) {
-      console.error('Error loading availability range:', error);
-      return;
-    }
-
-    const fetchedMap = new Map<string, any>();
-    for (const row of (data || [])) {
-      fetchedMap.set(row.date, row);
-    }
-
-    const newMap = { ...existingMap };
-    const newAvail = [...get().availability];
-    let d = new Date(startDate);
-    while (d <= endDate) {
-      const dateStr = format(d, 'yyyy-MM-dd');
-      if (!newMap[dateStr]) {
-        const existing = fetchedMap.get(dateStr);
-        const dayAvail: DayAvailability = existing
-          ? mapAvailabilityRow(existing, new Date(d))
-          : createDefaultAvailability(new Date(d), defaultSettings);
-        newMap[dateStr] = dayAvail;
-        newAvail.push(dayAvail);
-      }
-      d = addDays(d, 1);
-    }
-
-    set({ availability: newAvail, availabilityMap: newMap });
-  },
-
-  initializeWeekAvailability: async () => {
-    const { userId, defaultSettings } = get();
-    if (!userId) {
-      const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const week: DayAvailability[] = [];
-      for (let i = 0; i < 7; i++) {
-        week.push(createDefaultAvailability(addDays(start, i), defaultSettings));
-      }
-      set({ availability: week, availabilityMap: buildAvailabilityMap(week) });
-      return;
-    }
-    await get().loadProfileAndAvailability();
-  },
-
-  loadFriends: async () => {
-    const { userId } = get();
-    if (!userId) return;
-
-    const [outgoingResult, incomingResult] = await Promise.all([
-      supabase.from('friendships').select('*').eq('user_id', userId),
-      supabase.from('friendships_incoming' as any).select('*').eq('friend_user_id', userId),
-    ]);
-
-    const outgoingData = outgoingResult.data;
-    const incomingData = incomingResult.data;
-
-    const incomingUserIds = (incomingData || []).map((f: any) => f.user_id).filter(Boolean);
-    const outgoingUserIds = (outgoingData || []).map((f: any) => f.friend_user_id).filter(Boolean) as string[];
-
-    const [incomingProfilesResult, outgoingProfilesResult] = await Promise.all([
-      incomingUserIds.length > 0
-        ? supabase.rpc('get_display_names_for_users', { p_user_ids: incomingUserIds })
-        : Promise.resolve({ data: [] as any[] }),
-      outgoingUserIds.length > 0
-        ? supabase.from('public_profiles').select('user_id, avatar_url').in('user_id', outgoingUserIds)
-        : Promise.resolve({ data: [] as any[] }),
-    ]);
-
-    const incomingProfilesMap = new Map((incomingProfilesResult.data || []).map((p: any) => [p.user_id, p]));
-    const outgoingAvatarMap = new Map<string, string | null>((outgoingProfilesResult.data || []).map((p: any) => [p.user_id, p.avatar_url]));
-
-    const outgoingFriends = mapOutgoingFriendships(outgoingData || [], outgoingAvatarMap);
-    const incomingFriends = mapIncomingFriendships(incomingData || [], incomingProfilesMap);
-    const friends = dedupeFriends(outgoingFriends, incomingFriends);
-
-    set({ friends });
-  },
-
-  loadPlans: async () => {
-    const { userId, userTimezone } = get();
-    if (!userId) return;
-
-    const [ownPlansResult, participatedPlanIdsResult] = await Promise.all([
-      supabase.from('plans').select('*').eq('user_id', userId).order('date', { ascending: true }).limit(200),
-      supabase.rpc('user_participated_plan_ids', { p_user_id: userId }),
-    ]);
-
-    const ownPlansData = ownPlansResult.data || [];
-    const participatedPlanIds = participatedPlanIdsResult.data;
-
-    const participatedPlansData = (participatedPlanIds && participatedPlanIds.length > 0)
-      ? (await supabase.from('plans').select('*').in('id', participatedPlanIds).order('date', { ascending: true }).limit(200)).data || []
-      : [];
-
-    const plansData = deduplicatePlanRows(ownPlansData, participatedPlansData);
-
-    const planIds = plansData.map(p => p.id);
-    const participantsMap = planIds.length > 0
-      ? (() => {
-          const result: Record<string, { friend_id: string; status: string; role: string; responded_at: string | null }[]> = {};
-          return supabase.from('plan_participants').select('plan_id, friend_id, status, role, responded_at').in('plan_id', planIds)
-            .then(({ data }) => {
-              for (const pp of (data || [])) {
-                if (!result[pp.plan_id]) result[pp.plan_id] = [];
-                result[pp.plan_id].push({ friend_id: pp.friend_id, status: pp.status, role: pp.role, responded_at: pp.responded_at });
-              }
-              return result;
-            });
-        })()
-      : Promise.resolve({} as Record<string, { friend_id: string; status: string; role: string; responded_at: string | null }[]>);
-
-    const resolvedParticipantsMap = await participantsMap;
-
-    const participantUserIds = new Set<string>();
-    for (const pps of Object.values(resolvedParticipantsMap)) {
-      for (const pp of pps) participantUserIds.add(pp.friend_id);
-    }
-    for (const p of plansData) {
-      if (p.user_id !== userId) participantUserIds.add(p.user_id);
-    }
-
-    let profilesMap: Record<string, string> = {};
-    let profileAvatarsMap: Record<string, string | null> = {};
-    if (participantUserIds.size > 0) {
-      const { data: profiles } = await supabase.from('public_profiles').select('user_id, display_name, avatar_url').in('user_id', Array.from(participantUserIds));
-      for (const p of (profiles || [])) {
-        if (p.user_id) {
-          profilesMap[p.user_id] = p.display_name || 'Friend';
-          profileAvatarsMap[p.user_id] = p.avatar_url;
-        }
-      }
-    }
-
-    const plans: Plan[] = plansData.map((p) =>
-      mapRawPlanToModel(p, userId, resolvedParticipantsMap, profilesMap, profileAvatarsMap, userTimezone)
-    );
-
-    set({ plans });
-  },
-
-  loadProfileAndAvailability: async () => {
-    const { userId } = get();
-    if (!userId) return;
-
-    const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-    const availStartDate = format(addDays(start, -183), 'yyyy-MM-dd');
-    const availEndDate = format(addDays(start, 183), 'yyyy-MM-dd');
-
-    const [availResult, profileResult] = await Promise.all([
-      supabase.from('availability').select('*').eq('user_id', userId).gte('date', availStartDate).lte('date', availEndDate),
-      supabase.from('profiles')
-        .select('current_vibe, location_status, custom_vibe_tags, vibe_gif_url, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, default_vibes, home_address, timezone')
-        .eq('user_id', userId).single(),
-    ]);
-
-    const availData = availResult.data;
-    const profile = profileResult.data;
-
-    const defaultSettings: DefaultAvailabilitySettings = {
-      workDays: (profile as any)?.default_work_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-      workStartHour: (profile as any)?.default_work_start_hour ?? 9,
-      workEndHour: (profile as any)?.default_work_end_hour ?? 17,
-      defaultStatus: (profile as any)?.default_availability_status || 'free',
-      defaultVibes: (profile as any)?.default_vibes || [],
-    };
-
-    const availDataMap = new Map<string, any>();
-    if (availData) { for (const a of availData) availDataMap.set(a.date, a); }
-
-    const allDates = Array.from({ length: 366 }, (_, i) => format(addDays(start, i - 183), 'yyyy-MM-dd'));
-    const availabilityWithDefaults: DayAvailability[] = allDates.map((dateStr, i) => {
-      const existing = availDataMap.get(dateStr);
-      const date = addDays(start, i - 183);
-      if (existing) return mapAvailabilityRow(existing, date);
-      return createDefaultAvailability(date, defaultSettings);
-    });
-
-    const availabilityMap = buildAvailabilityMap(availabilityWithDefaults);
-    const homeAddr = (profile as any)?.home_address || null;
-    const customTags = (profile as any)?.custom_vibe_tags || [];
-    const vibeGifUrl = (profile as any)?.vibe_gif_url || undefined;
-    const currentVibe = (profile as any)?.current_vibe
-      ? { type: (profile as any).current_vibe as VibeType, customTags: (profile as any).current_vibe === 'custom' ? customTags : undefined, gifUrl: vibeGifUrl }
-      : null;
-
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const todayAvail = availabilityMap[todayStr];
-    const todayLocationStatus = todayAvail?.locationStatus || 'home';
-
-    set({
-      availability: availabilityWithDefaults,
-      availabilityMap,
-      currentVibe,
-      locationStatus: todayLocationStatus,
-      defaultSettings,
-      homeAddress: homeAddr,
-    });
-  },
-}));
+    loadProfileAndAvailability: async () => {
+      const { userId } = get();
+      if (!userId) return;
+      await useAvailabilityStore.getState().loadProfileAndAvailability(userId);
+    },
+  };
+});
