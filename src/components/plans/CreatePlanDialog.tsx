@@ -156,6 +156,18 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   const [participantAvailability, setParticipantAvailability] = useState<{ userId: string; name: string; available: boolean }[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isProposing, setIsProposing] = useState(false);
+  const [customActivities, setCustomActivities] = useState<CustomActivity[]>([]);
+
+  // Load custom activities from profile
+  useEffect(() => {
+    if (!session?.user) return;
+    supabase.from('profiles').select('custom_activities').eq('user_id', session.user.id).single()
+      .then(({ data }) => {
+        if (data?.custom_activities) {
+          setCustomActivities(data.custom_activities as unknown as CustomActivity[]);
+        }
+      });
+  }, [session?.user]);
 
   // Auto-calculate duration when both start and end times are set
   useEffect(() => {
