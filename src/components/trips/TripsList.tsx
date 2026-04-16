@@ -464,17 +464,6 @@ function TripCard({
 
         <Button
           variant="ghost"
-          size="sm"
-          className="h-7 px-2 shrink-0 gap-1 text-xs"
-          onClick={(e) => { e.stopPropagation(); onNavigate(); }}
-          title="Suggest & vote on activities"
-        >
-          <Vote className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Activities</span>
-        </Button>
-
-        <Button
-          variant="ghost"
           size="icon"
           className="h-7 w-7 shrink-0"
           onClick={(e) => { e.stopPropagation(); setAddParticipantOpen(true); }}
@@ -497,27 +486,39 @@ function TripCard({
         <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
       </div>
 
-      {/* Participant avatars */}
-      {friendProfiles.length > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="flex -space-x-1.5">
-            {friendProfiles.slice(0, 5).map((p, i, arr) => (
-              <Avatar key={p.user_id} className="h-5 w-5 border-2 border-background" style={{ zIndex: arr.length - i }}>
-                <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
-                <AvatarFallback className="text-[7px]">{(p.display_name || '?')[0]}</AvatarFallback>
-              </Avatar>
-            ))}
-            {friendProfiles.length > 5 && (
-              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-2 border-background text-[8px] font-medium text-muted-foreground">
-                +{friendProfiles.length - 5}
-              </span>
-            )}
+      {/* Participant avatars + Activities CTA */}
+      <div className="flex items-center justify-between gap-2">
+        {friendProfiles.length > 0 ? (
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex -space-x-1.5">
+              {friendProfiles.slice(0, 5).map((p, i, arr) => (
+                <Avatar key={p.user_id} className="h-5 w-5 border-2 border-background" style={{ zIndex: arr.length - i }}>
+                  <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
+                  <AvatarFallback className="text-[7px]">{(p.display_name || '?')[0]}</AvatarFallback>
+                </Avatar>
+              ))}
+              {friendProfiles.length > 5 && (
+                <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-2 border-background text-[8px] font-medium text-muted-foreground">
+                  +{friendProfiles.length - 5}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground truncate">
+              {friendProfiles.map(p => (p.display_name || 'Friend').split(' ')[0]).join(', ')}
+            </span>
           </div>
-          <span className="text-[10px] text-muted-foreground truncate">
-            {friendProfiles.map(p => (p.display_name || 'Friend').split(' ')[0]).join(', ')}
-          </span>
-        </div>
-      )}
+        ) : <div />}
+
+        <Button
+          variant="default"
+          size="sm"
+          className="h-7 px-2.5 shrink-0 gap-1 text-xs ml-auto"
+          onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Suggest activities
+        </Button>
+      </div>
 
       <AddParticipantDialog
         open={addParticipantOpen}
