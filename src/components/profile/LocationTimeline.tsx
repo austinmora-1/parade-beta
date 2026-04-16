@@ -12,6 +12,7 @@ import { type TripData } from './AddTripDialog';
 
 const AddTripDialog = lazy(() => import('./AddTripDialog'));
 import { toast } from 'sonner';
+import { formatCityForDisplay } from '@/lib/formatCity';
 import {
   Popover,
   PopoverContent,
@@ -379,7 +380,7 @@ export function LocationTimeline() {
               >
                 <Plane className="h-3.5 w-3.5 text-availability-away-foreground" />
                 {trip.location && (
-                  <span className="font-semibold text-availability-away-foreground">{trip.location}</span>
+                  <span className="font-semibold text-availability-away-foreground">{formatCityForDisplay(trip.location) || trip.location}</span>
                 )}
                 <span className="font-medium text-availability-away-foreground">
                   {format(trip.startDate, 'MMM d')} – {format(trip.endDate, 'MMM d')}

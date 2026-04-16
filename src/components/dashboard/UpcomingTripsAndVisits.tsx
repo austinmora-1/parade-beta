@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { formatDisplayName } from '@/lib/formatName';
+import { formatCityForDisplay } from '@/lib/formatCity';
 
 export function UpcomingTripsAndVisits() {
   const { user } = useAuth();
@@ -152,7 +153,7 @@ export function UpcomingTripsAndVisits() {
                 <div className="flex items-center gap-2">
                   <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
                   <span className="text-sm font-medium truncate">
-                    {trip.location ? `Trip to ${trip.location.split(',')[0]}` : 'Trip'}
+                    {trip.location ? `Trip to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}` : 'Trip'}
                   </span>
                   {isWithinInterval(startOfDay(new Date()), {
                     start: startOfDay(new Date(trip.start_date + 'T00:00:00')),

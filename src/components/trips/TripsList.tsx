@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { AddParticipantDialog } from './AddParticipantDialog';
 import { formatDisplayName } from '@/lib/formatName';
+import { formatCityForDisplay } from '@/lib/formatCity';
 
 interface Trip {
   id: string;
@@ -443,7 +444,7 @@ function TripCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="font-medium text-sm truncate">
-              {trip.location || 'Unknown destination'}
+              {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'Unknown destination'}
             </span>
             {isOngoing && (
               <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full shrink-0">

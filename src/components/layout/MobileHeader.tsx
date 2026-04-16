@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { getTimezoneAbbreviation, getTimezoneForCity } from '@/lib/timezone';
+import { formatCityForDisplay } from '@/lib/formatCity';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 
@@ -24,13 +25,13 @@ export function MobileHeader() {
     const todayAvail = availabilityMap[todayKey];
     if (todayAvail?.locationStatus === 'away' && todayAvail?.tripLocation) {
       return {
-        currentCity: todayAvail.tripLocation.split(',')[0],
+        currentCity: formatCityForDisplay(todayAvail.tripLocation) || todayAvail.tripLocation.split(',')[0],
         currentTimezone: getTimezoneForCity(todayAvail.tripLocation),
       };
     }
     const homeAddress = profile?.home_address;
     return {
-      currentCity: homeAddress?.split(',')[0] || 'Set location',
+      currentCity: homeAddress ? (formatCityForDisplay(homeAddress) || homeAddress.split(',')[0]) : 'Set location',
       currentTimezone: homeAddress ? getTimezoneForCity(homeAddress) : userTimezone,
     };
   }, [availabilityMap, profile?.home_address, userTimezone]);

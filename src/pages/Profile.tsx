@@ -491,15 +491,11 @@ export default function Profile() {
       .slice(0, 2);
   };
 
-  // Extract city from address
+  // Extract city from address (normalized for display)
   const getCity = (address: string | null | undefined) => {
     if (!address) return null;
-    // Try to extract city - usually after the first comma or just the first part
-    const parts = address.split(',');
-    if (parts.length >= 2) {
-      return parts[1].trim();
-    }
-    return parts[0].trim();
+    const display = formatCityForDisplay(address);
+    return display || null;
   };
 
   if (isLoading) {
@@ -842,7 +838,7 @@ export default function Profile() {
                           {plan.location && (
                             <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
                               <MapPin className="h-3 w-3 shrink-0" />
-                              <span className="truncate max-w-[140px]">{plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
+                              <span className="truncate max-w-[140px]">{formatCityForDisplay(plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]) || plan.location.name.split(' · ')[0].split(', ')[0].split(' - ')[0]}</span>
                             </div>
                           )}
                         </div>
