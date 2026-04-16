@@ -62,7 +62,7 @@ export function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds
           </span>
         )}
         {dayPlans.length > 1 && (
-          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary/15 px-1 text-[10px] font-semibold text-primary ml-auto shrink-0">
+          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 font-semibold ml-auto shrink-0 text-sm text-muted-foreground bg-input">
             {dayPlans.length}
           </span>
         )}
