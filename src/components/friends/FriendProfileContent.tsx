@@ -87,6 +87,8 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   const [quickPlanDate, setQuickPlanDate] = useState<Date | undefined>(undefined);
   const [quickPlanSlot, setQuickPlanSlot] = useState<TimeSlot | undefined>(undefined);
+  const [requestingAvailability, setRequestingAvailability] = useState(false);
+  const [availabilityRequested, setAvailabilityRequested] = useState(false);
 
   const friendFormattedName = useMemo(() => profile ? formatDisplayName({
     firstName: profile.first_name,
