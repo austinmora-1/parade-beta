@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Plus, CalendarPlus, PlaneTakeoff, UserPlus } from 'lucide-react';
 import {
   DropdownMenu,
@@ -6,10 +6,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { InviteFriendDialog } from '@/components/friends/InviteFriendDialog';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
-import { AddTripDialog } from '@/components/profile/AddTripDialog';
 import { usePlannerStore } from '@/stores/plannerStore';
+
+const InviteFriendDialog = lazy(() => import('@/components/friends/InviteFriendDialog'));
+const AddTripDialog = lazy(() => import('@/components/profile/AddTripDialog'));
 
 export function FloatingFeedbackButton() {
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
@@ -45,8 +46,16 @@ export function FloatingFeedbackButton() {
       </DropdownMenu>
 
       <QuickPlanSheet open={quickPlanOpen} onOpenChange={setQuickPlanOpen} />
-      <InviteFriendDialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen} />
-      <AddTripDialog open={tripOpen} onOpenChange={setTripOpen} onTripAdded={() => loadProfileAndAvailability()} />
+      {inviteFriendOpen && (
+        <Suspense fallback={null}>
+          <InviteFriendDialog open={inviteFriendOpen} onOpenChange={setInviteFriendOpen} />
+        </Suspense>
+      )}
+      {tripOpen && (
+        <Suspense fallback={null}>
+          <AddTripDialog open={tripOpen} onOpenChange={setTripOpen} onTripAdded={() => loadProfileAndAvailability()} />
+        </Suspense>
+      )}
     </>
   );
 }

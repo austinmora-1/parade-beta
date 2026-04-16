@@ -1078,7 +1078,9 @@ export default function Settings() {
                 <p className="text-sm font-medium text-destructive">Delete Account</p>
                 <p className="text-[10px] text-muted-foreground">Permanently delete your account and all data</p>
               </div>
-              <DeleteAccountDialog />
+              <Suspense fallback={null}>
+                <DeleteAccountDialog />
+              </Suspense>
             </div>
           </AccordionContent>
         </AccordionItem>

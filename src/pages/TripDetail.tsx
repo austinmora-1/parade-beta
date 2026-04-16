@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, differenceInDays } from 'date-fns';
 import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2 } from 'lucide-react';
@@ -8,7 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
-import { AddTripDialog, TripData } from '@/components/profile/AddTripDialog';
+import { type TripData } from '@/components/profile/AddTripDialog';
+
+const AddTripDialog = lazy(() => import('@/components/profile/AddTripDialog'));
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -352,12 +354,16 @@ export default function TripDetail() {
       </div>
 
       {/* Edit Dialog */}
-      <AddTripDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        editingTrip={editTripData}
-        onTripAdded={handleTripEdited}
-      />
+      {editOpen && (
+        <Suspense fallback={null}>
+          <AddTripDialog
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            editingTrip={editTripData}
+            onTripAdded={handleTripEdited}
+          />
+        </Suspense>
+      )}
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

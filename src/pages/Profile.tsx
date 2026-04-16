@@ -528,23 +528,27 @@ export default function Profile() {
       />
 
       {/* Image Crop Dialog */}
-      <ImageCropDialog
-        open={cropDialogOpen}
-        onOpenChange={(open) => {
-          setCropDialogOpen(open);
-          if (!open && imageToCrop) {
-            URL.revokeObjectURL(imageToCrop);
-            setImageToCrop('');
-          }
-        }}
-        imageSrc={imageToCrop}
-        onCropComplete={handleCropComplete}
-        aspect={cropMode === 'cover' ? 4 : 1}
-        circular={cropMode === 'avatar'}
-        title={cropMode === 'cover' ? 'Crop Cover Photo' : 'Crop Profile Picture'}
-        outputWidth={cropMode === 'cover' ? 1600 : 1024}
-        outputHeight={cropMode === 'cover' ? 400 : undefined}
-      />
+      {cropDialogOpen && (
+        <Suspense fallback={null}>
+          <ImageCropDialog
+            open={cropDialogOpen}
+            onOpenChange={(open) => {
+              setCropDialogOpen(open);
+              if (!open && imageToCrop) {
+                URL.revokeObjectURL(imageToCrop);
+                setImageToCrop('');
+              }
+            }}
+            imageSrc={imageToCrop}
+            onCropComplete={handleCropComplete}
+            aspect={cropMode === 'cover' ? 4 : 1}
+            circular={cropMode === 'avatar'}
+            title={cropMode === 'cover' ? 'Crop Cover Photo' : 'Crop Profile Picture'}
+            outputWidth={cropMode === 'cover' ? 1600 : 1024}
+            outputHeight={cropMode === 'cover' ? 400 : undefined}
+          />
+        </Suspense>
+      )}
 
       {/* Profile Header */}
       <Card className="overflow-hidden">
@@ -869,11 +873,15 @@ export default function Profile() {
       </Collapsible>
 
       {/* Edit Plan Dialog */}
-      <CreatePlanDialog
-        open={editDialogOpen}
-        onOpenChange={handleEditDialogClose}
-        editPlan={editingPlan}
-      />
+      {editDialogOpen && (
+        <Suspense fallback={null}>
+          <CreatePlanDialog
+            open={editDialogOpen}
+            onOpenChange={handleEditDialogClose}
+            editPlan={editingPlan}
+          />
+        </Suspense>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
