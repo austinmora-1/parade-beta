@@ -13,7 +13,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
-import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette, Globe } from 'lucide-react';
+import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette, Globe, Check } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
 import { toast } from 'sonner';
