@@ -42,8 +42,8 @@ function getContextMessage(planCount: number, friendCount: number, hour: number)
 }
 
 const menuItems = [
-  { key: 'plan', label: 'Make a Plan', icon: CalendarPlus },
-  { key: 'trip', label: 'Plan a Trip', icon: Plane },
+  { key: 'plan', label: 'Create a Plan', icon: CalendarPlus },
+  { key: 'trip', label: 'Create a Trip', icon: Plane },
   { key: 'invite', label: 'Invite Friends', icon: UserPlus },
 ] as const;
 
