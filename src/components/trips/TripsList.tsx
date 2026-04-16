@@ -1023,6 +1023,15 @@ function ProposalTripCard({
                     variant="ghost"
                     size="icon"
                     className="h-5 w-5"
+                    onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+                    title="Share invite link"
+                  >
+                    <Share2 className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
                     disabled={converting}
                     onClick={handleConvertType}
                     title={isVisit ? 'Convert to trip' : 'Convert to visit'}
@@ -1043,6 +1052,15 @@ function ProposalTripCard({
               )}
               {!isCreator && (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+                    title="Share invite link"
+                  >
+                    <Share2 className="h-3 w-3" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
