@@ -1146,6 +1146,16 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         )}
       </DrawerContent>
     </Drawer>
+    {postCreateShare && (
+      <InviteToTripDialog
+        open={!!postCreateShare}
+        onOpenChange={(o) => { if (!o) setPostCreateShare(null); }}
+        proposalId={postCreateShare.proposalId}
+        destination={postCreateShare.destination}
+        proposalType={postCreateShare.type}
+      />
+    )}
+    </>
   );
 }
 
