@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { ACTIVITY_CONFIG, TimeSlot, ActivityType } from '@/types/planner';
+import { ACTIVITY_CONFIG, VIBE_CONFIG, TimeSlot, ActivityType, VibeType, getActivitiesByVibe, getAllVibes, CustomActivity } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeCity, citiesMatch } from '@/lib/locationMatch';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { SlotCalendarPicker, SelectedSlotEntry } from '@/components/plans/SlotCalendarPicker';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GuidedPlanSheetProps {
   open: boolean;
