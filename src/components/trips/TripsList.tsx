@@ -595,6 +595,7 @@ function ProposalTripCard({
   }, [proposal.dates]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rankingsCollapsed, setRankingsCollapsed] = useState(hasVoted);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Derive myRankings from ordered list
   const myRankings = useMemo(() => {
