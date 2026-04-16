@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus } from 'lucide-react';
+import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus, Vote } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -461,6 +461,17 @@ function TripCard({
             <span>{duration} {duration === 1 ? 'day' : 'days'}</span>
           </div>
         </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 shrink-0 gap-1 text-xs"
+          onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+          title="Suggest & vote on activities"
+        >
+          <Vote className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Activities</span>
+        </Button>
 
         <Button
           variant="ghost"
