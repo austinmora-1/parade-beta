@@ -7,7 +7,6 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { getTimezoneAbbreviation, getTimezoneForCity } from '@/lib/timezone';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { MiniConfetti } from '@/components/layout/MiniConfetti';
 
 export function MobileHeader() {
   const { profile } = useCurrentUserProfile();
@@ -40,9 +39,8 @@ export function MobileHeader() {
     <header className="sticky top-0 z-40 flex h-[64px] items-center border-b border-sidebar-border bg-sidebar px-4 md:hidden relative">
       {/* Center: wordmark (absolutely positioned for true center) */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <Link to="/" className="relative flex items-center justify-center leading-none pointer-events-auto">
-          <MiniConfetti />
-          <ParadeWordmark size="md" className="leading-none relative z-10" />
+        <Link to="/" className="flex items-center justify-center leading-none pointer-events-auto">
+          <ParadeWordmark size="md" className="leading-none" />
         </Link>
       </div>
 
