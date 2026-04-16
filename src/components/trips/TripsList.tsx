@@ -1352,6 +1352,16 @@ function ProposalTripCard({
         nonRemovableIds={[proposal.created_by]}
         onAdded={onRefresh}
       />
+
+      {shareOpen && (
+        <InviteToTripDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          proposalId={proposal.id}
+          destination={proposal.destination}
+          proposalType={proposal.proposal_type as 'trip' | 'visit'}
+        />
+      )}
     </>
   );
 }
