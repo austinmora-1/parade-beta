@@ -1,29 +1,21 @@
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
-import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
-import { Friend, TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
+import { Friend } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { X, CalendarPlus, Users, ChevronLeft, ChevronRight, Search, Sparkles, ChevronDown } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Users, Search, Sparkles, ChevronDown, CalendarPlus, Plane } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
+import { getElephantAvatar } from '@/lib/elephantAvatars';
 
-const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
+const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
+const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
 
 interface GroupSchedulerProps {
   friends: Friend[];
   defaultSelectedFriendIds?: string[];
-}
-
-interface FriendAvailability {
-  userId: string;
-  slots: Record<string, Record<TimeSlot, boolean>>;
-  locationByDate: Record<string, { locationStatus: string; tripLocation: string | null }>;
-  homeAddress: string | null;
 }
 
 const getInitials = (name: string) =>
@@ -41,11 +33,10 @@ const getAvatarColor = (name: string) => avatarColors[name.charCodeAt(0) % avata
 function useSuggestedFriends(connectedFriends: Friend[]) {
   const { user } = useAuth();
   const { plans } = usePlannerStore();
-  
+
   return useMemo(() => {
     if (!user?.id || connectedFriends.length === 0) return connectedFriends.slice(0, 5);
-    
-    // Count co-participation frequency from plans
+
     const coCount = new Map<string, number>();
     for (const plan of plans) {
       if (!plan.participants) continue;
@@ -55,14 +46,13 @@ function useSuggestedFriends(connectedFriends: Friend[]) {
         }
       }
     }
-    
-    // Sort connected friends by co-participation, then alphabetically
+
     const scored = connectedFriends.map(f => ({
       friend: f,
       score: f.friendUserId ? (coCount.get(f.friendUserId) || 0) : 0,
     }));
     scored.sort((a, b) => b.score - a.score || a.friend.name.localeCompare(b.friend.name));
-    
+
     return scored.slice(0, 5).map(s => s.friend);
   }, [user?.id, connectedFriends, plans]);
 }
@@ -71,31 +61,28 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
   const connectedFriends = friends.filter(f => f.status === 'connected');
   const [selectedFriends, setSelectedFriends] = useState<Friend[]>([]);
   const [defaultsApplied, setDefaultsApplied] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showChoiceMenu, setShowChoiceMenu] = useState(false);
+  const [quickPlanOpen, setQuickPlanOpen] = useState(false);
+  const [quickTripOpen, setQuickTripOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  // Pre-populate selected friends from defaultSelectedFriendIds
+  // Pre-populate selected friends
   useEffect(() => {
     if (defaultSelectedFriendIds && defaultSelectedFriendIds.length > 0 && !defaultsApplied) {
-      const preSelected = connectedFriends.filter(f => f.friendUserId && defaultSelectedFriendIds.includes(f.friendUserId));
+      const preSelected = connectedFriends.filter(
+        f => f.friendUserId && defaultSelectedFriendIds.includes(f.friendUserId),
+      );
       if (preSelected.length > 0) {
         setSelectedFriends(preSelected);
         setDefaultsApplied(true);
       }
     }
   }, [defaultSelectedFriendIds, connectedFriends, defaultsApplied]);
-  const [friendAvailabilities, setFriendAvailabilities] = useState<FriendAvailability[]>([]);
-  const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [createPlanOpen, setCreatePlanOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{ date: Date; slot: TimeSlot } | null>(null);
-  const { availabilityMap: myAvailabilityMap, plans, homeAddress } = usePlannerStore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
 
   const suggestedFriends = useSuggestedFriends(connectedFriends);
 
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
-
-  // Filter friends for search dropdown (only when actively searching)
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (q.length === 0) return [];
@@ -103,13 +90,11 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
     return connectedFriends.filter(f => !selectedIds.has(f.id) && f.name.toLowerCase().includes(q));
   }, [searchQuery, connectedFriends, selectedFriends]);
 
-  // Suggested friends (excluding already selected)
   const visibleSuggestions = useMemo(() => {
     const selectedIds = new Set(selectedFriends.map(f => f.id));
     return suggestedFriends.filter(f => !selectedIds.has(f.id));
   }, [suggestedFriends, selectedFriends]);
 
-  // Close search dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -119,75 +104,6 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
-
-  // Fetch availability for selected friends
-  useEffect(() => {
-    if (selectedFriends.length === 0) {
-      setFriendAvailabilities([]);
-      return;
-    }
-
-    const fetchAvail = async () => {
-      const userIds = selectedFriends.map(f => f.friendUserId).filter(Boolean) as string[];
-      if (userIds.length === 0) return;
-
-      const startDate = format(days[0], 'yyyy-MM-dd');
-      const endDate = format(days[6], 'yyyy-MM-dd');
-
-      const [{ data }, { data: profileData }] = await Promise.all([
-        supabase
-          .from('availability')
-          .select('*')
-          .in('user_id', userIds)
-          .gte('date', startDate)
-          .lte('date', endDate),
-        supabase
-          .from('profiles')
-          .select('user_id, home_address')
-          .in('user_id', userIds),
-      ]);
-
-      const homeMap = new Map<string, string | null>();
-      for (const p of (profileData || [])) {
-        homeMap.set(p.user_id, p.home_address);
-      }
-
-      const avails: FriendAvailability[] = userIds.map(uid => {
-        const userRows = (data || []).filter(d => d.user_id === uid);
-        const slots: Record<string, Record<TimeSlot, boolean>> = {};
-        const locationByDate: Record<string, { locationStatus: string; tripLocation: string | null }> = {};
-        for (const row of userRows) {
-          slots[row.date] = {
-            'early-morning': row.early_morning ?? true,
-            'late-morning': row.late_morning ?? true,
-            'early-afternoon': row.early_afternoon ?? true,
-            'late-afternoon': row.late_afternoon ?? true,
-            'evening': row.evening ?? true,
-            'late-night': row.late_night ?? true,
-          };
-          locationByDate[row.date] = {
-            locationStatus: row.location_status || 'home',
-            tripLocation: row.trip_location || null,
-          };
-        }
-        return { userId: uid, slots, locationByDate, homeAddress: homeMap.get(uid) || null };
-      });
-
-      setFriendAvailabilities(avails);
-    };
-
-    fetchAvail();
-  }, [selectedFriends, days]);
-
-  const toggleFriend = (friend: Friend) => {
-    setSelectedFriends(prev =>
-      prev.find(f => f.id === friend.id)
-        ? prev.filter(f => f.id !== friend.id)
-        : [...prev, friend]
-    );
-    setSearchQuery('');
-    setIsSearchFocused(false);
-  };
 
   const addFriend = (friend: Friend) => {
     setSelectedFriends(prev => [...prev, friend]);
@@ -199,268 +115,243 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
     setSelectedFriends(prev => prev.filter(f => f.id !== friendId));
   };
 
-  // Get combined availability status for a day/slot
-  const getOverlapStatus = (date: Date, slot: TimeSlot): 'all-free' | 'some-free' | 'none-free' | 'no-data' => {
-    if (selectedFriends.length === 0) return 'no-data';
+  const clearStaged = () => setSelectedFriends([]);
 
-    const dateStr = format(date, 'yyyy-MM-dd');
+  const preSelectedFriends = useMemo(
+    () =>
+      selectedFriends
+        .filter(f => f.friendUserId)
+        .map(f => ({ userId: f.friendUserId!, name: f.name, avatar: f.avatar })),
+    [selectedFriends],
+  );
 
-    const myDay = myAvailabilityMap[dateStr];
-    const myFree = myDay ? myDay.slots[slot] : true;
-    const myBusy = plans.some(p => isSameDay(p.date, date) && p.timeSlot === slot);
-
-    // My effective city for this date
-    const myCity = getEffectiveCity(myDay?.locationStatus || 'home', myDay?.tripLocation || null, homeAddress);
-
-    let freeCount = 0;
-    let totalChecked = 0;
-
-    for (const fa of friendAvailabilities) {
-      totalChecked++;
-      const daySlots = fa.slots[dateStr];
-      const slotFree = !daySlots || daySlots[slot];
-
-      // Check co-location
-      const friendLoc = fa.locationByDate[dateStr];
-      const friendCity = getEffectiveCity(
-        friendLoc?.locationStatus || 'home',
-        friendLoc?.tripLocation || null,
-        fa.homeAddress,
-      );
-      const coLocated = !myCity || !friendCity || citiesMatch(myCity, friendCity);
-
-      if (slotFree && coLocated) freeCount++;
-    }
-
-    const iAmFree = myFree && !myBusy;
-    const allFriendsFree = freeCount === totalChecked;
-    const someFriendsFree = freeCount > 0;
-
-    if (iAmFree && allFriendsFree) return 'all-free';
-    if (iAmFree && someFriendsFree) return 'some-free';
-    return 'none-free';
+  const handleLetsGoClick = () => setShowChoiceMenu(true);
+  const handleChoosePlan = () => {
+    setShowChoiceMenu(false);
+    setQuickPlanOpen(true);
   };
-
-  const handleSlotClick = (date: Date, slot: TimeSlot) => {
-    const status = getOverlapStatus(date, slot);
-    if (status === 'none-free') return;
-    setSelectedSlot({ date, slot });
-    setCreatePlanOpen(true);
+  const handleChooseTrip = () => {
+    setShowChoiceMenu(false);
+    setQuickTripOpen(true);
   };
 
   if (connectedFriends.length === 0) return null;
 
   const showSearchDropdown = isSearchFocused && searchQuery.trim().length > 0 && searchResults.length > 0;
+  const hasStaged = selectedFriends.length > 0;
 
   return (
-    <Collapsible defaultOpen={false} className="group/hang">
-    <div className="rounded-xl border border-border bg-card p-3 shadow-soft md:p-4">
-      <CollapsibleTrigger className="flex w-full items-center justify-between">
-        <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
-          <Users className="h-4 w-4 text-primary" />
-          Schedule a Hang
-        </h2>
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/hang:rotate-180" />
-      </CollapsibleTrigger>
+    <>
+      <Collapsible defaultOpen={false} className="group/hang">
+        <div className="rounded-xl border border-border bg-card p-3 shadow-soft md:p-4">
+          <CollapsibleTrigger className="flex w-full items-center justify-between">
+            <h2 className="flex items-center gap-2 font-display text-sm font-semibold">
+              <Users className="h-4 w-4 text-primary" />
+              Plan with Friends
+            </h2>
+            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/hang:rotate-180" />
+          </CollapsibleTrigger>
 
-      <CollapsibleContent className="mt-2.5">
-
-      {/* Selected friends chips */}
-      {selectedFriends.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          {selectedFriends.map(friend => (
-            <span
-              key={friend.id}
-              className="flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-2.5 py-1 text-xs font-medium"
-            >
-              <Avatar className="h-4 w-4">
-                <AvatarImage src={friend.avatar} />
-                <AvatarFallback className="text-[7px] bg-primary-foreground/20 text-primary-foreground">
-                  {getInitials(friend.name)}
-                </AvatarFallback>
-              </Avatar>
-              {friend.name.split(' ')[0]}
-              <button onClick={() => removeFriend(friend.id)} className="hover:opacity-70 transition-opacity">
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Search input */}
-      <div className="relative" ref={searchRef}>
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search friends to schedule with..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={() => setIsSearchFocused(true)}
-          className="pl-8 h-8 text-xs"
-        />
-
-        {/* Search results dropdown (only when typing) */}
-        {showSearchDropdown && (
-          <div className="absolute z-20 mt-1 w-full rounded-lg border border-border bg-popover shadow-md overflow-hidden">
-            <div className="max-h-48 overflow-y-auto py-1">
-              {searchResults.map(friend => (
-                <button
-                  key={friend.id}
-                  onClick={() => addFriend(friend)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted/60 transition-colors"
-                >
-                  <Avatar className="h-7 w-7">
-                    <AvatarImage src={friend.avatar} />
-                    <AvatarFallback className={cn("text-[9px]", getAvatarColor(friend.name))}>
-                      {getInitials(friend.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs font-medium truncate">{friend.name}</span>
-                  {friend.isPodMember && (
-                    <span className="ml-auto text-[9px] text-primary font-medium">Pod</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Suggested friends (always visible below search) */}
-      {visibleSuggestions.length > 0 && selectedFriends.length === 0 && (
-        <div className="mt-2.5">
-          <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-            <Sparkles className="h-3 w-3" />
-            Suggested
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {visibleSuggestions.map(friend => (
-              <button
-                key={friend.id}
-                onClick={() => addFriend(friend)}
-                className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
-              >
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={friend.avatar} />
-                  <AvatarFallback className={cn("text-[8px]", getAvatarColor(friend.name))}>
-                    {getInitials(friend.name)}
-                  </AvatarFallback>
-                </Avatar>
-                {friend.name.split(' ')[0]}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Availability overlay grid */}
-      {selectedFriends.length > 0 && (
-        <div className="space-y-2">
-          {/* Week navigation */}
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setWeekStart(addDays(weekStart, -7))}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            <span className="text-xs font-medium text-muted-foreground">
-              {format(days[0], 'MMM d')} – {format(days[6], 'MMM d')}
-            </span>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setWeekStart(addDays(weekStart, 7))}>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          {/* Grid */}
-          <div className="overflow-x-auto -mx-1 px-1">
-            <table className="w-full border-collapse text-[10px]">
-              <thead>
-                <tr>
-                  <th className="w-16 p-1 text-left text-muted-foreground font-normal" />
-                  {days.map(day => (
-                    <th key={day.toISOString()} className={cn(
-                      "p-1 text-center font-medium min-w-[40px]",
-                      isToday(day) && "text-primary"
-                    )}>
-                      <div>{format(day, 'EEE')}</div>
-                      <div className={cn("text-sm", isToday(day) && "font-bold")}>{format(day, 'd')}</div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(Object.keys(TIME_SLOT_LABELS) as TimeSlot[]).map(slot => (
-                  <tr key={slot}>
-                    <td className="p-1 text-muted-foreground whitespace-nowrap">
-                      {TIME_SLOT_LABELS[slot].time}
-                    </td>
-                    {days.map(day => {
-                      const status = getOverlapStatus(day, slot);
-                      return (
-                        <td key={day.toISOString()} className="p-0.5">
-                          <button
-                            onClick={() => handleSlotClick(day, slot)}
-                            disabled={status === 'none-free' || status === 'no-data'}
-                            className={cn(
-                              "w-full h-6 rounded transition-all text-[9px] font-medium",
-                              status === 'all-free' && "bg-availability-available/30 hover:bg-availability-available/50 text-availability-available cursor-pointer",
-                              status === 'some-free' && "bg-availability-partial/20 hover:bg-availability-partial/30 text-availability-partial cursor-pointer",
-                              status === 'none-free' && "bg-muted/40 text-muted-foreground/40 cursor-not-allowed",
-                              status === 'no-data' && "bg-transparent"
-                            )}
-                          >
-                            {status === 'all-free' && '✓'}
-                            {status === 'some-free' && '~'}
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </tr>
+          <CollapsibleContent className="mt-2.5">
+            {/* Selected friends chips */}
+            {hasStaged && (
+              <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                {selectedFriends.map(friend => (
+                  <span
+                    key={friend.id}
+                    className="flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground"
+                  >
+                    <Avatar className="h-4 w-4">
+                      <AvatarImage src={friend.avatar || getElephantAvatar(friend.name)} />
+                      <AvatarFallback className="bg-primary-foreground/20 text-[7px] text-primary-foreground">
+                        {getInitials(friend.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {friend.name.split(' ')[0]}
+                    <button
+                      onClick={() => removeFriend(friend.id)}
+                      className="transition-opacity hover:opacity-70"
+                      aria-label={`Remove ${friend.name}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            )}
 
-          {/* Legend */}
-          <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <div className="h-2.5 w-2.5 rounded-sm bg-availability-available/30" />
-              All free
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="h-2.5 w-2.5 rounded-sm bg-availability-partial/20" />
-              Some free
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="h-2.5 w-2.5 rounded-sm bg-muted/40" />
-              Unavailable
-            </div>
-          </div>
+            {/* Search input + Let's Go */}
+            <div className="relative flex items-center gap-2" ref={searchRef}>
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder={hasStaged ? 'Add more…' : 'Search friends to plan with…'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  className="h-8 pl-8 text-xs"
+                />
 
-          {/* Create plan button */}
-          <Button
-            size="sm"
-            className="w-full gap-1.5 text-xs"
-            onClick={() => {
-              setSelectedSlot(null);
-              setCreatePlanOpen(true);
-            }}
-          >
-            <CalendarPlus className="h-3.5 w-3.5" />
-            Create Plan with {selectedFriends.length} {selectedFriends.length === 1 ? 'friend' : 'friends'}
-          </Button>
+                {showSearchDropdown && (
+                  <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-border bg-popover shadow-md">
+                    <div className="max-h-48 overflow-y-auto py-1">
+                      {searchResults.map(friend => (
+                        <button
+                          key={friend.id}
+                          onClick={() => addFriend(friend)}
+                          className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/60"
+                        >
+                          <Avatar className="h-7 w-7">
+                            <AvatarImage src={friend.avatar || getElephantAvatar(friend.name)} />
+                            <AvatarFallback className={cn('text-[9px]', getAvatarColor(friend.name))}>
+                              {getInitials(friend.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate text-xs font-medium">{friend.name}</span>
+                          {friend.isPodMember && (
+                            <span className="ml-auto text-[9px] font-medium text-primary">Pod</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {hasStaged && (
+                <div className="relative">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleLetsGoClick}
+                    className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Let's Go
+                  </motion.button>
+
+                  {/* Choice menu popover */}
+                  <AnimatePresence>
+                    {showChoiceMenu && (
+                      <>
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowChoiceMenu(false)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-0 top-full z-50 mt-1.5 flex w-56 flex-col gap-1 overflow-hidden rounded-xl border border-border bg-popover p-1.5 shadow-lg"
+                        >
+                          <motion.button
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.05 }}
+                            onClick={handleChoosePlan}
+                            className="group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-all duration-150 hover:bg-accent"
+                          >
+                            <motion.div
+                              whileHover={{ scale: 1.1, rotate: -6 }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/10"
+                            >
+                              <CalendarPlus className="h-4 w-4 text-primary" />
+                            </motion.div>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
+                                Create a Plan
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">Find a time to meet up</p>
+                            </div>
+                          </motion.button>
+                          <motion.button
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                            onClick={handleChooseTrip}
+                            className="group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-all duration-150 hover:bg-accent"
+                          >
+                            <motion.div
+                              whileHover={{ scale: 1.1, rotate: 6 }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-chart-4/20 to-chart-4/5 ring-1 ring-chart-4/10"
+                            >
+                              <Plane className="h-4 w-4 text-chart-4" />
+                            </motion.div>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground transition-colors group-hover:text-chart-4">
+                                Plan a Trip
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">Find the best weekend</p>
+                            </div>
+                          </motion.button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
+
+            {/* Suggested friends */}
+            {visibleSuggestions.length > 0 && !hasStaged && (
+              <div className="mt-2.5">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
+                  Suggested
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {visibleSuggestions.map(friend => (
+                    <button
+                      key={friend.id}
+                      onClick={() => addFriend(friend)}
+                      className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/80"
+                    >
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage src={friend.avatar || getElephantAvatar(friend.name)} />
+                        <AvatarFallback className={cn('text-[8px]', getAvatarColor(friend.name))}>
+                          {getInitials(friend.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {friend.name.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CollapsibleContent>
         </div>
-      )}
-      </CollapsibleContent>
+      </Collapsible>
 
-      {createPlanOpen && (
+      {quickPlanOpen && (
         <Suspense fallback={null}>
-          <CreatePlanDialog
-            open={createPlanOpen}
-            onOpenChange={setCreatePlanOpen}
-            defaultDate={selectedSlot?.date}
+          <GuidedPlanSheet
+            open={quickPlanOpen}
+            onOpenChange={(open) => {
+              setQuickPlanOpen(open);
+              if (!open) clearStaged();
+            }}
+            preSelectedFriends={preSelectedFriends}
           />
         </Suspense>
       )}
-    </div>
-    </Collapsible>
+
+      {quickTripOpen && (
+        <Suspense fallback={null}>
+          <GuidedTripSheet
+            open={quickTripOpen}
+            onOpenChange={(open) => {
+              setQuickTripOpen(open);
+              if (!open) clearStaged();
+            }}
+            preSelectedFriends={preSelectedFriends}
+          />
+        </Suspense>
+      )}
+    </>
   );
 }
