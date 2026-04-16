@@ -97,6 +97,55 @@ export function AddParticipantDialog({
       )
     : friends;
 
+  const notifyAdded = async (friendUserId: string) => {
+    if (!user) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) return;
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+      // Resolve trip context (location + dates) for nicer notification copy
+      let trip_location: string | null = null;
+      let trip_dates: string | null = null;
+      if (targetType === 'trip') {
+        const { data: trip } = await supabase
+          .from('trips')
+          .select('location, start_date, end_date')
+          .eq('id', targetId)
+          .single();
+        if (trip) {
+          trip_location = trip.location;
+          try {
+            const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            trip_dates = `${fmt(trip.start_date)} – ${fmt(trip.end_date)}`;
+          } catch { /* ignore */ }
+        }
+      } else {
+        const { data: prop } = await supabase
+          .from('trip_proposals')
+          .select('destination')
+          .eq('id', targetId)
+          .single();
+        if (prop) trip_location = prop.destination;
+      }
+
+      fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'trip',
+          creator_id: user.id,
+          participant_ids: [friendUserId],
+          trip_location,
+          trip_dates,
+        }),
+      }).catch(() => {});
+    } catch {
+      // best-effort notification, ignore failures
+    }
+  };
+
   const handleAdd = async (friend: Friend) => {
     setAdding(friend.user_id);
     try {
@@ -136,6 +185,9 @@ export function AddParticipantDialog({
           }
         }
       }
+
+      // Fire-and-forget notification (push + email)
+      notifyAdded(friend.user_id);
 
       setAddedIds(prev => new Set(prev).add(friend.user_id));
       toast.success(`Added ${friend.display_name}`);
