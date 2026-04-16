@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { getCompactPlanTitle, getPlanDisplayTitle } from '@/lib/planTitle';
 import { getTimezoneAbbreviation } from '@/lib/timezone';
 import { Link, useNavigate } from 'react-router-dom';
@@ -48,10 +48,11 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot, Plan } from '@/types/planner';
 import { toast } from 'sonner';
-import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
 import { cn } from '@/lib/utils';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
-import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+
+const ImageCropDialog = lazy(() => import('@/components/profile/ImageCropDialog'));
+const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { CalendarCheck } from 'lucide-react';
@@ -527,23 +528,27 @@ export default function Profile() {
       />
 
       {/* Image Crop Dialog */}
-      <ImageCropDialog
-        open={cropDialogOpen}
-        onOpenChange={(open) => {
-          setCropDialogOpen(open);
-          if (!open && imageToCrop) {
-            URL.revokeObjectURL(imageToCrop);
-            setImageToCrop('');
-          }
-        }}
-        imageSrc={imageToCrop}
-        onCropComplete={handleCropComplete}
-        aspect={cropMode === 'cover' ? 4 : 1}
-        circular={cropMode === 'avatar'}
-        title={cropMode === 'cover' ? 'Crop Cover Photo' : 'Crop Profile Picture'}
-        outputWidth={cropMode === 'cover' ? 1600 : 1024}
-        outputHeight={cropMode === 'cover' ? 400 : undefined}
-      />
+      {cropDialogOpen && (
+        <Suspense fallback={null}>
+          <ImageCropDialog
+            open={cropDialogOpen}
+            onOpenChange={(open) => {
+              setCropDialogOpen(open);
+              if (!open && imageToCrop) {
+                URL.revokeObjectURL(imageToCrop);
+                setImageToCrop('');
+              }
+            }}
+            imageSrc={imageToCrop}
+            onCropComplete={handleCropComplete}
+            aspect={cropMode === 'cover' ? 4 : 1}
+            circular={cropMode === 'avatar'}
+            title={cropMode === 'cover' ? 'Crop Cover Photo' : 'Crop Profile Picture'}
+            outputWidth={cropMode === 'cover' ? 1600 : 1024}
+            outputHeight={cropMode === 'cover' ? 400 : undefined}
+          />
+        </Suspense>
+      )}
 
       {/* Profile Header */}
       <Card className="overflow-hidden">
@@ -868,11 +873,15 @@ export default function Profile() {
       </Collapsible>
 
       {/* Edit Plan Dialog */}
-      <CreatePlanDialog
-        open={editDialogOpen}
-        onOpenChange={handleEditDialogClose}
-        editPlan={editingPlan}
-      />
+      {editDialogOpen && (
+        <Suspense fallback={null}>
+          <CreatePlanDialog
+            open={editDialogOpen}
+            onOpenChange={handleEditDialogClose}
+            editPlan={editingPlan}
+          />
+        </Suspense>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>

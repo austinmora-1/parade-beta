@@ -1,13 +1,14 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarPlus, X, Sparkles, Search, Plane } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { GuidedPlanSheet } from '@/components/plans/GuidedPlanSheet';
-import { GuidedTripSheet } from '@/components/trips/GuidedTripSheet';
 import { usePlannerStore } from '@/stores/plannerStore';
+
+const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
+const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
 
 export interface StagedFriend {
   userId: string;
@@ -284,23 +285,31 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
         </AnimatePresence>
       </div>
 
-      <GuidedPlanSheet
-        open={quickPlanOpen}
-        onOpenChange={(open) => {
-          setQuickPlanOpen(open);
-          if (!open) onClear();
-        }}
-        preSelectedFriends={stagedFriends}
-      />
+      {quickPlanOpen && (
+        <Suspense fallback={null}>
+          <GuidedPlanSheet
+            open={quickPlanOpen}
+            onOpenChange={(open) => {
+              setQuickPlanOpen(open);
+              if (!open) onClear();
+            }}
+            preSelectedFriends={stagedFriends}
+          />
+        </Suspense>
+      )}
 
-      <GuidedTripSheet
-        open={quickTripOpen}
-        onOpenChange={(open) => {
-          setQuickTripOpen(open);
-          if (!open) onClear();
-        }}
-        preSelectedFriends={stagedFriends}
-      />
+      {quickTripOpen && (
+        <Suspense fallback={null}>
+          <GuidedTripSheet
+            open={quickTripOpen}
+            onOpenChange={(open) => {
+              setQuickTripOpen(open);
+              if (!open) onClear();
+            }}
+            preSelectedFriends={stagedFriends}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

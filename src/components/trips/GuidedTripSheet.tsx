@@ -1229,3 +1229,4 @@ function WeekendCard({
     </motion.button>
   );
 }
+export default GuidedTripSheet;

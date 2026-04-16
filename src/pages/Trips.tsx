@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { TripsList } from '@/components/trips/TripsList';
 
 import { MissingReturnDialog, PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 import { TripConflictDialog, TripConflict } from '@/components/trips/TripConflictDialog';
-import { GuidedTripSheet } from '@/components/trips/GuidedTripSheet';
+const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,16 +82,20 @@ export default function Trips() {
         }}
       />
 
-      <GuidedTripSheet
-        open={guidedSheetOpen}
-        onOpenChange={(open) => {
-          setGuidedSheetOpen(open);
-          if (!open) {
-            setTripsRefreshKey(k => k + 1);
-            loadProfileAndAvailability();
-          }
-        }}
-      />
+      {guidedSheetOpen && (
+        <Suspense fallback={null}>
+          <GuidedTripSheet
+            open={guidedSheetOpen}
+            onOpenChange={(open) => {
+              setGuidedSheetOpen(open);
+              if (!open) {
+                setTripsRefreshKey(k => k + 1);
+                loadProfileAndAvailability();
+              }
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

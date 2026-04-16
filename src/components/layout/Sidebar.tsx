@@ -11,8 +11,9 @@ import { cn } from '@/lib/utils';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useState } from 'react';
-import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+import { useState, lazy, Suspense } from 'react';
+
+const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 
 const navItems = [
   { path: '/',             icon: LayoutDashboard, label: 'Home'         },
@@ -125,7 +126,11 @@ export function Sidebar() {
         </div>
       </aside>
 
-      <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
+      {createPlanOpen && (
+        <Suspense fallback={null}>
+          <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
+        </Suspense>
+      )}
     </>
   );
 }

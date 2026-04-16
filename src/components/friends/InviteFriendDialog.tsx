@@ -367,3 +367,4 @@ export function InviteFriendDialog({ open, onOpenChange }: InviteFriendDialogPro
     </Dialog>
   );
 }
+export default InviteFriendDialog;

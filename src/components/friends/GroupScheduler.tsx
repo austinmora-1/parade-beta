@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
 import { Friend, TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,8 +10,9 @@ import { X, CalendarPlus, Users, ChevronLeft, ChevronRight, Search, Sparkles, Ch
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
 import { useAuth } from '@/hooks/useAuth';
+
+const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 
 interface GroupSchedulerProps {
   friends: Friend[];
@@ -450,11 +451,15 @@ export function GroupScheduler({ friends, defaultSelectedFriendIds }: GroupSched
       )}
       </CollapsibleContent>
 
-      <CreatePlanDialog
-        open={createPlanOpen}
-        onOpenChange={setCreatePlanOpen}
-        defaultDate={selectedSlot?.date}
-      />
+      {createPlanOpen && (
+        <Suspense fallback={null}>
+          <CreatePlanDialog
+            open={createPlanOpen}
+            onOpenChange={setCreatePlanOpen}
+            defaultDate={selectedSlot?.date}
+          />
+        </Suspense>
+      )}
     </div>
     </Collapsible>
   );

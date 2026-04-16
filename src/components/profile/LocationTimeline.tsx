@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { format, addDays, isToday as isDateToday, differenceInDays, getMonth } from 'date-fns';
 import { Home, Plane, MapPin, Plus, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { LocationStatus } from '@/types/planner';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AddTripDialog, TripData } from './AddTripDialog';
+import { type TripData } from './AddTripDialog';
+
+const AddTripDialog = lazy(() => import('./AddTripDialog'));
 import { toast } from 'sonner';
 import {
   Popover,
@@ -515,12 +517,16 @@ export function LocationTimeline() {
         </Button>
       </div>
 
-      <AddTripDialog 
-        open={addTripDialogOpen} 
-        onOpenChange={setAddTripDialogOpen}
-        onTripAdded={handleTripAdded}
-        editingTrip={editingTrip}
-      />
+      {addTripDialogOpen && (
+        <Suspense fallback={null}>
+          <AddTripDialog 
+            open={addTripDialogOpen} 
+            onOpenChange={setAddTripDialogOpen}
+            onTripAdded={handleTripAdded}
+            editingTrip={editingTrip}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

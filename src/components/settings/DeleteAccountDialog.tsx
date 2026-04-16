@@ -110,3 +110,4 @@ export function DeleteAccountDialog() {
     </AlertDialog>
   );
 }
+export default DeleteAccountDialog;

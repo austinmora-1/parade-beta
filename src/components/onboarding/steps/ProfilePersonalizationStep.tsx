@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, lazy, Suspense } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { OnboardingData } from '../OnboardingWizard';
 import { Camera, Navigation, Loader2 } from 'lucide-react';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
-import { ImageCropDialog } from '@/components/profile/ImageCropDialog';
 import { supabase } from '@/integrations/supabase/client';
+
+const ImageCropDialog = lazy(() => import('@/components/profile/ImageCropDialog'));
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -215,14 +216,18 @@ export function ProfilePersonalizationStep({ data, updateData }: ProfilePersonal
       <input ref={coverInputRef} type="file" accept="image/*" className="hidden"
         onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'cover')} />
 
-      <ImageCropDialog
-        open={cropDialogOpen}
-        onOpenChange={setCropDialogOpen}
-        imageSrc={imageToCrop}
-        onCropComplete={handleCropComplete}
-        aspect={cropMode === 'avatar' ? 1 : 3}
-        circular={cropMode === 'avatar'}
-      />
+      {cropDialogOpen && (
+        <Suspense fallback={null}>
+          <ImageCropDialog
+            open={cropDialogOpen}
+            onOpenChange={setCropDialogOpen}
+            imageSrc={imageToCrop}
+            onCropComplete={handleCropComplete}
+            aspect={cropMode === 'avatar' ? 1 : 3}
+            circular={cropMode === 'avatar'}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

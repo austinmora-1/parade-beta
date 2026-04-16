@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,7 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
-import { CreatePlanDialog } from '@/components/plans/CreatePlanDialog';
+const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 import { usePods } from '@/hooks/usePods';
 import { SlotCalendarPicker } from '@/components/plans/SlotCalendarPicker';
 import { Users } from 'lucide-react';
@@ -935,18 +935,22 @@ export function QuickPlanSheet({
       </Drawer>
 
       {/* Escape hatch to full CreatePlanDialog */}
-      <CreatePlanDialog
-        open={showMoreOptions}
-        onOpenChange={(v) => { if (!v) setShowMoreOptions(false); }}
-        defaultDate={selectedDate || undefined}
-        defaultActivity={activity || undefined}
-        defaultTimeSlot={timeSlot || undefined}
-        defaultLocation={location || undefined}
-        defaultNotes={note || undefined}
-        defaultStatus={effectiveStatus}
-        defaultFriendUserIds={selectedFriends.map(f => f.userId)}
-        defaultTitle={title.trim() || undefined}
-      />
+      {showMoreOptions && (
+        <Suspense fallback={null}>
+          <CreatePlanDialog
+            open={showMoreOptions}
+            onOpenChange={(v) => { if (!v) setShowMoreOptions(false); }}
+            defaultDate={selectedDate || undefined}
+            defaultActivity={activity || undefined}
+            defaultTimeSlot={timeSlot || undefined}
+            defaultLocation={location || undefined}
+            defaultNotes={note || undefined}
+            defaultStatus={effectiveStatus}
+            defaultFriendUserIds={selectedFriends.map(f => f.userId)}
+            defaultTitle={title.trim() || undefined}
+          />
+        </Suspense>
+      )}
     </>
   );
 }
