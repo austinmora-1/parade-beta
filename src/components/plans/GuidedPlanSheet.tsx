@@ -178,12 +178,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setFriendMultiDayAvail({});
       setChosenFriends([]);
       setFriendSearch('');
+      setSoloMode(false);
     }
   }, [open, needsFriendStep]);
 
-  // Fetch availability + best slots when moving to time step
+  // Fetch availability + best slots when moving to time step (only when friends selected)
   const fetchBestSlots = useCallback(async () => {
-    if (effectiveFriends.length === 0) return;
+    if (effectiveFriends.length === 0) { setLoadingSlots(false); return; }
     setLoadingSlots(true);
 
     const userIds = effectiveFriends.map(f => f.userId);
@@ -521,7 +522,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   // When step changes to 'time', fetch best slots (covers full 180-day window)
   useEffect(() => {
     if (step === 'time') {
-      fetchBestSlots();
+      if (hasFriends) {
+        fetchBestSlots();
+      } else {
+        // Solo mode: go straight to calendar
+        setShowCalendar(true);
+        setLoadingSlots(false);
+      }
     }
   }, [step]);
 
@@ -589,8 +596,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const activityEmoji = activity ? (SUGGESTED_ACTIVITIES.find(a => a.id === activity)?.emoji || '📅') : '';
 
   const autoTitle = activity
-    ? `${activityLabel} with ${friendNames.join(', ')}`
-    : `Hang with ${friendNames.join(', ')}`;
+    ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : activityLabel)
+    : (hasFriends ? `Hang with ${friendNames.join(', ')}` : 'Solo Plan');
 
   const handleSubmit = async () => {
     if (!activity || selectedSlots.length === 0) return;
@@ -598,53 +605,76 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     setSending(true);
 
     try {
-      const firstFriend = effectiveFriends[0];
       const hasMultipleOptions = selectedSlots.length > 1;
 
-      await proposePlan({
-        recipientFriendId: firstFriend.userId,
-        activity: activity,
-        date: primarySlot.date,
-        timeSlot: primarySlot.slot,
-        title: autoTitle,
-      });
+      if (hasFriends) {
+        // Plan with friends - use proposePlan flow
+        const firstFriend = effectiveFriends[0];
+        await proposePlan({
+          recipientFriendId: firstFriend.userId,
+          activity: activity,
+          date: primarySlot.date,
+          timeSlot: primarySlot.slot,
+          title: autoTitle,
+        });
 
-      // Get the newly created plan
-      const { data: latestPlan } = await supabase
-        .from('plans')
-        .select('id')
-        .eq('user_id', userId || '')
-        .eq('status', 'proposed')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        // Get the newly created plan
+        const { data: latestPlan } = await supabase
+          .from('plans')
+          .select('id')
+          .eq('user_id', userId || '')
+          .eq('status', 'proposed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-      if (latestPlan) {
-        // Add additional participants
-        if (effectiveFriends.length > 1) {
-          const additionalParticipants = effectiveFriends.slice(1).map(f => ({
-            plan_id: latestPlan.id,
-            friend_id: f.userId,
-            status: 'invited',
-            role: 'participant',
-          }));
-          await supabase.from('plan_participants').insert(additionalParticipants);
+        if (latestPlan) {
+          if (effectiveFriends.length > 1) {
+            const additionalParticipants = effectiveFriends.slice(1).map(f => ({
+              plan_id: latestPlan.id,
+              friend_id: f.userId,
+              status: 'invited',
+              role: 'participant',
+            }));
+            await supabase.from('plan_participants').insert(additionalParticipants);
+          }
+
+          if (hasMultipleOptions) {
+            await supabase.from('plans').update({
+              proposal_status: 'voting',
+            }).eq('id', latestPlan.id);
+
+            const proposalOptions = selectedSlots.map((s, i) => ({
+              plan_id: latestPlan.id,
+              date: `${format(s.date, 'yyyy-MM-dd')}T12:00:00+00:00`,
+              time_slot: s.slot,
+              sort_order: i,
+            }));
+            await supabase.from('plan_proposal_options').insert(proposalOptions);
+          }
         }
 
-        // If multiple time options selected, create proposal options for voting
-        if (hasMultipleOptions) {
-          await supabase.from('plans').update({
-            proposal_status: 'voting',
-          }).eq('id', latestPlan.id);
+        toast.success(`Plan sent to ${friendNamesStr}! 🎉`);
+      } else {
+        // Solo plan - create confirmed plan directly
+        const dateStr = format(primarySlot.date, 'yyyy-MM-dd');
+        const noonUtcDate = `${dateStr}T12:00:00+00:00`;
 
-          const proposalOptions = selectedSlots.map((s, i) => ({
-            plan_id: latestPlan.id,
-            date: `${format(s.date, 'yyyy-MM-dd')}T12:00:00+00:00`,
-            time_slot: s.slot,
-            sort_order: i,
-          }));
-          await supabase.from('plan_proposal_options').insert(proposalOptions);
-        }
+        await supabase.from('plans').insert({
+          user_id: userId,
+          title: autoTitle,
+          activity: activity,
+          date: noonUtcDate,
+          time_slot: primarySlot.slot,
+          duration: 60,
+          status: 'confirmed',
+          feed_visibility: 'private',
+          source_timezone: usePlannerStore.getState().userTimezone,
+        } as any);
+
+        // Reload data
+        await usePlannerStore.getState().loadPlans();
+        toast.success('Plan created! 🎉');
       }
 
       confetti({
@@ -654,7 +684,6 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
         scalar: 0.9,
       });
-      toast.success(`Plan sent to ${friendNamesStr}! 🎉`);
       onOpenChange(false);
     } catch (err) {
       console.error('Failed to create plan:', err);
@@ -667,9 +696,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const stepTitle = step === 'friends'
     ? 'Who do you want to hang with?'
     : step === 'activity'
-      ? `What do you want to do with ${friendNamesStr}?`
+      ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
       : step === 'time'
-        ? `When works for ${activityLabel.toLowerCase()}?`
+        ? (hasFriends ? `When works for ${activityLabel.toLowerCase()}?` : `When do you want to do ${activityLabel.toLowerCase()}?`)
         : 'Look good?';
 
   const firstStep = needsFriendStep ? 'friends' : 'activity';
