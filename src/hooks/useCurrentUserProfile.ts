@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { formatDisplayName } from '@/lib/formatName';
 
 interface CurrentUserProfile {
   display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   avatar_url: string | null;
   location_status: string | null;
   timezone: string | null;
@@ -54,7 +57,7 @@ export function useCurrentUserProfile() {
       setIsLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, avatar_url, location_status, timezone, home_address')
+        .select('display_name, first_name, last_name, avatar_url, location_status, timezone, home_address')
         .eq('user_id', session.user.id)
         .single();
 
@@ -68,7 +71,7 @@ export function useCurrentUserProfile() {
   const updateProfile = useCallback((updates: Partial<CurrentUserProfile>) => {
     const newProfile = globalProfile 
       ? { ...globalProfile, ...updates }
-      : { display_name: null, avatar_url: null, location_status: null, timezone: null, home_address: null, ...updates };
+      : { display_name: null, first_name: null, last_name: null, avatar_url: null, location_status: null, timezone: null, home_address: null, ...updates };
     notifyListeners(newProfile);
   }, []);
 
@@ -78,12 +81,18 @@ export function useCurrentUserProfile() {
 
     const { data } = await supabase
       .from('profiles')
-      .select('display_name, avatar_url, location_status, timezone, home_address')
+        .select('display_name, first_name, last_name, avatar_url, location_status, timezone, home_address')
       .eq('user_id', session.user.id)
       .single();
 
     notifyListeners(data);
   }, [session?.user]);
 
-  return { profile, isLoading, updateProfile, refetchProfile };
+  const formattedName = profile ? formatDisplayName({
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    displayName: profile.display_name,
+  }) : null;
+
+  return { profile, formattedName, isLoading, updateProfile, refetchProfile };
 }
