@@ -174,7 +174,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                     onFocus={() => searchQuery.trim() && setShowResults(true)}
                     onBlur={() => setTimeout(() => setShowResults(false), 200)}
                     placeholder="Add more…"
-                    className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 outline-none"
+                    className="w-full bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
                   />
                 </div>
 
