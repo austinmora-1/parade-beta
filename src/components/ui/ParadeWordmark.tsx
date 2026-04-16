@@ -5,7 +5,7 @@ interface ParadeWordmarkProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) {
+export function ParadeWordmark({ className, size = 'xl' }: ParadeWordmarkProps) {
   const sizeClasses = {
     sm: 'text-xl',
     md: 'text-2xl',
@@ -16,12 +16,12 @@ export function ParadeWordmark({ className, size = 'md' }: ParadeWordmarkProps) 
   return (
     <span
       className={cn(
-        'parade-wordmark tracking-wide text-primary',
+        'parade-wordmark tracking-wide text-primary leading-none',
         sizeClasses[size],
         className
       )}
     >
-      parade
+      p
     </span>
   );
 }
