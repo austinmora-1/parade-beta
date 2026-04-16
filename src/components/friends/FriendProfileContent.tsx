@@ -548,7 +548,38 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
 
         {availabilityOpen && (
           <div className="px-4 pb-4 md:px-6 md:pb-6">
-            {availability.length === 0 ? (
+            {!profile.show_availability ? (
+              <div className="py-6 text-center space-y-3">
+                <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                  <EyeOff className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Availability is private</p>
+                  <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                    {friendFormattedName || 'This friend'} hasn't shared their availability. You can ask them to share it with you.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={availabilityRequested ? 'outline' : 'default'}
+                  className="gap-1.5 text-xs h-8"
+                  disabled={requestingAvailability || availabilityRequested}
+                  onClick={handleRequestAvailability}
+                >
+                  {availabilityRequested ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      Request sent
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-3.5 w-3.5" />
+                      {requestingAvailability ? 'Sending…' : 'Request availability'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : availability.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-3xl mb-2">📅</p>
                 <p className="text-sm text-muted-foreground">
