@@ -23,6 +23,7 @@ import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { useAuth } from '@/hooks/useAuth';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
+import { InviteToTripDialog } from './InviteToTripDialog';
 
 interface PreSelectedFriend {
   userId: string;
@@ -122,6 +123,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
   const [selectedWeekends, setSelectedWeekends] = useState<WeekendOption[]>([]);
    const [destination, setDestination] = useState('');
    const [sending, setSending] = useState(false);
+   const [postCreateShare, setPostCreateShare] = useState<{ proposalId: string; destination: string | null; type: 'trip' | 'visit' } | null>(null);
    const [monthStats, setMonthStats] = useState<Record<string, { freeWeekends: number; totalWeekends: number; tripConflicts: number }>>({}); 
    const [loadingMonthStats, setLoadingMonthStats] = useState(false);
    const [proposalType, setProposalType] = useState<ProposalType>('trip');
@@ -537,6 +539,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         ? `Visit options shared with ${friendNamesStr}! 🏠`
         : `Trip options shared with ${friendNamesStr}! ✈️`
       );
+      setPostCreateShare({ proposalId: proposal.id, destination: destination || null, type: proposalType });
       onOpenChange(false);
     } catch (err) {
       console.error('Failed to create trip proposal:', err);
@@ -605,6 +608,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
           : isVisit ? 'Your visit options' : isSoloTrip ? 'Your trip' : 'Your trip options';
 
   return (
+    <>
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className="max-h-[90vh]"
@@ -1143,6 +1147,16 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         )}
       </DrawerContent>
     </Drawer>
+    {postCreateShare && (
+      <InviteToTripDialog
+        open={!!postCreateShare}
+        onOpenChange={(o) => { if (!o) setPostCreateShare(null); }}
+        proposalId={postCreateShare.proposalId}
+        destination={postCreateShare.destination}
+        proposalType={postCreateShare.type}
+      />
+    )}
+    </>
   );
 }
 

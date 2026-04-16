@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus, Vote } from 'lucide-react';
+import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus, Vote, Share2 } from 'lucide-react';
+import { InviteToTripDialog } from './InviteToTripDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -594,6 +595,7 @@ function ProposalTripCard({
   }, [proposal.dates]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rankingsCollapsed, setRankingsCollapsed] = useState(hasVoted);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Derive myRankings from ordered list
   const myRankings = useMemo(() => {
@@ -1022,6 +1024,15 @@ function ProposalTripCard({
                     variant="ghost"
                     size="icon"
                     className="h-5 w-5"
+                    onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+                    title="Share invite link"
+                  >
+                    <Share2 className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
                     disabled={converting}
                     onClick={handleConvertType}
                     title={isVisit ? 'Convert to trip' : 'Convert to visit'}
@@ -1042,6 +1053,15 @@ function ProposalTripCard({
               )}
               {!isCreator && (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+                    title="Share invite link"
+                  >
+                    <Share2 className="h-3 w-3" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1332,6 +1352,16 @@ function ProposalTripCard({
         nonRemovableIds={[proposal.created_by]}
         onAdded={onRefresh}
       />
+
+      {shareOpen && (
+        <InviteToTripDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          proposalId={proposal.id}
+          destination={proposal.destination}
+          proposalType={proposal.proposal_type as 'trip' | 'visit'}
+        />
+      )}
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, differenceInDays } from 'date-fns';
-import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2 } from 'lucide-react';
+import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,7 @@ import { TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { type TripData } from '@/components/profile/AddTripDialog';
 
 const AddTripDialog = lazy(() => import('@/components/profile/AddTripDialog'));
+const InviteToTripDialog = lazy(() => import('@/components/trips/InviteToTripDialog'));
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -63,6 +64,7 @@ export default function TripDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     if (!tripId || !user) return;
@@ -215,6 +217,11 @@ export default function TripDetail() {
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex items-center gap-1.5">
+          {trip.proposal_id && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShareOpen(true)}>
+              <Share2 className="h-3.5 w-3.5" /> Share
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditOpen(true)}>
             <Edit2 className="h-3.5 w-3.5" /> Edit
           </Button>
@@ -384,6 +391,19 @@ export default function TripDetail() {
             onOpenChange={setEditOpen}
             editingTrip={editTripData}
             onTripAdded={handleTripEdited}
+          />
+        </Suspense>
+      )}
+
+      {/* Share Dialog */}
+      {shareOpen && trip.proposal_id && (
+        <Suspense fallback={null}>
+          <InviteToTripDialog
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            proposalId={trip.proposal_id}
+            tripId={trip.id}
+            destination={trip.location}
           />
         </Suspense>
       )}
