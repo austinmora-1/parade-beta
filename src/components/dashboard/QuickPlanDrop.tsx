@@ -226,7 +226,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                     <CalendarPlus className="h-4.5 w-4.5 text-primary" />
                   </motion.div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Plan a Hangout</p>
+                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Create a Plan</p>
                     <p className="text-[10px] text-muted-foreground">Find a time to meet up</p>
                   </div>
                 </motion.button>
