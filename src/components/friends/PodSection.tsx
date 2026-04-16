@@ -135,7 +135,7 @@ export function PodSection({
     <div className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-1.5 text-xs font-semibold">
+        <h2 className="flex items-center gap-1.5 font-semibold text-sm">
           <Heart className="h-4 w-4 text-primary fill-primary" />
           Pods
         </h2>
