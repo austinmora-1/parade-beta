@@ -38,7 +38,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-sidebar-border bg-sidebar pb-safe md:hidden">
-      <div className="flex items-end justify-around px-1 py-2.5">
+      <div className="flex items-center justify-around px-1 py-2.5">
         <LayoutGroup>
           {navItems.map((item) => {
             const active = isActive(item.path);
@@ -94,7 +94,7 @@ export function MobileNav() {
                 </AvatarFallback>
               </Avatar>
             </div>
-            <span className="text-[10px] invisible">Me</span>
+            
           </button>
         </LayoutGroup>
       </div>
