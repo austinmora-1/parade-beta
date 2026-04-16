@@ -36,7 +36,8 @@ import {
   Edit,
   Trash2,
   MoreVertical,
-  Bell
+  Bell,
+  Palette
 } from 'lucide-react';
 import {
   DropdownMenu,
