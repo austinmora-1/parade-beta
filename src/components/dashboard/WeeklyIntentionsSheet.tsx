@@ -72,7 +72,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[85dvh] overflow-y-auto pb-8">
         <SheetHeader className="pb-2">
-          <SheetTitle className="text-lg">Weekly Intentions</SheetTitle>
+          <SheetTitle className="text-lg font-display">How's your week looking?</SheetTitle>
           <p className="text-sm text-muted-foreground">{weekStartLabel} – {weekEnd}</p>
         </SheetHeader>
 
