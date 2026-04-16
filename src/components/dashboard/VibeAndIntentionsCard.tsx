@@ -138,7 +138,7 @@ export function VibeAndIntentionsCard() {
                   <span className="text-[10px] text-muted-foreground">·</span>
                 )}
                 {plansOnDeck > 0 && (
-                  <span className="text-xs font-medium text-primary">
+                  <span className="text-xs font-medium text-muted-foreground">
                     {plansOnDeck} plan{plansOnDeck !== 1 ? 's' : ''} on deck
                   </span>
                 )}
@@ -150,7 +150,7 @@ export function VibeAndIntentionsCard() {
                   <span className="text-[10px] text-muted-foreground">·</span>
                 )}
                 {plansOnDeck > 0 && (
-                  <span className="text-xs font-medium text-primary">
+                  <span className="text-xs font-medium text-muted-foreground">
                     {plansOnDeck} plan{plansOnDeck !== 1 ? 's' : ''} on deck
                   </span>
                 )}
