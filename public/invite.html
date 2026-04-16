@@ -31,9 +31,12 @@
 <script>
   var params = new URLSearchParams(window.location.search);
   var token = params.get('t');
+  var tripToken = params.get('tt');
   var ref = params.get('ref');
   var from = params.get('from');
-  if (token) {
+  if (tripToken) {
+    window.location.replace('/trip-invite/' + encodeURIComponent(tripToken));
+  } else if (token) {
     window.location.replace('/plan-invite/' + encodeURIComponent(token));
   } else if (ref) {
     var dest = '/invite?ref=' + encodeURIComponent(ref);

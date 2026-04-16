@@ -19,6 +19,7 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const Profile = lazy(() => import("./pages/Profile"));
 const FriendProfile = lazy(() => import("./pages/FriendProfile"));
 const PlanInvite = lazy(() => import("./pages/PlanInvite"));
+const TripInvite = lazy(() => import("./pages/TripInvite"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Invite = lazy(() => import("./pages/Invite"));
 const Share = lazy(() => import("./pages/Share"));
@@ -107,6 +108,7 @@ const AppRoutes = () => {
     <Route path="/share/:shareCode" element={<Share />} />
     <Route path="/invite" element={<Invite />} />
     <Route path="/plan-invite/:token" element={<PlanInvite />} />
+    <Route path="/trip-invite/:token" element={<TripInvite />} />
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/privacy" element={<Privacy />} />
     <Route path="/terms" element={<Terms />} />
