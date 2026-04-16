@@ -133,7 +133,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
           {/* Vibes */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">What kind of hangs sound good?</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">What's your vibe this week?</label>
             <div className="flex flex-wrap gap-2">
               {VIBE_TYPES.map(type => {
                 const config = VIBE_CONFIG[type];
