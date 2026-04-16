@@ -1282,6 +1282,82 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_activity_suggestions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          proposal_id: string
+          sort_order: number
+          suggested_by: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          proposal_id: string
+          sort_order?: number
+          suggested_by: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          proposal_id?: string
+          sort_order?: number
+          suggested_by?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_activity_suggestions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_activity_votes: {
+        Row: {
+          created_at: string
+          id: string
+          rank: number
+          suggestion_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rank: number
+          suggestion_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rank?: number
+          suggestion_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_activity_votes_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "trip_activity_suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_participants: {
         Row: {
           created_at: string
@@ -1465,6 +1541,7 @@ export type Database = {
           location: string | null
           needs_return_date: boolean
           priority_friend_ids: string[]
+          proposal_id: string | null
           start_date: string
           updated_at: string
           user_id: string
@@ -1477,6 +1554,7 @@ export type Database = {
           location?: string | null
           needs_return_date?: boolean
           priority_friend_ids?: string[]
+          proposal_id?: string | null
           start_date: string
           updated_at?: string
           user_id: string
@@ -1489,11 +1567,20 @@ export type Database = {
           location?: string | null
           needs_return_date?: boolean
           priority_friend_ids?: string[]
+          proposal_id?: string | null
           start_date?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trips_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vibe_comments: {
         Row: {
