@@ -1,4 +1,5 @@
 import { Friend } from '@/types/planner';
+import { formatDisplayName } from '@/lib/formatName';
 
 const STATUS_PRIORITY: Record<string, number> = { connected: 3, pending: 2, invited: 1 };
 
@@ -27,7 +28,7 @@ export const mapIncomingFriendships = (
     const prof = profilesMap.get(f.user_id);
     return {
       id: f.id,
-      name: prof?.display_name || 'Someone',
+      name: formatDisplayName({ firstName: prof?.first_name, lastName: prof?.last_name, displayName: prof?.display_name }) || 'Someone',
       avatar: prof?.avatar_url || undefined,
       friendUserId: f.user_id,
       status: f.status as 'connected' | 'pending' | 'invited',
