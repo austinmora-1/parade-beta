@@ -9,6 +9,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { ACTIVITY_CONFIG, ActivityType, VIBE_CONFIG, VibeType } from '@/types/planner';
+
+interface StandardActivity {
+  id: ActivityType;
+  label: string;
+  icon: string;
+  vibeType: VibeType;
+}
+
+const STANDARD_ACTIVITIES: StandardActivity[] = (Object.entries(ACTIVITY_CONFIG) as [ActivityType, (typeof ACTIVITY_CONFIG)[ActivityType]][])
+  .filter(([id]) => id !== 'custom' && id !== 'flight' && id !== 'hotel')
+  .map(([id, cfg]) => ({ id, label: cfg.label, icon: cfg.icon, vibeType: cfg.vibeType }));
 
 interface Props {
   proposalId: string;
@@ -29,12 +41,41 @@ export function TripActivities({ proposalId, participantCount }: Props) {
   } = useTripActivities(proposalId);
 
   const [adding, setAdding] = useState(false);
+  const [mode, setMode] = useState<'pick' | 'custom'>('pick');
+  const [search, setSearch] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [voteOpen, setVoteOpen] = useState(false);
   const [draftRanking, setDraftRanking] = useState<string[]>([]);
   const [savingVotes, setSavingVotes] = useState(false);
+
+  const filteredStandard = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return STANDARD_ACTIVITIES;
+    return STANDARD_ACTIVITIES.filter(a => a.label.toLowerCase().includes(q));
+  }, [search]);
+
+  const resetForm = () => {
+    setAdding(false);
+    setMode('pick');
+    setSearch('');
+    setTitle('');
+    setDescription('');
+  };
+
+  const handlePickStandard = async (activity: StandardActivity) => {
+    if (submitting) return;
+    setSubmitting(true);
+    const ok = await addSuggestion(activity.label, '');
+    setSubmitting(false);
+    if (ok) {
+      resetForm();
+      toast.success(`${activity.label} added`);
+    } else {
+      toast.error('Failed to add activity');
+    }
+  };
 
   const sortedByScore: ActivitySuggestion[] = useMemo(() => {
     return [...suggestions].sort((a, b) => {
@@ -54,9 +95,7 @@ export function TripActivities({ proposalId, participantCount }: Props) {
     const ok = await addSuggestion(title, description);
     setSubmitting(false);
     if (ok) {
-      setTitle('');
-      setDescription('');
-      setAdding(false);
+      resetForm();
       toast.success('Activity added');
     } else {
       toast.error('Failed to add activity');
@@ -232,28 +271,84 @@ export function TripActivities({ proposalId, participantCount }: Props) {
       {/* Add new */}
       {adding ? (
         <div className="rounded-xl border-2 border-primary/30 bg-card p-3 space-y-2">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Activity title (e.g. Sunset dinner at Mama's)"
-            maxLength={200}
-            autoFocus
-          />
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add details (optional)"
-            maxLength={1000}
-            rows={2}
-          />
-          <div className="flex items-center justify-end gap-2">
-            <Button size="sm" variant="ghost" onClick={() => { setAdding(false); setTitle(''); setDescription(''); }}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleAdd} disabled={submitting || !title.trim()}>
-              {submitting ? 'Adding…' : 'Add activity'}
-            </Button>
-          </div>
+          {mode === 'pick' ? (
+            <>
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search activities…"
+                autoFocus
+              />
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-border bg-background/50 divide-y divide-border">
+                {filteredStandard.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-muted-foreground">
+                    No matches. Try creating a custom activity.
+                  </div>
+                ) : (
+                  filteredStandard.map((a) => {
+                    const vibeLabel = VIBE_CONFIG[a.vibeType]?.label;
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => handlePickStandard(a)}
+                        disabled={submitting}
+                        className="flex w-full items-center gap-2.5 px-2.5 py-2 text-left hover:bg-muted/50 transition-colors disabled:opacity-50"
+                      >
+                        <span className="text-base leading-none">{a.icon}</span>
+                        <span className="text-sm font-medium flex-1 truncate">{a.label}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{vibeLabel}</span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1.5"
+                  onClick={() => { setMode('custom'); setTitle(search); setSearch(''); }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Custom
+                </Button>
+                <Button size="sm" variant="ghost" onClick={resetForm}>
+                  Cancel
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Activity title (e.g. Sunset dinner at Mama's)"
+                maxLength={200}
+                autoFocus
+              />
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add details (optional)"
+                maxLength={1000}
+                rows={2}
+              />
+              <div className="flex items-center justify-between gap-2">
+                <Button size="sm" variant="ghost" onClick={() => { setMode('pick'); setTitle(''); setDescription(''); }}>
+                  ← Back to list
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost" onClick={resetForm}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleAdd} disabled={submitting || !title.trim()}>
+                    {submitting ? 'Adding…' : 'Add'}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <Button variant="outline" className="w-full gap-1.5 border-dashed" onClick={() => setAdding(true)}>
