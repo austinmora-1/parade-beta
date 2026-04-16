@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { VIBE_CONFIG, VibeType } from '@/types/planner';
@@ -8,6 +8,8 @@ import { GifPicker } from '@/components/chat/GifPicker';
 import { useWeeklyIntentions } from '@/hooks/useWeeklyIntentions';
 import { WeeklyIntentionsSheet } from './WeeklyIntentionsSheet';
 import { Progress } from '@/components/ui/progress';
+import { useDisplayPlans } from '@/hooks/useDisplayPlans';
+import { addDays, isBefore, isSameDay } from 'date-fns';
 
 const VIBE_CHIP_STYLES: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
   social:     { bg: 'hsl(5 60% 95%)',   text: 'hsl(5 50% 45%)',   border: 'hsl(5 50% 85%)',   iconBg: 'bg-[hsl(5_80%_65%)]' },
