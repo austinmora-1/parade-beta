@@ -660,7 +660,7 @@ function ProposalTripCard({
     if (!winningDate || !isCreator) return;
     setFinalizing(true);
     try {
-      // Create the actual trip
+      // Create a linked trip row for the creator (proposal_id ties shared activities together)
       const { error: tripErr } = await supabase.from('trips').insert({
         user_id: currentUserId,
         location: proposal.destination?.trim() || null,
@@ -670,7 +670,8 @@ function ProposalTripCard({
         priority_friend_ids: proposal.participants
           .filter(p => p.user_id !== currentUserId)
           .map(p => p.user_id),
-      });
+        proposal_id: proposal.id,
+      } as any);
       if (tripErr) throw tripErr;
 
       // Set availability to away for the winning dates

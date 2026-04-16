@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { TripActivities } from '@/components/trips/TripActivities';
 
 const TRIPS_UPDATED_EVENT = 'trips:updated';
 
@@ -34,6 +35,7 @@ interface TripRow {
   end_date: string;
   priority_friend_ids: string[];
   available_slots: string[];
+  proposal_id: string | null;
 }
 
 interface FriendProfile {
@@ -57,6 +59,7 @@ export default function TripDetail() {
   const [loading, setLoading] = useState(true);
   const [friendProfiles, setFriendProfiles] = useState<FriendProfile[]>([]);
   const [companionProfiles, setCompanionProfiles] = useState<FriendProfile[]>([]);
+  const [proposalParticipantCount, setProposalParticipantCount] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -97,6 +100,17 @@ export default function TripDetail() {
         if (cProfiles) setCompanionProfiles(cProfiles);
       } else {
         setCompanionProfiles([]);
+      }
+
+      // If linked to a shared proposal, fetch participant count for activity-vote context
+      if ((data as any).proposal_id) {
+        const { count } = await supabase
+          .from('trip_proposal_participants')
+          .select('*', { count: 'exact', head: true })
+          .eq('proposal_id', (data as any).proposal_id);
+        setProposalParticipantCount(count || 0);
+      } else {
+        setProposalParticipantCount(0);
       }
 
       setLoading(false);
@@ -353,6 +367,14 @@ export default function TripDetail() {
           </div>
         )}
       </div>
+
+      {/* Activity suggestions for confirmed shared trips */}
+      {trip.proposal_id && (
+        <TripActivities
+          proposalId={trip.proposal_id}
+          participantCount={proposalParticipantCount}
+        />
+      )}
 
       {/* Edit Dialog */}
       {editOpen && (
