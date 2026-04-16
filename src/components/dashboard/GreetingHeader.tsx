@@ -5,6 +5,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { Sun, Moon, Sunset, Coffee, MapPin, Plus, CalendarPlus, Plane, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTimezoneForCity } from '@/lib/timezone';
+import { formatCityForDisplay } from '@/lib/formatCity';
 import { useTheme } from 'next-themes';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
@@ -73,10 +74,11 @@ export function GreetingHeader() {
     const todayKey = format(new Date(), 'yyyy-MM-dd');
     const todayAvail = availabilityMap[todayKey];
     if (todayAvail?.locationStatus === 'away' && todayAvail?.tripLocation) {
-      return todayAvail.tripLocation.split(',')[0];
+      return formatCityForDisplay(todayAvail.tripLocation) || todayAvail.tripLocation.split(',')[0];
     }
     const homeAddress = profile?.home_address;
-    return homeAddress?.split(',')[0] || 'Set location';
+    if (!homeAddress) return 'Set location';
+    return formatCityForDisplay(homeAddress) || homeAddress.split(',')[0];
   }, [availabilityMap, profile?.home_address]);
 
   const handleSelect = (key: string) => {
