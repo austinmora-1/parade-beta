@@ -164,7 +164,7 @@ export function PastDaysCollapsible({ weekDays, today, plansByDay, selectMode, s
             "h-3.5 w-3.5 text-muted-foreground transition-transform",
             !showPast && "-rotate-90"
           )} />
-          <span className="text-[11px] font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             {pastDays.length} past day{pastDays.length > 1 ? 's' : ''}
             {pastPlanCount > 0 && ` · ${pastPlanCount} plan${pastPlanCount > 1 ? 's' : ''}`}
           </span>
