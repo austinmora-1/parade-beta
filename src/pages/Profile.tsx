@@ -59,6 +59,8 @@ import { CalendarCheck } from 'lucide-react';
 
 interface ProfileData {
   display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   avatar_url: string | null;
   bio: string | null;
   home_address: string | null;
@@ -100,7 +102,7 @@ export default function Profile() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('display_name, avatar_url, bio, home_address, cover_photo_url')
+          .select('display_name, first_name, last_name, avatar_url, bio, home_address, cover_photo_url')
           .eq('user_id', session.user.id)
           .single();
 
