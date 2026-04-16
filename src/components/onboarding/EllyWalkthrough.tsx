@@ -38,10 +38,10 @@ const STEPS: WalkthroughStep[] = [
   },
   {
     icon: <Sparkles className="h-5 w-5" />,
-    title: "Sharing Availability",
-    message: "Set your weekly intentions and mark when you're free. Friends can see your availability and propose plans for open slots. The more you share, the easier it is to connect!",
-    emoji: "🗓️",
-    tip: "Set default work hours so your free time fills in automatically.",
+    title: "Your Social Health",
+    message: "Parade helps you stay intentional about your social life. During onboarding you set your baseline preferences — preferred days, social cap, and the vibes you're craving. Each week, revisit your intentions to set a hangout target and check in on your social health.",
+    emoji: "💛",
+    tip: "Tap 'Weekly Intentions' on the dashboard every Sunday to recalibrate for the week ahead.",
   },
 ];
 
