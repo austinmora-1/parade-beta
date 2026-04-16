@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AppearanceToggle } from '@/components/settings/AppearanceToggle';
+import { AppearanceQuickToggles } from '@/components/profile/AppearanceQuickToggles';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -789,14 +788,6 @@ export default function Profile() {
       {/* Quick Stats */}
       <QuickStats />
 
-      {/* Appearance */}
-      <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
-        <div className="mb-3 flex items-center gap-2">
-          <Palette className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-sm font-semibold">Appearance</h2>
-        </div>
-        <AppearanceToggle />
-      </div>
 
 
       {/* Plan History */}
