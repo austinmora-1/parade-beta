@@ -30,18 +30,18 @@ const STEPS: WalkthroughStep[] = [
     tip: "Connect Google or Apple Calendar to sync events automatically every 2 hours.",
   },
   {
+    icon: <Globe className="h-5 w-5" />,
+    title: "Trips & Visits",
+    message: "Head to the Trips page to log upcoming travel or see when friends are visiting your city. Add a trip with destination and dates, and Parade automatically updates your location status and surfaces friends nearby so you can plan meetups.",
+    emoji: "✈️",
+    tip: "Not sure when to go? Start a Trip Proposal and vote on dates with friends before committing.",
+  },
+  {
     icon: <Sparkles className="h-5 w-5" />,
     title: "Sharing Availability",
     message: "Set your weekly intentions and mark when you're free. Friends can see your availability and propose plans for open slots. The more you share, the easier it is to connect!",
     emoji: "🗓️",
     tip: "Set default work hours so your free time fills in automatically.",
-  },
-  {
-    icon: <Globe className="h-5 w-5" />,
-    title: "Trips & Travel",
-    message: "Heading somewhere? Add a trip and Parade will update your availability and location status automatically. Friends visiting your city — or vice versa — will get surfaced so you never miss a chance to meet up.",
-    emoji: "✈️",
-    tip: "Trip proposals let you vote on dates with friends before committing!",
   },
 ];
 
