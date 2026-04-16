@@ -95,9 +95,7 @@ export function TripActivities({ proposalId, participantCount }: Props) {
     const ok = await addSuggestion(title, description);
     setSubmitting(false);
     if (ok) {
-      setTitle('');
-      setDescription('');
-      setAdding(false);
+      resetForm();
       toast.success('Activity added');
     } else {
       toast.error('Failed to add activity');
