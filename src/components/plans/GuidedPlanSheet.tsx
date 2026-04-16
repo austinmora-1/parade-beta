@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { ACTIVITY_CONFIG, TimeSlot, ActivityType } from '@/types/planner';
+import { ACTIVITY_CONFIG, VIBE_CONFIG, TimeSlot, ActivityType, VibeType, getActivitiesByVibe, getAllVibes, CustomActivity } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeCity, citiesMatch } from '@/lib/locationMatch';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { SlotCalendarPicker, SelectedSlotEntry } from '@/components/plans/SlotCalendarPicker';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GuidedPlanSheetProps {
   open: boolean;
@@ -29,18 +30,9 @@ interface GuidedPlanSheetProps {
 
 type Step = 'friends' | 'activity' | 'time' | 'confirm';
 
-const SUGGESTED_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
-  { id: 'drinks', emoji: '🍹', label: 'Drinks' },
-  { id: 'get-food', emoji: '🍽️', label: 'Get Food' },
-  { id: 'hanging-out', emoji: '🤙', label: 'Hangout' },
-  { id: 'concert', emoji: '🎵', label: 'Concert' },
-  { id: 'movies', emoji: '🎥', label: 'Movies' },
-  { id: 'gym', emoji: '🏋️', label: 'Gym' },
-  { id: 'park', emoji: '🌳', label: 'Park' },
-  { id: 'hiking', emoji: '🥾', label: 'Hiking' },
-  { id: 'yoga', emoji: '🧘', label: 'Yoga' },
-  { id: 'shopping', emoji: '🛍️', label: 'Shopping' },
-];
+const TBD_ACTIVITY_ID = 'tbd';
+const TBD_EMOJI = '❓';
+const TBD_LABEL = 'TBD';
 
 interface BestSlot {
   date: Date;
@@ -117,6 +109,7 @@ function SlotCard({ bs, i, onSelect, isSelected }: { bs: BestSlot; i: number; on
 }
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
+  const { session } = useAuth();
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
 
@@ -130,7 +123,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const hasFriends = effectiveFriends.length > 0;
 
   const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'activity');
-  const [activity, setActivity] = useState<ActivityType | null>(null);
+  const [activity, setActivity] = useState<ActivityType | string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<SelectedSlotEntry[]>([]);
@@ -140,6 +133,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [showCalendar, setShowCalendar] = useState(false);
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
   const [selectedSharedCity, setSelectedSharedCity] = useState<string>('');
+  const [customActivities, setCustomActivities] = useState<CustomActivity[]>([]);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customLabel, setCustomLabel] = useState('');
+  const [customEmoji, setCustomEmoji] = useState('✨');
+  const [activitySearch, setActivitySearch] = useState('');
 
   const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
@@ -164,6 +162,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     });
   };
 
+  // Load custom activities from profile
+  useEffect(() => {
+    if (!session?.user) return;
+    supabase.from('profiles').select('custom_activities').eq('user_id', session.user.id).single()
+      .then(({ data }) => {
+        if (data?.custom_activities) {
+          setCustomActivities(data.custom_activities as unknown as CustomActivity[]);
+        }
+      });
+  }, [session?.user]);
+
   // Reset on open
   useEffect(() => {
     if (open) {
@@ -179,6 +188,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setChosenFriends([]);
       setFriendSearch('');
       setSoloMode(false);
+      setShowCustomInput(false);
+      setCustomLabel('');
+      setActivitySearch('');
     }
   }, [open, needsFriendStep]);
 
@@ -551,9 +563,26 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     return null;
   }, [friendMultiDayAvail, effectiveFriends, myAvailabilityMap, myPlans]);
 
-  const handleSelectActivity = (act: ActivityType) => {
+  const handleSelectActivity = (act: ActivityType | string) => {
     setActivity(act);
     setStep('time');
+  };
+
+  const handleSaveCustomActivity = async () => {
+    if (!customLabel.trim() || !session?.user) return;
+    const newActivity: CustomActivity = {
+      id: `custom-${Date.now()}`,
+      label: customLabel.trim(),
+      icon: customEmoji,
+      vibeType: 'social',
+    };
+    const updated = [...customActivities, newActivity];
+    setCustomActivities(updated);
+    await supabase.from('profiles').update({ custom_activities: updated as any }).eq('user_id', session.user.id);
+    setShowCustomInput(false);
+    setCustomLabel('');
+    setCustomEmoji('✨');
+    handleSelectActivity(newActivity.id);
   };
 
   const handleSelectSlot = (bs: BestSlot) => {
@@ -599,8 +628,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     setStep('confirm');
   };
 
-  const activityLabel = activity ? (SUGGESTED_ACTIVITIES.find(a => a.id === activity)?.label || ACTIVITY_CONFIG[activity]?.label || activity) : '';
-  const activityEmoji = activity ? (SUGGESTED_ACTIVITIES.find(a => a.id === activity)?.emoji || '📅') : '';
+  const activityLabel = activity === TBD_ACTIVITY_ID ? TBD_LABEL : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.label || customActivities.find(a => a.id === activity)?.label || activity) : '';
+  const activityEmoji = activity === TBD_ACTIVITY_ID ? TBD_EMOJI : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.icon || customActivities.find(a => a.id === activity)?.icon || '📅') : '';
 
   const autoTitle = activity
     ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : activityLabel)
@@ -704,8 +733,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     ? 'Who do you want to hang with?'
     : step === 'activity'
       ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
-      : step === 'time'
-        ? (hasFriends ? `When works for ${activityLabel.toLowerCase()}?` : `When do you want to do ${activityLabel.toLowerCase()}?`)
+        : step === 'time'
+          ? (activity === TBD_ACTIVITY_ID ? 'When works?' : hasFriends ? `When works for ${activityLabel.toLowerCase()}?` : `When do you want to do ${activityLabel.toLowerCase()}?`)
         : 'Look good?';
 
   const firstStep = needsFriendStep ? 'friends' : 'activity';
@@ -844,25 +873,116 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-3"
               >
-                <p className="text-xs text-muted-foreground text-center">
-                  Pick an activity or let Parade suggest one
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {SUGGESTED_ACTIVITIES.map((a) => (
-                    <motion.button
-                      key={a.id}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => handleSelectActivity(a.id)}
-                      className={cn(
-                        "flex items-center gap-2.5 rounded-xl border border-border px-3 py-3 text-left transition-all",
-                        "hover:border-primary/40 hover:bg-primary/5 active:bg-primary/10"
-                      )}
-                    >
-                      <span className="text-xl">{a.emoji}</span>
-                      <span className="text-sm font-medium text-foreground">{a.label}</span>
-                    </motion.button>
-                  ))}
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search activities..."
+                    value={activitySearch}
+                    onChange={(e) => setActivitySearch(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                  />
                 </div>
+
+                {/* TBD option */}
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleSelectActivity(TBD_ACTIVITY_ID)}
+                  className="w-full flex items-center gap-2 rounded-xl border border-dashed border-muted-foreground/30 px-3 py-2.5 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <CircleHelp className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">TBD — decide later</span>
+                </motion.button>
+
+                <div className="max-h-[320px] overflow-y-auto space-y-3 pr-1">
+                  {/* Custom activities */}
+                  {customActivities.length > 0 && (!activitySearch || customActivities.some(a => a.label.toLowerCase().includes(activitySearch.toLowerCase()))) && (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5">Your Activities</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {customActivities
+                          .filter(a => !activitySearch || a.label.toLowerCase().includes(activitySearch.toLowerCase()))
+                          .map(a => (
+                          <motion.button
+                            key={a.id}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => handleSelectActivity(a.id)}
+                            className="flex flex-col items-center gap-1 rounded-xl border border-border px-2 py-2 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
+                          >
+                            <span className="text-lg">{a.icon}</span>
+                            <span className="text-[11px] font-medium text-foreground leading-tight truncate w-full">{a.label}</span>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* All activities grouped by vibe */}
+                  {getAllVibes().map(vibe => {
+                    const vibeConfig = VIBE_CONFIG[vibe];
+                    const activities = getActivitiesByVibe(vibe);
+                    const filtered = activitySearch
+                      ? activities.filter(a => ACTIVITY_CONFIG[a].label.toLowerCase().includes(activitySearch.toLowerCase()))
+                      : activities;
+                    if (filtered.length === 0) return null;
+                    return (
+                      <div key={vibe}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5 flex items-center gap-1">
+                          <vibeConfig.icon className="h-3 w-3" />
+                          {vibeConfig.label}
+                        </p>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {filtered.map(type => {
+                            const config = ACTIVITY_CONFIG[type];
+                            return (
+                              <motion.button
+                                key={type}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => handleSelectActivity(type)}
+                                className="flex flex-col items-center gap-1 rounded-xl border border-border px-2 py-2 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
+                              >
+                                <span className="text-lg">{config.icon}</span>
+                                <span className="text-[11px] font-medium text-foreground leading-tight truncate w-full">{config.label}</span>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Custom activity creation */}
+                {!showCustomInput ? (
+                  <button
+                    onClick={() => setShowCustomInput(true)}
+                    className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Create custom activity
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
+                    <input
+                      type="text"
+                      maxLength={2}
+                      value={customEmoji}
+                      onChange={(e) => setCustomEmoji(e.target.value || '✨')}
+                      className="w-8 h-8 text-center text-lg bg-transparent border border-border rounded-lg outline-none focus:border-primary"
+                    />
+                    <Input
+                      placeholder="Activity name"
+                      value={customLabel}
+                      onChange={(e) => setCustomLabel(e.target.value)}
+                      className="h-8 text-sm flex-1"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveCustomActivity()}
+                      autoFocus
+                    />
+                    <Button size="sm" className="h-8 text-xs" onClick={handleSaveCustomActivity} disabled={!customLabel.trim()}>
+                      Add
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             )}
 
