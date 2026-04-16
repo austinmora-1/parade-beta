@@ -733,8 +733,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     ? 'Who do you want to hang with?'
     : step === 'activity'
       ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
-      : step === 'time'
-        ? (hasFriends ? `When works for ${activityLabel.toLowerCase()}?` : `When do you want to do ${activityLabel.toLowerCase()}?`)
+        : step === 'time'
+          ? (activity === TBD_ACTIVITY_ID ? 'When works?' : hasFriends ? `When works for ${activityLabel.toLowerCase()}?` : `When do you want to do ${activityLabel.toLowerCase()}?`)
         : 'Look good?';
 
   const firstStep = needsFriendStep ? 'friends' : 'activity';
