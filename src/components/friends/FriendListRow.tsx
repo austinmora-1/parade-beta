@@ -59,8 +59,8 @@ export function FriendListRow({
 
   // Determine subtitle
   let subtitle = 'Tap to connect';
-  if (currentVibe && vibeIcon) {
-    subtitle = `${vibeIcon} ${currentVibe}`;
+  if (currentVibe) {
+    subtitle = currentVibe;
   } else if (lastHungOutDate) {
     subtitle = formatLastHungOut(lastHungOutDate);
   }
