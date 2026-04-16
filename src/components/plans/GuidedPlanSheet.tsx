@@ -30,18 +30,9 @@ interface GuidedPlanSheetProps {
 
 type Step = 'friends' | 'activity' | 'time' | 'confirm';
 
-const SUGGESTED_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
-  { id: 'drinks', emoji: '🍹', label: 'Drinks' },
-  { id: 'get-food', emoji: '🍽️', label: 'Get Food' },
-  { id: 'hanging-out', emoji: '🤙', label: 'Hangout' },
-  { id: 'concert', emoji: '🎵', label: 'Concert' },
-  { id: 'movies', emoji: '🎥', label: 'Movies' },
-  { id: 'gym', emoji: '🏋️', label: 'Gym' },
-  { id: 'park', emoji: '🌳', label: 'Park' },
-  { id: 'hiking', emoji: '🥾', label: 'Hiking' },
-  { id: 'yoga', emoji: '🧘', label: 'Yoga' },
-  { id: 'shopping', emoji: '🛍️', label: 'Shopping' },
-];
+const TBD_ACTIVITY_ID = 'tbd';
+const TBD_EMOJI = '❓';
+const TBD_LABEL = 'TBD';
 
 interface BestSlot {
   date: Date;
