@@ -92,6 +92,8 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
     displayName: profile.display_name,
   }) : null, [profile?.first_name, profile?.last_name, profile?.display_name]);
 
+  const friendIds = useMemo(() => [userId], [userId]);
+
   const lastHungOut = useLastHungOut(friendIds);
   const lastDate = lastHungOut[userId];
 
