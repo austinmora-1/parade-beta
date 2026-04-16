@@ -608,6 +608,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
           : isVisit ? 'Your visit options' : isSoloTrip ? 'Your trip' : 'Your trip options';
 
   return (
+    <>
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className="max-h-[90vh]"
