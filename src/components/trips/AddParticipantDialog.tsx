@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, UserPlus, Loader2, Check } from 'lucide-react';
+import { Search, UserPlus, Loader2, Check, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,12 @@ interface Friend {
   avatar_url: string | null;
 }
 
+interface CurrentParticipant {
+  user_id: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
 interface AddParticipantDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -23,6 +29,10 @@ interface AddParticipantDialogProps {
   targetId: string;
   /** User IDs already participating (to exclude from search) */
   existingParticipantIds: string[];
+  /** Current participants displayed with remove buttons. If omitted, no remove section shown. */
+  currentParticipants?: CurrentParticipant[];
+  /** User IDs that may not be removed (e.g. trip owner / proposal creator). */
+  nonRemovableIds?: string[];
   onAdded: () => Promise<void>;
 }
 
@@ -32,12 +42,15 @@ export function AddParticipantDialog({
   targetType,
   targetId,
   existingParticipantIds,
+  currentParticipants = [],
+  nonRemovableIds = [],
   onAdded,
 }: AddParticipantDialogProps) {
   const { user } = useAuth();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
@@ -139,21 +152,133 @@ export function AddParticipantDialog({
     }
   };
 
+  const handleRemove = async (participant: CurrentParticipant) => {
+    if (nonRemovableIds.includes(participant.user_id)) return;
+    setRemoving(participant.user_id);
+    try {
+      if (targetType === 'proposal') {
+        // Remove participant + their votes
+        const { error } = await supabase
+          .from('trip_proposal_participants')
+          .delete()
+          .eq('proposal_id', targetId)
+          .eq('user_id', participant.user_id);
+        if (error) throw error;
+
+        // Best-effort: delete their votes for this proposal's dates
+        const { data: dates } = await supabase
+          .from('trip_proposal_dates')
+          .select('id')
+          .eq('proposal_id', targetId);
+        const dateIds = (dates || []).map(d => d.id);
+        if (dateIds.length > 0) {
+          await supabase
+            .from('trip_proposal_votes')
+            .delete()
+            .eq('user_id', participant.user_id)
+            .in('date_id', dateIds);
+        }
+      } else {
+        // Remove from trip_participants
+        await supabase
+          .from('trip_participants')
+          .delete()
+          .eq('trip_id', targetId)
+          .eq('friend_user_id', participant.user_id);
+
+        // Also remove from priority_friend_ids
+        const { data: trip } = await supabase
+          .from('trips')
+          .select('priority_friend_ids')
+          .eq('id', targetId)
+          .single();
+        if (trip) {
+          const ids = (trip.priority_friend_ids || []).filter(
+            (id: string) => id !== participant.user_id
+          );
+          await supabase
+            .from('trips')
+            .update({ priority_friend_ids: ids })
+            .eq('id', targetId);
+        }
+      }
+
+      toast.success(`Removed ${participant.display_name}`);
+      await onAdded();
+    } catch (err: any) {
+      console.error('Failed to remove participant:', err);
+      toast.error('Failed to remove participant');
+    } finally {
+      setRemoving(null);
+    }
+  };
+
+  const removableCurrent = currentParticipants.filter(
+    p => !nonRemovableIds.includes(p.user_id)
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-base">Add Participant</DialogTitle>
+          <DialogTitle className="text-base">Manage Participants</DialogTitle>
         </DialogHeader>
 
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search friends..."
-            className="pl-8 h-8 text-sm"
-          />
+        {removableCurrent.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
+              Current
+            </p>
+            <div className="max-h-40 overflow-y-auto space-y-1">
+              {removableCurrent.map(p => (
+                <div
+                  key={p.user_id}
+                  className="flex items-center gap-2.5 rounded-lg p-2 hover:bg-muted/50 transition-colors"
+                >
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={p.avatar_url || getElephantAvatar(p.display_name)} />
+                    <AvatarFallback className="text-[9px]">
+                      {(p.display_name || '?')[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium flex-1 truncate">
+                    {p.display_name || 'Friend'}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                    disabled={removing === p.user_id}
+                    onClick={() => handleRemove(p)}
+                    title="Remove"
+                  >
+                    {removing === p.user_id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <X className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-1">
+          {removableCurrent.length > 0 && (
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
+              Add friends
+            </p>
+          )}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search friends..."
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
         </div>
 
         <div className="max-h-60 overflow-y-auto space-y-1">
