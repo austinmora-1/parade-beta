@@ -7,12 +7,8 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 
-const GuidedPlanSheet = lazy(() =>
-  import('@/components/plans/GuidedPlanSheet').then((m) => ({ default: m.GuidedPlanSheet })),
-);
-const GuidedTripSheet = lazy(() =>
-  import('@/components/trips/GuidedTripSheet').then((m) => ({ default: m.GuidedTripSheet })),
-);
+const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
+const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
 
 export interface StagedFriend {
   userId: string;

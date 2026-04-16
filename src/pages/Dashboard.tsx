@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Loader2 } from 'lucide-react';
@@ -6,23 +6,14 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { VibeAndIntentionsCard } from '@/components/dashboard/VibeAndIntentionsCard';
+import { HomeTabs } from '@/components/dashboard/HomeTabs';
+import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
-import type { StagedFriend } from '@/components/dashboard/QuickPlanDrop';
-
-// Lazy-load below-the-fold widgets to shrink initial dashboard JS
-const EllyWalkthrough = lazy(() =>
-  import('@/components/onboarding/EllyWalkthrough').then((m) => ({ default: m.EllyWalkthrough })),
-);
-const QuickPlanDrop = lazy(() =>
-  import('@/components/dashboard/QuickPlanDrop').then((m) => ({ default: m.QuickPlanDrop })),
-);
-const HomeTabs = lazy(() =>
-  import('@/components/dashboard/HomeTabs').then((m) => ({ default: m.HomeTabs })),
-);
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -91,9 +82,7 @@ export default function Dashboard() {
       animate="show"
       className="space-y-5 md:space-y-7"
     >
-      <Suspense fallback={null}>
-        <EllyWalkthrough />
-      </Suspense>
+      <EllyWalkthrough />
       <PushNotificationPrompt />
 
       {/* Personalized greeting */}
@@ -116,21 +105,17 @@ export default function Dashboard() {
 
       {/* Quick Plan drop zone */}
       <motion.div variants={fadeUp}>
-        <Suspense fallback={<div className="h-32" />}>
-          <QuickPlanDrop
-            stagedFriends={stagedFriends}
-            onAddFriend={handleAddFriend}
-            onRemoveFriend={handleRemoveFriend}
-            onClear={handleClear}
-          />
-        </Suspense>
+        <QuickPlanDrop
+          stagedFriends={stagedFriends}
+          onAddFriend={handleAddFriend}
+          onRemoveFriend={handleRemoveFriend}
+          onClear={handleClear}
+        />
       </motion.div>
 
       {/* Upcoming Plans & Feed */}
       <motion.div variants={fadeUp}>
-        <Suspense fallback={<div className="h-48" />}>
-          <HomeTabs />
-        </Suspense>
+        <HomeTabs />
       </motion.div>
     </motion.div>
   );

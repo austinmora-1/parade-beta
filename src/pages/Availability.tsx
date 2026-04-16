@@ -2,9 +2,7 @@ import { useState, useCallback, lazy, Suspense } from 'react';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
-const GuidedPlanSheet = lazy(() =>
-  import('@/components/plans/GuidedPlanSheet').then((m) => ({ default: m.GuidedPlanSheet })),
-);
+const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const MergePlansDialog = lazy(() => import('@/components/plans/MergePlansDialog'));
 const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDialog'));
 import { Button } from '@/components/ui/button';

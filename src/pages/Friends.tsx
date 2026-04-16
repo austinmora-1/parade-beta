@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { usePlannerStore } from '@/stores/plannerStore';
 
 const InviteFriendDialog = lazy(() => import('@/components/friends/InviteFriendDialog'));
-import { PlanWithFriends } from '@/components/friends/PlanWithFriends';
+import { GroupScheduler } from '@/components/friends/GroupScheduler';
 import { FriendAvatarGrid } from '@/components/friends/FriendAvatarGrid';
 import { FriendListRow } from '@/components/friends/FriendListRow';
 import { FriendPanel } from '@/components/friends/FriendPanel';
@@ -353,8 +353,8 @@ export default function Friends() {
         </div>
       )}
 
-      {/* Plan with Friends */}
-      <PlanWithFriends friends={friends} />
+      {/* Group Scheduler */}
+      <GroupScheduler friends={friends} />
 
       {/* Incoming Requests */}
       {incomingRequests.length > 0 && (
