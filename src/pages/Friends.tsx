@@ -391,8 +391,8 @@ export default function Friends() {
 
       {/* Connected Friends — List View */}
       <div>
-        <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
-          <Users className="h-4 w-4 text-availability-available" />
+        <h2 className="mb-2 flex items-center gap-1.5 font-semibold text-sm">
+          <Users className="h-4 w-4 text-primary" />
           Connected ({connectedFriends.length})
         </h2>
         {connectedFriends.length > 0 ? (
