@@ -1050,51 +1050,15 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                             {hasFriends ? 'Best times for everyone' : 'You\'re free'}
                           </p>
                         </div>
-                     {(() => {
-                       // Group bestSlots by sharedCity
-                       const groups: { city: string; slots: BestSlot[] }[] = [];
-                       const seen = new Map<string, number>();
-                       for (const bs of bestSlots) {
-                         const key = bs.sharedCity || 'Unknown';
-                         if (!seen.has(key)) {
-                           seen.set(key, groups.length);
-                           groups.push({ city: key, slots: [] });
-                         }
-                         groups[seen.get(key)!].slots.push(bs);
-                       }
-                       const multiCity = groups.length > 1;
-
-                       return multiCity ? (
-                         <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
-                           {groups.map((g) => (
-                             <div key={g.city} className="snap-start shrink-0 w-[85%] space-y-2">
-                               <div className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-                                 <MapPin className="h-3 w-3 text-primary" />
-                                 In {g.city}
-                                 <span className="text-[10px] font-normal ml-1">({g.slots.length} times)</span>
-                               </div>
-                               {g.slots.map((bs, i) => (
-                                 <SlotCard
-                                   key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
-                                   bs={bs} i={i} onSelect={handleSelectSlot}
-                                   isSelected={selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot)}
-                                 />
-                               ))}
-                             </div>
-                           ))}
-                         </div>
-                       ) : (
-                         <div className="space-y-2">
-                           {bestSlots.map((bs, i) => (
-                             <SlotCard
-                               key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
-                               bs={bs} i={i} onSelect={handleSelectSlot}
-                               isSelected={selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot)}
-                             />
-                           ))}
-                         </div>
-                       );
-                     })()}
+                        <div className="space-y-2">
+                          {bestSlots.map((bs, i) => (
+                            <SlotCard
+                              key={`${format(bs.date, 'yyyy-MM-dd')}-${bs.slot}`}
+                              bs={bs} i={i} onSelect={handleSelectSlot}
+                              isSelected={selectedSlots.some(s => isSameDay(s.date, bs.date) && s.slot === bs.slot)}
+                            />
+                          ))}
+                        </div>
                       </>
                     ) : (
                       <div className="flex flex-col items-center gap-2 py-6 text-center">
