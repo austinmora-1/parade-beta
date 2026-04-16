@@ -79,7 +79,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
         <div className="space-y-5 pt-2">
           {/* Energy Level */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Social energy</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">How much social energy do you have?</label>
             <div className="grid grid-cols-3 gap-2">
               {ENERGY_LEVELS.map(e => (
                 <button
@@ -102,7 +102,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
           {/* Target Hangouts */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">How many hangouts?</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">How many times do you want to see your people?</label>
             <div className="flex gap-2">
               {HANGOUT_OPTIONS.map(n => (
                 <button
@@ -123,7 +123,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
           {/* Vibes */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Vibes for the week</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">What kind of hangs sound good?</label>
             <div className="flex flex-wrap gap-2">
               {VIBE_TYPES.map(type => {
                 const config = VIBE_CONFIG[type];
@@ -153,18 +153,18 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
           {/* Notes */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">Any goals? (optional)</label>
+            <label className="text-sm font-medium text-foreground mb-2 block">Anything specific on your mind?</label>
             <Textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Try a new restaurant, reconnect with an old friend…"
+              placeholder="Reconnect with an old friend, try that new spot downtown…"
               className="resize-none"
               rows={2}
             />
           </div>
 
           <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
-            {saving ? 'Saving…' : intention ? 'Update intentions' : 'Set intentions 🎯'}
+            {saving ? 'Saving…' : intention ? 'Update intentions' : 'Let\'s do this 🎯'}
           </Button>
         </div>
       </SheetContent>
