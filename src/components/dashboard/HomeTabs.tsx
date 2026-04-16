@@ -4,8 +4,8 @@ import { UpcomingPlansWidget } from './UpcomingPlansWidget';
 export function HomeTabs() {
   return (
     <div className="space-y-4">
-      <UpcomingTripsAndVisits />
       <UpcomingPlansWidget />
+      <UpcomingTripsAndVisits />
     </div>
   );
 }
