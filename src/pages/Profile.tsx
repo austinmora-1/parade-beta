@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AppearanceToggle } from '@/components/settings/AppearanceToggle';
+import { AppearanceQuickToggles } from '@/components/profile/AppearanceQuickToggles';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -636,17 +635,20 @@ export default function Profile() {
               </button>
             </div>
             
-            <div className="flex items-center gap-1">
-              <Link to="/notifications">
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Bell className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/settings">
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Settings className="h-5 w-5" />
-                </Button>
-              </Link>
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-1">
+                <Link to="/notifications">
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Bell className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link to="/settings">
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Settings className="h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+              <AppearanceQuickToggles />
             </div>
           </div>
 
@@ -786,14 +788,6 @@ export default function Profile() {
       {/* Quick Stats */}
       <QuickStats />
 
-      {/* Appearance */}
-      <div className="rounded-2xl border border-border bg-card p-4 md:p-5 shadow-soft">
-        <div className="mb-3 flex items-center gap-2">
-          <Palette className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-sm font-semibold">Appearance</h2>
-        </div>
-        <AppearanceToggle />
-      </div>
 
 
       {/* Plan History */}
