@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
-import { MobileNav } from './MobileNav';
 import { PullToRefresh } from './PullToRefresh';
 import { FeedbackProvider } from '@/components/feedback/FeedbackContext';
 import { FeedbackPanel } from '@/components/feedback/FeedbackPanel';
