@@ -86,7 +86,12 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
   const [quickPlanDate, setQuickPlanDate] = useState<Date | undefined>(undefined);
   const [quickPlanSlot, setQuickPlanSlot] = useState<TimeSlot | undefined>(undefined);
 
-  const friendIds = useMemo(() => [userId], [userId]);
+  const friendFormattedName = useMemo(() => profile ? formatDisplayName({
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    displayName: profile.display_name,
+  }) : null, [profile?.first_name, profile?.last_name, profile?.display_name]);
+
   const lastHungOut = useLastHungOut(friendIds);
   const lastDate = lastHungOut[userId];
 
