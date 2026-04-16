@@ -514,6 +514,12 @@ function TripCard({
         targetType="trip"
         targetId={trip.id}
         existingParticipantIds={[currentUserId, ...trip.priority_friend_ids]}
+        currentParticipants={friendProfiles.map(p => ({
+          user_id: p.user_id,
+          display_name: p.display_name,
+          avatar_url: p.avatar_url,
+        }))}
+        nonRemovableIds={[currentUserId]}
         onAdded={onConverted}
       />
     </div>
@@ -1287,6 +1293,12 @@ function ProposalTripCard({
         targetType="proposal"
         targetId={proposal.id}
         existingParticipantIds={proposal.participants.map(p => p.user_id)}
+        currentParticipants={proposal.participants.map(p => ({
+          user_id: p.user_id,
+          display_name: p.display_name,
+          avatar_url: p.avatar_url,
+        }))}
+        nonRemovableIds={[proposal.created_by]}
         onAdded={onRefresh}
       />
     </>
