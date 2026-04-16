@@ -79,7 +79,7 @@ export default function Settings() {
   const [showAvailability, setShowAvailability] = useState(true);
   const [showLocation, setShowLocation] = useState(true);
   const [showVibeStatus, setShowVibeStatus] = useState(true);
-  const [discoverable, setDiscoverable] = useState(true);
+  
   const [allowAllHangRequests, setAllowAllHangRequests] = useState(true);
   const [allowedFriendIds, setAllowedFriendIds] = useState<string[]>([]);
 
@@ -130,7 +130,7 @@ export default function Settings() {
           setShowAvailability(profile.show_availability ?? true);
           setShowLocation(profile.show_location ?? true);
           setShowVibeStatus(profile.show_vibe_status ?? true);
-          setDiscoverable(profile.discoverable ?? true);
+          
           setAllowAllHangRequests(profile.allow_all_hang_requests ?? true);
           setAllowedFriendIds(profile.allowed_hang_request_friend_ids || []);
           // Load default availability settings
@@ -223,7 +223,7 @@ export default function Settings() {
           show_availability: showAvailability,
           show_location: showLocation,
           show_vibe_status: showVibeStatus,
-          discoverable: discoverable,
+          
           allow_all_hang_requests: allowAllHangRequests,
           allowed_hang_request_friend_ids: allowedFriendIds,
           // Save default availability settings
@@ -738,17 +738,6 @@ export default function Settings() {
                 <Switch
                   checked={showVibeStatus}
                   onCheckedChange={(checked) => { setShowVibeStatus(checked); handleChange(); }}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between py-1">
-                <div>
-                  <p className="text-sm font-medium">Discoverable</p>
-                  <p className="text-[10px] text-muted-foreground">Let others find you by email or name</p>
-                </div>
-                <Switch
-                  checked={discoverable}
-                  onCheckedChange={(checked) => { setDiscoverable(checked); handleChange(); }}
                 />
               </div>
               <Separator />

@@ -42,7 +42,7 @@ export interface OnboardingData {
   showAvailability: boolean;
   showLocation: boolean;
   showVibeStatus: boolean;
-  discoverable: boolean;
+  
   allowAllHangRequests: boolean;
 }
 
@@ -86,7 +86,7 @@ export function OnboardingWizard() {
     showAvailability: true,
     showLocation: true,
     showVibeStatus: true,
-    discoverable: true,
+    
     allowAllHangRequests: true,
   });
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -159,7 +159,7 @@ export function OnboardingWizard() {
         show_availability: data.showAvailability,
         show_location: data.showLocation,
         show_vibe_status: data.showVibeStatus,
-        discoverable: data.discoverable,
+        
         allow_all_hang_requests: data.allowAllHangRequests,
         default_work_days: data.workDays,
         default_work_start_hour: data.workStartHour,
