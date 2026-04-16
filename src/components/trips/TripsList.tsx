@@ -20,6 +20,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AddParticipantDialog } from './AddParticipantDialog';
+import { formatDisplayName } from '@/lib/formatName';
 
 interface Trip {
   id: string;
@@ -156,7 +157,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
     const { data: profiles } = await supabase
       .rpc('get_display_names_for_users', { p_user_ids: allUserIds });
     const profileMap = new Map(
-      (profiles || []).map((p: any) => [p.user_id, { name: p.display_name, avatar: p.avatar_url }])
+      (profiles || []).map((p: any) => [p.user_id, { name: formatDisplayName({ firstName: p.first_name, lastName: p.last_name, displayName: p.display_name }), avatar: p.avatar_url }])
     );
 
     const mapped: TripProposal[] = proposalsData.map(prop => {
