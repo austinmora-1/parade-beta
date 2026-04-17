@@ -1,60 +1,71 @@
 
 
-## Plan: Replace vibe polling/race-guard with realtime subscription
+## Root cause
 
-### Goal
-Eliminate the vibe race condition by making the local store the single writer and Supabase Realtime the single source of remote truth — so the dashboard RPC never overwrites vibe state and changes propagate across devices instantly.
+The `calendar-sync-worker` (the **background cron job that runs every 2 hours**) has its own copy of sync logic that **ignores per-event timezones**:
 
-### Strategy
-- **Vibe is owned by `useVibeStore`**, not by `loadAllData`.
-- The dashboard RPC stops touching vibe entirely (after initial bootstrap).
-- Subscribe to the user's own `profiles` row via realtime; remote updates flow only through this channel.
-- Remove the `lastLocalMutationAt` 10-second guard and cache-patching workaround — they're no longer needed.
+**iCal worker (lines 364–388 of `calendar-sync-worker/index.ts`):**
+- `getDateString(event.dtstart)` — no timezone arg → uses UTC for the date
+- `event.dtstart.getUTCHours()` — UTC hour for the time slot
+- `formatTimeHHMM(event.dtstart, userTimezone)` — viewer's TZ for the HH:MM
+- `source_timezone: userTimezone` — viewer's TZ stored, ignoring `event.tzid`
 
-### Changes
+The on-demand `ical-sync` was already fixed (line 217: `event.tzid || userTimezone`) — but the worker wasn't, so every 2 hours the cron overwrites it back to `2026-04-17 / 21:30 NY`.
 
-**1. `src/stores/vibeStore.ts` — simplify**
-- Remove `lastLocalMutationAt`, `LOCAL_MUTATION_GUARD_MS`, `applyRemoteVibe`, and the cache-patching helper.
-- Add a `bootstrapVibe(vibe)` action used **only** on first load (when store has never been initialized for this user) — sets initial vibe from cache/RPC.
-- Add an `applyRealtimeUpdate(profileRow)` action — accepts the new profile row from realtime payload, constructs a Vibe, sets it directly. Always wins (it IS the latest server state).
-- Optimistic updates in `setVibe` / `addCustomVibe` / `removeCustomVibe`: write locally first, then Supabase. On error, revert to snapshot. On success, do nothing — realtime echo will arrive but matches local state, so it's a no-op.
-- Track `initialized: boolean` per user so subsequent RPC loads skip vibe.
+**Verified from the iCal feed:** the actual event is `DTSTART;TZID=America/Los_Angeles:20260416T183000` — should be stored as `date=2026-04-16, start_time=18:30, source_timezone=America/Los_Angeles`.
 
-**2. New hook: `src/hooks/useVibeRealtime.ts`**
-- Mounted once at the app level (in `AppLayout` or `AuthProvider`).
-- Uses `useRealtimeHub` to subscribe to `profiles` table, `UPDATE` event, filter `user_id=eq.{currentUserId}`.
-- On payload, calls `useVibeStore.getState().applyRealtimeUpdate(payload.new)`.
+The Google worker has the same class of bug — it always uses the viewer's timezone instead of the event's own timezone (Google returns `start.timeZone` per event, plus `start.dateTime` includes an offset).
 
-**3. `src/stores/plannerStore.ts` — stop overwriting vibe**
-- In `loadAllData`, when pushing transformed RPC data:
-  - Replace `useVibeStore.getState().applyRemoteVibe(...)` with `useVibeStore.getState().bootstrapVibe(...)` — only sets if not yet initialized.
-  - Same for the cache hydration path.
-- Cache write (`setCachedDashboard`) stays as-is — no patching needed because vibe in cache is just a bootstrap value; realtime keeps the live store accurate regardless.
-- Remove the import of `useVibeStore` for the patching workaround if any was added.
+## Fix
 
-**4. Mount the realtime hook**
-- Add `useVibeRealtime()` call in `src/components/layout/AppLayout.tsx` (or wherever auth-gated app shell mounts) so it's active on every authenticated screen.
+### 1. `supabase/functions/calendar-sync-worker/index.ts` — iCal section (lines 364–388)
 
-**5. Cleanup**
-- Delete dead `VibeSelector.tsx` (already flagged as unused).
-- Remove the `patchVibeInCache` helper from `vibeStore.ts` if no other callers.
+Mirror the on-demand `ical-sync` logic exactly:
+- `eventTimezone = (!event.isAllDay && event.tzid) ? event.tzid : userTimezone`
+- Use `eventTimezone` for `getDateString`, `getHourInTimezone`, `formatTimeHHMM`, and `source_timezone`.
 
-### Why this fixes the race
-- The RPC response can no longer overwrite a fresh local vibe because `bootstrapVibe` is a one-shot.
-- Cross-device updates arrive via realtime within ~100ms — faster and cleaner than waiting for the next RPC poll.
-- Optimistic local writes echo back through realtime; since the payload matches local state, `applyRealtimeUpdate` is idempotent.
+### 2. `supabase/functions/calendar-sync-worker/index.ts` — Google section (lines 243–275)
 
-### Files touched
-- `src/stores/vibeStore.ts` — simplify, add bootstrap + realtime apply
-- `src/stores/plannerStore.ts` — switch to `bootstrapVibe`, remove guard logic
-- `src/hooks/useVibeRealtime.ts` — new file
-- `src/components/layout/AppLayout.tsx` — mount hook
-- `src/components/dashboard/VibeSelector.tsx` — delete (dead code)
+Apply per-event timezone:
+- `eventTimezone = event.start.timeZone || timezone`
+- Use it for `getDateString`, `getHourInTimezone`, `formatTimeHHMM`, and `source_timezone`.
 
-### Verification flow
-1. Set vibe → reload → persists.
-2. Set vibe on phone, watch laptop dashboard update within ~1s without refresh.
-3. Set vibe → pull-to-refresh → persists (RPC bootstrap is skipped).
-4. Add custom tag, then GIF → both persist on reload and propagate cross-device.
-5. Open two tabs, change vibe in tab A → tab B updates automatically.
+### 3. `supabase/functions/google-calendar-sync/index.ts` — same per-event TZ fix (lines 142–172)
+
+Same pattern — prefer `event.start.timeZone` over the viewer's `timezone`.
+
+### 4. `supabase/functions/_shared/calendar-helpers.ts` — extend `CalendarEvent`
+
+Add the optional fields Google already returns (currently dropped):
+```ts
+export interface CalendarEvent {
+  id: string
+  summary?: string
+  start: { dateTime?: string; date?: string; timeZone?: string }
+  end:   { dateTime?: string; date?: string; timeZone?: string }
+  location?: string
+}
+```
+
+### 5. One-shot DB cleanup
+
+Trigger an immediate `ical-sync` after deploy (the user can do this via the existing "Sync now" button in Calendar Integration). This will rewrite the Docklands plan with the correct LA timezone, and from then on the cron worker will no longer corrupt it.
+
+## Why this fully fixes the symptom
+
+- The event's true local time (PDT) is now the source of truth at write-time, regardless of which sync path runs (foreground, cron, Google, iCal).
+- `source_timezone` correctly stores the **event's** zone, not the **viewer's**, so the client converts properly when rendering for any viewer in any location.
+- The two-hour cron will no longer "revert" anything, because both paths now produce identical values.
+
+## Files touched
+
+- `supabase/functions/calendar-sync-worker/index.ts` — apply per-event TZ for both iCal and Google
+- `supabase/functions/google-calendar-sync/index.ts` — apply per-event TZ
+- `supabase/functions/_shared/calendar-helpers.ts` — add `timeZone?: string` to `CalendarEvent`
+
+## Verification
+
+1. Deploy → click "Sync now" in Calendar Integration → Docklands plan moves to **Thu Apr 16, 6:30 PM PDT** (displayed as 9:30 PM ET if viewer is in NY, or 6:30 PM PT if viewer is in Redwood City).
+2. Wait for the 2-hour cron → plan stays on Apr 16 — no revert.
+3. Repeat for the JFK→SFO Delta flight (which has `TZID=America/New_York`): should show 3:20 PM ET / 12:20 PM PT, on April 13. No drift after cron.
 
