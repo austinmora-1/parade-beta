@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { normalizeCity } from '@/lib/locationMatch';
+import { formatCityForDisplay } from '@/lib/formatCity';
 import { formatDisplayName } from '@/lib/formatName';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -481,10 +482,7 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
                 const cityRaw = isAway && todayAvail?.trip_location
                   ? todayAvail.trip_location
                   : profile.home_address;
-                const cityNorm = normalizeCity(cityRaw);
-                const cityDisplay = cityNorm
-                  ? cityNorm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-                  : null;
+                const cityDisplay = formatCityForDisplay(cityRaw) || null;
 
                 return (
                   <span className={cn(
