@@ -138,6 +138,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [customLabel, setCustomLabel] = useState('');
   const [customEmoji, setCustomEmoji] = useState('✨');
   const [activitySearch, setActivitySearch] = useState('');
+  const [activitySearchFocused, setActivitySearchFocused] = useState(false);
 
   const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
@@ -966,16 +967,96 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-3"
               >
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search activities..."
-                    value={activitySearch}
-                    onChange={(e) => setActivitySearch(e.target.value)}
-                    className="pl-9 h-9 text-sm"
-                  />
-                </div>
+                {/* Search with dropdown */}
+                {(() => {
+                  const q = activitySearch.trim().toLowerCase();
+                  const matchedCustom = customActivities.filter(
+                    a => !q || a.label.toLowerCase().includes(q)
+                  );
+                  const vibeGroups = getAllVibes()
+                    .map(vibe => ({
+                      vibe,
+                      config: VIBE_CONFIG[vibe],
+                      activities: getActivitiesByVibe(vibe).filter(
+                        a => !q || ACTIVITY_CONFIG[a].label.toLowerCase().includes(q)
+                      ),
+                    }))
+                    .filter(g => g.activities.length > 0);
+                  const hasResults = matchedCustom.length > 0 || vibeGroups.length > 0;
+                  const showDropdown = activitySearchFocused || q.length > 0;
+
+                  return (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-[18px] -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground z-10" />
+                      <Input
+                        placeholder="Search activities..."
+                        value={activitySearch}
+                        onChange={(e) => setActivitySearch(e.target.value)}
+                        onFocus={() => setActivitySearchFocused(true)}
+                        onBlur={() => setTimeout(() => setActivitySearchFocused(false), 150)}
+                        className="pl-9 h-9 text-sm"
+                      />
+
+                      {showDropdown && (
+                        <div className="absolute left-0 right-0 top-10 z-20 max-h-[320px] overflow-y-auto rounded-xl border border-border bg-popover shadow-lg p-2 space-y-3">
+                          {!hasResults && (
+                            <p className="text-xs text-muted-foreground text-center py-4">
+                              No activities found
+                            </p>
+                          )}
+
+                          {matchedCustom.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5">
+                                Your Activities
+                              </p>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {matchedCustom.map(a => (
+                                  <motion.button
+                                    key={a.id}
+                                    whileTap={{ scale: 0.97 }}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => handleSelectActivity(a.id)}
+                                    className="flex flex-col items-center gap-1 rounded-xl border border-border px-2 py-2 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
+                                  >
+                                    <span className="text-lg">{a.icon}</span>
+                                    <span className="text-[11px] font-medium text-foreground leading-tight truncate w-full">{a.label}</span>
+                                  </motion.button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {vibeGroups.map(({ vibe, config: vibeConfig, activities }) => (
+                            <div key={vibe}>
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5 flex items-center gap-1">
+                                <vibeConfig.icon className="h-3 w-3" />
+                                {vibeConfig.label}
+                              </p>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {activities.map(type => {
+                                  const config = ACTIVITY_CONFIG[type];
+                                  return (
+                                    <motion.button
+                                      key={type}
+                                      whileTap={{ scale: 0.97 }}
+                                      onMouseDown={(e) => e.preventDefault()}
+                                      onClick={() => handleSelectActivity(type)}
+                                      className="flex flex-col items-center gap-1 rounded-xl border border-border px-2 py-2 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
+                                    >
+                                      <span className="text-lg">{config.icon}</span>
+                                      <span className="text-[11px] font-medium text-foreground leading-tight truncate w-full">{config.label}</span>
+                                    </motion.button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* TBD option */}
                 <motion.button
@@ -986,64 +1067,6 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   <CircleHelp className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium text-muted-foreground">TBD — decide later</span>
                 </motion.button>
-
-                <div className="max-h-[320px] overflow-y-auto space-y-3 pr-1">
-                  {/* Custom activities */}
-                  {customActivities.length > 0 && (!activitySearch || customActivities.some(a => a.label.toLowerCase().includes(activitySearch.toLowerCase()))) && (
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5">Your Activities</p>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {customActivities
-                          .filter(a => !activitySearch || a.label.toLowerCase().includes(activitySearch.toLowerCase()))
-                          .map(a => (
-                          <motion.button
-                            key={a.id}
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => handleSelectActivity(a.id)}
-                            className="flex flex-col items-center gap-1 rounded-xl border border-border px-2 py-2 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
-                          >
-                            <span className="text-lg">{a.icon}</span>
-                            <span className="text-[11px] font-medium text-foreground leading-tight truncate w-full">{a.label}</span>
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* All activities grouped by vibe */}
-                  {getAllVibes().map(vibe => {
-                    const vibeConfig = VIBE_CONFIG[vibe];
-                    const activities = getActivitiesByVibe(vibe);
-                    const filtered = activitySearch
-                      ? activities.filter(a => ACTIVITY_CONFIG[a].label.toLowerCase().includes(activitySearch.toLowerCase()))
-                      : activities;
-                    if (filtered.length === 0) return null;
-                    return (
-                      <div key={vibe}>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5 flex items-center gap-1">
-                          <vibeConfig.icon className="h-3 w-3" />
-                          {vibeConfig.label}
-                        </p>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {filtered.map(type => {
-                            const config = ACTIVITY_CONFIG[type];
-                            return (
-                              <motion.button
-                                key={type}
-                                whileTap={{ scale: 0.97 }}
-                                onClick={() => handleSelectActivity(type)}
-                                className="flex flex-col items-center gap-1 rounded-xl border border-border px-2 py-2 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
-                              >
-                                <span className="text-lg">{config.icon}</span>
-                                <span className="text-[11px] font-medium text-foreground leading-tight truncate w-full">{config.label}</span>
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
 
                 {/* Custom activity creation */}
                 {!showCustomInput ? (
