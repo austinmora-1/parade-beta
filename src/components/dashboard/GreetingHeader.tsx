@@ -150,53 +150,69 @@ export function GreetingHeader() {
               <h2 className="text-lg font-display text-foreground">
                 {config.greeting}
               </h2>
-              {needsLocation ? (
-                <Popover open={locationOpen} onOpenChange={(o) => { setLocationOpen(o); if (o) setLocationDraft(''); }}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 -mt-0.5 rounded-md px-1 py-0.5 -mx-1 text-primary hover:bg-primary/10 transition-colors"
-                    >
-                      <MapPin className="h-3 w-3" />
-                      <span className="text-xs font-medium underline-offset-2 underline decoration-dotted">Set location</span>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="w-[280px] p-3 z-50" onOpenAutoFocus={(e) => e.preventDefault()}>
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-foreground">Where are you based?</p>
-                      <CityAutocomplete
-                        value={locationDraft}
-                        onChange={setLocationDraft}
-                        placeholder="Search for your city…"
-                        compact
-                      />
-                      <div className="flex justify-end gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setLocationOpen(false)}
-                          className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveLocation}
-                          disabled={!locationDraft.trim() || savingLocation}
-                          className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                        >
-                          {savingLocation && <Loader2 className="h-3 w-3 animate-spin" />}
-                          Save
-                        </button>
-                      </div>
+              <Popover
+                open={locationOpen}
+                onOpenChange={(o) => {
+                  setLocationOpen(o);
+                  if (o) setLocationDraft(needsLocation ? '' : (profile?.home_address ?? ''));
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-1 -mt-0.5 rounded-md px-1 py-0.5 -mx-1 transition-colors",
+                      needsLocation
+                        ? "text-primary hover:bg-primary/10"
+                        : "text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <MapPin className={cn("h-3 w-3", needsLocation ? "" : "text-primary")} />
+                    <span className={cn(
+                      "text-xs",
+                      needsLocation && "font-medium underline-offset-2 underline decoration-dotted"
+                    )}>
+                      {needsLocation ? 'Set location' : currentCity}
+                    </span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-[280px] p-3 z-50" onOpenAutoFocus={(e) => e.preventDefault()}>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-foreground">
+                      {needsLocation ? 'Where are you based?' : 'Update your location'}
+                    </p>
+                    <CityAutocomplete
+                      value={locationDraft}
+                      onChange={setLocationDraft}
+                      placeholder="Search for your city…"
+                      compact
+                    />
+                    {!needsLocation && (
+                      <p className="text-[10px] text-muted-foreground leading-snug">
+                        We'll keep this until your next trip or flight syncs from your calendar.
+                      </p>
+                    )}
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setLocationOpen(false)}
+                        className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveLocation}
+                        disabled={!locationDraft.trim() || savingLocation}
+                        className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                      >
+                        {savingLocation && <Loader2 className="h-3 w-3 animate-spin" />}
+                        Save
+                      </button>
                     </div>
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <div className="flex items-center gap-1 text-muted-foreground -mt-0.5">
-                  <MapPin className="h-3 w-3 text-primary" />
-                  <span className="text-xs">{currentCity}</span>
-                </div>
-              )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* FAB */}
