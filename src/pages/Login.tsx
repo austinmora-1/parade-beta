@@ -8,11 +8,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
-import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function Login() {
   const { signIn, signUp, resetPassword } = useAuth();
+  const { scheme } = useColorScheme();
+  const gradient =
+    scheme === 'coral'
+      ? 'linear-gradient(135deg, #2A0F0A 0%, #5C1F18 100%)'
+      : 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect');
@@ -96,16 +101,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6" style={{ background: 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)' }}>
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6" style={{ background: gradient }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-sm"
       >
-        {/* Logo */}
+        {/* Wordmark */}
         <div className="text-center mb-8">
-          <img src={paradeElephantLogo} alt="Parade" className="h-20 w-20 mx-auto mb-4" />
           <ParadeWordmark size="lg" className="text-primary drop-shadow-lg" />
         </div>
 
