@@ -41,17 +41,22 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
   setVibe: async (vibe, userId) => {
     if (!userId) return;
 
+    // Optimistic update first so UI persists immediately
+    set({ currentVibe: vibe });
+    patchVibeInCache(userId, vibe);
+
     const { error } = await supabase
       .from('profiles')
-      .update({ current_vibe: vibe?.type || null, vibe_gif_url: vibe?.gifUrl || null })
+      .update({
+        current_vibe: vibe?.type || null,
+        vibe_gif_url: vibe?.gifUrl || null,
+        custom_vibe_tags: vibe?.customTags || [],
+      })
       .eq('user_id', userId);
 
     if (error) {
       console.error('Error setting vibe:', error);
-      return;
     }
-    set({ currentVibe: vibe });
-    patchVibeInCache(userId, vibe);
   },
 
   addCustomVibe: async (tag, userId) => {
@@ -65,17 +70,16 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
     const vibeType = currentVibe?.type || 'custom';
     const newVibe: Vibe = { type: vibeType, customTags: newTags, gifUrl: currentVibe?.gifUrl };
 
+    // Optimistic update
+    set({ currentVibe: newVibe });
+    patchVibeInCache(userId, newVibe);
+
     const { error } = await supabase
       .from('profiles')
       .update({ current_vibe: vibeType, custom_vibe_tags: newTags })
       .eq('user_id', userId);
 
-    if (error) {
-      console.error('Error adding custom vibe:', error);
-      return;
-    }
-    set({ currentVibe: newVibe });
-    patchVibeInCache(userId, newVibe);
+    if (error) console.error('Error adding custom vibe:', error);
   },
 
   removeCustomVibe: async (tag, userId) => {
@@ -89,29 +93,29 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
 
     if (newTags.length === 0) {
       const keepVibe = vibeType !== 'custom' || !!gifUrl;
+      const next = keepVibe ? { type: vibeType, customTags: [], gifUrl } : null;
+
+      // Optimistic update
+      set({ currentVibe: next });
+      patchVibeInCache(userId, next);
+
       const { error } = await supabase
         .from('profiles')
         .update({ current_vibe: keepVibe ? vibeType : null, custom_vibe_tags: [] })
         .eq('user_id', userId);
-      if (error) {
-        console.error('Error removing custom vibe:', error);
-        return;
-      }
-      const next = keepVibe ? { type: vibeType, customTags: [], gifUrl } : null;
+      if (error) console.error('Error removing custom vibe:', error);
+    } else {
+      const next = { type: vibeType, customTags: newTags, gifUrl };
+
+      // Optimistic update
       set({ currentVibe: next });
       patchVibeInCache(userId, next);
-    } else {
+
       const { error } = await supabase
         .from('profiles')
         .update({ custom_vibe_tags: newTags })
         .eq('user_id', userId);
-      if (error) {
-        console.error('Error removing custom vibe:', error);
-        return;
-      }
-      const next = { type: vibeType, customTags: newTags, gifUrl };
-      set({ currentVibe: next });
-      patchVibeInCache(userId, next);
+      if (error) console.error('Error removing custom vibe:', error);
     }
   },
 }));
