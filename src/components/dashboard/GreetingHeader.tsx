@@ -9,8 +9,10 @@ import { formatCityForDisplay } from '@/lib/formatCity';
 import { useTheme } from 'next-themes';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAvailabilityStore } from '@/stores/availabilityStore';
 import { toast } from 'sonner';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
