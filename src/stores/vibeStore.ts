@@ -18,14 +18,20 @@ function patchVibeInCache(userId: string, vibe: Vibe | null) {
   }).catch(() => {});
 }
 
+// Window during which we ignore "stale" remote updates that may overwrite a fresh local mutation.
+const LOCAL_MUTATION_GUARD_MS = 10_000;
+
 export interface VibeState {
   currentVibe: Vibe | null;
   userTimezone: string;
+  lastLocalMutationAt: number;
 }
 
 export interface VibeActions {
   _setVibe: (currentVibe: Vibe | null) => void;
   _setTimezone: (tz: string) => void;
+  /** Apply a remote vibe (from RPC/cache). Skipped if a local mutation happened recently. */
+  applyRemoteVibe: (currentVibe: Vibe | null) => void;
   setVibe: (vibe: Vibe | null, userId: string) => Promise<void>;
   addCustomVibe: (tag: string, userId: string) => Promise<void>;
   removeCustomVibe: (tag: string, userId: string) => Promise<void>;
@@ -34,15 +40,25 @@ export interface VibeActions {
 export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
   currentVibe: null,
   userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  lastLocalMutationAt: 0,
 
   _setVibe: (currentVibe) => set({ currentVibe }),
   _setTimezone: (tz) => set({ userTimezone: tz }),
+
+  applyRemoteVibe: (currentVibe) => {
+    const { lastLocalMutationAt } = get();
+    if (Date.now() - lastLocalMutationAt < LOCAL_MUTATION_GUARD_MS) {
+      // A local mutation just happened — ignore the (likely stale) remote snapshot.
+      return;
+    }
+    set({ currentVibe });
+  },
 
   setVibe: async (vibe, userId) => {
     if (!userId) return;
 
     // Optimistic update first so UI persists immediately
-    set({ currentVibe: vibe });
+    set({ currentVibe: vibe, lastLocalMutationAt: Date.now() });
     patchVibeInCache(userId, vibe);
 
     const { error } = await supabase
@@ -71,7 +87,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
     const newVibe: Vibe = { type: vibeType, customTags: newTags, gifUrl: currentVibe?.gifUrl };
 
     // Optimistic update
-    set({ currentVibe: newVibe });
+    set({ currentVibe: newVibe, lastLocalMutationAt: Date.now() });
     patchVibeInCache(userId, newVibe);
 
     const { error } = await supabase
@@ -96,7 +112,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
       const next = keepVibe ? { type: vibeType, customTags: [], gifUrl } : null;
 
       // Optimistic update
-      set({ currentVibe: next });
+      set({ currentVibe: next, lastLocalMutationAt: Date.now() });
       patchVibeInCache(userId, next);
 
       const { error } = await supabase
@@ -108,7 +124,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
       const next = { type: vibeType, customTags: newTags, gifUrl };
 
       // Optimistic update
-      set({ currentVibe: next });
+      set({ currentVibe: next, lastLocalMutationAt: Date.now() });
       patchVibeInCache(userId, next);
 
       const { error } = await supabase
