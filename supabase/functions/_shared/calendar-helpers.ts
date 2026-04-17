@@ -264,6 +264,42 @@ export function isFlightEvent(eventOrSummary: { summary?: string } | string | un
 
 // ── Location Helpers ───────────────────────────────────────────────────────
 
+/**
+ * Maps neighborhoods, boroughs, suburbs, and nearby airport-served cities
+ * to their canonical metro area. Used to detect when a flight (e.g. to EWR
+ * for a Brooklyn-based user) represents a return home.
+ */
+const METRO_ALIASES: Record<string, string> = {
+  // NYC metro
+  'new york': 'new york city', 'new york city': 'new york city', nyc: 'new york city',
+  manhattan: 'new york city', brooklyn: 'new york city', queens: 'new york city',
+  bronx: 'new york city', 'the bronx': 'new york city', 'staten island': 'new york city',
+  newark: 'new york city', 'jersey city': 'new york city', hoboken: 'new york city',
+  // LA metro
+  'los angeles': 'los angeles', la: 'los angeles', hollywood: 'los angeles',
+  'west hollywood': 'los angeles', 'beverly hills': 'los angeles',
+  'santa monica': 'los angeles', 'culver city': 'los angeles', burbank: 'los angeles',
+  glendale: 'los angeles', pasadena: 'los angeles', 'long beach': 'los angeles',
+  // SF Bay Area
+  'san francisco': 'san francisco', sf: 'san francisco', oakland: 'san francisco',
+  berkeley: 'san francisco', 'daly city': 'san francisco',
+  'south san francisco': 'san francisco',
+  // DC metro
+  'washington': 'washington dc', 'washington dc': 'washington dc', dc: 'washington dc',
+  arlington: 'washington dc', alexandria: 'washington dc',
+  // Chicago metro
+  chicago: 'chicago', evanston: 'chicago',
+  // Dallas metro
+  dallas: 'dallas', 'fort worth': 'dallas', plano: 'dallas', irving: 'dallas',
+  // London metro
+  london: 'london',
+}
+
+function canonicalizeMetro(value: string): string {
+  const cleaned = value.toLowerCase().trim().replace(/\s*(city|town|village)$/i, '').trim()
+  return METRO_ALIASES[cleaned] ?? cleaned
+}
+
 export function isCityMatchingHome(city: string, homeAddress: string | null): boolean {
   if (!city || !homeAddress) return false
   const normCity = city.toLowerCase().trim()
@@ -272,6 +308,10 @@ export function isCityMatchingHome(city: string, homeAddress: string | null): bo
   const homeCity = normHome.split(',')[0].trim().replace(/\s*(city|town|village)$/i, '').trim()
   const flightCity = normCity.replace(/\s*(city|town|village)$/i, '').trim()
   if (homeCity && flightCity && (homeCity.includes(flightCity) || flightCity.includes(homeCity))) return true
+  // Metro-alias match: e.g. flight to EWR (→ "new york city") for a Brooklyn-based user
+  const homeMetro = canonicalizeMetro(homeCity)
+  const flightMetro = canonicalizeMetro(flightCity)
+  if (homeMetro && flightMetro && homeMetro === flightMetro) return true
   return false
 }
 
