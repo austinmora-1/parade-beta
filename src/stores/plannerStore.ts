@@ -242,7 +242,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
             defaultSettings: stale.defaultSettings,
             homeAddress: stale.homeAddress,
           });
-          useVibeStore.setState({ currentVibe: stale.currentVibe, userTimezone: stale.userTimezone });
+          useVibeStore.setState({ userTimezone: stale.userTimezone });
+          useVibeStore.getState().applyRemoteVibe(stale.currentVibe);
           set({ isLoading: false, lastFetchedAt: cached.cachedAt });
           if (!force && Date.now() - cached.cachedAt < 120_000) {
             return;
@@ -294,7 +295,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           defaultSettings: transformed.defaultSettings,
           homeAddress: transformed.homeAddress,
         });
-        useVibeStore.setState({ currentVibe: transformed.currentVibe, userTimezone: transformed.userTimezone });
+        useVibeStore.setState({ userTimezone: transformed.userTimezone });
+        useVibeStore.getState().applyRemoteVibe(transformed.currentVibe);
         set({ isLoading: false, lastFetchedAt: Date.now() });
 
         setCachedDashboard(userId, rpcData).catch(() => {});
