@@ -155,6 +155,7 @@ const AppRoutes = () => {
       <Route path="/plan/:planId" element={<ErrorBoundary scope="PlanDetail"><PlanDetail /></ErrorBoundary>} />
       <Route path="/trips" element={<ErrorBoundary scope="Trips"><Trips /></ErrorBoundary>} />
       <Route path="/trip/:tripId" element={<ErrorBoundary scope="TripDetail"><TripDetail /></ErrorBoundary>} />
+      <Route path="/proposal/:id" element={<ErrorBoundary scope="ProposalDetail"><ProposalDetail /></ErrorBoundary>} />
       <Route path="/settings" element={<ErrorBoundary scope="Settings"><Settings /></ErrorBoundary>} />
     </Route>
     <Route path="*" element={<NotFound />} />
