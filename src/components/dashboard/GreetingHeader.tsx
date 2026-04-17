@@ -12,6 +12,7 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
