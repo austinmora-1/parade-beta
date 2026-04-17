@@ -374,7 +374,6 @@ function TripCard({
   onNavigate: () => void;
   onConverted: () => Promise<void>;
 }) {
-  const [converting, setConverting] = useState(false);
   const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [friendProfiles, setFriendProfiles] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
 
@@ -384,47 +383,6 @@ function TripCard({
       .rpc('get_display_names_for_users', { p_user_ids: trip.priority_friend_ids })
       .then(({ data }) => { if (data) setFriendProfiles(data); });
   }, [trip.priority_friend_ids]);
-
-  const handleConvertToVisit = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setConverting(true);
-    try {
-      const { data: proposal, error: propError } = await supabase
-        .from('trip_proposals')
-        .insert({
-          created_by: currentUserId,
-          destination: trip.location,
-          proposal_type: 'visit',
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (propError || !proposal) throw propError;
-
-      await supabase.from('trip_proposal_dates').insert({
-        proposal_id: proposal.id,
-        start_date: trip.start_date,
-        end_date: trip.end_date,
-      });
-
-      await supabase.from('trip_proposal_participants').insert({
-        proposal_id: proposal.id,
-        user_id: currentUserId,
-        status: 'accepted',
-      });
-
-      await supabase.from('trips').delete().eq('id', trip.id);
-
-      toast.success('Converted to visit proposal');
-      await onConverted();
-    } catch (err) {
-      console.error('Error converting trip:', err);
-      toast.error('Failed to convert trip');
-    } finally {
-      setConverting(false);
-    }
-  };
 
   return (
     <div
