@@ -1018,7 +1018,7 @@ function ProposalTripCard({
                 {cardTitle}
               </span>
               
-              {isCreator && (
+              {isCreator ? (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
                   <Button
                     variant="ghost"
@@ -1033,25 +1033,18 @@ function ProposalTripCard({
                     variant="ghost"
                     size="icon"
                     className="h-5 w-5"
-                    disabled={converting}
-                    onClick={handleConvertType}
-                    title={isVisit ? 'Convert to trip' : 'Convert to visit'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditDestination(proposal.destination || '');
+                      setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
+                      setEditOpen(true);
+                    }}
+                    title="Edit proposal"
                   >
-                    {converting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowLeftRight className="h-3 w-3" />}
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
-                    setEditDestination(proposal.destination || '');
-                    setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
-                    setEditOpen(true);
-                  }}>
                     <Edit2 className="h-3 w-3" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
                 </div>
-              )}
-              {!isCreator && (
+              ) : (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
                   <Button
                     variant="ghost"
@@ -1061,16 +1054,6 @@ function ProposalTripCard({
                     title="Share invite link"
                   >
                     <Share2 className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5"
-                    disabled={converting}
-                    onClick={handleConvertType}
-                    title={isVisit ? 'Convert to trip' : 'Convert to visit'}
-                  >
-                    {converting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowLeftRight className="h-3 w-3" />}
                   </Button>
                 </div>
               )}
