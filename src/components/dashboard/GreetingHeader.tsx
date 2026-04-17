@@ -54,7 +54,7 @@ const menuItems = [
 ] as const;
 
 export function GreetingHeader() {
-  const { profile, refreshProfile } = useCurrentUserProfile();
+  const { profile, updateProfile } = useCurrentUserProfile();
   const { plans, friends, availabilityMap, userTimezone } = usePlannerStore();
   const { user } = useAuth();
   const { resolvedTheme } = useTheme();
