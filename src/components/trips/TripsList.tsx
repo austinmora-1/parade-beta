@@ -965,18 +965,27 @@ function ProposalTripCard({
 
         {/* Card header */}
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
-            allVoted ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
-          )}>
+          <button
+            type="button"
+            onClick={() => navigate(`/proposal/${proposal.id}`)}
+            className={cn(
+              "flex items-center justify-center h-10 w-10 rounded-lg shrink-0 transition-opacity hover:opacity-80",
+              allVoted ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
+            )}
+            title="Open proposal details"
+          >
             <CardIcon className="h-5 w-5" />
-          </div>
+          </button>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="font-medium text-sm truncate text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => navigate(`/proposal/${proposal.id}`)}
+                className="font-medium text-sm truncate text-muted-foreground text-left hover:text-foreground transition-colors min-w-0"
+              >
                 {cardTitle}
-              </span>
+              </button>
               
               {isCreator ? (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
