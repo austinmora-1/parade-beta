@@ -66,6 +66,7 @@ export function GreetingHeader() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [locationDraft, setLocationDraft] = useState('');
+  const [saveAsHome, setSaveAsHome] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
 
   const config = useMemo(() => {
