@@ -671,15 +671,14 @@ function ProposalTripCard({
     return sorted[0];
   }, [proposal.dates, bordaScores]);
 
+  const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [editDestination, setEditDestination] = useState(proposal.destination || '');
   const [editDates, setEditDates] = useState(
     proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date }))
   );
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [justFinalized, setJustFinalized] = useState(false);
 
