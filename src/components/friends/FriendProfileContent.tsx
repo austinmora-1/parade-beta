@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { normalizeCity } from '@/lib/locationMatch';
+import { formatCityForDisplay } from '@/lib/formatCity';
 import { formatDisplayName } from '@/lib/formatName';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
