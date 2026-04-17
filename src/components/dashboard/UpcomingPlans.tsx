@@ -12,6 +12,7 @@ import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDisplayName } from '@/lib/formatName';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { getCurrentTimeInTimezone, getTimezoneAbbreviation } from '@/lib/timezone';
@@ -111,7 +112,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
         ...(allParts || []).map(p => p.user_id),
       ])];
       const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allUserIds });
-      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: p.display_name, avatar: p.avatar_url }]));
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: formatDisplayName({ firstName: p.first_name, lastName: p.last_name, displayName: p.display_name }), avatar: p.avatar_url }]));
 
       const mapped = proposalsData.map(prop => {
         const myRow = myParticipations.find(p => p.proposal_id === prop.id)!;
@@ -451,7 +452,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     <div className="flex flex-col items-center justify-center py-6 text-center">
       <div className="mb-3 text-4xl">📅</div>
       <p className="text-muted-foreground">No upcoming plans this week</p>
-      <p className="text-sm text-muted-foreground">Create a new plan or chat with Elly!</p>
+      <p className="text-sm text-muted-foreground">Make a plan to get started!</p>
     </div>
   ) : (
     <div className="space-y-4">

@@ -1560,7 +1560,7 @@ export type Database = {
           destination: string | null
           host_user_id: string | null
           id: string
-          proposal_type: string | null
+          proposal_type: string
           status: string
           updated_at: string
         }
@@ -1570,7 +1570,7 @@ export type Database = {
           destination?: string | null
           host_user_id?: string | null
           id?: string
-          proposal_type?: string | null
+          proposal_type?: string
           status?: string
           updated_at?: string
         }
@@ -1580,7 +1580,7 @@ export type Database = {
           destination?: string | null
           host_user_id?: string | null
           id?: string
-          proposal_type?: string | null
+          proposal_type?: string
           status?: string
           updated_at?: string
         }

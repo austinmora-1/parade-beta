@@ -469,49 +469,38 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
     setSending(true);
 
     try {
-      const sortedWeekends = [...selectedWeekends].sort((a, b) => a.fridayDate.getTime() - b.fridayDate.getTime());
-      const earliestStart = format(sortedWeekends[0].fridayDate, 'yyyy-MM-dd');
-      const latestEnd = format(sortedWeekends[sortedWeekends.length - 1].sundayDate, 'yyyy-MM-dd');
-
-      // Create unified trip in proposal state
-      const { data: trip, error: tripErr } = await supabase
-        .from('trips')
+      // Create proposal
+      const { data: proposal, error: proposalErr } = await supabase
+        .from('trip_proposals')
         .insert({
-          user_id: userId,
           created_by: userId,
-          location: destination || null,
-          start_date: earliestStart,
-          end_date: latestEnd,
-          status: 'proposal',
+          destination: destination || null,
+          status: 'pending',
           proposal_type: proposalType,
           host_user_id: proposalType === 'visit' ? hostUserId : null,
-          available_slots: [],
-          priority_friend_ids: [],
-          needs_return_date: false,
         } as any)
         .select('id')
         .single();
-      if (tripErr || !trip) throw tripErr;
+      if (proposalErr || !proposal) throw proposalErr;
 
-      // Insert candidate dates
+      // Insert dates
       const dateRows = selectedWeekends.map(w => ({
-        trip_id: trip.id,
+        proposal_id: proposal.id,
         start_date: format(w.fridayDate, 'yyyy-MM-dd'),
         end_date: format(w.sundayDate, 'yyyy-MM-dd'),
       }));
-      await supabase.from('trip_date_options').insert(dateRows);
+      await supabase.from('trip_proposal_dates').insert(dateRows);
 
       // Insert participants (including the creator)
       const friendUserIds = selectedFriends.map(f => f.friendUserId).filter(Boolean) as string[];
       const allParticipantIds = [userId, ...friendUserIds.filter(id => id !== userId)];
       const participantRows = allParticipantIds.map(uid => ({
-        trip_id: trip.id,
-        friend_user_id: uid,
+        proposal_id: proposal.id,
         user_id: uid,
-        status: uid === userId ? 'voted' as const : 'invited' as const,
+        status: uid === userId ? 'voted' as const : 'pending' as const,
       }));
       if (participantRows.length > 0) {
-        await supabase.from('trip_participants').insert(participantRows);
+        await supabase.from('trip_proposal_participants').insert(participantRows);
       }
 
       // Send push notifications to participants (fire-and-forget)

@@ -1,12 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, addMonths } from 'date-fns';
-import { Plane, Clock } from 'lucide-react';
+import { format, addMonths, isWithinInterval, startOfDay } from 'date-fns';
+import { Plane, Clock, Home } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CollapsibleWidget } from './CollapsibleWidget';
+import { formatDisplayName } from '@/lib/formatName';
+import { formatCityForDisplay } from '@/lib/formatCity';
 
 export function UpcomingTripsAndVisits() {
   const { user } = useAuth();
@@ -48,7 +51,7 @@ export function UpcomingTripsAndVisits() {
       if (allFriendIds.length > 0) {
         const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allFriendIds });
         for (const p of (profiles || [])) {
-          profileMap.set(p.user_id, { name: p.display_name, avatar: p.avatar_url });
+          profileMap.set(p.user_id, { name: formatDisplayName({ firstName: (p as any).first_name, lastName: (p as any).last_name, displayName: p.display_name }), avatar: p.avatar_url });
         }
       }
 
@@ -86,7 +89,7 @@ export function UpcomingTripsAndVisits() {
         ...(allParts || []).map(p => p.user_id),
       ])];
       const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allUserIds });
-      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: p.display_name, avatar: p.avatar_url }]));
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: formatDisplayName({ firstName: p.first_name, lastName: p.last_name, displayName: p.display_name }), avatar: p.avatar_url }]));
 
       const mapped = proposalsData.map(prop => {
         const myRow = myParticipations.find(p => p.proposal_id === prop.id)!;
@@ -150,8 +153,14 @@ export function UpcomingTripsAndVisits() {
                 <div className="flex items-center gap-2">
                   <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
                   <span className="text-sm font-medium truncate">
-                    {trip.location ? `Trip to ${trip.location.split(',')[0]}` : 'Trip'}
+                    {trip.location ? `Trip to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}` : 'Trip'}
                   </span>
+                  {isWithinInterval(startOfDay(new Date()), {
+                    start: startOfDay(new Date(trip.start_date + 'T00:00:00')),
+                    end: startOfDay(new Date(trip.end_date + 'T00:00:00')),
+                  }) && (
+                    <Badge variant="default" className="text-[9px] px-1.5 py-0 shrink-0">In Progress</Badge>
+                  )}
                 </div>
                 <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                   <span className="flex items-center gap-0.5">
@@ -196,7 +205,11 @@ export function UpcomingTripsAndVisits() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+                    {isVisit ? (
+                      <Home className="h-[18px] w-[18px] text-primary shrink-0" />
+                    ) : (
+                      <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+                    )}
                     <span className="text-sm font-medium truncate text-muted-foreground">
                       {proposal.destination
                         ? `${isVisit ? 'Visit' : 'Trip'} to ${proposal.destination}`
