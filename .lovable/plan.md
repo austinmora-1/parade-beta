@@ -1,71 +1,89 @@
 
 
-## Root cause
+## Goal
+Change the inline location-set in `GreetingHeader` so it defaults to setting **today's current location only** (via `availability` table), with an opt-in checkbox to also persist as **home base** (via `profiles.home_address`).
 
-The `calendar-sync-worker` (the **background cron job that runs every 2 hours**) has its own copy of sync logic that **ignores per-event timezones**:
+## Current behavior
+The popover's `handleSaveLocation` writes to `profiles.home_address` + `timezone` directly, treating it as permanent home.
 
-**iCal worker (lines 364–388 of `calendar-sync-worker/index.ts`):**
-- `getDateString(event.dtstart)` — no timezone arg → uses UTC for the date
-- `event.dtstart.getUTCHours()` — UTC hour for the time slot
-- `formatTimeHHMM(event.dtstart, userTimezone)` — viewer's TZ for the HH:MM
-- `source_timezone: userTimezone` — viewer's TZ stored, ignoring `event.tzid`
+## New behavior
 
-The on-demand `ical-sync` was already fixed (line 217: `event.tzid || userTimezone`) — but the worker wasn't, so every 2 hours the cron overwrites it back to `2026-04-17 / 21:30 NY`.
+When user opens the popover from "Set location":
+1. **Default action** — save as today's current location:
+   - Upsert into `availability` for today's date with `location_status='away'`, `trip_location=<city>`. This mirrors how `LocationToggle` / trip auto-creation already works and will flow through the existing trip-merging trigger.
+2. **Optional checkbox** — "Also save as my home location":
+   - When checked, additionally update `profiles.home_address` and `timezone`, and call `updateProfile(...)` to refresh local state.
 
-**Verified from the iCal feed:** the actual event is `DTSTART;TZID=America/Los_Angeles:20260416T183000` — should be stored as `date=2026-04-16, start_time=18:30, source_timezone=America/Los_Angeles`.
+## UI changes (`src/components/dashboard/GreetingHeader.tsx`)
 
-The Google worker has the same class of bug — it always uses the viewer's timezone instead of the event's own timezone (Google returns `start.timeZone` per event, plus `start.dateTime` includes an offset).
+Inside the popover, below `CityAutocomplete`, add:
+```
+[ ] Also save as my home location
+```
+Using the existing `Checkbox` component from `@/components/ui/checkbox`.
 
-## Fix
+State additions:
+- `saveAsHome: boolean` (default `false`)
 
-### 1. `supabase/functions/calendar-sync-worker/index.ts` — iCal section (lines 364–388)
+Reset `saveAsHome` to `false` whenever popover opens (alongside `locationDraft`).
 
-Mirror the on-demand `ical-sync` logic exactly:
-- `eventTimezone = (!event.isAllDay && event.tzid) ? event.tzid : userTimezone`
-- Use `eventTimezone` for `getDateString`, `getHourInTimezone`, `formatTimeHHMM`, and `source_timezone`.
+## Save logic rewrite
 
-### 2. `supabase/functions/calendar-sync-worker/index.ts` — Google section (lines 243–275)
-
-Apply per-event timezone:
-- `eventTimezone = event.start.timeZone || timezone`
-- Use it for `getDateString`, `getHourInTimezone`, `formatTimeHHMM`, and `source_timezone`.
-
-### 3. `supabase/functions/google-calendar-sync/index.ts` — same per-event TZ fix (lines 142–172)
-
-Same pattern — prefer `event.start.timeZone` over the viewer's `timezone`.
-
-### 4. `supabase/functions/_shared/calendar-helpers.ts` — extend `CalendarEvent`
-
-Add the optional fields Google already returns (currently dropped):
 ```ts
-export interface CalendarEvent {
-  id: string
-  summary?: string
-  start: { dateTime?: string; date?: string; timeZone?: string }
-  end:   { dateTime?: string; date?: string; timeZone?: string }
-  location?: string
-}
+const handleSaveLocation = async () => {
+  const trimmed = locationDraft.trim();
+  if (!trimmed || !user?.id) return;
+  setSavingLocation(true);
+  try {
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    const tz = getTimezoneForCity(trimmed) || profile?.timezone || null;
+
+    // 1. Always: set today's current location via availability upsert
+    const { error: availErr } = await supabase
+      .from('availability')
+      .upsert(
+        {
+          user_id: user.id,
+          date: todayKey,
+          location_status: 'away',
+          trip_location: trimmed,
+        },
+        { onConflict: 'user_id,date' }
+      );
+    if (availErr) throw availErr;
+
+    // 2. Optional: persist as home
+    if (saveAsHome) {
+      const { error: profErr } = await supabase
+        .from('profiles')
+        .update({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) })
+        .eq('user_id', user.id);
+      if (profErr) throw profErr;
+      updateProfile({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) });
+    }
+
+    // 3. Refresh planner store so today's availability reflects new location
+    await usePlannerStore.getState().reloadAvailability?.();
+    
+    toast.success(saveAsHome ? 'Location saved as home' : 'Current location set');
+    setLocationOpen(false);
+    setLocationDraft('');
+    setSaveAsHome(false);
+  } catch (err: any) {
+    toast.error(err.message || 'Failed to save location');
+  } finally {
+    setSavingLocation(false);
+  }
+};
 ```
 
-### 5. One-shot DB cleanup
-
-Trigger an immediate `ical-sync` after deploy (the user can do this via the existing "Sync now" button in Calendar Integration). This will rewrite the Docklands plan with the correct LA timezone, and from then on the cron worker will no longer corrupt it.
-
-## Why this fully fixes the symptom
-
-- The event's true local time (PDT) is now the source of truth at write-time, regardless of which sync path runs (foreground, cron, Google, iCal).
-- `source_timezone` correctly stores the **event's** zone, not the **viewer's**, so the client converts properly when rendering for any viewer in any location.
-- The two-hour cron will no longer "revert" anything, because both paths now produce identical values.
+Note: I'll verify `plannerStore` has a refresh method for availability (likely `loadAvailability` or via `useAvailabilityStore`); if not, fall back to manually patching the local store similar to how `LocationToggle` does it. Will inspect during implementation.
 
 ## Files touched
-
-- `supabase/functions/calendar-sync-worker/index.ts` — apply per-event TZ for both iCal and Google
-- `supabase/functions/google-calendar-sync/index.ts` — apply per-event TZ
-- `supabase/functions/_shared/calendar-helpers.ts` — add `timeZone?: string` to `CalendarEvent`
+- `src/components/dashboard/GreetingHeader.tsx` — add checkbox, refactor save logic, import `Checkbox` and `usePlannerStore` already imported.
 
 ## Verification
-
-1. Deploy → click "Sync now" in Calendar Integration → Docklands plan moves to **Thu Apr 16, 6:30 PM PDT** (displayed as 9:30 PM ET if viewer is in NY, or 6:30 PM PT if viewer is in Redwood City).
-2. Wait for the 2-hour cron → plan stays on Apr 16 — no revert.
-3. Repeat for the JFK→SFO Delta flight (which has `TZID=America/New_York`): should show 3:20 PM ET / 12:20 PM PT, on April 13. No drift after cron.
+1. Open dashboard with no `home_address` set → "Set location" appears.
+2. Pick city, leave checkbox unchecked → Save → today's `currentCity` updates to that city, but `profile.home_address` remains null (next day's view falls back to "Set location" again unless next day also away).
+3. Same flow with checkbox checked → both today's availability and profile home are updated; persists across days.
 
