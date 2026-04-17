@@ -387,6 +387,12 @@ export function AddParticipantDialog({
             })
           )}
         </div>
+
+        <div className="flex justify-end pt-2 border-t">
+          <Button size="sm" onClick={() => onOpenChange(false)}>
+            Done{addedIds.size > 0 ? ` · ${addedIds.size} added` : ''}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
