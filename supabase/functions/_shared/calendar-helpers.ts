@@ -783,8 +783,8 @@ export function parseICSDate(line: string): { date: Date; allDay: boolean } | nu
 export interface CalendarEvent {
   id: string
   summary?: string
-  start: { dateTime?: string; date?: string }
-  end: { dateTime?: string; date?: string }
+  start: { dateTime?: string; date?: string; timeZone?: string }
+  end: { dateTime?: string; date?: string; timeZone?: string }
   location?: string
 }
 
