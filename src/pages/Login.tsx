@@ -285,6 +285,12 @@ export default function Login() {
             </button>
           </p>
         )}
+
+        <div className="flex items-center justify-center gap-3 mt-6 text-xs text-white/60">
+          <a href="/privacy" className="hover:text-white transition-colors underline underline-offset-2">Privacy Policy</a>
+          <span>·</span>
+          <a href="/terms" className="hover:text-white transition-colors underline underline-offset-2">Terms & Conditions</a>
+        </div>
       </motion.div>
     </div>
   );
