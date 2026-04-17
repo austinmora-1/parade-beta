@@ -20,11 +20,12 @@ interface TripDateOption {
 
 interface TripInviteData {
   invite_status: string;
-  proposal_id: string;
-  trip_id: string | null;
+  trip_id: string;
   destination: string | null;
   proposal_type: 'trip' | 'visit';
-  proposal_status: string;
+  trip_status: string;
+  start_date: string;
+  end_date: string;
   host: {
     user_id: string;
     display_name: string | null;
@@ -86,7 +87,7 @@ export default function TripInvite() {
     try {
       const { data, error } = await supabase.rpc('accept_trip_invite', { p_token: token });
       if (error) throw error;
-      const result = data as { proposal_id: string; trip_id: string | null };
+      const result = data as { trip_id: string };
       toast.success("You've joined the trip!");
       if (result.trip_id) {
         navigate(`/trip/${result.trip_id}`);

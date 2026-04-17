@@ -5,8 +5,8 @@ import { ShareLinkDialog } from '@/components/share/ShareLinkDialog';
 interface InviteToTripDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  proposalId: string;
-  tripId?: string | null;
+  /** Unified trip id (covers both proposal and confirmed states). */
+  tripId: string;
   destination?: string | null;
   proposalType?: 'trip' | 'visit';
 }
@@ -14,7 +14,6 @@ interface InviteToTripDialogProps {
 export function InviteToTripDialog({
   open,
   onOpenChange,
-  proposalId,
   tripId,
   destination,
   proposalType = 'trip',
@@ -33,10 +32,9 @@ export function InviteToTripDialog({
 
   const generateLink = async () => {
     const { data, error } = await supabase
-      .from('trip_proposal_invites')
+      .from('trip_invites')
       .insert({
-        proposal_id: proposalId,
-        trip_id: tripId ?? null,
+        trip_id: tripId,
         invited_by: user!.id,
       })
       .select('invite_token')

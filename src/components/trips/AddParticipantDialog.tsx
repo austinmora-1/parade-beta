@@ -24,14 +24,14 @@ interface CurrentParticipant {
 interface AddParticipantDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** 'proposal' or 'trip' */
-  targetType: 'proposal' | 'trip';
+  /** All participants now live on `trip_participants` regardless of trip lifecycle status. */
+  targetType: 'trip';
   targetId: string;
   /** User IDs already participating (to exclude from search) */
   existingParticipantIds: string[];
   /** Current participants displayed with remove buttons. If omitted, no remove section shown. */
   currentParticipants?: CurrentParticipant[];
-  /** User IDs that may not be removed (e.g. trip owner / proposal creator). */
+  /** User IDs that may not be removed (e.g. trip owner). */
   nonRemovableIds?: string[];
   onAdded: () => Promise<void>;
 }

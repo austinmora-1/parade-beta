@@ -87,52 +87,55 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
   const [tripProposals, setTripProposals] = useState<any[]>([]);
 
-  // Fetch pending trip proposals
+  // Fetch pending trip proposals (unified trips with status='proposal')
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
       const { data: myParticipations } = await supabase
-        .from('trip_proposal_participants')
-        .select('id, proposal_id, status, preferred_date_id, user_id')
+        .from('trip_participants')
+        .select('id, trip_id, status, preferred_date_id, user_id')
         .eq('user_id', user.id);
 
       if (!myParticipations?.length) { setTripProposals([]); return; }
 
-      const proposalIds = myParticipations.map(p => p.proposal_id);
-      const [{ data: proposalsData }, { data: datesData }, { data: allParts }] = await Promise.all([
-        supabase.from('trip_proposals').select('*').in('id', proposalIds).eq('status', 'pending'),
-        supabase.from('trip_proposal_dates').select('*').in('proposal_id', proposalIds).order('start_date'),
-        supabase.from('trip_proposal_participants').select('*').in('proposal_id', proposalIds),
+      const tripIds = myParticipations.map(p => p.trip_id);
+      const [{ data: tripsData }, { data: datesData }, { data: allParts }] = await Promise.all([
+        supabase.from('trips').select('*').in('id', tripIds).eq('status', 'proposal'),
+        supabase.from('trip_date_options').select('*').in('trip_id', tripIds).order('start_date'),
+        supabase.from('trip_participants').select('*').in('trip_id', tripIds),
       ]);
 
-      if (!proposalsData?.length) { setTripProposals([]); return; }
+      if (!tripsData?.length) { setTripProposals([]); return; }
 
       const allUserIds = [...new Set([
-        ...proposalsData.map(p => p.created_by),
-        ...(allParts || []).map(p => p.user_id),
+        ...tripsData.map(t => t.created_by),
+        ...(allParts || []).map(p => p.user_id || p.friend_user_id),
       ])];
       const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allUserIds });
       const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: formatDisplayName({ firstName: p.first_name, lastName: p.last_name, displayName: p.display_name }), avatar: p.avatar_url }]));
 
-      const mapped = proposalsData.map(prop => {
-        const myRow = myParticipations.find(p => p.proposal_id === prop.id)!;
-        const creator = profileMap.get(prop.created_by);
-        const propDates = (datesData || []).filter(d => d.proposal_id === prop.id);
-        const propParticipants = (allParts || [])
-          .filter(p => p.proposal_id === prop.id)
-          .map(p => ({ ...p, display_name: profileMap.get(p.user_id)?.name || 'Unknown', avatar_url: profileMap.get(p.user_id)?.avatar || null }));
-        const votedCount = propParticipants.filter(p => p.status === 'voted').length;
+      const mapped = tripsData.map(trip => {
+        const myRow = myParticipations.find(p => p.trip_id === trip.id)!;
+        const creator = profileMap.get(trip.created_by);
+        const tripDates = (datesData || []).filter(d => d.trip_id === trip.id);
+        const tripParticipants = (allParts || [])
+          .filter(p => p.trip_id === trip.id)
+          .map(p => {
+            const uid = p.user_id || p.friend_user_id;
+            return { ...p, user_id: uid, display_name: profileMap.get(uid)?.name || 'Unknown', avatar_url: profileMap.get(uid)?.avatar || null };
+          });
+        const votedCount = tripParticipants.filter(p => p.status === 'voted').length;
 
         return {
-          id: `proposal-${prop.id}`,
-          proposalId: prop.id,
-          destination: prop.destination,
-          isCreator: prop.created_by === user.id,
+          id: `proposal-${trip.id}`,
+          tripId: trip.id,
+          destination: trip.location,
+          isCreator: trip.created_by === user.id,
           creatorName: creator?.name || 'Someone',
-          dates: propDates,
-          participants: propParticipants,
+          dates: tripDates,
+          participants: tripParticipants,
           votedCount,
-          totalVoters: propParticipants.length,
+          totalVoters: tripParticipants.length,
           myVotedDateId: myRow.preferred_date_id,
           isTripProposal: true,
         };

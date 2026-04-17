@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export interface ActivitySuggestion {
   id: string;
-  proposalId: string;
+  tripId: string;
   suggestedBy: string;
   suggesterName?: string;
   suggesterAvatar?: string | null;
@@ -21,28 +21,28 @@ export interface ActivityVote {
   rank: number;
 }
 
-export function useTripActivities(proposalId: string | null) {
+export function useTripActivities(tripId: string | null) {
   const { user } = useAuth();
   const [suggestions, setSuggestions] = useState<ActivitySuggestion[]>([]);
   const [votes, setVotes] = useState<ActivityVote[]>([]);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    if (!proposalId) {
+    if (!tripId) {
       setSuggestions([]);
       setVotes([]);
       return;
     }
     setLoading(true);
     const { data: sData } = await supabase
-      .from('trip_activity_suggestions' as any)
+      .from('trip_activity_suggestions')
       .select('*')
-      .eq('proposal_id', proposalId)
+      .eq('trip_id', tripId)
       .order('created_at', { ascending: true });
 
     const rows = (sData as any[]) || [];
     const userIds = [...new Set(rows.map(r => r.suggested_by))];
-    let profileMap = new Map<string, { name: string; avatar: string | null }>();
+    const profileMap = new Map<string, { name: string; avatar: string | null }>();
     if (userIds.length > 0) {
       const { data: profs } = await supabase.rpc('get_display_names_for_users', { p_user_ids: userIds });
       for (const p of (profs || [])) {
@@ -52,7 +52,7 @@ export function useTripActivities(proposalId: string | null) {
 
     const suggestionList: ActivitySuggestion[] = rows.map(r => ({
       id: r.id,
-      proposalId: r.proposal_id,
+      tripId: r.trip_id,
       suggestedBy: r.suggested_by,
       suggesterName: profileMap.get(r.suggested_by)?.name,
       suggesterAvatar: profileMap.get(r.suggested_by)?.avatar,
@@ -66,7 +66,7 @@ export function useTripActivities(proposalId: string | null) {
     const ids = suggestionList.map(s => s.id);
     if (ids.length > 0) {
       const { data: vData } = await supabase
-        .from('trip_activity_votes' as any)
+        .from('trip_activity_votes')
         .select('*')
         .in('suggestion_id', ids);
       setVotes(((vData as any[]) || []).map(v => ({
@@ -79,16 +79,16 @@ export function useTripActivities(proposalId: string | null) {
       setVotes([]);
     }
     setLoading(false);
-  }, [proposalId]);
+  }, [tripId]);
 
   useEffect(() => { load(); }, [load]);
 
   const addSuggestion = useCallback(async (title: string, description?: string) => {
-    if (!user || !proposalId) return false;
+    if (!user || !tripId) return false;
     const trimmed = title.trim();
     if (!trimmed) return false;
-    const { error } = await supabase.from('trip_activity_suggestions' as any).insert({
-      proposal_id: proposalId,
+    const { error } = await supabase.from('trip_activity_suggestions').insert({
+      trip_id: tripId,
       suggested_by: user.id,
       title: trimmed.slice(0, 200),
       description: description?.trim().slice(0, 1000) || null,
@@ -99,10 +99,10 @@ export function useTripActivities(proposalId: string | null) {
     }
     await load();
     return true;
-  }, [user, proposalId, load]);
+  }, [user, tripId, load]);
 
   const deleteSuggestion = useCallback(async (id: string) => {
-    const { error } = await supabase.from('trip_activity_suggestions' as any).delete().eq('id', id);
+    const { error } = await supabase.from('trip_activity_suggestions').delete().eq('id', id);
     if (error) return false;
     await load();
     return true;
@@ -110,12 +110,11 @@ export function useTripActivities(proposalId: string | null) {
 
   /** Submit a complete ranking: suggestionId -> rank (1 = top). Replaces all prior votes by this user. */
   const submitRanking = useCallback(async (rankings: Record<string, number>) => {
-    if (!user || !proposalId) return false;
+    if (!user || !tripId) return false;
     const ids = suggestions.map(s => s.id);
     if (ids.length === 0) return false;
-    // Delete existing
     await supabase
-      .from('trip_activity_votes' as any)
+      .from('trip_activity_votes')
       .delete()
       .in('suggestion_id', ids)
       .eq('user_id', user.id);
@@ -129,20 +128,19 @@ export function useTripActivities(proposalId: string | null) {
       await load();
       return true;
     }
-    const { error } = await supabase.from('trip_activity_votes' as any).insert(rows);
+    const { error } = await supabase.from('trip_activity_votes').insert(rows);
     if (error) {
       console.error('submitRanking error', error);
       return false;
     }
     await load();
     return true;
-  }, [user, proposalId, suggestions, load]);
+  }, [user, tripId, suggestions, load]);
 
   /** Borda count: rank 1 of N → N points. */
   const scores = (() => {
     const map = new Map<string, number>();
     for (const s of suggestions) map.set(s.id, 0);
-    // Group votes per user to determine N (per-user ballot length)
     const byUser = new Map<string, ActivityVote[]>();
     for (const v of votes) {
       if (!byUser.has(v.userId)) byUser.set(v.userId, []);

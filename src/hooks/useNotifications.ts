@@ -125,11 +125,11 @@ export function useNotifications() {
   const fetchPendingTripProposals = useCallback(async () => {
     if (!user) return;
     const { count } = await supabase
-      .from('trip_proposal_participants')
-      .select('*, trip_proposals!inner(status)', { count: 'exact', head: true })
+      .from('trip_participants')
+      .select('*, trips!inner(status)', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .eq('status', 'pending')
-      .eq('trip_proposals.status', 'pending');
+      .eq('status', 'invited')
+      .eq('trips.status', 'proposal');
     sharedState = { ...sharedState, pendingTripProposalsCount: count ?? 0 };
     emitChange();
   }, [user]);
@@ -179,7 +179,7 @@ export function useNotifications() {
   useRealtimeHub('plan_participants', '*', () => fetchPendingPlanInvites(), user ? `friend_id=eq.${user.id}` : undefined);
   useRealtimeHub('plan_change_responses', '*', () => fetchPendingChangeRequests(), user ? `participant_id=eq.${user.id}` : undefined);
   useRealtimeHub('plan_photos', 'INSERT', () => fetchNewPlanPhotos());
-  useRealtimeHub('trip_proposal_participants', '*', () => fetchPendingTripProposals(), user ? `user_id=eq.${user.id}` : undefined);
+  useRealtimeHub('trip_participants', '*', () => fetchPendingTripProposals(), user ? `user_id=eq.${user.id}` : undefined);
 
   const incomingRequestsCount = useMemo(() => {
     return friends.filter(f => f.status === 'pending' && f.isIncoming).length;
