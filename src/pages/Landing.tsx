@@ -1,14 +1,20 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { ConfettiBackground } from '@/components/landing/ConfettiBackground';
-import paradeElephantLogo from '@/assets/parade-elephant-dark.png';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function Landing() {
   const signupRef = useRef<HTMLDivElement>(null);
+  const { scheme, setScheme } = useColorScheme();
+
+  // Force green color scheme on landing page
+  useEffect(() => {
+    if (scheme !== 'green') setScheme('green');
+  }, [scheme, setScheme]);
 
   const scrollToSignup = () => {
     signupRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,7 +32,6 @@ export default function Landing() {
           style={{ background: 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)' }}
         />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto w-full flex flex-col items-center" style={{ isolation: 'isolate' }}>
-          <img src={paradeElephantLogo} alt="Parade" className="h-32 w-32 sm:h-40 sm:w-40 mx-auto mb-6" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
