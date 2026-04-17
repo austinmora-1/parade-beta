@@ -41,17 +41,22 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
   setVibe: async (vibe, userId) => {
     if (!userId) return;
 
+    // Optimistic update first so UI persists immediately
+    set({ currentVibe: vibe });
+    patchVibeInCache(userId, vibe);
+
     const { error } = await supabase
       .from('profiles')
-      .update({ current_vibe: vibe?.type || null, vibe_gif_url: vibe?.gifUrl || null })
+      .update({
+        current_vibe: vibe?.type || null,
+        vibe_gif_url: vibe?.gifUrl || null,
+        custom_vibe_tags: vibe?.customTags || [],
+      })
       .eq('user_id', userId);
 
     if (error) {
       console.error('Error setting vibe:', error);
-      return;
     }
-    set({ currentVibe: vibe });
-    patchVibeInCache(userId, vibe);
   },
 
   addCustomVibe: async (tag, userId) => {
