@@ -34,6 +34,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const PlanDetail = lazy(() => import("./pages/PlanDetail"));
 const TripDetail = lazy(() => import("./pages/TripDetail"));
+const ProposalDetail = lazy(() => import("./pages/ProposalDetail"));
 const Trips = lazy(() => import("./pages/Trips"));
 const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
 
