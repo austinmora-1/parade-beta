@@ -1287,38 +1287,38 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          proposal_id: string
           sort_order: number
           suggested_by: string
           title: string
-          trip_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
+          proposal_id: string
           sort_order?: number
           suggested_by: string
           title: string
-          trip_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
+          proposal_id?: string
           sort_order?: number
           suggested_by?: string
           title?: string
-          trip_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "trip_activity_suggestions_trip_id_fkey"
-            columns: ["trip_id"]
+            foreignKeyName: "trip_activity_suggestions_proposal_id_fkey"
+            columns: ["proposal_id"]
             isOneToOne: false
-            referencedRelation: "trips"
+            referencedRelation: "trip_proposals"
             referencedColumns: ["id"]
           },
         ]
@@ -1358,34 +1358,28 @@ export type Database = {
           },
         ]
       }
-      trip_date_options: {
+      trip_participants: {
         Row: {
           created_at: string
-          end_date: string
+          friend_user_id: string
           id: string
-          start_date: string
           trip_id: string
-          votes: number
         }
         Insert: {
           created_at?: string
-          end_date: string
+          friend_user_id: string
           id?: string
-          start_date: string
           trip_id: string
-          votes?: number
         }
         Update: {
           created_at?: string
-          end_date?: string
+          friend_user_id?: string
           id?: string
-          start_date?: string
           trip_id?: string
-          votes?: number
         }
         Relationships: [
           {
-            foreignKeyName: "trip_date_options_trip_id_fkey"
+            foreignKeyName: "trip_participants_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "trips"
@@ -1393,7 +1387,138 @@ export type Database = {
           },
         ]
       }
-      trip_date_votes: {
+      trip_proposal_dates: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          proposal_id: string
+          start_date: string
+          votes: number
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          proposal_id: string
+          start_date: string
+          votes?: number
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          proposal_id?: string
+          start_date?: string
+          votes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_proposal_dates_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_proposal_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string | null
+          id: string
+          invite_token: string
+          invited_by: string
+          proposal_id: string
+          status: string
+          trip_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          invite_token?: string
+          invited_by: string
+          proposal_id: string
+          status?: string
+          trip_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          proposal_id?: string
+          status?: string
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_proposal_invites_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_proposal_invites_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_proposal_participants: {
+        Row: {
+          created_at: string
+          id: string
+          preferred_date_id: string | null
+          proposal_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preferred_date_id?: string | null
+          proposal_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preferred_date_id?: string | null
+          proposal_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_proposal_participants_preferred_date_id_fkey"
+            columns: ["preferred_date_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposal_dates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_proposal_participants_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_proposal_votes: {
         Row: {
           created_at: string
           date_id: string
@@ -1420,153 +1545,96 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "trip_date_votes_date_id_fkey"
+            foreignKeyName: "trip_proposal_votes_date_id_fkey"
             columns: ["date_id"]
             isOneToOne: false
-            referencedRelation: "trip_date_options"
+            referencedRelation: "trip_proposal_dates"
             referencedColumns: ["id"]
           },
         ]
       }
-      trip_invites: {
-        Row: {
-          accepted_at: string | null
-          accepted_by: string | null
-          created_at: string
-          email: string | null
-          id: string
-          invite_token: string
-          invited_by: string
-          status: string
-          trip_id: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          accepted_by?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          invite_token?: string
-          invited_by: string
-          status?: string
-          trip_id: string
-        }
-        Update: {
-          accepted_at?: string | null
-          accepted_by?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          invite_token?: string
-          invited_by?: string
-          status?: string
-          trip_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trip_invites_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      trip_participants: {
+      trip_proposals: {
         Row: {
           created_at: string
-          friend_user_id: string
+          created_by: string
+          destination: string | null
+          host_user_id: string | null
           id: string
-          preferred_date_id: string | null
+          proposal_type: string | null
           status: string
-          trip_id: string
-          user_id: string | null
+          updated_at: string
         }
         Insert: {
           created_at?: string
-          friend_user_id: string
+          created_by: string
+          destination?: string | null
+          host_user_id?: string | null
           id?: string
-          preferred_date_id?: string | null
+          proposal_type?: string | null
           status?: string
-          trip_id: string
-          user_id?: string | null
+          updated_at?: string
         }
         Update: {
           created_at?: string
-          friend_user_id?: string
+          created_by?: string
+          destination?: string | null
+          host_user_id?: string | null
           id?: string
-          preferred_date_id?: string | null
+          proposal_type?: string | null
           status?: string
-          trip_id?: string
-          user_id?: string | null
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "trip_participants_preferred_date_id_fkey"
-            columns: ["preferred_date_id"]
-            isOneToOne: false
-            referencedRelation: "trip_date_options"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trip_participants_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       trips: {
         Row: {
           available_slots: string[]
           created_at: string
-          created_by: string
           end_date: string
-          host_user_id: string | null
           id: string
           location: string | null
           needs_return_date: boolean
           priority_friend_ids: string[]
-          proposal_type: string
+          proposal_id: string | null
           start_date: string
-          status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           available_slots?: string[]
           created_at?: string
-          created_by: string
           end_date: string
-          host_user_id?: string | null
           id?: string
           location?: string | null
           needs_return_date?: boolean
           priority_friend_ids?: string[]
-          proposal_type?: string
+          proposal_id?: string | null
           start_date: string
-          status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           available_slots?: string[]
           created_at?: string
-          created_by?: string
           end_date?: string
-          host_user_id?: string | null
           id?: string
           location?: string | null
           needs_return_date?: boolean
           priority_friend_ids?: string[]
-          proposal_type?: string
+          proposal_id?: string | null
           start_date?: string
-          status?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trips_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "trip_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vibe_comments: {
         Row: {
@@ -2107,7 +2175,10 @@ export type Database = {
           user_id: string
         }[]
       }
-      is_trip_participant: { Args: { p_trip_id: string }; Returns: boolean }
+      is_trip_proposal_participant: {
+        Args: { p_proposal_id: string }
+        Returns: boolean
+      }
       merge_overlapping_trips: { Args: { p_user_id: string }; Returns: number }
       normalize_plan_title_for_dedup: {
         Args: { title: string }
