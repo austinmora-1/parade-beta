@@ -1,15 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, addMonths, isWithinInterval, startOfDay } from 'date-fns';
-import { Plane, Clock, Home } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { format, addMonths } from 'date-fns';
+import { Plane, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CollapsibleWidget } from './CollapsibleWidget';
-import { formatDisplayName } from '@/lib/formatName';
-import { formatCityForDisplay } from '@/lib/formatCity';
 
 export function UpcomingTripsAndVisits() {
   const { user } = useAuth();
@@ -51,7 +48,7 @@ export function UpcomingTripsAndVisits() {
       if (allFriendIds.length > 0) {
         const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allFriendIds });
         for (const p of (profiles || [])) {
-          profileMap.set(p.user_id, { name: formatDisplayName({ firstName: (p as any).first_name, lastName: (p as any).last_name, displayName: p.display_name }), avatar: p.avatar_url });
+          profileMap.set(p.user_id, { name: p.display_name, avatar: p.avatar_url });
         }
       }
 
@@ -64,56 +61,53 @@ export function UpcomingTripsAndVisits() {
     })();
   }, [user?.id]);
 
-  // Fetch pending trip proposals (unified trips with status='proposal')
+  // Fetch pending trip proposals (next 3 months)
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
       const { data: myParticipations } = await supabase
-        .from('trip_participants')
-        .select('id, trip_id, status, preferred_date_id, user_id')
+        .from('trip_proposal_participants')
+        .select('id, proposal_id, status, preferred_date_id, user_id')
         .eq('user_id', user.id);
 
       if (!myParticipations?.length) { setTripProposals([]); return; }
 
-      const tripIds = myParticipations.map(p => p.trip_id);
-      const [{ data: tripsData }, { data: datesData }, { data: allParts }] = await Promise.all([
-        supabase.from('trips').select('*').in('id', tripIds).eq('status', 'proposal'),
-        supabase.from('trip_date_options').select('*').in('trip_id', tripIds).order('start_date'),
-        supabase.from('trip_participants').select('*').in('trip_id', tripIds),
+      const proposalIds = myParticipations.map(p => p.proposal_id);
+      const [{ data: proposalsData }, { data: datesData }, { data: allParts }] = await Promise.all([
+        supabase.from('trip_proposals').select('*').in('id', proposalIds).eq('status', 'pending'),
+        supabase.from('trip_proposal_dates').select('*').in('proposal_id', proposalIds).order('start_date'),
+        supabase.from('trip_proposal_participants').select('*').in('proposal_id', proposalIds),
       ]);
 
-      if (!tripsData?.length) { setTripProposals([]); return; }
+      if (!proposalsData?.length) { setTripProposals([]); return; }
 
       const allUserIds = [...new Set([
-        ...tripsData.map(t => t.created_by),
-        ...(allParts || []).map(p => p.user_id || p.friend_user_id),
+        ...proposalsData.map(p => p.created_by),
+        ...(allParts || []).map(p => p.user_id),
       ])];
       const { data: profiles } = await supabase.rpc('get_display_names_for_users', { p_user_ids: allUserIds });
-      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: formatDisplayName({ firstName: p.first_name, lastName: p.last_name, displayName: p.display_name }), avatar: p.avatar_url }]));
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, { name: p.display_name, avatar: p.avatar_url }]));
 
-      const mapped = tripsData.map(trip => {
-        const myRow = myParticipations.find(p => p.trip_id === trip.id)!;
-        const creator = profileMap.get(trip.created_by);
-        const tripDates = (datesData || []).filter(d => d.trip_id === trip.id);
-        const tripParticipants = (allParts || [])
-          .filter(p => p.trip_id === trip.id)
-          .map(p => {
-            const uid = p.user_id || p.friend_user_id;
-            return { ...p, user_id: uid, display_name: profileMap.get(uid)?.name || 'Unknown', avatar_url: profileMap.get(uid)?.avatar || null };
-          });
-        const votedCount = tripParticipants.filter(p => p.status === 'voted').length;
+      const mapped = proposalsData.map(prop => {
+        const myRow = myParticipations.find(p => p.proposal_id === prop.id)!;
+        const creator = profileMap.get(prop.created_by);
+        const propDates = (datesData || []).filter(d => d.proposal_id === prop.id);
+        const propParticipants = (allParts || [])
+          .filter(p => p.proposal_id === prop.id)
+          .map(p => ({ ...p, display_name: profileMap.get(p.user_id)?.name || 'Unknown', avatar_url: profileMap.get(p.user_id)?.avatar || null }));
+        const votedCount = propParticipants.filter(p => p.status === 'voted').length;
 
         return {
-          id: `proposal-${trip.id}`,
-          tripId: trip.id,
-          destination: trip.location,
-          proposalType: trip.proposal_type,
-          isCreator: trip.created_by === user.id,
+          id: `proposal-${prop.id}`,
+          proposalId: prop.id,
+          destination: prop.destination,
+          proposalType: prop.proposal_type,
+          isCreator: prop.created_by === user.id,
           creatorName: creator?.name || 'Someone',
-          dates: tripDates,
-          participants: tripParticipants,
+          dates: propDates,
+          participants: propParticipants,
           votedCount,
-          totalVoters: tripParticipants.length,
+          totalVoters: propParticipants.length,
           myVotedDateId: myRow.preferred_date_id,
           isTripProposal: true,
         };
@@ -156,14 +150,8 @@ export function UpcomingTripsAndVisits() {
                 <div className="flex items-center gap-2">
                   <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
                   <span className="text-sm font-medium truncate">
-                    {trip.location ? `Trip to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}` : 'Trip'}
+                    {trip.location ? `Trip to ${trip.location.split(',')[0]}` : 'Trip'}
                   </span>
-                  {isWithinInterval(startOfDay(new Date()), {
-                    start: startOfDay(new Date(trip.start_date + 'T00:00:00')),
-                    end: startOfDay(new Date(trip.end_date + 'T00:00:00')),
-                  }) && (
-                    <Badge variant="default" className="text-[9px] px-1.5 py-0 shrink-0">In Progress</Badge>
-                  )}
                 </div>
                 <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
                   <span className="flex items-center gap-0.5">
@@ -208,11 +196,7 @@ export function UpcomingTripsAndVisits() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    {isVisit ? (
-                      <Home className="h-[18px] w-[18px] text-primary shrink-0" />
-                    ) : (
-                      <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
-                    )}
+                    <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
                     <span className="text-sm font-medium truncate text-muted-foreground">
                       {proposal.destination
                         ? `${isVisit ? 'Visit' : 'Trip'} to ${proposal.destination}`
