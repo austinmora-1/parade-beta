@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
-import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { VibeAndIntentionsCard } from '@/components/dashboard/VibeAndIntentionsCard';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
