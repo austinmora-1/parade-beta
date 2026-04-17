@@ -225,15 +225,19 @@ async function syncGoogleCalendar(
   adminClient: any,
   userId: string,
 ): Promise<{ eventsProcessed: number; datesUpdated: number }> {
-  const { data: connRows, error: connError } = await adminClient
-    .from("calendar_connections")
-    .select("access_token, refresh_token, expires_at")
-    .eq("user_id", userId)
-    .eq("provider", "google");
+  const { data: tokens, error: connError } = await adminClient.rpc(
+    "get_calendar_tokens",
+    {
+      p_user_id: userId,
+      p_provider: "google",
+    },
+  );
 
-  if (connError || !connRows || connRows.length === 0) {
+  if (connError || !tokens || tokens.length === 0) {
     throw new Error("Google Calendar not connected");
   }
+
+  const tokenData = tokens[0];
 
   const { data: profileData } = await adminClient
     .from("profiles")
@@ -268,31 +272,16 @@ async function syncGoogleCalendar(
     }
   }
 
-  let accessToken = connRows[0].access_token;
+  let accessToken = tokenData.access_token;
 
-  if (new Date(connRows[0].expires_at) < new Date()) {
-    const clientId = Deno.env.get("GOOGLE_CLIENT_ID")!;
-    const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
-    const response = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: connRows[0].refresh_token,
-        grant_type: "refresh_token",
-      }),
-    });
-    const tokens = await response.json();
-    if (tokens.error) throw new Error("Failed to refresh Google token");
-    accessToken = tokens.access_token;
-    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000)
-      .toISOString();
-    await adminClient.from("calendar_connections").update({
-      access_token: accessToken,
-      expires_at: expiresAt,
-      updated_at: new Date().toISOString(),
-    }).eq("user_id", userId).eq("provider", "google");
+  if (new Date(tokenData.expires_at) < new Date()) {
+    const refreshedToken = await refreshGoogleAccessToken(
+      tokenData.refresh_token,
+      adminClient,
+      userId,
+    );
+    if (!refreshedToken) throw new Error("Failed to refresh Google token");
+    accessToken = refreshedToken;
   }
 
   const now = new Date();
@@ -594,6 +583,48 @@ async function syncICalCalendar(
   });
 
   return { eventsProcessed: events.length, datesUpdated: updatedCount };
+}
+
+async function refreshGoogleAccessToken(
+  refreshToken: string,
+  supabase: any,
+  userId: string,
+): Promise<string | null> {
+  try {
+    const clientId = Deno.env.get("GOOGLE_CLIENT_ID")!;
+    const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
+
+    const response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    const tokens = await response.json();
+    if (tokens.error) {
+      console.error("Token refresh error:", tokens);
+      return null;
+    }
+
+    const expiresAt = new Date(Date.now() + tokens.expires_in * 1000)
+      .toISOString();
+    await supabase.rpc("update_calendar_access_token", {
+      p_user_id: userId,
+      p_provider: "google",
+      p_access_token: tokens.access_token,
+      p_expires_at: expiresAt,
+    });
+
+    return tokens.access_token;
+  } catch (error) {
+    console.error("Refresh token error:", error);
+    return null;
+  }
 }
 
 // ── Main Handler ────────────────────────────────────────────────────────────
