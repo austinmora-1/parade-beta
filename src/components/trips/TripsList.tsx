@@ -988,7 +988,7 @@ function ProposalTripCard({
               </button>
               
               {isCreator ? (
-                <div className="flex items-center gap-1 shrink-0 ml-auto">
+                <div className="flex items-center gap-2 shrink-0 ml-auto">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1014,7 +1014,7 @@ function ProposalTripCard({
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 shrink-0 ml-auto">
+                <div className="flex items-center gap-2 shrink-0 ml-auto">
                   <Button
                     variant="ghost"
                     size="icon"
