@@ -477,11 +477,10 @@ function TripCard({
           variant="ghost"
           size="icon"
           className="h-7 w-7 shrink-0"
-          disabled={converting}
-          onClick={handleConvertToVisit}
-          title="Convert to visit"
+          onClick={(e) => { e.stopPropagation(); onNavigate(); }}
+          title="Edit trip"
         >
-          {converting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowLeftRight className="h-3.5 w-3.5" />}
+          <Edit2 className="h-3.5 w-3.5" />
         </Button>
 
         <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
