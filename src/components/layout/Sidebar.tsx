@@ -77,17 +77,6 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* ── New Plan CTA ── */}
-        <div className="shrink-0 px-3 pb-3">
-          <button
-            onClick={() => setCreatePlanOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2.5} />
-            New Plan
-          </button>
-        </div>
-
         {/* ── Divider ── */}
         <div className="mx-3 shrink-0 border-t border-sidebar-border" />
 
