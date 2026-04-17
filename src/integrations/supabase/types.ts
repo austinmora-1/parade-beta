@@ -2038,6 +2038,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      check_phone_available: { Args: { p_phone: string }; Returns: boolean }
       check_username_available: {
         Args: { p_username: string }
         Returns: boolean
@@ -2180,6 +2181,7 @@ export type Database = {
         Returns: boolean
       }
       merge_overlapping_trips: { Args: { p_user_id: string }; Returns: number }
+      normalize_phone: { Args: { p_phone: string }; Returns: string }
       normalize_plan_title_for_dedup: {
         Args: { title: string }
         Returns: string

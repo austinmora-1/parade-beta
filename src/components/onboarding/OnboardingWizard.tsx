@@ -187,9 +187,16 @@ export function OnboardingWizard() {
       localStorage.removeItem('onboarding_step');
       toast.success('Welcome to Parade! 🎉');
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing onboarding:', error);
-      toast.error('Something went wrong. Please try again.');
+      const msg = error?.message || '';
+      if (/profiles_display_name_unique_ci/i.test(msg)) {
+        toast.error('That username is already taken. Please pick another on the first step.');
+      } else if (/profiles_phone_number_unique/i.test(msg)) {
+        toast.error('That phone number is already linked to another account.');
+      } else {
+        toast.error('Something went wrong. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

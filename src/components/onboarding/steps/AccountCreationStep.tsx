@@ -12,10 +12,14 @@ interface AccountCreationStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
 }
 
+type FieldStatus = 'idle' | 'checking' | 'available' | 'taken';
+
 export function AccountCreationStep({ data, updateData }: AccountCreationStepProps) {
   const { user } = useAuth();
-  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  const [checkTimeout, setCheckTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [usernameStatus, setUsernameStatus] = useState<FieldStatus>('idle');
+  const [phoneStatus, setPhoneStatus] = useState<FieldStatus>('idle');
+  const [usernameTimer, setUsernameTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [phoneTimer, setPhoneTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const checkUsername = async (username: string) => {
     if (!username || username.length < 3) {
@@ -31,16 +35,49 @@ export function AccountCreationStep({ data, updateData }: AccountCreationStepPro
     }
   };
 
+  const checkPhone = async (phone: string) => {
+    const digits = phone.replace(/[^0-9]/g, '');
+    if (!phone || digits.length < 7) {
+      setPhoneStatus('idle');
+      return;
+    }
+    setPhoneStatus('checking');
+    try {
+      // RPC is too new to be in generated types — cast supabase client
+      const { data: available } = await (supabase.rpc as any)('check_phone_available', { p_phone: phone });
+      setPhoneStatus(available ? 'available' : 'taken');
+    } catch {
+      setPhoneStatus('idle');
+    }
+  };
+
   const handleUsernameChange = (value: string) => {
     updateData({ displayName: value });
-    if (checkTimeout) clearTimeout(checkTimeout);
-    const timeout = setTimeout(() => checkUsername(value), 500);
-    setCheckTimeout(timeout);
+    if (usernameTimer) clearTimeout(usernameTimer);
+    const timer = setTimeout(() => checkUsername(value), 500);
+    setUsernameTimer(timer);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    updateData({ phoneNumber: value });
+    if (phoneTimer) clearTimeout(phoneTimer);
+    const timer = setTimeout(() => checkPhone(value), 500);
+    setPhoneTimer(timer);
   };
 
   useEffect(() => {
-    return () => { if (checkTimeout) clearTimeout(checkTimeout); };
-  }, [checkTimeout]);
+    return () => {
+      if (usernameTimer) clearTimeout(usernameTimer);
+      if (phoneTimer) clearTimeout(phoneTimer);
+    };
+  }, [usernameTimer, phoneTimer]);
+
+  const renderStatusIcon = (status: FieldStatus) => {
+    if (status === 'checking') return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+    if (status === 'available') return <Check className="h-4 w-4 text-green-500" />;
+    if (status === 'taken') return <X className="h-4 w-4 text-destructive" />;
+    return null;
+  };
 
   return (
     <div>
@@ -60,19 +97,30 @@ export function AccountCreationStep({ data, updateData }: AccountCreationStepPro
           />
         </div>
 
-        {/* Phone (optional) */}
+        {/* Phone (optional, but unique if provided) */}
         <div className="space-y-2">
           <Label htmlFor="phone" className="text-sm font-medium">
             Phone number <span className="text-muted-foreground font-normal">(optional)</span>
           </Label>
-          <Input
-            id="phone"
-            type="tel"
-            placeholder="+1 (555) 123-4567"
-            value={data.phoneNumber}
-            onChange={(e) => updateData({ phoneNumber: e.target.value })}
-            className="h-11"
-          />
+          <div className="relative">
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+1 (555) 123-4567"
+              value={data.phoneNumber}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              className={cn("h-11 pr-10",
+                phoneStatus === 'available' && 'border-green-500',
+                phoneStatus === 'taken' && 'border-destructive'
+              )}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              {renderStatusIcon(phoneStatus)}
+            </div>
+          </div>
+          {phoneStatus === 'taken' && (
+            <p className="text-xs text-destructive">This phone number is already linked to another account</p>
+          )}
         </div>
 
         {/* Username */}
@@ -90,9 +138,7 @@ export function AccountCreationStep({ data, updateData }: AccountCreationStepPro
               )}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              {usernameStatus === 'checking' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-              {usernameStatus === 'available' && <Check className="h-4 w-4 text-green-500" />}
-              {usernameStatus === 'taken' && <X className="h-4 w-4 text-destructive" />}
+              {renderStatusIcon(usernameStatus)}
             </div>
           </div>
           {usernameStatus === 'taken' && (

@@ -34,9 +34,24 @@ const Invite = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    // Pre-flight: check username uniqueness
+    const { data: usernameAvailable, error: checkError } = await supabase.rpc(
+      'check_username_available',
+      { p_username: signupName.trim() }
+    );
+    if (checkError || !usernameAvailable) {
+      toast.error(checkError ? 'Could not verify username.' : 'That username is already taken.');
+      setIsLoading(false);
+      return;
+    }
     const { data, error } = await signUp(signupEmail, signupPassword, signupName);
     if (error) {
-      toast.error(error.message);
+      const msg = error.message || '';
+      if (/already registered|already exists|user.*exists/i.test(msg)) {
+        toast.error('An account with this email already exists.');
+      } else {
+        toast.error(msg);
+      }
     } else {
       const newUserId = data?.user?.id;
       if (newUserId) {
