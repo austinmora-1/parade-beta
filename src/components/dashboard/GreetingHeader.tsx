@@ -111,16 +111,50 @@ export function GreetingHeader() {
     if (!trimmed || !user?.id) return;
     setSavingLocation(true);
     try {
+      const todayKey = format(new Date(), 'yyyy-MM-dd');
       const tz = getTimezoneForCity(trimmed) || profile?.timezone || null;
-      const { error } = await supabase
-        .from('profiles')
-        .update({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) })
-        .eq('user_id', user.id);
-      if (error) throw error;
-      updateProfile({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) });
-      toast.success('Location saved');
+
+      // 1. Always: set today's current location via availability upsert
+      const { error: availErr } = await supabase
+        .from('availability')
+        .upsert(
+          {
+            user_id: user.id,
+            date: todayKey,
+            location_status: 'away',
+            trip_location: trimmed,
+          },
+          { onConflict: 'user_id,date' }
+        );
+      if (availErr) throw availErr;
+
+      // Patch local availability store so today's banner reflects new location immediately
+      const availStore = useAvailabilityStore.getState();
+      const { availability, availabilityMap } = availStore;
+      const existing = availabilityMap[todayKey];
+      if (existing) {
+        const updated = { ...existing, locationStatus: 'away' as const, tripLocation: trimmed };
+        availStore._setAvailability({
+          availability: availability.map(a => format(a.date, 'yyyy-MM-dd') === todayKey ? updated : a),
+          availabilityMap: { ...availabilityMap, [todayKey]: updated },
+          locationStatus: 'away',
+        } as any);
+      }
+
+      // 2. Optional: persist as home base
+      if (saveAsHome) {
+        const { error: profErr } = await supabase
+          .from('profiles')
+          .update({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) })
+          .eq('user_id', user.id);
+        if (profErr) throw profErr;
+        updateProfile({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) });
+      }
+
+      toast.success(saveAsHome ? 'Location saved as home' : 'Current location set');
       setLocationOpen(false);
       setLocationDraft('');
+      setSaveAsHome(false);
     } catch (err: any) {
       toast.error(err.message || 'Failed to save location');
     } finally {
