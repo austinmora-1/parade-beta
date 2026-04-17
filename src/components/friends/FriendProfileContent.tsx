@@ -481,10 +481,7 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
                 const cityRaw = isAway && todayAvail?.trip_location
                   ? todayAvail.trip_location
                   : profile.home_address;
-                const cityNorm = normalizeCity(cityRaw);
-                const cityDisplay = cityNorm
-                  ? cityNorm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-                  : null;
+                const cityDisplay = formatCityForDisplay(cityRaw) || null;
 
                 return (
                   <span className={cn(

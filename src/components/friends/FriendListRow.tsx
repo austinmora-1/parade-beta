@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { ChevronRight, Flame, Home, Plane } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatCityForDisplay } from '@/lib/formatCity';
 
 interface FriendListRowProps {
   friend: Friend;
