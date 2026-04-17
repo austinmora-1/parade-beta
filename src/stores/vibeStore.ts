@@ -87,7 +87,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
     const newVibe: Vibe = { type: vibeType, customTags: newTags, gifUrl: currentVibe?.gifUrl };
 
     // Optimistic update
-    set({ currentVibe: newVibe });
+    set({ currentVibe: newVibe, lastLocalMutationAt: Date.now() });
     patchVibeInCache(userId, newVibe);
 
     const { error } = await supabase
@@ -112,7 +112,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
       const next = keepVibe ? { type: vibeType, customTags: [], gifUrl } : null;
 
       // Optimistic update
-      set({ currentVibe: next });
+      set({ currentVibe: next, lastLocalMutationAt: Date.now() });
       patchVibeInCache(userId, next);
 
       const { error } = await supabase
@@ -124,7 +124,7 @@ export const useVibeStore = create<VibeState & VibeActions>((set, get) => ({
       const next = { type: vibeType, customTags: newTags, gifUrl };
 
       // Optimistic update
-      set({ currentVibe: next });
+      set({ currentVibe: next, lastLocalMutationAt: Date.now() });
       patchVibeInCache(userId, next);
 
       const { error } = await supabase
