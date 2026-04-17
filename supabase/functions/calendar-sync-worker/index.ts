@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
-  formatTimeHHMM, parseAllDayDate, getAllDayDateRange,
+  formatTimeHHMM, getPlanDurationMinutes, parseAllDayDate, getAllDayDateRange,
   resolveToCity, extractFlightDestination, extractFlightDepartureCity, isFlightEvent,
   isCityMatchingHome,
   isHotelEvent, extractHotelLocation,
@@ -245,16 +245,19 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     let hour: number
     let startTimeStr: string | null
     let endTimeStr: string | null
+    let durationMinutes = 60
 
     // Prefer the event's own timezone (Google returns it per event) over the viewer's tz
     const eventTimezone = event.start.timeZone || timezone
 
     if (event.start.dateTime) {
       const startDate = new Date(event.start.dateTime)
+      const endDate = event.end.dateTime ? new Date(event.end.dateTime) : null
       hour = getHourInTimezone(startDate, eventTimezone)
       localDateStr = getDateString(startDate, eventTimezone)
       startTimeStr = formatTimeHHMM(startDate, eventTimezone)
-      endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), eventTimezone) : null
+      endTimeStr = endDate ? formatTimeHHMM(endDate, eventTimezone) : null
+      durationMinutes = getPlanDurationMinutes(startDate, endDate)
     } else if (event.start.date) {
       localDateStr = event.start.date
       hour = 12
@@ -270,7 +273,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     planRowsByEventId.set(event.id, {
       user_id: userId, title: event.summary || 'Gcal imported event',
       activity: classifyActivity(event.summary),
-      date: `${localDateStr}T12:00:00+00:00`, time_slot: timeSlotHyphen, duration: 1,
+      date: `${localDateStr}T12:00:00+00:00`, time_slot: timeSlotHyphen, duration: durationMinutes,
       source: 'gcal', source_event_id: event.id,
       start_time: startTimeStr, end_time: endTimeStr,
       source_timezone: eventTimezone || null,
@@ -382,12 +385,13 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
 
     const icalStartTime = !event.isAllDay ? formatTimeHHMM(event.dtstart, eventTimezone) : null
     const icalEndTime = !event.isAllDay && event.dtend ? formatTimeHHMM(event.dtend, eventTimezone) : null
+    const durationMinutes = event.isAllDay ? 60 : getPlanDurationMinutes(event.dtstart, event.dtend)
 
     incomingEventIds.add(event.uid)
     planRowsByEventId.set(event.uid, {
       user_id: userId, title: (event.summary || 'iCal imported event').replace(/\s+/g, ' ').trim(),
       activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
-      time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
+      time_slot: getTimeSlot(hour).replace('_', '-'), duration: durationMinutes,
       location: event.location || null, source: 'ical', source_event_id: event.uid,
       source_timezone: eventTimezone || null,
       start_time: icalStartTime, end_time: icalEndTime,

@@ -71,6 +71,15 @@ export function formatTimeHHMM(date: Date, timezone?: string): string {
   return new Intl.DateTimeFormat('en-GB', opts).format(date)
 }
 
+export function getPlanDurationMinutes(startTime?: Date | null, endTime?: Date | null): number {
+  if (!startTime || !endTime) return 60
+
+  const diffMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+  if (!Number.isFinite(diffMinutes) || diffMinutes <= 0) return 60
+
+  return Math.min(1440, Math.max(15, diffMinutes))
+}
+
 export function getDateRange(startDate: string, endDate: string): string[] {
   const dates: string[] = []
   const current = new Date(startDate + 'T00:00:00Z')
@@ -955,6 +964,7 @@ export async function reconcilePlans(params: {
         activity: planRow.activity,
         date: planRow.date,
         time_slot: planRow.time_slot,
+        duration: planRow.duration,
         start_time: planRow.start_time,
         end_time: planRow.end_time,
         ...(planRow.location !== undefined ? { location: planRow.location } : {}),

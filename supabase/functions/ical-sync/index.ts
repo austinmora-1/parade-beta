@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getTimeSlot, getHourInTimezone, getDateString, getEventTimeSlots, getEventDates,
-  formatTimeHHMM, getAllDayDateRange,
+  formatTimeHHMM, getPlanDurationMinutes, getAllDayDateRange,
   resolveToCity, extractFlightDestination, extractFlightDepartureCity, isFlightEvent,
   isCityMatchingHome,
   isHotelEvent, extractHotelLocation,
@@ -228,6 +228,7 @@ Deno.serve(async (req) => {
       const planDate = `${localDateStr}T12:00:00+00:00`
       const startTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtstart, eventTimezone)
       const endTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtend, eventTimezone)
+      const durationMinutes = event.isAllDay ? 60 : getPlanDurationMinutes(event.dtstart, event.dtend)
 
       incomingEventIds.add(event.uid)
       planRowsByEventId.set(event.uid, {
@@ -236,7 +237,7 @@ Deno.serve(async (req) => {
         activity: classifyActivity(event.summary),
         date: planDate,
         time_slot: timeSlot,
-        duration: 1,
+        duration: durationMinutes,
         location: event.location || null,
         source: 'ical',
         source_event_id: event.uid,
