@@ -65,10 +65,8 @@ export function FriendListRow({
     subtitle = formatLastHungOut(lastHungOutDate);
   }
 
-  // Location display (capitalize each word)
-  const locationLabel = locationCity
-    ? locationCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-    : null;
+  // Location display (apply canonical formatting + overrides like "new york city" → "New York")
+  const locationLabel = locationCity ? formatCityForDisplay(locationCity) || null : null;
 
   return (
     <motion.button
