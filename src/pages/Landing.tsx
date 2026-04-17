@@ -11,9 +11,9 @@ export default function Landing() {
   const signupRef = useRef<HTMLDivElement>(null);
   const { scheme, setScheme } = useColorScheme();
 
-  // Force green color scheme on landing page
+  // Force coral color scheme on landing page
   useEffect(() => {
-    if (scheme !== 'green') setScheme('green');
+    if (scheme !== 'coral') setScheme('coral');
   }, [scheme, setScheme]);
 
   const scrollToSignup = () => {
@@ -26,10 +26,10 @@ export default function Landing() {
         <ConfettiBackground count={100} />
       </div>
       {/* Hero Section */}
-      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#1A2B22' }}>
+      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center" style={{ backgroundColor: '#2A0F0A' }}>
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(135deg, #0F1A14 0%, #24382D 100%)' }}
+          style={{ background: 'linear-gradient(135deg, #2A0F0A 0%, #5C1F18 100%)' }}
         />
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-3xl mx-auto w-full flex flex-col items-center" style={{ isolation: 'isolate' }}>
           <motion.div
