@@ -60,9 +60,28 @@ export default function Login() {
     if (!email.trim() || !password.trim() || !displayName.trim()) return;
     setIsLoading(true);
     try {
+      // Pre-flight: check username uniqueness (email uniqueness is enforced by Supabase Auth)
+      const { data: usernameAvailable, error: checkError } = await supabase.rpc(
+        'check_username_available',
+        { p_username: displayName.trim() }
+      );
+      if (checkError) {
+        toast.error('Could not verify username. Please try again.');
+        return;
+      }
+      if (!usernameAvailable) {
+        toast.error('That username is already taken. Please pick another.');
+        return;
+      }
+
       const { data, error } = await signUp(email.trim(), password, displayName.trim());
       if (error) {
-        toast.error(error.message || 'Could not create account');
+        const msg = error.message || '';
+        if (/already registered|already exists|user.*exists/i.test(msg)) {
+          toast.error('An account with this email already exists. Try signing in instead.');
+        } else {
+          toast.error(msg || 'Could not create account');
+        }
       } else {
         // Fire-and-forget Loops sync
         if (data?.user?.id) {
