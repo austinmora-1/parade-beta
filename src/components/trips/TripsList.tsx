@@ -815,46 +815,7 @@ function ProposalTripCard({
     }
   };
 
-  const handleConfirmDelete = async () => {
-    setDeleting(true);
-    try {
-      await supabase.from('trip_proposal_dates').delete().eq('proposal_id', proposal.id);
-      await supabase.from('trip_proposal_participants').delete().eq('proposal_id', proposal.id);
-      await supabase.from('trip_proposals').delete().eq('id', proposal.id);
-      toast.success('Proposal deleted');
-      await onRefresh();
-    } catch (err) {
-      console.error('Delete failed:', err);
-      toast.error('Failed to delete proposal');
-    } finally {
-      setDeleting(false);
-      setDeleteOpen(false);
-    }
-  };
-  const [converting, setConverting] = useState(false);
-  const handleConvertType = async () => {
-    setConverting(true);
-    try {
-      const newType = isVisit ? 'trip' : 'visit';
-      const updates: any = { proposal_type: newType, updated_at: new Date().toISOString() };
-      // When converting to visit, clear host; when converting to trip, set creator as host
-      if (newType === 'visit') {
-        // Find a non-creator participant to be the host (person being visited)
-        const otherParticipant = proposal.participants.find(p => p.user_id !== currentUserId);
-        updates.host_user_id = otherParticipant?.user_id || null;
-      } else {
-        updates.host_user_id = null;
-      }
-      await supabase.from('trip_proposals').update(updates).eq('id', proposal.id);
-      toast.success(newType === 'visit' ? 'Converted to visit 🏠' : 'Converted to trip ✈️');
-      await onRefresh();
-    } catch (err) {
-      console.error('Convert failed:', err);
-      toast.error('Failed to convert');
-    } finally {
-      setConverting(false);
-    }
-  };
+  // Delete & convert handlers moved to /proposal/:id detail page
   const addDateOption = () => {
     const last = editDates[editDates.length - 1];
     const startDate = last ? new Date(last.start_date + 'T00:00:00') : new Date();
