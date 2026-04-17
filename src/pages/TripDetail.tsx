@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, differenceInDays } from 'date-fns';
-import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2, Share2 } from 'lucide-react';
+import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2, Share2, ArrowLeftRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,6 +65,48 @@ export default function TripDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [converting, setConverting] = useState(false);
+
+  const handleConvertToVisit = async () => {
+    if (!trip || !user) return;
+    setConverting(true);
+    try {
+      const { data: proposal, error: propError } = await supabase
+        .from('trip_proposals')
+        .insert({
+          created_by: user.id,
+          destination: trip.location,
+          proposal_type: 'visit',
+          status: 'pending',
+        })
+        .select()
+        .single();
+      if (propError || !proposal) throw propError;
+
+      await supabase.from('trip_proposal_dates').insert({
+        proposal_id: proposal.id,
+        start_date: trip.start_date,
+        end_date: trip.end_date,
+      });
+
+      await supabase.from('trip_proposal_participants').insert({
+        proposal_id: proposal.id,
+        user_id: user.id,
+        status: 'accepted',
+      });
+
+      await supabase.from('trips').delete().eq('id', trip.id);
+
+      toast.success('Converted to visit proposal 🏠');
+      window.dispatchEvent(new Event(TRIPS_UPDATED_EVENT));
+      await loadProfileAndAvailability();
+      navigate(`/proposal/${proposal.id}`);
+    } catch (err) {
+      console.error('Error converting trip:', err);
+      toast.error('Failed to convert trip');
+      setConverting(false);
+    }
+  };
 
   useEffect(() => {
     if (!tripId || !user) return;
@@ -224,6 +266,17 @@ export default function TripDetail() {
           )}
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditOpen(true)}>
             <Edit2 className="h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={converting}
+            onClick={handleConvertToVisit}
+            title="Convert to visit"
+          >
+            {converting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowLeftRight className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">Convert</span>
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="h-3.5 w-3.5" />
