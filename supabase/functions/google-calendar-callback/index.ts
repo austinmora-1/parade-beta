@@ -121,15 +121,14 @@ Deno.serve(async (req) => {
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
     console.log('Saving connection for user:', userId, 'expires:', expiresAt)
 
-    const { error: upsertError } = await supabase
-      .from('calendar_connections')
-      .upsert({
-        user_id: userId,
-        provider: 'google',
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token || null,
-        expires_at: expiresAt,
-      }, { onConflict: 'user_id,provider' })
+    const { error: upsertError } = await supabase.rpc('upsert_calendar_connection', {
+      p_user_id: userId,
+      p_provider: 'google',
+      p_access_token: tokens.access_token,
+      p_refresh_token: tokens.refresh_token || null,
+      p_expires_at: expiresAt,
+      p_grant_id: null,
+    })
 
     if (upsertError) {
       console.error('Database upsert error:', upsertError)
