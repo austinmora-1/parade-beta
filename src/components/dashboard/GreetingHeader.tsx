@@ -79,15 +79,21 @@ export function GreetingHeader() {
     return { ...greetConfig, context };
   }, [plans, friends]);
 
-  const currentCity = useMemo(() => {
+  const { currentCity, needsLocation } = useMemo(() => {
     const todayKey = format(new Date(), 'yyyy-MM-dd');
     const todayAvail = availabilityMap[todayKey];
     if (todayAvail?.locationStatus === 'away' && todayAvail?.tripLocation) {
-      return formatCityForDisplay(todayAvail.tripLocation) || todayAvail.tripLocation.split(',')[0];
+      return {
+        currentCity: formatCityForDisplay(todayAvail.tripLocation) || todayAvail.tripLocation.split(',')[0],
+        needsLocation: false,
+      };
     }
     const homeAddress = profile?.home_address;
-    if (!homeAddress) return 'Set location';
-    return formatCityForDisplay(homeAddress) || homeAddress.split(',')[0];
+    if (!homeAddress) return { currentCity: 'Set location', needsLocation: true };
+    return {
+      currentCity: formatCityForDisplay(homeAddress) || homeAddress.split(',')[0],
+      needsLocation: false,
+    };
   }, [availabilityMap, profile?.home_address]);
 
   const handleSelect = (key: string) => {
@@ -95,6 +101,28 @@ export function GreetingHeader() {
     if (key === 'plan') setPlanOpen(true);
     else if (key === 'trip') setTripOpen(true);
     else if (key === 'invite') setInviteOpen(true);
+  };
+
+  const handleSaveLocation = async () => {
+    const trimmed = locationDraft.trim();
+    if (!trimmed || !user?.id) return;
+    setSavingLocation(true);
+    try {
+      const tz = getTimezoneForCity(trimmed) || profile?.timezone || null;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) })
+        .eq('user_id', user.id);
+      if (error) throw error;
+      updateProfile({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) });
+      toast.success('Location saved');
+      setLocationOpen(false);
+      setLocationDraft('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save location');
+    } finally {
+      setSavingLocation(false);
+    }
   };
 
   const Icon = config.icon;
