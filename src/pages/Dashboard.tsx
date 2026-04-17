@@ -82,7 +82,6 @@ export default function Dashboard() {
       className="space-y-5 md:space-y-7"
     >
       <EllyWalkthrough />
-      <PushNotificationPrompt />
 
       {/* Personalized greeting */}
       <motion.div variants={fadeUp}>
