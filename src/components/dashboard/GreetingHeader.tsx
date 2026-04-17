@@ -188,7 +188,7 @@ export function GreetingHeader() {
                 {config.greeting}
               </h2>
               {needsLocation ? (
-                <Popover open={locationOpen} onOpenChange={(o) => { setLocationOpen(o); if (o) setLocationDraft(''); }}>
+                <Popover open={locationOpen} onOpenChange={(o) => { setLocationOpen(o); if (o) { setLocationDraft(''); setSaveAsHome(false); } }}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -200,13 +200,21 @@ export function GreetingHeader() {
                   </PopoverTrigger>
                   <PopoverContent align="start" className="w-[280px] p-3 z-50" onOpenAutoFocus={(e) => e.preventDefault()}>
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-foreground">Where are you based?</p>
+                      <p className="text-xs font-medium text-foreground">Where are you today?</p>
                       <CityAutocomplete
                         value={locationDraft}
                         onChange={setLocationDraft}
                         placeholder="Search for your city…"
                         compact
                       />
+                      <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+                        <Checkbox
+                          checked={saveAsHome}
+                          onCheckedChange={(v) => setSaveAsHome(v === true)}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span className="text-xs text-muted-foreground">Also save as my home location</span>
+                      </label>
                       <div className="flex justify-end gap-2 pt-1">
                         <button
                           type="button"
