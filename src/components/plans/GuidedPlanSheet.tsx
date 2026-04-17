@@ -836,8 +836,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
-        className="h-[95vh] max-h-[95vh]"
-        style={viewport ? { height: `${viewport.height * 0.95}px`, maxHeight: `${viewport.height * 0.95}px` } : undefined}
+        className="h-[70vh] max-h-[70vh]"
+        style={viewport ? { height: `${viewport.height * 0.7}px`, maxHeight: `${viewport.height * 0.7}px` } : undefined}
       >
         <DrawerHeader className="pb-2 relative">
           {step !== firstStep && (
