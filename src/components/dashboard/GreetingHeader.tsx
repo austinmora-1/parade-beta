@@ -54,13 +54,17 @@ const menuItems = [
 ] as const;
 
 export function GreetingHeader() {
-  const { profile } = useCurrentUserProfile();
+  const { profile, refreshProfile } = useCurrentUserProfile();
   const { plans, friends, availabilityMap, userTimezone } = usePlannerStore();
+  const { user } = useAuth();
   const { resolvedTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [tripOpen, setTripOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationDraft, setLocationDraft] = useState('');
+  const [savingLocation, setSavingLocation] = useState(false);
 
   const config = useMemo(() => {
     const hour = new Date().getHours();
