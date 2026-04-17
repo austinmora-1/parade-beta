@@ -210,18 +210,24 @@ Deno.serve(async (req) => {
       let localDateStr: string
       let hour: number
 
+      // Prefer the event's own VTIMEZONE/TZID when present (e.g. ClassPass tags
+      // each studio class with the studio's local timezone). Fall back to the
+      // viewer's resolved timezone otherwise. This ensures the plan's calendar
+      // day and HH:mm reflect the event's actual local time, not the viewer's.
+      const eventTimezone = (!event.isAllDay && event.tzid) ? event.tzid : userTimezone
+
       if (event.isAllDay) {
         localDateStr = event.dtstart.toISOString().split('T')[0]
         hour = 12
       } else {
-        hour = getHourInTimezone(event.dtstart, userTimezone)
-        localDateStr = getDateString(event.dtstart, userTimezone)
+        hour = getHourInTimezone(event.dtstart, eventTimezone)
+        localDateStr = getDateString(event.dtstart, eventTimezone)
       }
 
       const timeSlot = getTimeSlot(hour).replace('_', '-')
       const planDate = `${localDateStr}T12:00:00+00:00`
-      const startTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtstart, userTimezone)
-      const endTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtend, userTimezone)
+      const startTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtstart, eventTimezone)
+      const endTimeStr = event.isAllDay ? null : formatTimeHHMM(event.dtend, eventTimezone)
 
       incomingEventIds.add(event.uid)
       planRowsByEventId.set(event.uid, {
@@ -236,7 +242,7 @@ Deno.serve(async (req) => {
         source_event_id: event.uid,
         start_time: startTimeStr,
         end_time: endTimeStr,
-        source_timezone: userTimezone || null,
+        source_timezone: eventTimezone || null,
       })
     }
 

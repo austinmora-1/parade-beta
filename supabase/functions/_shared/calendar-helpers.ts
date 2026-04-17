@@ -487,6 +487,17 @@ export interface ICalEvent {
   dtend: Date
   isAllDay: boolean
   location?: string
+  /** IANA timezone parsed from the event's DTSTART;TZID= parameter, if present. */
+  tzid?: string
+}
+
+/** Extract the TZID parameter value from a DTSTART/DTEND line, if any. */
+function extractTzid(line: string): string | undefined {
+  const colonIdx = line.indexOf(':')
+  if (colonIdx === -1) return undefined
+  const params = line.slice(0, colonIdx)
+  const m = params.match(/TZID=([^;:]+)/)
+  return m ? m[1] : undefined
 }
 
 export function parseICS(icsText: string, rangeStart: Date, rangeEnd: Date): ICalEvent[] {
@@ -502,11 +513,12 @@ export function parseICS(icsText: string, rangeStart: Date, rangeEnd: Date): ICa
   let location = ''
   let rrule = ''
   let exdates: Set<string> = new Set()
+  let tzid: string | undefined = undefined
 
   for (const line of lines) {
     if (line === 'BEGIN:VEVENT') {
       inEvent = true
-      uid = ''; summary = ''; dtstart = null; dtend = null; isAllDay = false; location = ''; rrule = ''; exdates = new Set()
+      uid = ''; summary = ''; dtstart = null; dtend = null; isAllDay = false; location = ''; rrule = ''; exdates = new Set(); tzid = undefined
       continue
     }
 
@@ -517,10 +529,10 @@ export function parseICS(icsText: string, rangeStart: Date, rangeEnd: Date): ICa
           // Expand recurring event instances
           const instances = expandRRule(rrule, dtstart, dtend, isAllDay, rangeStart, rangeEnd, exdates)
           for (const inst of instances) {
-            events.push({ uid: `${uid}_${inst.dtstart.toISOString()}`, summary, dtstart: inst.dtstart, dtend: inst.dtend, isAllDay, location: location || undefined })
+            events.push({ uid: `${uid}_${inst.dtstart.toISOString()}`, summary, dtstart: inst.dtstart, dtend: inst.dtend, isAllDay, location: location || undefined, tzid })
           }
         } else if (dtend > rangeStart && dtstart < rangeEnd) {
-          events.push({ uid, summary, dtstart, dtend, isAllDay, location: location || undefined })
+          events.push({ uid, summary, dtstart, dtend, isAllDay, location: location || undefined, tzid })
         }
       }
       continue
@@ -536,7 +548,12 @@ export function parseICS(icsText: string, rangeStart: Date, rangeEnd: Date): ICa
       location = unescapeICS(line.slice(9))
     } else if (line.startsWith('DTSTART')) {
       const parsed = parseICSDate(line)
-      if (parsed) { dtstart = parsed.date; isAllDay = parsed.allDay }
+      if (parsed) {
+        dtstart = parsed.date
+        isAllDay = parsed.allDay
+        // Capture the event's own timezone, if any (DTSTART;TZID=America/Los_Angeles:...)
+        if (!parsed.allDay) tzid = extractTzid(line) || tzid
+      }
     } else if (line.startsWith('DTEND')) {
       const parsed = parseICSDate(line)
       if (parsed) dtend = parsed.date
