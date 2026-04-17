@@ -115,10 +115,46 @@ export function GreetingHeader() {
         .update({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) })
         .eq('user_id', user.id);
       if (error) throw error;
+
+      // If today (or a run of upcoming days) is currently flagged "away" via a
+      // synced trip, clear that override so the manual location takes effect.
+      const todayKey = format(new Date(), 'yyyy-MM-dd');
+      const todayAvail = availabilityMap[todayKey];
+      const datesToClear: string[] = [];
+      if (todayAvail?.locationStatus === 'away') {
+        datesToClear.push(todayKey);
+        const tripLoc = todayAvail.tripLocation;
+        if (tripLoc) {
+          for (let i = 1; i < 30; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() + i);
+            const key = format(d, 'yyyy-MM-dd');
+            const a = availabilityMap[key];
+            if (a?.locationStatus === 'away' && a?.tripLocation === tripLoc) {
+              datesToClear.push(key);
+            } else {
+              break;
+            }
+          }
+        }
+      }
+      if (datesToClear.length > 0) {
+        await supabase.from('availability').upsert(
+          datesToClear.map(date => ({
+            user_id: user.id,
+            date,
+            location_status: 'home',
+            trip_location: null,
+          })),
+          { onConflict: 'user_id,date' }
+        );
+      }
+
       updateProfile({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) });
       toast.success('Location saved');
       setLocationOpen(false);
       setLocationDraft('');
+      window.dispatchEvent(new CustomEvent('parade:refresh-planner'));
     } catch (err: any) {
       toast.error(err.message || 'Failed to save location');
     } finally {
