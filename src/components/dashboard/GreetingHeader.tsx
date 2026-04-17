@@ -12,7 +12,6 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
@@ -115,46 +114,10 @@ export function GreetingHeader() {
         .update({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) })
         .eq('user_id', user.id);
       if (error) throw error;
-
-      // If today (or a run of upcoming days) is currently flagged "away" via a
-      // synced trip, clear that override so the manual location takes effect.
-      const todayKey = format(new Date(), 'yyyy-MM-dd');
-      const todayAvail = availabilityMap[todayKey];
-      const datesToClear: string[] = [];
-      if (todayAvail?.locationStatus === 'away') {
-        datesToClear.push(todayKey);
-        const tripLoc = todayAvail.tripLocation;
-        if (tripLoc) {
-          for (let i = 1; i < 30; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() + i);
-            const key = format(d, 'yyyy-MM-dd');
-            const a = availabilityMap[key];
-            if (a?.locationStatus === 'away' && a?.tripLocation === tripLoc) {
-              datesToClear.push(key);
-            } else {
-              break;
-            }
-          }
-        }
-      }
-      if (datesToClear.length > 0) {
-        await supabase.from('availability').upsert(
-          datesToClear.map(date => ({
-            user_id: user.id,
-            date,
-            location_status: 'home',
-            trip_location: null,
-          })),
-          { onConflict: 'user_id,date' }
-        );
-      }
-
       updateProfile({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) });
       toast.success('Location saved');
       setLocationOpen(false);
       setLocationDraft('');
-      window.dispatchEvent(new CustomEvent('parade:refresh-planner'));
     } catch (err: any) {
       toast.error(err.message || 'Failed to save location');
     } finally {
@@ -187,69 +150,53 @@ export function GreetingHeader() {
               <h2 className="text-lg font-display text-foreground">
                 {config.greeting}
               </h2>
-              <Popover
-                open={locationOpen}
-                onOpenChange={(o) => {
-                  setLocationOpen(o);
-                  if (o) setLocationDraft(needsLocation ? '' : (profile?.home_address ?? ''));
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      "flex items-center gap-1 -mt-0.5 rounded-md px-1 py-0.5 -mx-1 transition-colors",
-                      needsLocation
-                        ? "text-primary hover:bg-primary/10"
-                        : "text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <MapPin className={cn("h-3 w-3", needsLocation ? "" : "text-primary")} />
-                    <span className={cn(
-                      "text-xs",
-                      needsLocation && "font-medium underline-offset-2 underline decoration-dotted"
-                    )}>
-                      {needsLocation ? 'Set location' : currentCity}
-                    </span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-[280px] p-3 z-50" onOpenAutoFocus={(e) => e.preventDefault()}>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-foreground">
-                      {needsLocation ? 'Where are you based?' : 'Update your location'}
-                    </p>
-                    <CityAutocomplete
-                      value={locationDraft}
-                      onChange={setLocationDraft}
-                      placeholder="Search for your city…"
-                      compact
-                    />
-                    {!needsLocation && (
-                      <p className="text-[10px] text-muted-foreground leading-snug">
-                        We'll keep this until your next trip or flight syncs from your calendar.
-                      </p>
-                    )}
-                    <div className="flex justify-end gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setLocationOpen(false)}
-                        className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveLocation}
-                        disabled={!locationDraft.trim() || savingLocation}
-                        className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                      >
-                        {savingLocation && <Loader2 className="h-3 w-3 animate-spin" />}
-                        Save
-                      </button>
+              {needsLocation ? (
+                <Popover open={locationOpen} onOpenChange={(o) => { setLocationOpen(o); if (o) setLocationDraft(''); }}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 -mt-0.5 rounded-md px-1 py-0.5 -mx-1 text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      <MapPin className="h-3 w-3" />
+                      <span className="text-xs font-medium underline-offset-2 underline decoration-dotted">Set location</span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-[280px] p-3 z-50" onOpenAutoFocus={(e) => e.preventDefault()}>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-foreground">Where are you based?</p>
+                      <CityAutocomplete
+                        value={locationDraft}
+                        onChange={setLocationDraft}
+                        placeholder="Search for your city…"
+                        compact
+                      />
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setLocationOpen(false)}
+                          className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveLocation}
+                          disabled={!locationDraft.trim() || savingLocation}
+                          className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                        >
+                          {savingLocation && <Loader2 className="h-3 w-3 animate-spin" />}
+                          Save
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <div className="flex items-center gap-1 text-muted-foreground -mt-0.5">
+                  <MapPin className="h-3 w-3 text-primary" />
+                  <span className="text-xs">{currentCity}</span>
+                </div>
+              )}
             </div>
 
             {/* FAB */}
