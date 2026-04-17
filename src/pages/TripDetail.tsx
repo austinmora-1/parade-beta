@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, differenceInDays } from 'date-fns';
-import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2, Share2 } from 'lucide-react';
+import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2, Share2, ArrowLeftRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
