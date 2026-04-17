@@ -283,7 +283,12 @@ export function UpcomingPlansWidget() {
           const isOwner = !plan.userId || plan.userId === userId;
           const myRsvp = plan.myRsvpStatus;
           const planIsPast = (plan.endDate || plan.date) < new Date(new Date().setHours(0, 0, 0, 0));
-          const showRsvp = !isOwner && userId && !planIsPast;
+          // Only show RSVP if the viewer is actually a participant on the plan.
+          // Friend plans visible via feed_visibility (without participant row) should NOT show RSVP buttons.
+          const isParticipant = !!userId && plan.participants?.some(
+            (p: any) => p.friendUserId === userId && p.id !== plan.userId
+          );
+          const showRsvp = !isOwner && userId && !planIsPast && isParticipant;
           if (!showRsvp) return null;
           return (
             <div className="mt-2 pt-2 border-t border-border/50" onClick={e => e.stopPropagation()}>
