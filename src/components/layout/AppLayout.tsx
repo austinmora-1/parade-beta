@@ -8,10 +8,12 @@ import { FeedbackProvider } from '@/components/feedback/FeedbackContext';
 import { FeedbackPanel } from '@/components/feedback/FeedbackPanel';
 import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
 import { useFriendRequestNotifications } from '@/hooks/useFriendRequestNotifications';
+import { useVibeRealtime } from '@/hooks/useVibeRealtime';
 import { usePlannerStore } from '@/stores/plannerStore';
 
 export function AppLayout() {
   useFriendRequestNotifications();
+  useVibeRealtime();
   const queryClient = useQueryClient();
   const forceRefresh = usePlannerStore((s) => s.forceRefresh);
 
