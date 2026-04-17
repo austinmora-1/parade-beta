@@ -998,7 +998,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                       />
 
                       {showDropdown && (
-                        <div className="absolute left-0 right-0 top-10 z-20 max-h-[320px] overflow-y-auto rounded-xl border border-border bg-popover shadow-lg p-2 space-y-3">
+                        <div className="absolute left-0 right-0 top-10 z-20 max-h-[60vh] min-h-[400px] overflow-y-auto rounded-xl border border-border bg-popover shadow-lg p-3 space-y-3">
                           {!hasResults && (
                             <p className="text-xs text-muted-foreground text-center py-4">
                               No activities found
