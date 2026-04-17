@@ -1,77 +1,60 @@
 
 
-## Goal
+## Plan: Replace vibe polling/race-guard with realtime subscription
 
-Allow users to share a Plan or a Trip/Visit invite via a public link that works for non-users, triggered from:
-1. The **Share** action on a Plan card or Trip/Visit card (and detail pages)
-2. **During creation** in the Guided Plan / Guided Trip sheets ("Generate shareable link")
+### Goal
+Eliminate the vibe race condition by making the local store the single writer and Supabase Realtime the single source of remote truth — so the dashboard RPC never overwrites vibe state and changes propagate across devices instantly.
 
-## What's already built (reuse)
+### Strategy
+- **Vibe is owned by `useVibeStore`**, not by `loadAllData`.
+- The dashboard RPC stops touching vibe entirely (after initial bootstrap).
+- Subscribe to the user's own `profiles` row via realtime; remote updates flow only through this channel.
+- Remove the `lastLocalMutationAt` 10-second guard and cache-patching workaround — they're no longer needed.
 
-Plans already have most of this:
-- `InviteToPlanDialog` generates a token-based link via the `plan_invites` table
-- `/plan-invite/:token` page (`src/pages/PlanInvite.tsx`)
-- `public/invite.html` redirector with OG tags for link previews
-- Wired to plan cards (`onSharePlan`) and `PlanDetail`
+### Changes
 
-## What's missing / to build
+**1. `src/stores/vibeStore.ts` — simplify**
+- Remove `lastLocalMutationAt`, `LOCAL_MUTATION_GUARD_MS`, `applyRemoteVibe`, and the cache-patching helper.
+- Add a `bootstrapVibe(vibe)` action used **only** on first load (when store has never been initialized for this user) — sets initial vibe from cache/RPC.
+- Add an `applyRealtimeUpdate(profileRow)` action — accepts the new profile row from realtime payload, constructs a Vibe, sets it directly. Always wins (it IS the latest server state).
+- Optimistic updates in `setVibe` / `addCustomVibe` / `removeCustomVibe`: write locally first, then Supabase. On error, revert to snapshot. On success, do nothing — realtime echo will arrive but matches local state, so it's a no-op.
+- Track `initialized: boolean` per user so subsequent RPC loads skip vibe.
 
-### 1. Trip/Visit invite infrastructure (new — mirrors plan_invites)
+**2. New hook: `src/hooks/useVibeRealtime.ts`**
+- Mounted once at the app level (in `AppLayout` or `AuthProvider`).
+- Uses `useRealtimeHub` to subscribe to `profiles` table, `UPDATE` event, filter `user_id=eq.{currentUserId}`.
+- On payload, calls `useVibeStore.getState().applyRealtimeUpdate(payload.new)`.
 
-**New table `trip_proposal_invites`**:
-- `id`, `proposal_id` (FK trip_proposals), `trip_id` (FK trips, nullable for finalized trips), `invite_token` (unique), `invited_by`, `email` (nullable), `status` (`pending` / `accepted`), `accepted_by`, `accepted_at`, `created_at`
-- RLS: creator manages own invites; public read by token via SECURITY DEFINER RPCs
+**3. `src/stores/plannerStore.ts` — stop overwriting vibe**
+- In `loadAllData`, when pushing transformed RPC data:
+  - Replace `useVibeStore.getState().applyRemoteVibe(...)` with `useVibeStore.getState().bootstrapVibe(...)` — only sets if not yet initialized.
+  - Same for the cache hydration path.
+- Cache write (`setCachedDashboard`) stays as-is — no patching needed because vibe in cache is just a bootstrap value; realtime keeps the live store accurate regardless.
+- Remove the import of `useVibeStore` for the patching workaround if any was added.
 
-**New RPCs**:
-- `get_trip_invite_details(p_token)` — returns destination, date options, host name/avatar, participant count, status. Public.
-- `accept_trip_invite(p_token)` — adds caller to `trip_proposal_participants` (or `trips` if finalized) and marks invite accepted. Auth required.
+**4. Mount the realtime hook**
+- Add `useVibeRealtime()` call in `src/components/layout/AppLayout.tsx` (or wherever auth-gated app shell mounts) so it's active on every authenticated screen.
 
-### 2. New page `/trip-invite/:token` (`src/pages/TripInvite.tsx`)
+**5. Cleanup**
+- Delete dead `VibeSelector.tsx` (already flagged as unused).
+- Remove the `patchVibeInCache` helper from `vibeStore.ts` if no other callers.
 
-Mirrors `PlanInvite.tsx`:
-- Public — fetches details via the new RPC
-- Shows destination, proposed dates, host + invitee count, Parade branding
-- **Non-user flow**: full read-only details; signup/login required only to RSVP/rank dates (gates the action button only)
-- After signup → returns to `/trip-invite/:token` → auto-accepts → redirects to `/trip/:id`
+### Why this fixes the race
+- The RPC response can no longer overwrite a fresh local vibe because `bootstrapVibe` is a one-shot.
+- Cross-device updates arrive via realtime within ~100ms — faster and cleaner than waiting for the next RPC poll.
+- Optimistic local writes echo back through realtime; since the payload matches local state, `applyRealtimeUpdate` is idempotent.
 
-Update `public/invite.html` to also handle `?tt=<token>` and redirect to `/trip-invite/...`. Add the route in `App.tsx`.
+### Files touched
+- `src/stores/vibeStore.ts` — simplify, add bootstrap + realtime apply
+- `src/stores/plannerStore.ts` — switch to `bootstrapVibe`, remove guard logic
+- `src/hooks/useVibeRealtime.ts` — new file
+- `src/components/layout/AppLayout.tsx` — mount hook
+- `src/components/dashboard/VibeSelector.tsx` — delete (dead code)
 
-### 3. New `InviteToTripDialog` component
-
-Same UX as `InviteToPlanDialog` (email / SMS / Generate Link). Reuses the existing `send-sms-invite` edge function and adds a parallel `send-trip-invite` edge function for branded email (mirrors `send-plan-invite`).
-
-### 4. Wire up triggers
-
-- **Trip cards** (`TripsList.tsx`): add a small Share icon next to the existing UserPlus / Convert icons on both confirmed trips and proposal cards
-- **Trip detail** (`TripDetail.tsx`): add a Share button in the header
-- **GuidedTripSheet**: after a proposal/trip is created, surface a "Plan Created" follow-up dialog with the shareable link (copy + email + SMS)
-- **GuidedPlanSheet**: same — surface the link in a follow-up summary dialog after creation, reusing `InviteToPlanDialog`
-
-This consistent post-create dialog means users can immediately share with non-Parade friends without needing to find the card again.
-
-### 5. OG image
-
-Reuse the existing `og-invite-image` edge function. Future enhancement (not v1): render destination/dates dynamically.
-
-## File change summary
-
-**New**:
-- `supabase/migrations/<ts>_trip_invites.sql`
-- `src/pages/TripInvite.tsx`
-- `src/components/trips/InviteToTripDialog.tsx`
-- `supabase/functions/send-trip-invite/index.ts`
-
-**Modified**:
-- `public/invite.html` — handle `?tt=` token
-- `src/App.tsx` — add `/trip-invite/:token` route
-- `src/components/trips/TripsList.tsx` — Share icon on trip + proposal cards
-- `src/pages/TripDetail.tsx` — Share button in header
-- `src/components/trips/GuidedTripSheet.tsx` — post-create share dialog
-- `src/components/plans/GuidedPlanSheet.tsx` — post-create share dialog (reuses existing infra)
-
-## Behavior summary
-
-- **Non-user opens link** → sees full plan/trip details (read-only). Clicking "Join" prompts signup → auto-accepts on return.
-- **Existing user opens link** → auto-redirected to `/plan/:id` or `/trip/:id`, added as participant.
-- **Creator** can grab a shareable link from: (a) the Share action on the card, (b) the detail page header, or (c) the post-create summary dialog.
+### Verification flow
+1. Set vibe → reload → persists.
+2. Set vibe on phone, watch laptop dashboard update within ~1s without refresh.
+3. Set vibe → pull-to-refresh → persists (RPC bootstrap is skipped).
+4. Add custom tag, then GIF → both persist on reload and propagate cross-device.
+5. Open two tabs, change vibe in tab A → tab B updates automatically.
 
