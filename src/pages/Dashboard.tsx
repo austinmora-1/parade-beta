@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
-import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { VibeAndIntentionsCard } from '@/components/dashboard/VibeAndIntentionsCard';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
@@ -83,7 +82,6 @@ export default function Dashboard() {
       className="space-y-5 md:space-y-7"
     >
       <EllyWalkthrough />
-      <PushNotificationPrompt />
 
       {/* Personalized greeting */}
       <motion.div variants={fadeUp}>
