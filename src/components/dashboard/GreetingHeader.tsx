@@ -2,11 +2,16 @@ import { useMemo, useState, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Sun, Moon, Sunset, Coffee, MapPin, Plus, CalendarPlus, Plane, UserPlus } from 'lucide-react';
+import { Sun, Moon, Sunset, Coffee, MapPin, Plus, CalendarPlus, Plane, UserPlus, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTimezoneForCity } from '@/lib/timezone';
 import { formatCityForDisplay } from '@/lib/formatCity';
 import { useTheme } from 'next-themes';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CityAutocomplete } from '@/components/ui/city-autocomplete';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
@@ -49,13 +54,17 @@ const menuItems = [
 ] as const;
 
 export function GreetingHeader() {
-  const { profile } = useCurrentUserProfile();
+  const { profile, updateProfile } = useCurrentUserProfile();
   const { plans, friends, availabilityMap, userTimezone } = usePlannerStore();
+  const { user } = useAuth();
   const { resolvedTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [tripOpen, setTripOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationDraft, setLocationDraft] = useState('');
+  const [savingLocation, setSavingLocation] = useState(false);
 
   const config = useMemo(() => {
     const hour = new Date().getHours();
@@ -70,15 +79,21 @@ export function GreetingHeader() {
     return { ...greetConfig, context };
   }, [plans, friends]);
 
-  const currentCity = useMemo(() => {
+  const { currentCity, needsLocation } = useMemo(() => {
     const todayKey = format(new Date(), 'yyyy-MM-dd');
     const todayAvail = availabilityMap[todayKey];
     if (todayAvail?.locationStatus === 'away' && todayAvail?.tripLocation) {
-      return formatCityForDisplay(todayAvail.tripLocation) || todayAvail.tripLocation.split(',')[0];
+      return {
+        currentCity: formatCityForDisplay(todayAvail.tripLocation) || todayAvail.tripLocation.split(',')[0],
+        needsLocation: false,
+      };
     }
     const homeAddress = profile?.home_address;
-    if (!homeAddress) return 'Set location';
-    return formatCityForDisplay(homeAddress) || homeAddress.split(',')[0];
+    if (!homeAddress) return { currentCity: 'Set location', needsLocation: true };
+    return {
+      currentCity: formatCityForDisplay(homeAddress) || homeAddress.split(',')[0],
+      needsLocation: false,
+    };
   }, [availabilityMap, profile?.home_address]);
 
   const handleSelect = (key: string) => {
@@ -86,6 +101,28 @@ export function GreetingHeader() {
     if (key === 'plan') setPlanOpen(true);
     else if (key === 'trip') setTripOpen(true);
     else if (key === 'invite') setInviteOpen(true);
+  };
+
+  const handleSaveLocation = async () => {
+    const trimmed = locationDraft.trim();
+    if (!trimmed || !user?.id) return;
+    setSavingLocation(true);
+    try {
+      const tz = getTimezoneForCity(trimmed) || profile?.timezone || null;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) })
+        .eq('user_id', user.id);
+      if (error) throw error;
+      updateProfile({ home_address: trimmed, ...(tz ? { timezone: tz } : {}) });
+      toast.success('Location saved');
+      setLocationOpen(false);
+      setLocationDraft('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save location');
+    } finally {
+      setSavingLocation(false);
+    }
   };
 
   const Icon = config.icon;
@@ -113,10 +150,53 @@ export function GreetingHeader() {
               <h2 className="text-lg font-display text-foreground">
                 {config.greeting}
               </h2>
-              <div className="flex items-center gap-1 text-muted-foreground -mt-0.5">
-                <MapPin className="h-3 w-3 text-primary" />
-                <span className="text-xs">{currentCity}</span>
-              </div>
+              {needsLocation ? (
+                <Popover open={locationOpen} onOpenChange={(o) => { setLocationOpen(o); if (o) setLocationDraft(''); }}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 -mt-0.5 rounded-md px-1 py-0.5 -mx-1 text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      <MapPin className="h-3 w-3" />
+                      <span className="text-xs font-medium underline-offset-2 underline decoration-dotted">Set location</span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-[280px] p-3 z-50" onOpenAutoFocus={(e) => e.preventDefault()}>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-foreground">Where are you based?</p>
+                      <CityAutocomplete
+                        value={locationDraft}
+                        onChange={setLocationDraft}
+                        placeholder="Search for your city…"
+                        compact
+                      />
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setLocationOpen(false)}
+                          className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveLocation}
+                          disabled={!locationDraft.trim() || savingLocation}
+                          className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                        >
+                          {savingLocation && <Loader2 className="h-3 w-3 animate-spin" />}
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <div className="flex items-center gap-1 text-muted-foreground -mt-0.5">
+                  <MapPin className="h-3 w-3 text-primary" />
+                  <span className="text-xs">{currentCity}</span>
+                </div>
+              )}
             </div>
 
             {/* FAB */}
