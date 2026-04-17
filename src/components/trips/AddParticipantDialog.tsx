@@ -271,10 +271,18 @@ export function AddParticipantDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent
+        className="max-w-sm"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-base">Manage Participants</DialogTitle>
         </DialogHeader>
+
+        <p className="text-[11px] text-muted-foreground -mt-1">
+          Add as many friends as you'd like — tap Done when finished.
+        </p>
 
         {removableCurrent.length > 0 && (
           <div className="space-y-1">
@@ -378,6 +386,12 @@ export function AddParticipantDialog({
               );
             })
           )}
+        </div>
+
+        <div className="flex justify-end pt-2 border-t">
+          <Button size="sm" onClick={() => onOpenChange(false)}>
+            Done{addedIds.size > 0 ? ` · ${addedIds.size} added` : ''}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
