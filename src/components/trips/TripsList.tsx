@@ -671,15 +671,14 @@ function ProposalTripCard({
     return sorted[0];
   }, [proposal.dates, bordaScores]);
 
+  const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [editDestination, setEditDestination] = useState(proposal.destination || '');
   const [editDates, setEditDates] = useState(
     proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date }))
   );
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [justFinalized, setJustFinalized] = useState(false);
 
@@ -816,46 +815,7 @@ function ProposalTripCard({
     }
   };
 
-  const handleConfirmDelete = async () => {
-    setDeleting(true);
-    try {
-      await supabase.from('trip_proposal_dates').delete().eq('proposal_id', proposal.id);
-      await supabase.from('trip_proposal_participants').delete().eq('proposal_id', proposal.id);
-      await supabase.from('trip_proposals').delete().eq('id', proposal.id);
-      toast.success('Proposal deleted');
-      await onRefresh();
-    } catch (err) {
-      console.error('Delete failed:', err);
-      toast.error('Failed to delete proposal');
-    } finally {
-      setDeleting(false);
-      setDeleteOpen(false);
-    }
-  };
-  const [converting, setConverting] = useState(false);
-  const handleConvertType = async () => {
-    setConverting(true);
-    try {
-      const newType = isVisit ? 'trip' : 'visit';
-      const updates: any = { proposal_type: newType, updated_at: new Date().toISOString() };
-      // When converting to visit, clear host; when converting to trip, set creator as host
-      if (newType === 'visit') {
-        // Find a non-creator participant to be the host (person being visited)
-        const otherParticipant = proposal.participants.find(p => p.user_id !== currentUserId);
-        updates.host_user_id = otherParticipant?.user_id || null;
-      } else {
-        updates.host_user_id = null;
-      }
-      await supabase.from('trip_proposals').update(updates).eq('id', proposal.id);
-      toast.success(newType === 'visit' ? 'Converted to visit 🏠' : 'Converted to trip ✈️');
-      await onRefresh();
-    } catch (err) {
-      console.error('Convert failed:', err);
-      toast.error('Failed to convert');
-    } finally {
-      setConverting(false);
-    }
-  };
+  // Delete & convert handlers moved to /proposal/:id detail page
   const addDateOption = () => {
     const last = editDates[editDates.length - 1];
     const startDate = last ? new Date(last.start_date + 'T00:00:00') : new Date();
@@ -1005,20 +965,29 @@ function ProposalTripCard({
 
         {/* Card header */}
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
-            allVoted ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
-          )}>
+          <button
+            type="button"
+            onClick={() => navigate(`/proposal/${proposal.id}`)}
+            className={cn(
+              "flex items-center justify-center h-10 w-10 rounded-lg shrink-0 transition-opacity hover:opacity-80",
+              allVoted ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
+            )}
+            title="Open proposal details"
+          >
             <CardIcon className="h-5 w-5" />
-          </div>
+          </button>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <span className="font-medium text-sm truncate text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => navigate(`/proposal/${proposal.id}`)}
+                className="font-medium text-sm truncate text-muted-foreground text-left hover:text-foreground transition-colors min-w-0"
+              >
                 {cardTitle}
-              </span>
+              </button>
               
-              {isCreator && (
+              {isCreator ? (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
                   <Button
                     variant="ghost"
@@ -1033,25 +1002,18 @@ function ProposalTripCard({
                     variant="ghost"
                     size="icon"
                     className="h-5 w-5"
-                    disabled={converting}
-                    onClick={handleConvertType}
-                    title={isVisit ? 'Convert to trip' : 'Convert to visit'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditDestination(proposal.destination || '');
+                      setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
+                      setEditOpen(true);
+                    }}
+                    title="Edit proposal"
                   >
-                    {converting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowLeftRight className="h-3 w-3" />}
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => {
-                    setEditDestination(proposal.destination || '');
-                    setEditDates(proposal.dates.map(d => ({ id: d.id, start_date: d.start_date, end_date: d.end_date })));
-                    setEditOpen(true);
-                  }}>
                     <Edit2 className="h-3 w-3" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
                 </div>
-              )}
-              {!isCreator && (
+              ) : (
                 <div className="flex items-center gap-1 shrink-0 ml-auto">
                   <Button
                     variant="ghost"
@@ -1061,16 +1023,6 @@ function ProposalTripCard({
                     title="Share invite link"
                   >
                     <Share2 className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5"
-                    disabled={converting}
-                    onClick={handleConvertType}
-                    title={isVisit ? 'Convert to trip' : 'Convert to visit'}
-                  >
-                    {converting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowLeftRight className="h-3 w-3" />}
                   </Button>
                 </div>
               )}
@@ -1316,27 +1268,7 @@ function ProposalTripCard({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Proposal</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this trip proposal and all votes. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete & convert moved to /proposal/:id detail page */}
 
       <AddParticipantDialog
         open={addParticipantOpen}
