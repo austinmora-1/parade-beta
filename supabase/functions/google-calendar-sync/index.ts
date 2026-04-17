@@ -139,12 +139,15 @@ async function handleEventsSync(params: {
     let startTimeStr: string | null
     let endTimeStr: string | null
 
+    // Prefer the event's own timezone (Google returns it per event) over the viewer's tz
+    const eventTimezone = event.start.timeZone || timezone
+
     if (event.start.dateTime) {
       const startDate = new Date(event.start.dateTime)
-      hour = getHourInTimezone(startDate, timezone)
-      localDateStr = getDateString(startDate, timezone)
-      startTimeStr = formatTimeHHMM(startDate, timezone)
-      endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
+      hour = getHourInTimezone(startDate, eventTimezone)
+      localDateStr = getDateString(startDate, eventTimezone)
+      startTimeStr = formatTimeHHMM(startDate, eventTimezone)
+      endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), eventTimezone) : null
     } else if (event.start.date) {
       localDateStr = event.start.date
       hour = 12
@@ -169,7 +172,7 @@ async function handleEventsSync(params: {
       source_event_id: event.id,
       start_time: startTimeStr,
       end_time: endTimeStr,
-      source_timezone: timezone || null,
+      source_timezone: eventTimezone || null,
     })
   }
 

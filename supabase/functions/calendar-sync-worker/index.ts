@@ -246,12 +246,15 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
     let startTimeStr: string | null
     let endTimeStr: string | null
 
+    // Prefer the event's own timezone (Google returns it per event) over the viewer's tz
+    const eventTimezone = event.start.timeZone || timezone
+
     if (event.start.dateTime) {
       const startDate = new Date(event.start.dateTime)
-      hour = getHourInTimezone(startDate, timezone)
-      localDateStr = getDateString(startDate, timezone)
-      startTimeStr = formatTimeHHMM(startDate, timezone)
-      endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), timezone) : null
+      hour = getHourInTimezone(startDate, eventTimezone)
+      localDateStr = getDateString(startDate, eventTimezone)
+      startTimeStr = formatTimeHHMM(startDate, eventTimezone)
+      endTimeStr = event.end.dateTime ? formatTimeHHMM(new Date(event.end.dateTime), eventTimezone) : null
     } else if (event.start.date) {
       localDateStr = event.start.date
       hour = 12
@@ -270,7 +273,7 @@ async function syncGoogleCalendar(adminClient: any, userId: string): Promise<{ e
       date: `${localDateStr}T12:00:00+00:00`, time_slot: timeSlotHyphen, duration: 1,
       source: 'gcal', source_event_id: event.id,
       start_time: startTimeStr, end_time: endTimeStr,
-      source_timezone: timezone || null,
+      source_timezone: eventTimezone || null,
     })
   }
 
@@ -365,16 +368,20 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
     let localDateStr: string
     let hour: number
 
+    // Prefer the event's own VTIMEZONE/TZID over the viewer's tz so day & HH:mm
+    // reflect the event's actual local time (e.g. ClassPass studio timezones).
+    const eventTimezone = (!event.isAllDay && event.tzid) ? event.tzid : userTimezone
+
     if (event.isAllDay) {
       localDateStr = event.dtstart.toISOString().split('T')[0]
       hour = 12
     } else {
-      localDateStr = getDateString(event.dtstart)
-      hour = event.dtstart.getUTCHours()
+      localDateStr = getDateString(event.dtstart, eventTimezone)
+      hour = getHourInTimezone(event.dtstart, eventTimezone)
     }
 
-    const icalStartTime = !event.isAllDay ? formatTimeHHMM(event.dtstart, userTimezone) : null
-    const icalEndTime = !event.isAllDay && event.dtend ? formatTimeHHMM(event.dtend, userTimezone) : null
+    const icalStartTime = !event.isAllDay ? formatTimeHHMM(event.dtstart, eventTimezone) : null
+    const icalEndTime = !event.isAllDay && event.dtend ? formatTimeHHMM(event.dtend, eventTimezone) : null
 
     incomingEventIds.add(event.uid)
     planRowsByEventId.set(event.uid, {
@@ -382,7 +389,7 @@ async function syncICalCalendar(adminClient: any, userId: string): Promise<{ eve
       activity: classifyActivity(event.summary), date: `${localDateStr}T12:00:00+00:00`,
       time_slot: getTimeSlot(hour).replace('_', '-'), duration: 1,
       location: event.location || null, source: 'ical', source_event_id: event.uid,
-      source_timezone: userTimezone || null,
+      source_timezone: eventTimezone || null,
       start_time: icalStartTime, end_time: icalEndTime,
     })
   }
