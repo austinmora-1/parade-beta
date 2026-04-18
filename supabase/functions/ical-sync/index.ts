@@ -72,10 +72,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Get the iCal URL from calendar_connections
+    // Get the iCal URL from the dedicated plaintext column
     const { data: connRows, error: connError } = await adminClient
       .from("calendar_connections")
-      .select("access_token")
+      .select("ical_url")
       .eq("user_id", userId)
       .eq("provider", "ical");
 
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const icalUrl = connRows[0].access_token;
+    const icalUrl = connRows[0].ical_url;
     if (!icalUrl) {
       return new Response(
         JSON.stringify({

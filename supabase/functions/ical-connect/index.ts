@@ -76,22 +76,24 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Store the iCal URL in calendar_connections using service role
+    // Store the iCal URL in calendar_connections using service role.
+    // iCal URLs are NOT secrets — they live in a dedicated plaintext column
+    // so they don't conflict with encrypted Google OAuth tokens.
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // We store the iCal URL in access_token field (it's just a URL, not a secret OAuth token)
     const { error: upsertError } = await adminClient
       .from('calendar_connections')
       .upsert(
         {
           user_id: user.id,
           provider: 'ical',
-          access_token: normalizedUrl,
+          ical_url: normalizedUrl,
+          access_token: null,
           refresh_token: null,
-          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
           grant_id: null,
         },
         { onConflict: 'user_id,provider' }
