@@ -89,6 +89,7 @@ export type Database = {
           created_at: string
           expires_at: string
           grant_id: string | null
+          ical_url: string | null
           id: string
           key_id: string | null
           provider: string
@@ -101,6 +102,7 @@ export type Database = {
           created_at?: string
           expires_at: string
           grant_id?: string | null
+          ical_url?: string | null
           id?: string
           key_id?: string | null
           provider: string
@@ -113,6 +115,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           grant_id?: string | null
+          ical_url?: string | null
           id?: string
           key_id?: string | null
           provider?: string
@@ -2083,6 +2086,7 @@ export type Database = {
           access_token: string
           expires_at: string
           grant_id: string
+          ical_url: string
           refresh_token: string
         }[]
       }
