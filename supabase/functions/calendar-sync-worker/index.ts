@@ -418,7 +418,7 @@ async function syncICalCalendar(
 ): Promise<{ eventsProcessed: number; datesUpdated: number }> {
   const { data: connRows, error: connError } = await adminClient
     .from("calendar_connections")
-    .select("access_token")
+    .select("ical_url")
     .eq("user_id", userId)
     .eq("provider", "ical");
 
@@ -453,7 +453,7 @@ async function syncICalCalendar(
     }
   }
 
-  const icalUrl = connRows[0].access_token;
+  const icalUrl = connRows[0].ical_url;
   if (!icalUrl) throw new Error("No iCal URL stored");
 
   const icsResponse = await fetch(icalUrl);

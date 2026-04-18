@@ -41,18 +41,22 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Get the access token to revoke it
-    const { data: connRows } = await adminClient
-      .from('calendar_connections')
-      .select('access_token')
-      .eq('user_id', userId)
-      .eq('provider', 'google')
+    // Look up the decrypted access token via RPC to revoke it with Google.
+    // (Encrypted bytea column cannot be read directly.)
+    const { data: tokens } = await adminClient.rpc('get_calendar_tokens', {
+      p_user_id: userId,
+      p_provider: 'google',
+    })
 
-    if (connRows && connRows.length > 0 && connRows[0].access_token) {
-      // Revoke the token with Google
-      await fetch(`https://oauth2.googleapis.com/revoke?token=${connRows[0].access_token}`, {
-        method: 'POST',
-      })
+    const accessToken = tokens?.[0]?.access_token
+    if (accessToken) {
+      try {
+        await fetch(`https://oauth2.googleapis.com/revoke?token=${accessToken}`, {
+          method: 'POST',
+        })
+      } catch (revokeErr) {
+        console.warn('Token revoke failed (continuing with disconnect):', revokeErr)
+      }
     }
 
     // Delete the connection from database
