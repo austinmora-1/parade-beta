@@ -174,11 +174,16 @@ export function UpcomingPlansWidget() {
     });
     const ownPlanIds = new Set(ownPlans.map(p => p.id));
     const friendPlans = friendUpcomingPlans.filter(p => !ownPlanIds.has(p.id));
+    const effectiveStartMinutes = (p: any): number => {
+      if (p.startTime) return parseTimeToMinutes(p.startTime);
+      const slot = TIME_SLOT_HOURS[p.timeSlot];
+      return slot ? slot.start * 60 : (timeSlotOrder[p.timeSlot] ?? 0) * 60;
+    };
     return [...ownPlans, ...friendPlans]
       .sort((a, b) => {
         const dateDiff = a.date.getTime() - b.date.getTime();
         if (dateDiff !== 0) return dateDiff;
-        return (timeSlotOrder[a.timeSlot] ?? 0) - (timeSlotOrder[b.timeSlot] ?? 0);
+        return effectiveStartMinutes(a) - effectiveStartMinutes(b);
       })
       .slice(0, 8);
   }, [plans, friendUpcomingPlans, userTimezone]);
