@@ -598,6 +598,20 @@ export default function Profile() {
         
         {/* Profile Info */}
         <div className="relative px-4 pb-4 md:px-6 md:pb-5">
+          {/* Action buttons row (below cover, above avatar on mobile) */}
+          <div className="flex items-center justify-end gap-1 pt-2 md:hidden">
+            <Link to="/notifications">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Bell className="h-5 w-5" />
+              </Button>
+            </Link>
+            <Link to="/settings">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
+
           {/* Avatar with upload button */}
           <div className="-mt-10 mb-3 flex items-end justify-between md:-mt-12">
             <div className="relative group">
@@ -636,7 +650,8 @@ export default function Profile() {
             </div>
             
             <div className="flex flex-col items-end gap-1.5">
-              <div className="flex items-center gap-1">
+              {/* Desktop-only action buttons (mobile renders them above) */}
+              <div className="hidden md:flex items-center gap-1">
                 <Link to="/notifications">
                   <Button variant="ghost" size="icon" className="h-9 w-9">
                     <Bell className="h-5 w-5" />
