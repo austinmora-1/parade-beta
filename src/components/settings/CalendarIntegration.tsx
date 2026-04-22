@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import confetti from 'canvas-confetti';
 import { Calendar, Check, Loader2, ExternalLink, RefreshCw, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -20,6 +21,36 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
   const [isConnectingApple, setIsConnectingApple] = useState(false);
+
+  // Celebrate successful calendar connection (post-OAuth redirect)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('calendar') !== 'connected') return;
+
+    // Fire confetti from two sides for a nice spread
+    const fire = (originX: number) => {
+      confetti({
+        particleCount: 60,
+        spread: 70,
+        startVelocity: 45,
+        origin: { x: originX, y: 0.7 },
+        colors: ['#FF6B5B', '#4ADE80', '#FBBF24', '#FFF7ED'],
+        scalar: 0.9,
+      });
+    };
+    fire(0.2);
+    setTimeout(() => fire(0.8), 150);
+
+    toast.success('Calendar connected! 🎉', {
+      description: 'Your events will sync automatically.',
+    });
+
+    // Clean the query param so it doesn't replay on re-render/refresh
+    const url = new URL(window.location.href);
+    url.searchParams.delete('calendar');
+    window.history.replaceState({}, '', url.toString());
+  }, []);
 
   const handleGoogleSync = async () => {
     const result = await googleSync();
