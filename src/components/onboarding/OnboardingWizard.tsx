@@ -5,11 +5,9 @@ import { ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { AccountCreationStep } from './steps/AccountCreationStep';
-import { ProfilePersonalizationStep } from './steps/ProfilePersonalizationStep';
 import { CalendarSyncStep } from './steps/CalendarSyncStep';
-import { SocialPreferencesStep } from './steps/SocialPreferencesStep';
-import { InterestsActivitiesStep } from './steps/InterestsActivitiesStep';
-import { NotificationsPrivacyStep } from './steps/NotificationsPrivacyStep';
+import { RhythmStep } from './steps/RhythmStep';
+import { FriendsStep } from './steps/FriendsStep';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -46,13 +44,16 @@ export interface OnboardingData {
   allowAllHangRequests: boolean;
 }
 
+// New 4-step onboarding flow (Phase 2 UX redesign):
+// Welcome → Calendar → Rhythm → Bring someone.
+// Optional fields (interests, social goals, social cap, preferred social
+// times, privacy toggles) live in Settings and are nudged via the
+// PolishProfileCard on the dashboard.
 const STEPS = [
-  { id: 'account', title: 'Account' },
-  { id: 'profile', title: 'Profile' },
+  { id: 'account', title: 'Welcome' },
   { id: 'calendar', title: 'Calendar' },
-  { id: 'social', title: 'Social' },
-  { id: 'interests', title: 'Goals & Interests' },
-  { id: 'notifications', title: 'Settings' },
+  { id: 'rhythm', title: 'Rhythm' },
+  { id: 'friends', title: 'Bring someone' },
 ];
 
 export function OnboardingWizard() {
@@ -211,16 +212,12 @@ export function OnboardingWizard() {
     switch (STEPS[currentStep].id) {
       case 'account':
         return <AccountCreationStep data={data} updateData={updateData} />;
-      case 'profile':
-        return <ProfilePersonalizationStep data={data} updateData={updateData} />;
       case 'calendar':
         return <CalendarSyncStep data={data} updateData={updateData} />;
-      case 'social':
-        return <SocialPreferencesStep data={data} updateData={updateData} />;
-      case 'interests':
-        return <InterestsActivitiesStep data={data} updateData={updateData} />;
-      case 'notifications':
-        return <NotificationsPrivacyStep data={data} updateData={updateData} />;
+      case 'rhythm':
+        return <RhythmStep data={data} updateData={updateData} />;
+      case 'friends':
+        return <FriendsStep data={data} updateData={updateData} />;
       default:
         return null;
     }
