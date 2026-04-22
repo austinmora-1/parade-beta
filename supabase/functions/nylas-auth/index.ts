@@ -59,20 +59,46 @@ serve(async (req) => {
       });
     }
 
+    // Parse optional provider hint from request body ("google" | "icloud").
+    // Defaults to "google" to preserve existing behaviour.
+    let provider: "google" | "icloud" = "google";
+    if (req.method === "POST") {
+      try {
+        const body = await req.json().catch(() => ({}));
+        if (body?.provider === "icloud" || body?.provider === "google") {
+          provider = body.provider;
+        }
+      } catch {
+        // ignore body parse errors, keep default
+      }
+    }
+
     // Get the origin for redirect
     const origin = req.headers.get("origin") || "https://parade.lovable.app";
     const redirectUri = `${Deno.env.get("SUPABASE_URL")}/functions/v1/nylas-callback`;
 
-    // Build Nylas OAuth URL with read-only calendar scope
-    const state = JSON.stringify({ userId: user.id, origin });
+    // Build Nylas OAuth URL. We pass `provider` so Nylas routes the user
+    // straight to the right IdP (Google or Apple iCloud) instead of the
+    // generic provider chooser. Scopes differ per provider.
+    const state = JSON.stringify({ userId: user.id, origin, provider });
     const params = new URLSearchParams({
       client_id: nylasClientId,
       redirect_uri: redirectUri,
       response_type: "code",
+      provider,
       state,
-      // Request only read access to calendar events and free/busy info
-      scope: "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.freebusy",
     });
+
+    if (provider === "google") {
+      // Read-only calendar + free/busy
+      params.set(
+        "scope",
+        "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.freebusy",
+      );
+    } else {
+      // iCloud / Apple — Nylas-managed CalDAV scope
+      params.set("scope", "calendar");
+    }
 
     const authUrl = `${nylasApiOrigin}/v3/connect/auth?${params.toString()}`;
 
