@@ -12,7 +12,7 @@ describe("resolveEffectiveCity", () => {
       resolveEffectiveCity({
         date: TODAY,
         availability: [],
-        homeAddress: "Frisco, TX",
+        homeAddress: "Dallas, TX",
       }),
     ).toBe("dallas");
   });
@@ -90,9 +90,9 @@ describe("isFriendInMyCity", () => {
         myAvailability: [
           { date: TODAY, location_status: "away", trip_location: "Dallas" },
         ],
-        myHomeAddress: "Frisco, TX",
+        myHomeAddress: "Dallas, TX",
         friendAvailability: [],
-        friendHomeAddress: "Plano, TX",
+        friendHomeAddress: "Dallas, TX",
       }),
     ).toBe(true);
   });
@@ -104,7 +104,7 @@ describe("isFriendInMyCity", () => {
         myAvailability: [
           { date: TODAY, location_status: "away", trip_location: "Dallas" },
         ],
-        myHomeAddress: "Frisco, TX",
+        myHomeAddress: "Dallas, TX",
         friendAvailability: [],
         friendHomeAddress: "Boston, MA",
       }),
