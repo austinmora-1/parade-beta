@@ -40,7 +40,6 @@ interface FriendVibeStripProps {
 
 export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
   const { friends, availability, homeAddress } = usePlannerStore();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [friendVibes, setFriendVibes] = useState<FriendVibe[]>([]);
 
@@ -84,34 +83,38 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
       const profileMap = new Map((profileData || []).map(p => [p.user_id, p]));
       const availMap = new Map((availData || []).map(a => [a.user_id, a]));
 
-      const vibes: FriendVibe[] = connectedFriends.map(friend => {
+      const vibes: FriendVibe[] = connectedFriends.flatMap(friend => {
         const profile = profileMap.get(friend.friendUserId!);
         const avail = availMap.get(friend.friendUserId!);
 
-        // Determine if friend is co-located with the current user today.
-        // If we can't confirm same city, treat them as not available today.
         const friendCity = getEffectiveCity(
           (avail as any)?.location_status || 'home',
           (avail as any)?.trip_location || null,
           (profile as any)?.home_address || null,
         );
-        const sameCity = !!myEffectiveCity && !!friendCity && citiesMatch(myEffectiveCity, friendCity);
 
-        const availableSlots: TimeSlot[] = [];
-        if (avail && sameCity) {
-          for (const { key, slot } of SLOT_KEYS) {
-            if ((avail as any)[key]) availableSlots.push(slot);
-          }
+        const sameCity = !!myEffectiveCity && !!friendCity && citiesMatch(myEffectiveCity, friendCity);
+        if (!sameCity || !avail) {
+          return [];
         }
 
-        return {
+        const availableSlots: TimeSlot[] = [];
+        for (const { key, slot } of SLOT_KEYS) {
+          if ((avail as any)[key]) availableSlots.push(slot);
+        }
+
+        if (availableSlots.length === 0) {
+          return [];
+        }
+
+        return [{
           friend,
           currentVibe: profile?.current_vibe || null,
           customVibeTags: profile?.custom_vibe_tags || null,
           vibeGifUrl: profile?.vibe_gif_url || null,
-          isAvailableToday: sameCity && availableSlots.length > 0,
+          isAvailableToday: true,
           availableSlots,
-        };
+        }];
       });
 
       vibes.sort((a, b) => {
@@ -133,6 +136,10 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
         <p className="text-xs text-muted-foreground">Add friends to see their vibes</p>
       </div>
     );
+  }
+
+  if (friendVibes.length === 0) {
+    return null;
   }
 
   return (
