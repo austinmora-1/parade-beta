@@ -90,42 +90,20 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
         const profile = profileMap.get(friend.friendUserId!);
         const avail = availMap.get(friend.friendUserId!);
 
+        // Use the shared helper so the rule is identical for me and friends.
+        // We pass the precomputed myEffectiveCity via a synthetic
+        // availability shim so resolveEffectiveCity short-circuits to it.
         const sameCity = isFriendInMyCity({
           date: todayStr,
-          myAvailability: { location_status: undefined, trip_location: undefined },
-          myHomeAddress: undefined,
+          myAvailability: { date: todayStr, location_status: 'away', trip_location: myEffectiveCity },
+          myHomeAddress: myEffectiveCity,
           friendAvailability: avail
             ? { date: todayStr, location_status: (avail as any).location_status, trip_location: (avail as any).trip_location }
             : null,
           friendHomeAddress: (profile as any)?.home_address ?? null,
-        }) && !!myEffectiveCity && (() => {
-          // Use the precomputed myEffectiveCity to avoid re-resolving
-          const friendCity = resolveEffectiveCity({
-            date: todayStr,
-            availability: avail
-              ? { date: todayStr, location_status: (avail as any).location_status, trip_location: (avail as any).trip_location }
-              : null,
-            homeAddress: (profile as any)?.home_address ?? null,
-          });
-          return !!friendCity;
-        })();
-
-        // Re-check using the shared helper directly with my real city
-        const friendCity = resolveEffectiveCity({
-          date: todayStr,
-          availability: avail
-            ? { date: todayStr, location_status: (avail as any).location_status, trip_location: (avail as any).trip_location }
-            : null,
-          homeAddress: (profile as any)?.home_address ?? null,
         });
-        const reallySameCity =
-          !!myEffectiveCity && !!friendCity &&
-          // citiesMatch is the underlying rule used by isFriendInMyCity
-          (myEffectiveCity === friendCity ||
-            myEffectiveCity.includes(friendCity) ||
-            friendCity.includes(myEffectiveCity));
 
-        if (!reallySameCity || !avail) {
+        if (!sameCity || !avail) {
           return [];
         }
 
