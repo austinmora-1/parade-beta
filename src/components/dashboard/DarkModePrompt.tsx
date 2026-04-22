@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 
 const STORAGE_KEY = 'parade-dark-mode-prompt';
 const AUTO_DARK_KEY = 'parade-auto-dark-after-9pm';
+const SESSION_COUNT_KEY = 'parade-session-count';
+const MIN_SESSIONS = 3;
 
 interface PromptState {
   dismissedDate: string | null; // ISO date string — dismissed once per day
@@ -25,6 +27,14 @@ function isAutoDarkEnabled(): boolean {
   return localStorage.getItem(AUTO_DARK_KEY) === 'true';
 }
 
+function getSessionCount(): number {
+  try {
+    return parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '0', 10) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function DarkModePrompt() {
   const { theme, setTheme } = useTheme();
   const [visible, setVisible] = useState(false);
@@ -34,6 +44,7 @@ export function DarkModePrompt() {
     const hour = new Date().getHours();
     const todayStr = new Date().toISOString().slice(0, 10);
     const stored = getStoredState();
+    const sessions = getSessionCount();
 
     // If auto-dark is enabled, silently switch and don't show prompt
     if (isAutoDarkEnabled() && hour >= 21 && theme === 'light') {
@@ -41,8 +52,14 @@ export function DarkModePrompt() {
       return;
     }
 
-    // Show prompt if: after 9pm, light theme, not already dismissed today
-    if (hour >= 21 && theme === 'light' && stored.dismissedDate !== todayStr) {
+    // Phase 1.2 — only show after the user's 3rd session, after 9pm,
+    // on light theme, and not already dismissed today.
+    if (
+      sessions >= MIN_SESSIONS &&
+      hour >= 21 &&
+      theme === 'light' &&
+      stored.dismissedDate !== todayStr
+    ) {
       setVisible(true);
     }
   }, [theme, setTheme]);

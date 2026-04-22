@@ -13,6 +13,7 @@ import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
+import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -88,8 +89,11 @@ export default function Dashboard() {
         <GreetingHeader />
       </motion.div>
 
-      {/* Dark mode suggestion after 9 PM */}
+      {/* Dark mode suggestion after 3rd session, after 9 PM */}
       <DarkModePrompt />
+
+      {/* Push notification prompt — fires after first confirmed plan */}
+      <PushNotificationPrompt />
 
       {/* Vibe + Weekly Intentions (consolidated) */}
       <motion.div variants={fadeUp}>
