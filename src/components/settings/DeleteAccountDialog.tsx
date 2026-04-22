@@ -44,12 +44,12 @@ export function DeleteAccountDialog() {
 
       if (error) throw error;
 
-      toast.success('Your account has been deleted.');
+      toast.success('Account gone. Take care 👋');
       await signOut();
       navigate('/');
     } catch (err) {
       console.error('Error deleting account:', err);
-      toast.error('Failed to delete account. Please try again.');
+      toast.error("Couldn't delete your account — try again?");
     } finally {
       setIsDeleting(false);
     }

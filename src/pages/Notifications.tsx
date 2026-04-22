@@ -1140,9 +1140,9 @@ export default function Notifications() {
       {isEmpty && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && incomingRequests.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
           <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">🔔</div>
-          <h3 className="font-display text-base font-semibold md:text-lg">No new notifications</h3>
+          <h3 className="font-display text-base font-semibold md:text-lg">All caught up</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            You're all caught up! When friends send you requests, they'll appear here.
+            Quiet for now. When your crew reaches out, you'll see it here.
           </p>
           <Button
             onClick={() => navigate('/friends')}
@@ -1151,7 +1151,7 @@ export default function Notifications() {
             className="mt-4 gap-2"
           >
             <Users className="h-4 w-4" />
-            Find Friends
+            Find your people
           </Button>
         </div>
       )}

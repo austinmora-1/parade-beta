@@ -181,10 +181,10 @@ export function AvailableFriends() {
           <div className="mb-3 rounded-full bg-muted p-3">
             <Users className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-muted-foreground">No friends connected yet</p>
+          <p className="text-sm text-muted-foreground">Parade's better with friends — bring a few along</p>
           <Link to="/friends" className="mt-2">
             <Button size="sm" variant="outline">
-              Add Friends
+              Invite a friend
             </Button>
           </Link>
         </div>
@@ -215,10 +215,10 @@ export function AvailableFriends() {
           <div className="mb-3 rounded-full bg-muted p-3">
             <Users className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-muted-foreground">No friends available today</p>
+          <p className="text-sm text-muted-foreground">Quiet day — nobody's free yet</p>
           <Link to="/friends" className="mt-2">
             <Button size="sm" variant="outline" className="gap-1 text-xs">
-              View All Friends
+              See your crew
               <ArrowRight className="h-3 w-3" />
             </Button>
           </Link>

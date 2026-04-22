@@ -85,7 +85,7 @@ export function FriendsStep({ data, updateData }: FriendsStepProps) {
         {data.friendEmails.length === 0 && (
           <div className="rounded-lg border border-dashed border-border p-4 text-center">
             <p className="text-xs text-muted-foreground">
-              No friends added yet. You can always invite them later!
+              No worries — you can bring people along whenever.
             </p>
           </div>
         )}

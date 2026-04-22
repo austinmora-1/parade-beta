@@ -714,7 +714,7 @@ export function QuickPlanSheet({
                     ))}
 
                     {friendSearch && filteredFriends.length === 0 && (
-                      <p className="px-3 py-3 text-xs text-muted-foreground text-center">No friends found</p>
+                      <p className="px-3 py-3 text-xs text-muted-foreground text-center">Nobody by that name</p>
                     )}
                   </div>
                 )}

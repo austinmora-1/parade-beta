@@ -943,7 +943,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     );
                   }) : (
                     <div className="text-center py-6">
-                      <p className="text-xs text-muted-foreground">No friends found</p>
+                      <p className="text-xs text-muted-foreground">Nobody by that name</p>
                     </div>
                   )}
                 </div>

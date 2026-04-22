@@ -152,9 +152,9 @@ export function HangRequests() {
       .eq('id', id);
 
     if (error) {
-      toast.error('Failed to update request');
+      toast.error("Couldn't update that — try again?");
     } else {
-      toast.success(status === 'accepted' ? 'Request accepted! A plan has been created 🎉' : 'Request declined');
+      toast.success(status === 'accepted' ? "You're on! Plan added to your week 🎉" : 'Maybe next time 👋');
       setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
       if (status === 'accepted') {
         await loadPlans();

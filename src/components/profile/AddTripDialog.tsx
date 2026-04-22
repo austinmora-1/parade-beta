@@ -554,14 +554,14 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
           .eq('end_date', format(editingTrip.endDate, 'yyyy-MM-dd'));
       }
 
-      toast.success('Trip deleted');
+      toast.success('Trip removed');
       notifyTripsUpdated();
       await Promise.resolve(onTripAdded());
       onOpenChange(false);
       setDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error deleting trip:', error);
-      toast.error('Failed to delete trip');
+      toast.error("Couldn't remove that trip — try again?");
     } finally {
       setIsLoading(false);
     }

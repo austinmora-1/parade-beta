@@ -122,10 +122,10 @@ export function MissingReturnDialog({ open, onOpenChange, trips, onComplete }: M
 
       if (availabilityError) throw availabilityError;
 
-      toast.success(`Return date set for ${currentTrip.destination}`);
+      toast.success(`Welcome back from ${currentTrip.destination} 🏠`);
     } catch (err) {
       console.error('Error setting return date:', err);
-      toast.error('Failed to set return date');
+      toast.error("Couldn't save that return date — try again?");
     } finally {
       setSaving(false);
       goToNext();

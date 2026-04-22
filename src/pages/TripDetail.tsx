@@ -423,7 +423,7 @@ export default function TripDetail() {
           </div>
         ) : (
           <div className="rounded-lg border border-border bg-card p-4 text-center">
-            <p className="text-xs text-muted-foreground">No friends tagged for this trip</p>
+            <p className="text-xs text-muted-foreground">Going solo on this one — bring someone along?</p>
           </div>
         )}
       </div>

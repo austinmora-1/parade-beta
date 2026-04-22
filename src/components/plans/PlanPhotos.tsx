@@ -90,11 +90,11 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
     try {
       for (const file of Array.from(files)) {
         if (!file.type.startsWith('image/')) {
-          toast.error(`${file.name} is not an image`);
+          toast.error(`${file.name} doesn't look like a photo`);
           continue;
         }
         if (file.size > 10 * 1024 * 1024) {
-          toast.error(`${file.name} is too large (max 10MB)`);
+          toast.error(`${file.name} is a bit too big (10MB max)`);
           continue;
         }
 
@@ -107,7 +107,7 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
 
         if (uploadError) {
           console.error('Upload error:', uploadError);
-          toast.error('Failed to upload photo');
+          toast.error("Couldn't upload that one — try again?");
           continue;
         }
 
@@ -121,15 +121,15 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
 
         if (dbError) {
           console.error('DB error:', dbError);
-          toast.error('Failed to save photo');
+          toast.error("Couldn't save that photo — try again?");
         }
       }
 
-      toast.success('Photo added! 📸');
+      toast.success('Memory saved 📸');
       await fetchPhotos();
     } catch (err) {
       console.error('Upload failed:', err);
-      toast.error('Upload failed');
+      toast.error("Couldn't upload — try again?");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -149,13 +149,13 @@ export function PlanPhotos({ planId }: PlanPhotosProps) {
       .eq('id', photo.id);
 
     if (dbError) {
-      toast.error('Failed to delete photo');
+      toast.error("Couldn't remove that photo — try again?");
       return;
     }
 
     setPhotos(prev => prev.filter(p => p.id !== photo.id));
     setSelectedPhoto(null);
-    toast.success('Photo deleted');
+    toast.success('Photo gone');
   };
 
   const addPhotoOverlay = (

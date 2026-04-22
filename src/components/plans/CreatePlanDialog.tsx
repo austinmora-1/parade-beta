@@ -391,12 +391,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
           startsOn: format(date, 'yyyy-MM-dd'),
           feedVisibility,
         });
-        toast.success(`Recurring plan created! 🔄 ${effectiveTitle} will repeat ${recurrenceFrequency === 'weekly' ? 'every week' : recurrenceFrequency === 'biweekly' ? 'every other week' : 'monthly'}.`);
+        toast.success(`On the calendar 🔄 — ${effectiveTitle} will come back ${recurrenceFrequency === 'weekly' ? 'every week' : recurrenceFrequency === 'biweekly' ? 'every other week' : 'every month'}.`);
         onOpenChange(false);
         resetForm();
         return;
       } catch (err) {
-        toast.error('Failed to create recurring plan');
+        toast.error("Couldn't set up that recurring plan — try again?");
         return;
       }
     }
@@ -430,12 +430,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
       const success = await proposeChange(editPlan.id, changes, respondentUserIds);
       setIsProposing(false);
       if (success) {
-        toast.success('Time change proposed! Waiting for approval.');
+        toast.success('Suggested a new time — waiting on the crew.');
         onChangeProposed?.();
         onOpenChange(false);
         resetForm();
       } else {
-        toast.error('Failed to propose change. Please try again.');
+        toast.error("Couldn't send that change — try again?");
       }
       return;
     }

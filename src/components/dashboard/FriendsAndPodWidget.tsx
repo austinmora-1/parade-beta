@@ -218,9 +218,9 @@ export function FriendsAndPodWidget() {
           <div className="mb-3 rounded-full bg-muted p-3">
             <Users className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-muted-foreground">No friends connected yet</p>
+          <p className="text-sm text-muted-foreground">Parade's better with friends — bring a few along</p>
           <Link to="/friends" className="mt-2">
-            <Button size="sm" variant="outline">Add Friends</Button>
+            <Button size="sm" variant="outline">Invite a friend</Button>
           </Link>
         </div>
       </CollapsibleWidget>
@@ -286,7 +286,7 @@ export function FriendsAndPodWidget() {
         </div>
       ) : displayedFriends.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-4">
-          {activeTab === 'available' ? 'No friends available today' : 'No members in this pod yet'}
+          {activeTab === 'available' ? "Quiet day — nobody's free yet" : 'This pod is empty — add a few friends'}
         </p>
       ) : (
         <div className="max-h-[320px] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
