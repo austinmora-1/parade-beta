@@ -31,34 +31,25 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
     }
   };
 
-  const handleIcalConnect = async () => {
-    if (!icalUrl.trim()) {
-      toast.error('Please enter an iCal URL');
-      return;
-    }
-    const result = await icalConnect(icalUrl.trim());
-    if (result?.success) {
-      toast.success('Apple Calendar connected!');
-      setIcalUrl('');
-      setShowIcalInput(false);
-      // Auto-sync after connecting
-      const syncResult = await icalSync();
-      if (syncResult.synced) {
-        toast.success(syncResult.message || 'Calendar synced');
-        await Promise.all([loadPlans(), loadProfileAndAvailability()]);
-      }
-    } else {
-      toast.error(result?.error || 'Failed to connect');
+  const handleAppleConnect = async () => {
+    setIsConnectingApple(true);
+    try {
+      await nylasConnect('icloud');
+      // Browser will redirect to Apple/Nylas OAuth
+    } catch (err) {
+      console.error('Error starting Apple connect:', err);
+      toast.error("Couldn't start Apple Calendar — try again?");
+      setIsConnectingApple(false);
     }
   };
 
-  const handleIcalSync = async () => {
-    const result = await icalSync();
+  const handleAppleSync = async () => {
+    const result = await appleSync();
     if (result.synced) {
-      toast.success(result.message || 'Calendar synced successfully');
+      toast.success(result.message || 'Calendar synced ✨');
       await Promise.all([loadPlans(), loadProfileAndAvailability()]);
     } else {
-      toast.error(result.message || 'Failed to sync calendar');
+      toast.error(result.message || "Couldn't sync — try again?");
     }
   };
 
