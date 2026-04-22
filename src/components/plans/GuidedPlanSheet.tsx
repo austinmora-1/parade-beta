@@ -1300,7 +1300,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         {step === 'friends' && (
           <DrawerFooter className="pt-2">
             <Button
-              onClick={() => setStep('activity')}
+              onClick={() => setStep('time')}
               disabled={chosenFriends.length === 0}
               className="w-full gap-2"
             >
