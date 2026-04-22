@@ -267,11 +267,11 @@ export function TripsList({ refreshKey }: TripsListProps) {
         colors: ['#3D8C6C', '#F59E0B', '#3B82F6'],
         scalar: 0.8,
       });
-      toast.success('Rankings submitted! ✈️');
+      toast.success('Your picks are in ✈️');
       await fetchProposals();
     } catch (err) {
       console.error('Vote failed:', err);
-      toast.error('Failed to vote. Try again?');
+      toast.error("Couldn't save those — try again?");
     } finally {
       setVoting(null);
     }
@@ -578,7 +578,7 @@ function ProposalTripCard({
 
   const handleSubmit = async () => {
     if (rankedDateIds.length === 0) {
-      toast.error('Please rank at least one date option');
+      toast.error('Pick at least one date you like');
       return;
     }
     setIsSubmitting(true);
@@ -708,7 +708,7 @@ function ProposalTripCard({
         colors: ['#3D8C6C', '#FF6B6B', '#F59E0B', '#8B5CF6', '#3B82F6'],
         scalar: 1,
       });
-      toast.success(isVisit ? 'Visit confirmed! 🏠🎉' : 'Trip confirmed! ✈️🎉');
+      toast.success(isVisit ? "You're on the books 🏠🎉" : "It's official — pack the bags ✈️🎉");
 
       // Refresh after a short delay to show the animation
       setTimeout(() => {
@@ -717,7 +717,7 @@ function ProposalTripCard({
       }, 2000);
     } catch (err) {
       console.error('Failed to finalize:', err);
-      toast.error('Something went wrong. Try again?');
+      toast.error("Hmm, that didn't go through — try again?");
     } finally {
       setFinalizing(false);
     }
@@ -761,12 +761,12 @@ function ProposalTripCard({
         }
       }
 
-      toast.success('Proposal updated');
+      toast.success('Updated ✨');
       setEditOpen(false);
       await onRefresh();
     } catch (err) {
       console.error('Save failed:', err);
-      toast.error('Failed to update proposal');
+      toast.error("Couldn't save those changes — try again?");
     } finally {
       setSaving(false);
     }

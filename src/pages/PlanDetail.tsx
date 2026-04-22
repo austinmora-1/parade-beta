@@ -564,9 +564,9 @@ export default function PlanDetail() {
                         try {
                           await supabase.from('plans').update({ source_timezone: newTz }).eq('id', plan.id);
                           await loadPlans();
-                          toast.success('Timezone updated');
+                          toast.success('Timezone set');
                         } catch {
-                          toast.error('Failed to update timezone');
+                          toast.error("Couldn't update the timezone — try again?");
                         }
                       }}
                     >

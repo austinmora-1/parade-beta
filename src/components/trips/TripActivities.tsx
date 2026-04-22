@@ -71,9 +71,9 @@ export function TripActivities({ proposalId, participantCount }: Props) {
     setSubmitting(false);
     if (ok) {
       resetForm();
-      toast.success(`${activity.label} added`);
+      toast.success(`${activity.label} on the list`);
     } else {
-      toast.error('Failed to add activity');
+      toast.error("Couldn't add that — try again?");
     }
   };
 
@@ -96,15 +96,15 @@ export function TripActivities({ proposalId, participantCount }: Props) {
     setSubmitting(false);
     if (ok) {
       resetForm();
-      toast.success('Activity added');
+      toast.success('Idea added');
     } else {
-      toast.error('Failed to add activity');
+      toast.error("Couldn't add that — try again?");
     }
   };
 
   const handleDelete = async (id: string) => {
     const ok = await deleteSuggestion(id);
-    if (ok) toast.success('Removed');
+    if (ok) toast.success('Taken off the list');
   };
 
   const openVote = () => {
@@ -135,9 +135,9 @@ export function TripActivities({ proposalId, participantCount }: Props) {
     setSavingVotes(false);
     if (ok) {
       setVoteOpen(false);
-      toast.success('Your ranking is saved');
+      toast.success('Your picks are in 🗳️');
     } else {
-      toast.error('Failed to save ranking');
+      toast.error("Couldn't save your ranking — try again?");
     }
   };
 

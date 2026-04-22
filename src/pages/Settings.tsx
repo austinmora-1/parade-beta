@@ -113,7 +113,7 @@ export default function Settings() {
 
         if (error && error.code !== 'PGRST116') {
           console.error('Error loading profile:', error);
-          toast.error('Failed to load profile');
+          toast.error("Couldn't load your profile — try refreshing?");
         }
 
         if (profile) {
@@ -197,12 +197,12 @@ export default function Settings() {
 
   const handleSaveChanges = async () => {
     if (!session?.user) {
-      toast.error('You must be logged in to save settings');
+      toast.error('Sign in first to save changes');
       return;
     }
 
     if (usernameError) {
-      toast.error('Please fix the username error before saving');
+      toast.error('Pick a different username first');
       return;
     }
 
@@ -245,11 +245,11 @@ export default function Settings() {
       const { loadProfileAndAvailability } = usePlannerStore.getState();
       await loadProfileAndAvailability();
 
-      toast.success('Settings saved');
+      toast.success('Saved ✨');
       setHasChanges(false);
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error('Failed to save settings');
+      toast.error("Couldn't save those — try again?");
     } finally {
       setIsSaving(false);
     }

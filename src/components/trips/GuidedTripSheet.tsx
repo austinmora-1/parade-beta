@@ -840,7 +840,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                       <FriendRow key={f.id} friend={f} selected={!!selectedFriends.find(s => s.id === f.id)} onToggle={() => toggleFriend(f)} />
                     ))}
                     {filteredFriends.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-4">No friends found</p>
+                      <p className="text-xs text-muted-foreground text-center py-4">Nobody by that name</p>
                     )}
                   </div>
                 </div>

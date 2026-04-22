@@ -25,7 +25,7 @@ export default function ResetPassword() {
       
       if (error) {
         console.error('Session error:', error);
-        toast.error('Invalid or expired reset link');
+        toast.error('That reset link looks expired');
         setIsVerifying(false);
         return;
       }
@@ -33,7 +33,7 @@ export default function ResetPassword() {
       if (session) {
         setIsValidSession(true);
       } else {
-        toast.error('Invalid or expired reset link. Please request a new one.');
+        toast.error("That link's expired — grab a fresh one?");
       }
       
       setIsVerifying(false);
@@ -63,12 +63,12 @@ export default function ResetPassword() {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Those passwords don't match");
       return;
     }
 
     if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error('Password needs at least 6 characters');
       return;
     }
 
@@ -81,7 +81,7 @@ export default function ResetPassword() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Password updated successfully!');
+      toast.success("You're all set ✨");
       navigate('/');
     }
 

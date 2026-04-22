@@ -215,12 +215,12 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
         await deletePlan(plan.id);
       }
       await loadPlans();
-      toast.success(`Merged ${selectedPlans.length} plans into one`);
+      toast.success(`Combined ${selectedPlans.length} plans into one ✨`);
       onMerged?.();
       onOpenChange(false);
     } catch (err) {
       console.error('Error merging plans:', err);
-      toast.error('Failed to merge plans');
+      toast.error("Couldn't merge those — try again?");
     } finally {
       setMerging(false);
     }

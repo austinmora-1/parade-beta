@@ -224,7 +224,7 @@ export function LocationTimeline() {
       if (isDateToday(date)) {
         usePlannerStore.setState({ locationStatus: currentStatus });
       }
-      toast.error('Failed to update status');
+      toast.error("Couldn't update that — try again?");
     } finally {
       setUpdatingDate(null);
     }

@@ -319,8 +319,8 @@ export default function Share() {
       setSelectedSlot(null);
     } catch (err) {
       console.error('Error sending hang request:', err);
-      toast.error('Failed to send request', {
-        description: 'Please try again later.',
+      toast.error("Couldn't send that — try again?", {
+        description: 'Give it another shot in a moment.',
       });
     } finally {
       setSendingRequest(false);

@@ -190,14 +190,14 @@ export function AddParticipantDialog({
       notifyAdded(friend.user_id);
 
       setAddedIds(prev => new Set(prev).add(friend.user_id));
-      toast.success(`Added ${friend.display_name}`);
+      toast.success(`${friend.display_name} is in 🎉`);
       await onAdded();
     } catch (err: any) {
       console.error('Failed to add participant:', err);
       if (err?.code === '23505') {
-        toast.error('Already added');
+        toast.error("They're already in");
       } else {
-        toast.error('Failed to add participant');
+        toast.error("Couldn't add them — try again?");
       }
     } finally {
       setAdding(null);
@@ -255,11 +255,11 @@ export function AddParticipantDialog({
         }
       }
 
-      toast.success(`Removed ${participant.display_name}`);
+      toast.success(`${participant.display_name} stepped out`);
       await onAdded();
     } catch (err: any) {
       console.error('Failed to remove participant:', err);
-      toast.error('Failed to remove participant');
+      toast.error("Couldn't remove them — try again?");
     } finally {
       setRemoving(null);
     }
