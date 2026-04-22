@@ -122,7 +122,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const effectiveFriends = soloMode ? [] : (needsFriendStep ? chosenFriends : preSelectedFriends);
   const hasFriends = effectiveFriends.length > 0;
 
-  const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'activity');
+  const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'time');
   const [activity, setActivity] = useState<ActivityType | string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [timeSlot, setTimeSlot] = useState<TimeSlot | null>(null);
@@ -177,7 +177,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   // Reset on open
   useEffect(() => {
     if (open) {
-      setStep(needsFriendStep ? 'friends' : 'activity');
+      setStep(needsFriendStep ? 'friends' : 'time');
       setActivity(null);
       setSelectedDate(null);
       setTimeSlot(null);
@@ -659,7 +659,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
   const handleSelectActivity = (act: ActivityType | string) => {
     setActivity(act);
-    setStep('time');
+    setStep('confirm');
   };
 
   const handleSaveCustomActivity = async () => {
@@ -719,7 +719,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     // Use first selected slot as the primary date/slot
     setSelectedDate(selectedSlots[0].date);
     setTimeSlot(selectedSlots[0].slot);
-    setStep('confirm');
+    setStep('activity');
   };
 
   const activityLabel = activity === TBD_ACTIVITY_ID ? TBD_LABEL : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.label || customActivities.find(a => a.id === activity)?.label || activity) : '';
@@ -825,13 +825,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
   const stepTitle = step === 'friends'
     ? 'Who do you want to hang with?'
-    : step === 'activity'
-      ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
-        : step === 'time'
-          ? (activity === TBD_ACTIVITY_ID ? 'When works?' : hasFriends ? `When works for ${activityLabel.toLowerCase()}?` : `When do you want to do ${activityLabel.toLowerCase()}?`)
+    : step === 'time'
+      ? (hasFriends ? `When works for ${friendNamesStr}?` : 'When are you free?')
+      : step === 'activity'
+        ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
         : 'Look good?';
 
-  const firstStep = needsFriendStep ? 'friends' : 'activity';
+  const firstStep = needsFriendStep ? 'friends' : 'time';
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -843,9 +843,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           {step !== firstStep && (
             <button
               onClick={() => {
-                if (step === 'confirm') { setStep('time'); setShowCalendar(false); }
-                else if (step === 'time') setStep('activity');
-                else if (step === 'activity' && needsFriendStep) setStep('friends');
+                if (step === 'confirm') { setStep('activity'); setShowCalendar(false); }
+                else if (step === 'activity') setStep('time');
+                else if (step === 'time' && needsFriendStep) setStep('friends');
               }}
               className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -950,7 +950,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
                 {/* Just me button */}
                 <button
-                  onClick={() => { setSoloMode(true); setStep('activity'); }}
+                  onClick={() => { setSoloMode(true); setStep('time'); }}
                   className="flex items-center justify-center gap-1.5 w-full py-2.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
                 >
                   Just me — no friends needed
@@ -1300,7 +1300,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         {step === 'friends' && (
           <DrawerFooter className="pt-2">
             <Button
-              onClick={() => setStep('activity')}
+              onClick={() => setStep('time')}
               disabled={chosenFriends.length === 0}
               className="w-full gap-2"
             >
