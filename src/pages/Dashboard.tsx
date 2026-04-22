@@ -14,6 +14,7 @@ import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDro
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
+import { PolishProfileCard } from '@/components/dashboard/PolishProfileCard';
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -113,6 +114,11 @@ export default function Dashboard() {
           onRemoveFriend={handleRemoveFriend}
           onClear={handleClear}
         />
+      </motion.div>
+
+      {/* Optional: nudge to flesh out profile (interests, goals, etc.) */}
+      <motion.div variants={fadeUp}>
+        <PolishProfileCard />
       </motion.div>
 
       {/* Upcoming Plans & Feed */}

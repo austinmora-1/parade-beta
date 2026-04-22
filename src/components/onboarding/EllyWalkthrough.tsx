@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useFriendsStore } from '@/stores/friendsStore';
+import { usePlansStore } from '@/stores/plansStore';
 
 interface WalkthroughStep {
   icon: React.ReactNode;
@@ -51,11 +53,17 @@ interface EllyWalkthroughProps {
 
 export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
   const { user } = useAuth();
+  const friendCount = useFriendsStore((s) => s.friends.length);
+  const planCount = usePlansStore((s) => s.plans.length);
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
 
+  // Only surface the walkthrough on a TRULY empty dashboard — no friends and
+  // no plans. Once the user has any signal of activity, the tour gets in the
+  // way more than it helps.
   useEffect(() => {
     if (!user) return;
+    if (friendCount > 0 || planCount > 0) return;
 
     let cancelled = false;
 
@@ -76,7 +84,7 @@ export function EllyWalkthrough({ onComplete }: EllyWalkthroughProps) {
 
     checkWalkthrough();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, friendCount, planCount]);
 
   const handleNext = () => {
     if (step < STEPS.length - 1) {
