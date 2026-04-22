@@ -8,6 +8,7 @@ import { useNylasCalendar } from '@/hooks/useNylasCalendar';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
+import { LastSyncedIndicator } from './LastSyncedIndicator';
 
 interface CalendarIntegrationProps {
   isEmbedded?: boolean;
@@ -15,8 +16,8 @@ interface CalendarIntegrationProps {
 
 export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationProps) {
   const { session } = useAuth();
-  const { isConnected: googleConnected, isLoading: googleLoading, isSyncing: googleSyncing, lastSyncResult: googleLastSync, connect: googleConnect, disconnect: googleDisconnect, syncCalendar: googleSync } = useGoogleCalendar();
-  const { isConnected: appleConnected, isLoading: appleLoading, isSyncing: appleSyncing, lastSyncResult: appleLastSync, connect: nylasConnect, disconnect: appleDisconnect, syncCalendar: appleSync, error: appleError } = useNylasCalendar();
+  const { isConnected: googleConnected, isLoading: googleLoading, isSyncing: googleSyncing, lastSyncResult: googleLastSync, lastSyncedAt: googleLastSyncedAt, connect: googleConnect, disconnect: googleDisconnect, syncCalendar: googleSync } = useGoogleCalendar();
+  const { isConnected: appleConnected, isLoading: appleLoading, isSyncing: appleSyncing, lastSyncResult: appleLastSync, lastSyncedAt: appleLastSyncedAt, connect: nylasConnect, disconnect: appleDisconnect, syncCalendar: appleSync, error: appleError } = useNylasCalendar();
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
