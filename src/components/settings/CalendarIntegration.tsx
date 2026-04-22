@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Calendar, Check, Loader2, ExternalLink, RefreshCw, Apple, Link } from 'lucide-react';
+import { Calendar, Check, Loader2, ExternalLink, RefreshCw, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
-import { useAppleCalendar } from '@/hooks/useAppleCalendar';
+import { useNylasCalendar } from '@/hooks/useNylasCalendar';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
@@ -16,12 +15,11 @@ interface CalendarIntegrationProps {
 export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationProps) {
   const { session } = useAuth();
   const { isConnected: googleConnected, isLoading: googleLoading, isSyncing: googleSyncing, lastSyncResult: googleLastSync, connect: googleConnect, disconnect: googleDisconnect, syncCalendar: googleSync } = useGoogleCalendar();
-  const { isConnected: icalConnected, isLoading: icalLoading, isSyncing: icalSyncing, isConnecting: icalConnecting, lastSyncResult: icalLastSync, connect: icalConnect, disconnect: icalDisconnect, syncCalendar: icalSync, error: icalError } = useAppleCalendar();
+  const { isConnected: appleConnected, isLoading: appleLoading, isSyncing: appleSyncing, lastSyncResult: appleLastSync, connect: nylasConnect, disconnect: appleDisconnect, syncCalendar: appleSync, error: appleError } = useNylasCalendar();
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
-  const [icalUrl, setIcalUrl] = useState('');
-  const [showIcalInput, setShowIcalInput] = useState(false);
+  const [isConnectingApple, setIsConnectingApple] = useState(false);
 
   const handleGoogleSync = async () => {
     const result = await googleSync();
