@@ -168,7 +168,7 @@ const App = () => (
   <ErrorBoundary scope="Root">
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} themes={['light', 'dark']}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} themes={['light', 'dark']}>
           <ColorSchemeProvider>
           <TooltipProvider>
             <Toaster />
