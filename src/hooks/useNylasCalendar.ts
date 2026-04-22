@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { getStoredLastSync, setStoredLastSync, clearStoredLastSync } from '@/lib/lastSync';
 
 interface CalendarEvent {
   id: string;
@@ -25,7 +26,14 @@ export function useNylasCalendar() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(() =>
+    getStoredLastSync('nylas', session?.user?.id)
+  );
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLastSyncedAt(getStoredLastSync('nylas', session?.user?.id));
+  }, [session?.user?.id]);
 
   // Lightweight status check - doesn't fetch events
   const checkConnection = useCallback(async () => {
@@ -89,6 +97,8 @@ export function useNylasCalendar() {
       setIsConnected(false);
       setEvents([]);
       setLastSyncResult(null);
+      clearStoredLastSync('nylas', session?.user?.id);
+      setLastSyncedAt(null);
       setError(null);
     } catch (err) {
       console.error('Error disconnecting from Nylas:', err);
@@ -126,6 +136,11 @@ export function useNylasCalendar() {
       };
       
       setLastSyncResult(result);
+      if (result.synced) {
+        const ts = new Date().toISOString();
+        setStoredLastSync('nylas', session?.user?.id, ts);
+        setLastSyncedAt(ts);
+      }
       return result;
     } catch (err) {
       console.error('Error syncing calendar:', err);
@@ -170,6 +185,7 @@ export function useNylasCalendar() {
     events,
     error,
     lastSyncResult,
+    lastSyncedAt,
     connect,
     disconnect,
     syncCalendar,

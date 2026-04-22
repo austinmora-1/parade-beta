@@ -8,6 +8,7 @@ import { useNylasCalendar } from '@/hooks/useNylasCalendar';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
+import { LastSyncedIndicator } from './LastSyncedIndicator';
 
 interface CalendarIntegrationProps {
   isEmbedded?: boolean;
@@ -15,8 +16,8 @@ interface CalendarIntegrationProps {
 
 export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationProps) {
   const { session } = useAuth();
-  const { isConnected: googleConnected, isLoading: googleLoading, isSyncing: googleSyncing, lastSyncResult: googleLastSync, connect: googleConnect, disconnect: googleDisconnect, syncCalendar: googleSync } = useGoogleCalendar();
-  const { isConnected: appleConnected, isLoading: appleLoading, isSyncing: appleSyncing, lastSyncResult: appleLastSync, connect: nylasConnect, disconnect: appleDisconnect, syncCalendar: appleSync, error: appleError } = useNylasCalendar();
+  const { isConnected: googleConnected, isLoading: googleLoading, isSyncing: googleSyncing, lastSyncResult: googleLastSync, lastSyncedAt: googleLastSyncedAt, connect: googleConnect, disconnect: googleDisconnect, syncCalendar: googleSync } = useGoogleCalendar();
+  const { isConnected: appleConnected, isLoading: appleLoading, isSyncing: appleSyncing, lastSyncResult: appleLastSync, lastSyncedAt: appleLastSyncedAt, connect: nylasConnect, disconnect: appleDisconnect, syncCalendar: appleSync, error: appleError } = useNylasCalendar();
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
@@ -166,14 +167,16 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
       {/* Google Sync Button */}
       {googleConnected && (
         <div className="flex items-center justify-between rounded-lg border border-dashed border-border bg-muted/30 p-3">
-          <div>
+          <div className="space-y-1">
             <p className="text-sm font-medium">Sync Google Calendar</p>
-            <p className="text-[10px] text-muted-foreground">
-              {googleLastSync?.synced 
-                ? `Last sync: ${googleLastSync.eventsProcessed} events → ${googleLastSync.datesUpdated} days`
-                : 'Import calendar events to mark busy times'
-              }
-            </p>
+            <div className="flex items-center gap-2">
+              <LastSyncedIndicator syncedAt={googleLastSyncedAt} isSyncing={googleSyncing} />
+              {googleLastSync?.synced && !googleSyncing && (
+                <span className="text-[10px] text-muted-foreground">
+                  · {googleLastSync.eventsProcessed} events → {googleLastSync.datesUpdated} days
+                </span>
+              )}
+            </div>
           </div>
           <Button 
             onClick={handleGoogleSync} 
@@ -259,14 +262,16 @@ export function CalendarIntegration({ isEmbedded = false }: CalendarIntegrationP
       {/* Apple Sync Button */}
       {appleConnected && (
         <div className="flex items-center justify-between rounded-lg border border-dashed border-border bg-muted/30 p-3">
-          <div>
+          <div className="space-y-1">
             <p className="text-sm font-medium">Sync Apple Calendar</p>
-            <p className="text-[10px] text-muted-foreground">
-              {appleLastSync?.synced
-                ? `Last sync: ${appleLastSync.eventsProcessed} events → ${appleLastSync.datesUpdated} days`
-                : 'Import iCloud events to mark busy times'
-              }
-            </p>
+            <div className="flex items-center gap-2">
+              <LastSyncedIndicator syncedAt={appleLastSyncedAt} isSyncing={appleSyncing} />
+              {appleLastSync?.synced && !appleSyncing && (
+                <span className="text-[10px] text-muted-foreground">
+                  · {appleLastSync.eventsProcessed} events → {appleLastSync.datesUpdated} days
+                </span>
+              )}
+            </div>
           </div>
           <Button
             onClick={handleAppleSync}
