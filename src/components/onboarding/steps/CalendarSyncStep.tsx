@@ -107,40 +107,24 @@ export function CalendarSyncStep({ data, updateData }: CalendarSyncStepProps) {
           ) : (
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-                  <Apple className="h-5 w-5" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
+                  <Apple className="h-5 w-5 text-background" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-sm">Apple Calendar (iCal)</h3>
-                  <p className="text-xs text-muted-foreground">Paste your iCal subscription URL</p>
+                  <h3 className="font-medium text-sm">Apple Calendar</h3>
+                  <p className="text-xs text-muted-foreground">One-click sync with iCloud</p>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <div className="rounded-lg bg-muted/50 p-3 space-y-1.5">
-                  <p className="text-xs font-medium">How to get your iCal URL:</p>
-                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Open Calendar on your Mac or iCloud.com</li>
-                    <li>Right-click your calendar → Share Calendar</li>
-                    <li>Check "Public Calendar" and copy the URL</li>
-                  </ol>
-                </div>
-                <Input
-                  placeholder="webcal://p123-calendarws.icloud.com/..."
-                  value={icalUrl}
-                  onChange={(e) => setIcalUrl(e.target.value)}
-                  className="h-9 text-xs"
-                />
-                <Button
-                  onClick={handleConnectApple}
-                  disabled={isConnectingApple || !icalUrl}
-                  variant="outline"
-                  className="w-full gap-2"
-                  size="sm"
-                >
-                  {isConnectingApple ? 'Connecting...' : 'Connect iCal'}
-                </Button>
-              </div>
+              <Button
+                onClick={handleConnectApple}
+                disabled={isConnectingApple}
+                variant="outline"
+                className="w-full gap-2"
+                size="sm"
+              >
+                {isConnectingApple ? 'Opening Apple…' : 'Connect Apple Calendar'}
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
             </div>
           )}
         </div>
