@@ -13,7 +13,7 @@ import { SignedImage } from '@/components/ui/SignedImage';
 import { CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
-import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
+import { resolveEffectiveCity, isFriendInMyCity } from '@/lib/effectiveCity';
 
 interface FriendVibe {
   friend: Friend;
@@ -46,16 +46,21 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
     return friends.filter(f => f.status === 'connected' && f.friendUserId);
   }, [friends]);
 
-  // Resolve the current user's effective city for today
-  const myEffectiveCity = useMemo(() => {
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const todayAvail = availability.find(a => format(a.date, 'yyyy-MM-dd') === todayStr);
-    return getEffectiveCity(
-      todayAvail?.locationStatus || 'home',
-      todayAvail?.tripLocation || null,
-      homeAddress,
-    );
-  }, [availability, homeAddress]);
+  // Resolve the current user's effective city for today using the shared rule
+  const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
+  const myEffectiveCity = useMemo(
+    () =>
+      resolveEffectiveCity({
+        date: todayStr,
+        availability: availability.map((a) => ({
+          date: a.date,
+          location_status: a.locationStatus,
+          trip_location: a.tripLocation ?? null,
+        })),
+        homeAddress,
+      }),
+    [availability, homeAddress, todayStr],
+  );
 
   useEffect(() => {
     if (connectedFriends.length === 0) {
@@ -65,7 +70,6 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
 
     const fetchVibes = async () => {
       const friendUserIds = connectedFriends.map(f => f.friendUserId!);
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
 
       const [{ data: profileData }, { data: availData }] = await Promise.all([
         supabase
@@ -86,13 +90,19 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
         const profile = profileMap.get(friend.friendUserId!);
         const avail = availMap.get(friend.friendUserId!);
 
-        const friendCity = getEffectiveCity(
-          (avail as any)?.location_status || 'home',
-          (avail as any)?.trip_location || null,
-          (profile as any)?.home_address || null,
-        );
+        // Use the shared helper so the rule is identical for me and friends.
+        // We pass the precomputed myEffectiveCity via a synthetic
+        // availability shim so resolveEffectiveCity short-circuits to it.
+        const sameCity = isFriendInMyCity({
+          date: todayStr,
+          myAvailability: { date: todayStr, location_status: 'away', trip_location: myEffectiveCity },
+          myHomeAddress: myEffectiveCity,
+          friendAvailability: avail
+            ? { date: todayStr, location_status: (avail as any).location_status, trip_location: (avail as any).trip_location }
+            : null,
+          friendHomeAddress: (profile as any)?.home_address ?? null,
+        });
 
-        const sameCity = !!myEffectiveCity && !!friendCity && citiesMatch(myEffectiveCity, friendCity);
         if (!sameCity || !avail) {
           return [];
         }
