@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,7 +28,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
-const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 import { usePods } from '@/hooks/usePods';
 import { SlotCalendarPicker } from '@/components/plans/SlotCalendarPicker';
 import { Users } from 'lucide-react';
@@ -111,7 +110,7 @@ export function QuickPlanSheet({
       return () => document.removeEventListener('mousedown', handler);
     }
   }, [friendPickerOpen, activityPickerOpen]);
-  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  
 
   // Location search
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
@@ -518,11 +517,6 @@ export function QuickPlanSheet({
     onOpenChange(false);
   };
 
-  const handleMoreOptions = () => {
-    setShowMoreOptions(true);
-    onOpenChange(false);
-  };
-
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
@@ -924,33 +918,9 @@ export function QuickPlanSheet({
               )}
               {hasFriends ? 'Send Plan Suggestion →' : 'Add to My Plans'}
             </Button>
-            <button
-              onClick={handleMoreOptions}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors text-center py-1"
-            >
-              More options →
-            </button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-
-      {/* Escape hatch to full CreatePlanDialog */}
-      {showMoreOptions && (
-        <Suspense fallback={null}>
-          <CreatePlanDialog
-            open={showMoreOptions}
-            onOpenChange={(v) => { if (!v) setShowMoreOptions(false); }}
-            defaultDate={selectedDate || undefined}
-            defaultActivity={activity || undefined}
-            defaultTimeSlot={timeSlot || undefined}
-            defaultLocation={location || undefined}
-            defaultNotes={note || undefined}
-            defaultStatus={effectiveStatus}
-            defaultFriendUserIds={selectedFriends.map(f => f.userId)}
-            defaultTitle={title.trim() || undefined}
-          />
-        </Suspense>
-      )}
     </>
   );
 }

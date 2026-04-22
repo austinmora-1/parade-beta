@@ -3,7 +3,6 @@ import {
   CalendarDays,
   LayoutDashboard,
   Users,
-  Plus,
   Settings,
   PlaneTakeoff,
 } from 'lucide-react';
@@ -11,9 +10,6 @@ import { cn } from '@/lib/utils';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useState, lazy, Suspense } from 'react';
-
-const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 
 const navItems = [
   { path: '/',             icon: LayoutDashboard, label: 'Home'         },
@@ -26,7 +22,6 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, formattedName } = useCurrentUserProfile();
-  const [createPlanOpen, setCreatePlanOpen] = useState(false);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -114,12 +109,6 @@ export function Sidebar() {
           </NavLink>
         </div>
       </aside>
-
-      {createPlanOpen && (
-        <Suspense fallback={null}>
-          <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen} />
-        </Suspense>
-      )}
     </>
   );
 }
