@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Friend, TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
