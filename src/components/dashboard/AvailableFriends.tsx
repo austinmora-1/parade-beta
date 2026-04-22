@@ -117,8 +117,10 @@ export function AvailableFriends() {
         const friendHome = friendHomeMap.get(friendUserId) || null;
         const friendCity = getEffectiveCity(friendLocStatus, friendTripLoc, friendHome);
 
-        if (myEffectiveCity && friendCity && !citiesMatch(myEffectiveCity, friendCity)) {
-          continue; // Skip friends not in the same city
+        // Only show friends we can confirm are in the same city as the user today.
+        // If we can't resolve either side's city, skip them rather than assume available.
+        if (!myEffectiveCity || !friendCity || !citiesMatch(myEffectiveCity, friendCity)) {
+          continue;
         }
 
         const hasAnyFree = TIME_SLOT_ORDER.some(slot => {
