@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { OnboardingData } from '../OnboardingWizard';
 import { Calendar, Check, ExternalLink, Apple } from 'lucide-react';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
-import { useAppleCalendar } from '@/hooks/useAppleCalendar';
+import { useNylasCalendar } from '@/hooks/useNylasCalendar';
 
 interface CalendarSyncStepProps {
   data: OnboardingData;
@@ -14,10 +12,9 @@ interface CalendarSyncStepProps {
 
 export function CalendarSyncStep({ data, updateData }: CalendarSyncStepProps) {
   const { isConnected: googleConnected, connect: connectGoogle } = useGoogleCalendar();
-  const { connect: connectApple, isConnected: appleConnected } = useAppleCalendar();
+  const { connect: connectNylas, isConnected: appleConnected } = useNylasCalendar();
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [isConnectingApple, setIsConnectingApple] = useState(false);
-  const [icalUrl, setIcalUrl] = useState('');
 
   const handleConnectGoogle = async () => {
     setIsConnectingGoogle(true);
@@ -32,14 +29,13 @@ export function CalendarSyncStep({ data, updateData }: CalendarSyncStepProps) {
   };
 
   const handleConnectApple = async () => {
-    if (!icalUrl) return;
     setIsConnectingApple(true);
     try {
-      await connectApple(icalUrl);
+      await connectNylas('icloud');
       updateData({ calendarConnected: true });
+      // Browser will redirect to Apple/Nylas OAuth
     } catch (error) {
       console.error('Error connecting Apple Calendar:', error);
-    } finally {
       setIsConnectingApple(false);
     }
   };
