@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { getStoredLastSync, setStoredLastSync, clearStoredLastSync } from '@/lib/lastSync';
 import type { PendingReturnTrip } from '@/components/trips/MissingReturnDialog';
 
 interface CalendarEvent {
@@ -27,7 +28,15 @@ export function useGoogleCalendar() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(() =>
+    getStoredLastSync('google', session?.user?.id)
+  );
   const [error, setError] = useState<string | null>(null);
+
+  // Re-hydrate stored timestamp when the user changes
+  useEffect(() => {
+    setLastSyncedAt(getStoredLastSync('google', session?.user?.id));
+  }, [session?.user?.id]);
 
   const checkConnection = useCallback(async () => {
     if (!session?.access_token) {
@@ -90,6 +99,8 @@ export function useGoogleCalendar() {
       setIsConnected(false);
       setEvents([]);
       setLastSyncResult(null);
+      clearStoredLastSync('google', session?.user?.id);
+      setLastSyncedAt(null);
     } catch (err) {
       console.error('Error disconnecting from Google Calendar:', err);
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
@@ -121,6 +132,11 @@ export function useGoogleCalendar() {
       };
       
       setLastSyncResult(result);
+      if (result.synced) {
+        const ts = new Date().toISOString();
+        setStoredLastSync('google', session?.user?.id, ts);
+        setLastSyncedAt(ts);
+      }
       return result;
     } catch (err) {
       console.error('Error syncing calendar:', err);
@@ -158,6 +174,7 @@ export function useGoogleCalendar() {
     events,
     error,
     lastSyncResult,
+    lastSyncedAt,
     connect,
     disconnect,
     syncCalendar,
