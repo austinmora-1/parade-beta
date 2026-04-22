@@ -14,6 +14,7 @@ import { SignedImage } from '@/components/ui/SignedImage';
 import { CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
 
 interface FriendVibe {
   friend: Friend;
@@ -38,7 +39,7 @@ interface FriendVibeStripProps {
 }
 
 export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
-  const { friends } = usePlannerStore();
+  const { friends, availability, homeAddress } = usePlannerStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [friendVibes, setFriendVibes] = useState<FriendVibe[]>([]);
@@ -46,6 +47,17 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
   const connectedFriends = useMemo(() => {
     return friends.filter(f => f.status === 'connected' && f.friendUserId);
   }, [friends]);
+
+  // Resolve the current user's effective city for today
+  const myEffectiveCity = useMemo(() => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const todayAvail = availability.find(a => format(a.date, 'yyyy-MM-dd') === todayStr);
+    return getEffectiveCity(
+      todayAvail?.locationStatus || 'home',
+      todayAvail?.tripLocation || null,
+      homeAddress,
+    );
+  }, [availability, homeAddress]);
 
   useEffect(() => {
     if (connectedFriends.length === 0) {
@@ -60,11 +72,11 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
       const [{ data: profileData }, { data: availData }] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, current_vibe, custom_vibe_tags, vibe_gif_url')
+          .select('user_id, current_vibe, custom_vibe_tags, vibe_gif_url, home_address')
           .in('user_id', friendUserIds),
         supabase
           .from('availability')
-          .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night')
+          .select('user_id, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location')
           .in('user_id', friendUserIds)
           .eq('date', todayStr),
       ]);
@@ -76,8 +88,17 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
         const profile = profileMap.get(friend.friendUserId!);
         const avail = availMap.get(friend.friendUserId!);
 
+        // Determine if friend is co-located with the current user today.
+        // If we can't confirm same city, treat them as not available today.
+        const friendCity = getEffectiveCity(
+          (avail as any)?.location_status || 'home',
+          (avail as any)?.trip_location || null,
+          (profile as any)?.home_address || null,
+        );
+        const sameCity = !!myEffectiveCity && !!friendCity && citiesMatch(myEffectiveCity, friendCity);
+
         const availableSlots: TimeSlot[] = [];
-        if (avail) {
+        if (avail && sameCity) {
           for (const { key, slot } of SLOT_KEYS) {
             if ((avail as any)[key]) availableSlots.push(slot);
           }
@@ -88,7 +109,7 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
           currentVibe: profile?.current_vibe || null,
           customVibeTags: profile?.custom_vibe_tags || null,
           vibeGifUrl: profile?.vibe_gif_url || null,
-          isAvailableToday: availableSlots.length > 0,
+          isAvailableToday: sameCity && availableSlots.length > 0,
           availableSlots,
         };
       });
@@ -103,7 +124,7 @@ export function FriendVibeStrip({ onFriendTap }: FriendVibeStripProps = {}) {
     };
 
     fetchVibes();
-  }, [connectedFriends]);
+  }, [connectedFriends, myEffectiveCity]);
 
   if (connectedFriends.length === 0) {
     return (
