@@ -56,12 +56,13 @@ export function useNylasCalendar() {
     checkConnection();
   }, [checkConnection]);
 
-  const connect = async () => {
+  const connect = async (provider: 'google' | 'icloud' = 'google') => {
     if (!session?.access_token) return;
 
     try {
       const { data, error } = await supabase.functions.invoke('nylas-auth', {
         headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { provider },
       });
 
       if (error) throw error;
