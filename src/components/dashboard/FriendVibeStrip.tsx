@@ -14,6 +14,7 @@ import { SignedImage } from '@/components/ui/SignedImage';
 import { CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { getEffectiveCity, citiesMatch } from '@/lib/locationMatch';
 
 interface FriendVibe {
   friend: Friend;
