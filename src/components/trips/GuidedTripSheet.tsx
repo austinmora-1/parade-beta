@@ -5,9 +5,11 @@ import {
 } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X, Home,
+  Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X, Home, CalendarIcon,
 } from 'lucide-react';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter,
@@ -122,6 +124,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
   const [loadingWeekends, setLoadingWeekends] = useState(false);
   const [selectedWeekends, setSelectedWeekends] = useState<WeekendOption[]>([]);
    const [destination, setDestination] = useState('');
+   const [tripName, setTripName] = useState('');
    const [sending, setSending] = useState(false);
    const [postCreateShare, setPostCreateShare] = useState<{ proposalId: string; destination: string | null; type: 'trip' | 'visit' } | null>(null);
    const [monthStats, setMonthStats] = useState<Record<string, { freeWeekends: number; totalWeekends: number; tripConflicts: number }>>({}); 
@@ -130,6 +133,9 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
    const [hostMode, setHostMode] = useState<HostMode>('hosting');
    const [hostUserId, setHostUserId] = useState<string | null>(null);
    const [friendHomeAddresses, setFriendHomeAddresses] = useState<Record<string, string>>({});
+   const [customMode, setCustomMode] = useState(false);
+   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
 
   // Generate month options (next 12 months)
   const monthOptions = useMemo(() => {
@@ -220,11 +226,15 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
       setWeekends([]);
       setSelectedWeekends([]);
       setDestination('');
+      setTripName('');
       setSending(false);
       setProposalType(preSelectedType || 'trip');
       setHostMode('hosting');
       setHostUserId(null);
       setFriendHomeAddresses({});
+      setCustomMode(false);
+      setCustomStartDate(undefined);
+      setCustomEndDate(undefined);
 
       if (preSelectedFriends && preSelectedFriends.length > 0) {
         const matched = connectedFriends.filter(f =>
@@ -475,6 +485,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         .insert({
           created_by: userId,
           destination: destination || null,
+          name: tripName.trim() || null,
           status: 'pending',
           proposal_type: proposalType,
           host_user_id: proposalType === 'visit' ? hostUserId : null,
@@ -563,12 +574,13 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
 
       const { error } = await supabase.from('trips').insert({
         user_id: userId,
+        name: tripName.trim() || null,
         location: destination.trim() || null,
         start_date: startDate,
         end_date: endDate,
         available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
         priority_friend_ids: [],
-      });
+      } as any);
       if (error) throw error;
 
       // Also set availability to away for those dates
@@ -618,7 +630,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
           {step !== 'type' && (
             <button
               onClick={() => {
-                if (step === 'confirm') setStep('weekends');
+                if (step === 'confirm') {
+                  // In customMode there's no weekends step — go straight back to months
+                  setStep(customMode ? 'months' : 'weekends');
+                  if (customMode) setSelectedWeekends([]);
+                }
                 else if (step === 'weekends') { setStep('months'); setSelectedWeekends([]); }
                 else if (step === 'months') setStep('friends');
                 else if (step === 'friends') setStep('type');
@@ -848,7 +864,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
             )}
 
 
-            {/* STEP 2: Month picker */}
+            {/* STEP 2: Month picker (or custom date range) */}
             {step === 'months' && (
               <motion.div
                 key="months"
@@ -857,72 +873,165 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-4"
               >
-                <p className="text-xs text-muted-foreground text-center">
-                  Select the months you'd consider for this trip. Pick as many as you like — they don't need to be consecutive.
-                </p>
+                {!customMode ? (
+                  <>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Pick months we'll search — they don't need to be consecutive.
+                    </p>
 
-                <div className="grid grid-cols-3 gap-2">
-                  {monthOptions.map(mo => {
-                    const sel = selectedMonths.includes(mo.key);
-                    const stats = monthStats[mo.key];
-                    const hasStats = !!stats && !loadingMonthStats;
-                    const freeRatio = hasStats && stats.totalWeekends > 0 ? stats.freeWeekends / stats.totalWeekends : 0;
-                    // Color coding: green if mostly free, amber if mixed, red-ish if conflicts
-                    const isGreat = hasStats && freeRatio >= 0.7 && stats.tripConflicts === 0;
-                    const hasTripConflict = hasStats && stats.tripConflicts > 0;
-                    return (
-                      <motion.button
-                        key={mo.key}
-                        whileTap={{ scale: 0.96 }}
-                        onClick={() => toggleMonth(mo.key)}
-                        className={cn(
-                          "relative rounded-xl border px-3 py-2.5 text-sm font-medium transition-all text-center flex flex-col items-center gap-1",
-                          sel
-                            ? isGreat
-                              ? "border-chart-2 bg-chart-2/15 text-chart-2 ring-1 ring-chart-2/30"
-                              : "border-primary bg-primary/10 text-primary"
-                            : isGreat
-                              ? "border-chart-2/40 bg-chart-2/5 hover:bg-chart-2/10 text-foreground"
-                              : "border-border hover:border-primary/30 hover:bg-primary/5 text-foreground"
-                        )}
+                    <div className="grid grid-cols-3 gap-2">
+                      {monthOptions.map(mo => {
+                        const sel = selectedMonths.includes(mo.key);
+                        const stats = monthStats[mo.key];
+                        const hasStats = !!stats && !loadingMonthStats;
+                        const freeRatio = hasStats && stats.totalWeekends > 0 ? stats.freeWeekends / stats.totalWeekends : 0;
+                        const isGreat = hasStats && freeRatio >= 0.7 && stats.tripConflicts === 0;
+                        const hasTripConflict = hasStats && stats.tripConflicts > 0;
+                        return (
+                          <motion.button
+                            key={mo.key}
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => toggleMonth(mo.key)}
+                            className={cn(
+                              "relative rounded-xl border px-3 py-2.5 text-sm font-medium transition-all text-center flex flex-col items-center gap-1",
+                              sel
+                                ? isGreat
+                                  ? "border-chart-2 bg-chart-2/15 text-chart-2 ring-1 ring-chart-2/30"
+                                  : "border-primary bg-primary/10 text-primary"
+                                : isGreat
+                                  ? "border-chart-2/40 bg-chart-2/5 hover:bg-chart-2/10 text-foreground"
+                                  : "border-border hover:border-primary/30 hover:bg-primary/5 text-foreground"
+                            )}
+                          >
+                            <span>{mo.label}</span>
+                            {hasStats && (
+                              <span className={cn(
+                                "text-[9px] font-medium leading-none",
+                                isGreat ? "text-chart-2" : hasTripConflict ? "text-destructive" : "text-muted-foreground"
+                              )}>
+                                {stats.freeWeekends}/{stats.totalWeekends} free
+                                {stats.tripConflicts > 0 && ` · ${stats.tripConflicts} trip${stats.tripConflicts > 1 ? 's' : ''}`}
+                              </span>
+                            )}
+                            {loadingMonthStats && (
+                              <span className="h-2.5 w-12 rounded-full bg-muted animate-pulse" />
+                            )}
+                            {hasStats && (
+                              <div className="absolute top-1.5 right-1.5 flex gap-0.5">
+                                {isGreat && <span className="h-1.5 w-1.5 rounded-full bg-chart-2" />}
+                                {hasTripConflict && <span className="h-1.5 w-1.5 rounded-full bg-destructive" />}
+                              </div>
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+
+                    {selectedMonths.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 justify-center">
+                        {selectedMonths.sort().map(k => {
+                          const mo = monthOptions.find(m => m.key === k);
+                          return (
+                            <span key={k} className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium text-primary">
+                              {mo?.label}
+                              <button onClick={() => toggleMonth(k)}><X className="h-3 w-3" /></button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => { setCustomMode(true); setSelectedMonths([]); }}
+                      className="w-full text-xs font-medium text-primary hover:underline pt-1"
+                    >
+                      Or pick exact dates instead →
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">Pick a start and end date.</p>
+                      <button
+                        type="button"
+                        onClick={() => { setCustomMode(false); setCustomStartDate(undefined); setCustomEndDate(undefined); }}
+                        className="text-[11px] text-muted-foreground hover:text-foreground"
                       >
-                        <span>{mo.label}</span>
-                        {hasStats && (
-                          <span className={cn(
-                            "text-[9px] font-medium leading-none",
-                            isGreat ? "text-chart-2" : hasTripConflict ? "text-destructive" : "text-muted-foreground"
-                          )}>
-                            {stats.freeWeekends}/{stats.totalWeekends} free
-                            {stats.tripConflicts > 0 && ` · ${stats.tripConflicts} trip${stats.tripConflicts > 1 ? 's' : ''}`}
-                          </span>
-                        )}
-                        {loadingMonthStats && (
-                          <span className="h-2.5 w-12 rounded-full bg-muted animate-pulse" />
-                        )}
-                        {/* Dot indicator */}
-                        {hasStats && (
-                          <div className="absolute top-1.5 right-1.5 flex gap-0.5">
-                            {isGreat && <span className="h-1.5 w-1.5 rounded-full bg-chart-2" />}
-                            {hasTripConflict && <span className="h-1.5 w-1.5 rounded-full bg-destructive" />}
-                          </div>
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
+                        ← Browse months
+                      </button>
+                    </div>
 
-                {selectedMonths.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 justify-center">
-                    {selectedMonths.sort().map(k => {
-                      const mo = monthOptions.find(m => m.key === k);
-                      return (
-                        <span key={k} className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium text-primary">
-                          {mo?.label}
-                          <button onClick={() => toggleMonth(k)}><X className="h-3 w-3" /></button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "h-12 justify-start gap-2 text-left font-normal",
+                              !customStartDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate text-xs">
+                              {customStartDate ? format(customStartDate, 'MMM d, yyyy') : 'Start date'}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={customStartDate}
+                            onSelect={(d) => {
+                              setCustomStartDate(d);
+                              if (d && customEndDate && customEndDate < d) setCustomEndDate(undefined);
+                            }}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "h-12 justify-start gap-2 text-left font-normal",
+                              !customEndDate && "text-muted-foreground"
+                            )}
+                            disabled={!customStartDate}
+                          >
+                            <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate text-xs">
+                              {customEndDate ? format(customEndDate, 'MMM d, yyyy') : 'End date'}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={customEndDate}
+                            onSelect={setCustomEndDate}
+                            disabled={(date) =>
+                              date < (customStartDate || new Date(new Date().setHours(0, 0, 0, 0)))
+                            }
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {customStartDate && customEndDate && (
+                      <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-center">
+                        <span className="font-medium text-primary">
+                          {format(customStartDate, 'EEE, MMM d')} – {format(customEndDate, 'EEE, MMM d')}
                         </span>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </motion.div>
             )}
@@ -990,19 +1099,34 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                 exit={{ opacity: 0, scale: 0.97 }}
                 className="space-y-4"
               >
-                {/* Destination input */}
+                {/* Trip name (optional) */}
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
+                    Name this {isVisit ? 'visit' : 'trip'} (optional)
+                  </label>
+                  <Input
+                    value={tripName}
+                    onChange={(e) => setTripName(e.target.value)}
+                    placeholder={isVisit ? 'e.g. Holiday weekend' : 'e.g. Bachelorette, Ski week'}
+                    className="h-11 text-sm"
+                    maxLength={60}
+                  />
+                </div>
+
+                {/* Destination input — full width, larger tap target */}
                 {proposalType === 'trip' ? (
                   <div>
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
                       Destination (optional)
                     </label>
-                    <CityAutocomplete
-                      value={destination}
-                      onChange={setDestination}
-                      placeholder="Where to?"
-                      compact
-                      types="(cities)"
-                    />
+                    <div className="rounded-lg border border-border focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                      <CityAutocomplete
+                        value={destination}
+                        onChange={setDestination}
+                        placeholder="Tap to search for a city…"
+                        types="(cities)"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -1010,18 +1134,19 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                       {hostMode === 'hosting' ? 'Hosting in your city' : "Friend's city"}
                     </label>
                     {hostMode === 'hosting' && destination ? (
-                      <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-3 min-h-[44px]">
+                        <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span className="text-sm">{destination}</span>
                       </div>
                     ) : (
-                      <CityAutocomplete
-                        value={destination}
-                        onChange={setDestination}
-                        placeholder="Search for a city..."
-                        compact
-                        types="(cities)"
-                      />
+                      <div className="rounded-lg border border-border focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                        <CityAutocomplete
+                          value={destination}
+                          onChange={setDestination}
+                          placeholder="Tap to search for a city…"
+                          types="(cities)"
+                        />
+                      </div>
                     )}
                   </div>
                 )}
@@ -1032,11 +1157,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                     <span className="text-2xl">{isVisit ? '🏠' : '✈️'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">
-                        {isVisit
+                        {tripName.trim() || (isVisit
                           ? (hostMode === 'hosting'
                             ? `Hosting in ${destination || 'your city'}`
                             : `Visit to ${destination || "friend's city"}`)
-                          : (destination ? `Trip to ${destination}` : isSoloTrip ? 'Solo Trip' : 'Group Trip')}
+                          : (destination ? `Trip to ${destination}` : isSoloTrip ? 'Solo Trip' : 'Group Trip'))}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {selectedWeekends.length} date option{selectedWeekends.length > 1 ? 's' : ''}
@@ -1119,11 +1244,34 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
           </DrawerFooter>
         )}
 
-        {step === 'months' && selectedMonths.length > 0 && (
+        {step === 'months' && !customMode && selectedMonths.length > 0 && (
           <DrawerFooter className="pt-2">
             <Button onClick={() => setStep('weekends')} className="w-full gap-2">
               <Sparkles className="h-4 w-4" />
               Find best weekends
+            </Button>
+          </DrawerFooter>
+        )}
+
+        {step === 'months' && customMode && customStartDate && customEndDate && (
+          <DrawerFooter className="pt-2">
+            <Button
+              onClick={() => {
+                // Synthesize a single WeekendOption-like entry from custom dates
+                setSelectedWeekends([{
+                  fridayDate: customStartDate,
+                  sundayDate: customEndDate,
+                  score: 0,
+                  availPct: 100,
+                  hasConflict: false,
+                  perParticipant: [],
+                }]);
+                setStep('confirm');
+              }}
+              className="w-full gap-2"
+            >
+              <Check className="h-4 w-4" />
+              Continue
             </Button>
           </DrawerFooter>
         )}

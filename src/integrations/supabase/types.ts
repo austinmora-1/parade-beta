@@ -1563,6 +1563,7 @@ export type Database = {
           destination: string | null
           host_user_id: string | null
           id: string
+          name: string | null
           proposal_type: string | null
           status: string
           updated_at: string
@@ -1573,6 +1574,7 @@ export type Database = {
           destination?: string | null
           host_user_id?: string | null
           id?: string
+          name?: string | null
           proposal_type?: string | null
           status?: string
           updated_at?: string
@@ -1583,6 +1585,7 @@ export type Database = {
           destination?: string | null
           host_user_id?: string | null
           id?: string
+          name?: string | null
           proposal_type?: string | null
           status?: string
           updated_at?: string
@@ -1596,6 +1599,7 @@ export type Database = {
           end_date: string
           id: string
           location: string | null
+          name: string | null
           needs_return_date: boolean
           priority_friend_ids: string[]
           proposal_id: string | null
@@ -1609,6 +1613,7 @@ export type Database = {
           end_date: string
           id?: string
           location?: string | null
+          name?: string | null
           needs_return_date?: boolean
           priority_friend_ids?: string[]
           proposal_id?: string | null
@@ -1622,6 +1627,7 @@ export type Database = {
           end_date?: string
           id?: string
           location?: string | null
+          name?: string | null
           needs_return_date?: boolean
           priority_friend_ids?: string[]
           proposal_id?: string | null
