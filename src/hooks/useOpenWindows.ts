@@ -107,19 +107,20 @@ function getTargetDates(): { date: Date; label: string }[] {
   return out;
 }
 
-// Find longest contiguous run of free slots in the day (returns block info)
-function findLongestBlock(slotMap: Partial<Record<TimeSlot, boolean>>) {
-  let bestRun: TimeSlot[] = [];
+// Find all contiguous runs of free slots in the day (each run = a block)
+function findAllBlocks(slotMap: Partial<Record<TimeSlot, boolean>>): TimeSlot[][] {
+  const runs: TimeSlot[][] = [];
   let curRun: TimeSlot[] = [];
   for (const slot of SLOT_ORDER) {
     if (slotMap[slot]) {
       curRun.push(slot);
-      if (curRun.length > bestRun.length) bestRun = [...curRun];
     } else {
+      if (curRun.length) runs.push(curRun);
       curRun = [];
     }
   }
-  return bestRun;
+  if (curRun.length) runs.push(curRun);
+  return runs;
 }
 
 function blockHours(slots: TimeSlot[]): number {
