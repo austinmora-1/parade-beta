@@ -16,6 +16,7 @@ import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { PolishProfileCard } from '@/components/dashboard/PolishProfileCard';
 import { FreeWindowCard } from '@/components/dashboard/FreeWindowCard';
+import { SmartPrimaryCTA } from '@/components/dashboard/SmartPrimaryCTA';
 
 const stagger = {
   hidden: { opacity: 0 },
