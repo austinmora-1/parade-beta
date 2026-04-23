@@ -195,7 +195,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
     else if (step === 'describe') setStep('anchor');
   };
 
-  const showBack = !(step === 'anchor' || (tripContext && step === 'audience'));
+  const showBack = !(step === 'anchor' || step === 'success' || (tripContext && step === 'audience'));
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -536,6 +536,11 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
             <Button onClick={handleSend} disabled={sending} className="w-full gap-2">
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Send open invite
+            </Button>
+          )}
+          {step === 'success' && (
+            <Button onClick={() => onOpenChange(false)} className="w-full">
+              Done
             </Button>
           )}
         </DrawerFooter>
