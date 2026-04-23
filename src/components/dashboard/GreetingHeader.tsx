@@ -271,36 +271,14 @@ export function GreetingHeader() {
           </div>
         </motion.div>
 
-        {/* Dropdown rendered outside overflow-hidden */}
-        <AnimatePresence>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: -4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: -4 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border border-border bg-popover p-1 shadow-lg"
-              >
-                {menuItems.map(({ key, label, icon: ItemIcon, hint }: any) => (
-                  <button
-                    key={key}
-                    onClick={() => handleSelect(key)}
-                    className="flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors hover:bg-accent text-left"
-                  >
-                    <ItemIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="leading-tight">{label}</div>
-                      {hint && <div className="text-[10px] text-muted-foreground leading-tight">{hint}</div>}
-                    </div>
-                  </button>
-                ))}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* Unified "What are you planning?" sheet */}
+      <WhatArePlanningSheet
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        onSelect={handleSelect}
+      />
 
       {/* Sheets / Dialogs */}
       {planOpen && (
