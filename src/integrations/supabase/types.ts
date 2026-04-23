@@ -422,6 +422,107 @@ export type Database = {
           },
         ]
       }
+      open_invite_responses: {
+        Row: {
+          created_at: string
+          id: string
+          open_invite_id: string
+          response: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          open_invite_id: string
+          response: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          open_invite_id?: string
+          response?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_invite_responses_open_invite_id_fkey"
+            columns: ["open_invite_id"]
+            isOneToOne: false
+            referencedRelation: "open_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      open_invites: {
+        Row: {
+          activity: string
+          audience_ref: string | null
+          audience_type: string
+          claimed_plan_id: string | null
+          created_at: string
+          date: string
+          duration: number
+          end_time: string | null
+          expires_at: string
+          id: string
+          location: string | null
+          notes: string | null
+          notified_count: number
+          start_time: string | null
+          status: string
+          time_slot: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity: string
+          audience_ref?: string | null
+          audience_type: string
+          claimed_plan_id?: string | null
+          created_at?: string
+          date: string
+          duration?: number
+          end_time?: string | null
+          expires_at?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          notified_count?: number
+          start_time?: string | null
+          status?: string
+          time_slot: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          audience_ref?: string | null
+          audience_type?: string
+          claimed_plan_id?: string | null
+          created_at?: string
+          date?: string
+          duration?: number
+          end_time?: string | null
+          expires_at?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          notified_count?: number
+          start_time?: string | null
+          status?: string
+          time_slot?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plan_change_requests: {
         Row: {
           created_at: string
