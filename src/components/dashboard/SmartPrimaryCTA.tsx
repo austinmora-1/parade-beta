@@ -74,7 +74,7 @@ export function SmartPrimaryCTA() {
       (p) => p.date >= now && p.date <= sevenDaysOut && p.status !== 'cancelled'
     );
     const hasActiveOpenInvite = myOpenInvites.some(
-      (i) => i.status === 'open' && new Date(i.expiresAt) > now
+      (i) => i.status === 'open' && new Date(i.expires_at) > now
     );
 
     if (windows.length > 0 && !hasActiveOpenInvite) {
