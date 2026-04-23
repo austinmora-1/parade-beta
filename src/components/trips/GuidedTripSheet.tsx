@@ -1343,6 +1343,15 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         proposalType={postCreateShare.type}
       />
     )}
+    {findPeopleTripContext && (
+      <Suspense fallback={null}>
+        <FindPeopleSheet
+          open={!!findPeopleTripContext}
+          onOpenChange={(o) => { if (!o) setFindPeopleTripContext(null); }}
+          tripContext={findPeopleTripContext}
+        />
+      </Suspense>
+    )}
     </>
   );
 }

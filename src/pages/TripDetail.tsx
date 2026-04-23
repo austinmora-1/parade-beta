@@ -26,6 +26,16 @@ import {
 import { cn } from '@/lib/utils';
 import { formatCityForDisplay } from '@/lib/formatCity';
 import { TripActivities } from '@/components/trips/TripActivities';
+import { Megaphone } from 'lucide-react';
+
+interface TripOpenInvite {
+  id: string;
+  title: string;
+  date: string;
+  time_slot: string;
+  status: string;
+  notified_count: number;
+}
 
 const TRIPS_UPDATED_EVENT = 'trips:updated';
 
@@ -66,6 +76,18 @@ export default function TripDetail() {
   const [deleting, setDeleting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [converting, setConverting] = useState(false);
+  const [tripInvites, setTripInvites] = useState<TripOpenInvite[]>([]);
+
+  useEffect(() => {
+    if (!tripId) return;
+    supabase
+      .from('open_invites')
+      .select('id, title, date, time_slot, status, notified_count')
+      .eq('trip_id', tripId)
+      .eq('status', 'open')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setTripInvites((data || []) as TripOpenInvite[]));
+  }, [tripId]);
 
   const handleConvertToVisit = async () => {
     if (!trip || !user) return;

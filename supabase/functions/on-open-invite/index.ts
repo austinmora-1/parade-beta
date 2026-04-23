@@ -132,6 +132,15 @@ Deno.serve(async (req) => {
     // Don't await - fire and forget
     Promise.all(sendPromises);
 
+    // If anchored to an existing plan or trip, surface that context for downstream handlers.
+    // (Claim/RSVP processing happens elsewhere; this function only handles broadcast.)
+    if (invite.plan_id) {
+      console.log('[on-open-invite] anchored to plan', invite.plan_id);
+    }
+    if (invite.trip_id) {
+      console.log('[on-open-invite] anchored to trip', invite.trip_id);
+    }
+
     // Update notified_count
     await admin
       .from('open_invites')
