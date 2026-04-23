@@ -986,7 +986,6 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                             {hasStats && t && (
                               <div className="absolute top-1.5 right-1.5 flex gap-0.5">
                                 <span className={cn("h-1.5 w-1.5 rounded-full", t.dot)} />
-                                {hasTripConflict && tier !== 'red' && <span className="h-1.5 w-1.5 rounded-full bg-destructive" />}
                               </div>
                             )}
                           </motion.button>
