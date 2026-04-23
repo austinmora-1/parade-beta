@@ -33,7 +33,7 @@ interface FindPeopleSheetProps {
   tripContext?: TripContext;
 }
 
-type Step = 'anchor' | 'describe' | 'audience' | 'preview';
+type Step = 'anchor' | 'describe' | 'audience' | 'preview' | 'success';
 
 const TIME_SLOTS: TimeSlot[] = ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
 
@@ -163,8 +163,9 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
         setSending(false);
         return;
       }
-      toast.success('Open invite sent! 📡');
-      onOpenChange(false);
+      // Show inline success state instead of toast
+      setSending(false);
+      setStep('success');
     } catch (err) {
       console.error('[FindPeopleSheet] send error', err);
       toast.error('Something went wrong');
@@ -176,7 +177,8 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
     step === 'anchor' ? 'Find people'
     : step === 'describe' ? 'Describe the plan'
     : step === 'audience' ? 'Who should see this?'
-    : 'Send open invite';
+    : step === 'preview' ? 'Send open invite'
+    : 'Live!';
 
   const goBack = () => {
     if (tripContext) {
