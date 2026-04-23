@@ -935,20 +935,20 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                               : 'red';
                         const tierClasses = {
                           green: {
-                            selected: "border-chart-2 bg-chart-2/15 text-chart-2 ring-1 ring-chart-2/30",
-                            idle: "border-chart-2/40 bg-chart-2/5 hover:bg-chart-2/10 text-foreground",
-                            text: "text-chart-2",
-                            dot: "bg-chart-2",
+                            selected: "border-availability-available bg-availability-available/15 text-availability-available ring-1 ring-availability-available/30",
+                            idle: "border-availability-available/50 bg-availability-available/10 hover:bg-availability-available/20 text-foreground",
+                            text: "text-availability-available",
+                            dot: "bg-availability-available",
                           },
                           yellow: {
-                            selected: "border-chart-4 bg-chart-4/15 text-chart-4 ring-1 ring-chart-4/30",
-                            idle: "border-chart-4/40 bg-chart-4/5 hover:bg-chart-4/10 text-foreground",
-                            text: "text-chart-4",
-                            dot: "bg-chart-4",
+                            selected: "border-availability-partial bg-availability-partial/25 text-foreground ring-1 ring-availability-partial/40",
+                            idle: "border-availability-partial/60 bg-availability-partial/15 hover:bg-availability-partial/25 text-foreground",
+                            text: "text-foreground/80",
+                            dot: "bg-availability-partial",
                           },
                           red: {
                             selected: "border-destructive bg-destructive/15 text-destructive ring-1 ring-destructive/30",
-                            idle: "border-destructive/40 bg-destructive/5 hover:bg-destructive/10 text-foreground",
+                            idle: "border-destructive/50 bg-destructive/10 hover:bg-destructive/20 text-foreground",
                             text: "text-destructive",
                             dot: "bg-destructive",
                           },
