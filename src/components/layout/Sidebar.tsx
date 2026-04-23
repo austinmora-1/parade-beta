@@ -80,6 +80,15 @@ export function Sidebar() {
               </NavLink>
             );
           })}
+
+          {/* Find someone to join me */}
+          <button
+            onClick={() => setOpenInviteOpen(true)}
+            className="group mt-2 flex w-full items-center gap-3 rounded-lg border border-dashed border-sidebar-border px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all hover:border-sidebar-primary/40 hover:bg-sidebar-accent/50 hover:text-sidebar-primary"
+          >
+            <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
+            <span className="flex-1 truncate text-left">Find someone to join me</span>
+          </button>
         </nav>
 
         {/* ── Divider ── */}
@@ -119,6 +128,7 @@ export function Sidebar() {
           </NavLink>
         </div>
       </aside>
+      <OpenInviteSheet open={openInviteOpen} onOpenChange={setOpenInviteOpen} />
     </>
   );
 }
