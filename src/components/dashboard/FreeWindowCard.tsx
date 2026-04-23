@@ -1,13 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles, Send } from 'lucide-react';
 import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
+import { cn } from '@/lib/utils';
 
 export function FreeWindowCard() {
   const { windows, loading } = useOpenWindows();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [highlight, setHighlight] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Listen for global "expand free weekend" event (from FAB → Free weekend entry)
+  useEffect(() => {
+    const handler = () => {
+      containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlight(true);
+      window.setTimeout(() => setHighlight(false), 1800);
+    };
+    window.addEventListener('parade:expand-free-window', handler);
+    return () => window.removeEventListener('parade:expand-free-window', handler);
+  }, []);
 
   if (loading) return null;
 
@@ -15,7 +29,13 @@ export function FreeWindowCard() {
   if (windows.length === 0) {
     return (
       <>
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-card px-3 py-2 shadow-soft">
+        <div
+          ref={containerRef}
+          className={cn(
+            'flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-card px-3 py-2 shadow-soft transition-all',
+            highlight && 'ring-2 ring-primary/50 border-primary/40'
+          )}
+        >
           <div className="flex items-center gap-2 min-w-0">
             <Sparkles className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <p className="text-xs text-muted-foreground truncate">
@@ -42,7 +62,13 @@ export function FreeWindowCard() {
 
   return (
     <>
-      <div className="space-y-2">
+      <div
+        ref={containerRef}
+        className={cn(
+          'space-y-2 rounded-xl transition-all',
+          highlight && 'ring-2 ring-primary/50 p-2 -m-2 bg-primary/5'
+        )}
+      >
         <div className="flex items-center justify-between px-0.5">
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-primary" />

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Loader2, Users as UsersIcon, Tag, Sparkles, Calendar as CalendarIcon, MapPin, Send, Plane,
+  ArrowLeft, Loader2, Users as UsersIcon, Tag, Sparkles, Calendar as CalendarIcon, MapPin, Send, Plane, Quote, CheckCircle2,
 } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 import { AnchorStep } from './findpeople/AnchorStep';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 export interface TripContext {
   tripId: string;
@@ -33,7 +34,7 @@ interface FindPeopleSheetProps {
   tripContext?: TripContext;
 }
 
-type Step = 'anchor' | 'describe' | 'audience' | 'preview';
+type Step = 'anchor' | 'describe' | 'audience' | 'preview' | 'success';
 
 const TIME_SLOTS: TimeSlot[] = ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
 
@@ -51,6 +52,8 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
   const { pods } = usePods();
   const { friends } = usePlannerStore();
   const viewport = useVisualViewport();
+  const { profile } = useCurrentUserProfile();
+  const senderFirstName = profile?.first_name || profile?.display_name?.split(' ')[0] || 'A friend';
 
   const [step, setStep] = useState<Step>('anchor');
   const [anchorPlan, setAnchorPlan] = useState<Plan | null>(null);
@@ -163,8 +166,9 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
         setSending(false);
         return;
       }
-      toast.success('Open invite sent! 📡');
-      onOpenChange(false);
+      // Show inline success state instead of toast
+      setSending(false);
+      setStep('success');
     } catch (err) {
       console.error('[FindPeopleSheet] send error', err);
       toast.error('Something went wrong');
@@ -176,7 +180,8 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
     step === 'anchor' ? 'Find people'
     : step === 'describe' ? 'Describe the plan'
     : step === 'audience' ? 'Who should see this?'
-    : 'Send open invite';
+    : step === 'preview' ? 'Send open invite'
+    : 'Live!';
 
   const goBack = () => {
     if (tripContext) {
@@ -190,7 +195,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
     else if (step === 'describe') setStep('anchor');
   };
 
-  const showBack = !(step === 'anchor' || (tripContext && step === 'audience'));
+  const showBack = !(step === 'anchor' || step === 'success' || (tripContext && step === 'audience'));
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -445,26 +450,33 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-3"
               >
-                <div className="rounded-xl border border-border bg-card p-3 space-y-1.5">
-                  <p className="text-sm font-semibold">{title || 'Hangout'}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <CalendarIcon className="h-3 w-3" />
-                    {format(date, 'EEE, MMM d')} · {TIME_SLOT_LABELS[timeSlot].label}
+                {/* Quoted recipient message — exactly what friends will see */}
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Recipients will see
                   </p>
-                  {location && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <MapPin className="h-3 w-3" />
-                      {location}
+                  <div className="relative rounded-2xl border-l-4 border-primary bg-primary/5 px-4 py-3">
+                    <Quote className="absolute -top-1 -left-1 h-4 w-4 text-primary/40" />
+                    <p className="text-[11px] text-muted-foreground italic mb-1">
+                      From {senderFirstName}, via Parade:
                     </p>
-                  )}
+                    <p className="text-sm font-medium text-foreground leading-snug">
+                      "{title.trim() || (ACTIVITY_CONFIG[activity as ActivityType]?.label ?? 'Hangout')} — are you free?"
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1.5 flex items-center gap-1.5">
+                      <CalendarIcon className="h-3 w-3" />
+                      {format(date, 'EEE, MMM d')} · {TIME_SLOT_LABELS[timeSlot].label}
+                      {location && <><span className="opacity-50">·</span><MapPin className="h-3 w-3" />{location}</>}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2.5 text-xs">
+                <div className="rounded-lg bg-muted/50 border border-border px-3 py-2.5 text-xs">
                   <p className="text-foreground">
                     Sending to <span className="font-semibold">{audienceLabel}</span>
                   </p>
                   <p className="text-muted-foreground mt-0.5">
-                    ~{estimatedReach} {estimatedReach === 1 ? 'friend' : 'friends'} likely to see this · expires in 48 hours
+                    ~{estimatedReach} {estimatedReach === 1 ? 'friend' : 'friends'} will see this · expires in 48 hours
                   </p>
                 </div>
 
@@ -478,6 +490,28 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
                     First friend to claim becomes a travel companion on this trip.
                   </p>
                 )}
+              </motion.div>
+            )}
+
+            {step === 'success' && (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center text-center py-6 space-y-3"
+              >
+                <div className="h-14 w-14 rounded-full bg-availability-available/15 flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-availability-available" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-semibold text-foreground">Your open invite is live.</p>
+                  <p className="text-xs text-muted-foreground max-w-[260px] mx-auto">
+                    We'll ping you the moment someone bites.
+                  </p>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Sent to ~{estimatedReach} {estimatedReach === 1 ? 'friend' : 'friends'} · expires in 48 hours
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -502,6 +536,11 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
             <Button onClick={handleSend} disabled={sending} className="w-full gap-2">
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Send open invite
+            </Button>
+          )}
+          {step === 'success' && (
+            <Button onClick={() => onOpenChange(false)} className="w-full">
+              Done
             </Button>
           )}
         </DrawerFooter>

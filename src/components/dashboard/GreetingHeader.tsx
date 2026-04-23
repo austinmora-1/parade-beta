@@ -1,8 +1,8 @@
 import { useMemo, useState, lazy, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Sun, Moon, Sunset, Coffee, MapPin, Plus, CalendarPlus, Plane, UserPlus, Loader2, Clock, Megaphone } from 'lucide-react';
+import { Sun, Moon, Sunset, Coffee, MapPin, Plus, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTimezoneForCity } from '@/lib/timezone';
 import { formatCityForDisplay } from '@/lib/formatCity';
@@ -13,7 +13,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAvailabilityStore } from '@/stores/availabilityStore';
+import { useOpenWindows } from '@/hooks/useOpenWindows';
 import { toast } from 'sonner';
+import { WhatArePlanningSheet, type PlanningEntry } from './WhatArePlanningSheet';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
@@ -50,12 +52,6 @@ function getContextMessage(planCount: number, friendCount: number, hour: number)
   return 'Ready to make some plans?';
 }
 
-const menuItems = [
-  { key: 'find-time', label: 'Find time', icon: Clock, hint: 'I know who' },
-  { key: 'find-people', label: 'Find people', icon: Megaphone, hint: 'I know what' },
-  { key: 'find-in-place', label: 'Plan a Trip', icon: MapPin, hint: 'I know where' },
-  { key: 'invite', label: 'Invite friends', icon: UserPlus },
-] as const;
 
 export function GreetingHeader() {
   const { profile, updateProfile } = useCurrentUserProfile();
@@ -102,11 +98,22 @@ export function GreetingHeader() {
     };
   }, [availabilityMap, profile?.home_address]);
 
-  const handleSelect = (key: string) => {
+  const { windows: openWindows } = useOpenWindows();
+
+  const handleSelect = (key: PlanningEntry) => {
     setMenuOpen(false);
-    if (key === 'find-time') setPlanOpen(true);
-    else if (key === 'find-people') setFindPeopleOpen(true);
-    else if (key === 'find-in-place') setTripOpen(true);
+    if (key === 'hang') setPlanOpen(true);
+    else if (key === 'plus-one') setFindPeopleOpen(true);
+    else if (key === 'trip') setTripOpen(true);
+    else if (key === 'free-weekend') {
+      // If they have ≥1 open window, scroll to / highlight FreeWindowCard.
+      // Otherwise drop them into the find-people sheet (open invite).
+      if (openWindows.length > 0) {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('parade:expand-free-window')), 50);
+      } else {
+        setFindPeopleOpen(true);
+      }
+    }
     else if (key === 'invite') setInviteOpen(true);
   };
 
@@ -264,36 +271,14 @@ export function GreetingHeader() {
           </div>
         </motion.div>
 
-        {/* Dropdown rendered outside overflow-hidden */}
-        <AnimatePresence>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: -4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: -4 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border border-border bg-popover p-1 shadow-lg"
-              >
-                {menuItems.map(({ key, label, icon: ItemIcon, hint }: any) => (
-                  <button
-                    key={key}
-                    onClick={() => handleSelect(key)}
-                    className="flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors hover:bg-accent text-left"
-                  >
-                    <ItemIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="leading-tight">{label}</div>
-                      {hint && <div className="text-[10px] text-muted-foreground leading-tight">{hint}</div>}
-                    </div>
-                  </button>
-                ))}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* Unified "What are you planning?" sheet */}
+      <WhatArePlanningSheet
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        onSelect={handleSelect}
+      />
 
       {/* Sheets / Dialogs */}
       {planOpen && (
