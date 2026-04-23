@@ -59,7 +59,7 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
         showTentativeStyle && "border-dashed border-muted-foreground/40",
         isPast && !showTentativeStyle && "bg-muted text-muted-foreground border-muted-foreground/20 shadow-none ring-0",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
-        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && !isPast && "border-border"
+        selected ? "border-primary ring-2 ring-primary/20 bg-card" : !isLive && !isPast && "border-border"
       )}
     >
       {isLive && !showTentativeStyle && (
