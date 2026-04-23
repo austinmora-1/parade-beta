@@ -33,8 +33,13 @@ interface ShareLinkDialogProps {
   /**
    * Called when the dialog opens to mint a fresh shareable link.
    * Should return the public URL to share.
+   * Receives any deps (e.g. view duration) so the link can be regenerated.
    */
   generateLink: () => Promise<string>;
+  /** Optional content slot rendered above the channel grid (e.g. duration picker). */
+  topSlot?: React.ReactNode;
+  /** Dependency keys that should re-mint the link when changed. */
+  regenerateKey?: string | number;
 }
 
 const CHANNELS: ShareChannel[] = [
@@ -107,13 +112,15 @@ export function ShareLinkDialog({
   shareMessage,
   emailSubject,
   generateLink,
+  topSlot,
+  regenerateKey,
 }: ShareLinkDialogProps) {
   const { toast } = useToast();
   const [link, setLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Mint a fresh link every time the dialog opens.
+  // Mint a fresh link every time the dialog opens (or regenerateKey changes).
   useEffect(() => {
     if (!open) {
       setLink(null);
@@ -122,6 +129,7 @@ export function ShareLinkDialog({
     }
     let cancelled = false;
     setLoading(true);
+    setLink(null);
     generateLink()
       .then((url) => {
         if (!cancelled) setLink(url);
@@ -142,7 +150,7 @@ export function ShareLinkDialog({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, regenerateKey]);
 
   const handleCopy = async () => {
     if (!link) return;
@@ -179,6 +187,7 @@ export function ShareLinkDialog({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
+          {topSlot}
           {/* Channel grid */}
           <div className="grid grid-cols-4 gap-3">
             {CHANNELS.map((c) => (
