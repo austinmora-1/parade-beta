@@ -472,10 +472,12 @@ export type Database = {
           location: string | null
           notes: string | null
           notified_count: number
+          plan_id: string | null
           start_time: string | null
           status: string
           time_slot: string
           title: string
+          trip_id: string | null
           updated_at: string
           user_id: string
         }
@@ -493,10 +495,12 @@ export type Database = {
           location?: string | null
           notes?: string | null
           notified_count?: number
+          plan_id?: string | null
           start_time?: string | null
           status?: string
           time_slot: string
           title: string
+          trip_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -514,14 +518,31 @@ export type Database = {
           location?: string | null
           notes?: string | null
           notified_count?: number
+          plan_id?: string | null
           start_time?: string | null
           status?: string
           time_slot?: string
           title?: string
+          trip_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "open_invites_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_invites_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plan_change_requests: {
         Row: {
