@@ -1,4 +1,4 @@
-import { useMemo, useState, lazy, Suspense } from 'react';
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -61,6 +61,7 @@ export function GreetingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [tripOpen, setTripOpen] = useState(false);
+  const [tripPreSelected, setTripPreSelected] = useState<Array<{ userId: string; name: string }>>([]);
   const [findPeopleOpen, setFindPeopleOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
@@ -99,6 +100,18 @@ export function GreetingHeader() {
   }, [availabilityMap, profile?.home_address]);
 
   const { windows: openWindows } = useOpenWindows();
+
+  // Listen for cross-component request to open the trip sheet with pre-selected friends
+  // (dispatched from GuidedPlanSheet's "Plan a Trip with X" empty-state CTA).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ friends: Array<{ userId: string; name: string }> }>).detail;
+      setTripPreSelected(detail?.friends || []);
+      setTripOpen(true);
+    };
+    window.addEventListener('parade:open-trip-sheet', handler);
+    return () => window.removeEventListener('parade:open-trip-sheet', handler);
+  }, []);
 
   const handleSelect = (key: PlanningEntry) => {
     setMenuOpen(false);
@@ -288,7 +301,14 @@ export function GreetingHeader() {
       )}
       {tripOpen && (
         <Suspense fallback={null}>
-          <GuidedTripSheet open={tripOpen} onOpenChange={setTripOpen} />
+          <GuidedTripSheet
+            open={tripOpen}
+            onOpenChange={(o) => {
+              setTripOpen(o);
+              if (!o) setTripPreSelected([]);
+            }}
+            preSelectedFriends={tripPreSelected.length > 0 ? tripPreSelected : undefined}
+          />
         </Suspense>
       )}
       {findPeopleOpen && (
