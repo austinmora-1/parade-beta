@@ -264,7 +264,7 @@ export default function ProposalDetail() {
             {winningDate && (
               <Button
                 className="w-full justify-start gap-2"
-                onClick={handleLockIn}
+                onClick={() => handleLockIn()}
                 disabled={lockingIn}
               >
                 {lockingIn ? (
@@ -275,12 +275,53 @@ export default function ProposalDetail() {
                 Lock in {format(new Date(winningDate.start_date + 'T00:00:00'), 'MMM d')}
                 {winningDate.start_date !== winningDate.end_date &&
                   `–${format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}`}
+                <span className="ml-auto text-[10px] opacity-80">winning vote</span>
               </Button>
             )}
+
             {!winningDate && dates.length > 0 && (
-              <p className="text-[11px] text-muted-foreground px-1">
-                Once friends vote, you'll be able to lock in the winning date here.
-              </p>
+              <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 space-y-2">
+                <p className="text-[11px] text-muted-foreground">
+                  No votes yet — as the organizer, you can lock in any date now.
+                </p>
+                <div className="space-y-1.5">
+                  {dates.map((d) => {
+                    const isSelected = selectedLockDateId === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setSelectedLockDateId(d.id)}
+                        className={`w-full text-left text-xs rounded-md px-3 py-2 border transition-colors ${
+                          isSelected
+                            ? 'bg-primary/10 border-primary text-foreground'
+                            : 'bg-background border-border hover:bg-muted/50'
+                        }`}
+                      >
+                        {format(new Date(d.start_date + 'T00:00:00'), 'EEE, MMM d')}
+                        {d.start_date !== d.end_date &&
+                          ` – ${format(new Date(d.end_date + 'T00:00:00'), 'EEE, MMM d')}`}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full gap-2"
+                  disabled={!selectedLockDateId || lockingIn}
+                  onClick={() => {
+                    const chosen = dates.find(d => d.id === selectedLockDateId);
+                    if (chosen) void handleLockIn(chosen);
+                  }}
+                >
+                  {lockingIn ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Lock className="h-4 w-4" />
+                  )}
+                  Lock in selected date
+                </Button>
+              </div>
             )}
 
             <Button
