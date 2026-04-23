@@ -58,6 +58,7 @@ import { formatCityForDisplay } from '@/lib/formatCity';
 const ImageCropDialog = lazy(() => import('@/components/profile/ImageCropDialog'));
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 import { QuickStats } from '@/components/dashboard/QuickStats';
+import { VibeAndIntentionsCard } from '@/components/dashboard/VibeAndIntentionsCard';
 import { ParticipantsList } from '@/components/plans/ParticipantsList';
 import { CalendarCheck } from 'lucide-react';
 
@@ -799,6 +800,9 @@ export default function Profile() {
           </div>
         </div>
       </Card>
+
+      {/* Vibe + Weekly Intentions */}
+      <VibeAndIntentionsCard />
 
       {/* Quick Stats */}
       <QuickStats />

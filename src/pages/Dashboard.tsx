@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/useAuth';
 
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
-import { VibeAndIntentionsCard } from '@/components/dashboard/VibeAndIntentionsCard';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
@@ -97,11 +96,6 @@ export default function Dashboard() {
 
       {/* Push notification prompt — fires after first confirmed plan */}
       <PushNotificationPrompt />
-
-      {/* Vibe + Weekly Intentions (consolidated) */}
-      <motion.div variants={fadeUp}>
-        <VibeAndIntentionsCard />
-      </motion.div>
 
       {/* State-aware primary CTA — picks open-invite, today's plan, etc. */}
       <motion.div variants={fadeUp}>
