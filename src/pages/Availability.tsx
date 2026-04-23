@@ -35,6 +35,16 @@ export default function Availability() {
   const [mergePreselected, setMergePreselected] = useState<string[] | undefined>(undefined);
   const [sharePlanId, setSharePlanId] = useState<string | null>(null);
   const [sharePlanTitle, setSharePlanTitle] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'parade' | 'calendar'>('all');
+
+  const filteredPlans = useMemo(() => {
+    if (sourceFilter === 'all') return plans;
+    if (sourceFilter === 'calendar') return plans.filter(isCalendarSourced);
+    return plans.filter((p) => !isCalendarSourced(p));
+  }, [plans, sourceFilter]);
+
+  const calendarCount = useMemo(() => plans.filter(isCalendarSourced).length, [plans]);
+  const hasAnyCalendar = calendarCount > 0;
 
   const openNewPlan = () => {
     setGuidedPlanOpen(true);
