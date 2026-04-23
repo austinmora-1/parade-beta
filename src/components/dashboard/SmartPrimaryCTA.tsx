@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { isToday, isSameDay } from 'date-fns';
-import { Sparkles, Send, CalendarPlus, ArrowRight, Users } from 'lucide-react';
+import { Sparkles, CalendarPlus, ArrowRight, Users } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useOpenWindows } from '@/hooks/useOpenWindows';
 import { useOpenInvites } from '@/hooks/useOpenInvites';
@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 
 type CtaState =
   | { kind: 'open-today'; planId: string; title: string }
-  | { kind: 'send-open-invite'; subtitle: string }
   | { kind: 'drop-open-invite'; subtitle: string }
   | { kind: 'make-plan'; subtitle: string };
 
@@ -50,24 +49,8 @@ export function SmartPrimaryCTA() {
       };
     }
 
-    // 2. Best open window with friend overlap
-    const bestOverlap = [...windows]
-      .filter((w) => w.overlappingFriends.length > 0)
-      .sort((a, b) => {
-        if (b.overlappingFriends.length !== a.overlappingFriends.length) {
-          return b.overlappingFriends.length - a.overlappingFriends.length;
-        }
-        return a.date.getTime() - b.date.getTime();
-      })[0];
-    if (bestOverlap) {
-      const fc = bestOverlap.overlappingFriends.length;
-      return {
-        kind: 'send-open-invite',
-        subtitle: `${bestOverlap.dayLabel} ${bestOverlap.startLabel}–${bestOverlap.endLabel} · ${fc} free`,
-      };
-    }
-
-    // 3. Open windows w/o overlap OR no plans in the next 7 days
+    // 2. Open windows OR no plans in the next 7 days
+    // (Friend-overlap "Send open invite" state removed — covered by Open Windows section)
     const sevenDaysOut = new Date();
     sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
     const upcomingThisWeek = plans.filter(
@@ -105,7 +88,6 @@ export function SmartPrimaryCTA() {
       case 'open-today':
         navigate(`/plan/${state.planId}`);
         return;
-      case 'send-open-invite':
       case 'drop-open-invite':
         setOpenInviteOpen(true);
         return;
@@ -127,17 +109,6 @@ export function SmartPrimaryCTA() {
           iconBg: 'bg-primary/15 text-primary',
           eyebrow: 'Happening today',
           eyebrowText: state.title,
-        };
-      case 'send-open-invite':
-        return {
-          icon: Send,
-          label: 'Send open invite',
-          accent: 'text-primary',
-          ring: 'ring-primary/30',
-          gradient: 'from-primary/10 via-card to-card',
-          iconBg: 'bg-primary/15 text-primary',
-          eyebrow: 'Friends are around',
-          eyebrowText: state.subtitle,
         };
       case 'drop-open-invite':
         return {
