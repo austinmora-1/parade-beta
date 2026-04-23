@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 
 type CtaState =
   | { kind: 'open-today'; planId: string; title: string }
-  | { kind: 'send-open-invite'; subtitle: string }
   | { kind: 'drop-open-invite'; subtitle: string }
   | { kind: 'make-plan'; subtitle: string };
 
