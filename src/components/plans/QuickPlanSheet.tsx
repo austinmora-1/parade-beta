@@ -834,7 +834,7 @@ export function QuickPlanSheet({
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
                     <div className="flex gap-1.5">
                       {([
-                        { value: 'confirmed' as PlanStatus, icon: CircleCheck, label: 'Confirmed', activeClass: 'bg-muted text-muted-foreground border-primary' },
+                        { value: 'confirmed' as PlanStatus, icon: CircleCheck, label: 'Confirmed', activeClass: 'bg-primary/10 text-primary border-primary' },
                         { value: 'tentative' as PlanStatus, icon: CircleHelp, label: 'Tentative', activeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500' },
                         { value: 'proposed' as PlanStatus, icon: Lightbulb, label: 'Proposed', activeClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500' },
                       ]).map(s => {
