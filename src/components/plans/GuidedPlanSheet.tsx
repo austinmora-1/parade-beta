@@ -1404,16 +1404,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         )}
       </DrawerContent>
     </Drawer>
-    {tripSheetOpen && (
-      <Suspense fallback={null}>
-        <GuidedTripSheet
-          open={tripSheetOpen}
-          onOpenChange={(o) => setTripSheetOpen(o)}
-          preSelectedFriends={effectiveFriends}
-        />
-      </Suspense>
-    )}
-    </>
+  );
+}
   );
 }
 export default GuidedPlanSheet;
