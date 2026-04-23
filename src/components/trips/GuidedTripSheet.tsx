@@ -226,11 +226,15 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
       setWeekends([]);
       setSelectedWeekends([]);
       setDestination('');
+      setTripName('');
       setSending(false);
       setProposalType(preSelectedType || 'trip');
       setHostMode('hosting');
       setHostUserId(null);
       setFriendHomeAddresses({});
+      setCustomMode(false);
+      setCustomStartDate(undefined);
+      setCustomEndDate(undefined);
 
       if (preSelectedFriends && preSelectedFriends.length > 0) {
         const matched = connectedFriends.filter(f =>
@@ -481,6 +485,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         .insert({
           created_by: userId,
           destination: destination || null,
+          name: tripName.trim() || null,
           status: 'pending',
           proposal_type: proposalType,
           host_user_id: proposalType === 'visit' ? hostUserId : null,
@@ -569,12 +574,13 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
 
       const { error } = await supabase.from('trips').insert({
         user_id: userId,
+        name: tripName.trim() || null,
         location: destination.trim() || null,
         start_date: startDate,
         end_date: endDate,
         available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
         priority_friend_ids: [],
-      });
+      } as any);
       if (error) throw error;
 
       // Also set availability to away for those dates
