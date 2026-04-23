@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
