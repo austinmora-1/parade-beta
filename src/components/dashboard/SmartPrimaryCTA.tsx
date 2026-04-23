@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { isToday } from 'date-fns';
 import { CalendarPlus, ArrowRight } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Button } from '@/components/ui/button';
+import { GuidedPlanSheet } from '@/components/plans/GuidedPlanSheet';
 import { cn } from '@/lib/utils';
 
 type CtaState =
@@ -24,7 +25,7 @@ type CtaState =
 export function SmartPrimaryCTA() {
   const navigate = useNavigate();
   const { plans } = usePlannerStore();
-  
+  const [makePlanOpen, setMakePlanOpen] = useState(false);
 
   const state = useMemo<CtaState>(() => {
     const now = new Date();
@@ -45,7 +46,7 @@ export function SmartPrimaryCTA() {
     if (state.kind === 'open-today') {
       navigate(`/plan/${state.planId}`);
     } else {
-      navigate('/friends?scheduler=1');
+      setMakePlanOpen(true);
     }
   };
 
@@ -105,6 +106,13 @@ export function SmartPrimaryCTA() {
         </div>
       </motion.button>
 
+      {makePlanOpen && (
+        <GuidedPlanSheet
+          open={makePlanOpen}
+          onOpenChange={setMakePlanOpen}
+          preSelectedFriends={[]}
+        />
+      )}
     </>
   );
 }
