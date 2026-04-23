@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp, Plane,
 } from 'lucide-react';
+
+const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
 import { cn } from '@/lib/utils';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter,
@@ -139,6 +141,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [customEmoji, setCustomEmoji] = useState('✨');
   const [activitySearch, setActivitySearch] = useState('');
   const [activitySearchFocused, setActivitySearchFocused] = useState(false);
+  const [friendsHaveDifferentHome, setFriendsHaveDifferentHome] = useState(false);
+  const [tripSheetOpen, setTripSheetOpen] = useState(false);
 
   const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
@@ -192,6 +196,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setShowCustomInput(false);
       setCustomLabel('');
       setActivitySearch('');
+      setFriendsHaveDifferentHome(false);
     }
   }, [open, needsFriendStep]);
 
@@ -254,6 +259,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         preferredSocialTimes: [],
       });
     }
+
+    // Detect whether any selected friend has a different home city than the user.
+    // This drives the "Plan a Trip" CTA shown in the empty state.
+    const myHomeCity = userId ? normalizeCity(profileMap.get(userId)?.homeAddress || '') : '';
+    const someoneElsewhere = userIds.some(uid => {
+      const fc = normalizeCity(profileMap.get(uid)?.homeAddress || '');
+      if (!fc || !myHomeCity) return false;
+      return !citiesMatch(fc, myHomeCity);
+    });
+    setFriendsHaveDifferentHome(someoneElsewhere);
 
     // Build trip lookup: for a given userId + date, find ALL trip locations
     const tripsByUser = new Map<string, { location: string; start_date: string; end_date: string }[]>();
@@ -1171,11 +1186,23 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         <p className="text-sm font-medium text-foreground">
                           {hasFriends ? 'No overlapping times found' : 'No free slots found'}
                         </p>
-                        <p className="text-xs text-muted-foreground max-w-[240px]">
+                        <p className="text-xs text-muted-foreground max-w-[260px]">
                           {hasFriends
-                            ? `It looks like you and ${friendNamesStr} won't be in the same city in the next 6 months.`
+                            ? (friendsHaveDifferentHome
+                                ? `Looks like you and ${friendNamesStr} live in different cities. Want to plan a trip together instead?`
+                                : `It looks like you and ${friendNamesStr} won't be in the same city in the next 6 months.`)
                             : 'Your schedule looks packed! Pick a time manually below.'}
                         </p>
+                        {hasFriends && friendsHaveDifferentHome && (
+                          <Button
+                            size="sm"
+                            onClick={() => setTripSheetOpen(true)}
+                            className="mt-2 gap-1.5"
+                          >
+                            <Plane className="h-3.5 w-3.5" />
+                            Plan a Trip with {friendNamesStr}
+                          </Button>
+                        )}
                       </div>
                     )}
 
@@ -1361,6 +1388,18 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           </DrawerFooter>
         )}
       </DrawerContent>
+      {tripSheetOpen && (
+        <Suspense fallback={null}>
+          <GuidedTripSheet
+            open={tripSheetOpen}
+            onOpenChange={(o) => {
+              setTripSheetOpen(o);
+              if (!o) onOpenChange(false);
+            }}
+            preSelectedFriends={effectiveFriends}
+          />
+        </Suspense>
+      )}
     </Drawer>
   );
 }
