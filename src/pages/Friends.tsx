@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { usePlannerStore } from '@/stores/plannerStore';
 
 const InviteFriendDialog = lazy(() => import('@/components/friends/InviteFriendDialog'));
