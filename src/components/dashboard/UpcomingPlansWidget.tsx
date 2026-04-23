@@ -217,10 +217,10 @@ export function UpcomingPlansWidget() {
         style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
       >
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0">
               <ActivityIcon config={activityConfig} size={18} />
-              <span className="text-sm font-medium truncate">{displayTitle}</span>
+              <span className="text-sm font-medium truncate min-w-0 flex-1">{displayTitle}</span>
               {hasPendingChange && (
                 <span className="rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground shrink-0">
                   Proposed change
@@ -244,12 +244,6 @@ export function UpcomingPlansWidget() {
                 <span className="text-muted-foreground/60 ml-0.5">{getTimezoneAbbreviation(userTimezone)}</span>
               </span>
             </div>
-            {fromCalendar && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 ml-[26px]" title={calendarLabel ?? undefined}>
-                <CalendarDays className="h-3 w-3 shrink-0" />
-                <span className="truncate">From your calendar</span>
-              </div>
-            )}
             {plan.location && (
               <div className="flex items-center gap-0.5 text-xs text-muted-foreground mt-0.5 ml-[26px]">
                 <MapPin className="h-3 w-3 shrink-0" />
@@ -265,6 +259,15 @@ export function UpcomingPlansWidget() {
                   ? `${format(plan.date, 'MMM d')} – ${format(plan.endDate, 'MMM d')}`
                   : format(plan.date, 'EEE, MMM d'))}
             </span>
+            {fromCalendar && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-muted-foreground/10 px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground whitespace-nowrap"
+                title={calendarLabel ?? undefined}
+              >
+                <CalendarDays className="h-2.5 w-2.5" />
+                From your calendar
+              </span>
+            )}
             {(() => {
               const visibleParticipants = plan.participants.filter((p: any) => p.role !== 'subscriber');
               if (visibleParticipants.length === 0) return null;
