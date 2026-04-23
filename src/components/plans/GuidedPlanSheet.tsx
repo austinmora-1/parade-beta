@@ -1186,11 +1186,23 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         <p className="text-sm font-medium text-foreground">
                           {hasFriends ? 'No overlapping times found' : 'No free slots found'}
                         </p>
-                        <p className="text-xs text-muted-foreground max-w-[240px]">
+                        <p className="text-xs text-muted-foreground max-w-[260px]">
                           {hasFriends
-                            ? `It looks like you and ${friendNamesStr} won't be in the same city in the next 6 months.`
+                            ? (friendsHaveDifferentHome
+                                ? `Looks like you and ${friendNamesStr} live in different cities. Want to plan a trip together instead?`
+                                : `It looks like you and ${friendNamesStr} won't be in the same city in the next 6 months.`)
                             : 'Your schedule looks packed! Pick a time manually below.'}
                         </p>
+                        {hasFriends && friendsHaveDifferentHome && (
+                          <Button
+                            size="sm"
+                            onClick={() => setTripSheetOpen(true)}
+                            className="mt-2 gap-1.5"
+                          >
+                            <Plane className="h-3.5 w-3.5" />
+                            Plan a Trip with {friendNamesStr}
+                          </Button>
+                        )}
                       </div>
                     )}
 
