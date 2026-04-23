@@ -151,21 +151,15 @@ export function useOpenInvites() {
   const claim = useCallback(
     async (openInviteId: string) => {
       if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('open_invite_responses')
-        .insert({
-          open_invite_id: openInviteId,
-          user_id: user.id,
-          response: 'claimed',
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('claim-open-invite', {
+        body: { open_invite_id: openInviteId },
+      });
       if (error) {
         console.error('[useOpenInvites] claim error', error);
         return null;
       }
       await refresh();
-      return data;
+      return data as { success: boolean; plan_id: string | null; trip_id: string | null };
     },
     [user?.id, refresh]
   );
