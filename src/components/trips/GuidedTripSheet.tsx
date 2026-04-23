@@ -924,8 +924,36 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                         const stats = monthStats[mo.key];
                         const hasStats = !!stats && !loadingMonthStats;
                         const freeRatio = hasStats && stats.totalWeekends > 0 ? stats.freeWeekends / stats.totalWeekends : 0;
-                        const isGreat = hasStats && freeRatio >= 0.7 && stats.tripConflicts === 0;
                         const hasTripConflict = hasStats && stats.tripConflicts > 0;
+                        // Tier: green >75%, yellow 50-75%, red <50%
+                        const tier: 'green' | 'yellow' | 'red' | null = !hasStats
+                          ? null
+                          : freeRatio > 0.75
+                            ? 'green'
+                            : freeRatio >= 0.5
+                              ? 'yellow'
+                              : 'red';
+                        const tierClasses = {
+                          green: {
+                            selected: "border-chart-2 bg-chart-2/15 text-chart-2 ring-1 ring-chart-2/30",
+                            idle: "border-chart-2/40 bg-chart-2/5 hover:bg-chart-2/10 text-foreground",
+                            text: "text-chart-2",
+                            dot: "bg-chart-2",
+                          },
+                          yellow: {
+                            selected: "border-chart-4 bg-chart-4/15 text-chart-4 ring-1 ring-chart-4/30",
+                            idle: "border-chart-4/40 bg-chart-4/5 hover:bg-chart-4/10 text-foreground",
+                            text: "text-chart-4",
+                            dot: "bg-chart-4",
+                          },
+                          red: {
+                            selected: "border-destructive bg-destructive/15 text-destructive ring-1 ring-destructive/30",
+                            idle: "border-destructive/40 bg-destructive/5 hover:bg-destructive/10 text-foreground",
+                            text: "text-destructive",
+                            dot: "bg-destructive",
+                          },
+                        } as const;
+                        const t = tier ? tierClasses[tier] : null;
                         return (
                           <motion.button
                             key={mo.key}
@@ -934,11 +962,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                             className={cn(
                               "relative rounded-xl border px-3 py-2.5 text-sm font-medium transition-all text-center flex flex-col items-center gap-1",
                               sel
-                                ? isGreat
-                                  ? "border-chart-2 bg-chart-2/15 text-chart-2 ring-1 ring-chart-2/30"
+                                ? t
+                                  ? t.selected
                                   : "border-primary bg-primary/10 text-primary"
-                                : isGreat
-                                  ? "border-chart-2/40 bg-chart-2/5 hover:bg-chart-2/10 text-foreground"
+                                : t
+                                  ? t.idle
                                   : "border-border hover:border-primary/30 hover:bg-primary/5 text-foreground"
                             )}
                           >
@@ -946,7 +974,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                             {hasStats && (
                               <span className={cn(
                                 "text-[9px] font-medium leading-none",
-                                isGreat ? "text-chart-2" : hasTripConflict ? "text-destructive" : "text-muted-foreground"
+                                t ? t.text : "text-muted-foreground"
                               )}>
                                 {stats.freeWeekends}/{stats.totalWeekends} free
                                 {stats.tripConflicts > 0 && ` · ${stats.tripConflicts} trip${stats.tripConflicts > 1 ? 's' : ''}`}
@@ -955,10 +983,10 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                             {loadingMonthStats && (
                               <span className="h-2.5 w-12 rounded-full bg-muted animate-pulse" />
                             )}
-                            {hasStats && (
+                            {hasStats && t && (
                               <div className="absolute top-1.5 right-1.5 flex gap-0.5">
-                                {isGreat && <span className="h-1.5 w-1.5 rounded-full bg-chart-2" />}
-                                {hasTripConflict && <span className="h-1.5 w-1.5 rounded-full bg-destructive" />}
+                                <span className={cn("h-1.5 w-1.5 rounded-full", t.dot)} />
+                                {hasTripConflict && tier !== 'red' && <span className="h-1.5 w-1.5 rounded-full bg-destructive" />}
                               </div>
                             )}
                           </motion.button>
