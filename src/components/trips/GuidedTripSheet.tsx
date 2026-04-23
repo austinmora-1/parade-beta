@@ -5,9 +5,11 @@ import {
 } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X, Home,
+  Loader2, ArrowLeft, Sparkles, Check, MapPin, Plane, Search, X, Home, CalendarIcon,
 } from 'lucide-react';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter,
