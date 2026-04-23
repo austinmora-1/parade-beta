@@ -719,7 +719,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     // Use first selected slot as the primary date/slot
     setSelectedDate(selectedSlots[0].date);
     setTimeSlot(selectedSlots[0].slot);
-    setStep('activity');
+    // Activity is now optional; default to TBD so confirm step has a workable value.
+    if (!activity) setActivity(TBD_ACTIVITY_ID);
+    setStep('confirm');
   };
 
   const activityLabel = activity === TBD_ACTIVITY_ID ? TBD_LABEL : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.label || customActivities.find(a => a.id === activity)?.label || activity) : '';
@@ -824,9 +826,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   };
 
   const stepTitle = step === 'friends'
-    ? 'Who do you want to hang with?'
+    ? 'Who are we planning with?'
     : step === 'time'
-      ? (hasFriends ? `When works for ${friendNamesStr}?` : 'When are you free?')
+      ? (hasFriends ? `Top times for ${friendNamesStr}` : 'When are you free?')
       : step === 'activity'
         ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
         : 'Look good?';
@@ -843,7 +845,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           {step !== firstStep && (
             <button
               onClick={() => {
-                if (step === 'confirm') { setStep('activity'); setShowCalendar(false); }
+                if (step === 'confirm') { setStep('time'); setShowCalendar(false); }
                 else if (step === 'activity') setStep('time');
                 else if (step === 'time' && needsFriendStep) setStep('friends');
               }}
