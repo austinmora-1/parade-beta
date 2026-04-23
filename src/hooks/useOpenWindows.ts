@@ -217,63 +217,80 @@ export function useOpenWindows() {
         slotMap[slot] = free && !hasPlan;
       }
 
-      const fullBlock = findLongestBlock(slotMap);
-      if (fullBlock.length === 0) continue;
+      const allBlocks = findAllBlocks(slotMap);
+      if (allBlocks.length === 0) continue;
 
-      // Truncate the block so the displayed window is at most MAX_WINDOW_HOURS.
-      // Drop trailing slots until we're under the cap (favors the earliest
-      // start of the longest free run).
-      const block: TimeSlot[] = [];
-      let runningHours = 0;
-      for (const slot of fullBlock) {
-        const next = runningHours + SLOT_HOURS[slot];
-        if (next > MAX_WINDOW_HOURS && block.length > 0) break;
-        block.push(slot);
-        runningHours = next;
-        if (runningHours >= MAX_WINDOW_HOURS) break;
-      }
-      const hours = Math.min(blockHours(block), MAX_WINDOW_HOURS);
-      if (hours < 2) continue;
+      const socialSlots = socialSlotsForDate(date);
 
-      const { startHr } = slotTimeBounds(block[0]);
-      const rawEndHr = slotTimeBounds(block[block.length - 1]).endHr;
-      // Clamp end to start + capped hours so the label matches the duration.
-      const endHr = Math.min(rawEndHr, startHr + hours);
-
-      // Compute friend overlap on the same day
-      const overlapping: OpenWindow['overlappingFriends'] = [];
-      for (const f of connectedFriends) {
-        const row = friendAvail.find(
-          (r) => r.user_id === f.friendUserId && r.date === dateKey
-        );
-        if (!row) continue;
-        let overlapHours = 0;
-        for (const slot of block) {
-          const dbKey = SLOT_DB_KEYS.find((k) => k.slot === slot)!.key;
-          if (row[dbKey]) overlapHours += SLOT_HOURS[slot];
+      for (const fullBlock of allBlocks) {
+        // Restrict each block to social-time slots only, preserving contiguity.
+        // A block may contain non-social slots at the edges (e.g. late-morning);
+        // trim down to its social-slot subrun(s).
+        const socialSubBlocks: TimeSlot[][] = [];
+        let cur: TimeSlot[] = [];
+        for (const s of fullBlock) {
+          if (socialSlots.has(s)) {
+            cur.push(s);
+          } else {
+            if (cur.length) socialSubBlocks.push(cur);
+            cur = [];
+          }
         }
-        if (overlapHours >= 2) {
-          overlapping.push({
-            userId: f.friendUserId,
-            name: f.name,
-            avatar: f.avatar,
-            overlapHours: Math.min(overlapHours, MAX_WINDOW_HOURS),
+        if (cur.length) socialSubBlocks.push(cur);
+
+        for (const sub of socialSubBlocks) {
+          // Cap at MAX_WINDOW_HOURS, favoring the start of the social run.
+          const block: TimeSlot[] = [];
+          let runningHours = 0;
+          for (const slot of sub) {
+            const next = runningHours + SLOT_HOURS[slot];
+            if (next > MAX_WINDOW_HOURS && block.length > 0) break;
+            block.push(slot);
+            runningHours = next;
+            if (runningHours >= MAX_WINDOW_HOURS) break;
+          }
+          const hours = Math.min(blockHours(block), MAX_WINDOW_HOURS);
+          if (hours < 2) continue;
+
+          const { startHr } = slotTimeBounds(block[0]);
+          const rawEndHr = slotTimeBounds(block[block.length - 1]).endHr;
+          const endHr = Math.min(rawEndHr, startHr + hours);
+
+          // Friend overlap on this block
+          const overlapping: OpenWindow['overlappingFriends'] = [];
+          for (const f of connectedFriends) {
+            const row = friendAvail.find(
+              (r) => r.user_id === f.friendUserId && r.date === dateKey
+            );
+            if (!row) continue;
+            let overlapHours = 0;
+            for (const slot of block) {
+              const dbKey = SLOT_DB_KEYS.find((k) => k.slot === slot)!.key;
+              if (row[dbKey]) overlapHours += SLOT_HOURS[slot];
+            }
+            if (overlapHours >= 2) {
+              overlapping.push({
+                userId: f.friendUserId,
+                name: f.name,
+                avatar: f.avatar,
+                overlapHours: Math.min(overlapHours, MAX_WINDOW_HOURS),
+              });
+            }
+          }
+
+          overlapping.sort((a, b) => b.overlapHours - a.overlapHours);
+
+          result.push({
+            date,
+            dayLabel: label,
+            slots: block,
+            hours,
+            startLabel: fmtHour(startHr),
+            endLabel: fmtHour(endHr),
+            overlappingFriends: overlapping.slice(0, 6),
           });
         }
       }
-
-      // Rank by overlap hours desc
-      overlapping.sort((a, b) => b.overlapHours - a.overlapHours);
-
-      result.push({
-        date,
-        dayLabel: label,
-        slots: block,
-        hours,
-        startLabel: fmtHour(startHr),
-        endLabel: fmtHour(endHr),
-        overlappingFriends: overlapping.slice(0, 6),
-      });
     }
 
     return result;
