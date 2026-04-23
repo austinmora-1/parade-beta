@@ -855,7 +855,14 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
   return (
     <>
-    <Drawer open={open && !tripSheetOpen} onOpenChange={onOpenChange}>
+    <Drawer
+      open={open && !tripSheetOpen}
+      onOpenChange={(o) => {
+        // Don't propagate close events when we're transitioning to the trip sheet
+        if (!o && tripSheetOpen) return;
+        onOpenChange(o);
+      }}
+    >
       <DrawerContent
         className="h-[70vh] max-h-[70vh]"
         style={viewport ? { height: `${viewport.height * 0.7}px`, maxHeight: `${viewport.height * 0.7}px` } : undefined}
