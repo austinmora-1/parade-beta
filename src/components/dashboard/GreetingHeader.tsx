@@ -61,6 +61,7 @@ export function GreetingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [tripOpen, setTripOpen] = useState(false);
+  const [tripPreSelected, setTripPreSelected] = useState<Array<{ userId: string; name: string }>>([]);
   const [findPeopleOpen, setFindPeopleOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
