@@ -15,6 +15,7 @@ import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { PolishProfileCard } from '@/components/dashboard/PolishProfileCard';
+import { FreeWindowCard } from '@/components/dashboard/FreeWindowCard';
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -104,6 +105,11 @@ export default function Dashboard() {
       {/* Who's around — the social hook */}
       <motion.div variants={fadeUp}>
         <FriendVibeStrip onFriendTap={handleAddFriend} />
+      </motion.div>
+
+      {/* Free-weekend / open-window surface */}
+      <motion.div variants={fadeUp}>
+        <FreeWindowCard />
       </motion.div>
 
       {/* Quick Plan drop zone */}
