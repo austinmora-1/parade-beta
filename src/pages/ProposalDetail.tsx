@@ -150,17 +150,18 @@ export default function ProposalDetail() {
     }
   };
 
-  const handleLockIn = async () => {
-    if (!isCreator || !winningDate) return;
+  const handleLockIn = async (dateOverride?: DateRow) => {
+    const target = dateOverride || winningDate;
+    if (!isCreator || !target) return;
     setLockingIn(true);
     try {
-      // Create the confirmed trip from the winning date
+      // Create the confirmed trip from the chosen date
       const { error: tripErr } = await supabase.from('trips').insert({
         user_id: user.id,
         name: proposal.name || null,
         location: proposal.destination,
-        start_date: winningDate.start_date,
-        end_date: winningDate.end_date,
+        start_date: target.start_date,
+        end_date: target.end_date,
         available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
         priority_friend_ids: participants.filter(p => p.user_id !== user.id).map(p => p.user_id),
         proposal_id: proposal.id,
@@ -180,7 +181,7 @@ export default function ProposalDetail() {
           body: {
             user_ids: otherIds,
             title: '🎉 Trip locked in!',
-            body: `${headerTitle} — ${format(new Date(winningDate.start_date + 'T00:00:00'), 'MMM d')}–${format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}`,
+            body: `${headerTitle} — ${format(new Date(target.start_date + 'T00:00:00'), 'MMM d')}–${format(new Date(target.end_date + 'T00:00:00'), 'MMM d')}`,
             url: '/trips',
           },
         }).catch(() => {});
