@@ -550,6 +550,22 @@ export default function Share() {
           </div>
 
 
+          {viewMode === 'pills' ? (
+            <AvailabilityPills
+              days={weekDays}
+              getSlotStatus={getSlotStatus}
+              isMySlotFree={user ? isMySlotFree : undefined}
+              plans={plans}
+              dayMeta={Object.fromEntries(
+                availability.map((a) => [
+                  a.date,
+                  { isAway: a.location_status === 'away', trip_location: a.trip_location },
+                ]),
+              )}
+              signedIn={!!user}
+              onSlotClick={handleSlotClick}
+            />
+          ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
             {weekDays.map((day) => {
               const key = day.toISOString();
