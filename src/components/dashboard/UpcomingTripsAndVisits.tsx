@@ -146,7 +146,21 @@ export function UpcomingTripsAndVisits() {
     })();
   }, [user?.id]);
 
-  const totalCount = confirmedTrips.length + tripProposals.length;
+  // Filter out trips/proposals to the user's own home metro — these
+  // shouldn't surface as "upcoming trips" since the user is already
+  // there. Visits (where the user is hosting from home) are kept.
+  const visibleTrips = useMemo(
+    () => confirmedTrips.filter((t) => !isHomeCity(t.location)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [confirmedTrips, homeCities],
+  );
+  const visibleProposals = useMemo(
+    () => tripProposals.filter((p) => p.proposalType === 'visit' || !isHomeCity(p.destination)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tripProposals, homeCities],
+  );
+
+  const totalCount = visibleTrips.length + visibleProposals.length;
 
   if (totalCount === 0) return null;
 
