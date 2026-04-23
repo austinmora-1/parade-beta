@@ -630,7 +630,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
           {step !== 'type' && (
             <button
               onClick={() => {
-                if (step === 'confirm') setStep('weekends');
+                if (step === 'confirm') {
+                  // In customMode there's no weekends step — go straight back to months
+                  setStep(customMode ? 'months' : 'weekends');
+                  if (customMode) setSelectedWeekends([]);
+                }
                 else if (step === 'weekends') { setStep('months'); setSelectedWeekends([]); }
                 else if (step === 'months') setStep('friends');
                 else if (step === 'friends') setStep('type');
@@ -1095,19 +1099,34 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                 exit={{ opacity: 0, scale: 0.97 }}
                 className="space-y-4"
               >
-                {/* Destination input */}
+                {/* Trip name (optional) */}
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
+                    Name this {isVisit ? 'visit' : 'trip'} (optional)
+                  </label>
+                  <Input
+                    value={tripName}
+                    onChange={(e) => setTripName(e.target.value)}
+                    placeholder={isVisit ? 'e.g. Holiday weekend' : 'e.g. Bachelorette, Ski week'}
+                    className="h-11 text-sm"
+                    maxLength={60}
+                  />
+                </div>
+
+                {/* Destination input — full width, larger tap target */}
                 {proposalType === 'trip' ? (
                   <div>
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
                       Destination (optional)
                     </label>
-                    <CityAutocomplete
-                      value={destination}
-                      onChange={setDestination}
-                      placeholder="Where to?"
-                      compact
-                      types="(cities)"
-                    />
+                    <div className="rounded-lg border border-border focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                      <CityAutocomplete
+                        value={destination}
+                        onChange={setDestination}
+                        placeholder="Tap to search for a city…"
+                        types="(cities)"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -1115,18 +1134,19 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                       {hostMode === 'hosting' ? 'Hosting in your city' : "Friend's city"}
                     </label>
                     {hostMode === 'hosting' && destination ? (
-                      <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2">
-                        <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-3 min-h-[44px]">
+                        <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span className="text-sm">{destination}</span>
                       </div>
                     ) : (
-                      <CityAutocomplete
-                        value={destination}
-                        onChange={setDestination}
-                        placeholder="Search for a city..."
-                        compact
-                        types="(cities)"
-                      />
+                      <div className="rounded-lg border border-border focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                        <CityAutocomplete
+                          value={destination}
+                          onChange={setDestination}
+                          placeholder="Tap to search for a city…"
+                          types="(cities)"
+                        />
+                      </div>
                     )}
                   </div>
                 )}
@@ -1137,11 +1157,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                     <span className="text-2xl">{isVisit ? '🏠' : '✈️'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">
-                        {isVisit
+                        {tripName.trim() || (isVisit
                           ? (hostMode === 'hosting'
                             ? `Hosting in ${destination || 'your city'}`
                             : `Visit to ${destination || "friend's city"}`)
-                          : (destination ? `Trip to ${destination}` : isSoloTrip ? 'Solo Trip' : 'Group Trip')}
+                          : (destination ? `Trip to ${destination}` : isSoloTrip ? 'Solo Trip' : 'Group Trip'))}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {selectedWeekends.length} date option{selectedWeekends.length > 1 ? 's' : ''}
@@ -1224,11 +1244,34 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
           </DrawerFooter>
         )}
 
-        {step === 'months' && selectedMonths.length > 0 && (
+        {step === 'months' && !customMode && selectedMonths.length > 0 && (
           <DrawerFooter className="pt-2">
             <Button onClick={() => setStep('weekends')} className="w-full gap-2">
               <Sparkles className="h-4 w-4" />
               Find best weekends
+            </Button>
+          </DrawerFooter>
+        )}
+
+        {step === 'months' && customMode && customStartDate && customEndDate && (
+          <DrawerFooter className="pt-2">
+            <Button
+              onClick={() => {
+                // Synthesize a single WeekendOption-like entry from custom dates
+                setSelectedWeekends([{
+                  fridayDate: customStartDate,
+                  sundayDate: customEndDate,
+                  score: 0,
+                  availPct: 100,
+                  hasConflict: false,
+                  perParticipant: [],
+                }]);
+                setStep('confirm');
+              }}
+              className="w-full gap-2"
+            >
+              <Check className="h-4 w-4" />
+              Continue
             </Button>
           </DrawerFooter>
         )}
