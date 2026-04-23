@@ -50,24 +50,8 @@ export function SmartPrimaryCTA() {
       };
     }
 
-    // 2. Best open window with friend overlap
-    const bestOverlap = [...windows]
-      .filter((w) => w.overlappingFriends.length > 0)
-      .sort((a, b) => {
-        if (b.overlappingFriends.length !== a.overlappingFriends.length) {
-          return b.overlappingFriends.length - a.overlappingFriends.length;
-        }
-        return a.date.getTime() - b.date.getTime();
-      })[0];
-    if (bestOverlap) {
-      const fc = bestOverlap.overlappingFriends.length;
-      return {
-        kind: 'send-open-invite',
-        subtitle: `${bestOverlap.dayLabel} ${bestOverlap.startLabel}–${bestOverlap.endLabel} · ${fc} free`,
-      };
-    }
-
-    // 3. Open windows w/o overlap OR no plans in the next 7 days
+    // 2. Open windows OR no plans in the next 7 days
+    // (Friend-overlap "Send open invite" state removed — covered by Open Windows section)
     const sevenDaysOut = new Date();
     sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
     const upcomingThisWeek = plans.filter(
