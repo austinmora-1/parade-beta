@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
@@ -8,12 +8,14 @@ const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDia
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 import { WeeklyPlanSwiper } from '@/components/plans/WeeklyPlanSwiper';
 import { useDisplayPlans } from '@/hooks/useDisplayPlans';
+import { isCalendarSourced } from '@/lib/planSource';
 
 export default function Availability() {
   
@@ -33,6 +35,16 @@ export default function Availability() {
   const [mergePreselected, setMergePreselected] = useState<string[] | undefined>(undefined);
   const [sharePlanId, setSharePlanId] = useState<string | null>(null);
   const [sharePlanTitle, setSharePlanTitle] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'parade' | 'calendar'>('all');
+
+  const filteredPlans = useMemo(() => {
+    if (sourceFilter === 'all') return plans;
+    if (sourceFilter === 'calendar') return plans.filter(isCalendarSourced);
+    return plans.filter((p) => !isCalendarSourced(p));
+  }, [plans, sourceFilter]);
+
+  const calendarCount = useMemo(() => plans.filter(isCalendarSourced).length, [plans]);
+  const hasAnyCalendar = calendarCount > 0;
 
   const openNewPlan = () => {
     setGuidedPlanOpen(true);
@@ -129,12 +141,25 @@ export default function Availability() {
               </Button>
             }
           />
+          {hasAnyCalendar && (
+            <ToggleGroup
+              type="single"
+              size="sm"
+              value={sourceFilter}
+              onValueChange={(v) => v && setSourceFilter(v as 'all' | 'parade' | 'calendar')}
+              className="ml-auto"
+            >
+              <ToggleGroupItem value="all" className="text-xs h-8 px-2.5">All</ToggleGroupItem>
+              <ToggleGroupItem value="parade" className="text-xs h-8 px-2.5">Parade</ToggleGroupItem>
+              <ToggleGroupItem value="calendar" className="text-xs h-8 px-2.5">Calendar</ToggleGroupItem>
+            </ToggleGroup>
+          )}
         </div>
       </div>
 
       {/* Weekly card swiper */}
       <WeeklyPlanSwiper
-        plans={plans}
+        plans={filteredPlans}
         weekOffset={weekOffset}
         onWeekChange={setWeekOffset}
         onEditPlan={handleEditPlan}
