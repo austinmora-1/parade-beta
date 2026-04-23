@@ -103,12 +103,17 @@ export default function Dashboard() {
         <VibeAndIntentionsCard />
       </motion.div>
 
+      {/* State-aware primary CTA — picks open-invite, today's plan, etc. */}
+      <motion.div variants={fadeUp}>
+        <SmartPrimaryCTA />
+      </motion.div>
+
       {/* Who's around — the social hook */}
       <motion.div variants={fadeUp}>
         <FriendVibeStrip onFriendTap={handleAddFriend} />
       </motion.div>
 
-      {/* Free-weekend / open-window surface */}
+      {/* Free-weekend / open-window surface (multiple options) */}
       <motion.div variants={fadeUp}>
         <FreeWindowCard />
       </motion.div>
