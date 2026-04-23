@@ -160,7 +160,7 @@ export function OpenInviteSheet({ open, onOpenChange }: OpenInviteSheetProps) {
                       return (
                         <div key={vibe}>
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-0.5">
-                            {VIBE_CONFIG[vibe].emoji} {VIBE_CONFIG[vibe].label}
+                            {VIBE_CONFIG[vibe].label}
                           </p>
                           <div className="flex flex-wrap gap-1.5">
                             {acts.map((a) => {
@@ -177,7 +177,7 @@ export function OpenInviteSheet({ open, onOpenChange }: OpenInviteSheetProps) {
                                       : 'border-border hover:border-primary/30 hover:bg-primary/5'
                                   )}
                                 >
-                                  <span>{cfg.emoji}</span>
+                                  <span>{cfg.icon}</span>
                                   {cfg.label}
                                 </button>
                               );
