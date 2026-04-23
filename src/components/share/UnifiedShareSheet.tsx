@@ -370,7 +370,7 @@ function OpenInviteTab({
       start_time: plan.startTime ?? null,
       end_time: plan.endTime ?? null,
       duration: plan.duration ?? 60,
-      location: plan.location ?? null,
+      location: plan.location?.name ?? null,
       notes: notes || null,
       audience_type: 'all_friends',
     });
