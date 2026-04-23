@@ -24,6 +24,10 @@ const SLOT_HOURS: Record<TimeSlot, number> = {
   'late-night': 4,
 };
 
+// Cap any window block at this many hours (keeps surface focused on
+// short, actionable open windows rather than full-day chunks).
+const MAX_WINDOW_HOURS = 3;
+
 const SLOT_DB_KEYS: { key: keyof FriendAvailRow; slot: TimeSlot }[] = [
   { key: 'early_morning', slot: 'early-morning' },
   { key: 'late_morning', slot: 'late-morning' },
@@ -196,12 +200,28 @@ export function useOpenWindows() {
         slotMap[slot] = free && !hasPlan;
       }
 
-      const block = findLongestBlock(slotMap);
-      const hours = blockHours(block);
-      if (hours < 4) continue;
+      const fullBlock = findLongestBlock(slotMap);
+      if (fullBlock.length === 0) continue;
+
+      // Truncate the block so the displayed window is at most MAX_WINDOW_HOURS.
+      // Drop trailing slots until we're under the cap (favors the earliest
+      // start of the longest free run).
+      const block: TimeSlot[] = [];
+      let runningHours = 0;
+      for (const slot of fullBlock) {
+        const next = runningHours + SLOT_HOURS[slot];
+        if (next > MAX_WINDOW_HOURS && block.length > 0) break;
+        block.push(slot);
+        runningHours = next;
+        if (runningHours >= MAX_WINDOW_HOURS) break;
+      }
+      const hours = Math.min(blockHours(block), MAX_WINDOW_HOURS);
+      if (hours < 2) continue;
 
       const { startHr } = slotTimeBounds(block[0]);
-      const { endHr } = slotTimeBounds(block[block.length - 1]);
+      const rawEndHr = slotTimeBounds(block[block.length - 1]).endHr;
+      // Clamp end to start + capped hours so the label matches the duration.
+      const endHr = Math.min(rawEndHr, startHr + hours);
 
       // Compute friend overlap on the same day
       const overlapping: OpenWindow['overlappingFriends'] = [];
@@ -220,7 +240,7 @@ export function useOpenWindows() {
             userId: f.friendUserId,
             name: f.name,
             avatar: f.avatar,
-            overlapHours,
+            overlapHours: Math.min(overlapHours, MAX_WINDOW_HOURS),
           });
         }
       }
