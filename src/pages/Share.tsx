@@ -105,6 +105,7 @@ export default function Share() {
   const maxWeekOffset = viewParam === '3m' ? 12 : viewParam === '1m' ? 4 : 0;
   const [weekOffset, setWeekOffset] = useState(0);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'pills' | 'grid'>('pills');
 
   const toggleDay = (key: string) => {
     setExpandedDays(prev => {
