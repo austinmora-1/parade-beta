@@ -141,12 +141,25 @@ export default function Availability() {
               </Button>
             }
           />
+          {hasAnyCalendar && (
+            <ToggleGroup
+              type="single"
+              size="sm"
+              value={sourceFilter}
+              onValueChange={(v) => v && setSourceFilter(v as 'all' | 'parade' | 'calendar')}
+              className="ml-auto"
+            >
+              <ToggleGroupItem value="all" className="text-xs h-8 px-2.5">All</ToggleGroupItem>
+              <ToggleGroupItem value="parade" className="text-xs h-8 px-2.5">Parade</ToggleGroupItem>
+              <ToggleGroupItem value="calendar" className="text-xs h-8 px-2.5">Calendar</ToggleGroupItem>
+            </ToggleGroup>
+          )}
         </div>
       </div>
 
       {/* Weekly card swiper */}
       <WeeklyPlanSwiper
-        plans={plans}
+        plans={filteredPlans}
         weekOffset={weekOffset}
         onWeekChange={setWeekOffset}
         onEditPlan={handleEditPlan}
