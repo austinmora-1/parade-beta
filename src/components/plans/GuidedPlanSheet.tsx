@@ -1247,6 +1247,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         {hasFriends ? `Proposed plan with ${friendNamesStr}` : 'Solo plan — invite friends later'}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setStep('activity')}
+                      className="text-[11px] font-medium text-primary hover:underline shrink-0"
+                    >
+                      Edit
+                    </button>
                   </div>
 
                   <div className="h-px bg-border" />
