@@ -55,6 +55,7 @@ export default function ProposalDetail() {
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [lockingIn, setLockingIn] = useState(false);
+  const [selectedLockDateId, setSelectedLockDateId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
