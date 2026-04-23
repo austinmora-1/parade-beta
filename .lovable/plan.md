@@ -1,64 +1,75 @@
 
-## UX Redesign Plan — Remaining Work Audit
 
-Here's the status of every task in `.lovable/plan.md`, based on what's landed in the codebase so far.
+# Refine Find People & Find in Place flows
 
-### Phase 1 · Foundations & quick wins — ✅ Complete
-- 1.1 Landing rebuild — done
-- 1.2 Defer push + dark mode prompts — done
-- 1.3 Default light theme — done
-- 1.4 Time-first GuidedPlanSheet — done
-- 1.5 Retire CreatePlanDialog as creation path — done
-- 1.6 Voice pass on toasts/empty states — done
+Extend the two flows so users can anchor an open invite to **something they've already created** rather than always describing a new plan/trip from scratch.
 
-### Phase 1.5 · Onboarding stickiness — ✅ Complete
-- 1.5.1 Apple Calendar via Nylas — done
-- 1.5.2 Calendar import visual differentiation — done (just polished)
-- 1.5.3 Layover-as-trip filter — done
+---
 
-### Phase 2 · Onboarding rebuild — ✅ Complete
-- 2.1 Relax profile NOT NULL — done (no migration needed; already nullable)
-- 2.2 4-step OnboardingWizard — done
-- 2.3 "First window" aha card — done
-- 2.4 Invite-to-unlock + notify-inviter — done
-- 2.5 Gate EllyWalkthrough to empty dashboards — done
+## Flow 02 · Find people — add "existing plan" entry
 
-### Phase 3 · Open-invite primitive + trip/visit split — ✅ Complete
-- 3.1 open_invites schema + RLS — done
-- 3.2 OpenInviteSheet + useOpenInvites — done
-- 3.3 on-open-invite edge function — done
-- 3.4 Split GuidedTripSheet → TripSheet + VisitSheet (+ 5 bug fixes) — done
-- 3.5 Plan-first SMS invites + push routing — done
-- 3.6 UnifiedShareSheet — done
-
-### Phase 4 · Free-weekend surface & polish — ⏳ Not started
-- **4.1** Free-weekend dashboard surface: `useOpenWindows` hook + `FreeWindowCard` (4+ hr blocks today/tomorrow/weekend, friends ranked by overlap then recency, empty state opens OpenInviteSheet)
-- **4.2** Replace availability density grid with `AvailabilityPills` (open-window pills grouped by day, month default; opt-in to old grid for power users)
-- **4.3** State-aware primary CTA on dashboard for new primitives (open-invite + free-weekend)
-- **4.4** Context-rich `/plan-invite` landing page for non-user arrivals
-
-### Phase 5 · Native widget & final polish — ✅ Complete (Lovable scope)
-- **5.1** iOS Home Screen widget — out of scope for Lovable (native iOS epic)
-- **5.2** Default sharing window: 3 months instead of 1 week — done
-- **5.3** Coral budget audit — done (avatar fallbacks, passive count badges, idle stat tiles toned to muted; coral reserved for active CTAs, selected states, and live moments)
-
-### Recommended sequence
-
-1. **4.1** Free-weekend surface (highest user-value, depends on already-shipped OpenInviteSheet)
-2. **4.3** State-aware dashboard CTA (small, complements 4.1)
-3. **4.4** /plan-invite landing page (conversion lift for invite traffic)
-4. **4.2** AvailabilityPills (bigger refactor; ship behind opt-out)
-5. **5.2** Default 3-month sharing window (one-line config change)
-6. **5.3** Coral budget audit (visual sweep across components)
-
-5.1 (native iOS widget) is outside what Lovable can build — flagging for the native team when ready.
-
-### What's left at a glance
+`FindPeopleSheet` (the new sheet from the prior plan) gains a **Step 0: anchor**:
 
 ```text
-Phase 4: 4 tasks (4.1, 4.2, 4.3, 4.4)
-Phase 5: 2 tasks shippable in Lovable (5.2, 5.3) + 1 native (5.1)
-Total remaining: 6 Lovable tasks
+What are you trying to fill?
+( ) An existing plan          ← shows list of upcoming own plans w/o full RSVPs
+( ) Something new             ← original "describe the plan" path
 ```
 
-Reply with which task to start (or "proceed" to begin with **4.1 Free-weekend surface**).
+**Existing plan branch**
+- List source: `plannerStore.plans` filtered to `user_id === me`, future-dated, status ≠ cancelled.
+- Each row: title, date, time slot, current participant avatars + count.
+- Selecting one **prefills** title/activity/date/time_slot/location/notes from the plan and skips Step 1 (Describe). User goes straight to **audience → preview**.
+- On send, the open-invite is created with `plan_id` linking it to the existing plan; when someone claims, they're added as a `plan_participants` row on that plan instead of spawning a new plan.
+
+**New branch**: unchanged — the original describe → audience → preview path.
+
+### Backend extension
+- Add nullable `plan_id uuid references plans(id) on delete cascade` to `open_invites` (migration).
+- Update `on-open-invite` edge function: if `plan_id` is set, insert into `plan_participants` for that plan instead of creating a new plan. Keep all existing notification logic.
+- RLS: existing open-invite policies already scope by `user_id`; add a check that `plan_id`'s owner = invite creator.
+
+---
+
+## Flow 03 · Find in place — add "existing trip" entry
+
+`GuidedTripSheet` already has trip vs visit branching. Add a **third entry mode** when launched from the FAB:
+
+```text
+Find in place
+[ Plan a new trip ]   [ Plan a new visit ]   [ Use an existing trip ▾ ]
+```
+
+**Existing trip branch**
+- Pulled from `trips` table where `user_id = me` and `end_date >= today` (re-use existing `useTrips`-style query in `TripsList`).
+- Selecting a trip pre-fills destination + date range and **opens `FindPeopleSheet` directly**, with:
+  - location prefilled to `trip.location`
+  - date defaulting to `trip.start_date` (user can change to any day in the trip range — add a small date picker scoped to `[start_date, end_date]`)
+  - audience step preselected to "Friends in {city} during this trip" (re-use the location-aware availability filter; falls back to all friends if none match).
+- The resulting open-invite carries `trip_id` so it appears on the trip detail page as "Looking for company".
+
+### Backend extension
+- Add nullable `trip_id uuid references trips(id) on delete cascade` to `open_invites` (same migration).
+- `on-open-invite`: when `trip_id` is set and someone RSVPs, create a plan attached to that trip and copy the responder into `trip_participants` if not already there.
+- Surface invites with `trip_id` on `TripDetail` page in a new compact section.
+
+---
+
+## Files touched
+
+**Edited**
+- `src/components/dashboard/GreetingHeader.tsx` — pass `mode: 'find-people'` / `mode: 'find-in-place'` so the sheets know to show the anchor step.
+- `src/components/plans/FindPeopleSheet.tsx` *(new from prior plan)* — add Step 0 anchor selector + existing-plan list + prefill logic.
+- `src/components/trips/GuidedTripSheet.tsx` — add "Use an existing trip" entry that pivots into `FindPeopleSheet` with prefilled trip context.
+- `src/pages/TripDetail.tsx` — render a "Open invites for this trip" strip when `trip_id`-linked invites exist.
+- `supabase/functions/on-open-invite/index.ts` — branch on `plan_id` / `trip_id` presence.
+
+**New**
+- DB migration: `ALTER TABLE open_invites ADD COLUMN plan_id uuid …, ADD COLUMN trip_id uuid …;` + supporting indexes + RLS tweak.
+- `src/components/plans/findpeople/AnchorStep.tsx` — small subcomponent listing existing plans / "something new".
+- `src/components/trips/findinplace/ExistingTripPicker.tsx` — list of upcoming trips.
+
+## Out of scope
+- Editing the underlying plan/trip from inside these flows (still happens on the detail page).
+- Cross-user trip anchoring (only your own trips for now).
+
