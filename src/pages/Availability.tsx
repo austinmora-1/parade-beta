@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
@@ -8,12 +8,14 @@ const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDia
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { RefreshCw, Loader2, Plus } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 import { WeeklyPlanSwiper } from '@/components/plans/WeeklyPlanSwiper';
 import { useDisplayPlans } from '@/hooks/useDisplayPlans';
+import { isCalendarSourced } from '@/lib/planSource';
 
 export default function Availability() {
   
