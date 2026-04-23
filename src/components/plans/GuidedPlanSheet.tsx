@@ -1207,7 +1207,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         {hasFriends && friendsHaveDifferentHome && (
                           <Button
                             size="sm"
-                            onClick={() => setTripSheetOpen(true)}
+                            onClick={handleOpenTripSheet}
                             className="mt-2 gap-1.5"
                           >
                             <Plane className="h-3.5 w-3.5" />
