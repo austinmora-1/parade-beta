@@ -7,13 +7,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { getCompactPlanTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock, CalendarCheck } from 'lucide-react';
+import { MapPin, Users, Clock, CalendarCheck, CalendarDays } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { getCurrentTimeInTimezone, getTimezoneAbbreviation } from '@/lib/timezone';
 import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
+import { isCalendarSourced, getCalendarSourceLabel } from '@/lib/planSource';
 
 function formatTime12(time: string): string {
   const [h, m] = time.split(':').map(Number);
