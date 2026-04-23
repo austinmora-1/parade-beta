@@ -57,9 +57,10 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
       className={cn(
         "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col justify-between overflow-hidden",
         showTentativeStyle && "border-dashed border-muted-foreground/40",
+        fromCalendar && !showTentativeStyle && !isLive && "bg-muted/40 border-muted-foreground/15 shadow-none ring-0",
         isPast && !showTentativeStyle && "bg-muted text-muted-foreground border-muted-foreground/20 shadow-none ring-0",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
-        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && !isPast && "border-border"
+        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && !isPast && !fromCalendar && "border-border"
       )}
     >
       {isLive && !showTentativeStyle && (
