@@ -5,7 +5,7 @@ import {
   CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp, Plane,
 } from 'lucide-react';
 
-const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
+
 import { cn } from '@/lib/utils';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter,
