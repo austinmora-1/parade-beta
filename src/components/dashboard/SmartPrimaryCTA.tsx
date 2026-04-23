@@ -1,43 +1,34 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { isToday, isSameDay } from 'date-fns';
-import { Sparkles, CalendarPlus, ArrowRight, Users } from 'lucide-react';
+import { isToday } from 'date-fns';
+import { CalendarPlus, ArrowRight } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { useOpenWindows } from '@/hooks/useOpenWindows';
-import { useOpenInvites } from '@/hooks/useOpenInvites';
 import { Button } from '@/components/ui/button';
-import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
 import { GuidedPlanSheet } from '@/components/plans/GuidedPlanSheet';
 import { cn } from '@/lib/utils';
 
 type CtaState =
   | { kind: 'open-today'; planId: string; title: string }
-  | { kind: 'drop-open-invite'; subtitle: string }
   | { kind: 'make-plan'; subtitle: string };
 
 /**
  * State-aware primary CTA for the dashboard.
  *
- * Picks one of four actions, in priority order:
- *  1. There's a confirmed plan today → "Open today's plan"
- *  2. Open windows w/ friend overlap → "Send open invite"
- *  3. Open windows but no overlap, OR no upcoming plans this week →
- *     "Drop an open invite"
- *  4. Fallback → "Make a plan"
+ * Priority:
+ *  1. Confirmed plan today → "Open today's plan"
+ *  2. Fallback → "Make a plan"
+ *
+ * Note: Open-window suggestions are handled by the dedicated
+ * Open Windows section to avoid duplication.
  */
 export function SmartPrimaryCTA() {
   const navigate = useNavigate();
   const { plans } = usePlannerStore();
-  const { windows } = useOpenWindows();
-  const { mine: myOpenInvites } = useOpenInvites();
-  const [openInviteOpen, setOpenInviteOpen] = useState(false);
   const [makePlanOpen, setMakePlanOpen] = useState(false);
 
   const state = useMemo<CtaState>(() => {
     const now = new Date();
-
-    // 1. Confirmed plan today (any status not cancelled)
     const todayPlan = plans.find(
       (p) => isToday(p.date) && p.status !== 'cancelled' && p.date >= now
     );
@@ -48,92 +39,38 @@ export function SmartPrimaryCTA() {
         title: todayPlan.title || todayPlan.activity || 'Today',
       };
     }
-
-    // 2. Open windows OR no plans in the next 7 days
-    // (Friend-overlap "Send open invite" state removed — covered by Open Windows section)
-    const sevenDaysOut = new Date();
-    sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
-    const upcomingThisWeek = plans.filter(
-      (p) => p.date >= now && p.date <= sevenDaysOut && p.status !== 'cancelled'
-    );
-    const hasActiveOpenInvite = myOpenInvites.some(
-      (i) => i.status === 'open' && new Date(i.expires_at) > now
-    );
-
-    if (windows.length > 0 && !hasActiveOpenInvite) {
-      const w = windows[0];
-      return {
-        kind: 'drop-open-invite',
-        subtitle: `${w.dayLabel} ${w.startLabel}–${w.endLabel} is open`,
-      };
-    }
-    if (upcomingThisWeek.length === 0 && !hasActiveOpenInvite) {
-      return {
-        kind: 'drop-open-invite',
-        subtitle: 'No plans yet this week',
-      };
-    }
-
-    // 4. Fallback
-    return {
-      kind: 'make-plan',
-      subtitle: hasActiveOpenInvite
-        ? "Invite's out — start something new?"
-        : 'Get something on the books',
-    };
-  }, [plans, windows, myOpenInvites]);
+    return { kind: 'make-plan', subtitle: 'Get something on the books' };
+  }, [plans]);
 
   const handleClick = () => {
-    switch (state.kind) {
-      case 'open-today':
-        navigate(`/plan/${state.planId}`);
-        return;
-      case 'drop-open-invite':
-        setOpenInviteOpen(true);
-        return;
-      case 'make-plan':
-        setMakePlanOpen(true);
-        return;
+    if (state.kind === 'open-today') {
+      navigate(`/plan/${state.planId}`);
+    } else {
+      setMakePlanOpen(true);
     }
   };
 
-  const config = (() => {
-    switch (state.kind) {
-      case 'open-today':
-        return {
-          icon: ArrowRight,
-          label: "Open today's plan",
-          accent: 'text-primary',
-          ring: 'ring-primary/30',
-          gradient: 'from-primary/10 via-card to-card',
-          iconBg: 'bg-primary/15 text-primary',
-          eyebrow: 'Happening today',
-          eyebrowText: state.title,
-        };
-      case 'drop-open-invite':
-        return {
-          icon: Sparkles,
-          label: 'Drop an open invite',
-          accent: 'text-secondary-foreground',
-          ring: 'ring-secondary/30',
-          gradient: 'from-secondary/10 via-card to-card',
-          iconBg: 'bg-secondary/20 text-secondary-foreground',
-          eyebrow: 'Open window',
-          eyebrowText: state.subtitle,
-        };
-      case 'make-plan':
-        return {
-          icon: CalendarPlus,
-          label: 'Make a plan',
-          accent: 'text-foreground',
-          ring: 'ring-border',
-          gradient: 'from-muted/40 via-card to-card',
-          iconBg: 'bg-muted text-foreground',
-          eyebrow: 'Quick start',
-          eyebrowText: state.subtitle,
-        };
-    }
-  })();
+  const config = state.kind === 'open-today'
+    ? {
+        icon: ArrowRight,
+        label: "Open today's plan",
+        accent: 'text-primary',
+        ring: 'ring-primary/30',
+        gradient: 'from-primary/10 via-card to-card',
+        iconBg: 'bg-primary/15 text-primary',
+        eyebrow: 'Happening today',
+        eyebrowText: state.title,
+      }
+    : {
+        icon: CalendarPlus,
+        label: 'Make a plan',
+        accent: 'text-foreground',
+        ring: 'ring-border',
+        gradient: 'from-muted/40 via-card to-card',
+        iconBg: 'bg-muted text-foreground',
+        eyebrow: 'Quick start',
+        eyebrowText: state.subtitle,
+      };
 
   const Icon = config.icon;
 
@@ -169,7 +106,6 @@ export function SmartPrimaryCTA() {
         </div>
       </motion.button>
 
-      <OpenInviteSheet open={openInviteOpen} onOpenChange={setOpenInviteOpen} />
       {makePlanOpen && (
         <GuidedPlanSheet
           open={makePlanOpen}
@@ -181,6 +117,5 @@ export function SmartPrimaryCTA() {
   );
 }
 
-// Silence unused-import warnings for tree-shake-friendly future use
-void Users;
-void isSameDay;
+// Silence unused-import warning for future use
+void Button;
