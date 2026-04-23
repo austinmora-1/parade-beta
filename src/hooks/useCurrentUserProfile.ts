@@ -58,7 +58,7 @@ export function useCurrentUserProfile() {
       setIsLoading(true);
       const { data } = await supabase
         .from('profiles')
-        .select('display_name, first_name, last_name, avatar_url, location_status, timezone, home_address')
+        .select('display_name, first_name, last_name, avatar_url, location_status, timezone, home_address, neighborhood')
         .eq('user_id', session.user.id)
         .single();
 
@@ -72,7 +72,7 @@ export function useCurrentUserProfile() {
   const updateProfile = useCallback((updates: Partial<CurrentUserProfile>) => {
     const newProfile = globalProfile 
       ? { ...globalProfile, ...updates }
-      : { display_name: null, first_name: null, last_name: null, avatar_url: null, location_status: null, timezone: null, home_address: null, ...updates };
+      : { display_name: null, first_name: null, last_name: null, avatar_url: null, location_status: null, timezone: null, home_address: null, neighborhood: null, ...updates };
     notifyListeners(newProfile);
   }, []);
 
@@ -82,7 +82,7 @@ export function useCurrentUserProfile() {
 
     const { data } = await supabase
       .from('profiles')
-        .select('display_name, first_name, last_name, avatar_url, location_status, timezone, home_address')
+        .select('display_name, first_name, last_name, avatar_url, location_status, timezone, home_address, neighborhood')
       .eq('user_id', session.user.id)
       .single();
 
