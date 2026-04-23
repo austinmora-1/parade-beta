@@ -611,7 +611,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
             className="h-10 text-sm"
           />
           )}
-          {/* ── Activity Dropdown ── */}
+          {/* ── Activity Dropdown (hidden in edit mode — moved to More options) ── */}
+          {!isEditMode && (
           <div className="space-y-1">
             <Label className="text-xs">Activity</Label>
             <Select
@@ -691,6 +692,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
               </SelectContent>
             </Select>
           </div>
+          )}
 
           {/* ── Date (Calendar Popover) ── */}
           {!isParticipantEditor && (
