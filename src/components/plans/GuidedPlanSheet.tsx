@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp, Plane,
 } from 'lucide-react';
+
+const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
 import { cn } from '@/lib/utils';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter,
