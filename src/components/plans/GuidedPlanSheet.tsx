@@ -1356,7 +1356,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 ? 'Create Plan →'
                 : selectedSlots.length > 1
                   ? `Send ${selectedSlots.length} Time Options →`
-                  : 'Send Plan Suggestion →'}
+                  : `Send to ${friendNamesStr} →`}
             </Button>
           </DrawerFooter>
         )}
