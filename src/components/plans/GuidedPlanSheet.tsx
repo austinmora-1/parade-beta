@@ -1404,10 +1404,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       <Suspense fallback={null}>
         <GuidedTripSheet
           open={tripSheetOpen}
-          onOpenChange={(o) => {
-            setTripSheetOpen(o);
-            if (!o) onOpenChange(false);
-          }}
+          onOpenChange={(o) => setTripSheetOpen(o)}
           preSelectedFriends={effectiveFriends}
         />
       </Suspense>
