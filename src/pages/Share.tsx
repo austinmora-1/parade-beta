@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { AvailabilityPills } from '@/components/share/AvailabilityPills';
 
 interface ProfileData {
   user_id: string | null;
@@ -104,6 +105,7 @@ export default function Share() {
   const maxWeekOffset = viewParam === '3m' ? 12 : viewParam === '1m' ? 4 : 0;
   const [weekOffset, setWeekOffset] = useState(0);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'pills' | 'grid'>('pills');
 
   const toggleDay = (key: string) => {
     setExpandedDays(prev => {
@@ -511,36 +513,59 @@ export default function Share() {
             )}
           </div>
 
-          {user ? (
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-availability-available" />
-                  <span>Both free</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-availability-available/40" />
-                  <span>Only {profile?.display_name?.split(' ')[0] || 'them'} free</span>
-                </div>
-              </div>
-              <span className="italic">Tap to request</span>
+          {/* Legend + view toggle */}
+          <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground mb-2">
+            <div className="flex items-center gap-3 min-w-0">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-availability-available" />
+                    <span>Both free</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-availability-available/40" />
+                    <span className="truncate">Only {profile?.display_name?.split(' ')[0] || 'them'} free</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="h-1 w-4 rounded-full bg-availability-available/60" />
+                    <span>Free</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="h-1 w-4 rounded-full bg-muted-foreground/20" />
+                    <span>Busy</span>
+                  </div>
+                </>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <span className="h-1 w-4 rounded-full bg-availability-available/60" />
-                  <span>Free</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="h-1 w-4 rounded-full bg-muted-foreground/20" />
-                  <span>Busy</span>
-                </div>
-              </div>
-              <span className="italic">Tap to request</span>
-            </div>
-          )}
+            <button
+              type="button"
+              onClick={() => setViewMode(viewMode === 'pills' ? 'grid' : 'pills')}
+              className="shrink-0 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              {viewMode === 'pills' ? 'Detailed grid' : 'Pills view'}
+            </button>
+          </div>
 
+
+          {viewMode === 'pills' ? (
+            <AvailabilityPills
+              days={weekDays}
+              getSlotStatus={getSlotStatus}
+              isMySlotFree={user ? isMySlotFree : undefined}
+              plans={plans}
+              dayMeta={Object.fromEntries(
+                availability.map((a) => [
+                  a.date,
+                  { isAway: a.location_status === 'away', trip_location: a.trip_location },
+                ]),
+              )}
+              signedIn={!!user}
+              onSlotClick={handleSlotClick}
+            />
+          ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
             {weekDays.map((day) => {
               const key = day.toISOString();
@@ -702,6 +727,7 @@ export default function Share() {
               );
             })}
           </div>
+          )}
 
         </div>
 
