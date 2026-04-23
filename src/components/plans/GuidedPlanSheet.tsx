@@ -853,16 +853,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
   const firstStep = needsFriendStep ? 'friends' : 'time';
 
+  const handleOpenTripSheet = () => {
+    // Close parent sheet first, then open trip sheet on next tick to avoid
+    // vaul Drawer instances fighting over body scroll/portal locks.
+    onOpenChange(false);
+    setTimeout(() => setTripSheetOpen(true), 250);
+  };
+
   return (
     <>
-    <Drawer
-      open={open && !tripSheetOpen}
-      onOpenChange={(o) => {
-        // Don't propagate close events when we're transitioning to the trip sheet
-        if (!o && tripSheetOpen) return;
-        onOpenChange(o);
-      }}
-    >
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className="h-[70vh] max-h-[70vh]"
         style={viewport ? { height: `${viewport.height * 0.7}px`, maxHeight: `${viewport.height * 0.7}px` } : undefined}
