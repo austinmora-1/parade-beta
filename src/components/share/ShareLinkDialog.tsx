@@ -187,6 +187,7 @@ export function ShareLinkDialog({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
+          {topSlot}
           {/* Channel grid */}
           <div className="grid grid-cols-4 gap-3">
             {CHANNELS.map((c) => (
