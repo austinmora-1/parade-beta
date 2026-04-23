@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Loader2, Users as UsersIcon, Tag, Sparkles, Calendar as CalendarIcon, MapPin, Send, Plane,
+  ArrowLeft, Loader2, Users as UsersIcon, Tag, Sparkles, Calendar as CalendarIcon, MapPin, Send, Plane, Quote, CheckCircle2,
 } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
 import { AnchorStep } from './findpeople/AnchorStep';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 export interface TripContext {
   tripId: string;
@@ -51,6 +52,8 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
   const { pods } = usePods();
   const { friends } = usePlannerStore();
   const viewport = useVisualViewport();
+  const { profile } = useCurrentUserProfile();
+  const senderFirstName = profile?.first_name || profile?.display_name?.split(' ')[0] || 'A friend';
 
   const [step, setStep] = useState<Step>('anchor');
   const [anchorPlan, setAnchorPlan] = useState<Plan | null>(null);
