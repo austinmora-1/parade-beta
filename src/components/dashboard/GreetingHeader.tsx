@@ -101,6 +101,18 @@ export function GreetingHeader() {
 
   const { windows: openWindows } = useOpenWindows();
 
+  // Listen for cross-component request to open the trip sheet with pre-selected friends
+  // (dispatched from GuidedPlanSheet's "Plan a Trip with X" empty-state CTA).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ friends: Array<{ userId: string; name: string }> }>).detail;
+      setTripPreSelected(detail?.friends || []);
+      setTripOpen(true);
+    };
+    window.addEventListener('parade:open-trip-sheet', handler);
+    return () => window.removeEventListener('parade:open-trip-sheet', handler);
+  }, []);
+
   const handleSelect = (key: PlanningEntry) => {
     setMenuOpen(false);
     if (key === 'hang') setPlanOpen(true);
