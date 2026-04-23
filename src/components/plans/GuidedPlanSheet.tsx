@@ -260,12 +260,15 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       });
     }
 
-    // Detect whether any selected friend has a different home city than the user.
-    // This drives the "Plan a Trip" CTA shown in the empty state.
+    // Detect whether any selected friend has a different (or unknown) home city than the user.
+    // This drives the "Plan a Trip" CTA shown in the empty state. We treat unknown friend
+    // home as "not confirmed same city" so the CTA still appears as a useful escape hatch.
     const myHomeCity = userId ? normalizeCity(profileMap.get(userId)?.homeAddress || '') : '';
     const someoneElsewhere = userIds.some(uid => {
       const fc = normalizeCity(profileMap.get(uid)?.homeAddress || '');
-      if (!fc || !myHomeCity) return false;
+      if (!myHomeCity) return false;
+      // If friend's home is unknown, or it's a different city → treat as elsewhere.
+      if (!fc) return true;
       return !citiesMatch(fc, myHomeCity);
     });
     setFriendsHaveDifferentHome(someoneElsewhere);
