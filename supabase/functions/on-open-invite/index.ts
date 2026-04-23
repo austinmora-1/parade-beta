@@ -122,7 +122,9 @@ Deno.serve(async (req) => {
           user_id: rid,
           title,
           body: bodyText,
-          data: { type: 'open_invite', open_invite_id: invite.id },
+          url: '/',
+          tag: `open-invite-${invite.id}`,
+          data: { type: 'open_invite', open_invite_id: invite.id, url: '/' },
         }),
       }).catch(() => null)
     );
