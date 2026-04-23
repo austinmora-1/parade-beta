@@ -28,6 +28,22 @@ const SLOT_HOURS: Record<TimeSlot, number> = {
 // short, actionable open windows rather than full-day chunks).
 const MAX_WINDOW_HOURS = 3;
 
+// Typical "social" time slots by day type. Weekday social hours skew
+// to evenings/late-night; weekends open up afternoons too.
+const WEEKDAY_SOCIAL_SLOTS: TimeSlot[] = ['evening', 'late-night'];
+const WEEKEND_SOCIAL_SLOTS: TimeSlot[] = [
+  'early-afternoon',
+  'late-afternoon',
+  'evening',
+  'late-night',
+];
+
+function socialSlotsForDate(date: Date): Set<TimeSlot> {
+  const day = date.getDay(); // 0 = Sun, 6 = Sat
+  const isWeekend = day === 0 || day === 6;
+  return new Set(isWeekend ? WEEKEND_SOCIAL_SLOTS : WEEKDAY_SOCIAL_SLOTS);
+}
+
 const SLOT_DB_KEYS: { key: keyof FriendAvailRow; slot: TimeSlot }[] = [
   { key: 'early_morning', slot: 'early-morning' },
   { key: 'late_morning', slot: 'late-morning' },
