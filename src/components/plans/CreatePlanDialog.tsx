@@ -578,11 +578,17 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   // activePreset no longer displayed separately
 
   // Count of extras configured
+  const isEditMode = !!editPlan;
   const extrasCount = [
     notes,
     feedVisibility !== 'private',
     isRecurring,
     isMultiDay,
+    // In edit mode, surface that secondary fields are configured
+    isEditMode && title,
+    isEditMode && activity && activity !== 'tbd',
+    isEditMode && locationName,
+    isEditMode && planStatus !== 'confirmed',
   ].filter(Boolean).length;
 
   return (
