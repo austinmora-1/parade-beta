@@ -73,19 +73,34 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
         {selectMode && (
           <Checkbox checked={selected} className="shrink-0 mt-0.5" />
         )}
-        <div
-          className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5"
-          style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
-        >
-          <ActivityIcon config={activityConfig} size={16} />
-        </div>
+        {fromCalendar ? (
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5 bg-muted-foreground/10">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          </div>
+        ) : (
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5"
+            style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
+          >
+            <ActivityIcon config={activityConfig} size={16} />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <div className="min-w-0 flex-1 overflow-hidden">
-              <span className={cn("block truncate text-sm font-semibold leading-tight", showTentativeStyle && "text-muted-foreground")}>
+              <span className={cn("block truncate text-sm font-semibold leading-tight", (showTentativeStyle || fromCalendar) && "text-muted-foreground")}>
                 {displayTitle}
               </span>
             </div>
+            {fromCalendar && (
+              <span
+                className="shrink-0 inline-flex items-center gap-1 rounded-full bg-muted-foreground/10 px-1.5 py-0.5 text-[8px] font-medium text-muted-foreground whitespace-nowrap mt-0.5"
+                title={calendarLabel ?? undefined}
+              >
+                <CalendarDays className="h-2.5 w-2.5" />
+                From your calendar
+              </span>
+            )}
             {hasPendingChange && (
               <span className="shrink-0 rounded-full bg-muted border border-muted-foreground/20 px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground whitespace-nowrap mt-0.5">
                 Proposed
