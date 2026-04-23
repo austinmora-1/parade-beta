@@ -1,13 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Sparkles, Send } from 'lucide-react';
 import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
+import { cn } from '@/lib/utils';
 
 export function FreeWindowCard() {
   const { windows, loading } = useOpenWindows();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [highlight, setHighlight] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Listen for global "expand free weekend" event (from FAB → Free weekend entry)
+  useEffect(() => {
+    const handler = () => {
+      containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlight(true);
+      window.setTimeout(() => setHighlight(false), 1800);
+    };
+    window.addEventListener('parade:expand-free-window', handler);
+    return () => window.removeEventListener('parade:expand-free-window', handler);
+  }, []);
 
   if (loading) return null;
 
