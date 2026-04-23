@@ -1,4 +1,4 @@
-import { useMemo, useState, lazy, Suspense } from 'react';
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
