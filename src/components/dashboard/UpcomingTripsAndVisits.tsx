@@ -177,7 +177,7 @@ export function UpcomingTripsAndVisits() {
       }
     >
       <div className="space-y-1.5">
-        {confirmedTrips.map(trip => (
+        {visibleTrips.map(trip => (
           <div
             key={trip.id}
             onClick={() => navigate('/trips')}
@@ -226,7 +226,7 @@ export function UpcomingTripsAndVisits() {
           </div>
         ))}
 
-        {tripProposals.map(proposal => {
+        {visibleProposals.map(proposal => {
           const earliestDate = proposal.dates[0];
           const latestDate = proposal.dates[proposal.dates.length - 1];
           const isVisit = proposal.proposalType === 'visit';
