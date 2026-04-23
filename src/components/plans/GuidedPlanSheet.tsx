@@ -260,6 +260,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       });
     }
 
+    // Detect whether any selected friend has a different home city than the user.
+    // This drives the "Plan a Trip" CTA shown in the empty state.
+    const myHomeCity = userId ? normalizeCity(profileMap.get(userId)?.homeAddress || '') : '';
+    const someoneElsewhere = userIds.some(uid => {
+      const fc = normalizeCity(profileMap.get(uid)?.homeAddress || '');
+      if (!fc || !myHomeCity) return false;
+      return !citiesMatch(fc, myHomeCity);
+    });
+    setFriendsHaveDifferentHome(someoneElsewhere);
+
     // Build trip lookup: for a given userId + date, find ALL trip locations
     const tripsByUser = new Map<string, { location: string; start_date: string; end_date: string }[]>();
     for (const t of (tripsData || [])) {
