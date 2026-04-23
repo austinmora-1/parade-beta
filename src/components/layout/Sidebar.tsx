@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   CalendarDays,
@@ -5,11 +6,13 @@ import {
   Users,
   Settings,
   PlaneTakeoff,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
 
 const navItems = [
   { path: '/',             icon: LayoutDashboard, label: 'Home'         },
@@ -22,6 +25,13 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, formattedName } = useCurrentUserProfile();
+  const [openInviteOpen, setOpenInviteOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setOpenInviteOpen(true);
+    window.addEventListener('parade:open-invite-sheet', handler);
+    return () => window.removeEventListener('parade:open-invite-sheet', handler);
+  }, []);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
@@ -70,6 +80,15 @@ export function Sidebar() {
               </NavLink>
             );
           })}
+
+          {/* Find someone to join me */}
+          <button
+            onClick={() => setOpenInviteOpen(true)}
+            className="group mt-2 flex w-full items-center gap-3 rounded-lg border border-dashed border-sidebar-border px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all hover:border-sidebar-primary/40 hover:bg-sidebar-accent/50 hover:text-sidebar-primary"
+          >
+            <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
+            <span className="flex-1 truncate text-left">Find someone to join me</span>
+          </button>
         </nav>
 
         {/* ── Divider ── */}
@@ -109,6 +128,7 @@ export function Sidebar() {
           </NavLink>
         </div>
       </aside>
+      <OpenInviteSheet open={openInviteOpen} onOpenChange={setOpenInviteOpen} />
     </>
   );
 }
