@@ -46,7 +46,7 @@ export function SmartPrimaryCTA() {
     if (state.kind === 'open-today') {
       navigate(`/plan/${state.planId}`);
     } else {
-      setMakePlanOpen(true);
+      navigate('/friends?scheduler=1');
     }
   };
 
