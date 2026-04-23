@@ -63,7 +63,7 @@ export function SmartPrimaryCTA() {
       }
     : {
         icon: CalendarPlus,
-        label: 'Make a plan',
+        label: 'Find time with friends',
         accent: 'text-foreground',
         ring: 'ring-border',
         gradient: 'from-muted/40 via-card to-card',
