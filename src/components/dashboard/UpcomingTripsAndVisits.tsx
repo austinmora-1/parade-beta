@@ -10,12 +10,34 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { formatDisplayName } from '@/lib/formatName';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { citiesMatch, normalizeCity } from '@/lib/locationMatch';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 export function UpcomingTripsAndVisits() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { profile } = useCurrentUserProfile();
   const [tripProposals, setTripProposals] = useState<any[]>([]);
   const [confirmedTrips, setConfirmedTrips] = useState<any[]>([]);
+
+  // Resolve the user's home city. Treat both `home_address` and
+  // `neighborhood` as signals of where they live, so a "trip" to their
+  // own metro never gets surfaced as travel. Mirrors the co-location
+  // rules used elsewhere on the dashboard.
+  const homeCities = useMemo(() => {
+    const candidates: string[] = [];
+    if (profile?.home_address) candidates.push(profile.home_address);
+    const neighborhood = (profile as any)?.neighborhood as string | null | undefined;
+    if (neighborhood) candidates.push(neighborhood);
+    return candidates.map(normalizeCity).filter(Boolean);
+  }, [profile?.home_address, (profile as any)?.neighborhood]);
+
+  const isHomeCity = (loc: string | null | undefined) => {
+    if (!loc) return false;
+    const normalized = normalizeCity(loc);
+    if (!normalized) return false;
+    return homeCities.some((home) => citiesMatch(home, normalized));
+  };
 
   // Fetch confirmed trips (next 3 months)
   useEffect(() => {
@@ -124,7 +146,21 @@ export function UpcomingTripsAndVisits() {
     })();
   }, [user?.id]);
 
-  const totalCount = confirmedTrips.length + tripProposals.length;
+  // Filter out trips/proposals to the user's own home metro — these
+  // shouldn't surface as "upcoming trips" since the user is already
+  // there. Visits (where the user is hosting from home) are kept.
+  const visibleTrips = useMemo(
+    () => confirmedTrips.filter((t) => !isHomeCity(t.location)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [confirmedTrips, homeCities],
+  );
+  const visibleProposals = useMemo(
+    () => tripProposals.filter((p) => p.proposalType === 'visit' || !isHomeCity(p.destination)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tripProposals, homeCities],
+  );
+
+  const totalCount = visibleTrips.length + visibleProposals.length;
 
   if (totalCount === 0) return null;
 
@@ -141,7 +177,7 @@ export function UpcomingTripsAndVisits() {
       }
     >
       <div className="space-y-1.5">
-        {confirmedTrips.map(trip => (
+        {visibleTrips.map(trip => (
           <div
             key={trip.id}
             onClick={() => navigate('/trips')}
@@ -190,7 +226,7 @@ export function UpcomingTripsAndVisits() {
           </div>
         ))}
 
-        {tripProposals.map(proposal => {
+        {visibleProposals.map(proposal => {
           const earliestDate = proposal.dates[0];
           const latestDate = proposal.dates[proposal.dates.length - 1];
           const isVisit = proposal.proposalType === 'visit';
