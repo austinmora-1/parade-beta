@@ -77,10 +77,8 @@ export default function Availability() {
   };
 
   const handleEditPlan = useCallback((plan: any) => {
-    setEditPlan(plan);
-    setPlanDefaultDate(plan.date);
-    setEditDialogOpen(true);
-  }, []);
+    navigate(`/plans/${plan.id}?edit=1`);
+  }, [navigate]);
 
   const handleDeletePlan = useCallback((id: string) => {
     deletePlan(id);
