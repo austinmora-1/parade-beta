@@ -98,6 +98,17 @@ export default function Friends() {
   const [searchResults, setSearchResults] = useState<PublicProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const schedulerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (searchParams.get('scheduler') === '1' && schedulerRef.current) {
+      schedulerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const next = new URLSearchParams(searchParams);
+      next.delete('scheduler');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // FriendPanel state
   const [panelOpen, setPanelOpen] = useState(false);
