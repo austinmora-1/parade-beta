@@ -25,6 +25,13 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, formattedName } = useCurrentUserProfile();
+  const [openInviteOpen, setOpenInviteOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setOpenInviteOpen(true);
+    window.addEventListener('parade:open-invite-sheet', handler);
+    return () => window.removeEventListener('parade:open-invite-sheet', handler);
+  }, []);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
