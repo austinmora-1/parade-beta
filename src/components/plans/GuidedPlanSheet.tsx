@@ -955,6 +955,17 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                 >
                   Just me — no friends needed
                 </button>
+
+                {/* No one specific → open invite */}
+                <button
+                  onClick={() => {
+                    onOpenChange(false);
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('parade:open-invite-sheet')), 250);
+                  }}
+                  className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  No one specific — find someone to join
+                </button>
               </motion.div>
             )}
 

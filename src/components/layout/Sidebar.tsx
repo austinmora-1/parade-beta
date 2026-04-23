@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   CalendarDays,
@@ -5,11 +6,13 @@ import {
   Users,
   Settings,
   PlaneTakeoff,
+  Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
 
 const navItems = [
   { path: '/',             icon: LayoutDashboard, label: 'Home'         },
