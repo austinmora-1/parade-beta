@@ -87,8 +87,8 @@ export function FreeWindowCard() {
             </div>
             <p className="text-xs text-muted-foreground min-w-0 flex-1 truncate">
               {friendCount === 1
-                ? `${formatDisplayName(best.overlappingFriends[0].name)} is free too`
-                : `${formatDisplayName(best.overlappingFriends[0].name)} + ${friendCount - 1} other${friendCount - 1 === 1 ? '' : 's'} free`}
+                ? `${formatDisplayName({ displayName: best.overlappingFriends[0].name })} is free too`
+                : `${formatDisplayName({ displayName: best.overlappingFriends[0].name })} + ${friendCount - 1} other${friendCount - 1 === 1 ? '' : 's'} free`}
             </p>
           </div>
         ) : (
