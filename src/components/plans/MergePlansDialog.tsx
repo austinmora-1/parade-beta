@@ -253,8 +253,21 @@ export function MergePlansDialog({ open, onOpenChange, preselectedPlanIds, onMer
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90dvh] flex flex-col overflow-hidden sm:max-w-md">
-        <DialogHeader className="shrink-0">
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="shrink-0 relative">
+          {step !== stepsForIndicator[0] && (
+            <button
+              type="button"
+              onClick={() => {
+                const idx = stepsForIndicator.indexOf(step);
+                if (idx > 0) setStep(stepsForIndicator[idx - 1]);
+              }}
+              aria-label="Back"
+              className="absolute left-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
+          <DialogTitle className={cn("flex items-center gap-2", step !== stepsForIndicator[0] && "pl-8")}>
             <Merge className="h-5 w-5 text-primary" />
             Merge Plans
           </DialogTitle>
