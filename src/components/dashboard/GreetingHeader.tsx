@@ -1,8 +1,8 @@
 import { useMemo, useState, lazy, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Sun, Moon, Sunset, Coffee, MapPin, Plus, CalendarPlus, Plane, UserPlus, Loader2, Clock, Megaphone } from 'lucide-react';
+import { Sun, Moon, Sunset, Coffee, MapPin, Plus, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTimezoneForCity } from '@/lib/timezone';
 import { formatCityForDisplay } from '@/lib/formatCity';
@@ -13,7 +13,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useAvailabilityStore } from '@/stores/availabilityStore';
+import { useOpenWindows } from '@/hooks/useOpenWindows';
 import { toast } from 'sonner';
+import { WhatArePlanningSheet, type PlanningEntry } from './WhatArePlanningSheet';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
@@ -50,12 +52,6 @@ function getContextMessage(planCount: number, friendCount: number, hour: number)
   return 'Ready to make some plans?';
 }
 
-const menuItems = [
-  { key: 'find-time', label: 'Find time', icon: Clock, hint: 'I know who' },
-  { key: 'find-people', label: 'Find people', icon: Megaphone, hint: 'I know what' },
-  { key: 'find-in-place', label: 'Plan a Trip', icon: MapPin, hint: 'I know where' },
-  { key: 'invite', label: 'Invite friends', icon: UserPlus },
-] as const;
 
 export function GreetingHeader() {
   const { profile, updateProfile } = useCurrentUserProfile();
@@ -102,11 +98,22 @@ export function GreetingHeader() {
     };
   }, [availabilityMap, profile?.home_address]);
 
-  const handleSelect = (key: string) => {
+  const { windows: openWindows } = useOpenWindows();
+
+  const handleSelect = (key: PlanningEntry) => {
     setMenuOpen(false);
-    if (key === 'find-time') setPlanOpen(true);
-    else if (key === 'find-people') setFindPeopleOpen(true);
-    else if (key === 'find-in-place') setTripOpen(true);
+    if (key === 'hang') setPlanOpen(true);
+    else if (key === 'plus-one') setFindPeopleOpen(true);
+    else if (key === 'trip') setTripOpen(true);
+    else if (key === 'free-weekend') {
+      // If they have ≥1 open window, scroll to / highlight FreeWindowCard.
+      // Otherwise drop them into the find-people sheet (open invite).
+      if (openWindows.length > 0) {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('parade:expand-free-window')), 50);
+      } else {
+        setFindPeopleOpen(true);
+      }
+    }
     else if (key === 'invite') setInviteOpen(true);
   };
 
