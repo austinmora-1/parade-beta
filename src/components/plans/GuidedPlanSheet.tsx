@@ -854,14 +854,18 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const firstStep = needsFriendStep ? 'friends' : 'time';
 
   const handleOpenTripSheet = () => {
-    // Close parent sheet first, then open trip sheet on next tick to avoid
-    // vaul Drawer instances fighting over body scroll/portal locks.
+    // Close this sheet and dispatch event for the dashboard's persistent
+    // GuidedTripSheet to open with the same pre-selected friends.
+    const friendsPayload = effectiveFriends.map(f => ({ userId: f.userId, name: f.name }));
     onOpenChange(false);
-    setTimeout(() => setTripSheetOpen(true), 250);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('parade:open-trip-sheet', {
+        detail: { friends: friendsPayload },
+      }));
+    }, 250);
   };
 
   return (
-    <>
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent
         className="h-[70vh] max-h-[70vh]"
