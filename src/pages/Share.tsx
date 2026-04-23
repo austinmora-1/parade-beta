@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { AvailabilityPills } from '@/components/share/AvailabilityPills';
 
 interface ProfileData {
   user_id: string | null;
