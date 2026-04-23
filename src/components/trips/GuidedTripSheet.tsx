@@ -26,6 +26,9 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { useAuth } from '@/hooks/useAuth';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { InviteToTripDialog } from './InviteToTripDialog';
+import { ExistingTripPicker, type ExistingTrip } from './findinplace/ExistingTripPicker';
+import { lazy, Suspense } from 'react';
+const FindPeopleSheet = lazy(() => import('@/components/plans/FindPeopleSheet'));
 
 interface PreSelectedFriend {
   userId: string;
@@ -136,6 +139,8 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
    const [customMode, setCustomMode] = useState(false);
    const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
    const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+   const [showExistingTrips, setShowExistingTrips] = useState(false);
+   const [findPeopleTripContext, setFindPeopleTripContext] = useState<{ tripId: string; location: string | null; startDate: string; endDate: string } | null>(null);
 
   // Generate month options (next 12 months)
   const monthOptions = useMemo(() => {
