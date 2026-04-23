@@ -1406,6 +1406,4 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
     </Drawer>
   );
 }
-  );
-}
 export default GuidedPlanSheet;
