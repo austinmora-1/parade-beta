@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, ArrowLeftRight, Trash2, Loader2, Plane, Home as HomeIcon } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Trash2, Loader2, Plane, Home as HomeIcon, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ interface ProposalRow {
   proposal_type: string;
   host_user_id: string | null;
   status: string;
+  name?: string | null;
 }
 
 interface DateRow {
@@ -29,6 +30,12 @@ interface DateRow {
 }
 
 interface ParticipantRow {
+  user_id: string;
+}
+
+interface VoteRow {
+  date_id: string;
+  rank: number;
   user_id: string;
 }
 
@@ -43,25 +50,51 @@ export default function ProposalDetail() {
   const [proposal, setProposal] = useState<ProposalRow | null>(null);
   const [dates, setDates] = useState<DateRow[]>([]);
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
+  const [votes, setVotes] = useState<VoteRow[]>([]);
   const [converting, setConverting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [lockingIn, setLockingIn] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    const [{ data: prop }, { data: ds }, { data: ps }] = await Promise.all([
+    const [{ data: prop }, { data: ds }, { data: ps }, { data: vs }] = await Promise.all([
       supabase.from('trip_proposals').select('*').eq('id', id).maybeSingle(),
       supabase.from('trip_proposal_dates').select('*').eq('proposal_id', id).order('start_date'),
       supabase.from('trip_proposal_participants').select('user_id').eq('proposal_id', id),
+      supabase.from('trip_proposal_votes').select('date_id, rank, user_id'),
     ]);
     setProposal(prop as any);
     setDates((ds as any) || []);
     setParticipants((ps as any) || []);
+    // Filter votes to only this proposal's date_ids
+    const dateIds = new Set(((ds as any) || []).map((d: DateRow) => d.id));
+    setVotes(((vs as any) || []).filter((v: VoteRow) => dateIds.has(v.date_id)));
     setLoading(false);
   }, [id]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Tally votes by date — lower rank = better. Use sum of (totalDates - rank + 1) per date.
+  const winningDate = useMemo(() => {
+    if (dates.length === 0) return null;
+    if (votes.length === 0) return null;
+    const totals = new Map<string, number>();
+    const maxRank = dates.length;
+    for (const v of votes) {
+      const points = Math.max(1, maxRank - v.rank + 1);
+      totals.set(v.date_id, (totals.get(v.date_id) || 0) + points);
+    }
+    const ranked = dates
+      .map(d => ({ date: d, points: totals.get(d.id) || 0 }))
+      .sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        return a.date.start_date.localeCompare(b.date.start_date); // tie → earliest
+      });
+    if (ranked[0].points === 0) return null;
+    return ranked[0].date;
+  }, [dates, votes]);
 
   if (loading) {
     return (
@@ -84,10 +117,13 @@ export default function ProposalDetail() {
 
   const isCreator = proposal.created_by === user.id;
   const isVisit = proposal.proposal_type === 'visit';
+  const isConfirmed = proposal.status === 'confirmed';
   const Icon = isVisit ? HomeIcon : Plane;
   const destinationLabel = proposal.destination
     ? (formatCityForDisplay(proposal.destination) || proposal.destination)
     : 'TBD';
+  const headerTitle = proposal.name?.trim()
+    || (isVisit ? `Visit to ${destinationLabel}` : `Trip to ${destinationLabel}`);
 
   const handleConvertType = async () => {
     if (!isCreator) return;
@@ -110,6 +146,53 @@ export default function ProposalDetail() {
       toast.error('Failed to convert');
     } finally {
       setConverting(false);
+    }
+  };
+
+  const handleLockIn = async () => {
+    if (!isCreator || !winningDate) return;
+    setLockingIn(true);
+    try {
+      // Create the confirmed trip from the winning date
+      const { error: tripErr } = await supabase.from('trips').insert({
+        user_id: user.id,
+        name: proposal.name || null,
+        location: proposal.destination,
+        start_date: winningDate.start_date,
+        end_date: winningDate.end_date,
+        available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
+        priority_friend_ids: participants.filter(p => p.user_id !== user.id).map(p => p.user_id),
+        proposal_id: proposal.id,
+      } as any);
+      if (tripErr) throw tripErr;
+
+      // Mark the proposal confirmed
+      await supabase.from('trip_proposals').update({
+        status: 'confirmed',
+        updated_at: new Date().toISOString(),
+      }).eq('id', proposal.id);
+
+      // Notify other participants (fire-and-forget)
+      const otherIds = participants.filter(p => p.user_id !== user.id).map(p => p.user_id);
+      if (otherIds.length > 0) {
+        supabase.functions.invoke('send-push-notification', {
+          body: {
+            user_ids: otherIds,
+            title: '🎉 Trip locked in!',
+            body: `${headerTitle} — ${format(new Date(winningDate.start_date + 'T00:00:00'), 'MMM d')}–${format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}`,
+            url: '/trips',
+          },
+        }).catch(() => {});
+      }
+
+      toast.success('Trip locked in! 🎉');
+      window.dispatchEvent(new Event(TRIPS_UPDATED_EVENT));
+      await load();
+    } catch (err) {
+      console.error('Lock-in failed:', err);
+      toast.error('Failed to lock in trip');
+    } finally {
+      setLockingIn(false);
     }
   };
 
@@ -147,8 +230,13 @@ export default function ProposalDetail() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-base font-semibold truncate">
-              {isVisit ? `Visit to ${destinationLabel}` : `Trip to ${destinationLabel}`}
+              {headerTitle}
             </h1>
+            {proposal.name?.trim() && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {isVisit ? `Visit to ${destinationLabel}` : `Trip to ${destinationLabel}`}
+              </p>
+            )}
             {earliest && latest && (
               <p className="text-xs text-muted-foreground mt-0.5">
                 {format(new Date(earliest + 'T00:00:00'), 'MMM d')} – {format(new Date(latest + 'T00:00:00'), 'MMM d')}
@@ -160,16 +248,39 @@ export default function ProposalDetail() {
 
         <div className="text-xs text-muted-foreground">
           {participants.length} participant{participants.length === 1 ? '' : 's'}
+          {isConfirmed && <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-availability-available/10 text-availability-available px-2 py-0.5 font-medium">✓ Locked in</span>}
         </div>
       </div>
 
-      {isCreator && (
+      {isCreator && !isConfirmed && (
         <div className="rounded-xl border border-border bg-card p-4 shadow-soft space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Manage proposal
           </h2>
 
           <div className="space-y-2">
+            {winningDate && (
+              <Button
+                className="w-full justify-start gap-2"
+                onClick={handleLockIn}
+                disabled={lockingIn}
+              >
+                {lockingIn ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Lock className="h-4 w-4" />
+                )}
+                Lock in {format(new Date(winningDate.start_date + 'T00:00:00'), 'MMM d')}
+                {winningDate.start_date !== winningDate.end_date &&
+                  `–${format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}`}
+              </Button>
+            )}
+            {!winningDate && dates.length > 0 && (
+              <p className="text-[11px] text-muted-foreground px-1">
+                Once friends vote, you'll be able to lock in the winning date here.
+              </p>
+            )}
+
             <Button
               variant="outline"
               className="w-full justify-start gap-2"
