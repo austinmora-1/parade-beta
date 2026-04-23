@@ -37,7 +37,7 @@ export function QuickStats() {
       icon: Calendar,
       label: 'Plans this week',
       value: stats.plansThisWeek,
-      color: 'bg-primary/10 text-primary',
+      color: 'bg-muted text-muted-foreground',
     },
     {
       icon: Clock,
