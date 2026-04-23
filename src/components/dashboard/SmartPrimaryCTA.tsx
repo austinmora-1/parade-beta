@@ -31,7 +31,7 @@ export function SmartPrimaryCTA() {
   const navigate = useNavigate();
   const { plans } = usePlannerStore();
   const { windows } = useOpenWindows();
-  const { invites } = useOpenInvites();
+  const { mine: myOpenInvites } = useOpenInvites();
   const [openInviteOpen, setOpenInviteOpen] = useState(false);
   const [makePlanOpen, setMakePlanOpen] = useState(false);
 
