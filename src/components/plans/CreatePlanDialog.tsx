@@ -871,8 +871,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
             </div>
           )}
 
-          {/* ── Status ── */}
-          {!isParticipantEditor && (
+          {/* ── Status (hidden in edit mode — moved to More options) ── */}
+          {!isParticipantEditor && !isEditMode && (
           <div className="space-y-1">
             <Label className="text-xs">Status</Label>
             <div className="flex gap-2">
