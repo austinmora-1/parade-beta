@@ -933,8 +933,101 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                               <button onClick={() => toggleMonth(k)}><X className="h-3 w-3" /></button>
                             </span>
                           );
-                    })}
-                  </div>
+                        })}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => { setCustomMode(true); setSelectedMonths([]); }}
+                      className="w-full text-xs font-medium text-primary hover:underline pt-1"
+                    >
+                      Or pick exact dates instead →
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">Pick a start and end date.</p>
+                      <button
+                        type="button"
+                        onClick={() => { setCustomMode(false); setCustomStartDate(undefined); setCustomEndDate(undefined); }}
+                        className="text-[11px] text-muted-foreground hover:text-foreground"
+                      >
+                        ← Browse months
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "h-12 justify-start gap-2 text-left font-normal",
+                              !customStartDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate text-xs">
+                              {customStartDate ? format(customStartDate, 'MMM d, yyyy') : 'Start date'}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={customStartDate}
+                            onSelect={(d) => {
+                              setCustomStartDate(d);
+                              if (d && customEndDate && customEndDate < d) setCustomEndDate(undefined);
+                            }}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "h-12 justify-start gap-2 text-left font-normal",
+                              !customEndDate && "text-muted-foreground"
+                            )}
+                            disabled={!customStartDate}
+                          >
+                            <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate text-xs">
+                              {customEndDate ? format(customEndDate, 'MMM d, yyyy') : 'End date'}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={customEndDate}
+                            onSelect={setCustomEndDate}
+                            disabled={(date) =>
+                              date < (customStartDate || new Date(new Date().setHours(0, 0, 0, 0)))
+                            }
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {customStartDate && customEndDate && (
+                      <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-center">
+                        <span className="font-medium text-primary">
+                          {format(customStartDate, 'EEE, MMM d')} – {format(customEndDate, 'EEE, MMM d')}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </motion.div>
             )}
