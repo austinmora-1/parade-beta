@@ -11,6 +11,7 @@ interface CurrentUserProfile {
   location_status: string | null;
   timezone: string | null;
   home_address: string | null;
+  neighborhood: string | null;
 }
 
 // Global state to share profile across components
