@@ -154,7 +154,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                     >
                       <Avatar className="h-7 w-7 border-2 border-background ring-1 ring-primary/20">
                         <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{f.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">{f.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <span className="absolute -top-0.5 -right-0.5 hidden group-hover:flex h-3.5 w-3.5 items-center justify-center rounded-full bg-destructive">
                         <X className="h-2 w-2 text-destructive-foreground" />
@@ -273,7 +273,7 @@ export function QuickPlanDrop({ stagedFriends, onAddFriend, onRemoveFriend, onCl
                 >
                   <Avatar className="h-7 w-7">
                     <AvatarImage src={friend.avatar || getElephantAvatar(friend.name)} />
-                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
                       {friend.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>

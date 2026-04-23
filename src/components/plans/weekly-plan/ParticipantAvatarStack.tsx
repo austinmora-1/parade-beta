@@ -42,7 +42,7 @@ export function ParticipantAvatarStack({ participants }: { participants: Friend[
                 <div className={cn("relative", i > 0 && "-ml-2")}>
                   <Avatar className="h-7 w-7 border-2 border-card">
                     <AvatarImage src={avatarSrc} alt={p.name} />
-                    <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">
                       {(p.name || '?')[0]}
                     </AvatarFallback>
                   </Avatar>

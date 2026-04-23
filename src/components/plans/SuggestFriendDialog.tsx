@@ -109,7 +109,7 @@ export function SuggestFriendDialog({
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={friend.avatar} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      <AvatarFallback className="bg-muted text-muted-foreground text-xs">
                         {getInitials(friend.name)}
                       </AvatarFallback>
                     </Avatar>

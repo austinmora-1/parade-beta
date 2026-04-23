@@ -149,7 +149,7 @@ export function ProfilePersonalizationStep({ data, updateData }: ProfilePersonal
             >
               <Avatar className="h-16 w-16 border-4 border-background">
                 <AvatarImage src={data.avatarUrl} />
-                <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                <AvatarFallback className="bg-muted text-muted-foreground text-lg">
                   {data.firstName?.[0] || '?'}
                 </AvatarFallback>
               </Avatar>
