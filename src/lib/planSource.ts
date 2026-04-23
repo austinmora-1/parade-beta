@@ -1,5 +1,3 @@
-import { Plan } from '@/types/planner';
-
 /**
  * Plans imported from external calendars (Google, Apple/iCal, Nylas/Outlook)
  * vs. plans created natively in Parade.
@@ -11,13 +9,10 @@ const CALENDAR_SOURCES = new Set([
   'google', 'gcal', 'ical', 'apple', 'nylas', 'outlook',
 ]);
 
-export function isCalendarSourced(plan: Pick<Plan, 'source' | 'manuallyEdited' | 'mergedSourceEventIds'> | { source?: string | null; manuallyEdited?: boolean; mergedSourceEventIds?: string[] | null }): boolean {
-  const src = (plan as any).source;
+export function isCalendarSourced(plan: { source?: string | null }): boolean {
+  const src = plan?.source;
   if (!src) return false;
-  if (!CALENDAR_SOURCES.has(String(src).toLowerCase())) return false;
-  // If a user manually edited a calendar import, treat as a Parade plan
-  if ((plan as any).manuallyEdited) return false;
-  return true;
+  return CALENDAR_SOURCES.has(String(src).toLowerCase());
 }
 
 export function getCalendarSourceLabel(source?: string | null): string {
