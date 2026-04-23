@@ -3,12 +3,13 @@ import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getCompactPlanTitle } from '@/lib/planTitle';
 import { getTimezoneAbbreviation } from '@/lib/timezone';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock } from 'lucide-react';
+import { MapPin, Clock, CalendarDays } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { formatTime12 } from './planCardHelpers';
 import { ParticipantAvatarStack } from './ParticipantAvatarStack';
+import { isCalendarSourced, getCalendarSourceLabel } from '@/lib/planSource';
 
 interface PlanCardCompactProps {
   plan: Plan;
