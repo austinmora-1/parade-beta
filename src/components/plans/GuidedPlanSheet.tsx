@@ -141,6 +141,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [customEmoji, setCustomEmoji] = useState('✨');
   const [activitySearch, setActivitySearch] = useState('');
   const [activitySearchFocused, setActivitySearchFocused] = useState(false);
+  const [friendsHaveDifferentHome, setFriendsHaveDifferentHome] = useState(false);
+  const [tripSheetOpen, setTripSheetOpen] = useState(false);
 
   const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
   const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
