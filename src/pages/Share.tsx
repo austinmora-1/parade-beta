@@ -101,7 +101,7 @@ export default function Share() {
   const [quickPlanOpen, setQuickPlanOpen] = useState(false);
   
   // Week navigation state — max offset depends on view param
-  const viewParam = searchParams.get('view') || '1w';
+  const viewParam = searchParams.get('view') || '3m';
   const maxWeekOffset = viewParam === '3m' ? 12 : viewParam === '1m' ? 4 : 0;
   const [weekOffset, setWeekOffset] = useState(0);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());

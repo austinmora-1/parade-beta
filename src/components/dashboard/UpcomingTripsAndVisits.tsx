@@ -170,7 +170,7 @@ export function UpcomingTripsAndVisits() {
       icon={<Plane className="h-4 w-4 text-primary" />}
       badge={
         totalCount > 0 ? (
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {totalCount}
           </span>
         ) : undefined

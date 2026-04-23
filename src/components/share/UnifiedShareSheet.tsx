@@ -273,7 +273,7 @@ const VIEW_DURATION_OPTIONS: { value: ViewDuration; label: string }[] = [
 function ProfileShareTab({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
   const [shareCode, setShareCode] = useState<string | null>(null);
-  const [viewDuration, setViewDuration] = useState<ViewDuration>('1w');
+  const [viewDuration, setViewDuration] = useState<ViewDuration>('3m');
 
   useEffect(() => {
     if (!user) return;

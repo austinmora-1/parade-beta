@@ -101,7 +101,7 @@ export function PlanCreatedDialog({ open, onOpenChange, plan }: PlanCreatedDialo
               {activeParticipants.slice(0, 5).map((p) => (
                 <Avatar key={p.id} className="h-5 w-5 border border-background">
                   <AvatarImage src={p.avatar} />
-                  <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                  <AvatarFallback className="text-[8px] bg-muted text-muted-foreground">
                     {p.name?.charAt(0)?.toUpperCase() || '?'}
                   </AvatarFallback>
                 </Avatar>

@@ -29,7 +29,7 @@ export function ShareDialog({ trigger, open: controlledOpen, onOpenChange }: Sha
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
   const [shareCode, setShareCode] = useState<string | null>(null);
-  const [viewDuration, setViewDuration] = useState<ViewDuration>('1w');
+  const [viewDuration, setViewDuration] = useState<ViewDuration>('3m');
   const { user } = useAuth();
 
   useEffect(() => {

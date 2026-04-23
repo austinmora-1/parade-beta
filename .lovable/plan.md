@@ -37,10 +37,10 @@ Here's the status of every task in `.lovable/plan.md`, based on what's landed in
 - **4.3** State-aware primary CTA on dashboard for new primitives (open-invite + free-weekend)
 - **4.4** Context-rich `/plan-invite` landing page for non-user arrivals
 
-### Phase 5 · Native widget & final polish — ⏳ Not started (mostly parallel/iOS)
+### Phase 5 · Native widget & final polish — ✅ Complete (Lovable scope)
 - **5.1** iOS Home Screen widget — out of scope for Lovable (native iOS epic)
-- **5.2** Default sharing window: 3 months instead of 1 week
-- **5.3** Coral budget audit — reserve accent for real moments
+- **5.2** Default sharing window: 3 months instead of 1 week — done
+- **5.3** Coral budget audit — done (avatar fallbacks, passive count badges, idle stat tiles toned to muted; coral reserved for active CTAs, selected states, and live moments)
 
 ### Recommended sequence
 

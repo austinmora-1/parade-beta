@@ -706,7 +706,7 @@ export function QuickPlanSheet({
                       >
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                          <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{f.name.charAt(0)}</AvatarFallback>
+                          <AvatarFallback className="text-[8px] bg-muted text-muted-foreground">{f.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <span className="flex-1 text-xs font-medium text-foreground truncate">{f.name}</span>
                         <span className="text-[10px] text-primary font-medium">Add</span>
