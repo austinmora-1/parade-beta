@@ -860,7 +860,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
             )}
 
 
-            {/* STEP 2: Month picker */}
+            {/* STEP 2: Month picker (or custom date range) */}
             {step === 'months' && (
               <motion.div
                 key="months"
@@ -869,70 +869,70 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-4"
               >
-                <p className="text-xs text-muted-foreground text-center">
-                  Select the months you'd consider for this trip. Pick as many as you like — they don't need to be consecutive.
-                </p>
+                {!customMode ? (
+                  <>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Pick months we'll search — they don't need to be consecutive.
+                    </p>
 
-                <div className="grid grid-cols-3 gap-2">
-                  {monthOptions.map(mo => {
-                    const sel = selectedMonths.includes(mo.key);
-                    const stats = monthStats[mo.key];
-                    const hasStats = !!stats && !loadingMonthStats;
-                    const freeRatio = hasStats && stats.totalWeekends > 0 ? stats.freeWeekends / stats.totalWeekends : 0;
-                    // Color coding: green if mostly free, amber if mixed, red-ish if conflicts
-                    const isGreat = hasStats && freeRatio >= 0.7 && stats.tripConflicts === 0;
-                    const hasTripConflict = hasStats && stats.tripConflicts > 0;
-                    return (
-                      <motion.button
-                        key={mo.key}
-                        whileTap={{ scale: 0.96 }}
-                        onClick={() => toggleMonth(mo.key)}
-                        className={cn(
-                          "relative rounded-xl border px-3 py-2.5 text-sm font-medium transition-all text-center flex flex-col items-center gap-1",
-                          sel
-                            ? isGreat
-                              ? "border-chart-2 bg-chart-2/15 text-chart-2 ring-1 ring-chart-2/30"
-                              : "border-primary bg-primary/10 text-primary"
-                            : isGreat
-                              ? "border-chart-2/40 bg-chart-2/5 hover:bg-chart-2/10 text-foreground"
-                              : "border-border hover:border-primary/30 hover:bg-primary/5 text-foreground"
-                        )}
-                      >
-                        <span>{mo.label}</span>
-                        {hasStats && (
-                          <span className={cn(
-                            "text-[9px] font-medium leading-none",
-                            isGreat ? "text-chart-2" : hasTripConflict ? "text-destructive" : "text-muted-foreground"
-                          )}>
-                            {stats.freeWeekends}/{stats.totalWeekends} free
-                            {stats.tripConflicts > 0 && ` · ${stats.tripConflicts} trip${stats.tripConflicts > 1 ? 's' : ''}`}
-                          </span>
-                        )}
-                        {loadingMonthStats && (
-                          <span className="h-2.5 w-12 rounded-full bg-muted animate-pulse" />
-                        )}
-                        {/* Dot indicator */}
-                        {hasStats && (
-                          <div className="absolute top-1.5 right-1.5 flex gap-0.5">
-                            {isGreat && <span className="h-1.5 w-1.5 rounded-full bg-chart-2" />}
-                            {hasTripConflict && <span className="h-1.5 w-1.5 rounded-full bg-destructive" />}
-                          </div>
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {monthOptions.map(mo => {
+                        const sel = selectedMonths.includes(mo.key);
+                        const stats = monthStats[mo.key];
+                        const hasStats = !!stats && !loadingMonthStats;
+                        const freeRatio = hasStats && stats.totalWeekends > 0 ? stats.freeWeekends / stats.totalWeekends : 0;
+                        const isGreat = hasStats && freeRatio >= 0.7 && stats.tripConflicts === 0;
+                        const hasTripConflict = hasStats && stats.tripConflicts > 0;
+                        return (
+                          <motion.button
+                            key={mo.key}
+                            whileTap={{ scale: 0.96 }}
+                            onClick={() => toggleMonth(mo.key)}
+                            className={cn(
+                              "relative rounded-xl border px-3 py-2.5 text-sm font-medium transition-all text-center flex flex-col items-center gap-1",
+                              sel
+                                ? isGreat
+                                  ? "border-chart-2 bg-chart-2/15 text-chart-2 ring-1 ring-chart-2/30"
+                                  : "border-primary bg-primary/10 text-primary"
+                                : isGreat
+                                  ? "border-chart-2/40 bg-chart-2/5 hover:bg-chart-2/10 text-foreground"
+                                  : "border-border hover:border-primary/30 hover:bg-primary/5 text-foreground"
+                            )}
+                          >
+                            <span>{mo.label}</span>
+                            {hasStats && (
+                              <span className={cn(
+                                "text-[9px] font-medium leading-none",
+                                isGreat ? "text-chart-2" : hasTripConflict ? "text-destructive" : "text-muted-foreground"
+                              )}>
+                                {stats.freeWeekends}/{stats.totalWeekends} free
+                                {stats.tripConflicts > 0 && ` · ${stats.tripConflicts} trip${stats.tripConflicts > 1 ? 's' : ''}`}
+                              </span>
+                            )}
+                            {loadingMonthStats && (
+                              <span className="h-2.5 w-12 rounded-full bg-muted animate-pulse" />
+                            )}
+                            {hasStats && (
+                              <div className="absolute top-1.5 right-1.5 flex gap-0.5">
+                                {isGreat && <span className="h-1.5 w-1.5 rounded-full bg-chart-2" />}
+                                {hasTripConflict && <span className="h-1.5 w-1.5 rounded-full bg-destructive" />}
+                              </div>
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
 
-                {selectedMonths.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 justify-center">
-                    {selectedMonths.sort().map(k => {
-                      const mo = monthOptions.find(m => m.key === k);
-                      return (
-                        <span key={k} className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium text-primary">
-                          {mo?.label}
-                          <button onClick={() => toggleMonth(k)}><X className="h-3 w-3" /></button>
-                        </span>
-                      );
+                    {selectedMonths.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 justify-center">
+                        {selectedMonths.sort().map(k => {
+                          const mo = monthOptions.find(m => m.key === k);
+                          return (
+                            <span key={k} className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium text-primary">
+                              {mo?.label}
+                              <button onClick={() => toggleMonth(k)}><X className="h-3 w-3" /></button>
+                            </span>
+                          );
                     })}
                   </div>
                 )}
