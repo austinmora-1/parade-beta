@@ -57,10 +57,9 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
       className={cn(
         "relative w-full min-h-[100px] rounded-xl border bg-card p-3 text-left transition-all active:scale-[0.99] shadow-lg ring-1 ring-white/5 flex flex-col justify-between overflow-hidden",
         showTentativeStyle && "border-dashed border-muted-foreground/40",
-        fromCalendar && !showTentativeStyle && !isLive && "bg-muted/40 border-muted-foreground/15 shadow-none ring-0",
         isPast && !showTentativeStyle && "bg-muted text-muted-foreground border-muted-foreground/20 shadow-none ring-0",
         isLive && !showTentativeStyle && "border-primary ring-2 ring-primary/30",
-        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && !isPast && !fromCalendar && "border-border"
+        selected ? "border-primary ring-2 ring-primary/20 bg-primary/5" : !isLive && !isPast && "border-border"
       )}
     >
       {isLive && !showTentativeStyle && (
@@ -73,34 +72,19 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
         {selectMode && (
           <Checkbox checked={selected} className="shrink-0 mt-0.5" />
         )}
-        {fromCalendar ? (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5 bg-muted-foreground/10">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          </div>
-        ) : (
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5"
-            style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
-          >
-            <ActivityIcon config={activityConfig} size={16} />
-          </div>
-        )}
+        <div
+          className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0 mt-0.5"
+          style={{ backgroundColor: `hsl(var(--${activityConfig.color}) / 0.15)` }}
+        >
+          <ActivityIcon config={activityConfig} size={16} />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <div className="min-w-0 flex-1 overflow-hidden">
-              <span className={cn("block truncate text-sm font-semibold leading-tight", (showTentativeStyle || fromCalendar) && "text-muted-foreground")}>
+              <span className={cn("block truncate text-sm font-semibold leading-tight", showTentativeStyle && "text-muted-foreground")}>
                 {displayTitle}
               </span>
             </div>
-            {fromCalendar && (
-              <span
-                className="shrink-0 inline-flex items-center gap-1 rounded-full bg-muted-foreground/10 px-1.5 py-0.5 text-[8px] font-medium text-muted-foreground whitespace-nowrap mt-0.5"
-                title={calendarLabel ?? undefined}
-              >
-                <CalendarDays className="h-2.5 w-2.5" />
-                From your calendar
-              </span>
-            )}
             {hasPendingChange && (
               <span className="shrink-0 rounded-full bg-muted border border-muted-foreground/20 px-1.5 py-0.5 text-[8px] font-semibold text-muted-foreground whitespace-nowrap mt-0.5">
                 Proposed
@@ -122,6 +106,12 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
               </span>
               <span className="text-muted-foreground/60 text-xs">{getTimezoneAbbreviation(userTimezone)}</span>
             </div>
+            {fromCalendar && (
+              <div className="flex items-center gap-1 min-w-0">
+                <CalendarDays className="h-3 w-3 shrink-0" />
+                <span className="truncate text-xs" title={calendarLabel ?? undefined}>From your calendar</span>
+              </div>
+            )}
             {plan.location && (
               <div className="flex items-center gap-1 truncate min-w-0">
                 <MapPin className="h-3 w-3 shrink-0" />
