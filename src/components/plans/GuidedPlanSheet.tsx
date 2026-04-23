@@ -196,6 +196,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setShowCustomInput(false);
       setCustomLabel('');
       setActivitySearch('');
+      setFriendsHaveDifferentHome(false);
     }
   }, [open, needsFriendStep]);
 
