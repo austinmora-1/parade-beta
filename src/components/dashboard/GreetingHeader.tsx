@@ -301,7 +301,14 @@ export function GreetingHeader() {
       )}
       {tripOpen && (
         <Suspense fallback={null}>
-          <GuidedTripSheet open={tripOpen} onOpenChange={setTripOpen} />
+          <GuidedTripSheet
+            open={tripOpen}
+            onOpenChange={(o) => {
+              setTripOpen(o);
+              if (!o) setTripPreSelected([]);
+            }}
+            preSelectedFriends={tripPreSelected.length > 0 ? tripPreSelected : undefined}
+          />
         </Suspense>
       )}
       {findPeopleOpen && (
