@@ -602,14 +602,15 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
         </DialogHeader>
 
         <div className="space-y-3">
-          {/* ── Title ── */}
+          {/* ── Title (hidden in edit mode — moved to More options) ── */}
+          {!isEditMode && (
           <Input
             placeholder={`${getAutoTitle()} (or type a custom title)`}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="h-10 text-sm"
           />
-
+          )}
           {/* ── Activity Dropdown ── */}
           <div className="space-y-1">
             <Label className="text-xs">Activity</Label>
