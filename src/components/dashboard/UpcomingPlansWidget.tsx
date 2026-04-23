@@ -202,6 +202,8 @@ export function UpcomingPlansWidget() {
     const isPendingRsvp = !isOwner && plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
     const hasPendingChange = !!plan.pendingChange;
     const isTentative = plan.status === 'tentative' || isPendingRsvp || hasPendingChange;
+    const fromCalendar = isCalendarSourced(plan);
+    const calendarLabel = fromCalendar ? getCalendarSourceLabel(plan.source) : null;
 
     return (
       <div
@@ -211,14 +213,26 @@ export function UpcomingPlansWidget() {
           "rounded-xl border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer group",
           isInProgress ? "bg-primary/8 hover:bg-primary/12 shadow-sm" : "bg-muted/30 hover:bg-muted/50",
           isTentative && "border-dashed border border-muted-foreground/30 opacity-70",
+          fromCalendar && !isInProgress && !isTentative && "bg-muted/20 hover:bg-muted/40 opacity-90",
         )}
-        style={{ borderLeftColor: `hsl(var(--${activityConfig.color}))` }}
+        style={{ borderLeftColor: fromCalendar ? 'hsl(var(--muted-foreground) / 0.4)' : `hsl(var(--${activityConfig.color}))` }}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <ActivityIcon config={activityConfig} size={18} />
-              <span className="text-sm font-medium truncate">{displayTitle}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {fromCalendar
+                ? <CalendarDays className="h-[18px] w-[18px] text-muted-foreground shrink-0" />
+                : <ActivityIcon config={activityConfig} size={18} />}
+              <span className={cn("text-sm font-medium truncate", fromCalendar && "text-muted-foreground")}>{displayTitle}</span>
+              {fromCalendar && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-muted-foreground/10 px-2 py-0.5 text-[9px] font-medium text-muted-foreground shrink-0"
+                  title={calendarLabel ?? undefined}
+                >
+                  <CalendarDays className="h-2.5 w-2.5" />
+                  From your calendar
+                </span>
+              )}
               {hasPendingChange && (
                 <span className="rounded-full bg-muted border border-muted-foreground/20 px-2 py-0.5 text-[9px] font-semibold text-muted-foreground shrink-0">
                   Proposed change
