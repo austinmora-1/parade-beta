@@ -310,7 +310,9 @@ export default function Friends() {
 
 
       {/* Group Scheduler */}
-      <GroupScheduler friends={friends} />
+      <div ref={schedulerRef} className="scroll-mt-20">
+        <GroupScheduler friends={friends} />
+      </div>
 
       {/* Incoming Requests */}
       {incomingRequests.length > 0 && (
