@@ -110,17 +110,6 @@ export function SmartPrimaryCTA() {
           eyebrow: 'Happening today',
           eyebrowText: state.title,
         };
-      case 'send-open-invite':
-        return {
-          icon: Send,
-          label: 'Send open invite',
-          accent: 'text-primary',
-          ring: 'ring-primary/30',
-          gradient: 'from-primary/10 via-card to-card',
-          iconBg: 'bg-primary/15 text-primary',
-          eyebrow: 'Friends are around',
-          eyebrowText: state.subtitle,
-        };
       case 'drop-open-invite':
         return {
           icon: Sparkles,
