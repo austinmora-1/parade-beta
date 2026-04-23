@@ -1090,6 +1090,170 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
               <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showMoreOptions && "rotate-180")} />
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-2">
+              {/* In edit mode, secondary fields live here */}
+              {isEditMode && (
+                <>
+                  {/* Title */}
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-title" className="text-xs">Title</Label>
+                    <Input
+                      id="edit-title"
+                      placeholder={`${getAutoTitle()} (or type a custom title)`}
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  {/* Activity */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Activity</Label>
+                    <Select
+                      value={activity}
+                      onValueChange={(v) => {
+                        setActivity(v);
+                        const config = getActivityConfig(v, customActivities);
+                        if (config) setSelectedVibe(config.vibeType);
+                      }}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue>
+                          {(() => {
+                            if (activity === 'tbd') return (
+                              <span className="flex items-center gap-2 text-muted-foreground">
+                                <CircleHelp className="h-4 w-4" /> TBD
+                              </span>
+                            );
+                            const config = getActivityConfig(activity, customActivities);
+                            if (!config) return activity;
+                            return (
+                              <span className="flex items-center gap-2">
+                                <ActivityIcon config={config} size={14} />
+                                {config.label}
+                              </span>
+                            );
+                          })()}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        <SelectItem value="tbd" className="text-sm">
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            ❓ TBD — decide later
+                          </span>
+                        </SelectItem>
+                        {customActivities.length > 0 && (
+                          <div>
+                            <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              Your Activities
+                            </div>
+                            {customActivities.map((ca) => (
+                              <SelectItem key={ca.id} value={ca.id} className="text-sm">
+                                <span className="flex items-center gap-2">
+                                  {ca.icon} {ca.label}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </div>
+                        )}
+                        {getAllVibes().map((vibe) => {
+                          const vibeConfig = VIBE_CONFIG[vibe];
+                          const activities = getActivitiesByVibe(vibe);
+                          return (
+                            <div key={vibe}>
+                              <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                <vibeConfig.icon className="h-3.5 w-3.5" />
+                                {vibeConfig.label}
+                              </div>
+                              {activities.map((type) => {
+                                const config = ACTIVITY_CONFIG[type];
+                                return (
+                                  <SelectItem key={type} value={type} className="text-sm">
+                                    <span className="flex items-center gap-2">
+                                      <ActivityIcon config={config} size={14} />
+                                      {config.label}
+                                    </span>
+                                  </SelectItem>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Status */}
+                  {!isParticipantEditor && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Status</Label>
+                      <div className="flex gap-2">
+                        {([
+                          { value: 'confirmed' as const, icon: CircleCheck, label: 'Confirmed', activeClass: 'border-primary bg-primary/10 text-primary' },
+                          { value: 'tentative' as const, icon: CircleHelp, label: 'Tentative', activeClass: 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+                          { value: 'proposed' as const, icon: Lightbulb, label: 'Proposed', activeClass: 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+                        ]).map(s => {
+                          const Icon = s.icon;
+                          return (
+                            <button
+                              key={s.value}
+                              type="button"
+                              onClick={() => setPlanStatus(s.value)}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all",
+                                planStatus === s.value
+                                  ? s.activeClass
+                                  : "border-border bg-muted/40 text-muted-foreground hover:bg-muted"
+                              )}
+                            >
+                              <Icon className="h-3.5 w-3.5" />
+                              {s.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Location */}
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-location" className="text-xs flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      Location
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="edit-location"
+                        placeholder="Search for a place..."
+                        value={locationName}
+                        onChange={(e) => handleLocationChange(e.target.value)}
+                        onFocus={() => locationSuggestions.length > 0 && setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        className="h-9 pr-8 text-sm"
+                      />
+                      {isSearchingLocation ? (
+                        <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Search className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      )}
+                      {showSuggestions && locationSuggestions.length > 0 && (
+                        <div className="absolute z-50 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                          {locationSuggestions.map((suggestion, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => selectLocation(suggestion)}
+                              className="flex w-full items-start gap-2 px-2 py-1.5 text-left text-xs hover:bg-muted transition-colors"
+                            >
+                              <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                              <span className="line-clamp-1">{suggestion.display_name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
               {/* Feed Visibility */}
               <div className="space-y-1">
                 <Label className="text-xs flex items-center gap-1.5">
