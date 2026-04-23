@@ -29,6 +29,8 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
   const isTentative = plan.status === 'tentative';
   const isPendingRsvp = plan.myRsvpStatus && plan.myRsvpStatus !== 'accepted' && plan.myRsvpStatus !== 'declined';
   const hasPendingChange = !!plan.pendingChange;
+  const fromCalendar = isCalendarSourced(plan);
+  const calendarLabel = fromCalendar ? getCalendarSourceLabel(plan.source) : null;
   const showTentativeStyle = isTentative || isPendingRsvp || hasPendingChange;
 
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
