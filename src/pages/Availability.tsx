@@ -20,6 +20,7 @@ import { isCalendarSourced } from '@/lib/planSource';
 
 export default function Availability() {
   
+  const navigate = useNavigate();
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
