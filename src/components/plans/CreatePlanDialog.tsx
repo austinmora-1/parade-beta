@@ -244,7 +244,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
       setNotes(editPlan.notes || '');
       setPlanStatus(editPlan.status || 'confirmed');
       setFeedVisibility(editPlan.feedVisibility || 'private');
-      setShowMoreOptions(true); // Show all options when editing
+      setShowMoreOptions(false); // Keep collapsed in edit mode — focus on date/time/friends
       // showCustomTime no longer needed in new UI
     } else if (open && !editPlan) {
       resetForm();
