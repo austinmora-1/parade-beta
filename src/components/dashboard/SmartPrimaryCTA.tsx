@@ -73,7 +73,7 @@ export function SmartPrimaryCTA() {
     const upcomingThisWeek = plans.filter(
       (p) => p.date >= now && p.date <= sevenDaysOut && p.status !== 'cancelled'
     );
-    const hasActiveOpenInvite = invites.some(
+    const hasActiveOpenInvite = myOpenInvites.some(
       (i) => i.status === 'open' && new Date(i.expiresAt) > now
     );
 
@@ -98,7 +98,7 @@ export function SmartPrimaryCTA() {
         ? "Invite's out — start something new?"
         : 'Get something on the books',
     };
-  }, [plans, windows, invites]);
+  }, [plans, windows, myOpenInvites]);
 
   const handleClick = () => {
     switch (state.kind) {
