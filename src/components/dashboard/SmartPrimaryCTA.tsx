@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { isToday, isSameDay } from 'date-fns';
-import { Sparkles, Send, CalendarPlus, ArrowRight, Users } from 'lucide-react';
+import { Sparkles, CalendarPlus, ArrowRight, Users } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useOpenWindows } from '@/hooks/useOpenWindows';
 import { useOpenInvites } from '@/hooks/useOpenInvites';
