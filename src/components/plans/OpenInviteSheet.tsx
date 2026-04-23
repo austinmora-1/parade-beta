@@ -1,20 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, ArrowLeft, Sparkles, Users, Tag, CalendarDays, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Users, Tag, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { ACTIVITY_CONFIG, VIBE_CONFIG, getActivitiesByVibe, getAllVibes, ActivityType, TimeSlot } from '@/types/planner';
 import { useOpenInvites } from '@/hooks/useOpenInvites';
 import { useAuth } from '@/hooks/useAuth';
 import { usePods } from '@/hooks/usePods';
-import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type Step = 'describe' | 'audience' | 'send' | 'confirm';
@@ -34,9 +33,19 @@ const SLOT_OPTIONS: { value: TimeSlot; label: string; range: string }[] = [
 
 export function OpenInviteSheet({ open, onOpenChange }: OpenInviteSheetProps) {
   const { user } = useAuth();
-  const { profile } = useCurrentUserProfile();
   const { create } = useOpenInvites();
   const { pods } = usePods();
+  const [interests, setInterests] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!open || !user?.id) return;
+    supabase
+      .from('profiles')
+      .select('interests')
+      .eq('user_id', user.id)
+      .single()
+      .then(({ data }) => setInterests((data?.interests as string[]) || []));
+  }, [open, user?.id]);
 
   const [step, setStep] = useState<Step>('describe');
   const [activity, setActivity] = useState<ActivityType | null>(null);
@@ -63,10 +72,8 @@ export function OpenInviteSheet({ open, onOpenChange }: OpenInviteSheetProps) {
     setTimeout(reset, 250);
   };
 
-  const interests = useMemo(() => (profile?.interests || []) as string[], [profile?.interests]);
-
   const activityLabel = activity ? ACTIVITY_CONFIG[activity].label : '';
-  const activityEmoji = activity ? ACTIVITY_CONFIG[activity].emoji : '✨';
+  const activityEmoji = activity ? ACTIVITY_CONFIG[activity].icon : '✨';
 
   const audienceLabel = useMemo(() => {
     if (audienceType === 'all_friends') return 'All friends';
