@@ -1192,7 +1192,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         <p className="text-xs text-muted-foreground max-w-[260px]">
                           {hasFriends
                             ? (friendsHaveDifferentHome
-                                ? `Looks like you and ${friendNamesStr} live in different cities. Want to plan a trip together instead?`
+                                ? `Looks like you and ${friendNamesStr} may not be in the same city. Want to plan a trip together instead?`
                                 : `It looks like you and ${friendNamesStr} won't be in the same city in the next 6 months.`)
                             : 'Your schedule looks packed! Pick a time manually below.'}
                         </p>
