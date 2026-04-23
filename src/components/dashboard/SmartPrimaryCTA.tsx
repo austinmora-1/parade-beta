@@ -5,7 +5,6 @@ import { isToday } from 'date-fns';
 import { CalendarPlus, ArrowRight } from 'lucide-react';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Button } from '@/components/ui/button';
-import { GuidedPlanSheet } from '@/components/plans/GuidedPlanSheet';
 import { cn } from '@/lib/utils';
 
 type CtaState =
