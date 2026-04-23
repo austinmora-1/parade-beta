@@ -24,6 +24,10 @@ const SLOT_HOURS: Record<TimeSlot, number> = {
   'late-night': 4,
 };
 
+// Cap any window block at this many hours (keeps surface focused on
+// short, actionable open windows rather than full-day chunks).
+const MAX_WINDOW_HOURS = 3;
+
 const SLOT_DB_KEYS: { key: keyof FriendAvailRow; slot: TimeSlot }[] = [
   { key: 'early_morning', slot: 'early-morning' },
   { key: 'late_morning', slot: 'late-morning' },
