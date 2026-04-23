@@ -40,6 +40,8 @@ export interface CreateOpenInviteInput {
   audience_type: OpenInviteAudienceType;
   audience_ref?: string | null;
   expires_at?: string;
+  plan_id?: string | null;
+  trip_id?: string | null;
 }
 
 export function useOpenInvites() {
@@ -97,8 +99,10 @@ export function useOpenInvites() {
           notes: input.notes ?? null,
           audience_type: input.audience_type,
           audience_ref: input.audience_ref ?? null,
+          plan_id: input.plan_id ?? null,
+          trip_id: input.trip_id ?? null,
           ...(input.expires_at ? { expires_at: input.expires_at } : {}),
-        })
+        } as any)
         .select()
         .single();
       if (error) {

@@ -2,7 +2,7 @@ import { useMemo, useState, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Sun, Moon, Sunset, Coffee, MapPin, Plus, CalendarPlus, Plane, UserPlus, Loader2 } from 'lucide-react';
+import { Sun, Moon, Sunset, Coffee, MapPin, Plus, CalendarPlus, Plane, UserPlus, Loader2, Clock, Megaphone } from 'lucide-react';
 import { format } from 'date-fns';
 import { getTimezoneForCity } from '@/lib/timezone';
 import { formatCityForDisplay } from '@/lib/formatCity';
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
+const FindPeopleSheet = lazy(() => import('@/components/plans/FindPeopleSheet'));
 const InviteFriendDialog = lazy(() => import('@/components/friends/InviteFriendDialog'));
 
 function getGreetingConfig(hour: number) {
@@ -50,9 +51,10 @@ function getContextMessage(planCount: number, friendCount: number, hour: number)
 }
 
 const menuItems = [
-  { key: 'plan', label: 'Create a Plan', icon: CalendarPlus },
-  { key: 'trip', label: 'Create a Trip', icon: Plane },
-  { key: 'invite', label: 'Invite Friends', icon: UserPlus },
+  { key: 'find-time', label: 'Find time', icon: Clock, hint: 'I know who' },
+  { key: 'find-people', label: 'Find people', icon: Megaphone, hint: 'I know what' },
+  { key: 'find-in-place', label: 'Find in place', icon: MapPin, hint: 'I know where' },
+  { key: 'invite', label: 'Invite friends', icon: UserPlus },
 ] as const;
 
 export function GreetingHeader() {
@@ -63,6 +65,7 @@ export function GreetingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [tripOpen, setTripOpen] = useState(false);
+  const [findPeopleOpen, setFindPeopleOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [locationDraft, setLocationDraft] = useState('');
@@ -101,8 +104,9 @@ export function GreetingHeader() {
 
   const handleSelect = (key: string) => {
     setMenuOpen(false);
-    if (key === 'plan') setPlanOpen(true);
-    else if (key === 'trip') setTripOpen(true);
+    if (key === 'find-time') setPlanOpen(true);
+    else if (key === 'find-people') setFindPeopleOpen(true);
+    else if (key === 'find-in-place') setTripOpen(true);
     else if (key === 'invite') setInviteOpen(true);
   };
 
@@ -272,14 +276,17 @@ export function GreetingHeader() {
                 transition={{ duration: 0.15 }}
                 className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl border border-border bg-popover p-1 shadow-lg"
               >
-                {menuItems.map(({ key, label, icon: ItemIcon }) => (
+                {menuItems.map(({ key, label, icon: ItemIcon, hint }: any) => (
                   <button
                     key={key}
                     onClick={() => handleSelect(key)}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors hover:bg-accent"
+                    className="flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-sm text-popover-foreground transition-colors hover:bg-accent text-left"
                   >
-                    <ItemIcon className="h-4 w-4 text-primary" />
-                    {label}
+                    <ItemIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="leading-tight">{label}</div>
+                      {hint && <div className="text-[10px] text-muted-foreground leading-tight">{hint}</div>}
+                    </div>
                   </button>
                 ))}
               </motion.div>
@@ -297,6 +304,11 @@ export function GreetingHeader() {
       {tripOpen && (
         <Suspense fallback={null}>
           <GuidedTripSheet open={tripOpen} onOpenChange={setTripOpen} />
+        </Suspense>
+      )}
+      {findPeopleOpen && (
+        <Suspense fallback={null}>
+          <FindPeopleSheet open={findPeopleOpen} onOpenChange={setFindPeopleOpen} />
         </Suspense>
       )}
       {inviteOpen && (

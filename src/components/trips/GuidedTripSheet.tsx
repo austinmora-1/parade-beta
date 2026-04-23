@@ -26,6 +26,9 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { useAuth } from '@/hooks/useAuth';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { InviteToTripDialog } from './InviteToTripDialog';
+import { ExistingTripPicker, type ExistingTrip } from './findinplace/ExistingTripPicker';
+import { lazy, Suspense } from 'react';
+const FindPeopleSheet = lazy(() => import('@/components/plans/FindPeopleSheet'));
 
 interface PreSelectedFriend {
   userId: string;
@@ -136,6 +139,8 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
    const [customMode, setCustomMode] = useState(false);
    const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
    const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+   const [showExistingTrips, setShowExistingTrips] = useState(false);
+   const [findPeopleTripContext, setFindPeopleTripContext] = useState<{ tripId: string; location: string | null; startDate: string; endDate: string } | null>(null);
 
   // Generate month options (next 12 months)
   const monthOptions = useMemo(() => {
@@ -235,6 +240,8 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
       setCustomMode(false);
       setCustomStartDate(undefined);
       setCustomEndDate(undefined);
+      setShowExistingTrips(false);
+      setFindPeopleTripContext(null);
 
       if (preSelectedFriends && preSelectedFriends.length > 0) {
         const matched = connectedFriends.filter(f =>
@@ -702,6 +709,38 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                     <p className="text-sm font-semibold">Plan a Visit</p>
                     <p className="text-[10px] text-muted-foreground leading-tight">Visit a friend or host them</p>
                   </button>
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    onClick={() => setShowExistingTrips(v => !v)}
+                    className={cn(
+                      'w-full rounded-xl border px-3 py-2.5 text-left transition-all flex items-center gap-2',
+                      'border-border hover:border-primary/30 hover:bg-primary/5'
+                    )}
+                  >
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold">Use an existing trip</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight">Find people to meet up with there</p>
+                    </div>
+                  </button>
+
+                  {showExistingTrips && (
+                    <div className="mt-2">
+                      <ExistingTripPicker
+                        onSelect={(trip: ExistingTrip) => {
+                          setFindPeopleTripContext({
+                            tripId: trip.id,
+                            location: trip.location,
+                            startDate: trip.start_date,
+                            endDate: trip.end_date,
+                          });
+                          onOpenChange(false);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -1303,6 +1342,15 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         destination={postCreateShare.destination}
         proposalType={postCreateShare.type}
       />
+    )}
+    {findPeopleTripContext && (
+      <Suspense fallback={null}>
+        <FindPeopleSheet
+          open={!!findPeopleTripContext}
+          onOpenChange={(o) => { if (!o) setFindPeopleTripContext(null); }}
+          tripContext={findPeopleTripContext}
+        />
+      </Suspense>
     )}
     </>
   );
