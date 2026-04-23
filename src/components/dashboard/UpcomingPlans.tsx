@@ -499,7 +499,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
       icon={<CalendarCheck className="h-4 w-4 text-primary" />}
       badge={
         (upcomingPlans.length + tripProposals.length) > 0 ? (
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
             {upcomingPlans.length + tripProposals.length}
           </span>
         ) : undefined
