@@ -24,7 +24,7 @@ type CtaState =
 export function SmartPrimaryCTA() {
   const navigate = useNavigate();
   const { plans } = usePlannerStore();
-  const [makePlanOpen, setMakePlanOpen] = useState(false);
+  
 
   const state = useMemo<CtaState>(() => {
     const now = new Date();
