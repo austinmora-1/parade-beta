@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { usePlannerStore } from '@/stores/plannerStore';
 
 const InviteFriendDialog = lazy(() => import('@/components/friends/InviteFriendDialog'));
@@ -97,6 +98,17 @@ export default function Friends() {
   const [searchResults, setSearchResults] = useState<PublicProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const schedulerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (searchParams.get('scheduler') === '1' && schedulerRef.current) {
+      schedulerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const next = new URLSearchParams(searchParams);
+      next.delete('scheduler');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // FriendPanel state
   const [panelOpen, setPanelOpen] = useState(false);
@@ -298,7 +310,9 @@ export default function Friends() {
 
 
       {/* Group Scheduler */}
-      <GroupScheduler friends={friends} />
+      <div ref={schedulerRef} className="scroll-mt-20">
+        <GroupScheduler friends={friends} />
+      </div>
 
       {/* Incoming Requests */}
       {incomingRequests.length > 0 && (
