@@ -105,13 +105,6 @@ export function SmartPrimaryCTA() {
         </div>
       </motion.button>
 
-      {makePlanOpen && (
-        <GuidedPlanSheet
-          open={makePlanOpen}
-          onOpenChange={setMakePlanOpen}
-          preSelectedFriends={[]}
-        />
-      )}
     </>
   );
 }
