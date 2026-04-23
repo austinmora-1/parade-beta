@@ -913,7 +913,8 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
             </div>
           )}
 
-          {/* ── Location (Optional) ── */}
+          {/* ── Location (hidden in edit mode — moved to More options) ── */}
+          {!isEditMode && (
           <div className="space-y-1">
             <Label htmlFor="location" className="text-xs flex items-center gap-1">
               <MapPin className="h-3 w-3" />
@@ -952,6 +953,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
               )}
             </div>
           </div>
+          )}
 
           {/* ── Friends (Optional) ── */}
           {!isParticipantEditor && (() => {
