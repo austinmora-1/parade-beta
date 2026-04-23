@@ -16,6 +16,7 @@ import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
 import { PolishProfileCard } from '@/components/dashboard/PolishProfileCard';
 import { FreeWindowCard } from '@/components/dashboard/FreeWindowCard';
+import { SmartPrimaryCTA } from '@/components/dashboard/SmartPrimaryCTA';
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -102,12 +103,17 @@ export default function Dashboard() {
         <VibeAndIntentionsCard />
       </motion.div>
 
+      {/* State-aware primary CTA — picks open-invite, today's plan, etc. */}
+      <motion.div variants={fadeUp}>
+        <SmartPrimaryCTA />
+      </motion.div>
+
       {/* Who's around — the social hook */}
       <motion.div variants={fadeUp}>
         <FriendVibeStrip onFriendTap={handleAddFriend} />
       </motion.div>
 
-      {/* Free-weekend / open-window surface */}
+      {/* Free-weekend / open-window surface (multiple options) */}
       <motion.div variants={fadeUp}>
         <FreeWindowCard />
       </motion.div>
