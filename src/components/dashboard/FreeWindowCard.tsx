@@ -29,7 +29,13 @@ export function FreeWindowCard() {
   if (windows.length === 0) {
     return (
       <>
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-card px-3 py-2 shadow-soft">
+        <div
+          ref={containerRef}
+          className={cn(
+            'flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-card px-3 py-2 shadow-soft transition-all',
+            highlight && 'ring-2 ring-primary/50 border-primary/40'
+          )}
+        >
           <div className="flex items-center gap-2 min-w-0">
             <Sparkles className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <p className="text-xs text-muted-foreground truncate">
@@ -56,7 +62,13 @@ export function FreeWindowCard() {
 
   return (
     <>
-      <div className="space-y-2">
+      <div
+        ref={containerRef}
+        className={cn(
+          'space-y-2 rounded-xl transition-all',
+          highlight && 'ring-2 ring-primary/50 p-2 -m-2 bg-primary/5'
+        )}
+      >
         <div className="flex items-center justify-between px-0.5">
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
