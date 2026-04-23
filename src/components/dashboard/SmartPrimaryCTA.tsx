@@ -88,7 +88,6 @@ export function SmartPrimaryCTA() {
       case 'open-today':
         navigate(`/plan/${state.planId}`);
         return;
-      case 'send-open-invite':
       case 'drop-open-invite':
         setOpenInviteOpen(true);
         return;
