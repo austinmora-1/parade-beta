@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
-import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
+import type { StagedFriend } from '@/components/dashboard/QuickPlanDrop';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
@@ -34,7 +34,6 @@ export default function Dashboard() {
   const { isLoading } = usePlannerStore();
   const { session } = useAuth();
   const navigate = useNavigate();
-  const [stagedFriends, setStagedFriends] = useState<StagedFriend[]>([]);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
   useEffect(() => {
@@ -54,19 +53,8 @@ export default function Dashboard() {
     checkOnboarding();
   }, [session?.user, navigate]);
 
-  const handleAddFriend = useCallback((friend: StagedFriend) => {
-    setStagedFriends(prev => {
-      if (prev.some(f => f.userId === friend.userId)) return prev;
-      return [...prev, friend];
-    });
-  }, []);
-
-  const handleRemoveFriend = useCallback((userId: string) => {
-    setStagedFriends(prev => prev.filter(f => f.userId !== userId));
-  }, []);
-
-  const handleClear = useCallback(() => {
-    setStagedFriends([]);
+  const handleAddFriend = useCallback((_friend: StagedFriend) => {
+    // No-op: friend staging surface (QuickPlanDrop) was removed from the dashboard.
   }, []);
 
   if (isLoading || checkingOnboarding) {
@@ -112,15 +100,6 @@ export default function Dashboard() {
         <FreeWindowCard />
       </motion.div>
 
-      {/* Quick Plan drop zone */}
-      <motion.div variants={fadeUp}>
-        <QuickPlanDrop
-          stagedFriends={stagedFriends}
-          onAddFriend={handleAddFriend}
-          onRemoveFriend={handleRemoveFriend}
-          onClear={handleClear}
-        />
-      </motion.div>
 
       {/* Optional: nudge to flesh out profile (interests, goals, etc.) */}
       <motion.div variants={fadeUp}>
