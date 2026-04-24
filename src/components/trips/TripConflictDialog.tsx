@@ -85,31 +85,57 @@ export function TripConflictDialog({ open, onOpenChange, conflicts, onResolved }
     }
   };
 
-  // Merge: keep `keepId`, merge dates + participants from `mergeFromId`, then delete `mergeFromId`
-  const mergeTrips = async (keepId: string, mergeFromId: string, keepLabel: string) => {
+  // Merge the two conflicting trips into one. We keep the trip with more
+  // participants (favouring trip A as tiebreak), expand its dates to span both
+  // ranges, union all invited friends, then delete the other trip.
+  const mergeTrips = async () => {
     setSaving(true);
     try {
-      const newStart = conflict.trip_a_start < conflict.trip_b_start ? conflict.trip_a_start : conflict.trip_b_start;
-      const newEnd = conflict.trip_a_end > conflict.trip_b_end ? conflict.trip_a_end : conflict.trip_b_end;
+      const aCount = (conflict.trip_a_participant_ids || []).length;
+      const bCount = (conflict.trip_b_participant_ids || []).length;
+      const keepIsA = aCount >= bCount;
+      const keepId = keepIsA ? conflict.trip_a_id : conflict.trip_b_id;
+      const dropId = keepIsA ? conflict.trip_b_id : conflict.trip_a_id;
+      const keepLabel = keepIsA
+        ? labelFor(conflict.trip_a_name, conflict.trip_a_location)
+        : labelFor(conflict.trip_b_name, conflict.trip_b_location);
 
-      // Expand kept trip's date range
+      const newStart =
+        conflict.trip_a_start < conflict.trip_b_start ? conflict.trip_a_start : conflict.trip_b_start;
+      const newEnd =
+        conflict.trip_a_end > conflict.trip_b_end ? conflict.trip_a_end : conflict.trip_b_end;
+
+      // Union of all participant ids from both trips (across all sources).
+      const unionIds = Array.from(
+        new Set([
+          ...(conflict.trip_a_participant_ids || []),
+          ...(conflict.trip_b_participant_ids || []),
+        ])
+      );
+
+      // Expand kept trip's date range and write the unioned priority_friend_ids
+      // so the kept trip reflects the full invited group.
       await supabase
         .from('trips')
-        .update({ start_date: newStart, end_date: newEnd })
+        .update({
+          start_date: newStart,
+          end_date: newEnd,
+          priority_friend_ids: unionIds,
+        })
         .eq('id', keepId);
 
-      // Merge participants from the other trip onto the kept trip
+      // Also merge any explicit trip_participants rows from the dropped trip
+      // onto the kept trip (dedupe via unique constraint).
       const { data: otherParticipants } = await supabase
         .from('trip_participants')
         .select('friend_user_id')
-        .eq('trip_id', mergeFromId);
+        .eq('trip_id', dropId);
 
       if (otherParticipants && otherParticipants.length > 0) {
         const rows = otherParticipants.map((p) => ({
           trip_id: keepId,
           friend_user_id: p.friend_user_id,
         }));
-        // Unique constraint on (trip_id, friend_user_id) — ignore conflicts
         await supabase.from('trip_participants').upsert(rows, {
           onConflict: 'trip_id,friend_user_id',
           ignoreDuplicates: true,
@@ -117,7 +143,7 @@ export function TripConflictDialog({ open, onOpenChange, conflicts, onResolved }
       }
 
       // Delete the other trip (cascades its participants)
-      await supabase.from('trips').delete().eq('id', mergeFromId);
+      await supabase.from('trips').delete().eq('id', dropId);
 
       toast.success(`Merged into "${keepLabel}" ✨`);
     } catch (err) {
@@ -195,9 +221,6 @@ export function TripConflictDialog({ open, onOpenChange, conflicts, onResolved }
     </div>
   );
 
-  const labelA = labelFor(conflict.trip_a_name, conflict.trip_a_location);
-  const labelB = labelFor(conflict.trip_b_name, conflict.trip_b_location);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
@@ -226,30 +249,21 @@ export function TripConflictDialog({ open, onOpenChange, conflicts, onResolved }
           <div className="flex flex-col gap-2">
             <Button
               size="sm"
-              onClick={() => mergeTrips(conflict.trip_a_id, conflict.trip_b_id, labelA)}
+              onClick={mergeTrips}
               disabled={saving}
-              className="w-full justify-start gap-2"
+              className="w-full justify-center gap-2"
             >
               <Merge className="h-4 w-4" />
-              Merge into "{labelA}"
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => mergeTrips(conflict.trip_b_id, conflict.trip_a_id, labelB)}
-              disabled={saving}
-              className="w-full justify-start gap-2"
-            >
-              <Merge className="h-4 w-4" />
-              Merge into "{labelB}"
+              Merge trips
             </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={handleKeepBoth}
               disabled={saving}
-              className="w-full justify-start gap-2"
+              className="w-full justify-center gap-2"
             >
-              Keep both as separate trips
+              Keep as separate trips
             </Button>
           </div>
         </div>
