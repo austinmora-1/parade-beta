@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
-import { QuickPlanDrop, StagedFriend } from '@/components/dashboard/QuickPlanDrop';
+import type { StagedFriend } from '@/components/dashboard/QuickPlanDrop';
 import { FriendVibeStrip } from '@/components/dashboard/FriendVibeStrip';
 import { DarkModePrompt } from '@/components/dashboard/DarkModePrompt';
 import { PushNotificationPrompt } from '@/components/dashboard/PushNotificationPrompt';
