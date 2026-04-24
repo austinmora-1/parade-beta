@@ -140,17 +140,18 @@ export function FreeWindowCard() {
           ))}
         </div>
       </div>
-      <OpenInviteSheet
-        open={inviteOpen || !!shareFor}
-        onOpenChange={(v) => {
-          if (!v) {
-            setInviteOpen(false);
-            setShareFor(null);
-          }
-        }}
-        initialDate={shareFor?.date}
-        initialSlot={shareFor?.slots[0] as TimeSlot | undefined}
-      />
+      <OpenInviteSheet open={inviteOpen} onOpenChange={setInviteOpen} />
+      {shareFor && (
+        <ShareLinkDialog
+          open={!!shareFor}
+          onOpenChange={(o) => { if (!o) setShareFor(null); }}
+          title={`Open hang — ${shareFor.dayLabel}, ${shareFor.startLabel}–${shareFor.endLabel}`}
+          shareMessage={`${inviterName} has an open window ${shareFor.dayLabel} ${shareFor.startLabel}–${shareFor.endLabel}. Activity TBD — tap to join on Parade:`}
+          emailSubject={`${inviterName} is free ${shareFor.dayLabel} ${shareFor.startLabel} — wanna hang?`}
+          generateLink={generateShareLink}
+          regenerateKey={`${shareFor.date.toISOString()}:${shareFor.slots[0]}`}
+        />
+      )}
       {planFor && (
         <QuickPlanSheet
           open={!!planFor}
