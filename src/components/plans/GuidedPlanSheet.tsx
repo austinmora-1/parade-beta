@@ -119,6 +119,12 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [chosenFriends, setChosenFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [soloMode, setSoloMode] = useState(false);
+  // Off-Parade guest: a person not on Parade. Treated like solo planning
+  // (uses only the current user's availability) but injects their name into
+  // the plan title so the user remembers who they're hanging with.
+  const [offParadeName, setOffParadeName] = useState('');
+  const [addingOffParade, setAddingOffParade] = useState(false);
+  const [offParadeDraft, setOffParadeDraft] = useState('');
 
   // The effective friends list (pre-selected or user-chosen)
   const effectiveFriends = soloMode ? [] : (needsFriendStep ? chosenFriends : preSelectedFriends);
