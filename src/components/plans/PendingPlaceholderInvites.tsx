@@ -31,6 +31,7 @@ export function PendingPlaceholderInvites({ planId, isOwner }: Props) {
   const [invites, setInvites] = useState<PlaceholderInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [shareInvite, setShareInvite] = useState<PlaceholderInvite | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
