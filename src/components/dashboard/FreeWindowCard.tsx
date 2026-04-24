@@ -88,11 +88,22 @@ export function FreeWindowCard() {
               key={w.date.toISOString() + w.slots[0]}
               window={w}
               onClick={() => setPlanFor(w)}
+              onShare={() => setShareFor(w)}
             />
           ))}
         </div>
       </div>
-      <OpenInviteSheet open={inviteOpen} onOpenChange={setInviteOpen} />
+      <OpenInviteSheet
+        open={inviteOpen || !!shareFor}
+        onOpenChange={(v) => {
+          if (!v) {
+            setInviteOpen(false);
+            setShareFor(null);
+          }
+        }}
+        initialDate={shareFor?.date}
+        initialSlot={shareFor?.slots[0] as TimeSlot | undefined}
+      />
       {planFor && (
         <QuickPlanSheet
           open={!!planFor}
