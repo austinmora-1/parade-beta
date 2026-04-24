@@ -327,7 +327,7 @@ export function useOpenWindows() {
     }
 
     return result;
-  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail]);
+  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail, friendHomeAddresses, homeAddress]);
 
   return { windows, loading };
 }
