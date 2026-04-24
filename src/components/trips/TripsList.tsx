@@ -370,6 +370,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
               currentUserId={user!.id}
               voting={voting}
               onSubmitRankedVotes={handleSubmitRankedVotes}
+              onAcceptDecline={handleAcceptDecline}
               onRefresh={fetchProposals}
             />
           );
