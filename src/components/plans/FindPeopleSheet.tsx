@@ -528,36 +528,60 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
                   </button>
 
                   {audienceType === 'friends' && (
-                    <div className="mt-2 max-h-44 overflow-y-auto -mx-1 px-1 space-y-1">
-                      {connectedFriends.length === 0 && (
-                        <p className="text-[11px] text-muted-foreground py-2 text-center">
-                          No connected friends yet.
-                        </p>
+                    <div className="mt-2 space-y-2">
+                      {connectedFriends.length > 0 && (
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                          <Input
+                            value={friendSearch}
+                            onChange={e => setFriendSearch(e.target.value)}
+                            placeholder="Search friends…"
+                            className="h-8 pl-7 text-xs"
+                          />
+                        </div>
                       )}
-                      {connectedFriends.map(f => {
-                        const id = f.friendUserId!;
-                        const checked = selectedFriendIds.includes(id);
-                        return (
-                          <button
-                            key={f.id}
-                            onClick={() => toggleFriend(id)}
-                            className={cn(
-                              'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors',
-                              checked ? 'bg-primary/15' : 'hover:bg-muted'
-                            )}
-                          >
-                            <span
+                      <div className="max-h-44 overflow-y-auto -mx-1 px-1 space-y-1">
+                        {connectedFriends.length === 0 && (
+                          <p className="text-[11px] text-muted-foreground py-2 text-center">
+                            No connected friends yet.
+                          </p>
+                        )}
+                        {connectedFriends.length > 0 && visibleFriends.length === 0 && (
+                          <p className="text-[11px] text-muted-foreground py-2 text-center">
+                            No matches.
+                          </p>
+                        )}
+                        {visibleFriends.map(f => {
+                          const id = f.friendUserId!;
+                          const checked = selectedFriendIds.includes(id);
+                          const count = hangoutCounts[id] || 0;
+                          return (
+                            <button
+                              key={f.id}
+                              onClick={() => toggleFriend(id)}
                               className={cn(
-                                'h-4 w-4 rounded border flex items-center justify-center shrink-0',
-                                checked ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                                'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors',
+                                checked ? 'bg-primary/15' : 'hover:bg-muted'
                               )}
                             >
-                              {checked && <Check className="h-3 w-3" />}
-                            </span>
-                            <span className="truncate flex-1">{f.name}</span>
-                          </button>
-                        );
-                      })}
+                              <span
+                                className={cn(
+                                  'h-4 w-4 rounded border flex items-center justify-center shrink-0',
+                                  checked ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                                )}
+                              >
+                                {checked && <Check className="h-3 w-3" />}
+                              </span>
+                              <span className="truncate flex-1">{f.name}</span>
+                              {count > 0 && (
+                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                  {count} hang{count === 1 ? '' : 's'}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
