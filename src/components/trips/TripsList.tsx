@@ -693,6 +693,7 @@ function ProposalTripCard({
   const [saving, setSaving] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [justFinalized, setJustFinalized] = useState(false);
+  const [confirmEarlyOpen, setConfirmEarlyOpen] = useState(false);
 
   const handleFinalize = async () => {
     if (!winningDate || !isCreator) return;
