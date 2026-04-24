@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
+import { addDays, format, isSameDay, isToday, isTomorrow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -29,21 +29,23 @@ const SLOT_HOURS: Record<TimeSlot, number> = {
 // short, actionable open windows rather than full-day chunks).
 const MAX_WINDOW_HOURS = 3;
 
-// Typical "social" time slots by day type. Weekday social hours skew
-// to evenings/late-night; weekends open up afternoons too.
-const WEEKDAY_SOCIAL_SLOTS: TimeSlot[] = ['evening', 'late-night'];
-const WEEKEND_SOCIAL_SLOTS: TimeSlot[] = [
-  'early-afternoon',
-  'late-afternoon',
-  'evening',
-  'late-night',
-];
+// Number of suggested windows surfaced to the user.
+const MAX_RESULTS = 5;
 
-function socialSlotsForDate(date: Date): Set<TimeSlot> {
-  const day = date.getDay(); // 0 = Sun, 6 = Sat
-  const isWeekend = day === 0 || day === 6;
-  return new Set(isWeekend ? WEEKEND_SOCIAL_SLOTS : WEEKDAY_SOCIAL_SLOTS);
-}
+// Days to scan ahead (today + next 6 = 1 week).
+const SCAN_DAYS = 7;
+
+const DAY_NAMES_LOWER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const DEFAULT_SOCIAL_DAYS = ['friday', 'saturday', 'sunday'];
+const DEFAULT_SOCIAL_TIMES = ['evening'];
+
+// Onboarding time categories → concrete slots
+const TIME_TO_SLOTS: Record<string, TimeSlot[]> = {
+  'morning': ['late-morning'],
+  'afternoon': ['early-afternoon', 'late-afternoon'],
+  'evening': ['evening'],
+  'late-night': ['late-night'],
+};
 
 const SLOT_DB_KEYS: { key: keyof FriendAvailRow; slot: TimeSlot }[] = [
   { key: 'early_morning', slot: 'early-morning' },
@@ -88,23 +90,19 @@ interface MinFriend {
   avatar?: string;
 }
 
+function dayLabelFor(date: Date): string {
+  if (isToday(date)) return 'Today';
+  if (isTomorrow(date)) return 'Tomorrow';
+  return format(date, 'EEEE');
+}
+
 function getTargetDates(): { date: Date; label: string }[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const tomorrow = addDays(today, 1);
-  const monday = startOfWeek(today, { weekStartsOn: 1 });
-  const saturday = addDays(monday, 5);
-  const sunday = addDays(monday, 6);
-
-  const out: { date: Date; label: string }[] = [
-    { date: today, label: 'Today' },
-    { date: tomorrow, label: 'Tomorrow' },
-  ];
-  // Add weekend if not already covered
-  for (const d of [saturday, sunday]) {
-    if (d < today) continue;
-    if (isSameDay(d, today) || isSameDay(d, tomorrow)) continue;
-    out.push({ date: d, label: format(d, 'EEEE') });
+  const out: { date: Date; label: string }[] = [];
+  for (let i = 0; i < SCAN_DAYS; i++) {
+    const d = addDays(today, i);
+    out.push({ date: d, label: dayLabelFor(d) });
   }
   return out;
 }
@@ -149,14 +147,49 @@ function fmtHour(hr: number): string {
 }
 
 /**
- * Compute open social "windows" — contiguous 4+ hour blocks of free
- * availability today / tomorrow / this weekend, ranked by friend overlap.
+ * Score how well a (date, slot) matches the user's stated preferences.
+ * Higher = better fit. 0 = no match.
+ */
+function preferenceScore(
+  date: Date,
+  slot: TimeSlot,
+  prefDays: string[],
+  prefTimes: string[],
+): number {
+  const dayName = DAY_NAMES_LOWER[date.getDay()];
+  let score = 0;
+
+  // Day-specific slot ("day:slot" or any "*:slot") match — strongest signal
+  const daySlotMatch = prefTimes.some(
+    (t) => t === `${dayName}:${slot}` || t.endsWith(`:${slot}`)
+  );
+  if (daySlotMatch) score += 3;
+
+  // General day preference
+  const validDays = prefDays.filter((d) => DAY_NAMES_LOWER.includes(d));
+  if (validDays.length === 0 || validDays.includes(dayName)) score += 1;
+
+  // General time-of-day preference
+  const bareTimes = prefTimes.filter((t) => !t.includes(':'));
+  for (const bt of bareTimes) {
+    const mapped = TIME_TO_SLOTS[bt];
+    if (mapped?.includes(slot)) { score += 2; break; }
+  }
+
+  return score;
+}
+
+/**
+ * Compute the user's top recommended open windows for the coming week,
+ * prioritized by their preferred social days/times and friend overlap.
  */
 export function useOpenWindows() {
   const { user } = useAuth();
   const { availabilityMap, friends, plans, homeAddress } = usePlannerStore();
   const [friendAvail, setFriendAvail] = useState<FriendAvailRow[]>([]);
   const [friendHomeAddresses, setFriendHomeAddresses] = useState<Record<string, string | null>>({});
+  const [prefDays, setPrefDays] = useState<string[]>(DEFAULT_SOCIAL_DAYS);
+  const [prefTimes, setPrefTimes] = useState<string[]>(DEFAULT_SOCIAL_TIMES);
   const [loading, setLoading] = useState(true);
 
   const connectedFriends: MinFriend[] = useMemo(
@@ -173,6 +206,25 @@ export function useOpenWindows() {
 
   const targetDates = useMemo(getTargetDates, []);
   const dateStrs = useMemo(() => targetDates.map((d) => format(d.date, 'yyyy-MM-dd')), [targetDates]);
+
+  // Load the current user's social preferences once.
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('preferred_social_days, preferred_social_times')
+        .eq('user_id', user.id)
+        .single();
+      if (cancelled || !data) return;
+      const days = (data as { preferred_social_days: string[] | null }).preferred_social_days;
+      const times = (data as { preferred_social_times: string[] | null }).preferred_social_times;
+      if (days && days.length) setPrefDays(days);
+      if (times && times.length) setPrefTimes(times);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -216,7 +268,8 @@ export function useOpenWindows() {
 
   const windows: OpenWindow[] = useMemo(() => {
     if (!user?.id) return [];
-    const result: OpenWindow[] = [];
+    type Scored = OpenWindow & { _score: number };
+    const candidates: Scored[] = [];
 
     for (const { date, label } of targetDates) {
       const dateKey = format(date, 'yyyy-MM-dd');
@@ -235,33 +288,28 @@ export function useOpenWindows() {
       const allBlocks = findAllBlocks(slotMap);
       if (allBlocks.length === 0) continue;
 
-      const socialSlots = socialSlotsForDate(date);
-
       for (const fullBlock of allBlocks) {
-        // Restrict each block to social-time slots only, preserving contiguity.
-        // A block may contain non-social slots at the edges (e.g. late-morning);
-        // trim down to its social-slot subrun(s).
-        const socialSubBlocks: TimeSlot[][] = [];
-        let cur: TimeSlot[] = [];
-        for (const s of fullBlock) {
-          if (socialSlots.has(s)) {
-            cur.push(s);
-          } else {
-            if (cur.length) socialSubBlocks.push(cur);
-            cur = [];
-          }
-        }
-        if (cur.length) socialSubBlocks.push(cur);
+        // Walk the contiguous free run and create up to one window per
+        // distinct anchor slot, starting from each slot that scores >0
+        // against the user's preferences. This lets a single long free
+        // stretch surface multiple distinct suggestions (e.g. afternoon +
+        // evening on a Saturday).
+        for (let startIdx = 0; startIdx < fullBlock.length; startIdx++) {
+          const anchor = fullBlock[startIdx];
+          const anchorScore = preferenceScore(date, anchor, prefDays, prefTimes);
+          if (anchorScore === 0) continue;
 
-        for (const sub of socialSubBlocks) {
-          // Cap at MAX_WINDOW_HOURS, favoring the start of the social run.
+          // Build the block from the anchor forward, capped at MAX_WINDOW_HOURS.
           const block: TimeSlot[] = [];
           let runningHours = 0;
-          for (const slot of sub) {
+          let totalScore = 0;
+          for (let j = startIdx; j < fullBlock.length; j++) {
+            const slot = fullBlock[j];
             const next = runningHours + SLOT_HOURS[slot];
             if (next > MAX_WINDOW_HOURS && block.length > 0) break;
             block.push(slot);
             runningHours = next;
+            totalScore += preferenceScore(date, slot, prefDays, prefTimes);
             if (runningHours >= MAX_WINDOW_HOURS) break;
           }
           const hours = Math.min(blockHours(block), MAX_WINDOW_HOURS);
@@ -278,7 +326,7 @@ export function useOpenWindows() {
             trip_location: myAvail?.tripLocation || null,
           };
 
-          // Friend overlap on this block — only include friends co-located with me on this date
+          // Friend overlap on this block — only co-located friends.
           const overlapping: OpenWindow['overlappingFriends'] = [];
           for (const f of connectedFriends) {
             const row = friendAvail.find(
@@ -286,7 +334,6 @@ export function useOpenWindows() {
             );
             if (!row) continue;
 
-            // Filter by same-city on this date
             const sameCity = isFriendInMyCity({
               date,
               myAvailability: myRowForCity,
@@ -310,10 +357,18 @@ export function useOpenWindows() {
               });
             }
           }
-
           overlapping.sort((a, b) => b.overlapHours - a.overlapHours);
 
-          result.push({
+          // Composite score: preference fit + friend overlap + soonness.
+          const overlapBonus = overlapping.reduce((s, o) => s + o.overlapHours, 0);
+          const daysAway = Math.max(
+            0,
+            Math.round((date.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000)
+          );
+          const soonness = (SCAN_DAYS - daysAway) * 0.25;
+          const score = totalScore * 2 + overlapBonus + soonness;
+
+          candidates.push({
             date,
             dayLabel: label,
             slots: block,
@@ -321,13 +376,26 @@ export function useOpenWindows() {
             startLabel: fmtHour(startHr),
             endLabel: fmtHour(endHr),
             overlappingFriends: overlapping.slice(0, 6),
+            _score: score,
           });
         }
       }
     }
 
-    return result;
-  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail, friendHomeAddresses, homeAddress]);
+    // Deduplicate windows that share the same date + starting slot.
+    const seen = new Set<string>();
+    const deduped: Scored[] = [];
+    candidates
+      .sort((a, b) => b._score - a._score)
+      .forEach((c) => {
+        const key = `${format(c.date, 'yyyy-MM-dd')}|${c.slots[0]}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        deduped.push(c);
+      });
+
+    return deduped.slice(0, MAX_RESULTS).map(({ _score, ...w }) => w);
+  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail, friendHomeAddresses, homeAddress, prefDays, prefTimes]);
 
   return { windows, loading };
 }
