@@ -57,6 +57,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
   const { friends } = usePlannerStore();
   const viewport = useVisualViewport();
   const { profile } = useCurrentUserProfile();
+  const { user } = useAuth();
   const senderFirstName = profile?.first_name || profile?.display_name?.split(' ')[0] || 'A friend';
 
   const [step, setStep] = useState<Step>('anchor');
@@ -73,6 +74,10 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
   // Audience
   const [audienceType, setAudienceType] = useState<OpenInviteAudienceType>('all_friends');
   const [audienceRef, setAudienceRef] = useState<string | null>(null);
+
+  // Specific-friends UX
+  const [friendSearch, setFriendSearch] = useState('');
+  const [hangoutCounts, setHangoutCounts] = useState<Record<string, number>>({});
 
   const [sending, setSending] = useState(false);
 
