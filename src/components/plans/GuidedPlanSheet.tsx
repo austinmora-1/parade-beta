@@ -214,7 +214,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setChosenFriends([]);
       setFriendSearch('');
       setSoloMode(false);
-      setOffParadeName('');
+      setOffParadeNames([]);
       setAddingOffParade(false);
       setOffParadeDraft('');
       setShowCustomInput(false);
@@ -769,9 +769,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const activityLabel = activity === TBD_ACTIVITY_ID ? TBD_LABEL : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.label || customActivities.find(a => a.id === activity)?.label || activity) : '';
   const activityEmoji = activity === TBD_ACTIVITY_ID ? TBD_EMOJI : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.icon || customActivities.find(a => a.id === activity)?.icon || '📅') : '';
 
+  const offParadeListStr = offParadeNames.join(' & ');
+  const titleAudienceStr = friendNamesStr; // already includes off-Parade names
   const autoTitle = activity
-    ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : (offParadeName ? `${activityLabel} with ${offParadeName}` : activityLabel))
-    : (hasFriends ? `Hang with ${friendNames.join(', ')}` : (offParadeName ? `Hang with ${offParadeName}` : 'Solo Plan'));
+    ? ((hasFriends || hasOffParade) ? `${activityLabel} with ${titleAudienceStr}` : activityLabel)
+    : ((hasFriends || hasOffParade) ? `Hang with ${titleAudienceStr}` : 'Solo Plan');
 
   const handleSubmit = async () => {
     if (!activity || selectedSlots.length === 0) return;
@@ -870,9 +872,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const stepTitle = step === 'friends'
     ? 'Who are we planning with?'
     : step === 'time'
-      ? (hasFriends ? `Top times for ${friendNamesStr}` : (offParadeName ? `When are you free to see ${offParadeName}?` : 'When are you free?'))
+      ? ((hasFriends || hasOffParade) ? `Top times for ${friendNamesStr}` : 'When are you free?')
       : step === 'activity'
-        ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : (offParadeName ? `What do you want to do with ${offParadeName}?` : 'What do you want to do?'))
+        ? ((hasFriends || hasOffParade) ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
         : 'Look good?';
 
   const firstStep = needsFriendStep ? 'friends' : 'time';
@@ -1376,7 +1378,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">{autoTitle}</p>
                       <p className="text-xs text-muted-foreground">
-                        {hasFriends ? `Proposed plan with ${friendNamesStr}` : (offParadeName ? `Plan with ${offParadeName} (not on Parade)` : 'Solo plan — invite friends later')}
+                        {hasFriends && hasOffParade ? `Proposed plan with ${friendNamesStr}` : hasFriends ? `Proposed plan with ${friendNamesStr}` : hasOffParade ? `Plan with ${offParadeListStr} (not on Parade — share invite link after creating)` : 'Solo plan — invite friends later'}
                       </p>
                     </div>
                     <button
