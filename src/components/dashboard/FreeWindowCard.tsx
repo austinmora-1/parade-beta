@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Send } from 'lucide-react';
+import { Sparkles, Send, Share2 } from 'lucide-react';
 import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 export function FreeWindowCard() {
   const { windows, loading } = useOpenWindows();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [shareFor, setShareFor] = useState<OpenWindow | null>(null);
   const [planFor, setPlanFor] = useState<OpenWindow | null>(null);
   const [highlight, setHighlight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -87,11 +88,22 @@ export function FreeWindowCard() {
               key={w.date.toISOString() + w.slots[0]}
               window={w}
               onClick={() => setPlanFor(w)}
+              onShare={() => setShareFor(w)}
             />
           ))}
         </div>
       </div>
-      <OpenInviteSheet open={inviteOpen} onOpenChange={setInviteOpen} />
+      <OpenInviteSheet
+        open={inviteOpen || !!shareFor}
+        onOpenChange={(v) => {
+          if (!v) {
+            setInviteOpen(false);
+            setShareFor(null);
+          }
+        }}
+        initialDate={shareFor?.date}
+        initialSlot={shareFor?.slots[0] as TimeSlot | undefined}
+      />
       {planFor && (
         <QuickPlanSheet
           open={!!planFor}
@@ -109,14 +121,41 @@ export function FreeWindowCard() {
   );
 }
 
-function WindowChip({ window: w, onClick }: { window: OpenWindow; onClick: () => void }) {
+function WindowChip({
+  window: w,
+  onClick,
+  onShare,
+}: {
+  window: OpenWindow;
+  onClick: () => void;
+  onShare: () => void;
+}) {
   const friendCount = w.overlappingFriends.length;
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="snap-start shrink-0 min-w-[220px] max-w-[260px] rounded-2xl border border-border bg-card px-4 py-3.5 text-left shadow-soft hover:border-primary/40 hover:shadow-md transition-all"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="relative snap-start shrink-0 min-w-[220px] max-w-[260px] rounded-2xl border border-border bg-card px-4 py-3.5 text-left shadow-soft hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <button
+        type="button"
+        aria-label="Quick share this time"
+        onClick={(e) => {
+          e.stopPropagation();
+          onShare();
+        }}
+        className="absolute top-2 right-2 h-7 w-7 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+      >
+        <Share2 className="h-3.5 w-3.5" />
+      </button>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground pr-8">
         {w.dayLabel}
       </p>
       <p className="font-display text-lg font-semibold leading-tight mt-1 truncate">
@@ -143,6 +182,6 @@ function WindowChip({ window: w, onClick }: { window: OpenWindow; onClick: () =>
           <span className="text-xs text-muted-foreground">{w.hours}hr free</span>
         )}
       </div>
-    </button>
+    </div>
   );
 }
