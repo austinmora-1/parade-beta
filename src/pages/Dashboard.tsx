@@ -34,7 +34,6 @@ export default function Dashboard() {
   const { isLoading } = usePlannerStore();
   const { session } = useAuth();
   const navigate = useNavigate();
-  const [stagedFriends, setStagedFriends] = useState<StagedFriend[]>([]);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
 
   useEffect(() => {
@@ -54,19 +53,8 @@ export default function Dashboard() {
     checkOnboarding();
   }, [session?.user, navigate]);
 
-  const handleAddFriend = useCallback((friend: StagedFriend) => {
-    setStagedFriends(prev => {
-      if (prev.some(f => f.userId === friend.userId)) return prev;
-      return [...prev, friend];
-    });
-  }, []);
-
-  const handleRemoveFriend = useCallback((userId: string) => {
-    setStagedFriends(prev => prev.filter(f => f.userId !== userId));
-  }, []);
-
-  const handleClear = useCallback(() => {
-    setStagedFriends([]);
+  const handleAddFriend = useCallback((_friend: StagedFriend) => {
+    // No-op: friend staging surface (QuickPlanDrop) was removed from the dashboard.
   }, []);
 
   if (isLoading || checkingOnboarding) {
