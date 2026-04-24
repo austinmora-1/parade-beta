@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Plan, ACTIVITY_CONFIG, ActivityType, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { useOpenInvites, type OpenInviteAudienceType } from '@/hooks/useOpenInvites';
@@ -306,15 +307,18 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
                   </div>
                   <div>
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Time</label>
-                    <select
-                      value={timeSlot}
-                      onChange={e => setTimeSlot(e.target.value as TimeSlot)}
-                      className="mt-1 w-full h-9 rounded-md border border-border bg-background px-2 text-xs"
-                    >
-                      {TIME_SLOTS.map(s => (
-                        <option key={s} value={s}>{TIME_SLOT_LABELS[s].label} ({TIME_SLOT_LABELS[s].time})</option>
-                      ))}
-                    </select>
+                    <Select value={timeSlot} onValueChange={(v) => setTimeSlot(v as TimeSlot)}>
+                      <SelectTrigger className="mt-1 w-full h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIME_SLOTS.map(s => (
+                          <SelectItem key={s} value={s} className="text-xs">
+                            {TIME_SLOT_LABELS[s].label} ({TIME_SLOT_LABELS[s].time})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
