@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus, Vote, Share2 } from 'lucide-react';
+import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus, Vote, Share2, Lock } from 'lucide-react';
 import { InviteToTripDialog } from './InviteToTripDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -693,6 +693,7 @@ function ProposalTripCard({
   const [saving, setSaving] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [justFinalized, setJustFinalized] = useState(false);
+  const [confirmEarlyOpen, setConfirmEarlyOpen] = useState(false);
 
   const handleFinalize = async () => {
     if (!winningDate || !isCreator) return;
@@ -971,6 +972,29 @@ function ProposalTripCard({
               <span className="text-[11px] text-primary font-medium">
                 All votes in! Waiting for {proposal.creator_name.split(' ')[0]} to confirm.
               </span>
+            </motion.div>
+          )}
+          {!allVoted && isCreator && winningDate && votedCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="rounded-lg bg-muted/50 border border-border p-2.5 flex items-center gap-2"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-[11px] text-muted-foreground flex-1 min-w-0 truncate">
+                {votedCount}/{totalVoters} responded — confirm now if you can't wait
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 px-2 text-[10px] gap-1 shrink-0"
+                onClick={() => setConfirmEarlyOpen(true)}
+                disabled={finalizing}
+              >
+                <Lock className="h-3 w-3" />
+                Confirm now
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1396,6 +1420,35 @@ function ProposalTripCard({
           proposalType={proposal.proposal_type as 'trip' | 'visit'}
         />
       )}
+
+      <AlertDialog open={confirmEarlyOpen} onOpenChange={setConfirmEarlyOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm before everyone has voted?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {totalVoters - votedCount} {totalVoters - votedCount === 1 ? "person hasn't" : "people haven't"} responded yet.
+              {winningDate && (
+                <> You'll lock in <span className="font-medium text-foreground">{format(new Date(winningDate.start_date + 'T00:00:00'), 'EEE, MMM d')}{winningDate.start_date !== winningDate.end_date ? ` – ${format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}` : ''}</span>. </>
+              )}
+              {' '}Participants who haven't voted will show as tentative until they accept.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={finalizing}>Wait for everyone</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={finalizing}
+              onClick={async (e) => {
+                e.preventDefault();
+                await handleFinalize();
+                setConfirmEarlyOpen(false);
+              }}
+            >
+              {finalizing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              Confirm now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
