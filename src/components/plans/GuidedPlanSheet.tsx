@@ -1466,10 +1466,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           <DrawerFooter className="pt-2">
             <Button
               onClick={() => setStep('time')}
-              disabled={chosenFriends.length === 0}
+              disabled={chosenFriends.length === 0 && offParadeNames.length === 0}
               className="w-full gap-2"
             >
-              Continue with {chosenFriends.length} {chosenFriends.length === 1 ? 'friend' : 'friends'} →
+              {(() => {
+                const total = chosenFriends.length + offParadeNames.length;
+                return `Continue with ${total} ${total === 1 ? 'person' : 'people'} →`;
+              })()}
             </Button>
           </DrawerFooter>
         )}
