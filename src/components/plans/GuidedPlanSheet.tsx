@@ -23,6 +23,7 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { SlotCalendarPicker, SelectedSlotEntry } from '@/components/plans/SlotCalendarPicker';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface GuidedPlanSheetProps {
   open: boolean;
