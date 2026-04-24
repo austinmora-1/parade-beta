@@ -509,25 +509,6 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
                     })}
                   </div>
                 )}
-                      return (
-                        <button
-                          key={pod.id}
-                          onClick={() => { setAudienceType('pod'); setAudienceRef(pod.id); }}
-                          className={cn(
-                            'w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all',
-                            selected ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/30'
-                          )}
-                        >
-                          <span className="text-base shrink-0">{pod.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{pod.name}</p>
-                            <p className="text-[11px] text-muted-foreground">{pod.memberUserIds.length} member{pod.memberUserIds.length === 1 ? '' : 's'}</p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
 
                 <button
                   onClick={() => { setAudienceType('interest'); setAudienceRef('coffee'); }}
