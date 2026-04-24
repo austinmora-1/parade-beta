@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Loader2, Users as UsersIcon, Tag, Sparkles, Calendar as CalendarIcon, MapPin, Send, Plane, Quote, CheckCircle2, UserPlus, Check,
+  ArrowLeft, Loader2, Users as UsersIcon, Tag, Sparkles, Calendar as CalendarIcon, MapPin, Send, Plane, Quote, CheckCircle2, UserPlus, Check, Search,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +57,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
   const { friends } = usePlannerStore();
   const viewport = useVisualViewport();
   const { profile } = useCurrentUserProfile();
+  const { user } = useAuth();
   const senderFirstName = profile?.first_name || profile?.display_name?.split(' ')[0] || 'A friend';
 
   const [step, setStep] = useState<Step>('anchor');
@@ -71,6 +74,10 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
   // Audience
   const [audienceType, setAudienceType] = useState<OpenInviteAudienceType>('all_friends');
   const [audienceRef, setAudienceRef] = useState<string | null>(null);
+
+  // Specific-friends UX
+  const [friendSearch, setFriendSearch] = useState('');
+  const [hangoutCounts, setHangoutCounts] = useState<Record<string, number>>({});
 
   const [sending, setSending] = useState(false);
 
@@ -90,6 +97,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
     setAudienceType('all_friends');
     setAudienceRef(null);
     setNotes('');
+    setFriendSearch('');
 
     if (tripContext) {
       // Skip anchor + describe; prefill from trip and jump to audience.
@@ -131,6 +139,75 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
     () => friends.filter(f => f.status === 'connected' && f.friendUserId),
     [friends]
   );
+
+  // Fetch past-hangout counts when entering audience step (for sorting "frequent first")
+  useEffect(() => {
+    if (!open || step !== 'audience' || !user?.id) return;
+    if (connectedFriends.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const friendIds = connectedFriends.map(f => f.friendUserId!).filter(Boolean);
+      const nowIso = new Date().toISOString();
+
+      // Plans the user owns in the past
+      const { data: ownedPlans } = await supabase
+        .from('plans')
+        .select('id')
+        .eq('user_id', user.id)
+        .lt('date', nowIso);
+      const ownedIds = (ownedPlans || []).map(p => p.id);
+
+      // Plans where user is a participant
+      const { data: myParts } = await supabase
+        .from('plan_participants')
+        .select('plan_id')
+        .eq('friend_id', user.id);
+      const partIds = (myParts || []).map(p => p.plan_id);
+
+      const counts: Record<string, number> = {};
+
+      // Friends as participants on user-owned past plans
+      if (ownedIds.length > 0) {
+        const { data: rows } = await supabase
+          .from('plan_participants')
+          .select('friend_id')
+          .in('plan_id', ownedIds)
+          .in('friend_id', friendIds);
+        (rows || []).forEach(r => {
+          counts[r.friend_id] = (counts[r.friend_id] || 0) + 1;
+        });
+      }
+
+      // Friends as owners of past plans the user participated in
+      if (partIds.length > 0) {
+        const { data: rows } = await supabase
+          .from('plans')
+          .select('user_id')
+          .in('id', partIds)
+          .in('user_id', friendIds)
+          .lt('date', nowIso);
+        (rows || []).forEach(r => {
+          counts[r.user_id] = (counts[r.user_id] || 0) + 1;
+        });
+      }
+
+      if (!cancelled) setHangoutCounts(counts);
+    })();
+    return () => { cancelled = true; };
+  }, [open, step, user?.id, connectedFriends]);
+
+  const visibleFriends = useMemo(() => {
+    const q = friendSearch.trim().toLowerCase();
+    const filtered = q
+      ? connectedFriends.filter(f => f.name.toLowerCase().includes(q))
+      : connectedFriends.slice();
+    return filtered.sort((a, b) => {
+      const ca = hangoutCounts[a.friendUserId!] || 0;
+      const cb = hangoutCounts[b.friendUserId!] || 0;
+      if (cb !== ca) return cb - ca;
+      return a.name.localeCompare(b.name);
+    });
+  }, [connectedFriends, friendSearch, hangoutCounts]);
 
   const selectedFriendIds = useMemo(() => {
     if (audienceType !== 'friends' || !audienceRef) return [] as string[];
@@ -451,36 +528,60 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
                   </button>
 
                   {audienceType === 'friends' && (
-                    <div className="mt-2 max-h-44 overflow-y-auto -mx-1 px-1 space-y-1">
-                      {connectedFriends.length === 0 && (
-                        <p className="text-[11px] text-muted-foreground py-2 text-center">
-                          No connected friends yet.
-                        </p>
+                    <div className="mt-2 space-y-2">
+                      {connectedFriends.length > 0 && (
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                          <Input
+                            value={friendSearch}
+                            onChange={e => setFriendSearch(e.target.value)}
+                            placeholder="Search friends…"
+                            className="h-8 pl-7 text-xs"
+                          />
+                        </div>
                       )}
-                      {connectedFriends.map(f => {
-                        const id = f.friendUserId!;
-                        const checked = selectedFriendIds.includes(id);
-                        return (
-                          <button
-                            key={f.id}
-                            onClick={() => toggleFriend(id)}
-                            className={cn(
-                              'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors',
-                              checked ? 'bg-primary/15' : 'hover:bg-muted'
-                            )}
-                          >
-                            <span
+                      <div className="max-h-44 overflow-y-auto -mx-1 px-1 space-y-1">
+                        {connectedFriends.length === 0 && (
+                          <p className="text-[11px] text-muted-foreground py-2 text-center">
+                            No connected friends yet.
+                          </p>
+                        )}
+                        {connectedFriends.length > 0 && visibleFriends.length === 0 && (
+                          <p className="text-[11px] text-muted-foreground py-2 text-center">
+                            No matches.
+                          </p>
+                        )}
+                        {visibleFriends.map(f => {
+                          const id = f.friendUserId!;
+                          const checked = selectedFriendIds.includes(id);
+                          const count = hangoutCounts[id] || 0;
+                          return (
+                            <button
+                              key={f.id}
+                              onClick={() => toggleFriend(id)}
                               className={cn(
-                                'h-4 w-4 rounded border flex items-center justify-center shrink-0',
-                                checked ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                                'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors',
+                                checked ? 'bg-primary/15' : 'hover:bg-muted'
                               )}
                             >
-                              {checked && <Check className="h-3 w-3" />}
-                            </span>
-                            <span className="truncate flex-1">{f.name}</span>
-                          </button>
-                        );
-                      })}
+                              <span
+                                className={cn(
+                                  'h-4 w-4 rounded border flex items-center justify-center shrink-0',
+                                  checked ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                                )}
+                              >
+                                {checked && <Check className="h-3 w-3" />}
+                              </span>
+                              <span className="truncate flex-1">{f.name}</span>
+                              {count > 0 && (
+                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                  {count} hang{count === 1 ? '' : 's'}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
