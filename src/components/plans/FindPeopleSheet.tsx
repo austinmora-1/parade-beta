@@ -622,7 +622,10 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
           {step === 'audience' && (
             <Button
               onClick={() => setStep('preview')}
-              disabled={audienceType === 'interest' && !(audienceRef && audienceRef.trim())}
+              disabled={
+                (audienceType === 'interest' && !(audienceRef && audienceRef.trim())) ||
+                (audienceType === 'friends' && selectedFriendIds.length === 0)
+              }
               className="w-full"
             >
               Preview
