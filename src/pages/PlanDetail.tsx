@@ -23,6 +23,7 @@ import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
 import { PlanPhotos } from '@/components/plans/PlanPhotos';
 import { PlanComments } from '@/components/plans/PlanComments';
+import { PendingPlaceholderInvites } from '@/components/plans/PendingPlaceholderInvites';
 
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDialog'));
