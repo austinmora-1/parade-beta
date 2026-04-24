@@ -691,6 +691,11 @@ export default function PlanDetail() {
             )}
           </div>
 
+          {/* Pending placeholder invites (non-Parade friends) */}
+          {planId && (
+            <PendingPlaceholderInvites planId={planId} isOwner={isOwner} />
+          )}
+
           {/* Subscribers */}
           {subscribers.length > 0 && (
             <div className="space-y-2">
