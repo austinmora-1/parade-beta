@@ -64,6 +64,7 @@ interface FriendAvailRow {
   evening: boolean | null;
   late_night: boolean | null;
   location_status: string | null;
+  trip_location: string | null;
 }
 
 export interface OpenWindow {
