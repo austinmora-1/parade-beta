@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Loader2, Users as UsersIcon, Tag, Sparkles, Calendar as CalendarIcon, MapPin, Send, Plane, Quote, CheckCircle2,
+  ArrowLeft, Loader2, Users as UsersIcon, Tag, Sparkles, Calendar as CalendarIcon, MapPin, Send, Plane, Quote, CheckCircle2, UserPlus, Check,
 } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
@@ -127,6 +127,25 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
 
   const canSubmitDescribe = title.trim().length > 0 && !!activity && !!timeSlot;
 
+  const connectedFriends = useMemo(
+    () => friends.filter(f => f.status === 'connected' && f.friendUserId),
+    [friends]
+  );
+
+  const selectedFriendIds = useMemo(() => {
+    if (audienceType !== 'friends' || !audienceRef) return [] as string[];
+    return audienceRef.split(',').map(s => s.trim()).filter(Boolean);
+  }, [audienceType, audienceRef]);
+
+  const toggleFriend = (id: string) => {
+    setAudienceType('friends');
+    const set = new Set(selectedFriendIds);
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
+    const next = Array.from(set);
+    setAudienceRef(next.length > 0 ? next.join(',') : null);
+  };
+
   const audienceLabel = useMemo(() => {
     if (audienceType === 'all_friends') return 'All friends';
     if (audienceType === 'pod' && audienceRef) {
@@ -134,18 +153,22 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
       return pod ? `${pod.emoji} ${pod.name}` : 'Pod';
     }
     if (audienceType === 'interest' && audienceRef) return `Interested in ${audienceRef}`;
+    if (audienceType === 'friends') {
+      const count = selectedFriendIds.length;
+      return count === 1 ? '1 friend' : `${count} friends`;
+    }
     return 'Friends';
-  }, [audienceType, audienceRef, pods]);
+  }, [audienceType, audienceRef, pods, selectedFriendIds]);
 
   const estimatedReach = useMemo(() => {
-    const connected = friends.filter(f => f.status === 'connected');
-    if (audienceType === 'all_friends') return connected.length;
+    if (audienceType === 'all_friends') return connectedFriends.length;
     if (audienceType === 'pod' && audienceRef) {
       const pod = pods.find(p => p.id === audienceRef);
       return pod?.memberUserIds.length || 0;
     }
-    return Math.max(1, Math.round(connected.length * 0.3));
-  }, [audienceType, audienceRef, friends, pods]);
+    if (audienceType === 'friends') return selectedFriendIds.length;
+    return Math.max(1, Math.round(connectedFriends.length * 0.3));
+  }, [audienceType, audienceRef, connectedFriends, pods, selectedFriendIds]);
 
   const handleSend = async () => {
     setSending(true);
