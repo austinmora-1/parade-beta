@@ -670,6 +670,7 @@ export type Database = {
           id: string
           invite_token: string
           invited_by: string
+          placeholder_name: string | null
           plan_id: string
           status: string
         }
@@ -681,6 +682,7 @@ export type Database = {
           id?: string
           invite_token?: string
           invited_by: string
+          placeholder_name?: string | null
           plan_id: string
           status?: string
         }
@@ -692,6 +694,7 @@ export type Database = {
           id?: string
           invite_token?: string
           invited_by?: string
+          placeholder_name?: string | null
           plan_id?: string
           status?: string
         }

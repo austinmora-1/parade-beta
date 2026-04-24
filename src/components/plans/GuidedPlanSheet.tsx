@@ -23,6 +23,7 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { SlotCalendarPicker, SelectedSlotEntry } from '@/components/plans/SlotCalendarPicker';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface GuidedPlanSheetProps {
   open: boolean;
@@ -112,6 +113,7 @@ function SlotCard({ bs, i, onSelect, isSelected }: { bs: BestSlot; i: number; on
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
 
@@ -119,16 +121,21 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [chosenFriends, setChosenFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [soloMode, setSoloMode] = useState(false);
-  // Off-Parade guest: a person not on Parade. Treated like solo planning
-  // (uses only the current user's availability) but injects their name into
-  // the plan title so the user remembers who they're hanging with.
-  const [offParadeName, setOffParadeName] = useState('');
+  // Off-Parade guests: names of people not on Parade. Each becomes a
+  // placeholder plan_invite after the plan is created so the user can share
+  // a unique claim link with that friend. Treated like solo planning for
+  // availability scoring (only the current user's availability matters),
+  // but their names appear in the title and on the plan detail page.
+  const [offParadeNames, setOffParadeNames] = useState<string[]>([]);
   const [addingOffParade, setAddingOffParade] = useState(false);
   const [offParadeDraft, setOffParadeDraft] = useState('');
 
-  // The effective friends list (pre-selected or user-chosen)
+  // The effective Parade friends list (pre-selected or user-chosen).
+  // Off-Parade names are NOT included here — they are tracked separately
+  // and only become participants after they claim their invite.
   const effectiveFriends = soloMode ? [] : (needsFriendStep ? chosenFriends : preSelectedFriends);
   const hasFriends = effectiveFriends.length > 0;
+  const hasOffParade = offParadeNames.length > 0;
 
   const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'time');
   const [activity, setActivity] = useState<ActivityType | string | null>(null);
@@ -150,8 +157,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [friendsHaveDifferentHome, setFriendsHaveDifferentHome] = useState(false);
   // tripSheetOpen removed — trip sheet is now opened via custom event on dashboard
 
-  const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
-  const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
+  // Combined display names for title & headers (Parade friends first, then off-Parade)
+  const friendNames = [
+    ...effectiveFriends.map(f => f.name.split(' ')[0]),
+    ...offParadeNames,
+  ];
+  const friendNamesStr = friendNames.length === 0
+    ? ''
+    : friendNames.length <= 2
+      ? friendNames.join(' & ')
+      : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
 
   // Connected friends for the selection step
   const connectedFriends = useMemo(() =>
@@ -199,7 +214,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setChosenFriends([]);
       setFriendSearch('');
       setSoloMode(false);
-      setOffParadeName('');
+      setOffParadeNames([]);
       setAddingOffParade(false);
       setOffParadeDraft('');
       setShowCustomInput(false);
@@ -754,9 +769,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const activityLabel = activity === TBD_ACTIVITY_ID ? TBD_LABEL : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.label || customActivities.find(a => a.id === activity)?.label || activity) : '';
   const activityEmoji = activity === TBD_ACTIVITY_ID ? TBD_EMOJI : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.icon || customActivities.find(a => a.id === activity)?.icon || '📅') : '';
 
+  const offParadeListStr = offParadeNames.join(' & ');
+  const titleAudienceStr = friendNamesStr; // already includes off-Parade names
   const autoTitle = activity
-    ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : (offParadeName ? `${activityLabel} with ${offParadeName}` : activityLabel))
-    : (hasFriends ? `Hang with ${friendNames.join(', ')}` : (offParadeName ? `Hang with ${offParadeName}` : 'Solo Plan'));
+    ? ((hasFriends || hasOffParade) ? `${activityLabel} with ${titleAudienceStr}` : activityLabel)
+    : ((hasFriends || hasOffParade) ? `Hang with ${titleAudienceStr}` : 'Solo Plan');
 
   const handleSubmit = async () => {
     if (!activity || selectedSlots.length === 0) return;
@@ -765,6 +782,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
     try {
       const hasMultipleOptions = selectedSlots.length > 1;
+      let createdPlanId: string | null = null;
 
       if (hasFriends) {
         // Plan with friends - use proposePlan flow
@@ -788,6 +806,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           .single();
 
         if (latestPlan) {
+          createdPlanId = latestPlan.id;
           if (effectiveFriends.length > 1) {
             const additionalParticipants = effectiveFriends.slice(1).map(f => ({
               plan_id: latestPlan.id,
@@ -815,11 +834,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
         toast.success(`Plan sent to ${friendNamesStr}! 🎉`);
       } else {
-        // Solo plan - create confirmed plan directly
+        // Solo / off-Parade-only plan - create confirmed plan directly
         const dateStr = format(primarySlot.date, 'yyyy-MM-dd');
         const noonUtcDate = `${dateStr}T12:00:00+00:00`;
 
-        await supabase.from('plans').insert({
+        const { data: insertedPlan } = await supabase.from('plans').insert({
           user_id: userId,
           title: autoTitle,
           activity: activity,
@@ -829,11 +848,25 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           status: 'confirmed',
           feed_visibility: 'private',
           source_timezone: usePlannerStore.getState().userTimezone,
-        } as any);
+        } as any).select('id').single();
+
+        createdPlanId = insertedPlan?.id ?? null;
 
         // Reload data
         await usePlannerStore.getState().loadPlans();
-        toast.success('Plan created! 🎉');
+        toast.success(hasOffParade ? 'Plan created! Share the invite links 🎉' : 'Plan created! 🎉');
+      }
+
+      // Insert placeholder plan invites for any off-Parade names so the user
+      // can share a unique claim link with each from the plan detail page.
+      if (createdPlanId && offParadeNames.length > 0 && userId) {
+        const placeholderInserts = offParadeNames.map(n => ({
+          plan_id: createdPlanId!,
+          invited_by: userId,
+          placeholder_name: n,
+        }));
+        const { error: invErr } = await supabase.from('plan_invites').insert(placeholderInserts as any);
+        if (invErr) console.error('Failed to insert placeholder invites:', invErr);
       }
 
       confetti({
@@ -844,6 +877,12 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         scalar: 0.9,
       });
       onOpenChange(false);
+
+      // Open the plan detail page so the user can share placeholder invite
+      // links and review the plan they just made.
+      if (createdPlanId) {
+        setTimeout(() => navigate(`/plan/${createdPlanId}`), 200);
+      }
     } catch (err) {
       console.error('Failed to create plan:', err);
       toast.error('Something went wrong. Try again?');
@@ -855,9 +894,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const stepTitle = step === 'friends'
     ? 'Who are we planning with?'
     : step === 'time'
-      ? (hasFriends ? `Top times for ${friendNamesStr}` : (offParadeName ? `When are you free to see ${offParadeName}?` : 'When are you free?'))
+      ? ((hasFriends || hasOffParade) ? `Top times for ${friendNamesStr}` : 'When are you free?')
       : step === 'activity'
-        ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : (offParadeName ? `What do you want to do with ${offParadeName}?` : 'What do you want to do?'))
+        ? ((hasFriends || hasOffParade) ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
         : 'Look good?';
 
   const firstStep = needsFriendStep ? 'friends' : 'time';
@@ -934,7 +973,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   />
                 </div>
 
-                {chosenFriends.length > 0 && (
+                {(chosenFriends.length > 0 || offParadeNames.length > 0) && (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {chosenFriends.map(f => (
                       <button
@@ -948,6 +987,18 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         </Avatar>
                         {f.name.split(' ')[0]}
                         <span className="text-primary/60">×</span>
+                      </button>
+                    ))}
+                    {offParadeNames.map(n => (
+                      <button
+                        key={`off-${n}`}
+                        onClick={() => setOffParadeNames(prev => prev.filter(x => x !== n))}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-dashed border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/80 transition-colors"
+                        title="Not on Parade — they'll get a unique invite link"
+                      >
+                        <UserPlus className="h-3 w-3 text-muted-foreground" />
+                        {n}
+                        <span className="text-muted-foreground/60">×</span>
                       </button>
                     ))}
                   </div>
@@ -966,14 +1017,14 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">Invite new friends</p>
-                        <p className="text-[11px] text-muted-foreground">Share with friends outside Parade</p>
+                        <p className="text-[11px] text-muted-foreground">Add anyone by name — they'll get a unique link to join Parade and the plan</p>
                       </div>
                     </button>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <UserPlus className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <p className="text-[11px] font-medium text-foreground">Who are you hanging with?</p>
+                        <p className="text-[11px] font-medium text-foreground">Add a friend by name</p>
                         <button
                           type="button"
                           onClick={() => { setAddingOffParade(false); setOffParadeDraft(''); }}
@@ -991,10 +1042,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && offParadeDraft.trim()) {
                               const name = offParadeDraft.trim();
-                              setOffParadeName(name);
-                              setSoloMode(true);
-                              setAddingOffParade(false);
-                              setStep('time');
+                              setOffParadeNames(prev => prev.includes(name) ? prev : [...prev, name]);
+                              setOffParadeDraft('');
                             }
                           }}
                           placeholder="e.g. Alex"
@@ -1002,19 +1051,20 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         />
                         <Button
                           size="sm"
+                          variant="secondary"
                           disabled={!offParadeDraft.trim()}
                           onClick={() => {
                             const name = offParadeDraft.trim();
                             if (!name) return;
-                            setOffParadeName(name);
-                            setSoloMode(true);
-                            setAddingOffParade(false);
-                            setStep('time');
+                            setOffParadeNames(prev => prev.includes(name) ? prev : [...prev, name]);
+                            setOffParadeDraft('');
                           }}
                         >
-                          Continue
+                          <Plus className="h-3.5 w-3.5" />
+                          Add
                         </Button>
                       </div>
+                      <p className="text-[10px] text-muted-foreground">Add as many as you want. You'll share a unique link with each after creating the plan.</p>
                     </div>
                   )}
                 </div>
@@ -1361,7 +1411,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">{autoTitle}</p>
                       <p className="text-xs text-muted-foreground">
-                        {hasFriends ? `Proposed plan with ${friendNamesStr}` : (offParadeName ? `Plan with ${offParadeName} (not on Parade)` : 'Solo plan — invite friends later')}
+                        {hasFriends && hasOffParade ? `Proposed plan with ${friendNamesStr}` : hasFriends ? `Proposed plan with ${friendNamesStr}` : hasOffParade ? `Plan with ${offParadeListStr} (not on Parade — share invite link after creating)` : 'Solo plan — invite friends later'}
                       </p>
                     </div>
                     <button
@@ -1438,10 +1488,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           <DrawerFooter className="pt-2">
             <Button
               onClick={() => setStep('time')}
-              disabled={chosenFriends.length === 0}
+              disabled={chosenFriends.length === 0 && offParadeNames.length === 0}
               className="w-full gap-2"
             >
-              Continue with {chosenFriends.length} {chosenFriends.length === 1 ? 'friend' : 'friends'} →
+              {(() => {
+                const total = chosenFriends.length + offParadeNames.length;
+                return `Continue with ${total} ${total === 1 ? 'person' : 'people'} →`;
+              })()}
             </Button>
           </DrawerFooter>
         )}
