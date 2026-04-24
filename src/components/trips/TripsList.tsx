@@ -550,12 +550,14 @@ function ProposalTripCard({
   currentUserId,
   voting,
   onSubmitRankedVotes,
+  onAcceptDecline,
   onRefresh,
 }: {
   proposal: TripProposal;
   currentUserId: string;
   voting: string | null;
   onSubmitRankedVotes: (proposalId: string, rankings: Record<string, number>, participantId: string) => Promise<void>;
+  onAcceptDecline: (proposalId: string, dateId: string, participantId: string, response: 'accept' | 'decline') => Promise<void>;
   onRefresh: () => Promise<void>;
 }) {
   const isCreator = proposal.created_by === currentUserId;
