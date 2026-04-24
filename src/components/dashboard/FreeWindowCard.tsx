@@ -4,13 +4,14 @@ import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
-import { FindOtherTimesDialog } from '@/components/dashboard/FindOtherTimesDialog';
+import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import type { TimeSlot } from '@/types/planner';
 import { cn } from '@/lib/utils';
 
 export function FreeWindowCard() {
   const { windows, loading } = useOpenWindows();
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [otherTimesOpen, setOtherTimesOpen] = useState(false);
+  const [planFor, setPlanFor] = useState<OpenWindow | null>(null);
   const [highlight, setHighlight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -71,19 +72,13 @@ export function FreeWindowCard() {
           highlight && 'ring-2 ring-primary/50 p-2 -m-2 bg-primary/5'
         )}
       >
-        <div className="flex items-center justify-between px-0.5">
+        <div className="flex items-center px-0.5">
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
               Open windows
             </p>
           </div>
-          <button
-            onClick={() => setOtherTimesOpen(true)}
-            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Find other times →
-          </button>
         </div>
 
         <div className="flex gap-2.5 overflow-x-auto -mx-1 px-1 pb-1 snap-x snap-mandatory scrollbar-none">
@@ -91,13 +86,25 @@ export function FreeWindowCard() {
             <WindowChip
               key={w.date.toISOString() + w.slots[0]}
               window={w}
-              onClick={() => setInviteOpen(true)}
+              onClick={() => setPlanFor(w)}
             />
           ))}
         </div>
       </div>
       <OpenInviteSheet open={inviteOpen} onOpenChange={setInviteOpen} />
-      <FindOtherTimesDialog open={otherTimesOpen} onOpenChange={setOtherTimesOpen} />
+      {planFor && (
+        <QuickPlanSheet
+          open={!!planFor}
+          onOpenChange={(v) => !v && setPlanFor(null)}
+          preSelectedDate={planFor.date}
+          preSelectedTimeSlot={planFor.slots[0] as TimeSlot}
+          preSelectedFriends={planFor.overlappingFriends.map((f) => ({
+            userId: f.userId,
+            name: f.name,
+            avatar: f.avatar,
+          }))}
+        />
+      )}
     </>
   );
 }
