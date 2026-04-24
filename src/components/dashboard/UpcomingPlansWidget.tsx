@@ -70,6 +70,7 @@ export function UpcomingPlansWidget() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
@@ -189,8 +190,18 @@ export function UpcomingPlansWidget() {
       .slice(0, 8);
   }, [plans, friendUpcomingPlans, userTimezone]);
 
-  const myPlans = upcomingPlans.filter(p => !p.isFriendPlan);
-  const friendPlans = upcomingPlans.filter(p => p.isFriendPlan);
+  // By default, only show plans happening in the next 3 days (today + 2).
+  // Users can expand to see the rest of the week.
+  const visiblePlans = useMemo(() => {
+    if (showAll) return upcomingPlans;
+    const now = new Date();
+    const cutoff = addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), 3);
+    return upcomingPlans.filter((p) => p.date < cutoff);
+  }, [upcomingPlans, showAll]);
+
+  const hiddenCount = upcomingPlans.length - visiblePlans.length;
+  const myPlans = visiblePlans.filter((p) => !p.isFriendPlan);
+  const friendPlans = visiblePlans.filter((p) => p.isFriendPlan);
 
   const renderPlanCard = (plan: any) => {
     const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
@@ -338,6 +349,17 @@ export function UpcomingPlansWidget() {
           </h4>
           <div className="space-y-1.5">{friendPlans.map(renderPlanCard)}</div>
         </div>
+      )}
+      {(hiddenCount > 0 || showAll) && upcomingPlans.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="w-full text-center text-xs font-medium text-primary hover:text-primary/80 transition-colors py-1.5"
+        >
+          {showAll
+            ? 'Show less'
+            : `Show ${hiddenCount} more plan${hiddenCount === 1 ? '' : 's'} this week`}
+        </button>
       )}
     </div>
   );
