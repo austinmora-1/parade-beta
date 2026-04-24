@@ -70,6 +70,7 @@ export function UpcomingPlansWidget() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   const timeSlotOrder: Record<string, number> = {
     'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
