@@ -419,11 +419,96 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
                   </div>
                 </button>
 
+                <div
+                  className={cn(
+                    'w-full rounded-lg border px-3 py-2.5 transition-all',
+                    audienceType === 'friends'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border'
+                  )}
+                >
+                  <button
+                    onClick={() => {
+                      if (audienceType === 'friends') {
+                        setAudienceType('all_friends');
+                        setAudienceRef(null);
+                      } else {
+                        setAudienceType('friends');
+                        if (!audienceRef) setAudienceRef(null);
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 text-left"
+                  >
+                    <UserPlus className="h-4 w-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Specific friends</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {audienceType === 'friends' && selectedFriendIds.length > 0
+                          ? `${selectedFriendIds.length} selected`
+                          : 'Pick exactly who sees this'}
+                      </p>
+                    </div>
+                  </button>
+
+                  {audienceType === 'friends' && (
+                    <div className="mt-2 max-h-44 overflow-y-auto -mx-1 px-1 space-y-1">
+                      {connectedFriends.length === 0 && (
+                        <p className="text-[11px] text-muted-foreground py-2 text-center">
+                          No connected friends yet.
+                        </p>
+                      )}
+                      {connectedFriends.map(f => {
+                        const id = f.friendUserId!;
+                        const checked = selectedFriendIds.includes(id);
+                        return (
+                          <button
+                            key={f.id}
+                            onClick={() => toggleFriend(id)}
+                            className={cn(
+                              'w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors',
+                              checked ? 'bg-primary/15' : 'hover:bg-muted'
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'h-4 w-4 rounded border flex items-center justify-center shrink-0',
+                                checked ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                              )}
+                            >
+                              {checked && <Check className="h-3 w-3" />}
+                            </span>
+                            <span className="truncate flex-1">{f.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 {pods.length > 0 && (
                   <div className="space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pt-1">Pods</p>
                     {pods.map(pod => {
                       const selected = audienceType === 'pod' && audienceRef === pod.id;
+                      return (
+                        <button
+                          key={pod.id}
+                          onClick={() => { setAudienceType('pod'); setAudienceRef(pod.id); }}
+                          className={cn(
+                            'w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all',
+                            selected ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/30'
+                          )}
+                        >
+                          <span className="text-base shrink-0">{pod.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{pod.name}</p>
+                            <p className="text-[11px] text-muted-foreground">{pod.memberUserIds.length} member{pod.memberUserIds.length === 1 ? '' : 's'}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                       return (
                         <button
                           key={pod.id}
