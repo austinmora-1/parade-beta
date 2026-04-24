@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-export type OpenInviteAudienceType = 'all_friends' | 'pod' | 'interest';
+export type OpenInviteAudienceType = 'all_friends' | 'pod' | 'interest' | 'friends';
 export type OpenInviteStatus = 'open' | 'claimed' | 'expired' | 'cancelled';
 
 export interface OpenInvite {

@@ -74,6 +74,9 @@ Deno.serve(async (req) => {
         .select('friend_user_id')
         .eq('pod_id', invite.audience_ref);
       members?.forEach((m) => m.friend_user_id && recipientIds.add(m.friend_user_id));
+    } else if (invite.audience_type === 'friends' && invite.audience_ref) {
+      const ids = invite.audience_ref.split(',').map((s: string) => s.trim()).filter(Boolean);
+      ids.forEach((id: string) => recipientIds.add(id));
     } else if (invite.audience_type === 'interest' && invite.audience_ref) {
       // Match friends whose profile interests include the tag
       const { data: friends } = await admin
