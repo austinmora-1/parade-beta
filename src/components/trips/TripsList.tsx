@@ -221,6 +221,52 @@ export function TripsList({ refreshKey }: TripsListProps) {
     };
   }, [fetchTrips, fetchProposals]);
 
+  const handleAcceptDecline = async (
+    proposalId: string,
+    dateId: string,
+    participantId: string,
+    response: 'accept' | 'decline'
+  ) => {
+    if (!user) return;
+    setVoting(proposalId);
+    try {
+      // Always clear any prior vote for this user on this proposal's date
+      await supabase
+        .from('trip_proposal_votes' as any)
+        .delete()
+        .in('date_id', [dateId])
+        .eq('user_id', user.id);
+
+      if (response === 'accept') {
+        const { error } = await supabase
+          .from('trip_proposal_votes' as any)
+          .insert([{ date_id: dateId, user_id: user.id, rank: 1 }]);
+        if (error) throw error;
+        await supabase
+          .from('trip_proposal_participants')
+          .update({ status: 'voted' })
+          .eq('id', participantId);
+        confetti({
+          particleCount: 30, spread: 40, origin: { y: 0.7 },
+          colors: ['#3D8C6C', '#F59E0B', '#3B82F6'], scalar: 0.8,
+        });
+        toast.success("You're in ✈️");
+      } else {
+        await supabase
+          .from('trip_proposal_participants')
+          .update({ status: 'declined' })
+          .eq('id', participantId);
+        toast.success('Declined — thanks for letting them know');
+      }
+      await fetchProposals();
+    } catch (err) {
+      console.error('Response failed:', err);
+      toast.error("Couldn't save that — try again?");
+    } finally {
+      setVoting(null);
+    }
+  };
+
   const handleSubmitRankedVotes = async (
     proposalId: string,
     rankings: Record<string, number>, // dateId -> rank
