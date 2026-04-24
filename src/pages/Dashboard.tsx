@@ -70,7 +70,7 @@ export default function Dashboard() {
       variants={stagger}
       initial="hidden"
       animate="show"
-      className="space-y-5 md:space-y-7"
+      className="space-y-8 md:space-y-12 pt-2 md:pt-4 pb-6"
     >
       <EllyWalkthrough />
 
