@@ -112,15 +112,6 @@ export default function Dashboard() {
         <FreeWindowCard />
       </motion.div>
 
-      {/* Quick Plan drop zone */}
-      <motion.div variants={fadeUp}>
-        <QuickPlanDrop
-          stagedFriends={stagedFriends}
-          onAddFriend={handleAddFriend}
-          onRemoveFriend={handleRemoveFriend}
-          onClear={handleClear}
-        />
-      </motion.div>
 
       {/* Optional: nudge to flesh out profile (interests, goals, etc.) */}
       <motion.div variants={fadeUp}>
