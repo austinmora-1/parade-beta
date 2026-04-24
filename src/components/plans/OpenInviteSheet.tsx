@@ -21,6 +21,8 @@ type Step = 'describe' | 'audience' | 'send' | 'confirm';
 interface OpenInviteSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialDate?: Date;
+  initialSlot?: TimeSlot;
 }
 
 const SLOT_OPTIONS: { value: TimeSlot; label: string; range: string }[] = [
@@ -31,7 +33,7 @@ const SLOT_OPTIONS: { value: TimeSlot; label: string; range: string }[] = [
   { value: 'late-night', label: 'Late Night', range: '9pm+' },
 ];
 
-export function OpenInviteSheet({ open, onOpenChange }: OpenInviteSheetProps) {
+export function OpenInviteSheet({ open, onOpenChange, initialDate, initialSlot }: OpenInviteSheetProps) {
   const { user } = useAuth();
   const { create } = useOpenInvites();
   const { pods } = usePods();
@@ -55,6 +57,13 @@ export function OpenInviteSheet({ open, onOpenChange }: OpenInviteSheetProps) {
   const [audienceType, setAudienceType] = useState<'all_friends' | 'pod' | 'interest'>('all_friends');
   const [audienceRef, setAudienceRef] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Apply optional prefill (e.g. from "Find other times" dialog)
+  useEffect(() => {
+    if (!open) return;
+    if (initialDate) setDate(initialDate);
+    if (initialSlot) setSlot(initialSlot);
+  }, [open, initialDate, initialSlot]);
 
   const reset = () => {
     setStep('describe');
