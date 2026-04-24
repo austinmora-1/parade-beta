@@ -595,7 +595,7 @@ export default function PlanDetail() {
           {/* Participants with avatars and RSVP status */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Participants</h3>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Participants</div>
               {plan && !isPast && canEdit && (
                 <Popover open={addFriendOpen} onOpenChange={(open) => { setAddFriendOpen(open); if (!open) setFriendSearch(''); }}>
                   <PopoverTrigger asChild>
@@ -699,7 +699,7 @@ export default function PlanDetail() {
           {/* Subscribers */}
           {subscribers.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Subscribers</h3>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Subscribers</div>
               <div className="flex flex-wrap gap-2">
                 {subscribers.map(p => (
                   <FriendLink key={p.id} userId={p.friendUserId} className="flex items-center gap-2 rounded-lg bg-accent/50 px-3 py-2">
@@ -721,7 +721,7 @@ export default function PlanDetail() {
           {/* Notes */}
           {displayPlan.notes && (
             <div className="space-y-2">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</h3>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</div>
               <p className="text-sm bg-muted/30 rounded-lg p-3">{displayPlan.notes}</p>
             </div>
           )}
@@ -729,7 +729,7 @@ export default function PlanDetail() {
           {/* Visibility - compact inline */}
           {plan && isOwner && (
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Visibility</h3>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Visibility</div>
               <Select
                 value={plan.feedVisibility || 'private'}
                 onValueChange={async (value: string) => {
@@ -760,7 +760,7 @@ export default function PlanDetail() {
           {/* RSVP buttons for non-owner participants */}
           {plan && isParticipant && !isOwner && !isPast && userId && (
             <div className="space-y-2">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your RSVP</h3>
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your RSVP</div>
               <PlanRsvpButtons
                 planId={plan.id}
                 userId={userId}
