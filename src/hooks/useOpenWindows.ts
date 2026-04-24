@@ -271,13 +271,31 @@ export function useOpenWindows() {
           const rawEndHr = slotTimeBounds(block[block.length - 1]).endHr;
           const endHr = Math.min(rawEndHr, startHr + hours);
 
-          // Friend overlap on this block
+          // Build my availability row for this date (for trip_location/location_status)
+          const myRowForCity = {
+            date: dateKey,
+            location_status: myAvail?.locationStatus || 'home',
+            trip_location: myAvail?.tripLocation || null,
+          };
+
+          // Friend overlap on this block — only include friends co-located with me on this date
           const overlapping: OpenWindow['overlappingFriends'] = [];
           for (const f of connectedFriends) {
             const row = friendAvail.find(
               (r) => r.user_id === f.friendUserId && r.date === dateKey
             );
             if (!row) continue;
+
+            // Filter by same-city on this date
+            const sameCity = isFriendInMyCity({
+              date,
+              myAvailability: myRowForCity,
+              myHomeAddress: homeAddress,
+              friendAvailability: row,
+              friendHomeAddress: friendHomeAddresses[f.friendUserId] ?? null,
+            });
+            if (!sameCity) continue;
+
             let overlapHours = 0;
             for (const slot of block) {
               const dbKey = SLOT_DB_KEYS.find((k) => k.slot === slot)!.key;
