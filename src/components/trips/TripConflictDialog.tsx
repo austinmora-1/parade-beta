@@ -221,9 +221,6 @@ export function TripConflictDialog({ open, onOpenChange, conflicts, onResolved }
     </div>
   );
 
-  const labelA = labelFor(conflict.trip_a_name, conflict.trip_a_location);
-  const labelB = labelFor(conflict.trip_b_name, conflict.trip_b_location);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
@@ -252,30 +249,21 @@ export function TripConflictDialog({ open, onOpenChange, conflicts, onResolved }
           <div className="flex flex-col gap-2">
             <Button
               size="sm"
-              onClick={() => mergeTrips(conflict.trip_a_id, conflict.trip_b_id, labelA)}
+              onClick={mergeTrips}
               disabled={saving}
-              className="w-full justify-start gap-2"
+              className="w-full justify-center gap-2"
             >
               <Merge className="h-4 w-4" />
-              Merge into "{labelA}"
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => mergeTrips(conflict.trip_b_id, conflict.trip_a_id, labelB)}
-              disabled={saving}
-              className="w-full justify-start gap-2"
-            >
-              <Merge className="h-4 w-4" />
-              Merge into "{labelB}"
+              Merge trips
             </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={handleKeepBoth}
               disabled={saving}
-              className="w-full justify-start gap-2"
+              className="w-full justify-center gap-2"
             >
-              Keep both as separate trips
+              Keep as separate trips
             </Button>
           </div>
         </div>
