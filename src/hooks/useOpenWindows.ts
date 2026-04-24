@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { TimeSlot, TIME_SLOT_LABELS, Friend } from '@/types/planner';
+import { isFriendInMyCity } from '@/lib/effectiveCity';
 
 const SLOT_ORDER: TimeSlot[] = [
   'early-morning',
