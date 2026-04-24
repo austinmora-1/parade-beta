@@ -965,7 +965,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         <UserPlus className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">Someone not on Parade</p>
+                        <p className="text-sm font-medium">Invite new friends</p>
                         <p className="text-[11px] text-muted-foreground">Plan around your own availability</p>
                       </div>
                     </button>
