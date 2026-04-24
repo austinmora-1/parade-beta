@@ -199,6 +199,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setChosenFriends([]);
       setFriendSearch('');
       setSoloMode(false);
+      setOffParadeName('');
+      setAddingOffParade(false);
+      setOffParadeDraft('');
       setShowCustomInput(false);
       setCustomLabel('');
       setActivitySearch('');
