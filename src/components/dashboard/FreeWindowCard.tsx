@@ -4,11 +4,13 @@ import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
+import { FindOtherTimesDialog } from '@/components/dashboard/FindOtherTimesDialog';
 import { cn } from '@/lib/utils';
 
 export function FreeWindowCard() {
   const { windows, loading } = useOpenWindows();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [otherTimesOpen, setOtherTimesOpen] = useState(false);
   const [highlight, setHighlight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -77,10 +79,10 @@ export function FreeWindowCard() {
             </p>
           </div>
           <button
-            onClick={() => setInviteOpen(true)}
+            onClick={() => setOtherTimesOpen(true)}
             className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Send invite →
+            Find other times →
           </button>
         </div>
 
@@ -95,6 +97,7 @@ export function FreeWindowCard() {
         </div>
       </div>
       <OpenInviteSheet open={inviteOpen} onOpenChange={setInviteOpen} />
+      <FindOtherTimesDialog open={otherTimesOpen} onOpenChange={setOtherTimesOpen} />
     </>
   );
 }
