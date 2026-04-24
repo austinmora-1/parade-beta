@@ -3,6 +3,7 @@ import { UserPlus, Copy, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { ShareLinkDialog } from '@/components/share/ShareLinkDialog';
 
 interface PlaceholderInvite {
   id: string;
@@ -30,6 +31,7 @@ export function PendingPlaceholderInvites({ planId, isOwner }: Props) {
   const [invites, setInvites] = useState<PlaceholderInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [shareInvite, setShareInvite] = useState<PlaceholderInvite | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,74 +78,78 @@ export function PendingPlaceholderInvites({ planId, isOwner }: Props) {
     }
   };
 
-  const handleShare = async (inv: PlaceholderInvite) => {
-    const link = buildLink(inv.invite_token);
-    const text = `Join me on Parade — I added you to a plan: ${link}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Join me on Parade', text, url: link });
-        return;
-      } catch {
-        // User cancelled or share failed — fall back to copy
-      }
-    }
-    handleCopy(inv);
+  const handleShare = (inv: PlaceholderInvite) => {
+    setShareInvite(inv);
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Pending invites · not on Parade
-        </div>
-        <span className="text-[10px] text-muted-foreground">{invites.length}</span>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        {invites.map((inv) => (
-          <div
-            key={inv.id}
-            className="flex items-center justify-between rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
-                <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{inv.placeholder_name}</p>
-                <p className="text-[10px] text-muted-foreground">
-                  Waiting to claim invite
-                </p>
-              </div>
-            </div>
-            {isOwner && (
-              <div className="flex items-center gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => handleCopy(inv)}
-                  title="Copy invite link"
-                >
-                  {copiedId === inv.id ? (
-                    <Check className="h-3.5 w-3.5" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-7 px-2.5 text-xs"
-                  onClick={() => handleShare(inv)}
-                >
-                  Share
-                </Button>
-              </div>
-            )}
+    <>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Pending invites · not on Parade
           </div>
-        ))}
+          <span className="text-[10px] text-muted-foreground">{invites.length}</span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {invites.map((inv) => (
+            <div
+              key={inv.id}
+              className="flex items-center justify-between rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{inv.placeholder_name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Waiting to claim invite
+                  </p>
+                </div>
+              </div>
+              {isOwner && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleCopy(inv)}
+                    title="Copy invite link"
+                  >
+                    {copiedId === inv.id ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 px-2.5 text-xs"
+                    onClick={() => handleShare(inv)}
+                  >
+                    Share
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      {shareInvite && (
+        <ShareLinkDialog
+          open={!!shareInvite}
+          onOpenChange={(o) => { if (!o) setShareInvite(null); }}
+          title={`Invite for ${shareInvite.placeholder_name}`}
+          shareMessage={`Hey ${shareInvite.placeholder_name}! I added you to a plan on Parade — claim your spot here:`}
+          emailSubject={`You're invited to a plan on Parade`}
+          generateLink={async () => buildLink(shareInvite.invite_token)}
+          regenerateKey={shareInvite.id}
+        />
+      )}
+    </>
   );
 }
 
