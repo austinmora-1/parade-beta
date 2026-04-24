@@ -23,6 +23,7 @@ import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
 import { PlanChangeRequestBadge } from '@/components/plans/PlanChangeRequestBadge';
 import { PlanPhotos } from '@/components/plans/PlanPhotos';
 import { PlanComments } from '@/components/plans/PlanComments';
+import { PendingPlaceholderInvites } from '@/components/plans/PendingPlaceholderInvites';
 
 const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDialog'));
@@ -689,6 +690,11 @@ export default function PlanDetail() {
               <p className="text-sm text-muted-foreground">No participants yet</p>
             )}
           </div>
+
+          {/* Pending placeholder invites (non-Parade friends) */}
+          {planId && (
+            <PendingPlaceholderInvites planId={planId} isOwner={isOwner} />
+          )}
 
           {/* Subscribers */}
           {subscribers.length > 0 && (
