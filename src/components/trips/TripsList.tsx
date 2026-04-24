@@ -221,6 +221,52 @@ export function TripsList({ refreshKey }: TripsListProps) {
     };
   }, [fetchTrips, fetchProposals]);
 
+  const handleAcceptDecline = async (
+    proposalId: string,
+    dateId: string,
+    participantId: string,
+    response: 'accept' | 'decline'
+  ) => {
+    if (!user) return;
+    setVoting(proposalId);
+    try {
+      // Always clear any prior vote for this user on this proposal's date
+      await supabase
+        .from('trip_proposal_votes' as any)
+        .delete()
+        .in('date_id', [dateId])
+        .eq('user_id', user.id);
+
+      if (response === 'accept') {
+        const { error } = await supabase
+          .from('trip_proposal_votes' as any)
+          .insert([{ date_id: dateId, user_id: user.id, rank: 1 }]);
+        if (error) throw error;
+        await supabase
+          .from('trip_proposal_participants')
+          .update({ status: 'voted' })
+          .eq('id', participantId);
+        confetti({
+          particleCount: 30, spread: 40, origin: { y: 0.7 },
+          colors: ['#3D8C6C', '#F59E0B', '#3B82F6'], scalar: 0.8,
+        });
+        toast.success("You're in ✈️");
+      } else {
+        await supabase
+          .from('trip_proposal_participants')
+          .update({ status: 'declined' })
+          .eq('id', participantId);
+        toast.success('Declined — thanks for letting them know');
+      }
+      await fetchProposals();
+    } catch (err) {
+      console.error('Response failed:', err);
+      toast.error("Couldn't save that — try again?");
+    } finally {
+      setVoting(null);
+    }
+  };
+
   const handleSubmitRankedVotes = async (
     proposalId: string,
     rankings: Record<string, number>, // dateId -> rank
@@ -324,6 +370,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
               currentUserId={user!.id}
               voting={voting}
               onSubmitRankedVotes={handleSubmitRankedVotes}
+              onAcceptDecline={handleAcceptDecline}
               onRefresh={fetchProposals}
             />
           );
@@ -503,12 +550,14 @@ function ProposalTripCard({
   currentUserId,
   voting,
   onSubmitRankedVotes,
+  onAcceptDecline,
   onRefresh,
 }: {
   proposal: TripProposal;
   currentUserId: string;
   voting: string | null;
   onSubmitRankedVotes: (proposalId: string, rankings: Record<string, number>, participantId: string) => Promise<void>;
+  onAcceptDecline: (proposalId: string, dateId: string, participantId: string, response: 'accept' | 'decline') => Promise<void>;
   onRefresh: () => Promise<void>;
 }) {
   const isCreator = proposal.created_by === currentUserId;
@@ -522,7 +571,13 @@ function ProposalTripCard({
   }, [proposal.votes]);
   
   const votedCount = voterIds.size;
-  const allVoted = votedCount === totalVoters && totalVoters > 0;
+  // For single-date proposals, declines also count as a response so the organizer
+  // can confirm once everyone has responded (accepted or declined).
+  const isSingleDate = proposal.dates.length === 1;
+  const respondedCount = isSingleDate
+    ? proposal.participants.filter(p => voterIds.has(p.user_id) || p.status === 'declined').length
+    : votedCount;
+  const allVoted = respondedCount === totalVoters && totalVoters > 0;
   const hasVoted = voterIds.has(currentUserId);
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
@@ -1044,7 +1099,96 @@ function ProposalTripCard({
           </Button>
         </div>
 
-        {/* Date options with ranked vote buttons */}
+        {/* Single date → simple Accept/Decline. Multi-date → ranked vote. */}
+        {proposal.dates.length === 1 ? (() => {
+          const onlyDate = proposal.dates[0];
+          const myParticipant = proposal.participants.find(p => p.user_id === currentUserId);
+          const myStatus = myParticipant?.status;
+          const accepted = voterIds.has(currentUserId);
+          const declined = myStatus === 'declined';
+          const startDate = new Date(onlyDate.start_date + 'T00:00:00');
+          const endDate = new Date(onlyDate.end_date + 'T00:00:00');
+          const sameDay = onlyDate.start_date === onlyDate.end_date;
+          const isBusy = voting === proposal.id;
+          const acceptedCount = voterIds.size;
+          const declinedCount = proposal.participants.filter(p => p.status === 'declined').length;
+          return (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className={cn(
+                  "text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0",
+                  allVoted
+                    ? "bg-primary/15 text-primary border border-primary/30"
+                    : "bg-muted border border-muted-foreground/20 text-muted-foreground"
+                )}>
+                  {allVoted ? '✓ All responded' : 'Proposed'}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {acceptedCount} in{declinedCount > 0 ? ` · ${declinedCount} out` : ''} · {totalVoters} invited
+                </span>
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/30 px-2 py-1.5 text-[11px] font-medium flex items-center gap-1.5">
+                <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                {sameDay
+                  ? format(startDate, 'EEE, MMM d')
+                  : `${format(startDate, 'EEE, MMM d')} – ${format(endDate, 'MMM d')}`}
+              </div>
+
+              {accepted ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1 rounded-lg bg-primary/10 border border-primary/30 px-2 py-1.5 text-[11px] font-medium text-primary flex items-center gap-1.5">
+                    <Check className="h-3 w-3" /> You're in
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-[11px] text-muted-foreground"
+                    disabled={isBusy}
+                    onClick={() => onAcceptDecline(proposal.id, onlyDate.id, proposal.myParticipantId, 'decline')}
+                  >
+                    Change to decline
+                  </Button>
+                </div>
+              ) : declined ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1 rounded-lg bg-muted border border-border px-2 py-1.5 text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                    <X className="h-3 w-3" /> You declined
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-[11px] text-primary"
+                    disabled={isBusy}
+                    onClick={() => onAcceptDecline(proposal.id, onlyDate.id, proposal.myParticipantId, 'accept')}
+                  >
+                    Change to accept
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    disabled={isBusy}
+                    onClick={() => onAcceptDecline(proposal.id, onlyDate.id, proposal.myParticipantId, 'decline')}
+                  >
+                    {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <><X className="h-3 w-3 mr-1" /> Decline</>}
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={isBusy}
+                    onClick={() => onAcceptDecline(proposal.id, onlyDate.id, proposal.myParticipantId, 'accept')}
+                  >
+                    {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" /> Accept</>}
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })() : (
         <div className="space-y-1.5">
           <button
             type="button"
@@ -1159,6 +1303,7 @@ function ProposalTripCard({
             )}
           </AnimatePresence>
         </div>
+        )}
       </div>
 
       {/* Edit Dialog */}
