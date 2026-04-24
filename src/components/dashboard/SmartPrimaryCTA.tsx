@@ -27,7 +27,7 @@ export function SmartPrimaryCTA() {
   const { plans } = usePlannerStore();
   const [makePlanOpen, setMakePlanOpen] = useState(false);
 
-  const state = useMemo<CtaState>(() => {
+  const state = useMemo<CtaState | null>(() => {
     const now = new Date();
     const todayPlan = plans.find(
       (p) => isToday(p.date) && p.status !== 'cancelled' && p.date >= now
@@ -39,8 +39,10 @@ export function SmartPrimaryCTA() {
         title: todayPlan.title || todayPlan.activity || 'Today',
       };
     }
-    return { kind: 'make-plan', subtitle: 'Get something on the books' };
+    return null;
   }, [plans]);
+
+  if (!state) return null;
 
   const handleClick = () => {
     if (state.kind === 'open-today') {
