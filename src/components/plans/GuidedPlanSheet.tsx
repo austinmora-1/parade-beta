@@ -1295,7 +1295,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">{autoTitle}</p>
                       <p className="text-xs text-muted-foreground">
-                        {hasFriends ? `Proposed plan with ${friendNamesStr}` : 'Solo plan — invite friends later'}
+                        {hasFriends ? `Proposed plan with ${friendNamesStr}` : (offParadeName ? `Plan with ${offParadeName} (not on Parade)` : 'Solo plan — invite friends later')}
                       </p>
                     </div>
                     <button
