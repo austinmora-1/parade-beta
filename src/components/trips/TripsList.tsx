@@ -1420,6 +1420,35 @@ function ProposalTripCard({
           proposalType={proposal.proposal_type as 'trip' | 'visit'}
         />
       )}
+
+      <AlertDialog open={confirmEarlyOpen} onOpenChange={setConfirmEarlyOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm before everyone has voted?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {totalVoters - votedCount} {totalVoters - votedCount === 1 ? "person hasn't" : "people haven't"} responded yet.
+              {winningDate && (
+                <> You'll lock in <span className="font-medium text-foreground">{format(new Date(winningDate.start_date + 'T00:00:00'), 'EEE, MMM d')}{winningDate.start_date !== winningDate.end_date ? ` – ${format(new Date(winningDate.end_date + 'T00:00:00'), 'MMM d')}` : ''}</span>. </>
+              )}
+              {' '}Participants who haven't voted will show as tentative until they accept.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={finalizing}>Wait for everyone</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={finalizing}
+              onClick={async (e) => {
+                e.preventDefault();
+                await handleFinalize();
+                setConfirmEarlyOpen(false);
+              }}
+            >
+              {finalizing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              Confirm now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
