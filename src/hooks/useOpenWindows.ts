@@ -154,8 +154,9 @@ function fmtHour(hr: number): string {
  */
 export function useOpenWindows() {
   const { user } = useAuth();
-  const { availabilityMap, friends, plans } = usePlannerStore();
+  const { availabilityMap, friends, plans, homeAddress } = usePlannerStore();
   const [friendAvail, setFriendAvail] = useState<FriendAvailRow[]>([]);
+  const [friendHomeAddresses, setFriendHomeAddresses] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
 
   const connectedFriends: MinFriend[] = useMemo(
@@ -178,20 +179,32 @@ export function useOpenWindows() {
     async function load() {
       if (!user?.id || connectedFriends.length === 0 || dateStrs.length === 0) {
         setFriendAvail([]);
+        setFriendHomeAddresses({});
         setLoading(false);
         return;
       }
       setLoading(true);
       const friendIds = connectedFriends.map((f) => f.friendUserId);
-      const { data } = await supabase
-        .from('availability')
-        .select(
-          'user_id, date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status'
-        )
-        .in('user_id', friendIds)
-        .in('date', dateStrs);
+      const [availRes, profilesRes] = await Promise.all([
+        supabase
+          .from('availability')
+          .select(
+            'user_id, date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location'
+          )
+          .in('user_id', friendIds)
+          .in('date', dateStrs),
+        supabase
+          .from('profiles')
+          .select('user_id, home_address')
+          .in('user_id', friendIds),
+      ]);
       if (!cancelled) {
-        setFriendAvail((data as FriendAvailRow[]) || []);
+        setFriendAvail((availRes.data as FriendAvailRow[]) || []);
+        const map: Record<string, string | null> = {};
+        for (const p of (profilesRes.data as { user_id: string; home_address: string | null }[]) || []) {
+          map[p.user_id] = p.home_address;
+        }
+        setFriendHomeAddresses(map);
         setLoading(false);
       }
     }
