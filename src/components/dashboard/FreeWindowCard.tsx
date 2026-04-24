@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Send } from 'lucide-react';
+import { Sparkles, Send, Share2 } from 'lucide-react';
 import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 export function FreeWindowCard() {
   const { windows, loading } = useOpenWindows();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [shareFor, setShareFor] = useState<OpenWindow | null>(null);
   const [planFor, setPlanFor] = useState<OpenWindow | null>(null);
   const [highlight, setHighlight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
