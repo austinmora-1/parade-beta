@@ -755,8 +755,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const activityEmoji = activity === TBD_ACTIVITY_ID ? TBD_EMOJI : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.icon || customActivities.find(a => a.id === activity)?.icon || '📅') : '';
 
   const autoTitle = activity
-    ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : activityLabel)
-    : (hasFriends ? `Hang with ${friendNames.join(', ')}` : 'Solo Plan');
+    ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : (offParadeName ? `${activityLabel} with ${offParadeName}` : activityLabel))
+    : (hasFriends ? `Hang with ${friendNames.join(', ')}` : (offParadeName ? `Hang with ${offParadeName}` : 'Solo Plan'));
 
   const handleSubmit = async () => {
     if (!activity || selectedSlots.length === 0) return;
