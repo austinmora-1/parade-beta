@@ -78,18 +78,8 @@ export function PendingPlaceholderInvites({ planId, isOwner }: Props) {
     }
   };
 
-  const handleShare = async (inv: PlaceholderInvite) => {
-    const link = buildLink(inv.invite_token);
-    const text = `Join me on Parade — I added you to a plan: ${link}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Join me on Parade', text, url: link });
-        return;
-      } catch {
-        // User cancelled or share failed — fall back to copy
-      }
-    }
-    handleCopy(inv);
+  const handleShare = (inv: PlaceholderInvite) => {
+    setShareInvite(inv);
   };
 
   return (
