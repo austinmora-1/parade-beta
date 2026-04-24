@@ -13,7 +13,6 @@ const ENTRIES: { key: PlanningEntry; emoji: string; label: string; hint: string 
   { key: 'hang',         emoji: '👤',  label: 'Hang with someone',  hint: '"I want to see Alex this week"' },
   { key: 'plus-one',     emoji: '🎟️', label: 'Get a plus-one',     hint: '"Mets game Saturday, need someone"' },
   { key: 'trip',         emoji: '📍',  label: 'Plan a Trip',         hint: '"NYC this fall — or Queens Saturday"' },
-  { key: 'free-weekend', emoji: '🌤️', label: 'Free weekend',        hint: '"Who\'s around this Saturday?"' },
 ];
 
 export function WhatArePlanningSheet({ open, onOpenChange, onSelect }: WhatArePlanningSheetProps) {
