@@ -8,6 +8,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -324,11 +325,13 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
 
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Location (optional)</label>
-                  <Input
+                  <CityAutocomplete
                     value={location}
-                    onChange={e => setLocation(e.target.value)}
+                    onChange={setLocation}
                     placeholder="A spot, neighborhood, or TBD"
-                    className="mt-1 h-9 text-sm"
+                    types="establishment"
+                    compact
+                    className="mt-1"
                   />
                 </div>
 
