@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp, Plane,
+  CalendarPlus, Loader2, ArrowLeft, Sparkles, CalendarDays, Check, MapPin, Search, Plus, CircleHelp, Plane, UserPlus, X,
 } from 'lucide-react';
 
 
@@ -119,6 +119,12 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [chosenFriends, setChosenFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [soloMode, setSoloMode] = useState(false);
+  // Off-Parade guest: a person not on Parade. Treated like solo planning
+  // (uses only the current user's availability) but injects their name into
+  // the plan title so the user remembers who they're hanging with.
+  const [offParadeName, setOffParadeName] = useState('');
+  const [addingOffParade, setAddingOffParade] = useState(false);
+  const [offParadeDraft, setOffParadeDraft] = useState('');
 
   // The effective friends list (pre-selected or user-chosen)
   const effectiveFriends = soloMode ? [] : (needsFriendStep ? chosenFriends : preSelectedFriends);
@@ -193,6 +199,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
       setChosenFriends([]);
       setFriendSearch('');
       setSoloMode(false);
+      setOffParadeName('');
+      setAddingOffParade(false);
+      setOffParadeDraft('');
       setShowCustomInput(false);
       setCustomLabel('');
       setActivitySearch('');
@@ -746,8 +755,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const activityEmoji = activity === TBD_ACTIVITY_ID ? TBD_EMOJI : activity ? (ACTIVITY_CONFIG[activity as ActivityType]?.icon || customActivities.find(a => a.id === activity)?.icon || '📅') : '';
 
   const autoTitle = activity
-    ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : activityLabel)
-    : (hasFriends ? `Hang with ${friendNames.join(', ')}` : 'Solo Plan');
+    ? (hasFriends ? `${activityLabel} with ${friendNames.join(', ')}` : (offParadeName ? `${activityLabel} with ${offParadeName}` : activityLabel))
+    : (hasFriends ? `Hang with ${friendNames.join(', ')}` : (offParadeName ? `Hang with ${offParadeName}` : 'Solo Plan'));
 
   const handleSubmit = async () => {
     if (!activity || selectedSlots.length === 0) return;
@@ -846,9 +855,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const stepTitle = step === 'friends'
     ? 'Who are we planning with?'
     : step === 'time'
-      ? (hasFriends ? `Top times for ${friendNamesStr}` : 'When are you free?')
+      ? (hasFriends ? `Top times for ${friendNamesStr}` : (offParadeName ? `When are you free to see ${offParadeName}?` : 'When are you free?'))
       : step === 'activity'
-        ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
+        ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : (offParadeName ? `What do you want to do with ${offParadeName}?` : 'What do you want to do?'))
         : 'Look good?';
 
   const firstStep = needsFriendStep ? 'friends' : 'time';
@@ -980,7 +989,73 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   )}
                 </div>
 
-                {/* Just me button */}
+                {/* Off-Parade guest: invite someone not on Parade */}
+                <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-2.5">
+                  {!addingOffParade ? (
+                    <button
+                      type="button"
+                      onClick={() => { setAddingOffParade(true); setOffParadeDraft(''); }}
+                      className="flex items-center gap-2.5 w-full text-left"
+                    >
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <UserPlus className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">Someone not on Parade</p>
+                        <p className="text-[11px] text-muted-foreground">Plan around your own availability</p>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <UserPlus className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <p className="text-[11px] font-medium text-foreground">Who are you hanging with?</p>
+                        <button
+                          type="button"
+                          onClick={() => { setAddingOffParade(false); setOffParadeDraft(''); }}
+                          aria-label="Cancel"
+                          className="ml-auto text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          autoFocus
+                          value={offParadeDraft}
+                          onChange={(e) => setOffParadeDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && offParadeDraft.trim()) {
+                              const name = offParadeDraft.trim();
+                              setOffParadeName(name);
+                              setSoloMode(true);
+                              setAddingOffParade(false);
+                              setStep('time');
+                            }
+                          }}
+                          placeholder="e.g. Alex"
+                          className="h-9 text-sm"
+                        />
+                        <Button
+                          size="sm"
+                          disabled={!offParadeDraft.trim()}
+                          onClick={() => {
+                            const name = offParadeDraft.trim();
+                            if (!name) return;
+                            setOffParadeName(name);
+                            setSoloMode(true);
+                            setAddingOffParade(false);
+                            setStep('time');
+                          }}
+                        >
+                          Continue
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+
                 <button
                   onClick={() => { setSoloMode(true); setStep('time'); }}
                   className="flex items-center justify-center gap-1.5 w-full py-2.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
@@ -1286,7 +1361,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-bold text-foreground">{autoTitle}</p>
                       <p className="text-xs text-muted-foreground">
-                        {hasFriends ? `Proposed plan with ${friendNamesStr}` : 'Solo plan — invite friends later'}
+                        {hasFriends ? `Proposed plan with ${friendNamesStr}` : (offParadeName ? `Plan with ${offParadeName} (not on Parade)` : 'Solo plan — invite friends later')}
                       </p>
                     </div>
                     <button
