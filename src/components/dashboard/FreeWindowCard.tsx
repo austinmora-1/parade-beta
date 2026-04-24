@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays, startOfDay, isToday, isTomorrow } from 'date-fns';
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function formatDayPhrase(date: Date): string {
+  if (isToday(date)) return 'today';
+  if (isTomorrow(date)) return 'tomorrow';
+  const today = startOfDay(new Date());
+  const target = startOfDay(date);
+  const days = differenceInCalendarDays(target, today);
+  const dayName = DAY_NAMES[target.getDay()];
+  // Within the next 6 days (after tomorrow) → "this <Day>"
+  // 7-13 days out → "next <Day>"
+  // 14+ days out → include date for clarity
+  if (days <= 6) return `this ${dayName}`;
+  if (days <= 13) return `next ${dayName}`;
+  return `${dayName}, ${format(date, 'MMM d')}`;
+}
 import { Sparkles, Send, Share2 } from 'lucide-react';
 import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
