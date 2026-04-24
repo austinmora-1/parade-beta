@@ -1,20 +1,67 @@
 import { useEffect, useRef, useState } from 'react';
+import { format } from 'date-fns';
 import { Sparkles, Send, Share2 } from 'lucide-react';
 import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { ShareLinkDialog } from '@/components/share/ShareLinkDialog';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { usePlannerStore } from '@/stores/plannerStore';
 import type { TimeSlot } from '@/types/planner';
 import { cn } from '@/lib/utils';
 
+const PRIMARY_DOMAIN = 'https://helloparade.app';
+
 export function FreeWindowCard() {
+  const { user } = useAuth();
   const { windows, loading } = useOpenWindows();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [shareFor, setShareFor] = useState<OpenWindow | null>(null);
   const [planFor, setPlanFor] = useState<OpenWindow | null>(null);
   const [highlight, setHighlight] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const inviterName =
+    user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'A friend';
+
+  const generateShareLink = async () => {
+    if (!shareFor || !user?.id) throw new Error('Not ready');
+    const dateStr = format(shareFor.date, 'yyyy-MM-dd');
+    const noonUtcDate = `${dateStr}T12:00:00+00:00`;
+    const slot = shareFor.slots[0] as TimeSlot;
+    const title = `Open hang — ${shareFor.dayLabel}, ${shareFor.startLabel}`;
+
+    const { data: plan, error: planErr } = await supabase
+      .from('plans')
+      .insert({
+        user_id: user.id,
+        title,
+        activity: 'meetup',
+        date: noonUtcDate,
+        time_slot: slot,
+        duration: 60,
+        status: 'confirmed',
+        feed_visibility: 'private',
+        source_timezone: usePlannerStore.getState().userTimezone,
+      } as any)
+      .select('id')
+      .single();
+    if (planErr || !plan?.id) throw planErr || new Error('Failed to create plan');
+
+    const { data: invite, error: invErr } = await supabase
+      .from('plan_invites')
+      .insert({ plan_id: plan.id, invited_by: user.id })
+      .select('invite_token')
+      .single();
+    if (invErr || !invite?.invite_token) throw invErr || new Error('Failed to create invite');
+
+    usePlannerStore.getState().loadPlans?.();
+
+    return `${PRIMARY_DOMAIN}/invite.html?t=${invite.invite_token}`;
+  };
 
   // Listen for global "expand free weekend" event (from FAB → Free weekend entry)
   useEffect(() => {
