@@ -36,6 +36,9 @@ interface FindPeopleSheetProps {
   onOpenChange: (open: boolean) => void;
   /** When provided, skip anchor + describe and prefill from this trip. */
   tripContext?: TripContext;
+  /** Optional prefill for date/slot (e.g. from "Find other times" dialog) */
+  initialDate?: Date;
+  initialSlot?: TimeSlot;
 }
 
 type Step = 'anchor' | 'describe' | 'audience' | 'preview' | 'success';
@@ -51,7 +54,7 @@ const QUICK_ACTIVITIES: { id: ActivityType; label: string; icon: string }[] = [
   { id: 'gym', label: 'Workout', icon: '💪' } as any,
 ];
 
-export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleSheetProps) {
+export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, initialSlot }: FindPeopleSheetProps) {
   const { create } = useOpenInvites();
   const { pods } = usePods();
   const { friends } = usePlannerStore();
@@ -107,6 +110,14 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
       setActivity('coffee');
       setTitle(`Anyone free in ${tripContext.location || 'town'}?`);
       setStep('audience');
+    } else if (initialDate || initialSlot) {
+      // Prefill from "Find other times" — skip anchor, jump to describe with date/slot ready
+      setTitle('');
+      setActivity('coffee');
+      setDate(initialDate || new Date());
+      setTimeSlot(initialSlot || 'evening');
+      setLocation('');
+      setStep('describe');
     } else {
       setStep('anchor');
       setTitle('');
@@ -115,7 +126,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
       setTimeSlot('evening');
       setLocation('');
     }
-  }, [open, tripContext]);
+  }, [open, tripContext, initialDate, initialSlot]);
 
   const handleSelectExistingPlan = (plan: Plan) => {
     setAnchorPlan(plan);
