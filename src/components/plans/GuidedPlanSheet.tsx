@@ -113,6 +113,7 @@ function SlotCard({ bs, i, onSelect, isSelected }: { bs: BestSlot; i: number; on
 
 export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: GuidedPlanSheetProps) {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const { proposePlan, friends, userId, availabilityMap: myAvailabilityMap, plans: myPlans, homeAddress } = usePlannerStore();
   const viewport = useVisualViewport();
 
@@ -120,16 +121,21 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [chosenFriends, setChosenFriends] = useState<{ userId: string; name: string; avatar?: string }[]>([]);
   const [friendSearch, setFriendSearch] = useState('');
   const [soloMode, setSoloMode] = useState(false);
-  // Off-Parade guest: a person not on Parade. Treated like solo planning
-  // (uses only the current user's availability) but injects their name into
-  // the plan title so the user remembers who they're hanging with.
-  const [offParadeName, setOffParadeName] = useState('');
+  // Off-Parade guests: names of people not on Parade. Each becomes a
+  // placeholder plan_invite after the plan is created so the user can share
+  // a unique claim link with that friend. Treated like solo planning for
+  // availability scoring (only the current user's availability matters),
+  // but their names appear in the title and on the plan detail page.
+  const [offParadeNames, setOffParadeNames] = useState<string[]>([]);
   const [addingOffParade, setAddingOffParade] = useState(false);
   const [offParadeDraft, setOffParadeDraft] = useState('');
 
-  // The effective friends list (pre-selected or user-chosen)
+  // The effective Parade friends list (pre-selected or user-chosen).
+  // Off-Parade names are NOT included here — they are tracked separately
+  // and only become participants after they claim their invite.
   const effectiveFriends = soloMode ? [] : (needsFriendStep ? chosenFriends : preSelectedFriends);
   const hasFriends = effectiveFriends.length > 0;
+  const hasOffParade = offParadeNames.length > 0;
 
   const [step, setStep] = useState<Step>(needsFriendStep ? 'friends' : 'time');
   const [activity, setActivity] = useState<ActivityType | string | null>(null);
@@ -151,8 +157,16 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const [friendsHaveDifferentHome, setFriendsHaveDifferentHome] = useState(false);
   // tripSheetOpen removed — trip sheet is now opened via custom event on dashboard
 
-  const friendNames = effectiveFriends.map(f => f.name.split(' ')[0]);
-  const friendNamesStr = friendNames.length <= 2 ? friendNames.join(' & ') : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
+  // Combined display names for title & headers (Parade friends first, then off-Parade)
+  const friendNames = [
+    ...effectiveFriends.map(f => f.name.split(' ')[0]),
+    ...offParadeNames,
+  ];
+  const friendNamesStr = friendNames.length === 0
+    ? ''
+    : friendNames.length <= 2
+      ? friendNames.join(' & ')
+      : `${friendNames.slice(0, -1).join(', ')} & ${friendNames[friendNames.length - 1]}`;
 
   // Connected friends for the selection step
   const connectedFriends = useMemo(() =>
