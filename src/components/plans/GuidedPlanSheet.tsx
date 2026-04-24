@@ -782,6 +782,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
     try {
       const hasMultipleOptions = selectedSlots.length > 1;
+      let createdPlanId: string | null = null;
 
       if (hasFriends) {
         // Plan with friends - use proposePlan flow
@@ -805,6 +806,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           .single();
 
         if (latestPlan) {
+          createdPlanId = latestPlan.id;
           if (effectiveFriends.length > 1) {
             const additionalParticipants = effectiveFriends.slice(1).map(f => ({
               plan_id: latestPlan.id,
@@ -832,11 +834,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
 
         toast.success(`Plan sent to ${friendNamesStr}! 🎉`);
       } else {
-        // Solo plan - create confirmed plan directly
+        // Solo / off-Parade-only plan - create confirmed plan directly
         const dateStr = format(primarySlot.date, 'yyyy-MM-dd');
         const noonUtcDate = `${dateStr}T12:00:00+00:00`;
 
-        await supabase.from('plans').insert({
+        const { data: insertedPlan } = await supabase.from('plans').insert({
           user_id: userId,
           title: autoTitle,
           activity: activity,
@@ -846,11 +848,25 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
           status: 'confirmed',
           feed_visibility: 'private',
           source_timezone: usePlannerStore.getState().userTimezone,
-        } as any);
+        } as any).select('id').single();
+
+        createdPlanId = insertedPlan?.id ?? null;
 
         // Reload data
         await usePlannerStore.getState().loadPlans();
-        toast.success('Plan created! 🎉');
+        toast.success(hasOffParade ? 'Plan created! Share the invite links 🎉' : 'Plan created! 🎉');
+      }
+
+      // Insert placeholder plan invites for any off-Parade names so the user
+      // can share a unique claim link with each from the plan detail page.
+      if (createdPlanId && offParadeNames.length > 0 && userId) {
+        const placeholderInserts = offParadeNames.map(n => ({
+          plan_id: createdPlanId!,
+          invited_by: userId,
+          placeholder_name: n,
+        }));
+        const { error: invErr } = await supabase.from('plan_invites').insert(placeholderInserts as any);
+        if (invErr) console.error('Failed to insert placeholder invites:', invErr);
       }
 
       confetti({
@@ -861,6 +877,12 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
         scalar: 0.9,
       });
       onOpenChange(false);
+
+      // Open the plan detail page so the user can share placeholder invite
+      // links and review the plan they just made.
+      if (createdPlanId) {
+        setTimeout(() => navigate(`/plan/${createdPlanId}`), 200);
+      }
     } catch (err) {
       console.error('Failed to create plan:', err);
       toast.error('Something went wrong. Try again?');
