@@ -2224,10 +2224,14 @@ export type Database = {
           trip_a_end: string
           trip_a_id: string
           trip_a_location: string
+          trip_a_name: string
+          trip_a_participant_ids: string[]
           trip_a_start: string
           trip_b_end: string
           trip_b_id: string
           trip_b_location: string
+          trip_b_name: string
+          trip_b_participant_ids: string[]
           trip_b_start: string
         }[]
       }
