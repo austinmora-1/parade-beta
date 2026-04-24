@@ -571,7 +571,13 @@ function ProposalTripCard({
   }, [proposal.votes]);
   
   const votedCount = voterIds.size;
-  const allVoted = votedCount === totalVoters && totalVoters > 0;
+  // For single-date proposals, declines also count as a response so the organizer
+  // can confirm once everyone has responded (accepted or declined).
+  const isSingleDate = proposal.dates.length === 1;
+  const respondedCount = isSingleDate
+    ? proposal.participants.filter(p => voterIds.has(p.user_id) || p.status === 'declined').length
+    : votedCount;
+  const allVoted = respondedCount === totalVoters && totalVoters > 0;
   const hasVoted = voterIds.has(currentUserId);
   const isVisit = proposal.proposal_type === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
