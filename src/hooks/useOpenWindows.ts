@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { TimeSlot, TIME_SLOT_LABELS, Friend } from '@/types/planner';
+import { isFriendInMyCity } from '@/lib/effectiveCity';
 
 const SLOT_ORDER: TimeSlot[] = [
   'early-morning',
@@ -63,6 +64,7 @@ interface FriendAvailRow {
   evening: boolean | null;
   late_night: boolean | null;
   location_status: string | null;
+  trip_location: string | null;
 }
 
 export interface OpenWindow {
@@ -152,8 +154,9 @@ function fmtHour(hr: number): string {
  */
 export function useOpenWindows() {
   const { user } = useAuth();
-  const { availabilityMap, friends, plans } = usePlannerStore();
+  const { availabilityMap, friends, plans, homeAddress } = usePlannerStore();
   const [friendAvail, setFriendAvail] = useState<FriendAvailRow[]>([]);
+  const [friendHomeAddresses, setFriendHomeAddresses] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
 
   const connectedFriends: MinFriend[] = useMemo(
@@ -176,20 +179,32 @@ export function useOpenWindows() {
     async function load() {
       if (!user?.id || connectedFriends.length === 0 || dateStrs.length === 0) {
         setFriendAvail([]);
+        setFriendHomeAddresses({});
         setLoading(false);
         return;
       }
       setLoading(true);
       const friendIds = connectedFriends.map((f) => f.friendUserId);
-      const { data } = await supabase
-        .from('availability')
-        .select(
-          'user_id, date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status'
-        )
-        .in('user_id', friendIds)
-        .in('date', dateStrs);
+      const [availRes, profilesRes] = await Promise.all([
+        supabase
+          .from('availability')
+          .select(
+            'user_id, date, early_morning, late_morning, early_afternoon, late_afternoon, evening, late_night, location_status, trip_location'
+          )
+          .in('user_id', friendIds)
+          .in('date', dateStrs),
+        supabase
+          .from('profiles')
+          .select('user_id, home_address')
+          .in('user_id', friendIds),
+      ]);
       if (!cancelled) {
-        setFriendAvail((data as FriendAvailRow[]) || []);
+        setFriendAvail((availRes.data as FriendAvailRow[]) || []);
+        const map: Record<string, string | null> = {};
+        for (const p of (profilesRes.data as { user_id: string; home_address: string | null }[]) || []) {
+          map[p.user_id] = p.home_address;
+        }
+        setFriendHomeAddresses(map);
         setLoading(false);
       }
     }
@@ -256,13 +271,31 @@ export function useOpenWindows() {
           const rawEndHr = slotTimeBounds(block[block.length - 1]).endHr;
           const endHr = Math.min(rawEndHr, startHr + hours);
 
-          // Friend overlap on this block
+          // Build my availability row for this date (for trip_location/location_status)
+          const myRowForCity = {
+            date: dateKey,
+            location_status: myAvail?.locationStatus || 'home',
+            trip_location: myAvail?.tripLocation || null,
+          };
+
+          // Friend overlap on this block — only include friends co-located with me on this date
           const overlapping: OpenWindow['overlappingFriends'] = [];
           for (const f of connectedFriends) {
             const row = friendAvail.find(
               (r) => r.user_id === f.friendUserId && r.date === dateKey
             );
             if (!row) continue;
+
+            // Filter by same-city on this date
+            const sameCity = isFriendInMyCity({
+              date,
+              myAvailability: myRowForCity,
+              myHomeAddress: homeAddress,
+              friendAvailability: row,
+              friendHomeAddress: friendHomeAddresses[f.friendUserId] ?? null,
+            });
+            if (!sameCity) continue;
+
             let overlapHours = 0;
             for (const slot of block) {
               const dbKey = SLOT_DB_KEYS.find((k) => k.slot === slot)!.key;
@@ -294,7 +327,7 @@ export function useOpenWindows() {
     }
 
     return result;
-  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail]);
+  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail, friendHomeAddresses, homeAddress]);
 
   return { windows, loading };
 }
