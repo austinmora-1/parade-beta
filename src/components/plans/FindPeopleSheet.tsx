@@ -97,6 +97,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
     setAudienceType('all_friends');
     setAudienceRef(null);
     setNotes('');
+    setFriendSearch('');
 
     if (tripContext) {
       // Skip anchor + describe; prefill from trip and jump to audience.
