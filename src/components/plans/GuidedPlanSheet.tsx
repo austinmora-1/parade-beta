@@ -855,9 +855,9 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
   const stepTitle = step === 'friends'
     ? 'Who are we planning with?'
     : step === 'time'
-      ? (hasFriends ? `Top times for ${friendNamesStr}` : 'When are you free?')
+      ? (hasFriends ? `Top times for ${friendNamesStr}` : (offParadeName ? `When are you free to see ${offParadeName}?` : 'When are you free?'))
       : step === 'activity'
-        ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : 'What do you want to do?')
+        ? (hasFriends ? `What do you want to do with ${friendNamesStr}?` : (offParadeName ? `What do you want to do with ${offParadeName}?` : 'What do you want to do?'))
         : 'Look good?';
 
   const firstStep = needsFriendStep ? 'friends' : 'time';
