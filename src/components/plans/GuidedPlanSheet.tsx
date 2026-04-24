@@ -951,7 +951,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                   />
                 </div>
 
-                {chosenFriends.length > 0 && (
+                {(chosenFriends.length > 0 || offParadeNames.length > 0) && (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {chosenFriends.map(f => (
                       <button
@@ -965,6 +965,18 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         </Avatar>
                         {f.name.split(' ')[0]}
                         <span className="text-primary/60">×</span>
+                      </button>
+                    ))}
+                    {offParadeNames.map(n => (
+                      <button
+                        key={`off-${n}`}
+                        onClick={() => setOffParadeNames(prev => prev.filter(x => x !== n))}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-dashed border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/80 transition-colors"
+                        title="Not on Parade — they'll get a unique invite link"
+                      >
+                        <UserPlus className="h-3 w-3 text-muted-foreground" />
+                        {n}
+                        <span className="text-muted-foreground/60">×</span>
                       </button>
                     ))}
                   </div>
@@ -983,14 +995,14 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">Invite new friends</p>
-                        <p className="text-[11px] text-muted-foreground">Share with friends outside Parade</p>
+                        <p className="text-[11px] text-muted-foreground">Add anyone by name — they'll get a unique link to join Parade and the plan</p>
                       </div>
                     </button>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <UserPlus className="h-3.5 w-3.5 text-primary shrink-0" />
-                        <p className="text-[11px] font-medium text-foreground">Who are you hanging with?</p>
+                        <p className="text-[11px] font-medium text-foreground">Add a friend by name</p>
                         <button
                           type="button"
                           onClick={() => { setAddingOffParade(false); setOffParadeDraft(''); }}
@@ -1008,10 +1020,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && offParadeDraft.trim()) {
                               const name = offParadeDraft.trim();
-                              setOffParadeName(name);
-                              setSoloMode(true);
-                              setAddingOffParade(false);
-                              setStep('time');
+                              setOffParadeNames(prev => prev.includes(name) ? prev : [...prev, name]);
+                              setOffParadeDraft('');
                             }
                           }}
                           placeholder="e.g. Alex"
@@ -1019,19 +1029,20 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends }: Guid
                         />
                         <Button
                           size="sm"
+                          variant="secondary"
                           disabled={!offParadeDraft.trim()}
                           onClick={() => {
                             const name = offParadeDraft.trim();
                             if (!name) return;
-                            setOffParadeName(name);
-                            setSoloMode(true);
-                            setAddingOffParade(false);
-                            setStep('time');
+                            setOffParadeNames(prev => prev.includes(name) ? prev : [...prev, name]);
+                            setOffParadeDraft('');
                           }}
                         >
-                          Continue
+                          <Plus className="h-3.5 w-3.5" />
+                          Add
                         </Button>
                       </div>
+                      <p className="text-[10px] text-muted-foreground">Add as many as you want. You'll share a unique link with each after creating the plan.</p>
                     </div>
                   )}
                 </div>
