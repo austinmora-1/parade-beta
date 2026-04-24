@@ -278,6 +278,8 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
 
   const hiddenCount = upcomingPlans.length - visiblePlans.length;
 
+  const myPlans = visiblePlans.filter((p) => !p.isFriendPlan);
+  const friendPlans = visiblePlans.filter((p) => p.isFriendPlan);
 
   const renderPlanCard = (plan: any) => {
     const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc' };
