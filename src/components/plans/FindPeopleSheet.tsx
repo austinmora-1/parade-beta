@@ -140,6 +140,75 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext }: FindPeopleS
     [friends]
   );
 
+  // Fetch past-hangout counts when entering audience step (for sorting "frequent first")
+  useEffect(() => {
+    if (!open || step !== 'audience' || !user?.id) return;
+    if (connectedFriends.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const friendIds = connectedFriends.map(f => f.friendUserId!).filter(Boolean);
+      const nowIso = new Date().toISOString();
+
+      // Plans the user owns in the past
+      const { data: ownedPlans } = await supabase
+        .from('plans')
+        .select('id')
+        .eq('user_id', user.id)
+        .lt('date', nowIso);
+      const ownedIds = (ownedPlans || []).map(p => p.id);
+
+      // Plans where user is a participant
+      const { data: myParts } = await supabase
+        .from('plan_participants')
+        .select('plan_id')
+        .eq('friend_id', user.id);
+      const partIds = (myParts || []).map(p => p.plan_id);
+
+      const counts: Record<string, number> = {};
+
+      // Friends as participants on user-owned past plans
+      if (ownedIds.length > 0) {
+        const { data: rows } = await supabase
+          .from('plan_participants')
+          .select('friend_id')
+          .in('plan_id', ownedIds)
+          .in('friend_id', friendIds);
+        (rows || []).forEach(r => {
+          counts[r.friend_id] = (counts[r.friend_id] || 0) + 1;
+        });
+      }
+
+      // Friends as owners of past plans the user participated in
+      if (partIds.length > 0) {
+        const { data: rows } = await supabase
+          .from('plans')
+          .select('user_id')
+          .in('id', partIds)
+          .in('user_id', friendIds)
+          .lt('date', nowIso);
+        (rows || []).forEach(r => {
+          counts[r.user_id] = (counts[r.user_id] || 0) + 1;
+        });
+      }
+
+      if (!cancelled) setHangoutCounts(counts);
+    })();
+    return () => { cancelled = true; };
+  }, [open, step, user?.id, connectedFriends]);
+
+  const visibleFriends = useMemo(() => {
+    const q = friendSearch.trim().toLowerCase();
+    const filtered = q
+      ? connectedFriends.filter(f => f.name.toLowerCase().includes(q))
+      : connectedFriends.slice();
+    return filtered.sort((a, b) => {
+      const ca = hangoutCounts[a.friendUserId!] || 0;
+      const cb = hangoutCounts[b.friendUserId!] || 0;
+      if (cb !== ca) return cb - ca;
+      return a.name.localeCompare(b.name);
+    });
+  }, [connectedFriends, friendSearch, hangoutCounts]);
+
   const selectedFriendIds = useMemo(() => {
     if (audienceType !== 'friends' || !audienceRef) return [] as string[];
     return audienceRef.split(',').map(s => s.trim()).filter(Boolean);
