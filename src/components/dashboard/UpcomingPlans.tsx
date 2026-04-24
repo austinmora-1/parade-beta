@@ -499,6 +499,17 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
           </div>
         </div>
       )}
+      {(hiddenCount > 0 || showAll) && upcomingPlans.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="w-full text-center text-xs font-medium text-primary hover:text-primary/80 transition-colors py-1.5"
+        >
+          {showAll
+            ? 'Show less'
+            : `Show ${hiddenCount} more plan${hiddenCount === 1 ? '' : 's'} this week`}
+        </button>
+      )}
     </div>
   );
 
