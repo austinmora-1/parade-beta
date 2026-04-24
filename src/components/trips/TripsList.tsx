@@ -974,6 +974,29 @@ function ProposalTripCard({
               </span>
             </motion.div>
           )}
+          {!allVoted && isCreator && winningDate && votedCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="rounded-lg bg-muted/50 border border-border p-2.5 flex items-center gap-2"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-[11px] text-muted-foreground flex-1 min-w-0 truncate">
+                {votedCount}/{totalVoters} responded — confirm now if you can't wait
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 px-2 text-[10px] gap-1 shrink-0"
+                onClick={() => setConfirmEarlyOpen(true)}
+                disabled={finalizing}
+              >
+                <Lock className="h-3 w-3" />
+                Confirm now
+              </Button>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Card header */}
