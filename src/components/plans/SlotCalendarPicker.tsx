@@ -82,12 +82,13 @@ export function SlotCalendarPicker({
   multiSelect = false,
   selectedSlots = [],
   onToggleSlot,
+  initialMonth,
 }: SlotCalendarPickerProps) {
   const today = startOfDay(new Date());
   const maxDate = addDays(today, days);
 
   const [viewMonth, setViewMonth] = useState<Date>(
-    startOfMonth(selectedDate ?? today),
+    startOfMonth(selectedDate ?? initialMonth ?? today),
   );
 
   const monthDays = useMemo(() => {
