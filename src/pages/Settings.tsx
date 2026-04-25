@@ -70,6 +70,7 @@ export default function Settings() {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [homeAddress, setHomeAddress] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
 
   // Notification settings
   const [planReminders, setPlanReminders] = useState(true);
