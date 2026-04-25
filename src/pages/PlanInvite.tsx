@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
 import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
