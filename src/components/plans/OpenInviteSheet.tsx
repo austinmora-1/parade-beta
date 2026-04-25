@@ -23,6 +23,7 @@ interface OpenInviteSheetProps {
   onOpenChange: (open: boolean) => void;
   initialDate?: Date;
   initialSlot?: TimeSlot;
+  onBack?: () => void;
 }
 
 const SLOT_OPTIONS: { value: TimeSlot; label: string; range: string }[] = [
