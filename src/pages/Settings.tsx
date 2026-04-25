@@ -244,6 +244,10 @@ export default function Settings() {
           default_availability_status: defaultAvailability,
           default_vibes: defaultVibes,
           timezone: timezone || null,
+          preferred_social_times: preferredSocialTimes,
+          interests,
+          social_goals: socialGoals,
+          close_friend_ids: closeFriendIds,
         } as any)
         .eq('user_id', session.user.id);
 
