@@ -107,7 +107,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
   const handleSave = async () => {
     setSaving(true);
     try {
-      const notes = items.join('\n');
+      const notes = serializeItems(items);
       await onSave({ social_energy: energy, target_hangouts: items.length || 1, vibes, notes });
       toast.success('Intentions saved! 🎯');
       onOpenChange(false);
