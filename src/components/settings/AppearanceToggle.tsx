@@ -36,6 +36,8 @@ export function AppearanceToggle() {
         <Switch
           checked={isDark}
           onCheckedChange={(checked) => {
+            // User explicitly chose a theme — clear any auto-dark restore marker
+            try { localStorage.removeItem('parade-pre-auto-dark-theme'); } catch {}
             setTheme(checked ? 'dark' : 'light');
           }}
         />

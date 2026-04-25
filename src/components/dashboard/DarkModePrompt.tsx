@@ -4,11 +4,18 @@ import { Moon, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { useVibeStore } from '@/stores/vibeStore';
+import { getCurrentTimeInTimezone } from '@/lib/timezone';
 
 const STORAGE_KEY = 'parade-dark-mode-prompt';
 const AUTO_DARK_KEY = 'parade-auto-dark-after-9pm';
+const PRE_AUTO_DARK_THEME_KEY = 'parade-pre-auto-dark-theme';
 const SESSION_COUNT_KEY = 'parade-session-count';
 const MIN_SESSIONS = 3;
+
+// Hour thresholds (in user's local time)
+const AUTO_DARK_HOUR = 21; // 9 PM — switch to dark
+const AUTO_REVERT_HOUR = 8; // 8 AM — return to user's preferred theme
 
 interface PromptState {
   dismissedDate: string | null; // ISO date string — dismissed once per day
@@ -35,34 +42,69 @@ function getSessionCount(): number {
   }
 }
 
+/**
+ * Returns the current hour (0–23) in the user's local timezone, falling
+ * back to the browser's local time if no profile timezone is available.
+ */
+function getLocalHour(timezone: string | null | undefined): number {
+  if (timezone) {
+    try {
+      return getCurrentTimeInTimezone(timezone).hours;
+    } catch {
+      // fall through to browser default
+    }
+  }
+  return new Date().getHours();
+}
+
 export function DarkModePrompt() {
   const { theme, setTheme } = useTheme();
+  const userTimezone = useVibeStore((s) => s.userTimezone);
   const [visible, setVisible] = useState(false);
   const [autoSwitch, setAutoSwitch] = useState(false);
 
   useEffect(() => {
-    const hour = new Date().getHours();
+    const hour = getLocalHour(userTimezone);
     const todayStr = new Date().toISOString().slice(0, 10);
     const stored = getStoredState();
     const sessions = getSessionCount();
 
-    // If auto-dark is enabled, silently switch and don't show prompt
-    if (isAutoDarkEnabled() && hour >= 21 && theme === 'light') {
+    // 1) Auto-revert: between 8 AM and 9 PM local time, if we previously
+    //    auto-switched the user to dark, restore their preferred theme.
+    if (hour >= AUTO_REVERT_HOUR && hour < AUTO_DARK_HOUR) {
+      const preTheme = localStorage.getItem(PRE_AUTO_DARK_THEME_KEY);
+      if (preTheme && theme === 'dark' && preTheme !== 'dark') {
+        setTheme(preTheme);
+        localStorage.removeItem(PRE_AUTO_DARK_THEME_KEY);
+        return;
+      }
+      // If we're already on the user's preferred theme, just clear the marker.
+      if (preTheme && theme === preTheme) {
+        localStorage.removeItem(PRE_AUTO_DARK_THEME_KEY);
+      }
+      return;
+    }
+
+    // 2) Auto-darken: at/after 9 PM local time, if auto-dark is enabled and
+    //    the user is currently on a non-dark theme, switch to dark and
+    //    remember what they were on so we can restore it after 8 AM.
+    if (isAutoDarkEnabled() && hour >= AUTO_DARK_HOUR && theme && theme !== 'dark') {
+      localStorage.setItem(PRE_AUTO_DARK_THEME_KEY, theme);
       setTheme('dark');
       return;
     }
 
-    // Phase 1.2 — only show after the user's 3rd session, after 9pm,
-    // on light theme, and not already dismissed today.
+    // 3) Prompt — only show after the user's 3rd session, after 9 PM,
+    //    on light theme, and not already dismissed today.
     if (
       sessions >= MIN_SESSIONS &&
-      hour >= 21 &&
+      hour >= AUTO_DARK_HOUR &&
       theme === 'light' &&
       stored.dismissedDate !== todayStr
     ) {
       setVisible(true);
     }
-  }, [theme, setTheme]);
+  }, [theme, setTheme, userTimezone]);
 
   const dismiss = () => {
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -73,6 +115,10 @@ export function DarkModePrompt() {
   const handleSwitchToDark = () => {
     if (autoSwitch) {
       localStorage.setItem(AUTO_DARK_KEY, 'true');
+    }
+    // Remember the theme we're switching from so it can be restored at 8 AM.
+    if (theme && theme !== 'dark') {
+      localStorage.setItem(PRE_AUTO_DARK_THEME_KEY, theme);
     }
     setTheme('dark');
     dismiss();
@@ -105,7 +151,7 @@ export function DarkModePrompt() {
                 It's getting late — switch to dark mode?
               </p>
               <p className="text-xs text-muted-foreground">
-                Easier on the eyes at night 🌙
+                Easier on the eyes at night 🌙 — we'll switch back in the morning.
               </p>
 
               <div className="flex items-center gap-2 pt-1">

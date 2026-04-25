@@ -40,7 +40,11 @@ export function AppearanceQuickToggles() {
       </div>
       <button
         type="button"
-        onClick={() => setTheme(isDark ? 'light' : 'dark')}
+        onClick={() => {
+          // User explicitly chose a theme — clear any auto-dark restore marker
+          try { localStorage.removeItem('parade-pre-auto-dark-theme'); } catch {}
+          setTheme(isDark ? 'light' : 'dark');
+        }}
         aria-label="Toggle dark mode"
         className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
       >
