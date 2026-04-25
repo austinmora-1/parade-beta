@@ -290,7 +290,7 @@ export default function Friends() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-lg font-bold md:text-2xl">Friends</h1>
-        <Button onClick={() => setInviteDialogOpen(true)} size="sm" className="gap-1.5">
+        <Button data-tour="invite-friends" onClick={() => setInviteDialogOpen(true)} size="sm" className="gap-1.5">
           <UserPlus className="h-3.5 w-3.5" />
           Invite
         </Button>
