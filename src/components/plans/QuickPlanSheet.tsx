@@ -783,7 +783,7 @@ export function QuickPlanSheet({
                                 ? "bg-availability-available"
                                 : "bg-availability-partial"
                           )} />
-                          <span>{isSameDay(bs.date, new Date()) ? 'Today' : format(bs.date, 'EEE d')}</span>
+                          <span>{isSameDay(bs.date, new Date()) ? 'Today' : format(bs.date, 'EEE M/d')}</span>
                           <span className={cn(
                             "text-[10px]",
                             isSelected ? "text-primary-foreground/70" : "text-muted-foreground"
