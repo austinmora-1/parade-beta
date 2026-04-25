@@ -475,473 +475,527 @@ export default function Settings() {
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 overflow-visible">
-            <div className="space-y-4 pt-1">
-              {/* Home Base */}
-              <div className="space-y-1.5">
-                <Label className="flex items-center gap-1.5 text-xs">
-                  <MapPin className="h-3 w-3 text-muted-foreground" />
-                  Home Base
-                </Label>
-                <CityAutocomplete
-                  value={homeAddress}
-                  onChange={(value) => { setHomeAddress(value); handleChange(); }}
-                  placeholder="Search for your city..."
-                  compact
-                />
-              </div>
+            <Accordion type="multiple" className="space-y-2 pt-1">
+              {/* Location */}
+              <AccordionItem value="sub-location" className="rounded-lg border border-border/60 bg-muted/20 overflow-visible">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    Location & Timezone
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 overflow-visible">
+                  <div className="space-y-3 pt-1">
+                    {/* Home Base */}
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5 text-xs">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        Home Base
+                      </Label>
+                      <CityAutocomplete
+                        value={homeAddress}
+                        onChange={(value) => { setHomeAddress(value); handleChange(); }}
+                        placeholder="Search for your city..."
+                        compact
+                      />
+                    </div>
 
-              {/* Timezone */}
-              <TimezoneCombobox
-                value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
-                onChange={(value) => { setTimezone(value); handleChange(); }}
-                isAutoDetected={!timezone}
-              />
+                    {/* Timezone */}
+                    <TimezoneCombobox
+                      value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
+                      onChange={(value) => { setTimezone(value); handleChange(); }}
+                      isAutoDetected={!timezone}
+                    />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-              <Separator />
+              {/* Work Hours */}
+              <AccordionItem value="sub-work" className="rounded-lg border border-border/60 bg-muted/20">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    Standard Work Hours
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3">
+                  <div className="space-y-3 pt-1">
+                    <p className="text-[10px] text-muted-foreground">
+                      We'll mark you as busy during these times
+                    </p>
 
-              {/* Standard Work Hours */}
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs font-medium">Standard Work Hours</Label>
-                  <p className="text-[10px] text-muted-foreground">
-                    We'll mark you as busy during these times
-                  </p>
-                </div>
-                
-                {/* Work Days */}
-                <div className="space-y-1.5">
-                  <span className="text-[10px] text-muted-foreground">Work days</span>
-                  <div className="flex gap-1">
-                    {[
-                      { id: 'monday', label: 'M' },
-                      { id: 'tuesday', label: 'T' },
-                      { id: 'wednesday', label: 'W' },
-                      { id: 'thursday', label: 'T' },
-                      { id: 'friday', label: 'F' },
-                      { id: 'saturday', label: 'S' },
-                      { id: 'sunday', label: 'S' },
-                    ].map((day) => {
-                      const isSelected = workDays.includes(day.id);
-                      return (
+                    {/* Work Days */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] text-muted-foreground">Work days</span>
+                      <div className="flex gap-1">
+                        {[
+                          { id: 'monday', label: 'M' },
+                          { id: 'tuesday', label: 'T' },
+                          { id: 'wednesday', label: 'W' },
+                          { id: 'thursday', label: 'T' },
+                          { id: 'friday', label: 'F' },
+                          { id: 'saturday', label: 'S' },
+                          { id: 'sunday', label: 'S' },
+                        ].map((day) => {
+                          const isSelected = workDays.includes(day.id);
+                          return (
+                            <button
+                              key={day.id}
+                              onClick={() => {
+                                setWorkDays(prev =>
+                                  prev.includes(day.id)
+                                    ? prev.filter(d => d !== day.id)
+                                    : [...prev, day.id]
+                                );
+                                handleChange();
+                              }}
+                              className={cn(
+                                "flex-1 py-1.5 rounded-md text-xs font-medium transition-all",
+                                isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                              )}
+                            >
+                              {day.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Time Sliders */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-muted-foreground">Start</span>
+                          <span className="text-[10px] font-bold text-primary">{formatTime(workStartHour)}</span>
+                        </div>
+                        <Slider
+                          value={[workStartHour]}
+                          onValueChange={([value]) => { setWorkStartHour(value); handleChange(); }}
+                          min={5}
+                          max={12}
+                          step={0.25}
+                          className="w-full"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-muted-foreground">End</span>
+                          <span className="text-[10px] font-bold text-primary">{formatTime(workEndHour)}</span>
+                        </div>
+                        <Slider
+                          value={[workEndHour]}
+                          onValueChange={([value]) => { setWorkEndHour(value); handleChange(); }}
+                          min={14}
+                          max={22}
+                          step={0.25}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Default Status & Vibes */}
+              <AccordionItem value="sub-defaults" className="rounded-lg border border-border/60 bg-muted/20">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <Check className="h-3 w-3 text-muted-foreground" />
+                    Default Status & Vibes
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3">
+                  <div className="grid grid-cols-2 gap-4 pt-1">
+                    {/* Default Availability Status */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">Default Status</Label>
+                      <div className="flex gap-1.5">
                         <button
-                          key={day.id}
-                          onClick={() => {
-                            setWorkDays(prev => 
-                              prev.includes(day.id) 
-                                ? prev.filter(d => d !== day.id)
-                                : [...prev, day.id]
-                            );
-                            handleChange();
-                          }}
+                          onClick={() => { setDefaultAvailability('free'); handleChange(); }}
                           className={cn(
-                            "flex-1 py-1.5 rounded-md text-xs font-medium transition-all",
-                            isSelected
-                              ? "bg-primary text-primary-foreground"
+                            "flex-1 py-1.5 rounded-lg text-xs font-medium transition-all",
+                            defaultAvailability === 'free'
+                              ? "bg-primary/20 text-primary ring-1 ring-primary/30"
                               : "bg-muted/50 text-muted-foreground hover:bg-muted"
                           )}
                         >
-                          {day.label}
+                          ✓ Free
                         </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Time Sliders */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">Start</span>
-                      <span className="text-[10px] font-bold text-primary">{formatTime(workStartHour)}</span>
-                    </div>
-                    <Slider
-                      value={[workStartHour]}
-                      onValueChange={([value]) => { setWorkStartHour(value); handleChange(); }}
-                      min={5}
-                      max={12}
-                      step={0.25}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">End</span>
-                      <span className="text-[10px] font-bold text-primary">{formatTime(workEndHour)}</span>
-                    </div>
-                    <Slider
-                      value={[workEndHour]}
-                      onValueChange={([value]) => { setWorkEndHour(value); handleChange(); }}
-                      min={14}
-                      max={22}
-                      step={0.25}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Default Status & Vibes in a row */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Default Availability Status */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Default Status</Label>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => { setDefaultAvailability('free'); handleChange(); }}
-                      className={cn(
-                        "flex-1 py-1.5 rounded-lg text-xs font-medium transition-all",
-                        defaultAvailability === 'free'
-                          ? "bg-primary/20 text-primary ring-1 ring-primary/30"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      ✓ Free
-                    </button>
-                    <button
-                      onClick={() => { setDefaultAvailability('unavailable'); handleChange(); }}
-                      className={cn(
-                        "flex-1 py-1.5 rounded-lg text-xs font-medium transition-all",
-                        defaultAvailability === 'unavailable'
-                          ? "bg-destructive/20 text-destructive ring-1 ring-destructive/30"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      ✗ Busy
-                    </button>
-                  </div>
-                </div>
-
-                {/* Default Vibes (Optional) */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium">Default Vibes</Label>
-                    <span className="text-[10px] text-muted-foreground">Optional</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {(['social', 'chill', 'athletic', 'productive'] as VibeType[]).map((vibe) => {
-                      const config = VIBE_CONFIG[vibe];
-                      const isSelected = defaultVibes.includes(vibe);
-                      return (
                         <button
-                          key={vibe}
-                          onClick={() => {
-                            setDefaultVibes(prev => 
-                              prev.includes(vibe) 
-                                ? prev.filter(v => v !== vibe)
-                                : [...prev, vibe]
-                            );
-                            handleChange();
-                          }}
+                          onClick={() => { setDefaultAvailability('unavailable'); handleChange(); }}
                           className={cn(
-                            "flex items-center justify-center gap-1 py-1 px-1.5 rounded-md text-[10px] font-medium transition-all",
-                            isSelected
-                              ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                            "flex-1 py-1.5 rounded-lg text-xs font-medium transition-all",
+                            defaultAvailability === 'unavailable'
+                              ? "bg-destructive/20 text-destructive ring-1 ring-destructive/30"
                               : "bg-muted/50 text-muted-foreground hover:bg-muted"
                           )}
                         >
-                          <config.icon className="h-3.5 w-3.5" />
+                          ✗ Busy
                         </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+                      </div>
+                    </div>
 
-              <Separator />
+                    {/* Default Vibes (Optional) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-medium">Default Vibes</Label>
+                        <span className="text-[10px] text-muted-foreground">Optional</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        {(['social', 'chill', 'athletic', 'productive'] as VibeType[]).map((vibe) => {
+                          const config = VIBE_CONFIG[vibe];
+                          const isSelected = defaultVibes.includes(vibe);
+                          return (
+                            <button
+                              key={vibe}
+                              onClick={() => {
+                                setDefaultVibes(prev =>
+                                  prev.includes(vibe)
+                                    ? prev.filter(v => v !== vibe)
+                                    : [...prev, vibe]
+                                );
+                                handleChange();
+                              }}
+                              className={cn(
+                                "flex items-center justify-center gap-1 py-1 px-1.5 rounded-md text-[10px] font-medium transition-all",
+                                isSelected
+                                  ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                              )}
+                            >
+                              <config.icon className="h-3.5 w-3.5" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
               {/* Preferred Social Times */}
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-xs font-medium">Preferred Social Times</Label>
-                  <p className="text-[10px] text-muted-foreground">Pick the slots you most enjoy hanging out</p>
-                </div>
+              <AccordionItem value="sub-social-times" className="rounded-lg border border-border/60 bg-muted/20">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    Preferred Social Times
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3">
+                  <div className="space-y-2 pt-1">
+                    <p className="text-[10px] text-muted-foreground">Pick the slots you most enjoy hanging out</p>
 
-                {/* Quick select presets */}
-                {(() => {
-                  const WEEKDAYS = ['monday','tuesday','wednesday','thursday','friday'];
-                  const WEEKENDS = ['saturday','sunday'];
-                  const ALL_DAYS = [...WEEKDAYS, ...WEEKENDS];
-                  const presets: { id: string; label: string; keys: string[] }[] = [
-                    { id: 'we-aft', label: 'Weekend afternoons', keys: WEEKENDS.map(d => `${d}:afternoon`) },
-                    { id: 'we-eve', label: 'Weekend evenings', keys: WEEKENDS.map(d => `${d}:evening`) },
-                    { id: 'wd-eve', label: 'Weekday evenings', keys: WEEKDAYS.map(d => `${d}:evening`) },
-                    { id: 'wd-am', label: 'Weekday mornings', keys: WEEKDAYS.map(d => `${d}:morning`) },
-                    { id: 'late', label: 'Late nights', keys: ALL_DAYS.map(d => `${d}:late-night`) },
-                    { id: 'we-all', label: 'All weekend', keys: WEEKENDS.flatMap(d => ['morning','afternoon','evening','late-night'].map(s => `${d}:${s}`)) },
-                  ];
-                  const isPresetActive = (keys: string[]) => keys.every(k => preferredSocialTimes.includes(k));
-                  return (
+                    {/* Quick select presets */}
+                    {(() => {
+                      const WEEKDAYS = ['monday','tuesday','wednesday','thursday','friday'];
+                      const WEEKENDS = ['saturday','sunday'];
+                      const ALL_DAYS = [...WEEKDAYS, ...WEEKENDS];
+                      const presets: { id: string; label: string; keys: string[] }[] = [
+                        { id: 'we-aft', label: 'Weekend afternoons', keys: WEEKENDS.map(d => `${d}:afternoon`) },
+                        { id: 'we-eve', label: 'Weekend evenings', keys: WEEKENDS.map(d => `${d}:evening`) },
+                        { id: 'wd-eve', label: 'Weekday evenings', keys: WEEKDAYS.map(d => `${d}:evening`) },
+                        { id: 'wd-am', label: 'Weekday mornings', keys: WEEKDAYS.map(d => `${d}:morning`) },
+                        { id: 'late', label: 'Late nights', keys: ALL_DAYS.map(d => `${d}:late-night`) },
+                        { id: 'we-all', label: 'All weekend', keys: WEEKENDS.flatMap(d => ['morning','afternoon','evening','late-night'].map(s => `${d}:${s}`)) },
+                      ];
+                      const isPresetActive = (keys: string[]) => keys.every(k => preferredSocialTimes.includes(k));
+                      return (
+                        <div className="flex flex-wrap gap-1.5">
+                          {presets.map((p) => {
+                            const active = isPresetActive(p.keys);
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => {
+                                  setPreferredSocialTimes(prev => {
+                                    if (active) {
+                                      return prev.filter(k => !p.keys.includes(k));
+                                    }
+                                    const next = new Set(prev);
+                                    p.keys.forEach(k => next.add(k));
+                                    return Array.from(next);
+                                  });
+                                  handleChange();
+                                }}
+                                className={cn(
+                                  'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ring-1',
+                                  active
+                                    ? 'bg-primary/15 text-primary ring-primary/30'
+                                    : 'bg-muted/50 text-muted-foreground ring-transparent hover:bg-muted'
+                                )}
+                              >
+                                {active ? '✓ ' : '+ '}{p.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <div className="grid grid-cols-[60px_repeat(7,1fr)] bg-muted/20 border-b border-border">
+                        <div />
+                        {[
+                          { id: 'monday', label: 'M' },
+                          { id: 'tuesday', label: 'T' },
+                          { id: 'wednesday', label: 'W' },
+                          { id: 'thursday', label: 'T' },
+                          { id: 'friday', label: 'F' },
+                          { id: 'saturday', label: 'S' },
+                          { id: 'sunday', label: 'S' },
+                        ].map((day) => (
+                          <div key={day.id} className="py-1.5 text-center text-[10px] font-semibold text-muted-foreground">
+                            {day.label}
+                          </div>
+                        ))}
+                      </div>
+                      {[
+                        { id: 'morning', label: '🌅 AM', sublabel: '6–12' },
+                        { id: 'afternoon', label: '☀️ PM', sublabel: '12–5' },
+                        { id: 'evening', label: '🌙 Eve', sublabel: '5–10' },
+                        { id: 'late-night', label: '🦉 Late', sublabel: '10+' },
+                      ].map((slot, slotIdx, slots) => (
+                        <div
+                          key={slot.id}
+                          className={cn(
+                            'grid grid-cols-[60px_repeat(7,1fr)] items-center',
+                            slotIdx < slots.length - 1 && 'border-b border-border/40'
+                          )}
+                        >
+                          <div className="px-1 py-1">
+                            <div className="text-[10px] font-medium leading-tight">{slot.label}</div>
+                            <div className="text-[8px] text-muted-foreground leading-tight">{slot.sublabel}</div>
+                          </div>
+                          {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map((day) => {
+                            const key = `${day}:${slot.id}`;
+                            const isSelected = preferredSocialTimes.includes(key);
+                            return (
+                              <button
+                                key={day}
+                                type="button"
+                                onClick={() => {
+                                  setPreferredSocialTimes(prev =>
+                                    prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+                                  );
+                                  handleChange();
+                                }}
+                                className={cn(
+                                  'flex items-center justify-center py-1.5 text-[11px] border-l border-border/20 transition-all',
+                                  isSelected
+                                    ? 'bg-accent/40 text-accent-foreground'
+                                    : 'text-muted-foreground/30 hover:bg-muted/50 hover:text-muted-foreground'
+                                )}
+                              >
+                                {isSelected ? '✓' : '·'}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Favorite Activities / Interests */}
+              <AccordionItem value="sub-activities" className="rounded-lg border border-border/60 bg-muted/20 overflow-visible">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <Gamepad2 className="h-3 w-3 text-muted-foreground" />
+                    Favorite Activities
+                    {interests.length > 0 && (
+                      <span className="text-[10px] text-muted-foreground">({interests.length})</span>
+                    )}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 overflow-visible">
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[10px] text-muted-foreground">Search and add activities you love</p>
+
+                    {/* Search input with dropdown */}
+                    <div className="relative">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                        <Input
+                          type="text"
+                          value={activitySearch}
+                          onChange={(e) => {
+                            setActivitySearch(e.target.value);
+                            setActivitySearchOpen(true);
+                          }}
+                          onFocus={() => setActivitySearchOpen(true)}
+                          onBlur={() => setTimeout(() => setActivitySearchOpen(false), 150)}
+                          placeholder="Search activities..."
+                          className="h-9 pl-8 text-xs"
+                        />
+                      </div>
+                      {activitySearchOpen && (() => {
+                        const matches = Object.entries(ACTIVITY_CONFIG)
+                          .filter(([id]) => id !== 'custom')
+                          .map(([id, config]: any) => ({ id, display: `${config.icon} ${config.label}`, label: config.label }))
+                          .filter(o => !interests.includes(o.display))
+                          .filter(o => o.label.toLowerCase().includes(activitySearch.toLowerCase()));
+                        if (matches.length === 0) return null;
+                        return (
+                          <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                            {matches.map((o) => (
+                              <button
+                                key={o.id}
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  setInterests(prev => [...prev, o.display]);
+                                  setActivitySearch('');
+                                  setActivitySearchOpen(false);
+                                  handleChange();
+                                }}
+                                className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors"
+                              >
+                                {o.display}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Selected tags */}
+                    {interests.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {interests.map((display) => (
+                          <span
+                            key={display}
+                            className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-[11px] font-medium bg-primary/15 text-primary ring-1 ring-primary/30"
+                          >
+                            {display}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInterests(prev => prev.filter(i => i !== display));
+                                handleChange();
+                              }}
+                              className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                              aria-label={`Remove ${display}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Social Goals */}
+              <AccordionItem value="sub-goals" className="rounded-lg border border-border/60 bg-muted/20">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="h-3 w-3 text-muted-foreground" />
+                    Social Goals
+                    {socialGoals.length > 0 && (
+                      <span className="text-[10px] text-muted-foreground">({socialGoals.length})</span>
+                    )}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3">
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[10px] text-muted-foreground">What are you trying to do more of?</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {presets.map((p) => {
-                        const active = isPresetActive(p.keys);
+                      {[
+                        { id: 'stay_connected', label: 'Stay connected' },
+                        { id: 'try_new_things', label: 'Try new things' },
+                        { id: 'be_more_social', label: 'Be more social' },
+                        { id: 'less_flaking', label: 'Follow through' },
+                        { id: 'work_life_balance', label: 'Work-life balance' },
+                        { id: 'meet_new_people', label: 'Meet new people' },
+                      ].map((goal) => {
+                        const isSelected = socialGoals.includes(goal.id);
                         return (
                           <button
-                            key={p.id}
+                            key={goal.id}
                             type="button"
                             onClick={() => {
-                              setPreferredSocialTimes(prev => {
-                                if (active) {
-                                  return prev.filter(k => !p.keys.includes(k));
-                                }
-                                const next = new Set(prev);
-                                p.keys.forEach(k => next.add(k));
-                                return Array.from(next);
-                              });
+                              setSocialGoals(prev =>
+                                prev.includes(goal.id) ? prev.filter(g => g !== goal.id) : [...prev, goal.id]
+                              );
                               handleChange();
                             }}
                             className={cn(
                               'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ring-1',
-                              active
-                                ? 'bg-primary/15 text-primary ring-primary/30'
+                              isSelected
+                                ? 'bg-accent/30 text-accent-foreground ring-accent/40'
                                 : 'bg-muted/50 text-muted-foreground ring-transparent hover:bg-muted'
                             )}
                           >
-                            {active ? '✓ ' : '+ '}{p.label}
+                            {goal.label}
                           </button>
                         );
                       })}
                     </div>
-                  );
-                })()}
-
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <div className="grid grid-cols-[60px_repeat(7,1fr)] bg-muted/20 border-b border-border">
-                    <div />
-                    {[
-                      { id: 'monday', label: 'M' },
-                      { id: 'tuesday', label: 'T' },
-                      { id: 'wednesday', label: 'W' },
-                      { id: 'thursday', label: 'T' },
-                      { id: 'friday', label: 'F' },
-                      { id: 'saturday', label: 'S' },
-                      { id: 'sunday', label: 'S' },
-                    ].map((day) => (
-                      <div key={day.id} className="py-1.5 text-center text-[10px] font-semibold text-muted-foreground">
-                        {day.label}
-                      </div>
-                    ))}
                   </div>
-                  {[
-                    { id: 'morning', label: '🌅 AM', sublabel: '6–12' },
-                    { id: 'afternoon', label: '☀️ PM', sublabel: '12–5' },
-                    { id: 'evening', label: '🌙 Eve', sublabel: '5–10' },
-                    { id: 'late-night', label: '🦉 Late', sublabel: '10+' },
-                  ].map((slot, slotIdx, slots) => (
-                    <div
-                      key={slot.id}
-                      className={cn(
-                        'grid grid-cols-[60px_repeat(7,1fr)] items-center',
-                        slotIdx < slots.length - 1 && 'border-b border-border/40'
-                      )}
-                    >
-                      <div className="px-1 py-1">
-                        <div className="text-[10px] font-medium leading-tight">{slot.label}</div>
-                        <div className="text-[8px] text-muted-foreground leading-tight">{slot.sublabel}</div>
-                      </div>
-                      {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map((day) => {
-                        const key = `${day}:${slot.id}`;
-                        const isSelected = preferredSocialTimes.includes(key);
-                        return (
-                          <button
-                            key={day}
-                            type="button"
-                            onClick={() => {
-                              setPreferredSocialTimes(prev =>
-                                prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-                              );
-                              handleChange();
-                            }}
-                            className={cn(
-                              'flex items-center justify-center py-1.5 text-[11px] border-l border-border/20 transition-all',
-                              isSelected
-                                ? 'bg-accent/40 text-accent-foreground'
-                                : 'text-muted-foreground/30 hover:bg-muted/50 hover:text-muted-foreground'
-                            )}
-                          >
-                            {isSelected ? '✓' : '·'}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Favorite Activities / Interests */}
-              <div className="space-y-1.5">
-                <div>
-                  <Label className="text-xs font-medium">Favorite Activities</Label>
-                  <p className="text-[10px] text-muted-foreground">Search and add activities you love</p>
-                </div>
-
-                {/* Search input with dropdown */}
-                <div className="relative">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                    <Input
-                      type="text"
-                      value={activitySearch}
-                      onChange={(e) => {
-                        setActivitySearch(e.target.value);
-                        setActivitySearchOpen(true);
-                      }}
-                      onFocus={() => setActivitySearchOpen(true)}
-                      onBlur={() => setTimeout(() => setActivitySearchOpen(false), 150)}
-                      placeholder="Search activities..."
-                      className="h-9 pl-8 text-xs"
-                    />
-                  </div>
-                  {activitySearchOpen && (() => {
-                    const matches = Object.entries(ACTIVITY_CONFIG)
-                      .filter(([id]) => id !== 'custom')
-                      .map(([id, config]: any) => ({ id, display: `${config.icon} ${config.label}`, label: config.label }))
-                      .filter(o => !interests.includes(o.display))
-                      .filter(o => o.label.toLowerCase().includes(activitySearch.toLowerCase()));
-                    if (matches.length === 0) return null;
-                    return (
-                      <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
-                        {matches.map((o) => (
-                          <button
-                            key={o.id}
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                              setInterests(prev => [...prev, o.display]);
-                              setActivitySearch('');
-                              setActivitySearchOpen(false);
-                              handleChange();
-                            }}
-                            className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors"
-                          >
-                            {o.display}
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Selected tags */}
-                {interests.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {interests.map((display) => (
-                      <span
-                        key={display}
-                        className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-[11px] font-medium bg-primary/15 text-primary ring-1 ring-primary/30"
-                      >
-                        {display}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setInterests(prev => prev.filter(i => i !== display));
-                            handleChange();
-                          }}
-                          className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
-                          aria-label={`Remove ${display}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Social Goals */}
-              <div className="space-y-1.5">
-                <div>
-                  <Label className="text-xs font-medium">Social Goals</Label>
-                  <p className="text-[10px] text-muted-foreground">What are you trying to do more of?</p>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: 'stay_connected', label: 'Stay connected' },
-                    { id: 'try_new_things', label: 'Try new things' },
-                    { id: 'be_more_social', label: 'Be more social' },
-                    { id: 'less_flaking', label: 'Follow through' },
-                    { id: 'work_life_balance', label: 'Work-life balance' },
-                    { id: 'meet_new_people', label: 'Meet new people' },
-                  ].map((goal) => {
-                    const isSelected = socialGoals.includes(goal.id);
-                    return (
-                      <button
-                        key={goal.id}
-                        type="button"
-                        onClick={() => {
-                          setSocialGoals(prev =>
-                            prev.includes(goal.id) ? prev.filter(g => g !== goal.id) : [...prev, goal.id]
-                          );
-                          handleChange();
-                        }}
-                        className={cn(
-                          'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ring-1',
-                          isSelected
-                            ? 'bg-accent/30 text-accent-foreground ring-accent/40'
-                            : 'bg-muted/50 text-muted-foreground ring-transparent hover:bg-muted'
-                        )}
-                      >
-                        {goal.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <Separator />
+                </AccordionContent>
+              </AccordionItem>
 
               {/* Close Friends */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium flex items-center gap-1.5">
-                  <Heart className="h-3 w-3 text-primary" />
-                  Close Friends
-                </Label>
-                <p className="text-[10px] text-muted-foreground">
-                  Your inner circle — we'll prioritize them in suggestions and nudges
-                </p>
-                {friends.length === 0 ? (
-                  <p className="text-[10px] text-muted-foreground italic pt-1">
-                    Connect with friends first to mark close friends.
-                  </p>
-                ) : (
-                  <div className="max-h-48 overflow-y-auto pt-1">
-                    <div className="flex flex-wrap gap-1.5">
-                      {friends.map((friend) => {
-                        const isSelected = closeFriendIds.includes(friend.id);
-                        return (
-                          <button
-                            key={friend.id}
-                            type="button"
-                            onClick={() => {
-                              setCloseFriendIds(prev =>
-                                prev.includes(friend.id)
-                                  ? prev.filter(id => id !== friend.id)
-                                  : [...prev, friend.id]
-                              );
-                              handleChange();
-                            }}
-                            className={cn(
-                              'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all',
-                              isSelected
-                                ? 'border-primary/40 bg-primary/15 text-primary'
-                                : 'border-border bg-transparent text-muted-foreground hover:bg-muted/50'
-                            )}
-                          >
-                            {isSelected && <Heart className="h-2.5 w-2.5 fill-primary text-primary" />}
-                            <span className="truncate max-w-[140px]">{friend.friend_name}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+              <AccordionItem value="sub-close-friends" className="rounded-lg border border-border/60 bg-muted/20">
+                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <Heart className="h-3 w-3 text-primary" />
+                    Close Friends
+                    {closeFriendIds.length > 0 && (
+                      <span className="text-[10px] text-muted-foreground">({closeFriendIds.length})</span>
+                    )}
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3">
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[10px] text-muted-foreground">
+                      Your inner circle — we'll prioritize them in suggestions and nudges
+                    </p>
+                    {friends.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground italic pt-1">
+                        Connect with friends first to mark close friends.
+                      </p>
+                    ) : (
+                      <div className="max-h-48 overflow-y-auto pt-1">
+                        <div className="flex flex-wrap gap-1.5">
+                          {friends.map((friend) => {
+                            const isSelected = closeFriendIds.includes(friend.id);
+                            return (
+                              <button
+                                key={friend.id}
+                                type="button"
+                                onClick={() => {
+                                  setCloseFriendIds(prev =>
+                                    prev.includes(friend.id)
+                                      ? prev.filter(id => id !== friend.id)
+                                      : [...prev, friend.id]
+                                  );
+                                  handleChange();
+                                }}
+                                className={cn(
+                                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all',
+                                  isSelected
+                                    ? 'border-primary/40 bg-primary/15 text-primary'
+                                    : 'border-border bg-transparent text-muted-foreground hover:bg-muted/50'
+                                )}
+                              >
+                                {isSelected && <Heart className="h-2.5 w-2.5 fill-primary text-primary" />}
+                                <span className="truncate max-w-[140px]">{friend.friend_name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </AccordionContent>
         </AccordionItem>
 
