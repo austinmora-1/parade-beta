@@ -646,6 +646,207 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
+
+              <Separator />
+
+              {/* Preferred Social Times */}
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs font-medium">Preferred Social Times</Label>
+                  <p className="text-[10px] text-muted-foreground">Pick the slots you most enjoy hanging out</p>
+                </div>
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="grid grid-cols-[60px_repeat(7,1fr)] bg-muted/20 border-b border-border">
+                    <div />
+                    {[
+                      { id: 'monday', label: 'M' },
+                      { id: 'tuesday', label: 'T' },
+                      { id: 'wednesday', label: 'W' },
+                      { id: 'thursday', label: 'T' },
+                      { id: 'friday', label: 'F' },
+                      { id: 'saturday', label: 'S' },
+                      { id: 'sunday', label: 'S' },
+                    ].map((day) => (
+                      <div key={day.id} className="py-1.5 text-center text-[10px] font-semibold text-muted-foreground">
+                        {day.label}
+                      </div>
+                    ))}
+                  </div>
+                  {[
+                    { id: 'morning', label: '🌅 AM', sublabel: '6–12' },
+                    { id: 'afternoon', label: '☀️ PM', sublabel: '12–5' },
+                    { id: 'evening', label: '🌙 Eve', sublabel: '5–10' },
+                    { id: 'late-night', label: '🦉 Late', sublabel: '10+' },
+                  ].map((slot, slotIdx, slots) => (
+                    <div
+                      key={slot.id}
+                      className={cn(
+                        'grid grid-cols-[60px_repeat(7,1fr)] items-center',
+                        slotIdx < slots.length - 1 && 'border-b border-border/40'
+                      )}
+                    >
+                      <div className="px-1 py-1">
+                        <div className="text-[10px] font-medium leading-tight">{slot.label}</div>
+                        <div className="text-[8px] text-muted-foreground leading-tight">{slot.sublabel}</div>
+                      </div>
+                      {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map((day) => {
+                        const key = `${day}:${slot.id}`;
+                        const isSelected = preferredSocialTimes.includes(key);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              setPreferredSocialTimes(prev =>
+                                prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+                              );
+                              handleChange();
+                            }}
+                            className={cn(
+                              'flex items-center justify-center py-1.5 text-[11px] border-l border-border/20 transition-all',
+                              isSelected
+                                ? 'bg-accent/40 text-accent-foreground'
+                                : 'text-muted-foreground/30 hover:bg-muted/50 hover:text-muted-foreground'
+                            )}
+                          >
+                            {isSelected ? '✓' : '·'}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Favorite Activities / Interests */}
+              <div className="space-y-1.5">
+                <div>
+                  <Label className="text-xs font-medium">Favorite Activities</Label>
+                  <p className="text-[10px] text-muted-foreground">Tap the things you love to do</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(ACTIVITY_CONFIG)
+                    .filter(([id]) => id !== 'custom')
+                    .map(([id, config]: any) => {
+                      const display = `${config.icon} ${config.label}`;
+                      const isSelected = interests.includes(display);
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => {
+                            setInterests(prev =>
+                              prev.includes(display) ? prev.filter(i => i !== display) : [...prev, display]
+                            );
+                            handleChange();
+                          }}
+                          className={cn(
+                            'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ring-1',
+                            isSelected
+                              ? 'bg-primary/15 text-primary ring-primary/30'
+                              : 'bg-muted/50 text-muted-foreground ring-transparent hover:bg-muted'
+                          )}
+                        >
+                          {display}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Social Goals */}
+              <div className="space-y-1.5">
+                <div>
+                  <Label className="text-xs font-medium">Social Goals</Label>
+                  <p className="text-[10px] text-muted-foreground">What are you trying to do more of?</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'stay_connected', label: 'Stay connected' },
+                    { id: 'try_new_things', label: 'Try new things' },
+                    { id: 'be_more_social', label: 'Be more social' },
+                    { id: 'less_flaking', label: 'Follow through' },
+                    { id: 'work_life_balance', label: 'Work-life balance' },
+                    { id: 'meet_new_people', label: 'Meet new people' },
+                  ].map((goal) => {
+                    const isSelected = socialGoals.includes(goal.id);
+                    return (
+                      <button
+                        key={goal.id}
+                        type="button"
+                        onClick={() => {
+                          setSocialGoals(prev =>
+                            prev.includes(goal.id) ? prev.filter(g => g !== goal.id) : [...prev, goal.id]
+                          );
+                          handleChange();
+                        }}
+                        className={cn(
+                          'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ring-1',
+                          isSelected
+                            ? 'bg-accent/30 text-accent-foreground ring-accent/40'
+                            : 'bg-muted/50 text-muted-foreground ring-transparent hover:bg-muted'
+                        )}
+                      >
+                        {goal.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Close Friends */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Heart className="h-3 w-3 text-primary" />
+                  Close Friends
+                </Label>
+                <p className="text-[10px] text-muted-foreground">
+                  Your inner circle — we'll prioritize them in suggestions and nudges
+                </p>
+                {friends.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground italic pt-1">
+                    Connect with friends first to mark close friends.
+                  </p>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto space-y-1 pt-1">
+                    {friends.map((friend) => {
+                      const isSelected = closeFriendIds.includes(friend.id);
+                      return (
+                        <button
+                          key={friend.id}
+                          type="button"
+                          onClick={() => {
+                            setCloseFriendIds(prev =>
+                              prev.includes(friend.id)
+                                ? prev.filter(id => id !== friend.id)
+                                : [...prev, friend.id]
+                            );
+                            handleChange();
+                          }}
+                          className={cn(
+                            'w-full flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-all',
+                            isSelected
+                              ? 'border-primary/40 bg-primary/10 text-foreground'
+                              : 'border-border bg-transparent text-muted-foreground hover:bg-muted/50'
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <Users className="h-3 w-3" />
+                            {friend.friend_name}
+                          </span>
+                          {isSelected && <Heart className="h-3 w-3 fill-primary text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
