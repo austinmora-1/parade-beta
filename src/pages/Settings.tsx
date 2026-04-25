@@ -90,7 +90,7 @@ export default function Settings() {
   const [workStartHour, setWorkStartHour] = useState(9);
   const [workEndHour, setWorkEndHour] = useState(17);
   const [defaultAvailability, setDefaultAvailability] = useState<'free' | 'unavailable'>('free');
-  const [defaultVibes, setDefaultVibes] = useState<VibeType[]>([]);
+  const [timezone, setTimezone] = useState<string>('');
   const [timezone, setTimezone] = useState<string>('');
 
   // Social Circle & Preferences (extended)
