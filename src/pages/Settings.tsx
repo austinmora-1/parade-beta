@@ -465,6 +465,42 @@ export default function Settings() {
                   className="h-8 text-sm"
                 />
               </div>
+
+              {/* Home Base */}
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                  Home Base
+                </Label>
+                <CityAutocomplete
+                  value={homeAddress}
+                  onChange={(value) => { setHomeAddress(value); handleChange(); }}
+                  placeholder="Search for your city..."
+                  compact
+                />
+              </div>
+
+              {/* Neighborhood */}
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor="neighborhood" className="text-xs">Neighborhood</Label>
+                <Input
+                  id="neighborhood"
+                  placeholder="e.g. Mission District, Williamsburg"
+                  value={neighborhood}
+                  onChange={(e) => { setNeighborhood(e.target.value); handleChange(); }}
+                  className="h-8 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">Optional — helps friends find nearby plans</p>
+              </div>
+
+              {/* Timezone */}
+              <div className="space-y-1 sm:col-span-2">
+                <TimezoneCombobox
+                  value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
+                  onChange={(value) => { setTimezone(value); handleChange(); }}
+                  isAutoDetected={!timezone}
+                />
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
