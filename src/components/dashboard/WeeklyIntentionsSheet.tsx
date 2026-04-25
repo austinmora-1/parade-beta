@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { WeeklyIntention } from '@/hooks/useWeeklyIntentions';
 import { format, parseISO, addDays } from 'date-fns';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Check } from 'lucide-react';
 
 const ENERGY_LEVELS = [
   { value: 'low', label: 'Low-key', emoji: '🛋️', desc: 'Recharging this week' },
