@@ -220,7 +220,7 @@ export function ParadeTour() {
           lineHeight: 1.5,
           color: 'hsl(var(--muted-foreground))',
         },
-        buttonNext: {
+        buttonPrimary: {
           backgroundColor: '#E6533C',
           borderRadius: 8,
           fontSize: 13,
