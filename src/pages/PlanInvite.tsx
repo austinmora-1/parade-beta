@@ -114,6 +114,29 @@ export default function PlanInvite() {
     }
   };
 
+  const handleGuestRsvp = async () => {
+    if (!token) return;
+    const name = guestName.trim();
+    if (!name) {
+      toast.error('Please enter your name');
+      return;
+    }
+    setGuestSubmitting(true);
+    try {
+      const { error } = await supabase.rpc('rsvp_plan_invite_as_guest', {
+        p_token: token,
+        p_name: name,
+      });
+      if (error) throw error;
+      setGuestRsvpd(true);
+      toast.success('You\'re in! The host has been notified.');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not RSVP');
+    } finally {
+      setGuestSubmitting(false);
+    }
+  };
+
   if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
