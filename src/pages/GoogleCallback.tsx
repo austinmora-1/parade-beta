@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 
 export default function GoogleCallback() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
