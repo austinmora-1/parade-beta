@@ -1090,6 +1090,7 @@ export type Database = {
           allowed_hang_request_friend_ids: string[] | null
           avatar_url: string | null
           bio: string | null
+          close_friend_ids: string[]
           cover_photo_url: string | null
           created_at: string
           current_vibe: string | null
@@ -1134,6 +1135,7 @@ export type Database = {
           allowed_hang_request_friend_ids?: string[] | null
           avatar_url?: string | null
           bio?: string | null
+          close_friend_ids?: string[]
           cover_photo_url?: string | null
           created_at?: string
           current_vibe?: string | null
@@ -1178,6 +1180,7 @@ export type Database = {
           allowed_hang_request_friend_ids?: string[] | null
           avatar_url?: string | null
           bio?: string | null
+          close_friend_ids?: string[]
           cover_photo_url?: string | null
           created_at?: string
           current_vibe?: string | null
