@@ -41,6 +41,8 @@ interface SlotCalendarPickerProps {
   onToggleSlot?: (date: Date, slot: TimeSlot) => void;
   /** Initial month to focus when opening (e.g. the suggested date) */
   initialMonth?: Date | null;
+  /** Notified whenever the displayed month changes (and on mount). Useful to lazy-load availability for the visible range. */
+  onVisibleRangeChange?: (start: Date, end: Date) => void;
 }
 
 function isSlotSelected(entries: SelectedSlotEntry[], date: Date, slot: TimeSlot): boolean {
