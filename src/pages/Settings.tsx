@@ -70,6 +70,7 @@ export default function Settings() {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [homeAddress, setHomeAddress] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
 
   // Notification settings
   const [planReminders, setPlanReminders] = useState(true);
@@ -133,6 +134,7 @@ export default function Settings() {
           setLastName((profile as any).last_name || '');
           setPhoneNumber((profile as any).phone_number || '');
           setHomeAddress(profile.home_address || '');
+          setNeighborhood((profile as any).neighborhood || '');
           setPlanReminders(profile.plan_reminders ?? true);
           setFriendRequests(profile.friend_requests_notifications ?? true);
           setPlanInvitations(profile.plan_invitations_notifications ?? true);
@@ -230,6 +232,7 @@ export default function Settings() {
           last_name: lastName || null,
           phone_number: phoneNumber || null,
           home_address: homeAddress,
+          neighborhood: neighborhood || null,
           plan_reminders: planReminders,
           friend_requests_notifications: friendRequests,
           plan_invitations_notifications: planInvitations,
@@ -389,14 +392,14 @@ export default function Settings() {
 
       <Accordion type="multiple" defaultValue={[]} className="space-y-1.5">
         {/* Profile Section */}
-        <AccordionItem value="profile" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
+        <AccordionItem value="profile" className="rounded-xl border border-border bg-card shadow-soft overflow-visible">
           <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-primary" />
               <span className="font-display text-sm font-semibold">Profile</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
+          <AccordionContent className="px-4 pb-4 overflow-visible">
             <div className="grid gap-3 sm:grid-cols-2 pt-1">
               <div className="space-y-1">
                 <Label htmlFor="firstName" className="text-xs">First Name</Label>
@@ -462,6 +465,42 @@ export default function Settings() {
                   className="h-8 text-sm"
                 />
               </div>
+
+              {/* Home Base */}
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                  Home Base
+                </Label>
+                <CityAutocomplete
+                  value={homeAddress}
+                  onChange={(value) => { setHomeAddress(value); handleChange(); }}
+                  placeholder="Search for your city..."
+                  compact
+                />
+              </div>
+
+              {/* Neighborhood */}
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor="neighborhood" className="text-xs">Neighborhood</Label>
+                <Input
+                  id="neighborhood"
+                  placeholder="e.g. Mission District, Williamsburg"
+                  value={neighborhood}
+                  onChange={(e) => { setNeighborhood(e.target.value); handleChange(); }}
+                  className="h-8 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">Optional — helps friends find nearby plans</p>
+              </div>
+
+              {/* Timezone */}
+              <div className="space-y-1 sm:col-span-2">
+                <TimezoneCombobox
+                  value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
+                  onChange={(value) => { setTimezone(value); handleChange(); }}
+                  isAutoDetected={!timezone}
+                />
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -476,40 +515,6 @@ export default function Settings() {
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 overflow-visible">
             <Accordion type="multiple" className="space-y-2 pt-1">
-              {/* Location */}
-              <AccordionItem value="sub-location" className="rounded-lg border border-border/60 bg-muted/20 overflow-visible">
-                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 text-muted-foreground" />
-                    Location & Timezone
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 overflow-visible">
-                  <div className="space-y-3 pt-1">
-                    {/* Home Base */}
-                    <div className="space-y-1.5">
-                      <Label className="flex items-center gap-1.5 text-xs">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        Home Base
-                      </Label>
-                      <CityAutocomplete
-                        value={homeAddress}
-                        onChange={(value) => { setHomeAddress(value); handleChange(); }}
-                        placeholder="Search for your city..."
-                        compact
-                      />
-                    </div>
-
-                    {/* Timezone */}
-                    <TimezoneCombobox
-                      value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
-                      onChange={(value) => { setTimezone(value); handleChange(); }}
-                      isAutoDetected={!timezone}
-                    />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
               {/* Work Hours */}
               <AccordionItem value="sub-work" className="rounded-lg border border-border/60 bg-muted/20">
                 <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
