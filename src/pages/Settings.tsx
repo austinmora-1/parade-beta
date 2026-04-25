@@ -232,6 +232,7 @@ export default function Settings() {
           last_name: lastName || null,
           phone_number: phoneNumber || null,
           home_address: homeAddress,
+          neighborhood: neighborhood || null,
           plan_reminders: planReminders,
           friend_requests_notifications: friendRequests,
           plan_invitations_notifications: planInvitations,
