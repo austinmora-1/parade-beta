@@ -296,7 +296,12 @@ export function GreetingHeader() {
       {/* Sheets / Dialogs */}
       {planOpen && (
         <Suspense fallback={null}>
-          <GuidedPlanSheet open={planOpen} onOpenChange={setPlanOpen} preSelectedFriends={[]} />
+          <GuidedPlanSheet
+            open={planOpen}
+            onOpenChange={setPlanOpen}
+            preSelectedFriends={[]}
+            onBack={() => { setPlanOpen(false); setTimeout(() => setMenuOpen(true), 80); }}
+          />
         </Suspense>
       )}
       {tripOpen && (
@@ -308,12 +313,21 @@ export function GreetingHeader() {
               if (!o) setTripPreSelected([]);
             }}
             preSelectedFriends={tripPreSelected.length > 0 ? tripPreSelected : undefined}
+            onBack={() => {
+              setTripOpen(false);
+              setTripPreSelected([]);
+              setTimeout(() => setMenuOpen(true), 80);
+            }}
           />
         </Suspense>
       )}
       {findPeopleOpen && (
         <Suspense fallback={null}>
-          <FindPeopleSheet open={findPeopleOpen} onOpenChange={setFindPeopleOpen} />
+          <FindPeopleSheet
+            open={findPeopleOpen}
+            onOpenChange={setFindPeopleOpen}
+            onBack={() => { setFindPeopleOpen(false); setTimeout(() => setMenuOpen(true), 80); }}
+          />
         </Suspense>
       )}
       {inviteOpen && (
