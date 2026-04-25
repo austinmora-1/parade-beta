@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AppearanceQuickToggles } from '@/components/profile/AppearanceQuickToggles';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -505,7 +506,7 @@ export default function Profile() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <ElephantLoader />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 
 export default function GoogleCallback() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -52,7 +53,7 @@ export default function GoogleCallback() {
       <div className="text-center space-y-4 p-8">
         {status === 'loading' && (
           <>
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <ElephantLoader />
             <h1 className="text-xl font-semibold">Connecting your calendar...</h1>
             <p className="text-muted-foreground">Please wait while we finish setting up.</p>
           </>

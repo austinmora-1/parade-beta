@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Calendar, Users, MessageCircle, CheckCircle2 } from "lucide-react";
 import { ConfettiBackground } from "@/components/landing/ConfettiBackground";
 import { ParadeWordmark } from "@/components/ui/ParadeWordmark";
+import { ElephantLoader } from "@/components/ui/ElephantLoader";
 import paradeElephantLogo from "@/assets/parade-elephant-dark.png";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -104,7 +105,7 @@ const Invite = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #0F1A14 0%, #24382D 100%)' }}>
-        <div className="animate-pulse text-primary">Loading...</div>
+        <ElephantLoader />
       </div>
     );
   }

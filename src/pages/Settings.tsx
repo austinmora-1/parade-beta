@@ -13,6 +13,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette, Globe, Check, Heart, Sparkles, Users, Search, X } from 'lucide-react';
 import { ACTIVITY_CONFIG } from '@/types/planner';
 import { useAuth } from '@/hooks/useAuth';
@@ -356,7 +357,7 @@ export default function Settings() {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <ElephantLoader />
       </div>
     );
   }

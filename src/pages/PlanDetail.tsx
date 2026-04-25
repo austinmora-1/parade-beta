@@ -10,6 +10,7 @@ import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS, FeedVisibility } from '@/types
 import { getPlanDisplayTitle } from '@/lib/planTitle';
 import { usePods } from '@/hooks/usePods';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { Button } from '@/components/ui/button';
 import {
@@ -260,7 +261,7 @@ export default function PlanDetail() {
   if (loadingPreview || loadingShared) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <ElephantLoader />
       </div>
     );
   }

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import paradeLogo from '@/assets/parade-logo.png';
 
 export default function ResetPassword() {
@@ -91,10 +91,7 @@ export default function ResetPassword() {
   if (isVerifying) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-primary/10 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Verifying reset link...</p>
-        </div>
+        <ElephantLoader />
       </div>
     );
   }

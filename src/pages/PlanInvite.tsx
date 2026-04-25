@@ -8,6 +8,7 @@ import { ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Button } from '@/components/ui/button';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { getTimezoneAbbreviation, getBrowserTimezone } from '@/lib/timezone';
@@ -111,7 +112,7 @@ export default function PlanInvite() {
   if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <ElephantLoader />
       </div>
     );
   }

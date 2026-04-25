@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { formatDisplayName } from '@/lib/formatName';
@@ -103,7 +104,7 @@ export default function TripInvite() {
   if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <ElephantLoader />
       </div>
     );
   }
