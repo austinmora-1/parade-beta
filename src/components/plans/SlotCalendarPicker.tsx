@@ -179,20 +179,14 @@ export function SlotCalendarPicker({
           const hasSlots = multiSelect && dateHasSelection(d);
           const dayStatus = !past && inMonth ? computeDayStatus(d, getSlotStatus) : null;
 
-          // Background tint based on availability score
+          // Background tint based on availability score (lighter pastels, no dot)
           const tintClass =
             isSel ? "" :
-            dayStatus === 'high'   ? "bg-availability-available/15 hover:bg-availability-available/25" :
-            dayStatus === 'medium' ? "bg-availability-partial/15 hover:bg-availability-partial/25" :
-            dayStatus === 'low'    ? "bg-destructive/10 hover:bg-destructive/15" :
+            dayStatus === 'high'   ? "bg-availability-available/20 hover:bg-availability-available/30" :
+            dayStatus === 'medium' ? "bg-availability-partial/20 hover:bg-availability-partial/30" :
+            dayStatus === 'low'    ? "bg-destructive/15 hover:bg-destructive/20" :
             dayStatus === 'none'   ? "bg-muted/40" :
             "hover:bg-accent";
-
-          const dotClass =
-            dayStatus === 'high'   ? "bg-availability-available" :
-            dayStatus === 'medium' ? "bg-availability-partial" :
-            dayStatus === 'low'    ? "bg-destructive/70" :
-            "";
 
           return (
             <button
@@ -219,9 +213,6 @@ export function SlotCalendarPicker({
                 <span className="absolute top-1 left-1 h-1 w-1 rounded-full bg-primary" />
               )}
               <span className="leading-none">{format(d, 'd')}</span>
-              {dayStatus && !isSel && (
-                <span className={cn("mt-1 h-1.5 w-1.5 rounded-full", dotClass)} />
-              )}
             </button>
           );
         })}
