@@ -816,6 +816,7 @@ export function QuickPlanSheet({
               getSlotStatus={getSlotStatusForDate}
               hasFriends={hasFriends}
               days={14}
+              initialMonth={bestSlots[0]?.date ?? null}
             />
 
             {/* Optional details */}
