@@ -98,8 +98,6 @@ export function ParadeTour() {
       return;
     }
 
-    if (friendCount > 0 || planCount > 0) return;
-
     let cancelled = false;
     (async () => {
       const { data } = await supabase
