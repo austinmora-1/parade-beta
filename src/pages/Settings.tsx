@@ -909,36 +909,35 @@ export default function Settings() {
                     Connect with friends first to mark close friends.
                   </p>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto space-y-1 pt-1">
-                    {friends.map((friend) => {
-                      const isSelected = closeFriendIds.includes(friend.id);
-                      return (
-                        <button
-                          key={friend.id}
-                          type="button"
-                          onClick={() => {
-                            setCloseFriendIds(prev =>
-                              prev.includes(friend.id)
-                                ? prev.filter(id => id !== friend.id)
-                                : [...prev, friend.id]
-                            );
-                            handleChange();
-                          }}
-                          className={cn(
-                            'w-full flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-all',
-                            isSelected
-                              ? 'border-primary/40 bg-primary/10 text-foreground'
-                              : 'border-border bg-transparent text-muted-foreground hover:bg-muted/50'
-                          )}
-                        >
-                          <span className="flex items-center gap-2">
-                            <Users className="h-3 w-3" />
-                            {friend.friend_name}
-                          </span>
-                          {isSelected && <Heart className="h-3 w-3 fill-primary text-primary" />}
-                        </button>
-                      );
-                    })}
+                  <div className="max-h-48 overflow-y-auto pt-1">
+                    <div className="flex flex-wrap gap-1.5">
+                      {friends.map((friend) => {
+                        const isSelected = closeFriendIds.includes(friend.id);
+                        return (
+                          <button
+                            key={friend.id}
+                            type="button"
+                            onClick={() => {
+                              setCloseFriendIds(prev =>
+                                prev.includes(friend.id)
+                                  ? prev.filter(id => id !== friend.id)
+                                  : [...prev, friend.id]
+                              );
+                              handleChange();
+                            }}
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all',
+                              isSelected
+                                ? 'border-primary/40 bg-primary/15 text-primary'
+                                : 'border-border bg-transparent text-muted-foreground hover:bg-muted/50'
+                            )}
+                          >
+                            {isSelected && <Heart className="h-2.5 w-2.5 fill-primary text-primary" />}
+                            <span className="truncate max-w-[140px]">{friend.friend_name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
