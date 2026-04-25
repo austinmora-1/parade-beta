@@ -128,14 +128,19 @@ export function OpenInviteSheet({ open, onOpenChange, initialDate, initialSlot, 
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="pb-2">
           <div className="flex items-center gap-2">
-            {step !== 'describe' && step !== 'confirm' && (
+            {step !== 'confirm' && (step !== 'describe' || onBack) && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() =>
-                  setStep(step === 'audience' ? 'describe' : step === 'send' ? 'audience' : 'describe')
-                }
+                aria-label="Back"
+                onClick={() => {
+                  if (step === 'describe') {
+                    onBack?.();
+                    return;
+                  }
+                  setStep(step === 'audience' ? 'describe' : step === 'send' ? 'audience' : 'describe');
+                }}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
