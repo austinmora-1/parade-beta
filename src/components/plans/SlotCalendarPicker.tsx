@@ -85,6 +85,7 @@ export function SlotCalendarPicker({
   selectedSlots = [],
   onToggleSlot,
   initialMonth,
+  onVisibleRangeChange,
 }: SlotCalendarPickerProps) {
   const today = startOfDay(new Date());
   const maxDate = addDays(today, days);
@@ -98,6 +99,14 @@ export function SlotCalendarPicker({
     const end = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 0 });
     return eachDayOfInterval({ start, end });
   }, [viewMonth]);
+
+  // Notify parent of visible range so it can lazy-load availability data.
+  useEffect(() => {
+    if (!onVisibleRangeChange) return;
+    const start = startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 0 });
+    const end = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 0 });
+    onVisibleRangeChange(start, end);
+  }, [viewMonth, onVisibleRangeChange]);
 
   const focusedDate = selectedDate;
 
