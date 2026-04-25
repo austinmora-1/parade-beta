@@ -90,7 +90,6 @@ export default function Settings() {
   const [workStartHour, setWorkStartHour] = useState(9);
   const [workEndHour, setWorkEndHour] = useState(17);
   const [defaultAvailability, setDefaultAvailability] = useState<'free' | 'unavailable'>('free');
-  const [defaultVibes, setDefaultVibes] = useState<VibeType[]>([]);
   const [timezone, setTimezone] = useState<string>('');
 
   // Social Circle & Preferences (extended)
@@ -149,7 +148,6 @@ export default function Settings() {
           setWorkStartHour((profile as any).default_work_start_hour ?? 9);
           setWorkEndHour((profile as any).default_work_end_hour ?? 17);
           setDefaultAvailability((profile as any).default_availability_status || 'free');
-          setDefaultVibes((profile as any).default_vibes || []);
           setTimezone((profile as any).timezone || '');
           setPreferredSocialTimes((profile as any).preferred_social_times || []);
           setInterests((profile as any).interests || []);
@@ -247,7 +245,6 @@ export default function Settings() {
           default_work_start_hour: workStartHour,
           default_work_end_hour: workEndHour,
           default_availability_status: defaultAvailability,
-          default_vibes: defaultVibes,
           timezone: timezone || null,
           preferred_social_times: preferredSocialTimes,
           interests,
@@ -603,19 +600,20 @@ export default function Settings() {
                 </AccordionContent>
               </AccordionItem>
 
-              {/* Default Status & Vibes */}
-              <AccordionItem value="sub-defaults" className="rounded-lg border border-border/60 bg-muted/20">
+              {/* Preferred Social Times */}
+              <AccordionItem value="sub-social-times" className="rounded-lg border border-border/60 bg-muted/20">
                 <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
                   <span className="flex items-center gap-1.5">
-                    <Check className="h-3 w-3 text-muted-foreground" />
-                    Default Status & Vibes
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    Preferred Social Times
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="px-3 pb-3">
-                  <div className="grid grid-cols-2 gap-4 pt-1">
+                  <div className="space-y-3 pt-1">
                     {/* Default Availability Status */}
                     <div className="space-y-1.5">
                       <Label className="text-xs font-medium">Default Status</Label>
+                      <p className="text-[10px] text-muted-foreground">Are you generally free or busy by default?</p>
                       <div className="flex gap-1.5">
                         <button
                           onClick={() => { setDefaultAvailability('free'); handleChange(); }}
@@ -642,54 +640,8 @@ export default function Settings() {
                       </div>
                     </div>
 
-                    {/* Default Vibes (Optional) */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-medium">Default Vibes</Label>
-                        <span className="text-[10px] text-muted-foreground">Optional</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-1">
-                        {(['social', 'chill', 'athletic', 'productive'] as VibeType[]).map((vibe) => {
-                          const config = VIBE_CONFIG[vibe];
-                          const isSelected = defaultVibes.includes(vibe);
-                          return (
-                            <button
-                              key={vibe}
-                              onClick={() => {
-                                setDefaultVibes(prev =>
-                                  prev.includes(vibe)
-                                    ? prev.filter(v => v !== vibe)
-                                    : [...prev, vibe]
-                                );
-                                handleChange();
-                              }}
-                              className={cn(
-                                "flex items-center justify-center gap-1 py-1 px-1.5 rounded-md text-[10px] font-medium transition-all",
-                                isSelected
-                                  ? "bg-primary/10 text-primary ring-1 ring-primary/30"
-                                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                              )}
-                            >
-                              <config.icon className="h-3.5 w-3.5" />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+                    <Separator />
 
-              {/* Preferred Social Times */}
-              <AccordionItem value="sub-social-times" className="rounded-lg border border-border/60 bg-muted/20">
-                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="h-3 w-3 text-muted-foreground" />
-                    Preferred Social Times
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3">
-                  <div className="space-y-2 pt-1">
                     <p className="text-[10px] text-muted-foreground">Pick the slots you most enjoy hanging out</p>
 
                     {/* Quick select presets */}
