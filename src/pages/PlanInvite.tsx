@@ -53,6 +53,10 @@ export default function PlanInvite() {
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [guestSubmitting, setGuestSubmitting] = useState(false);
+  const [guestRsvpd, setGuestRsvpd] = useState(false);
 
   useEffect(() => {
     if (!token) return;
