@@ -24,30 +24,28 @@ const STEPS: TourStep[] = [
     placement: 'bottom',
   },
   {
-    target: '[data-tour="flow-hang"]',
+    target: '[data-tour="fab"]',
     route: '/',
     title: '🤝 Find time with friends',
     content:
-      "Pick who you want to see and we'll surface windows where you're both free. Great for casual catch-ups.",
+      "Tap the + and pick \"Find time with friends\" to choose who you want to see — we'll surface windows where you're both free.",
     placement: 'bottom',
-    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
   },
   {
-    target: '[data-tour="flow-plus-one"]',
+    target: '[data-tour="fab"]',
     route: '/',
     title: '🎟️ Open invites',
     content:
-      "Have a spare ticket or want company for something specific? Drop an open invite and friends can claim the spot.",
+      "Pick \"Open invite\" from the + menu when you have a spare ticket or want company for something specific. Friends can claim the spot.",
     placement: 'bottom',
   },
   {
-    target: '[data-tour="flow-trip"]',
+    target: '[data-tour="fab"]',
     route: '/',
     title: '📍 Go somewhere',
     content:
-      "Plan a trip or propose dates with a group — Parade auto-updates your location and surfaces nearby friends.",
+      "Pick \"Go somewhere\" to plan a trip or propose dates with a group — Parade auto-updates your location and surfaces nearby friends.",
     placement: 'bottom',
-    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
     target: '[data-tour="nav-plans"]',
