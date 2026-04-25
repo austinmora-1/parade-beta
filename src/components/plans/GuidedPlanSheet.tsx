@@ -29,6 +29,7 @@ interface GuidedPlanSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preSelectedFriends: { userId: string; name: string; avatar?: string }[];
+  onBack?: () => void;
 }
 
 type Step = 'friends' | 'activity' | 'time' | 'confirm';
