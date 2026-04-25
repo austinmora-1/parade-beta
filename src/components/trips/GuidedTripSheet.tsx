@@ -41,6 +41,7 @@ interface GuidedTripSheetProps {
   onOpenChange: (open: boolean) => void;
   preSelectedFriends?: PreSelectedFriend[];
   preSelectedType?: 'trip' | 'visit';
+  onBack?: () => void;
 }
 
 type Step = 'type' | 'friends' | 'months' | 'weekends' | 'confirm';
@@ -111,7 +112,7 @@ function useSuggestedFriends(connectedFriends: Friend[]) {
 const getInitials = (name: string) =>
   name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSelectedType }: GuidedTripSheetProps) {
+export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSelectedType, onBack }: GuidedTripSheetProps) {
   const { user } = useAuth();
   const { friends: allFriends, userId, loadProfileAndAvailability, loadPlans } = usePlannerStore();
   const viewport = useVisualViewport();
@@ -634,9 +635,13 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         style={viewport ? { maxHeight: `${Math.min(viewport.height * 0.9, window.innerHeight * 0.9)}px` } : undefined}
       >
         <DrawerHeader className="pb-2 relative">
-          {step !== 'type' && (
+          {(step !== 'type' || onBack) && (
             <button
               onClick={() => {
+                if (step === 'type') {
+                  onBack?.();
+                  return;
+                }
                 if (step === 'confirm') {
                   // In customMode there's no weekends step — go straight back to months
                   setStep(customMode ? 'months' : 'weekends');
@@ -646,6 +651,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                 else if (step === 'months') setStep('friends');
                 else if (step === 'friends') setStep('type');
               }}
+              aria-label="Back"
               className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />

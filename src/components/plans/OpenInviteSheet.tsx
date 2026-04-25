@@ -23,6 +23,7 @@ interface OpenInviteSheetProps {
   onOpenChange: (open: boolean) => void;
   initialDate?: Date;
   initialSlot?: TimeSlot;
+  onBack?: () => void;
 }
 
 const SLOT_OPTIONS: { value: TimeSlot; label: string; range: string }[] = [
@@ -33,7 +34,7 @@ const SLOT_OPTIONS: { value: TimeSlot; label: string; range: string }[] = [
   { value: 'late-night', label: 'Late Night', range: '9pm+' },
 ];
 
-export function OpenInviteSheet({ open, onOpenChange, initialDate, initialSlot }: OpenInviteSheetProps) {
+export function OpenInviteSheet({ open, onOpenChange, initialDate, initialSlot, onBack }: OpenInviteSheetProps) {
   const { user } = useAuth();
   const { create } = useOpenInvites();
   const { pods } = usePods();
@@ -127,14 +128,19 @@ export function OpenInviteSheet({ open, onOpenChange, initialDate, initialSlot }
       <DrawerContent className="max-h-[90vh]">
         <DrawerHeader className="pb-2">
           <div className="flex items-center gap-2">
-            {step !== 'describe' && step !== 'confirm' && (
+            {step !== 'confirm' && (step !== 'describe' || onBack) && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() =>
-                  setStep(step === 'audience' ? 'describe' : step === 'send' ? 'audience' : 'describe')
-                }
+                aria-label="Back"
+                onClick={() => {
+                  if (step === 'describe') {
+                    onBack?.();
+                    return;
+                  }
+                  setStep(step === 'audience' ? 'describe' : step === 'send' ? 'audience' : 'describe');
+                }}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>

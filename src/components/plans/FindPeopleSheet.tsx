@@ -39,6 +39,8 @@ interface FindPeopleSheetProps {
   /** Optional prefill for date/slot (e.g. from "Find other times" dialog) */
   initialDate?: Date;
   initialSlot?: TimeSlot;
+  /** Called when the user clicks Back from the very first step. */
+  onBack?: () => void;
 }
 
 type Step = 'anchor' | 'describe' | 'audience' | 'preview' | 'success';
@@ -54,7 +56,7 @@ const QUICK_ACTIVITIES: { id: ActivityType; label: string; icon: string }[] = [
   { id: 'gym', label: 'Workout', icon: '💪' } as any,
 ];
 
-export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, initialSlot }: FindPeopleSheetProps) {
+export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, initialSlot, onBack }: FindPeopleSheetProps) {
   const { create } = useOpenInvites();
   const { pods } = usePods();
   const { friends } = usePlannerStore();
@@ -300,15 +302,17 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
     if (tripContext) {
       // Trip mode: only audience ↔ preview, no back from audience.
       if (step === 'preview') setStep('audience');
+      else if (step === 'audience' && onBack) onBack();
       else onOpenChange(false);
       return;
     }
     if (step === 'preview') setStep('audience');
     else if (step === 'audience') setStep(anchorPlan ? 'anchor' : 'describe');
     else if (step === 'describe') setStep('anchor');
+    else if (step === 'anchor' && onBack) onBack();
   };
 
-  const showBack = !(step === 'anchor' || step === 'success' || (tripContext && step === 'audience'));
+  const showBack = !(step === 'success') && !(step === 'anchor' && !onBack) && !(tripContext && step === 'audience' && !onBack);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
