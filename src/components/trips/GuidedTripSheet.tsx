@@ -706,7 +706,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                     )}
                   >
                     <Home className="h-6 w-6 mx-auto text-primary" />
-                    <p className="text-sm font-semibold">Visit friends</p>
+                    <p className="text-sm font-semibold">Visit with friends</p>
                     <p className="text-[10px] text-muted-foreground leading-tight">Visit a friend or host them</p>
                   </button>
                 </div>
