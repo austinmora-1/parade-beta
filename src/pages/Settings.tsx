@@ -92,6 +92,12 @@ export default function Settings() {
   const [defaultVibes, setDefaultVibes] = useState<VibeType[]>([]);
   const [timezone, setTimezone] = useState<string>('');
 
+  // Social Circle & Preferences (extended)
+  const [preferredSocialTimes, setPreferredSocialTimes] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [socialGoals, setSocialGoals] = useState<string[]>([]);
+  const [closeFriendIds, setCloseFriendIds] = useState<string[]>([]);
+
   // Friends list
   const [friends, setFriends] = useState<Friend[]>([]);
 
