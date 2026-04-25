@@ -128,7 +128,7 @@ export function ParadeTour() {
 
     if (lastEnteredStep.current !== stepIndex) {
       lastEnteredStep.current = stepIndex;
-      setTimeout(() => step.onEnter?.(), 250);
+      setTimeout(() => step.onEnter?.(), 50);
     }
   }, [run, stepIndex, location.pathname, navigate]);
 
@@ -159,7 +159,10 @@ export function ParadeTour() {
         return;
       }
 
-      if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
+      // TARGET_NOT_FOUND fires while the target is mounting (e.g. Drawer
+      // portal opening). Do NOT auto-advance — let Joyride keep waiting up
+      // to `targetWaitTimeout`. Only advance on explicit user STEP_AFTER.
+      if (type === EVENTS.STEP_AFTER) {
         const next = action === ACTIONS.PREV ? index - 1 : index + 1;
         STEPS[index]?.onLeave?.();
         if (next >= STEPS.length) {
@@ -199,7 +202,7 @@ export function ParadeTour() {
         spotlightPadding: 6,
         spotlightRadius: 14,
         zIndex: 10000,
-        targetWaitTimeout: 4000,
+        targetWaitTimeout: 8000,
         buttons: ['back', 'skip', 'primary'],
       }}
       styles={{
