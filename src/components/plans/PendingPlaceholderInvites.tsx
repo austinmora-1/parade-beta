@@ -39,7 +39,7 @@ export function PendingPlaceholderInvites({ planId, isOwner }: Props) {
       .from('plan_invites')
       .select('id, invite_token, placeholder_name, status')
       .eq('plan_id', planId)
-      .eq('status', 'pending')
+      .in('status', ['pending', 'guest_accepted'])
       .not('placeholder_name', 'is', null);
     if (error) {
       console.error('[PendingPlaceholderInvites] load error', error);
