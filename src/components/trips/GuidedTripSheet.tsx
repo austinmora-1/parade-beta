@@ -696,7 +696,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                   >
                     <Plane className="h-6 w-6 mx-auto text-primary" />
                     <p className="text-sm font-semibold">Plan a trip</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight">Travel with your crew</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Plan a trip</p>
                   </button>
                   <button
                     onClick={() => { setProposalType('visit'); setStep('friends'); }}
