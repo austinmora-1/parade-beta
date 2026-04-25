@@ -186,28 +186,51 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
             </div>
           </div>
 
-          {/* Things to do — multi-input */}
+          {/* Things to do — to-do list */}
           <div>
             <label className="text-sm font-medium text-foreground mb-2 block">Anything you want to do this week?</label>
 
-            {/* Added items */}
+            {/* To-do list */}
             {items.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
+              <ul className="space-y-1 mb-2.5 rounded-xl border border-border bg-card/50 p-1.5">
                 {items.map((item, idx) => (
-                  <span
+                  <li
                     key={idx}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
+                    className="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/60 transition-colors"
                   >
-                    {item}
+                    <button
+                      type="button"
+                      onClick={() => toggleItem(idx)}
+                      aria-pressed={item.done}
+                      aria-label={item.done ? 'Mark as not done' : 'Mark as done'}
+                      className={cn(
+                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all',
+                        item.done
+                          ? 'bg-primary border-primary text-primary-foreground'
+                          : 'border-border bg-background hover:border-primary/60'
+                      )}
+                    >
+                      {item.done && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                    </button>
+                    <span
+                      onClick={() => toggleItem(idx)}
+                      className={cn(
+                        'flex-1 text-sm cursor-pointer select-none',
+                        item.done && 'line-through text-muted-foreground'
+                      )}
+                    >
+                      {item.text}
+                    </span>
                     <button
                       onClick={() => removeItem(idx)}
-                      className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                      aria-label="Remove item"
+                      className="rounded-full p-1 text-muted-foreground opacity-60 hover:opacity-100 hover:bg-muted transition-all"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
-                  </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
 
             {/* Input row */}
