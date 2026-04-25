@@ -1162,6 +1162,14 @@ export default function Settings() {
         >
           💬 Let us know what you think!
         </button>
+        <button
+          onClick={() => {
+            import('@/components/onboarding/ParadeTour').then(({ startParadeTour }) => startParadeTour());
+          }}
+          className="text-xs text-muted-foreground hover:text-primary hover:underline flex items-center gap-1"
+        >
+          ✨ Take the tour
+        </button>
       </div>
     </div>
   );
