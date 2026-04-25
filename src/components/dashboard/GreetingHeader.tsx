@@ -69,6 +69,18 @@ export function GreetingHeader() {
   const [saveAsHome, setSaveAsHome] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
 
+  // Allow the guided tour to open/close the planning sheet from outside.
+  useEffect(() => {
+    const open = () => setMenuOpen(true);
+    const close = () => setMenuOpen(false);
+    window.addEventListener('parade:open-planning-sheet', open);
+    window.addEventListener('parade:close-planning-sheet', close);
+    return () => {
+      window.removeEventListener('parade:open-planning-sheet', open);
+      window.removeEventListener('parade:close-planning-sheet', close);
+    };
+  }, []);
+
   const config = useMemo(() => {
     const hour = new Date().getHours();
     const today = new Date();
