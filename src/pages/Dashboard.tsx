@@ -72,7 +72,7 @@ export default function Dashboard() {
       animate="show"
       className="space-y-8 md:space-y-12 pt-2 md:pt-4 pb-6"
     >
-      <EllyWalkthrough />
+      <ParadeTour />
 
       {/* Personalized greeting */}
       <motion.div variants={fadeUp}>
