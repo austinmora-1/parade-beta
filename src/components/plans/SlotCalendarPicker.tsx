@@ -39,6 +39,8 @@ interface SlotCalendarPickerProps {
   selectedSlots?: SelectedSlotEntry[];
   /** Callback for multi-select toggle */
   onToggleSlot?: (date: Date, slot: TimeSlot) => void;
+  /** Initial month to focus when opening (e.g. the suggested date) */
+  initialMonth?: Date | null;
 }
 
 function isSlotSelected(entries: SelectedSlotEntry[], date: Date, slot: TimeSlot): boolean {
@@ -80,12 +82,13 @@ export function SlotCalendarPicker({
   multiSelect = false,
   selectedSlots = [],
   onToggleSlot,
+  initialMonth,
 }: SlotCalendarPickerProps) {
   const today = startOfDay(new Date());
   const maxDate = addDays(today, days);
 
   const [viewMonth, setViewMonth] = useState<Date>(
-    startOfMonth(selectedDate ?? today),
+    startOfMonth(selectedDate ?? initialMonth ?? today),
   );
 
   const monthDays = useMemo(() => {
@@ -121,9 +124,9 @@ export function SlotCalendarPicker({
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">When</p>
         {hasFriends && (
           <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-availability-available inline-block" /> Lots</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-availability-partial inline-block" /> Some</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive/70 inline-block" /> Tight</span>
+            <span className="rounded-md px-1.5 py-0.5 bg-availability-available/20 text-foreground/70">Open</span>
+            <span className="rounded-md px-1.5 py-0.5 bg-availability-partial/20 text-foreground/70">Some</span>
+            <span className="rounded-md px-1.5 py-0.5 bg-destructive/15 text-foreground/70">Tight</span>
           </div>
         )}
       </div>
@@ -176,20 +179,14 @@ export function SlotCalendarPicker({
           const hasSlots = multiSelect && dateHasSelection(d);
           const dayStatus = !past && inMonth ? computeDayStatus(d, getSlotStatus) : null;
 
-          // Background tint based on availability score
+          // Background tint based on availability score (lighter pastels, no dot)
           const tintClass =
             isSel ? "" :
-            dayStatus === 'high'   ? "bg-availability-available/15 hover:bg-availability-available/25" :
-            dayStatus === 'medium' ? "bg-availability-partial/15 hover:bg-availability-partial/25" :
-            dayStatus === 'low'    ? "bg-destructive/10 hover:bg-destructive/15" :
+            dayStatus === 'high'   ? "bg-availability-available/20 hover:bg-availability-available/30" :
+            dayStatus === 'medium' ? "bg-availability-partial/20 hover:bg-availability-partial/30" :
+            dayStatus === 'low'    ? "bg-destructive/15 hover:bg-destructive/20" :
             dayStatus === 'none'   ? "bg-muted/40" :
             "hover:bg-accent";
-
-          const dotClass =
-            dayStatus === 'high'   ? "bg-availability-available" :
-            dayStatus === 'medium' ? "bg-availability-partial" :
-            dayStatus === 'low'    ? "bg-destructive/70" :
-            "";
 
           return (
             <button
@@ -216,9 +213,6 @@ export function SlotCalendarPicker({
                 <span className="absolute top-1 left-1 h-1 w-1 rounded-full bg-primary" />
               )}
               <span className="leading-none">{format(d, 'd')}</span>
-              {dayStatus && !isSel && (
-                <span className={cn("mt-1 h-1.5 w-1.5 rounded-full", dotClass)} />
-              )}
             </button>
           );
         })}
