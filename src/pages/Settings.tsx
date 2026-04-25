@@ -515,40 +515,6 @@ export default function Settings() {
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 overflow-visible">
             <Accordion type="multiple" className="space-y-2 pt-1">
-              {/* Location */}
-              <AccordionItem value="sub-location" className="rounded-lg border border-border/60 bg-muted/20 overflow-visible">
-                <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 text-muted-foreground" />
-                    Location & Timezone
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="px-3 pb-3 overflow-visible">
-                  <div className="space-y-3 pt-1">
-                    {/* Home Base */}
-                    <div className="space-y-1.5">
-                      <Label className="flex items-center gap-1.5 text-xs">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        Home Base
-                      </Label>
-                      <CityAutocomplete
-                        value={homeAddress}
-                        onChange={(value) => { setHomeAddress(value); handleChange(); }}
-                        placeholder="Search for your city..."
-                        compact
-                      />
-                    </div>
-
-                    {/* Timezone */}
-                    <TimezoneCombobox
-                      value={timezone || (homeAddress ? getTimezoneForCity(homeAddress) : Intl.DateTimeFormat().resolvedOptions().timeZone)}
-                      onChange={(value) => { setTimezone(value); handleChange(); }}
-                      isAutoDetected={!timezone}
-                    />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
               {/* Work Hours */}
               <AccordionItem value="sub-work" className="rounded-lg border border-border/60 bg-muted/20">
                 <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-muted/40 text-xs font-medium">
