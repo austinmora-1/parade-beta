@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
+import { ParadeTour } from '@/components/onboarding/ParadeTour';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import type { StagedFriend } from '@/components/dashboard/QuickPlanDrop';
@@ -72,7 +72,7 @@ export default function Dashboard() {
       animate="show"
       className="space-y-8 md:space-y-12 pt-2 md:pt-4 pb-6"
     >
-      <EllyWalkthrough />
+      <ParadeTour />
 
       {/* Personalized greeting */}
       <motion.div variants={fadeUp}>

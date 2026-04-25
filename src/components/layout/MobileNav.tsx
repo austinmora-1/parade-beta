@@ -46,6 +46,7 @@ export function MobileNav() {
               <NavLink
                 key={item.path}
                 to={item.path}
+                data-tour={`nav-${item.label.toLowerCase()}`}
                 className="relative flex flex-col items-center gap-0.5 flex-1 py-0.5"
               >
                 <div className="relative flex h-9 w-9 items-center justify-center">
