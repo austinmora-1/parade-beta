@@ -302,15 +302,17 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
     if (tripContext) {
       // Trip mode: only audience ↔ preview, no back from audience.
       if (step === 'preview') setStep('audience');
+      else if (step === 'audience' && onBack) onBack();
       else onOpenChange(false);
       return;
     }
     if (step === 'preview') setStep('audience');
     else if (step === 'audience') setStep(anchorPlan ? 'anchor' : 'describe');
     else if (step === 'describe') setStep('anchor');
+    else if (step === 'anchor' && onBack) onBack();
   };
 
-  const showBack = !(step === 'anchor' || step === 'success' || (tripContext && step === 'audience'));
+  const showBack = !(step === 'success') && !(step === 'anchor' && !onBack) && !(tripContext && step === 'audience' && !onBack);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
