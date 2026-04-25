@@ -159,7 +159,10 @@ export function ParadeTour() {
         return;
       }
 
-      if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
+      // TARGET_NOT_FOUND fires while the target is mounting (e.g. Drawer
+      // portal opening). Do NOT auto-advance — let Joyride keep waiting up
+      // to `targetWaitTimeout`. Only advance on explicit user STEP_AFTER.
+      if (type === EVENTS.STEP_AFTER) {
         const next = action === ACTIONS.PREV ? index - 1 : index + 1;
         STEPS[index]?.onLeave?.();
         if (next >= STEPS.length) {
