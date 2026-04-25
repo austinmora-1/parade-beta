@@ -97,6 +97,8 @@ export default function Settings() {
   const [interests, setInterests] = useState<string[]>([]);
   const [socialGoals, setSocialGoals] = useState<string[]>([]);
   const [closeFriendIds, setCloseFriendIds] = useState<string[]>([]);
+  const [activitySearch, setActivitySearch] = useState('');
+  const [activitySearchOpen, setActivitySearchOpen] = useState(false);
 
   // Friends list
   const [friends, setFriends] = useState<Friend[]>([]);
