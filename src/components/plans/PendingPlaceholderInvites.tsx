@@ -87,7 +87,7 @@ export function PendingPlaceholderInvites({ planId, isOwner }: Props) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Pending invites · not on Parade
+            Off-Parade invites
           </div>
           <span className="text-[10px] text-muted-foreground">{invites.length}</span>
         </div>
