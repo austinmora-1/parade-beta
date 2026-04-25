@@ -240,9 +240,17 @@ export default function PlanInvite() {
               <Check className="h-5 w-5" />
               <span className="font-medium">Invite already accepted</span>
             </div>
+          ) : guestRsvpd ? (
+            <div className="flex flex-col items-center gap-2 py-4 rounded-xl bg-primary/10 text-primary text-center px-4">
+              <Check className="h-6 w-6" />
+              <span className="font-medium">You're in, {guestName.trim().split(' ')[0]}!</span>
+              <span className="text-xs text-primary/80">
+                {inviterFirstName} will see you on the guest list.
+              </span>
+            </div>
           ) : (
             <div className="space-y-2">
-              <Button onClick={handleAccept} disabled={accepting} className="w-full" size="lg">
+              <Button onClick={handleAccept} disabled={accepting || guestSubmitting} className="w-full" size="lg">
                 {accepting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : user ? (
@@ -255,6 +263,50 @@ export default function PlanInvite() {
                 <p className="text-xs text-center text-muted-foreground">
                   Free · Takes 30 seconds · No app download required
                 </p>
+              )}
+
+              {!user && !showGuestForm && (
+                <button
+                  type="button"
+                  onClick={() => setShowGuestForm(true)}
+                  className="w-full text-center text-sm text-muted-foreground hover:text-foreground underline-offset-2 hover:underline pt-2"
+                >
+                  Or accept without joining Parade
+                </button>
+              )}
+
+              {!user && showGuestForm && (
+                <div className="rounded-xl border border-border bg-card p-3 space-y-2 mt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Let {inviterFirstName} know you're coming — no account needed.
+                  </p>
+                  <Input
+                    placeholder="Your name"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    disabled={guestSubmitting}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => { setShowGuestForm(false); setGuestName(''); }}
+                      disabled={guestSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleGuestRsvp}
+                      disabled={guestSubmitting || !guestName.trim()}
+                    >
+                      {guestSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'RSVP as guest'}
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           )}
