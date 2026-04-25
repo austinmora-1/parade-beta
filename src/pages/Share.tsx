@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, TimeSlot, VIBE_CONFIG, VibeType, ACTIVITY_CONFIG } from '@/types/planner';
 import { ParadeWordmark } from '@/components/ui/ParadeWordmark';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
