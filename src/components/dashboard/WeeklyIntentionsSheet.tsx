@@ -41,16 +41,37 @@ interface Props {
   onSave: (values: { social_energy: string; target_hangouts: number; vibes: string[]; notes: string }) => Promise<void>;
 }
 
-/** Parse notes string into items array */
-function parseItems(notes: string): string[] {
+interface TodoItem {
+  text: string;
+  done: boolean;
+}
+
+/** Parse notes string into to-do items. Lines may be prefixed with "[x] " or "[ ] ". */
+function parseItems(notes: string): TodoItem[] {
   if (!notes) return [];
-  return notes.split('\n').map(s => s.trim()).filter(Boolean);
+  return notes
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(line => {
+      const checkedMatch = line.match(/^\[([ xX])\]\s+(.*)$/);
+      if (checkedMatch) {
+        return { text: checkedMatch[2].trim(), done: checkedMatch[1].toLowerCase() === 'x' };
+      }
+      return { text: line, done: false };
+    })
+    .filter(i => i.text.length > 0);
+}
+
+/** Serialize to-do items back into a notes string with checkbox markers. */
+function serializeItems(items: TodoItem[]): string {
+  return items.map(i => `[${i.done ? 'x' : ' '}] ${i.text}`).join('\n');
 }
 
 export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart, onSave }: Props) {
   const [energy, setEnergy] = useState(intention?.social_energy || 'medium');
   const [vibes, setVibes] = useState<string[]>(intention?.vibes || []);
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<TodoItem[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -69,14 +90,18 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
   const addItem = useCallback((text: string) => {
     const trimmed = text.trim();
-    if (trimmed && !items.includes(trimmed)) {
-      setItems(prev => [...prev, trimmed]);
+    if (trimmed && !items.some(i => i.text === trimmed)) {
+      setItems(prev => [...prev, { text: trimmed, done: false }]);
     }
     setInputValue('');
   }, [items]);
 
   const removeItem = useCallback((idx: number) => {
     setItems(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const toggleItem = useCallback((idx: number) => {
+    setItems(prev => prev.map((it, i) => i === idx ? { ...it, done: !it.done } : it));
   }, []);
 
   const handleSave = async () => {
