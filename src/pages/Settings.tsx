@@ -245,7 +245,6 @@ export default function Settings() {
           default_work_start_hour: workStartHour,
           default_work_end_hour: workEndHour,
           default_availability_status: defaultAvailability,
-          default_vibes: defaultVibes,
           timezone: timezone || null,
           preferred_social_times: preferredSocialTimes,
           interests,
