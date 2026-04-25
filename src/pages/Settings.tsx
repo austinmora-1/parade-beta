@@ -91,7 +91,6 @@ export default function Settings() {
   const [workEndHour, setWorkEndHour] = useState(17);
   const [defaultAvailability, setDefaultAvailability] = useState<'free' | 'unavailable'>('free');
   const [timezone, setTimezone] = useState<string>('');
-  const [timezone, setTimezone] = useState<string>('');
 
   // Social Circle & Preferences (extended)
   const [preferredSocialTimes, setPreferredSocialTimes] = useState<string[]>([]);
