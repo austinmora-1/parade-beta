@@ -10,7 +10,7 @@ interface WhatArePlanningSheetProps {
 }
 
 const ENTRIES: { key: PlanningEntry; emoji: string; label: string; hint: string }[] = [
-  { key: 'hang',         emoji: '👤',  label: 'Hang with someone',  hint: '"I want to see Alex this week"' },
+  { key: 'hang',         emoji: '👤',  label: 'Find time with friends',  hint: '"I want to see Alex this week"' },
   { key: 'plus-one',     emoji: '🎟️', label: 'Get a plus-one',     hint: '"Mets game Saturday, need someone"' },
   { key: 'trip',         emoji: '📍',  label: 'Plan a Trip',         hint: '"NYC this fall — or Queens Saturday"' },
 ];
