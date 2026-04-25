@@ -34,7 +34,7 @@ const SLOT_OPTIONS: { value: TimeSlot; label: string; range: string }[] = [
   { value: 'late-night', label: 'Late Night', range: '9pm+' },
 ];
 
-export function OpenInviteSheet({ open, onOpenChange, initialDate, initialSlot }: OpenInviteSheetProps) {
+export function OpenInviteSheet({ open, onOpenChange, initialDate, initialSlot, onBack }: OpenInviteSheetProps) {
   const { user } = useAuth();
   const { create } = useOpenInvites();
   const { pods } = usePods();
