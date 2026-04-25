@@ -94,6 +94,16 @@ export function SlotCalendarPicker({
     startOfMonth(selectedDate ?? initialMonth ?? today),
   );
 
+  // When the suggested/initial month changes (e.g. best-slot loaded async after mount),
+  // jump the calendar to that month — but only if the user hasn't picked a date yet.
+  useEffect(() => {
+    if (selectedDate) return;
+    if (!initialMonth) return;
+    setViewMonth((current) =>
+      isSameMonth(current, initialMonth) ? current : startOfMonth(initialMonth),
+    );
+  }, [initialMonth, selectedDate]);
+
   const monthDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 0 });
     const end = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 0 });
