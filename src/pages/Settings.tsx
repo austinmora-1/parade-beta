@@ -657,6 +657,55 @@ export default function Settings() {
                   <Label className="text-xs font-medium">Preferred Social Times</Label>
                   <p className="text-[10px] text-muted-foreground">Pick the slots you most enjoy hanging out</p>
                 </div>
+
+                {/* Quick select presets */}
+                {(() => {
+                  const WEEKDAYS = ['monday','tuesday','wednesday','thursday','friday'];
+                  const WEEKENDS = ['saturday','sunday'];
+                  const ALL_DAYS = [...WEEKDAYS, ...WEEKENDS];
+                  const presets: { id: string; label: string; keys: string[] }[] = [
+                    { id: 'we-aft', label: 'Weekend afternoons', keys: WEEKENDS.map(d => `${d}:afternoon`) },
+                    { id: 'we-eve', label: 'Weekend evenings', keys: WEEKENDS.map(d => `${d}:evening`) },
+                    { id: 'wd-eve', label: 'Weekday evenings', keys: WEEKDAYS.map(d => `${d}:evening`) },
+                    { id: 'wd-am', label: 'Weekday mornings', keys: WEEKDAYS.map(d => `${d}:morning`) },
+                    { id: 'late', label: 'Late nights', keys: ALL_DAYS.map(d => `${d}:late-night`) },
+                    { id: 'we-all', label: 'All weekend', keys: WEEKENDS.flatMap(d => ['morning','afternoon','evening','late-night'].map(s => `${d}:${s}`)) },
+                  ];
+                  const isPresetActive = (keys: string[]) => keys.every(k => preferredSocialTimes.includes(k));
+                  return (
+                    <div className="flex flex-wrap gap-1.5">
+                      {presets.map((p) => {
+                        const active = isPresetActive(p.keys);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setPreferredSocialTimes(prev => {
+                                if (active) {
+                                  return prev.filter(k => !p.keys.includes(k));
+                                }
+                                const next = new Set(prev);
+                                p.keys.forEach(k => next.add(k));
+                                return Array.from(next);
+                              });
+                              handleChange();
+                            }}
+                            className={cn(
+                              'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ring-1',
+                              active
+                                ? 'bg-primary/15 text-primary ring-primary/30'
+                                : 'bg-muted/50 text-muted-foreground ring-transparent hover:bg-muted'
+                            )}
+                          >
+                            {active ? '✓ ' : '+ '}{p.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
                 <div className="rounded-lg border border-border overflow-hidden">
                   <div className="grid grid-cols-[60px_repeat(7,1fr)] bg-muted/20 border-b border-border">
                     <div />
@@ -726,36 +775,80 @@ export default function Settings() {
               <div className="space-y-1.5">
                 <div>
                   <Label className="text-xs font-medium">Favorite Activities</Label>
-                  <p className="text-[10px] text-muted-foreground">Tap the things you love to do</p>
+                  <p className="text-[10px] text-muted-foreground">Search and add activities you love</p>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(ACTIVITY_CONFIG)
-                    .filter(([id]) => id !== 'custom')
-                    .map(([id, config]: any) => {
-                      const display = `${config.icon} ${config.label}`;
-                      const isSelected = interests.includes(display);
-                      return (
+
+                {/* Search input with dropdown */}
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                    <Input
+                      type="text"
+                      value={activitySearch}
+                      onChange={(e) => {
+                        setActivitySearch(e.target.value);
+                        setActivitySearchOpen(true);
+                      }}
+                      onFocus={() => setActivitySearchOpen(true)}
+                      onBlur={() => setTimeout(() => setActivitySearchOpen(false), 150)}
+                      placeholder="Search activities..."
+                      className="h-9 pl-8 text-xs"
+                    />
+                  </div>
+                  {activitySearchOpen && (() => {
+                    const matches = Object.entries(ACTIVITY_CONFIG)
+                      .filter(([id]) => id !== 'custom')
+                      .map(([id, config]: any) => ({ id, display: `${config.icon} ${config.label}`, label: config.label }))
+                      .filter(o => !interests.includes(o.display))
+                      .filter(o => o.label.toLowerCase().includes(activitySearch.toLowerCase()));
+                    if (matches.length === 0) return null;
+                    return (
+                      <div className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
+                        {matches.map((o) => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setInterests(prev => [...prev, o.display]);
+                              setActivitySearch('');
+                              setActivitySearchOpen(false);
+                              handleChange();
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors"
+                          >
+                            {o.display}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Selected tags */}
+                {interests.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {interests.map((display) => (
+                      <span
+                        key={display}
+                        className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-[11px] font-medium bg-primary/15 text-primary ring-1 ring-primary/30"
+                      >
+                        {display}
                         <button
-                          key={id}
                           type="button"
                           onClick={() => {
-                            setInterests(prev =>
-                              prev.includes(display) ? prev.filter(i => i !== display) : [...prev, display]
-                            );
+                            setInterests(prev => prev.filter(i => i !== display));
                             handleChange();
                           }}
-                          className={cn(
-                            'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ring-1',
-                            isSelected
-                              ? 'bg-primary/15 text-primary ring-primary/30'
-                              : 'bg-muted/50 text-muted-foreground ring-transparent hover:bg-muted'
-                          )}
+                          className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                          aria-label={`Remove ${display}`}
                         >
-                          {display}
+                          <X className="h-3 w-3" />
                         </button>
-                      );
-                    })}
-                </div>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Separator />
