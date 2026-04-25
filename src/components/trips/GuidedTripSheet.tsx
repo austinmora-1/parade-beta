@@ -695,7 +695,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
                     )}
                   >
                     <Plane className="h-6 w-6 mx-auto text-primary" />
-                    <p className="text-sm font-semibold">Plan a Trip</p>
+                    <p className="text-sm font-semibold">Plan a trip with your crew</p>
                     <p className="text-[10px] text-muted-foreground leading-tight">Travel somewhere new</p>
                   </button>
                   <button
