@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Loader2 } from 'lucide-react';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
