@@ -39,6 +39,8 @@ interface SlotCalendarPickerProps {
   selectedSlots?: SelectedSlotEntry[];
   /** Callback for multi-select toggle */
   onToggleSlot?: (date: Date, slot: TimeSlot) => void;
+  /** Initial month to focus when opening (e.g. the suggested date) */
+  initialMonth?: Date | null;
 }
 
 function isSlotSelected(entries: SelectedSlotEntry[], date: Date, slot: TimeSlot): boolean {
