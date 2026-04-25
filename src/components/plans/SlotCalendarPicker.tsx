@@ -134,10 +134,10 @@ export function SlotCalendarPicker({
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">When</p>
         {hasFriends && (
-          <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-            <span className="rounded-md px-1.5 py-0.5 bg-availability-available/20 text-foreground/70">Open</span>
-            <span className="rounded-md px-1.5 py-0.5 bg-availability-partial/20 text-foreground/70">Some</span>
-            <span className="rounded-md px-1.5 py-0.5 bg-destructive/15 text-foreground/70">Tight</span>
+          <div className="flex items-center gap-2 text-[10px] font-semibold">
+            <span className="rounded-md px-1.5 py-0.5 bg-availability-available/20" style={{ color: '#166534' }}>Open</span>
+            <span className="rounded-md px-1.5 py-0.5 bg-availability-partial/20" style={{ color: '#854d0e' }}>Some</span>
+            <span className="rounded-md px-1.5 py-0.5 bg-destructive/15" style={{ color: '#b91c1c' }}>Tight</span>
           </div>
         )}
       </div>
@@ -199,12 +199,21 @@ export function SlotCalendarPicker({
             dayStatus === 'none'   ? "bg-muted/40" :
             "hover:bg-accent";
 
+          // Font color matches the availability bucket so the day number reads at a glance.
+          const textColor =
+            isSel ? undefined :
+            dayStatus === 'high'   ? '#166534' /* dark green */ :
+            dayStatus === 'medium' ? '#854d0e' /* deep yellow */ :
+            dayStatus === 'low'    ? '#b91c1c' /* crimson */ :
+            undefined;
+
           return (
             <button
               key={d.toISOString()}
               type="button"
               onClick={() => handleDayClick(d)}
               disabled={past || !inMonth}
+              style={textColor ? { color: textColor } : undefined}
               className={cn(
                 "relative aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-medium transition-all",
                 !inMonth && "opacity-0 pointer-events-none",
@@ -213,7 +222,7 @@ export function SlotCalendarPicker({
                   ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary"
                   : cn(
                       tintClass,
-                      isWeekend ? "text-foreground" : "text-foreground/90",
+                      !textColor && (isWeekend ? "text-foreground" : "text-foreground/90"),
                     ),
               )}
             >
