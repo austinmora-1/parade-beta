@@ -124,9 +124,9 @@ export function SlotCalendarPicker({
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">When</p>
         {hasFriends && (
           <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-availability-available inline-block" /> Lots</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-availability-partial inline-block" /> Some</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive/70 inline-block" /> Tight</span>
+            <span className="rounded-md px-1.5 py-0.5 bg-availability-available/20 text-foreground/70">Open</span>
+            <span className="rounded-md px-1.5 py-0.5 bg-availability-partial/20 text-foreground/70">Some</span>
+            <span className="rounded-md px-1.5 py-0.5 bg-destructive/15 text-foreground/70">Tight</span>
           </div>
         )}
       </div>
