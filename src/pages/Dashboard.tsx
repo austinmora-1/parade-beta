@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-import { EllyWalkthrough } from '@/components/onboarding/EllyWalkthrough';
+import { ParadeTour } from '@/components/onboarding/ParadeTour';
 import { GreetingHeader } from '@/components/dashboard/GreetingHeader';
 import { HomeTabs } from '@/components/dashboard/HomeTabs';
 import type { StagedFriend } from '@/components/dashboard/QuickPlanDrop';
