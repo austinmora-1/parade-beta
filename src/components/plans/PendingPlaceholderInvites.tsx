@@ -92,49 +92,62 @@ export function PendingPlaceholderInvites({ planId, isOwner }: Props) {
           <span className="text-[10px] text-muted-foreground">{invites.length}</span>
         </div>
         <div className="flex flex-col gap-1.5">
-          {invites.map((inv) => (
-            <div
-              key={inv.id}
-              className="flex items-center justify-between rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{inv.placeholder_name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Waiting to claim invite
-                  </p>
-                </div>
-              </div>
-              {isOwner && (
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => handleCopy(inv)}
-                    title="Copy invite link"
-                  >
-                    {copiedId === inv.id ? (
-                      <Check className="h-3.5 w-3.5" />
+          {invites.map((inv) => {
+            const isGuest = inv.status === 'guest_accepted';
+            return (
+              <div
+                key={inv.id}
+                className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
+                  isGuest
+                    ? 'border-primary/30 bg-primary/5'
+                    : 'border-dashed border-border bg-muted/30'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${
+                    isGuest ? 'bg-primary/15' : 'bg-muted'
+                  }`}>
+                    {isGuest ? (
+                      <Check className="h-3.5 w-3.5 text-primary" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5" />
+                      <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-7 px-2.5 text-xs"
-                    onClick={() => handleShare(inv)}
-                  >
-                    Share
-                  </Button>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{inv.placeholder_name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {isGuest ? 'Coming as guest · not on Parade' : 'Waiting to claim invite'}
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
-          ))}
+                {isOwner && !isGuest && (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => handleCopy(inv)}
+                      title="Copy invite link"
+                    >
+                      {copiedId === inv.id ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-7 px-2.5 text-xs"
+                      onClick={() => handleShare(inv)}
+                    >
+                      Share
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
