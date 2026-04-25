@@ -39,6 +39,8 @@ interface FindPeopleSheetProps {
   /** Optional prefill for date/slot (e.g. from "Find other times" dialog) */
   initialDate?: Date;
   initialSlot?: TimeSlot;
+  /** Called when the user clicks Back from the very first step. */
+  onBack?: () => void;
 }
 
 type Step = 'anchor' | 'describe' | 'audience' | 'preview' | 'success';
