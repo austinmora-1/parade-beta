@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AppearanceQuickToggles } from '@/components/profile/AppearanceQuickToggles';
+import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import {
   AlertDialog,
   AlertDialogAction,
