@@ -199,12 +199,21 @@ export function SlotCalendarPicker({
             dayStatus === 'none'   ? "bg-muted/40" :
             "hover:bg-accent";
 
+          // Font color matches the availability bucket so the day number reads at a glance.
+          const textColor =
+            isSel ? undefined :
+            dayStatus === 'high'   ? '#166534' /* dark green */ :
+            dayStatus === 'medium' ? '#854d0e' /* deep yellow */ :
+            dayStatus === 'low'    ? '#b91c1c' /* crimson */ :
+            undefined;
+
           return (
             <button
               key={d.toISOString()}
               type="button"
               onClick={() => handleDayClick(d)}
               disabled={past || !inMonth}
+              style={textColor ? { color: textColor } : undefined}
               className={cn(
                 "relative aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-medium transition-all",
                 !inMonth && "opacity-0 pointer-events-none",
@@ -213,7 +222,7 @@ export function SlotCalendarPicker({
                   ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary"
                   : cn(
                       tintClass,
-                      isWeekend ? "text-foreground" : "text-foreground/90",
+                      !textColor && (isWeekend ? "text-foreground" : "text-foreground/90"),
                     ),
               )}
             >
