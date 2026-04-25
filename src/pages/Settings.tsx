@@ -148,7 +148,6 @@ export default function Settings() {
           setWorkStartHour((profile as any).default_work_start_hour ?? 9);
           setWorkEndHour((profile as any).default_work_end_hour ?? 17);
           setDefaultAvailability((profile as any).default_availability_status || 'free');
-          setDefaultVibes((profile as any).default_vibes || []);
           setTimezone((profile as any).timezone || '');
           setPreferredSocialTimes((profile as any).preferred_social_times || []);
           setInterests((profile as any).interests || []);
