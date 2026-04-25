@@ -2334,6 +2334,10 @@ export type Database = {
         Args: { p_friendship_id: string }
         Returns: undefined
       }
+      rsvp_plan_invite_as_guest: {
+        Args: { p_name: string; p_token: string }
+        Returns: string
+      }
       search_users_by_email_prefix: {
         Args: { p_query: string }
         Returns: {
