@@ -36,6 +36,7 @@ export function WhatArePlanningSheet({ open, onOpenChange, onSelect }: WhatArePl
           {ENTRIES.map((e) => (
             <button
               key={e.key}
+              data-tour={`flow-${e.key}`}
               onClick={() => handle(e.key)}
               className="w-full flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left transition-all hover:border-primary/40 hover:bg-primary/5 active:scale-[0.99]"
             >

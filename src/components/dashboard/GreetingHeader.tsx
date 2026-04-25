@@ -270,6 +270,7 @@ export function GreetingHeader() {
 
             {/* FAB */}
             <button
+              data-tour="fab"
               onClick={() => setMenuOpen(prev => !prev)}
               className="relative flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md transition-transform active:scale-90"
               style={{
