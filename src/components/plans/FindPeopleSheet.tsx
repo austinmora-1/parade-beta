@@ -56,7 +56,7 @@ const QUICK_ACTIVITIES: { id: ActivityType; label: string; icon: string }[] = [
   { id: 'gym', label: 'Workout', icon: '💪' } as any,
 ];
 
-export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, initialSlot }: FindPeopleSheetProps) {
+export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, initialSlot, onBack }: FindPeopleSheetProps) {
   const { create } = useOpenInvites();
   const { pods } = usePods();
   const { friends } = usePlannerStore();
