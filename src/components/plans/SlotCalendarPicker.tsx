@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   format, addDays, isSameDay, isToday, isTomorrow,
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -41,6 +41,8 @@ interface SlotCalendarPickerProps {
   onToggleSlot?: (date: Date, slot: TimeSlot) => void;
   /** Initial month to focus when opening (e.g. the suggested date) */
   initialMonth?: Date | null;
+  /** Notified whenever the displayed month changes (and on mount). Useful to lazy-load availability for the visible range. */
+  onVisibleRangeChange?: (start: Date, end: Date) => void;
 }
 
 function isSlotSelected(entries: SelectedSlotEntry[], date: Date, slot: TimeSlot): boolean {
@@ -83,6 +85,7 @@ export function SlotCalendarPicker({
   selectedSlots = [],
   onToggleSlot,
   initialMonth,
+  onVisibleRangeChange,
 }: SlotCalendarPickerProps) {
   const today = startOfDay(new Date());
   const maxDate = addDays(today, days);
@@ -96,6 +99,14 @@ export function SlotCalendarPicker({
     const end = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 0 });
     return eachDayOfInterval({ start, end });
   }, [viewMonth]);
+
+  // Notify parent of visible range so it can lazy-load availability data.
+  useEffect(() => {
+    if (!onVisibleRangeChange) return;
+    const start = startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 0 });
+    const end = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 0 });
+    onVisibleRangeChange(start, end);
+  }, [viewMonth, onVisibleRangeChange]);
 
   const focusedDate = selectedDate;
 
