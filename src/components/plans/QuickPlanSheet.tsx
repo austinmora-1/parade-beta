@@ -830,8 +830,9 @@ export function QuickPlanSheet({
               }}
               getSlotStatus={getSlotStatusForDate}
               hasFriends={hasFriends}
-              days={14}
+              days={90}
               initialMonth={bestSlots[0]?.date ?? null}
+              onVisibleRangeChange={handleVisibleRangeChange}
             />
 
             {/* Optional details */}
