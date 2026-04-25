@@ -128,7 +128,7 @@ export function ParadeTour() {
 
     if (lastEnteredStep.current !== stepIndex) {
       lastEnteredStep.current = stepIndex;
-      setTimeout(() => step.onEnter?.(), 250);
+      setTimeout(() => step.onEnter?.(), 50);
     }
   }, [run, stepIndex, location.pathname, navigate]);
 
@@ -202,7 +202,7 @@ export function ParadeTour() {
         spotlightPadding: 6,
         spotlightRadius: 14,
         zIndex: 10000,
-        targetWaitTimeout: 4000,
+        targetWaitTimeout: 8000,
         buttons: ['back', 'skip', 'primary'],
       }}
       styles={{
