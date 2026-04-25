@@ -53,7 +53,7 @@ export default function GoogleCallback() {
       <div className="text-center space-y-4 p-8">
         {status === 'loading' && (
           <>
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <ElephantLoader />
             <h1 className="text-xl font-semibold">Connecting your calendar...</h1>
             <p className="text-muted-foreground">Please wait while we finish setting up.</p>
           </>
