@@ -41,6 +41,7 @@ interface GuidedTripSheetProps {
   onOpenChange: (open: boolean) => void;
   preSelectedFriends?: PreSelectedFriend[];
   preSelectedType?: 'trip' | 'visit';
+  onBack?: () => void;
 }
 
 type Step = 'type' | 'friends' | 'months' | 'weekends' | 'confirm';
