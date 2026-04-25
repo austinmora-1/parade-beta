@@ -392,14 +392,14 @@ export default function Settings() {
 
       <Accordion type="multiple" defaultValue={[]} className="space-y-1.5">
         {/* Profile Section */}
-        <AccordionItem value="profile" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
+        <AccordionItem value="profile" className="rounded-xl border border-border bg-card shadow-soft overflow-visible">
           <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-primary" />
               <span className="font-display text-sm font-semibold">Profile</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
+          <AccordionContent className="px-4 pb-4 overflow-visible">
             <div className="grid gap-3 sm:grid-cols-2 pt-1">
               <div className="space-y-1">
                 <Label htmlFor="firstName" className="text-xs">First Name</Label>
