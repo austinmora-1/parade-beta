@@ -122,7 +122,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
   const weekStartLabel = format(parseISO(weekStart), 'MMM d');
 
   // Filter out suggestions already added
-  const availableSuggestions = SUGGESTIONS.filter(s => !items.includes(s));
+  const availableSuggestions = SUGGESTIONS.filter(s => !items.some(i => i.text === s));
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
