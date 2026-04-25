@@ -464,12 +464,12 @@ export default function Settings() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Default Availability */}
+        {/* Social Circle & Preferences */}
         <AccordionItem value="availability" className="rounded-xl border border-border bg-card shadow-soft overflow-visible">
           <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" />
-              <span className="font-display text-sm font-semibold">Default Availability</span>
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="font-display text-sm font-semibold">Social Circle & Preferences</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 overflow-visible">
