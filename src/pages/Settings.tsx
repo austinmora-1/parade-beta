@@ -147,14 +147,18 @@ export default function Settings() {
           setDefaultAvailability((profile as any).default_availability_status || 'free');
           setDefaultVibes((profile as any).default_vibes || []);
           setTimezone((profile as any).timezone || '');
+          setPreferredSocialTimes((profile as any).preferred_social_times || []);
+          setInterests((profile as any).interests || []);
+          setSocialGoals((profile as any).social_goals || []);
+          setCloseFriendIds((profile as any).close_friend_ids || []);
         }
 
-        // Load friends
+        // Load friends (connected)
         const { data: friendsData } = await supabase
           .from('friendships')
           .select('id, friend_name, friend_user_id')
           .eq('user_id', session.user.id)
-          .eq('status', 'accepted');
+          .eq('status', 'connected');
 
         if (friendsData) {
           setFriends(friendsData);
