@@ -921,13 +921,18 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
         style={viewport ? { height: `${viewport.height * 0.7}px`, maxHeight: `${viewport.height * 0.7}px` } : undefined}
       >
         <DrawerHeader className="pb-2 relative">
-          {step !== firstStep && (
+          {(step !== firstStep || onBack) && (
             <button
               onClick={() => {
+                if (step === firstStep) {
+                  onBack?.();
+                  return;
+                }
                 if (step === 'confirm') { setStep('time'); setShowCalendar(false); }
                 else if (step === 'activity') setStep('time');
                 else if (step === 'time' && needsFriendStep) setStep('friends');
               }}
+              aria-label="Back"
               className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
