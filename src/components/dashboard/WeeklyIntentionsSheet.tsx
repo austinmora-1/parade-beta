@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { WeeklyIntention } from '@/hooks/useWeeklyIntentions';
 import { format, parseISO, addDays } from 'date-fns';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Check } from 'lucide-react';
 
 const ENERGY_LEVELS = [
   { value: 'low', label: 'Low-key', emoji: '🛋️', desc: 'Recharging this week' },
@@ -41,16 +41,37 @@ interface Props {
   onSave: (values: { social_energy: string; target_hangouts: number; vibes: string[]; notes: string }) => Promise<void>;
 }
 
-/** Parse notes string into items array */
-function parseItems(notes: string): string[] {
+interface TodoItem {
+  text: string;
+  done: boolean;
+}
+
+/** Parse notes string into to-do items. Lines may be prefixed with "[x] " or "[ ] ". */
+function parseItems(notes: string): TodoItem[] {
   if (!notes) return [];
-  return notes.split('\n').map(s => s.trim()).filter(Boolean);
+  return notes
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(line => {
+      const checkedMatch = line.match(/^\[([ xX])\]\s+(.*)$/);
+      if (checkedMatch) {
+        return { text: checkedMatch[2].trim(), done: checkedMatch[1].toLowerCase() === 'x' };
+      }
+      return { text: line, done: false };
+    })
+    .filter(i => i.text.length > 0);
+}
+
+/** Serialize to-do items back into a notes string with checkbox markers. */
+function serializeItems(items: TodoItem[]): string {
+  return items.map(i => `[${i.done ? 'x' : ' '}] ${i.text}`).join('\n');
 }
 
 export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart, onSave }: Props) {
   const [energy, setEnergy] = useState(intention?.social_energy || 'medium');
   const [vibes, setVibes] = useState<string[]>(intention?.vibes || []);
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<TodoItem[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -69,8 +90,8 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
 
   const addItem = useCallback((text: string) => {
     const trimmed = text.trim();
-    if (trimmed && !items.includes(trimmed)) {
-      setItems(prev => [...prev, trimmed]);
+    if (trimmed && !items.some(i => i.text === trimmed)) {
+      setItems(prev => [...prev, { text: trimmed, done: false }]);
     }
     setInputValue('');
   }, [items]);
@@ -79,10 +100,14 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
     setItems(prev => prev.filter((_, i) => i !== idx));
   }, []);
 
+  const toggleItem = useCallback((idx: number) => {
+    setItems(prev => prev.map((it, i) => i === idx ? { ...it, done: !it.done } : it));
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      const notes = items.join('\n');
+      const notes = serializeItems(items);
       await onSave({ social_energy: energy, target_hangouts: items.length || 1, vibes, notes });
       toast.success('Intentions saved! 🎯');
       onOpenChange(false);
@@ -97,7 +122,7 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
   const weekStartLabel = format(parseISO(weekStart), 'MMM d');
 
   // Filter out suggestions already added
-  const availableSuggestions = SUGGESTIONS.filter(s => !items.includes(s));
+  const availableSuggestions = SUGGESTIONS.filter(s => !items.some(i => i.text === s));
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -161,28 +186,51 @@ export function WeeklyIntentionsSheet({ open, onOpenChange, intention, weekStart
             </div>
           </div>
 
-          {/* Things to do — multi-input */}
+          {/* Things to do — to-do list */}
           <div>
             <label className="text-sm font-medium text-foreground mb-2 block">Anything you want to do this week?</label>
 
-            {/* Added items */}
+            {/* To-do list */}
             {items.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
+              <ul className="space-y-1 mb-2.5 rounded-xl border border-border bg-card/50 p-1.5">
                 {items.map((item, idx) => (
-                  <span
+                  <li
                     key={idx}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary"
+                    className="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/60 transition-colors"
                   >
-                    {item}
+                    <button
+                      type="button"
+                      onClick={() => toggleItem(idx)}
+                      aria-pressed={item.done}
+                      aria-label={item.done ? 'Mark as not done' : 'Mark as done'}
+                      className={cn(
+                        'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all',
+                        item.done
+                          ? 'bg-primary border-primary text-primary-foreground'
+                          : 'border-border bg-background hover:border-primary/60'
+                      )}
+                    >
+                      {item.done && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                    </button>
+                    <span
+                      onClick={() => toggleItem(idx)}
+                      className={cn(
+                        'flex-1 text-sm cursor-pointer select-none',
+                        item.done && 'line-through text-muted-foreground'
+                      )}
+                    >
+                      {item.text}
+                    </span>
                     <button
                       onClick={() => removeItem(idx)}
-                      className="rounded-full p-0.5 hover:bg-primary/20 transition-colors"
+                      aria-label="Remove item"
+                      className="rounded-full p-1 text-muted-foreground opacity-60 hover:opacity-100 hover:bg-muted transition-all"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
-                  </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
 
             {/* Input row */}
