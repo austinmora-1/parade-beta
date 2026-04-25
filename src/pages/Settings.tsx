@@ -134,6 +134,7 @@ export default function Settings() {
           setLastName((profile as any).last_name || '');
           setPhoneNumber((profile as any).phone_number || '');
           setHomeAddress(profile.home_address || '');
+          setNeighborhood((profile as any).neighborhood || '');
           setPlanReminders(profile.plan_reminders ?? true);
           setFriendRequests(profile.friend_requests_notifications ?? true);
           setPlanInvitations(profile.plan_invitations_notifications ?? true);
