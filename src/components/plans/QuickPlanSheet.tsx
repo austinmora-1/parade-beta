@@ -199,8 +199,22 @@ export function QuickPlanSheet({
     setFriendSearch('');
   };
 
-  // Fetch availability for selected friends across 14-day window
+  // Fetch availability for selected friends across whatever range the calendar is showing.
+  // Defaults to a 14-day window from today; expands automatically as the user navigates months.
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
+  const [availRange, setAvailRange] = useState<{ start: Date; end: Date }>(() => ({
+    start: new Date(),
+    end: addDays(new Date(), 13),
+  }));
+
+  const handleVisibleRangeChange = useCallback((start: Date, end: Date) => {
+    setAvailRange((prev) => {
+      const newStart = start < prev.start ? start : prev.start;
+      const newEnd = end > prev.end ? end : prev.end;
+      if (newStart.getTime() === prev.start.getTime() && newEnd.getTime() === prev.end.getTime()) return prev;
+      return { start: newStart, end: newEnd };
+    });
+  }, []);
 
   useEffect(() => {
     if (selectedFriends.length === 0) {
@@ -210,8 +224,8 @@ export function QuickPlanSheet({
 
     const fetchAvail = async () => {
       const userIds = selectedFriends.map(f => f.userId);
-      const startDate = format(new Date(), 'yyyy-MM-dd');
-      const endDate = format(addDays(new Date(), 13), 'yyyy-MM-dd');
+      const startDate = format(availRange.start, 'yyyy-MM-dd');
+      const endDate = format(availRange.end, 'yyyy-MM-dd');
 
       const [{ data }, { data: friendPlans }] = await Promise.all([
         supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
@@ -221,8 +235,9 @@ export function QuickPlanSheet({
       const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
       const result: Record<string, Record<TimeSlot, { free: number; total: number }>> = {};
 
-      for (let i = 0; i < 14; i++) {
-        const day = addDays(new Date(), i);
+      const dayCount = Math.max(1, Math.round((availRange.end.getTime() - availRange.start.getTime()) / 86400000) + 1);
+      for (let i = 0; i < dayCount; i++) {
+        const day = addDays(availRange.start, i);
         const dateStr = format(day, 'yyyy-MM-dd');
         const slotMap = {} as Record<TimeSlot, { free: number; total: number }>;
 
@@ -244,7 +259,7 @@ export function QuickPlanSheet({
     };
 
     fetchAvail();
-  }, [selectedFriends]);
+  }, [selectedFriends, availRange]);
 
   // Also factor in my own availability
   const { availabilityMap: myAvailabilityMap, plans: myPlans } = usePlannerStore();
