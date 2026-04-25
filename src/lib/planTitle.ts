@@ -1,13 +1,35 @@
 import { Plan } from '@/types/planner';
 
+/** Take just the first name from a full display name (e.g. "Dean Smith" → "Dean"). */
+function firstName(name: string): string {
+  return (name || '').trim().split(/\s+/)[0] || name || '';
+}
+
+/** Join names as "A", "A & B", or "A, B & C". */
+function joinNames(names: string[]): string {
+  if (names.length === 0) return '';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`;
+}
+
 /**
  * Returns a dynamic display title for a plan.
- * For 1:1 hangs, shows "Hang with [other person's name]" instead of the static DB title.
+ *
+ * For "Hang with …" plans, the title is rebuilt from the viewer's perspective:
+ * the participants array on a Plan already excludes the viewer and includes the
+ * organizer (when the viewer isn't the organizer), so we just join their names.
+ * This means a hang between Austin and Dean reads "Hang with Dean" for Austin
+ * and "Hang with Austin" for Dean.
  */
 export function getPlanDisplayTitle(plan: Pick<Plan, 'title' | 'participants'>): string {
-  const nonSubscribers = plan.participants.filter(p => p.role !== 'subscriber');
-  if (plan.title.startsWith('Hang with') && nonSubscribers.length === 1) {
-    return `Hang with ${nonSubscribers[0].name}`;
+  const others = plan.participants
+    .filter(p => p.role !== 'subscriber')
+    .map(p => firstName(p.name))
+    .filter(Boolean);
+
+  if (plan.title.startsWith('Hang with') && others.length > 0) {
+    return `Hang with ${joinNames(others)}`;
   }
   return plan.title;
 }
