@@ -138,7 +138,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
   return (
     <>
       <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wider px-1 text-primary">
           Who's around this week
         </p>
         <div className="flex flex-wrap gap-1.5 px-1">
