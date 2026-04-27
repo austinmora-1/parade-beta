@@ -176,9 +176,9 @@ function collectICalFlightsAndHotels(
         }
         continue;
       }
-      for (const date of getEventDates(event.dtstart, event.dtend)) {
+      for (const date of getEventDates(event.dtstart, event.dtend, userTimezone)) {
         if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set());
-        getEventTimeSlots(event.dtstart, event.dtend).forEach((s) =>
+        getEventTimeSlots(event.dtstart, event.dtend, userTimezone).forEach((s) =>
           busySlotsByDate.get(date)!.add(s)
         );
       }
