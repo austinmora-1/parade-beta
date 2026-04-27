@@ -175,32 +175,11 @@ function ShareGrid({
           </span>
         </button>
       </div>
-      <div className="flex gap-1.5">
-        <Input
-          value={loading ? 'Generating link…' : link ?? ''}
-          readOnly
-          className="h-9 bg-muted/50 text-xs flex-1"
-        />
-        <Button
-          variant="default"
-          onClick={handleCopy}
-          disabled={!link}
-          size="sm"
-          className="h-9 px-3 shrink-0 gap-1.5 text-xs"
-        >
-          {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : copied ? (
-            <>
-              <Check className="h-3.5 w-3.5" /> Copied
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5" /> Copy
-            </>
-          )}
-        </Button>
-      </div>
+      <Input
+        value={loading ? 'Generating link…' : link ?? ''}
+        readOnly
+        className="h-9 bg-muted/50 text-xs"
+      />
     </div>
   );
 }
