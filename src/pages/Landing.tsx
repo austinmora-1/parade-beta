@@ -135,10 +135,21 @@ export default function Landing() {
             ))}
           </motion.div>
 
+          {/* Legal links */}
+          <div className="mt-10 flex items-center justify-center gap-3 text-xs text-foreground/45">
+            <a href="/privacy" className="hover:text-foreground/70 transition-colors underline underline-offset-2">
+              Privacy Policy
+            </a>
+            <span aria-hidden>·</span>
+            <a href="/terms" className="hover:text-foreground/70 transition-colors underline underline-offset-2">
+              Terms &amp; Conditions
+            </a>
+          </div>
+
           {/* Scroll cue */}
           <motion.button
             onClick={scrollToSignup}
-            className="mt-12 text-foreground/40 hover:text-foreground/70 transition-colors"
+            className="mt-8 text-foreground/40 hover:text-foreground/70 transition-colors"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.8 }}
