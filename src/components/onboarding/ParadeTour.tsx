@@ -10,8 +10,38 @@ const TOUR_REPLAY_KEY = 'parade.tour.replay';
 
 type TourStep = Step & {
   route?: string;
-  onEnter?: () => void;
   onLeave?: () => void;
+};
+
+/**
+ * Wait for an element matching `selector` to exist in the DOM, then resolve
+ * after a short settle delay so the spotlight measures a stable rect.
+ */
+function waitForSelector(selector: string, timeoutMs = 3000, settleMs = 220) {
+  return new Promise<void>((resolve) => {
+    const start = Date.now();
+    const check = () => {
+      if (document.querySelector(selector)) {
+        setTimeout(resolve, settleMs);
+        return;
+      }
+      if (Date.now() - start > timeoutMs) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(check);
+    };
+    check();
+  });
+}
+
+/**
+ * Step `before` hook: opens the planning sheet and waits for the
+ * referenced flow button to mount before letting Joyride spotlight it.
+ */
+const openSheetAndWait = (selector: string) => async () => {
+  window.dispatchEvent(new Event('parade:open-planning-sheet'));
+  await waitForSelector(selector);
 };
 
 const STEPS: TourStep[] = [
@@ -30,9 +60,9 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Find time with friends\" to choose who you want to see — we'll surface windows where you're both free.",
     placement: 'top',
-    disableScrollParentFix: true,
-    floaterProps: { disableAnimation: true },
-    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
+    isFixed: true,
+    skipScroll: true,
+    before: openSheetAndWait('[data-tour="flow-hang"]'),
   },
   {
     target: '[data-tour="flow-plus-one"]',
@@ -41,9 +71,9 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Open invite\" when you have a spare ticket or want company for something specific. Friends can claim the spot.",
     placement: 'top',
-    disableScrollParentFix: true,
-    floaterProps: { disableAnimation: true },
-    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
+    isFixed: true,
+    skipScroll: true,
+    before: openSheetAndWait('[data-tour="flow-plus-one"]'),
   },
   {
     target: '[data-tour="flow-trip"]',
@@ -52,9 +82,9 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Go somewhere\" to plan a trip or propose dates with a group — Parade auto-updates your location and surfaces nearby friends.",
     placement: 'top',
-    disableScrollParentFix: true,
-    floaterProps: { disableAnimation: true },
-    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
+    isFixed: true,
+    skipScroll: true,
+    before: openSheetAndWait('[data-tour="flow-trip"]'),
     onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
