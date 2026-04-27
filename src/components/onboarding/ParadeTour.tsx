@@ -115,6 +115,16 @@ export function ParadeTour() {
   const step = STEPS[stepIndex];
   const showPanel = isPanelStep(stepIndex);
 
+  // ---------- Prefetch lazy route chunks once tour starts so navigation
+  // between steps doesn't trigger the Suspense fallback / loading screen.
+  useEffect(() => {
+    if (!run) return;
+    // Fire-and-forget — chunks get warmed in the background.
+    import('@/pages/Availability').catch(() => {});
+    import('@/pages/Trips').catch(() => {});
+    import('@/pages/Friends').catch(() => {});
+  }, [run]);
+
   // ---------- Boot: replay flag or unfinished walkthrough ----------
   useEffect(() => {
     if (!user) return;
@@ -358,9 +368,10 @@ export function ParadeTour() {
         />
       </svg>
 
-      {/* Highlight ring around the spotlight */}
+      {/* Pulsing highlight ring around the spotlight */}
       {spotlight && (
-        <div
+        <motion.div
+          key={`ring-${step.id}`}
           className="pointer-events-none absolute"
           style={{
             top: spotlight.y,
@@ -368,8 +379,16 @@ export function ParadeTour() {
             width: spotlight.w,
             height: spotlight.h,
             borderRadius: radius,
-            boxShadow: '0 0 0 2px hsl(var(--primary)), 0 0 24px 2px hsl(var(--primary) / 0.45)',
           }}
+          initial={{ boxShadow: '0 0 0 2px hsl(var(--primary)), 0 0 0 0 hsl(var(--primary) / 0.5)' }}
+          animate={{
+            boxShadow: [
+              '0 0 0 2px hsl(var(--primary)), 0 0 0 0 hsl(var(--primary) / 0.55)',
+              '0 0 0 2px hsl(var(--primary)), 0 0 0 12px hsl(var(--primary) / 0)',
+              '0 0 0 2px hsl(var(--primary)), 0 0 0 0 hsl(var(--primary) / 0.55)',
+            ],
+          }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
         />
       )}
 
