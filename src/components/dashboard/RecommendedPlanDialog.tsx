@@ -203,10 +203,40 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
             </label>
             <Input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setTitleEdited(true);
+              }}
               placeholder="What are we doing?"
               className="h-10"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Add activity (optional)
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_ACTIVITIES.map((a) => {
+                const selected = activity === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setActivity(selected ? null : a.id)}
+                    className={
+                      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ' +
+                      (selected
+                        ? 'border-primary/50 bg-primary/10 text-foreground'
+                        : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground')
+                    }
+                  >
+                    <span>{a.emoji}</span>
+                    <span>{a.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
