@@ -244,7 +244,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                   'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors ' +
                   (customActivity.trim()
                     ? 'border-accent/60 bg-accent/15 text-foreground'
-                    : 'border-dashed border-accent/40 bg-accent/5 text-accent hover:border-accent/60')
+                    : 'text-accent bg-primary-foreground border-primary border-solid')
                 }
               >
                 <span>✏️</span>
@@ -256,7 +256,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                     if (e.target.value.trim()) setActivity(null);
                   }}
                   placeholder="Custom"
-                  className="w-14 bg-transparent text-xs placeholder:text-accent/60 focus:w-20 focus:outline-none transition-[width]"
+                  className="w-14 bg-transparent text-xs focus:w-20 focus:outline-none transition-[width] text-popover-foreground"
                 />
               </div>
             </div>
