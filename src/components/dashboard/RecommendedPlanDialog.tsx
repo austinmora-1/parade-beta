@@ -247,7 +247,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                     : 'text-accent bg-primary-foreground border-primary border-solid')
                 }
               >
-                <span>✏️</span>
+                <Drama className="h-3.5 w-3.5" />
                 <input
                   type="text"
                   value={customActivity}
