@@ -96,6 +96,11 @@ export function MobileNav() {
                   {getInitials(formattedName)}
                 </AvatarFallback>
               </Avatar>
+              {totalNotifications > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center ring-2 ring-sidebar leading-none">
+                  {totalNotifications > 99 ? '99+' : totalNotifications}
+                </span>
+              )}
             </div>
             
           </button>
