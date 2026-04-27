@@ -26,12 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, displayName?: string, emailRedirectTo?: string) => {
     return supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: emailRedirectTo || window.location.origin,
         data: { display_name: displayName },
       },
     });
