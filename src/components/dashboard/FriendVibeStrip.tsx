@@ -143,6 +143,21 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
         availByUserDate.set(`${a.user_id}|${a.date}`, a);
       });
 
+      const MAX_RECOMMENDED = 5;
+      const hasPreferences = preferredTimes.size > 0;
+      const isPreferred = (s: OverlapSlot) => {
+        const day = format(parseISO(s.date), 'EEEE').toLowerCase();
+        const bucket = SLOT_TO_PREF_BUCKET[s.slot];
+        return preferredTimes.has(`${day}:${bucket}`);
+      };
+      const pickRecommended = (slots: OverlapSlot[]): OverlapSlot[] => {
+        const preferred = hasPreferences ? slots.filter(isPreferred) : [];
+        // If the user has preferences, only show preferred slots (up to max).
+        // Otherwise, fall back to the first N so the pill isn't empty.
+        const pool = hasPreferences ? preferred : slots;
+        return pool.slice(0, MAX_RECOMMENDED);
+      };
+
       const result: AroundFriend[] = connectedFriends.flatMap((friend): AroundFriend[] => {
         const profile = profileMap.get(friend.friendUserId!);
         const overlapSlots: OverlapSlot[] = [];
