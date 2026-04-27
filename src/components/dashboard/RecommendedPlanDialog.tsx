@@ -48,9 +48,13 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
   const [customActivity, setCustomActivity] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (open && w) {
+      // Auto-suggest all overlapping friends as selected by default — user can deselect.
+      const initial = new Set(w.overlappingFriends.map((f) => f.userId));
+      setSelectedFriendIds(initial);
       const friendNames = w.overlappingFriends.slice(0, 2).map((f) => f.name.split(' ')[0]);
       const suffix = w.overlappingFriends.length > 2 ? ` +${w.overlappingFriends.length - 2}` : '';
       const baseTitle = friendNames.length > 0
@@ -65,11 +69,12 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
     }
   }, [open, w]);
 
-  // Auto-update title when activity changes (unless user manually edited).
+  // Auto-update title when activity or selection changes (unless user manually edited).
   useEffect(() => {
     if (!open || !w || titleEdited) return;
-    const friendNames = w.overlappingFriends.slice(0, 2).map((f) => f.name.split(' ')[0]);
-    const suffix = w.overlappingFriends.length > 2 ? ` +${w.overlappingFriends.length - 2}` : '';
+    const selectedFriends = w.overlappingFriends.filter((f) => selectedFriendIds.has(f.userId));
+    const friendNames = selectedFriends.slice(0, 2).map((f) => f.name.split(' ')[0]);
+    const suffix = selectedFriends.length > 2 ? ` +${selectedFriends.length - 2}` : '';
     const friendsPart = friendNames.length > 0 ? ` with ${friendNames.join(', ')}${suffix}` : '';
     if (activity) {
       const label = QUICK_ACTIVITIES.find((a) => a.id === activity)?.label ?? '';
@@ -77,13 +82,24 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
     } else {
       setTitle(friendNames.length > 0 ? `Hang${friendsPart}` : `Open hang — ${w.dayLabel}`);
     }
-  }, [activity, open, w, titleEdited]);
+  }, [activity, open, w, titleEdited, selectedFriendIds]);
 
   if (!w) return null;
 
   const slot = w.slots[0] as TimeSlot;
-  const hasFriends = w.overlappingFriends.length > 0;
+  const selectedFriends = w.overlappingFriends.filter((f) => selectedFriendIds.has(f.userId));
+  const hasFriends = selectedFriends.length > 0;
+  const hasSuggestions = w.overlappingFriends.length > 0;
   const effectiveActivity = customActivity.trim() || activity || 'hanging-out';
+
+  const toggleFriend = (id: string) => {
+    setSelectedFriendIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleSend = async () => {
     if (sending) return;
