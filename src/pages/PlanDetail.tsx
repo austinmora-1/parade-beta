@@ -1048,11 +1048,7 @@ export default function PlanDetail() {
         {/* Actions - only show when user has access to the plan (not invite preview) */}
         {plan && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-            {canEdit && !isPast && (
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setEditDialogOpen(true)}>
-                <Edit className="h-4 w-4" /> Edit
-              </Button>
-            )}
+
 
             {!isPast && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setInviteDialogOpen(true)}>
