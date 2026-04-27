@@ -275,7 +275,7 @@ export function ParadeTour() {
           overlayColor: 'rgba(0, 0, 0, 0.55)',
           showProgress: true,
           skipBeacon: true,
-          spotlightPadding: { top: 0, right: 6, bottom: 6, left: 6 },
+          spotlightPadding: { top: 10, right: 6, bottom: 2, left: 6 },
           spotlightRadius: 14,
           // Higher than the Drawer (which renders at z-50) so the tooltip,
           // overlay, and spotlight all sit above the open bottom sheet.
