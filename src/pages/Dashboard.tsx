@@ -88,12 +88,12 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Who's around — the social hook */}
-      <motion.div variants={fadeUp}>
+      <motion.div variants={fadeUp} data-tour="vibe-strip">
         <FriendVibeStrip onFriendTap={handleAddFriend} />
       </motion.div>
 
       {/* Free-weekend / open-window surface (multiple options) */}
-      <motion.div variants={fadeUp}>
+      <motion.div variants={fadeUp} data-tour="free-windows">
         <FreeWindowCard />
       </motion.div>
 
@@ -104,7 +104,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Upcoming Plans & Feed */}
-      <motion.div variants={fadeUp}>
+      <motion.div variants={fadeUp} data-tour="home-tabs">
         <HomeTabs />
       </motion.div>
     </motion.div>

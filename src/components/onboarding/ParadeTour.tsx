@@ -32,6 +32,30 @@ const STEPS: TourStep[] = [
     placement: 'bottom',
   },
   {
+    id: 'dash-vibe-strip',
+    route: '/',
+    selector: '[data-tour="vibe-strip"]',
+    title: "👀 Who's around",
+    body: "See your friends' vibes and availability at a glance — green dots mean they're free soon.",
+    placement: 'bottom',
+  },
+  {
+    id: 'dash-free-windows',
+    route: '/',
+    selector: '[data-tour="free-windows"]',
+    title: '🪟 Open windows',
+    body: 'Parade surfaces times when you and friends are mutually free — perfect for spontaneous plans.',
+    placement: 'top',
+  },
+  {
+    id: 'dash-home-tabs',
+    route: '/',
+    selector: '[data-tour="home-tabs"]',
+    title: '📰 Plans & Feed',
+    body: 'Your upcoming plans live here, plus a feed of what your friends are up to.',
+    placement: 'top',
+  },
+  {
     id: 'flow-hang',
     route: '/',
     panelRow: 0,
@@ -111,6 +135,7 @@ export function ParadeTour() {
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const panelRowRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const scrolledRef = useRef(false);
 
   const step = STEPS[stepIndex];
   const showPanel = isPanelStep(stepIndex);
@@ -196,6 +221,7 @@ export function ParadeTour() {
     // Reset rect immediately so we don't flash the previous step's spotlight
     // in the wrong place during route transitions.
     setRect(null);
+    scrolledRef.current = false;
 
     let stopped = false;
     let attempts = 0;
@@ -226,6 +252,12 @@ export function ParadeTour() {
         // Wait until the element actually has a non-zero size (route chunks
         // can mount with 0x0 for a frame).
         if (r.width > 0 && r.height > 0) {
+          // Scroll into view if the target is off-screen (dashboard sections
+          // below the fold). Only do this once per step.
+          if (!scrolledRef.current && (r.top < 80 || r.bottom > window.innerHeight - 80)) {
+            scrolledRef.current = true;
+            (target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
           setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
           // Keep re-measuring at a slower cadence to track layout shifts
           // (e.g. tabs mounting below). Stop after a bit.
