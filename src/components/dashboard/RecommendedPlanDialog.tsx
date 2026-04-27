@@ -22,15 +22,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, type TimeSlot, type ActivityType } from '@/types/planner';
 import type { OpenWindow } from '@/hooks/useOpenWindows';
 
-const QUICK_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
-  { id: 'drinks', emoji: '🍹', label: 'Drinks' },
-  { id: 'get-food', emoji: '🍽️', label: 'Food' },
-  { id: 'hanging-out', emoji: '🤙', label: 'Hangout' },
-  { id: 'concert', emoji: '🎵', label: 'Concert' },
-  { id: 'movies', emoji: '🎥', label: 'Movies' },
-  { id: 'gym', emoji: '🏋️', label: 'Gym' },
-  { id: 'video-games', emoji: '🎮', label: 'Games' },
-  { id: 'park', emoji: '🌳', label: 'Park' },
+const QUICK_ACTIVITIES: { id: ActivityType; Icon: LucideIcon; label: string }[] = [
+  { id: 'drinks', Icon: Wine, label: 'Drinks' },
+  { id: 'get-food', Icon: UtensilsCrossed, label: 'Food' },
+  { id: 'hanging-out', Icon: Hand, label: 'Hangout' },
+  { id: 'concert', Icon: Music, label: 'Concert' },
+  { id: 'movies', Icon: Film, label: 'Movies' },
+  { id: 'gym', Icon: Dumbbell, label: 'Gym' },
+  { id: 'video-games', Icon: Drama, label: 'Show' },
+  { id: 'park', Icon: Trees, label: 'Park' },
 ];
 
 
