@@ -221,6 +221,7 @@ export function ParadeTour() {
     // Reset rect immediately so we don't flash the previous step's spotlight
     // in the wrong place during route transitions.
     setRect(null);
+    scrolledRef.current = false;
 
     let stopped = false;
     let attempts = 0;
