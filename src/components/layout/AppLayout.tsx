@@ -7,6 +7,7 @@ import { PullToRefresh } from './PullToRefresh';
 import { FeedbackProvider } from '@/components/feedback/FeedbackContext';
 import { FeedbackPanel } from '@/components/feedback/FeedbackPanel';
 import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
+import { ParadeTour } from '@/components/onboarding/ParadeTour';
 import { useFriendRequestNotifications } from '@/hooks/useFriendRequestNotifications';
 import { useVibeRealtime } from '@/hooks/useVibeRealtime';
 import { usePlannerStore } from '@/stores/plannerStore';
@@ -34,6 +35,7 @@ export function AppLayout() {
             </div>
           </PullToRefresh>
         </main>
+        <ParadeTour />
         <MobileNav />
         <FloatingFeedbackButton />
         <FeedbackPanel />
