@@ -37,6 +37,14 @@ export default function Login() {
     navigate(redirect || '/', { replace: true });
   };
 
+  // If the user is already signed in (e.g., they clicked an invite link in another tab
+  // or returned to the email after signing in), send them straight to the redirect target.
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(redirect || '/', { replace: true });
+    }
+  }, [authLoading, user, redirect, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
