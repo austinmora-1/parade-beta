@@ -951,10 +951,44 @@ export default function PlanDetail() {
           )}
 
           {/* Notes */}
-          {displayPlan.notes && (
+          {(displayPlan.notes || (canEdit && !isPast && plan)) && (
             <div className="space-y-2">
               <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</div>
-              <p className="text-sm bg-muted/30 rounded-lg p-3">{displayPlan.notes}</p>
+              {canEdit && !isPast && plan ? (
+                editingNotes ? (
+                  <Textarea
+                    autoFocus
+                    value={notesDraft}
+                    onChange={(e) => setNotesDraft(e.target.value)}
+                    onBlur={async () => {
+                      const next = notesDraft;
+                      setEditingNotes(false);
+                      if ((next || '') !== (displayPlan.notes || '')) {
+                        await applyDirectUpdate({ notes: next || undefined });
+                      }
+                    }}
+                    placeholder="Add notes…"
+                    className="text-sm min-h-[80px]"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotesDraft(displayPlan.notes || '');
+                      setEditingNotes(true);
+                    }}
+                    className="text-left w-full text-sm bg-muted/30 hover:bg-muted/50 rounded-lg p-3 transition-colors"
+                  >
+                    {displayPlan.notes || (
+                      <span className="text-muted-foreground italic">Add notes…</span>
+                    )}
+                  </button>
+                )
+              ) : (
+                displayPlan.notes && (
+                  <p className="text-sm bg-muted/30 rounded-lg p-3">{displayPlan.notes}</p>
+                )
+              )}
             </div>
           )}
 
