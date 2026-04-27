@@ -107,7 +107,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
 
     try {
       if (hasFriends) {
-        const first = w.overlappingFriends[0];
+        const first = selectedFriends[0];
         await proposePlan({
           recipientFriendId: first.userId,
           activity: effectiveActivity,
@@ -117,7 +117,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
           note: note.trim() || undefined,
         });
 
-        if (w.overlappingFriends.length > 1 && userId) {
+        if (selectedFriends.length > 1 && userId) {
           const { data: latestPlan } = await supabase
             .from('plans')
             .select('id')
@@ -128,7 +128,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
             .single();
 
           if (latestPlan) {
-            const extras = w.overlappingFriends.slice(1).map((f) => ({
+            const extras = selectedFriends.slice(1).map((f) => ({
               plan_id: latestPlan.id,
               friend_id: f.userId,
               status: 'invited',
@@ -145,7 +145,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
           colors: ['#3D8C6C', '#FF6B5B', '#F59E0B', '#8B5CF6', '#3B82F6'],
           scalar: 0.9,
         });
-        const names = w.overlappingFriends
+        const names = selectedFriends
           .slice(0, 3)
           .map((f) => f.name.split(' ')[0])
           .join(', ');
