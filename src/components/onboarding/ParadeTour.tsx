@@ -250,6 +250,12 @@ export function ParadeTour() {
         // Wait until the element actually has a non-zero size (route chunks
         // can mount with 0x0 for a frame).
         if (r.width > 0 && r.height > 0) {
+          // Scroll into view if the target is off-screen (dashboard sections
+          // below the fold). Only do this once per step.
+          if (!scrolledRef.current && (r.top < 80 || r.bottom > window.innerHeight - 80)) {
+            scrolledRef.current = true;
+            (target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
           setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
           // Keep re-measuring at a slower cadence to track layout shifts
           // (e.g. tabs mounting below). Stop after a bit.
