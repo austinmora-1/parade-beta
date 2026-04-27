@@ -239,16 +239,27 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                   </button>
                 );
               })}
+              <div
+                className={
+                  'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors ' +
+                  (customActivity.trim()
+                    ? 'border-accent/60 bg-accent/15 text-foreground'
+                    : 'border-dashed border-accent/40 bg-accent/5 text-accent hover:border-accent/60')
+                }
+              >
+                <span>✏️</span>
+                <input
+                  type="text"
+                  value={customActivity}
+                  onChange={(e) => {
+                    setCustomActivity(e.target.value);
+                    if (e.target.value.trim()) setActivity(null);
+                  }}
+                  placeholder="Custom"
+                  className="w-14 bg-transparent text-xs placeholder:text-accent/60 focus:w-20 focus:outline-none transition-[width]"
+                />
+              </div>
             </div>
-            <Input
-              value={customActivity}
-              onChange={(e) => {
-                setCustomActivity(e.target.value);
-                if (e.target.value.trim()) setActivity(null);
-              }}
-              placeholder="Or type your own…"
-              className="h-9 text-sm"
-            />
           </div>
 
           <div className="space-y-2">
