@@ -472,6 +472,7 @@ export default function PlanDetail() {
     }
   };
 
+  return (
     <div className="animate-fade-in space-y-6 max-w-2xl mx-auto">
       {/* Back button */}
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-2 -ml-2">
