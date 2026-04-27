@@ -277,15 +277,23 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
       <p className="text-[11px] font-semibold uppercase tracking-wider px-1 text-primary">
         Who's around this week
       </p>
-      <div className="flex flex-wrap gap-2 px-1">
-        {around.map((a, i) => (
-          <FriendPill
-            key={a.friend.id}
-            data={a}
-            index={i}
-            preferredTimes={preferredTimes}
-          />
-        ))}
+      <div
+        className="overflow-x-auto -mx-1 px-1 pb-1 scrollbar-thin"
+        style={{ scrollbarWidth: 'thin' }}
+      >
+        <div
+          className="grid grid-flow-col auto-cols-max gap-2"
+          style={{ gridTemplateRows: 'repeat(2, minmax(0, auto))' }}
+        >
+          {around.map((a, i) => (
+            <FriendPill
+              key={a.friend.id}
+              data={a}
+              index={i}
+              preferredTimes={preferredTimes}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
