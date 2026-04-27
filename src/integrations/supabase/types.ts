@@ -2175,6 +2175,14 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      backfill_availability_for_all_users: {
+        Args: { _days_ahead?: number }
+        Returns: number
+      }
+      backfill_availability_for_user: {
+        Args: { _days_ahead?: number; _user_id: string }
+        Returns: number
+      }
       check_phone_available: { Args: { p_phone: string }; Returns: boolean }
       check_username_available: {
         Args: { p_username: string }
