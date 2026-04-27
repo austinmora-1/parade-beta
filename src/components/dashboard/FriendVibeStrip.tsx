@@ -41,10 +41,11 @@ interface OverlapSlot {
 interface AroundFriend {
   friend: Friend;
   freeDays: number;
-  overlapSlots: OverlapSlot[]; // mutual free slots in same city
+  overlapSlots: OverlapSlot[]; // mutual free slots in same city — falls back to friend-only free slots when no mutual overlap
   city: string | null;
   currentVibe: string | null;
   customVibeTags: string[] | null;
+  mutual: boolean; // true if overlapSlots are mutual; false if they're friend-only fallback
 }
 
 interface FriendVibeStripProps {
