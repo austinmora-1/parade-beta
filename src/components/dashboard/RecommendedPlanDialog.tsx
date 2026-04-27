@@ -19,8 +19,19 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
-import { TIME_SLOT_LABELS, type TimeSlot } from '@/types/planner';
+import { TIME_SLOT_LABELS, type TimeSlot, type ActivityType } from '@/types/planner';
 import type { OpenWindow } from '@/hooks/useOpenWindows';
+
+const QUICK_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
+  { id: 'drinks', emoji: '🍹', label: 'Drinks' },
+  { id: 'get-food', emoji: '🍽️', label: 'Food' },
+  { id: 'hanging-out', emoji: '🤙', label: 'Hangout' },
+  { id: 'concert', emoji: '🎵', label: 'Concert' },
+  { id: 'movies', emoji: '🎥', label: 'Movies' },
+  { id: 'gym', emoji: '🏋️', label: 'Gym' },
+  { id: 'video-games', emoji: '🎮', label: 'Games' },
+  { id: 'park', emoji: '🌳', label: 'Park' },
+];
 
 
 interface RecommendedPlanDialogProps {
@@ -32,6 +43,8 @@ interface RecommendedPlanDialogProps {
 export function RecommendedPlanDialog({ open, onOpenChange, window: w }: RecommendedPlanDialogProps) {
   const { proposePlan, addPlan, userId } = usePlannerStore();
   const [title, setTitle] = useState('');
+  const [titleEdited, setTitleEdited] = useState(false);
+  const [activity, setActivity] = useState<ActivityType | null>(null);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -43,10 +56,26 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
         ? `Hang with ${friendNames.join(', ')}${suffix}`
         : `Open hang — ${w.dayLabel}`;
       setTitle(baseTitle);
+      setTitleEdited(false);
+      setActivity(null);
       setNote('');
       setSending(false);
     }
   }, [open, w]);
+
+  // Auto-update title when activity changes (unless user manually edited).
+  useEffect(() => {
+    if (!open || !w || titleEdited) return;
+    const friendNames = w.overlappingFriends.slice(0, 2).map((f) => f.name.split(' ')[0]);
+    const suffix = w.overlappingFriends.length > 2 ? ` +${w.overlappingFriends.length - 2}` : '';
+    const friendsPart = friendNames.length > 0 ? ` with ${friendNames.join(', ')}${suffix}` : '';
+    if (activity) {
+      const label = QUICK_ACTIVITIES.find((a) => a.id === activity)?.label ?? '';
+      setTitle(`${label}${friendsPart || ` — ${w.dayLabel}`}`);
+    } else {
+      setTitle(friendNames.length > 0 ? `Hang${friendsPart}` : `Open hang — ${w.dayLabel}`);
+    }
+  }, [activity, open, w, titleEdited]);
 
   if (!w) return null;
 
