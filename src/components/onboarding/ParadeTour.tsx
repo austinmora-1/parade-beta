@@ -13,6 +13,20 @@ type TourStep = Step & {
   onLeave?: () => void;
 };
 
+const PLANNING_SHEET_SELECTOR = '[data-tour="planning-sheet"]';
+const PLANNING_TOOLTIP_ANCHOR_SELECTOR = '[data-tour="planning-tooltip-anchor"]';
+
+const isPlanningSheetStep = (index: number) => index >= 1 && index <= 3;
+
+function positionPlanningTooltipAnchor() {
+  const anchor = document.querySelector<HTMLElement>(PLANNING_TOOLTIP_ANCHOR_SELECTOR);
+  if (!anchor) return;
+
+  const sheet = document.querySelector<HTMLElement>(PLANNING_SHEET_SELECTOR);
+  const sheetTop = sheet?.getBoundingClientRect().top ?? window.innerHeight * 0.58;
+  anchor.style.top = `${Math.max(88, Math.round(sheetTop - 18))}px`;
+}
+
 /**
  * Wait for an element matching `selector` to exist in the DOM, then resolve
  * after a short settle delay so the spotlight measures a stable rect.
@@ -40,8 +54,16 @@ function waitForSelector(selector: string, timeoutMs = 3000, settleMs = 220) {
  * referenced flow button to mount before letting Joyride spotlight it.
  */
 const openSheetAndWait = (selector: string) => async () => {
+  const wasSheetOpen = Boolean(document.querySelector(PLANNING_SHEET_SELECTOR));
   window.dispatchEvent(new Event('parade:open-planning-sheet'));
-  await waitForSelector(selector);
+  await waitForSelector(selector, 3000, wasSheetOpen ? 160 : 520);
+  positionPlanningTooltipAnchor();
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      positionPlanningTooltipAnchor();
+      resolve();
+    });
+  });
 };
 
 const STEPS: TourStep[] = [
@@ -54,7 +76,8 @@ const STEPS: TourStep[] = [
     placement: 'bottom',
   },
   {
-    target: '[data-tour="flow-hang"]',
+    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
+    spotlightTarget: '[data-tour="flow-hang"]',
     route: '/',
     title: '🤝 Find time with friends',
     content:
@@ -66,7 +89,8 @@ const STEPS: TourStep[] = [
     onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
-    target: '[data-tour="flow-plus-one"]',
+    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
+    spotlightTarget: '[data-tour="flow-plus-one"]',
     route: '/',
     title: '🎟️ Open invites',
     content:
@@ -78,7 +102,8 @@ const STEPS: TourStep[] = [
     onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
-    target: '[data-tour="flow-trip"]',
+    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
+    spotlightTarget: '[data-tour="flow-trip"]',
     route: '/',
     title: '📍 Go somewhere',
     content:
