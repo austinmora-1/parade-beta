@@ -69,6 +69,13 @@ interface FriendAvailRow {
   trip_location: string | null;
 }
 
+interface FriendPlanRow {
+  user_id: string;
+  date: string;
+  time_slot: TimeSlot;
+  status: string;
+}
+
 export interface OpenWindow {
   date: Date;
   dayLabel: string; // "Today", "Tomorrow", "Saturday"
@@ -227,6 +234,7 @@ export function useOpenWindows() {
   const { user } = useAuth();
   const { availabilityMap, friends, plans, homeAddress } = usePlannerStore();
   const [friendAvail, setFriendAvail] = useState<FriendAvailRow[]>([]);
+  const [friendPlans, setFriendPlans] = useState<FriendPlanRow[]>([]);
   const [friendHomeAddresses, setFriendHomeAddresses] = useState<Record<string, string | null>>({});
   const [prefDays, setPrefDays] = useState<string[]>(DEFAULT_SOCIAL_DAYS);
   const [prefTimes, setPrefTimes] = useState<string[]>(DEFAULT_SOCIAL_TIMES);
@@ -271,13 +279,14 @@ export function useOpenWindows() {
     async function load() {
       if (!user?.id || connectedFriends.length === 0 || dateStrs.length === 0) {
         setFriendAvail([]);
+        setFriendPlans([]);
         setFriendHomeAddresses({});
         setLoading(false);
         return;
       }
       setLoading(true);
       const friendIds = connectedFriends.map((f) => f.friendUserId);
-      const [availRes, profilesRes] = await Promise.all([
+      const [availRes, profilesRes, plansRes] = await Promise.all([
         supabase
           .from('availability')
           .select(
@@ -289,6 +298,13 @@ export function useOpenWindows() {
           .from('profiles')
           .select('user_id, home_address')
           .in('user_id', friendIds),
+        supabase
+          .from('plans')
+          .select('user_id, date, time_slot, status')
+          .in('user_id', friendIds)
+          .gte('date', dateStrs[0])
+          .lte('date', dateStrs[dateStrs.length - 1] + 'T23:59:59')
+          .in('status', ['confirmed', 'proposed']),
       ]);
       if (!cancelled) {
         setFriendAvail((availRes.data as FriendAvailRow[]) || []);
@@ -297,6 +313,16 @@ export function useOpenWindows() {
           map[p.user_id] = p.home_address;
         }
         setFriendHomeAddresses(map);
+        // Normalize plan dates to YYYY-MM-DD for matching.
+        const normalized: FriendPlanRow[] = ((plansRes.data as { user_id: string; date: string; time_slot: string; status: string }[]) || []).map(
+          (p) => ({
+            user_id: p.user_id,
+            date: (p.date || '').slice(0, 10),
+            time_slot: p.time_slot as TimeSlot,
+            status: p.status,
+          })
+        );
+        setFriendPlans(normalized);
         setLoading(false);
       }
     }
@@ -383,8 +409,17 @@ export function useOpenWindows() {
             });
             if (!sameCity) continue;
 
+            // Slots where this friend has a confirmed or proposed plan are
+            // treated as conflicts and don't count toward overlap.
+            const friendBusySlots = new Set(
+              friendPlans
+                .filter((p) => p.user_id === f.friendUserId && p.date === dateKey)
+                .map((p) => p.time_slot)
+            );
+
             let overlapHours = 0;
             for (const slot of block) {
+              if (friendBusySlots.has(slot)) continue;
               const dbKey = SLOT_DB_KEYS.find((k) => k.slot === slot)!.key;
               if (row[dbKey]) overlapHours += SLOT_HOURS[slot];
             }
@@ -435,7 +470,7 @@ export function useOpenWindows() {
       });
 
     return deduped.slice(0, MAX_RESULTS).map(({ _score, ...w }) => w);
-  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail, friendHomeAddresses, homeAddress, prefDays, prefTimes]);
+  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail, friendPlans, friendHomeAddresses, homeAddress, prefDays, prefTimes]);
 
   return { windows, loading };
 }
