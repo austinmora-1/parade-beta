@@ -1,166 +1,130 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { Joyride, EVENTS, STATUS, ACTIONS, type Step, type EventData } from 'react-joyride';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ChevronRight, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useFriendsStore } from '@/stores/friendsStore';
-import { usePlansStore } from '@/stores/plansStore';
 
 const TOUR_REPLAY_KEY = 'parade.tour.replay';
 
-type TourStep = Step & {
+type Placement = 'top' | 'bottom';
+
+interface TourStep {
+  id: string;
   route?: string;
-  onLeave?: () => void;
-};
-
-const PLANNING_SHEET_SELECTOR = '[data-tour="planning-sheet"]';
-const PLANNING_TOOLTIP_ANCHOR_SELECTOR = '[data-tour="planning-tooltip-anchor"]';
-
-const isPlanningSheetStep = (index: number) => index >= 1 && index <= 3;
-
-function positionPlanningTooltipAnchor() {
-  const anchor = document.querySelector<HTMLElement>(PLANNING_TOOLTIP_ANCHOR_SELECTOR);
-  if (!anchor) return;
-
-  const sheet = document.querySelector<HTMLElement>(PLANNING_SHEET_SELECTOR);
-  const sheetTop = sheet?.getBoundingClientRect().top ?? window.innerHeight * 0.58;
-  anchor.style.top = `${Math.max(88, Math.round(sheetTop - 18))}px`;
+  /** CSS selector for a real DOM target; ignored when `panelRow` is set. */
+  selector?: string;
+  /** Index 0-2 to spotlight a row inside the tour-owned planning panel. */
+  panelRow?: 0 | 1 | 2;
+  title: string;
+  body: string;
+  placement: Placement;
 }
-
-/**
- * Wait for an element matching `selector` to exist in the DOM, then resolve
- * after a short settle delay so the spotlight measures a stable rect.
- */
-function waitForSelector(selector: string, timeoutMs = 3000, settleMs = 220) {
-  return new Promise<void>((resolve) => {
-    const start = Date.now();
-    const check = () => {
-      if (document.querySelector(selector)) {
-        setTimeout(resolve, settleMs);
-        return;
-      }
-      if (Date.now() - start > timeoutMs) {
-        resolve();
-        return;
-      }
-      requestAnimationFrame(check);
-    };
-    check();
-  });
-}
-
-/**
- * Step `before` hook: opens the planning sheet and waits for the
- * referenced flow button to mount before letting Joyride spotlight it.
- */
-const openSheetAndWait = (selector: string) => async () => {
-  const wasSheetOpen = Boolean(document.querySelector(PLANNING_SHEET_SELECTOR));
-  window.dispatchEvent(new Event('parade:open-planning-sheet'));
-  await waitForSelector(selector, 3000, wasSheetOpen ? 160 : 520);
-  positionPlanningTooltipAnchor();
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => {
-      positionPlanningTooltipAnchor();
-      resolve();
-    });
-  });
-};
 
 const STEPS: TourStep[] = [
   {
-    target: '[data-tour="fab"]',
+    id: 'fab',
     route: '/',
+    selector: '[data-tour="fab"]',
     title: '👋 Welcome to Parade',
-    content:
-      "This little plus button is your launchpad — tap it whenever you want to start something new.",
+    body: 'This little plus button is your launchpad — tap it whenever you want to start something new.',
     placement: 'bottom',
   },
   {
-    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
-    spotlightTarget: '[data-tour="flow-hang"]',
+    id: 'flow-hang',
     route: '/',
+    panelRow: 0,
     title: '🤝 Find time with friends',
-    content:
-      "Pick \"Find time with friends\" to choose who you want to see — we'll surface windows where you're both free.",
+    body: "Pick \"Find time with friends\" to choose who you want to see — we'll surface windows where you're both free.",
     placement: 'top',
-    isFixed: true,
-    skipScroll: true,
-    before: openSheetAndWait('[data-tour="flow-hang"]'),
-    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
-    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
-    spotlightTarget: '[data-tour="flow-plus-one"]',
+    id: 'flow-plus-one',
     route: '/',
+    panelRow: 1,
     title: '🎟️ Open invites',
-    content:
-      "Pick \"Open invite\" when you have a spare ticket or want company for something specific. Friends can claim the spot.",
+    body: '"Open invite" works when you have a spare ticket or want company for something specific. Friends can claim the spot.',
     placement: 'top',
-    isFixed: true,
-    skipScroll: true,
-    before: openSheetAndWait('[data-tour="flow-plus-one"]'),
-    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
-    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
-    spotlightTarget: '[data-tour="flow-trip"]',
+    id: 'flow-trip',
     route: '/',
+    panelRow: 2,
     title: '📍 Go somewhere',
-    content:
-      "Pick \"Go somewhere\" to plan a trip or propose dates with a group — Parade auto-updates your location and surfaces nearby friends.",
+    body: '"Go somewhere" plans a trip or proposes dates with a group — Parade auto-updates your location and surfaces nearby friends.',
     placement: 'top',
-    isFixed: true,
-    skipScroll: true,
-    before: openSheetAndWait('[data-tour="flow-trip"]'),
-    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
-    target: '[data-tour="nav-plans"]',
+    id: 'nav-plans',
     route: '/availability',
+    selector: '[data-tour="nav-plans"]',
     title: '📅 Plans',
-    content:
-      "Swipe week-by-week through your calendar. Tap any day to see who's free, or tap a plan to manage it.",
+    body: "Swipe week-by-week through your calendar. Tap any day to see who's free, or tap a plan to manage it.",
     placement: 'top',
   },
   {
-    target: '[data-tour="nav-trips"]',
+    id: 'nav-trips',
     route: '/trips',
+    selector: '[data-tour="nav-trips"]',
     title: '✈️ Trips',
-    content:
-      "Add upcoming travel here so friends know when you're around — and see friends visiting your city.",
+    body: "Add upcoming travel here so friends know when you're around — and see friends visiting your city.",
     placement: 'top',
   },
   {
-    target: '[data-tour="invite-friends"]',
+    id: 'invite-friends',
     route: '/friends',
+    selector: '[data-tour="invite-friends"]',
     title: '💛 Bring your people',
-    content:
-      "Parade is way better with your crew. Invite friends by email, SMS, or shareable link.",
+    body: 'Parade is way better with your crew. Invite friends by email, SMS, or shareable link.',
     placement: 'bottom',
   },
 ];
+
+const PANEL_ROWS = [
+  { emoji: '👤', label: 'Find time with friends', hint: '"I want to see Alex this week"' },
+  { emoji: '🎟️', label: 'Open invite', hint: '"Mets game Saturday, need someone"' },
+  { emoji: '📍', label: 'Go somewhere', hint: '"NYC this fall — or Queens on Saturday"' },
+];
+
+interface Rect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+const isPanelStep = (i: number) => STEPS[i]?.panelRow !== undefined;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
 
 export function ParadeTour() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const friendCount = useFriendsStore((s) => s.friends.length);
-  const planCount = usePlansStore((s) => s.plans.length);
 
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
-  const lastEnteredStep = useRef<number>(-1);
+  const [rect, setRect] = useState<Rect | null>(null);
+  const [viewport, setViewport] = useState({ w: 0, h: 0 });
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const panelRowRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  // Decide whether to run on mount.
+  const step = STEPS[stepIndex];
+  const showPanel = isPanelStep(stepIndex);
+
+  // ---------- Boot: replay flag or unfinished walkthrough ----------
   useEffect(() => {
     if (!user) return;
+    if (typeof window === 'undefined') return;
 
     if (localStorage.getItem(TOUR_REPLAY_KEY) === '1') {
       localStorage.removeItem(TOUR_REPLAY_KEY);
       setStepIndex(0);
-      lastEnteredStep.current = -1;
-      setTimeout(() => setRun(true), 400);
-      return;
+      const t = setTimeout(() => setRun(true), 300);
+      return () => clearTimeout(t);
     }
 
     let cancelled = false;
@@ -172,35 +136,84 @@ export function ParadeTour() {
         .single();
       if (cancelled) return;
       if (data && !data.walkthrough_completed) {
-        setTimeout(() => setRun(true), 800);
+        setTimeout(() => setRun(true), 700);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, friendCount, planCount]);
+    return () => { cancelled = true; };
+  }, [user]);
 
-  // Navigate to the right route when entering a step. The step's `before`
-  // hook (provided by react-joyride v3) handles opening the bottom sheet
-  // and waiting for the target to mount before the spotlight is measured.
+  // ---------- Track viewport size ----------
   useEffect(() => {
     if (!run) return;
-    const step = STEPS[stepIndex];
-    if (!step) return;
+    const update = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [run]);
 
+  // ---------- Route navigation when entering a step ----------
+  useEffect(() => {
+    if (!run || !step) return;
     if (step.route && location.pathname !== step.route) {
       navigate(step.route);
+    }
+  }, [run, step, location.pathname, navigate]);
+
+  // ---------- Measure spotlight target ----------
+  const measure = useCallback(() => {
+    if (!step) return;
+
+    let target: Element | null = null;
+    if (step.panelRow !== undefined) {
+      target = panelRowRefs.current[step.panelRow] ?? null;
+    } else if (step.selector) {
+      target = document.querySelector(step.selector);
+    }
+
+    if (!target) {
+      setRect(null);
       return;
     }
+    const r = target.getBoundingClientRect();
+    setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+  }, [step]);
 
-    if (lastEnteredStep.current !== stepIndex) {
-      lastEnteredStep.current = stepIndex;
-    }
-  }, [run, stepIndex, location.pathname, navigate]);
+  // Measure on step change + when panel mounts. Poll briefly until target appears
+  // (covers route transitions where the nav item mounts a few frames later).
+  useLayoutEffect(() => {
+    if (!run) return;
+    let frame = 0;
+    let stopped = false;
+    let attempts = 0;
+    const tick = () => {
+      if (stopped) return;
+      measure();
+      attempts += 1;
+      // keep re-measuring for ~600ms or until we get a rect
+      if (attempts < 36) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [run, stepIndex, location.pathname, measure, showPanel]);
 
+  // Re-measure on resize / scroll
+  useEffect(() => {
+    if (!run) return;
+    const onChange = () => measure();
+    window.addEventListener('resize', onChange);
+    window.addEventListener('scroll', onChange, true);
+    return () => {
+      window.removeEventListener('resize', onChange);
+      window.removeEventListener('scroll', onChange, true);
+    };
+  }, [run, measure]);
+
+  // ---------- Finish ----------
   const finish = useCallback(async () => {
     setRun(false);
-    window.dispatchEvent(new Event('parade:close-planning-sheet'));
     if (user) {
       await supabase
         .from('profiles')
@@ -209,116 +222,251 @@ export function ParadeTour() {
     }
   }, [user]);
 
-  const handleEvent = useCallback(
-    (data: EventData) => {
-      const { status, type, action, index } = data;
+  const goNext = useCallback(() => {
+    if (stepIndex >= STEPS.length - 1) {
+      finish();
+      return;
+    }
+    setStepIndex((i) => i + 1);
+  }, [stepIndex, finish]);
 
-      if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-        STEPS[index]?.onLeave?.();
-        finish();
-        return;
-      }
+  const goBack = useCallback(() => {
+    if (stepIndex === 0) return;
+    setStepIndex((i) => i - 1);
+  }, [stepIndex]);
 
-      if (action === ACTIONS.CLOSE && type === EVENTS.STEP_AFTER) {
-        STEPS[index]?.onLeave?.();
-        finish();
-        return;
-      }
+  // ---------- Tooltip position ----------
+  const tooltipStyle = useMemo<React.CSSProperties>(() => {
+    if (!step) return { display: 'none' };
+    const margin = 12;
+    const tooltipW = Math.min(360, viewport.w - margin * 2);
+    const tooltipMaxH = 220;
 
-      // TARGET_NOT_FOUND fires while the target is mounting (e.g. Drawer
-      // portal opening). Do NOT auto-advance — let Joyride keep waiting up
-      // to `targetWaitTimeout`. Only advance on explicit user STEP_AFTER.
-      if (type === EVENTS.STEP_AFTER) {
-        const next = action === ACTIONS.PREV ? index - 1 : index + 1;
-        if (next >= STEPS.length) {
-          STEPS[index]?.onLeave?.();
-          finish();
-          return;
-        }
-        if (next < 0) return;
-        if (!isPlanningSheetStep(index) || !isPlanningSheetStep(next)) {
-          STEPS[index]?.onLeave?.();
-        }
-        setStepIndex(next);
+    // Anchor: spotlight rect, OR panel top edge for panel steps if rect missing.
+    let anchor: Rect | null = rect;
+    if (!anchor) {
+      // Fallback to viewport center
+      return {
+        top: viewport.h / 2 - 80,
+        left: clamp(viewport.w / 2 - tooltipW / 2, margin, viewport.w - tooltipW - margin),
+        width: tooltipW,
+      };
+    }
+
+    let top: number;
+    if (step.placement === 'top') {
+      top = anchor.top - tooltipMaxH - 14;
+      // If it would clip the top of the viewport, flip below.
+      if (top < margin) top = anchor.top + anchor.height + 14;
+    } else {
+      top = anchor.top + anchor.height + 14;
+      if (top + tooltipMaxH > viewport.h - margin) {
+        top = anchor.top - tooltipMaxH - 14;
       }
-    },
-    [finish],
+    }
+    top = clamp(top, margin, Math.max(margin, viewport.h - tooltipMaxH - margin));
+
+    const centerX = anchor.left + anchor.width / 2;
+    const left = clamp(centerX - tooltipW / 2, margin, viewport.w - tooltipW - margin);
+
+    return { top, left, width: tooltipW };
+  }, [step, rect, viewport]);
+
+  if (!run || !step) return null;
+
+  // ---------- Build the spotlight cutout via SVG mask ----------
+  const padding = 8;
+  const radius = 14;
+  const spotlight = rect
+    ? {
+        x: Math.max(0, rect.left - padding),
+        y: Math.max(0, rect.top - padding),
+        w: rect.width + padding * 2,
+        h: rect.height + padding * 2,
+      }
+    : null;
+
+  const isLast = stepIndex === STEPS.length - 1;
+
+  const content = (
+    <div className="pointer-events-none fixed inset-0" style={{ zIndex: 9000 }}>
+      {/* Backdrop with spotlight cutout */}
+      <svg
+        className="pointer-events-auto absolute inset-0 h-full w-full"
+        width={viewport.w}
+        height={viewport.h}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <defs>
+          <mask id="parade-tour-mask">
+            <rect width="100%" height="100%" fill="white" />
+            {spotlight && (
+              <rect
+                x={spotlight.x}
+                y={spotlight.y}
+                width={spotlight.w}
+                height={spotlight.h}
+                rx={radius}
+                ry={radius}
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
+          fill="rgba(0,0,0,0.6)"
+          mask="url(#parade-tour-mask)"
+        />
+      </svg>
+
+      {/* Highlight ring around the spotlight */}
+      {spotlight && (
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            top: spotlight.y,
+            left: spotlight.x,
+            width: spotlight.w,
+            height: spotlight.h,
+            borderRadius: radius,
+            boxShadow: '0 0 0 2px hsl(var(--primary)), 0 0 24px 2px hsl(var(--primary) / 0.45)',
+          }}
+        />
+      )}
+
+      {/* Tour-owned planning panel (steps 2-4) */}
+      <AnimatePresence>
+        {showPanel && (
+          <motion.div
+            key="tour-panel"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+            className="pointer-events-auto absolute inset-x-0 bottom-0 rounded-t-2xl border border-border bg-background shadow-2xl"
+            style={{ zIndex: 9010 }}
+          >
+            <div className="mx-auto mt-3 h-1.5 w-[80px] rounded-full bg-muted" />
+            <div className="px-4 pt-3 pb-2 text-left">
+              <p className="text-base font-semibold text-foreground">What are you planning?</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Pick whatever comes to mind first — we'll fill in the rest.
+              </p>
+            </div>
+            <div className="px-4 pb-5 space-y-2">
+              {PANEL_ROWS.map((row, i) => (
+                <button
+                  key={row.label}
+                  ref={(el) => { panelRowRefs.current[i] = el; }}
+                  type="button"
+                  // disabled in tour — clicking does nothing, but keeps full-width visual
+                  onClick={(e) => e.preventDefault()}
+                  className="w-full flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left"
+                >
+                  <span className="text-2xl shrink-0" aria-hidden>{row.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground leading-tight">{row.label}</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 truncate">{row.hint}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Tooltip card */}
+      <motion.div
+        key={step.id}
+        ref={tooltipRef}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="pointer-events-auto absolute rounded-2xl border border-border bg-card text-card-foreground shadow-xl"
+        style={{ ...tooltipStyle, zIndex: 9020 }}
+      >
+        {/* Progress bar */}
+        <div className="h-1 w-full overflow-hidden rounded-t-2xl bg-muted">
+          <div
+            className="h-full bg-primary transition-all duration-300"
+            style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={finish}
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          aria-label="Close tour"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="p-5">
+          <p className="text-[11px] font-medium text-muted-foreground mb-2">
+            Step {stepIndex + 1} of {STEPS.length}
+          </p>
+          <h3 className="text-base font-bold text-foreground mb-1.5 pr-6">{step.title}</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">{step.body}</p>
+
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={finish}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Skip tour
+            </button>
+            <div className="flex items-center gap-2">
+              {stepIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  Back
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={goNext}
+                className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                {isLast ? "Let's go!" : 'Next'}
+                {!isLast && <ArrowRight className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Step dots */}
+          <div className="mt-4 flex justify-center gap-1.5">
+            {STEPS.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setStepIndex(i)}
+                className="h-1.5 rounded-full transition-all duration-200"
+                style={{
+                  width: i === stepIndex ? 24 : 6,
+                  background:
+                    i === stepIndex
+                      ? 'hsl(var(--primary))'
+                      : i < stepIndex
+                      ? 'hsl(var(--primary) / 0.4)'
+                      : 'hsl(var(--muted-foreground) / 0.25)',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </div>
   );
 
-  if (!run) return null;
-
-  return (
-    <>
-      <div
-        data-tour="planning-tooltip-anchor"
-        aria-hidden="true"
-        className="pointer-events-none fixed left-1/2 h-1 w-1 -translate-x-1/2"
-        style={{ top: '52vh' }}
-      />
-      <Joyride
-        steps={STEPS}
-        stepIndex={stepIndex}
-        run={run}
-        continuous
-        onEvent={handleEvent}
-        locale={{
-          back: 'Back',
-          close: 'Close',
-          last: "Let's go!",
-          next: 'Next',
-          skip: 'Skip tour',
-        }}
-        options={{
-          primaryColor: '#E6533C',
-          backgroundColor: 'hsl(var(--card))',
-          textColor: 'hsl(var(--foreground))',
-          overlayColor: 'rgba(0, 0, 0, 0.55)',
-          showProgress: true,
-          skipBeacon: true,
-          spotlightPadding: { top: 10, right: 6, bottom: 2, left: 6 },
-          spotlightRadius: 14,
-          // Higher than the Drawer (which renders at z-50) so the tooltip,
-          // overlay, and spotlight all sit above the open bottom sheet.
-          zIndex: 100000,
-          targetWaitTimeout: 8000,
-          buttons: ['back', 'skip', 'primary'],
-        }}
-        styles={{
-          tooltip: {
-            borderRadius: 16,
-            padding: 18,
-            fontSize: 14,
-          },
-          tooltipTitle: {
-            fontSize: 16,
-            fontWeight: 700,
-            marginBottom: 6,
-          },
-          tooltipContent: {
-            padding: 0,
-            lineHeight: 1.5,
-            color: 'hsl(var(--muted-foreground))',
-          },
-          buttonPrimary: {
-            backgroundColor: '#E6533C',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            padding: '8px 14px',
-          },
-          buttonBack: {
-            color: 'hsl(var(--muted-foreground))',
-            fontSize: 13,
-            marginRight: 6,
-          },
-          buttonSkip: {
-            color: 'hsl(var(--muted-foreground))',
-            fontSize: 12,
-          },
-        }}
-      />
-    </>
-  );
+  return createPortal(content, document.body);
 }
 
 export function startParadeTour() {

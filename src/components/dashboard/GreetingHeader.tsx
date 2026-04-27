@@ -68,25 +68,6 @@ export function GreetingHeader() {
   const [locationDraft, setLocationDraft] = useState('');
   const [saveAsHome, setSaveAsHome] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
-  const [planningSheetTourMode, setPlanningSheetTourMode] = useState(false);
-
-  // Allow the guided tour to open/close the planning sheet from outside.
-  useEffect(() => {
-    const open = () => {
-      setPlanningSheetTourMode(true);
-      setMenuOpen(true);
-    };
-    const close = () => {
-      setMenuOpen(false);
-      setPlanningSheetTourMode(false);
-    };
-    window.addEventListener('parade:open-planning-sheet', open);
-    window.addEventListener('parade:close-planning-sheet', close);
-    return () => {
-      window.removeEventListener('parade:open-planning-sheet', open);
-      window.removeEventListener('parade:close-planning-sheet', close);
-    };
-  }, []);
 
   const config = useMemo(() => {
     const hour = new Date().getHours();
@@ -309,12 +290,8 @@ export function GreetingHeader() {
       {/* Unified "What are you planning?" sheet */}
       <WhatArePlanningSheet
         open={menuOpen}
-        onOpenChange={(open) => {
-          setMenuOpen(open);
-          if (!open) setPlanningSheetTourMode(false);
-        }}
+        onOpenChange={setMenuOpen}
         onSelect={handleSelect}
-        tourMode={planningSheetTourMode}
       />
 
       {/* Sheets / Dialogs */}
