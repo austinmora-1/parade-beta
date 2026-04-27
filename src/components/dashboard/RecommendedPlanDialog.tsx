@@ -21,7 +21,7 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, type TimeSlot } from '@/types/planner';
 import type { OpenWindow } from '@/hooks/useOpenWindows';
-import { formatDisplayName } from '@/lib/formatName';
+
 
 interface RecommendedPlanDialogProps {
   open: boolean;
