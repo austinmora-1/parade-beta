@@ -1,7 +1,7 @@
-import { useMemo, useState, useEffect, lazy, Suspense } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { format, addDays, parseISO, isSameDay } from 'date-fns';
-import { CalendarPlus } from 'lucide-react';
+import { CalendarPlus, Sparkles, Send, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -11,10 +11,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { resolveEffectiveCity, isFriendInMyCity } from '@/lib/effectiveCity';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
-const QuickPlanSheet = lazy(() =>
-  import('@/components/plans/QuickPlanSheet').then(m => ({ default: m.QuickPlanSheet }))
-);
+// Map app TimeSlot -> preferred_social_times bucket id used in profile prefs
+const SLOT_TO_PREF_BUCKET: Record<TimeSlot, string> = {
+  'early-morning': 'morning',
+  'late-morning': 'morning',
+  'early-afternoon': 'afternoon',
+  'late-afternoon': 'afternoon',
+  'evening': 'evening',
+  'late-night': 'late-night',
+};
 
 const SLOT_KEYS: { col: string; slot: TimeSlot }[] = [
   { col: 'early_morning',   slot: 'early-morning'   },
