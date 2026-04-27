@@ -45,6 +45,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
   const [title, setTitle] = useState('');
   const [titleEdited, setTitleEdited] = useState(false);
   const [activity, setActivity] = useState<ActivityType | null>(null);
+  const [customActivity, setCustomActivity] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -58,6 +59,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
       setTitle(baseTitle);
       setTitleEdited(false);
       setActivity(null);
+      setCustomActivity('');
       setNote('');
       setSending(false);
     }
@@ -81,6 +83,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
 
   const slot = w.slots[0] as TimeSlot;
   const hasFriends = w.overlappingFriends.length > 0;
+  const effectiveActivity = customActivity.trim() || activity || 'hanging-out';
 
   const handleSend = async () => {
     if (sending) return;
@@ -91,7 +94,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
         const first = w.overlappingFriends[0];
         await proposePlan({
           recipientFriendId: first.userId,
-          activity: activity ?? 'hanging-out',
+          activity: effectiveActivity,
           date: w.date,
           timeSlot: slot,
           title: title.trim() || undefined,
@@ -134,7 +137,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
       } else {
         await addPlan({
           title: title.trim() || `Open hang — ${w.dayLabel}`,
-          activity: activity ?? 'hanging-out',
+          activity: effectiveActivity,
           date: w.date,
           timeSlot: slot,
           duration: 60,
@@ -237,6 +240,15 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                 );
               })}
             </div>
+            <Input
+              value={customActivity}
+              onChange={(e) => {
+                setCustomActivity(e.target.value);
+                if (e.target.value.trim()) setActivity(null);
+              }}
+              placeholder="Or type your own…"
+              className="h-9 text-sm"
+            />
           </div>
 
           <div className="space-y-2">
