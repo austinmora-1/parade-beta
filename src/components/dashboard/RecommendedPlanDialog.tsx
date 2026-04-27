@@ -52,9 +52,8 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
 
   useEffect(() => {
     if (open && w) {
-      // Auto-suggest all overlapping friends as selected by default — user can deselect.
-      const initial = new Set(w.overlappingFriends.map((f) => f.userId));
-      setSelectedFriendIds(initial);
+      // Default to no friends selected — user picks from suggested available friends.
+      setSelectedFriendIds(new Set());
       const friendNames = w.overlappingFriends.slice(0, 2).map((f) => f.name.split(' ')[0]);
       const suffix = w.overlappingFriends.length > 2 ? ` +${w.overlappingFriends.length - 2}` : '';
       const baseTitle = friendNames.length > 0
