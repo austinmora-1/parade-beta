@@ -257,7 +257,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
     })();
 
     return () => { cancelled = true; };
-  }, [connectedFriends, weekDates, myCityByDate, mySlotsByDate]);
+  }, [connectedFriends, weekDates, myCityByDate, mySlotsByDate, preferredTimes]);
 
   if (connectedFriends.length === 0) {
     return (
