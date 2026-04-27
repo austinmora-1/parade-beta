@@ -24,28 +24,32 @@ const STEPS: TourStep[] = [
     placement: 'bottom',
   },
   {
-    target: '[data-tour="fab"]',
+    target: '[data-tour="flow-hang"]',
     route: '/',
     title: '🤝 Find time with friends',
     content:
-      "Tap the + and pick \"Find time with friends\" to choose who you want to see — we'll surface windows where you're both free.",
-    placement: 'bottom',
+      "Pick \"Find time with friends\" to choose who you want to see — we'll surface windows where you're both free.",
+    placement: 'top',
+    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
   },
   {
-    target: '[data-tour="fab"]',
+    target: '[data-tour="flow-plus-one"]',
     route: '/',
     title: '🎟️ Open invites',
     content:
-      "Pick \"Open invite\" from the + menu when you have a spare ticket or want company for something specific. Friends can claim the spot.",
-    placement: 'bottom',
+      "Pick \"Open invite\" when you have a spare ticket or want company for something specific. Friends can claim the spot.",
+    placement: 'top',
+    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
   },
   {
-    target: '[data-tour="fab"]',
+    target: '[data-tour="flow-trip"]',
     route: '/',
     title: '📍 Go somewhere',
     content:
       "Pick \"Go somewhere\" to plan a trip or propose dates with a group — Parade auto-updates your location and surfaces nearby friends.",
-    placement: 'bottom',
+    placement: 'top',
+    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
+    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
     target: '[data-tour="nav-plans"]',
