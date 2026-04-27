@@ -22,7 +22,7 @@ import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
-import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
+import { RecommendedPlanDialog } from '@/components/dashboard/RecommendedPlanDialog';
 import { ShareLinkDialog } from '@/components/share/ShareLinkDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -174,19 +174,11 @@ export function FreeWindowCard() {
           />
         );
       })()}
-      {planFor && (
-        <QuickPlanSheet
-          open={!!planFor}
-          onOpenChange={(v) => !v && setPlanFor(null)}
-          preSelectedDate={planFor.date}
-          preSelectedTimeSlot={planFor.slots[0] as TimeSlot}
-          preSelectedFriends={planFor.overlappingFriends.map((f) => ({
-            userId: f.userId,
-            name: f.name,
-            avatar: f.avatar,
-          }))}
-        />
-      )}
+      <RecommendedPlanDialog
+        open={!!planFor}
+        onOpenChange={(v) => !v && setPlanFor(null)}
+        window={planFor}
+      />
     </>
   );
 }
