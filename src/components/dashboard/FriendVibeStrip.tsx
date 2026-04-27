@@ -143,6 +143,21 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
         availByUserDate.set(`${a.user_id}|${a.date}`, a);
       });
 
+      const MAX_RECOMMENDED = 5;
+      const hasPreferences = preferredTimes.size > 0;
+      const isPreferred = (s: OverlapSlot) => {
+        const day = format(parseISO(s.date), 'EEEE').toLowerCase();
+        const bucket = SLOT_TO_PREF_BUCKET[s.slot];
+        return preferredTimes.has(`${day}:${bucket}`);
+      };
+      const pickRecommended = (slots: OverlapSlot[]): OverlapSlot[] => {
+        const preferred = hasPreferences ? slots.filter(isPreferred) : [];
+        // If the user has preferences, only show preferred slots (up to max).
+        // Otherwise, fall back to the first N so the pill isn't empty.
+        const pool = hasPreferences ? preferred : slots;
+        return pool.slice(0, MAX_RECOMMENDED);
+      };
+
       const result: AroundFriend[] = connectedFriends.flatMap((friend): AroundFriend[] => {
         const profile = profileMap.get(friend.friendUserId!);
         const overlapSlots: OverlapSlot[] = [];
@@ -208,10 +223,12 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
         // friend still surfaces in "Who's around this week" even when our
         // calendars don't currently align.
         if (overlapSlots.length > 0) {
+          const trimmed = pickRecommended(overlapSlots);
+          if (trimmed.length === 0) return [];
           return [{
             friend,
-            freeDays: dayHasOverlap.size,
-            overlapSlots,
+            freeDays: new Set(trimmed.map(s => s.date)).size,
+            overlapSlots: trimmed,
             city: cityOnAvailableDay,
             currentVibe: (profile as any)?.current_vibe ?? null,
             customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
@@ -219,10 +236,12 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
           }];
         }
         if (friendOnlySlots.length > 0) {
+          const trimmed = pickRecommended(friendOnlySlots);
+          if (trimmed.length === 0) return [];
           return [{
             friend,
-            freeDays: dayHasFriendFree.size,
-            overlapSlots: friendOnlySlots,
+            freeDays: new Set(trimmed.map(s => s.date)).size,
+            overlapSlots: trimmed,
             city: cityOnFriendFreeDay,
             currentVibe: (profile as any)?.current_vibe ?? null,
             customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
@@ -238,7 +257,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
     })();
 
     return () => { cancelled = true; };
-  }, [connectedFriends, weekDates, myCityByDate, mySlotsByDate]);
+  }, [connectedFriends, weekDates, myCityByDate, mySlotsByDate, preferredTimes]);
 
   if (connectedFriends.length === 0) {
     return (
