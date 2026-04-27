@@ -1,7 +1,9 @@
-import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2, X, Pencil } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ACTIVITY_CONFIG as _AC } from '@/types/planner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
