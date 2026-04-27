@@ -137,6 +137,7 @@ const AppRoutes = () => {
   return (
   <Suspense fallback={<LazyFallback />}>
   <Routes>
+    <Route path="/" element={<RootRoute />} />
     <Route path="/share/:shareCode" element={<Share />} />
     <Route path="/invite" element={<Invite />} />
     <Route path="/plan-invite/:token" element={<PlanInvite />} />
