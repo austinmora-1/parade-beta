@@ -30,6 +30,8 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Find time with friends\" to choose who you want to see — we'll surface windows where you're both free.",
     placement: 'top',
+    disableScrollParentFix: true,
+    floaterProps: { disableAnimation: true },
     onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
   },
   {
@@ -39,6 +41,8 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Open invite\" when you have a spare ticket or want company for something specific. Friends can claim the spot.",
     placement: 'top',
+    disableScrollParentFix: true,
+    floaterProps: { disableAnimation: true },
     onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
   },
   {
@@ -48,6 +52,8 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Go somewhere\" to plan a trip or propose dates with a group — Parade auto-updates your location and surfaces nearby friends.",
     placement: 'top',
+    disableScrollParentFix: true,
+    floaterProps: { disableAnimation: true },
     onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
     onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
