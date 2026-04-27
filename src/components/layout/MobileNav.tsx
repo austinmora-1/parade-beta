@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { motion, LayoutGroup } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const navItems = [
   { path: '/',             icon: House,         label: 'Home'    },
