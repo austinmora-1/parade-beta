@@ -1,7 +1,9 @@
-import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Edit, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2, X, Pencil } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ACTIVITY_CONFIG as _AC } from '@/types/planner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -97,7 +99,7 @@ export default function PlanDetail() {
   const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends, userTimezone } = usePlannerStore();
   const { profile: currentUserProfile } = useCurrentUserProfile();
   
-  const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
+  const { changeRequests, respondToChange, refetch: refetchChangeRequests, proposeChange } = usePlanChangeRequests();
   const { pods } = usePods();
 
   const inviteToken = searchParams.get('invite_token');
@@ -115,6 +117,14 @@ export default function PlanDetail() {
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [mergeSelectedIds, setMergeSelectedIds] = useState<string[]>([]);
+
+  // Inline edit local state
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [locationDraft, setLocationDraft] = useState('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -416,6 +426,52 @@ export default function PlanDetail() {
     }
   };
 
+  // Determine if shared (multi-participant) — schedule changes need approval
+  const otherParticipantUserIds = (effectivePlan?.participants || [])
+    .filter((p: any) => p.role !== 'subscriber' && p.friendUserId && p.friendUserId !== userId)
+    .map((p: any) => p.friendUserId);
+  const isSharedPlan = otherParticipantUserIds.length > 0;
+
+  const applyDirectUpdate = async (updates: Partial<Plan>) => {
+    if (!plan) return;
+    try {
+      await updatePlan(plan.id, updates);
+      toast.success('Updated');
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't update — try again?");
+    }
+  };
+
+  const applyScheduleUpdate = async (changes: { date?: Date; timeSlot?: any; duration?: number; startTime?: string; endTime?: string }) => {
+    if (!plan) return;
+    // Owner solo plan, or non-time fields → direct update
+    const needsApproval = isSharedPlan && (changes.date || changes.timeSlot || changes.duration);
+    if (!needsApproval) {
+      await applyDirectUpdate(changes as Partial<Plan>);
+      return;
+    }
+    // Propose change
+    try {
+      const ok = await proposeChange(
+        plan.id,
+        {
+          date: changes.date,
+          timeSlot: changes.timeSlot,
+          duration: changes.duration,
+        },
+        otherParticipantUserIds,
+      );
+      if (ok) {
+        toast.success('Change proposed — waiting on participants');
+        refetchChangeRequests();
+      } else {
+        toast.error("Couldn't propose that change — try again?");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't propose change");
+    }
+  };
+
   return (
     <div className="animate-fade-in space-y-6 max-w-2xl mx-auto">
       {/* Back button */}
@@ -490,9 +546,63 @@ export default function PlanDetail() {
               >
                 <ActivityIcon config={activityConfig} size={22} />
               </div>
-              <div>
-                <h1 className="font-display text-lg font-bold leading-snug">{displayTitle}</h1>
-                <p className="text-xs text-muted-foreground">{activityConfig.label}</p>
+              <div className="flex-1 min-w-0">
+                {canEdit && !isPast && editingTitle ? (
+                  <Input
+                    autoFocus
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onBlur={async () => {
+                      const next = titleDraft.trim();
+                      setEditingTitle(false);
+                      if (next && next !== displayTitle) {
+                        await applyDirectUpdate({ title: next });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') { setEditingTitle(false); }
+                    }}
+                    className="h-8 font-display text-lg font-bold leading-snug px-2"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!canEdit || isPast) return;
+                      setTitleDraft(displayTitle || '');
+                      setEditingTitle(true);
+                    }}
+                    className={`text-left font-display text-lg font-bold leading-snug ${canEdit && !isPast ? 'hover:bg-muted/40 rounded px-1 -mx-1 cursor-text' : ''}`}
+                  >
+                    {displayTitle}
+                  </button>
+                )}
+                {canEdit && !isPast && plan ? (
+                  <Select
+                    value={plan.activity}
+                    onValueChange={async (val) => {
+                      await applyDirectUpdate({ activity: val as any });
+                    }}
+                  >
+                    <SelectTrigger className="h-6 mt-0.5 w-auto px-1 -mx-1 border-none shadow-none gap-1 text-xs text-muted-foreground hover:bg-muted/40">
+                      <SelectValue>{activityConfig.label}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {(Object.entries(_AC) as [string, any][])
+                        .filter(([k]) => k !== 'custom')
+                        .map(([key, cfg]) => (
+                          <SelectItem key={key} value={key} className="text-sm">
+                            <span className="inline-flex items-center gap-2">
+                              <span>{cfg.icon}</span>{cfg.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{activityConfig.label}</p>
+                )}
                 {displayPlan.status === 'tentative' && (
                   <span className="inline-block mt-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                     Tentative
@@ -509,46 +619,167 @@ export default function PlanDetail() {
 
           {/* Details */}
           <div className="space-y-2.5">
+            {/* Date */}
             <div className="flex items-center gap-3 text-sm">
               <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>
-                {format(displayPlan.date, 'EEEE, MMMM d, yyyy')}
-                {displayPlan.endDate && ` – ${format(displayPlan.endDate, 'EEEE, MMMM d, yyyy')}`}
-              </span>
+              {canEdit && !isPast && plan ? (
+                <input
+                  type="date"
+                  value={format(displayPlan.date, 'yyyy-MM-dd')}
+                  onChange={async (e) => {
+                    const v = e.target.value;
+                    if (!v) return;
+                    const [y, m, d] = v.split('-').map(Number);
+                    const newDate = new Date(y, m - 1, d);
+                    await applyScheduleUpdate({ date: newDate });
+                  }}
+                  className="bg-transparent border-none px-1 -mx-1 rounded hover:bg-muted/40 focus:bg-muted/40 outline-none text-sm"
+                />
+              ) : (
+                <span>
+                  {format(displayPlan.date, 'EEEE, MMMM d, yyyy')}
+                  {displayPlan.endDate && ` – ${format(displayPlan.endDate, 'EEEE, MMMM d, yyyy')}`}
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-3 text-sm">
+
+            {/* Time / time slot */}
+            <div className="flex items-center gap-3 text-sm flex-wrap">
               <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>
-                {displayPlan.startTime || displayPlan.endTime ? (
-                  <>
-                    {displayPlan.startTime && formatTime12(displayPlan.startTime)}
-                    {displayPlan.startTime && displayPlan.endTime && ' – '}
-                    {displayPlan.endTime && formatTime12(displayPlan.endTime)}
-                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
-                    {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
-                  </>
-                ) : timeSlotConfig ? (
-                  <>
-                    {timeSlotConfig.label} ({timeSlotConfig.time})
-                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
-                  </>
-                ) : null}
-                {displayPlan.duration && !displayPlan.startTime && !displayPlan.endTime && (
-                  <span className="text-muted-foreground">
-                    {' · '}
-                    {displayPlan.duration >= 60
-                      ? `${Math.floor(displayPlan.duration / 60)}h${displayPlan.duration % 60 > 0 ? ` ${displayPlan.duration % 60}m` : ''}`
-                      : `${displayPlan.duration}m`}
-                  </span>
-                )}
-              </span>
+              {canEdit && !isPast && plan ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select
+                    value={displayPlan.timeSlot || ''}
+                    onValueChange={async (val) => {
+                      await applyScheduleUpdate({ timeSlot: val as any });
+                    }}
+                  >
+                    <SelectTrigger className="h-7 w-auto px-2 text-sm border-none bg-muted/40 gap-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TIME_SLOT_LABELS).map(([key, cfg]) => (
+                        <SelectItem key={key} value={key} className="text-sm">
+                          {cfg.label} ({cfg.time})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <input
+                    type="time"
+                    value={displayPlan.startTime || ''}
+                    onChange={async (e) => {
+                      await applyScheduleUpdate({ startTime: e.target.value || undefined });
+                    }}
+                    className="bg-muted/40 border-none rounded px-2 py-1 outline-none text-xs"
+                    title="Start time"
+                  />
+                  <span className="text-muted-foreground text-xs">–</span>
+                  <input
+                    type="time"
+                    value={displayPlan.endTime || ''}
+                    onChange={async (e) => {
+                      await applyScheduleUpdate({ endTime: e.target.value || undefined });
+                    }}
+                    className="bg-muted/40 border-none rounded px-2 py-1 outline-none text-xs"
+                    title="End time"
+                  />
+                  <Select
+                    value={String(displayPlan.duration || 60)}
+                    onValueChange={async (val) => {
+                      await applyScheduleUpdate({ duration: parseInt(val, 10) });
+                    }}
+                  >
+                    <SelectTrigger className="h-7 w-auto px-2 text-xs border-none bg-muted/40 gap-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[30, 60, 90, 120, 150, 180, 240, 300, 360].map(m => (
+                        <SelectItem key={m} value={String(m)} className="text-sm">
+                          {m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}` : `${m}m`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <span>
+                  {displayPlan.startTime || displayPlan.endTime ? (
+                    <>
+                      {displayPlan.startTime && formatTime12(displayPlan.startTime)}
+                      {displayPlan.startTime && displayPlan.endTime && ' – '}
+                      {displayPlan.endTime && formatTime12(displayPlan.endTime)}
+                      <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
+                      {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
+                    </>
+                  ) : timeSlotConfig ? (
+                    <>
+                      {timeSlotConfig.label} ({timeSlotConfig.time})
+                      <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
+                    </>
+                  ) : null}
+                  {displayPlan.duration && !displayPlan.startTime && !displayPlan.endTime && (
+                    <span className="text-muted-foreground">
+                      {' · '}
+                      {displayPlan.duration >= 60
+                        ? `${Math.floor(displayPlan.duration / 60)}h${displayPlan.duration % 60 > 0 ? ` ${displayPlan.duration % 60}m` : ''}`
+                        : `${displayPlan.duration}m`}
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
-            {displayPlan.location && (
-              <div className="flex items-center gap-3 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>{displayPlan.location.name}</span>
-              </div>
+
+            {isSharedPlan && canEdit && !isPast && (
+              <p className="text-[11px] text-muted-foreground pl-7 -mt-1">
+                Date, time, and duration changes are proposed to participants for approval.
+              </p>
             )}
+
+            {/* Location */}
+            <div className="flex items-center gap-3 text-sm">
+              <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+              {canEdit && !isPast && plan ? (
+                editingLocation ? (
+                  <Input
+                    autoFocus
+                    value={locationDraft}
+                    onChange={(e) => setLocationDraft(e.target.value)}
+                    onBlur={async () => {
+                      const next = locationDraft.trim();
+                      setEditingLocation(false);
+                      const current = displayPlan.location?.name || '';
+                      if (next !== current) {
+                        await applyDirectUpdate({
+                          location: next ? { id: '', name: next, address: '' } as any : undefined as any,
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') setEditingLocation(false);
+                    }}
+                    className="h-8 text-sm"
+                    placeholder="Where?"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationDraft(displayPlan.location?.name || '');
+                      setEditingLocation(true);
+                    }}
+                    className="text-left hover:bg-muted/40 rounded px-1 -mx-1 cursor-text"
+                  >
+                    {displayPlan.location?.name || (
+                      <span className="text-muted-foreground italic">Add location</span>
+                    )}
+                  </button>
+                )
+              ) : (
+                displayPlan.location && <span>{displayPlan.location.name}</span>
+              )}
+            </div>
             {/* Timezone display / edit */}
             {(() => {
               const tz = displayPlan.sourceTimezone;
@@ -720,10 +951,44 @@ export default function PlanDetail() {
           )}
 
           {/* Notes */}
-          {displayPlan.notes && (
+          {(displayPlan.notes || (canEdit && !isPast && plan)) && (
             <div className="space-y-2">
               <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</div>
-              <p className="text-sm bg-muted/30 rounded-lg p-3">{displayPlan.notes}</p>
+              {canEdit && !isPast && plan ? (
+                editingNotes ? (
+                  <Textarea
+                    autoFocus
+                    value={notesDraft}
+                    onChange={(e) => setNotesDraft(e.target.value)}
+                    onBlur={async () => {
+                      const next = notesDraft;
+                      setEditingNotes(false);
+                      if ((next || '') !== (displayPlan.notes || '')) {
+                        await applyDirectUpdate({ notes: next || undefined });
+                      }
+                    }}
+                    placeholder="Add notes…"
+                    className="text-sm min-h-[80px]"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotesDraft(displayPlan.notes || '');
+                      setEditingNotes(true);
+                    }}
+                    className="text-left w-full text-sm bg-muted/30 hover:bg-muted/50 rounded-lg p-3 transition-colors"
+                  >
+                    {displayPlan.notes || (
+                      <span className="text-muted-foreground italic">Add notes…</span>
+                    )}
+                  </button>
+                )
+              ) : (
+                displayPlan.notes && (
+                  <p className="text-sm bg-muted/30 rounded-lg p-3">{displayPlan.notes}</p>
+                )
+              )}
             </div>
           )}
 
@@ -783,11 +1048,7 @@ export default function PlanDetail() {
         {/* Actions - only show when user has access to the plan (not invite preview) */}
         {plan && (
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-            {canEdit && !isPast && (
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setEditDialogOpen(true)}>
-                <Edit className="h-4 w-4" /> Edit
-              </Button>
-            )}
+
 
             {!isPast && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setInviteDialogOpen(true)}>
