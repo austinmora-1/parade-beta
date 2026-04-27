@@ -82,7 +82,10 @@ export default function Login() {
         return;
       }
 
-      const { data, error } = await signUp(email.trim(), password, displayName.trim());
+      const emailRedirectTo = redirect
+        ? `${window.location.origin}${redirect}`
+        : window.location.origin;
+      const { data, error } = await signUp(email.trim(), password, displayName.trim(), emailRedirectTo);
       if (error) {
         const msg = error.message || '';
         if (/already registered|already exists|user.*exists/i.test(msg)) {
