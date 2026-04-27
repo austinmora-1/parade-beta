@@ -13,6 +13,20 @@ type TourStep = Step & {
   onLeave?: () => void;
 };
 
+const PLANNING_SHEET_SELECTOR = '[data-tour="planning-sheet"]';
+const PLANNING_TOOLTIP_ANCHOR_SELECTOR = '[data-tour="planning-tooltip-anchor"]';
+
+const isPlanningSheetStep = (index: number) => index >= 1 && index <= 3;
+
+function positionPlanningTooltipAnchor() {
+  const anchor = document.querySelector<HTMLElement>(PLANNING_TOOLTIP_ANCHOR_SELECTOR);
+  if (!anchor) return;
+
+  const sheet = document.querySelector<HTMLElement>(PLANNING_SHEET_SELECTOR);
+  const sheetTop = sheet?.getBoundingClientRect().top ?? window.innerHeight * 0.58;
+  anchor.style.top = `${Math.max(88, Math.round(sheetTop - 18))}px`;
+}
+
 /**
  * Wait for an element matching `selector` to exist in the DOM, then resolve
  * after a short settle delay so the spotlight measures a stable rect.
@@ -40,8 +54,16 @@ function waitForSelector(selector: string, timeoutMs = 3000, settleMs = 220) {
  * referenced flow button to mount before letting Joyride spotlight it.
  */
 const openSheetAndWait = (selector: string) => async () => {
+  const wasSheetOpen = Boolean(document.querySelector(PLANNING_SHEET_SELECTOR));
   window.dispatchEvent(new Event('parade:open-planning-sheet'));
-  await waitForSelector(selector);
+  await waitForSelector(selector, 3000, wasSheetOpen ? 160 : 520);
+  positionPlanningTooltipAnchor();
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      positionPlanningTooltipAnchor();
+      resolve();
+    });
+  });
 };
 
 const STEPS: TourStep[] = [
@@ -54,7 +76,8 @@ const STEPS: TourStep[] = [
     placement: 'bottom',
   },
   {
-    target: '[data-tour="flow-hang"]',
+    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
+    spotlightTarget: '[data-tour="flow-hang"]',
     route: '/',
     title: '🤝 Find time with friends',
     content:
@@ -66,7 +89,8 @@ const STEPS: TourStep[] = [
     onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
-    target: '[data-tour="flow-plus-one"]',
+    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
+    spotlightTarget: '[data-tour="flow-plus-one"]',
     route: '/',
     title: '🎟️ Open invites',
     content:
@@ -78,7 +102,8 @@ const STEPS: TourStep[] = [
     onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
-    target: '[data-tour="flow-trip"]',
+    target: PLANNING_TOOLTIP_ANCHOR_SELECTOR,
+    spotlightTarget: '[data-tour="flow-trip"]',
     route: '/',
     title: '📍 Go somewhere',
     content:
@@ -205,12 +230,15 @@ export function ParadeTour() {
       // to `targetWaitTimeout`. Only advance on explicit user STEP_AFTER.
       if (type === EVENTS.STEP_AFTER) {
         const next = action === ACTIONS.PREV ? index - 1 : index + 1;
-        STEPS[index]?.onLeave?.();
         if (next >= STEPS.length) {
+          STEPS[index]?.onLeave?.();
           finish();
           return;
         }
         if (next < 0) return;
+        if (!isPlanningSheetStep(index) || !isPlanningSheetStep(next)) {
+          STEPS[index]?.onLeave?.();
+        }
         setStepIndex(next);
       }
     },
@@ -220,68 +248,76 @@ export function ParadeTour() {
   if (!run) return null;
 
   return (
-    <Joyride
-      steps={STEPS}
-      stepIndex={stepIndex}
-      run={run}
-      continuous
-      onEvent={handleEvent}
-      locale={{
-        back: 'Back',
-        close: 'Close',
-        last: "Let's go!",
-        next: 'Next',
-        skip: 'Skip tour',
-      }}
-      options={{
-        primaryColor: '#E6533C',
-        backgroundColor: 'hsl(var(--card))',
-        textColor: 'hsl(var(--foreground))',
-        overlayColor: 'rgba(0, 0, 0, 0.55)',
-        showProgress: true,
-        skipBeacon: true,
-        spotlightPadding: 6,
-        spotlightRadius: 14,
-        // Higher than the Drawer (which renders at z-50) so the tooltip,
-        // overlay, and spotlight all sit above the open bottom sheet.
-        zIndex: 100000,
-        targetWaitTimeout: 8000,
-        buttons: ['back', 'skip', 'primary'],
-      }}
-      styles={{
-        tooltip: {
-          borderRadius: 16,
-          padding: 18,
-          fontSize: 14,
-        },
-        tooltipTitle: {
-          fontSize: 16,
-          fontWeight: 700,
-          marginBottom: 6,
-        },
-        tooltipContent: {
-          padding: 0,
-          lineHeight: 1.5,
-          color: 'hsl(var(--muted-foreground))',
-        },
-        buttonPrimary: {
-          backgroundColor: '#E6533C',
-          borderRadius: 8,
-          fontSize: 13,
-          fontWeight: 600,
-          padding: '8px 14px',
-        },
-        buttonBack: {
-          color: 'hsl(var(--muted-foreground))',
-          fontSize: 13,
-          marginRight: 6,
-        },
-        buttonSkip: {
-          color: 'hsl(var(--muted-foreground))',
-          fontSize: 12,
-        },
-      }}
-    />
+    <>
+      <div
+        data-tour="planning-tooltip-anchor"
+        aria-hidden="true"
+        className="pointer-events-none fixed left-1/2 h-1 w-1 -translate-x-1/2"
+        style={{ top: '52vh' }}
+      />
+      <Joyride
+        steps={STEPS}
+        stepIndex={stepIndex}
+        run={run}
+        continuous
+        onEvent={handleEvent}
+        locale={{
+          back: 'Back',
+          close: 'Close',
+          last: "Let's go!",
+          next: 'Next',
+          skip: 'Skip tour',
+        }}
+        options={{
+          primaryColor: '#E6533C',
+          backgroundColor: 'hsl(var(--card))',
+          textColor: 'hsl(var(--foreground))',
+          overlayColor: 'rgba(0, 0, 0, 0.55)',
+          showProgress: true,
+          skipBeacon: true,
+          spotlightPadding: { top: 10, right: 6, bottom: 2, left: 6 },
+          spotlightRadius: 14,
+          // Higher than the Drawer (which renders at z-50) so the tooltip,
+          // overlay, and spotlight all sit above the open bottom sheet.
+          zIndex: 100000,
+          targetWaitTimeout: 8000,
+          buttons: ['back', 'skip', 'primary'],
+        }}
+        styles={{
+          tooltip: {
+            borderRadius: 16,
+            padding: 18,
+            fontSize: 14,
+          },
+          tooltipTitle: {
+            fontSize: 16,
+            fontWeight: 700,
+            marginBottom: 6,
+          },
+          tooltipContent: {
+            padding: 0,
+            lineHeight: 1.5,
+            color: 'hsl(var(--muted-foreground))',
+          },
+          buttonPrimary: {
+            backgroundColor: '#E6533C',
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            padding: '8px 14px',
+          },
+          buttonBack: {
+            color: 'hsl(var(--muted-foreground))',
+            fontSize: 13,
+            marginRight: 6,
+          },
+          buttonSkip: {
+            color: 'hsl(var(--muted-foreground))',
+            fontSize: 12,
+          },
+        }}
+      />
+    </>
   );
 }
 

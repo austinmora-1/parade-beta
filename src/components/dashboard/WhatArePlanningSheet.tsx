@@ -7,6 +7,7 @@ interface WhatArePlanningSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (entry: PlanningEntry) => void;
+  tourMode?: boolean;
 }
 
 const ENTRIES: { key: PlanningEntry; emoji: string; label: string; hint: string }[] = [
@@ -15,7 +16,7 @@ const ENTRIES: { key: PlanningEntry; emoji: string; label: string; hint: string 
   { key: 'trip',         emoji: '📍',  label: 'Go somewhere',         hint: '"NYC this fall — or Queens on Saturday"' },
 ];
 
-export function WhatArePlanningSheet({ open, onOpenChange, onSelect }: WhatArePlanningSheetProps) {
+export function WhatArePlanningSheet({ open, onOpenChange, onSelect, tourMode = false }: WhatArePlanningSheetProps) {
   const handle = (key: PlanningEntry) => {
     onOpenChange(false);
     // Allow drawer close animation to start before triggering parent state changes
@@ -23,8 +24,8 @@ export function WhatArePlanningSheet({ open, onOpenChange, onSelect }: WhatArePl
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh]">
+    <Drawer open={open} onOpenChange={onOpenChange} dismissible={!tourMode}>
+      <DrawerContent data-tour="planning-sheet" className="max-h-[85vh]">
         <DrawerHeader className="text-left pb-2">
           <DrawerTitle className="text-base font-semibold">What are you planning?</DrawerTitle>
           <DrawerDescription className="text-xs">
