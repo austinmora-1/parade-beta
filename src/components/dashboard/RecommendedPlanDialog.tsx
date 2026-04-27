@@ -240,6 +240,15 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                 );
               })}
             </div>
+            <Input
+              value={customActivity}
+              onChange={(e) => {
+                setCustomActivity(e.target.value);
+                if (e.target.value.trim()) setActivity(null);
+              }}
+              placeholder="Or type your own…"
+              className="h-9 text-sm"
+            />
           </div>
 
           <div className="space-y-2">
