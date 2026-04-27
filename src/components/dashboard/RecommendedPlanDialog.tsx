@@ -222,6 +222,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
             <div className="flex flex-wrap gap-1.5">
               {QUICK_ACTIVITIES.map((a) => {
                 const selected = activity === a.id;
+                const ActIcon = a.Icon;
                 return (
                   <button
                     key={a.id}
@@ -234,7 +235,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                         : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground')
                     }
                   >
-                    <span>{a.emoji}</span>
+                    <ActIcon className="h-3.5 w-3.5 text-primary/60" />
                     <span>{a.label}</span>
                   </button>
                 );
