@@ -1,6 +1,9 @@
 import { useMemo, useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { format, addDays } from 'date-fns';
+import { format, addDays, parseISO, isSameDay } from 'date-fns';
+import { CalendarPlus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { Friend, VIBE_CONFIG, VibeType } from '@/types/planner';
