@@ -62,7 +62,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, userId, setUserId, loadAllData]);
 
-  if (loading) {
+  if (loading && user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <ElephantLoader />
