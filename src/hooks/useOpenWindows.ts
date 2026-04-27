@@ -409,8 +409,17 @@ export function useOpenWindows() {
             });
             if (!sameCity) continue;
 
+            // Slots where this friend has a confirmed or proposed plan are
+            // treated as conflicts and don't count toward overlap.
+            const friendBusySlots = new Set(
+              friendPlans
+                .filter((p) => p.user_id === f.friendUserId && p.date === dateKey)
+                .map((p) => p.time_slot)
+            );
+
             let overlapHours = 0;
             for (const slot of block) {
+              if (friendBusySlots.has(slot)) continue;
               const dbKey = SLOT_DB_KEYS.find((k) => k.slot === slot)!.key;
               if (row[dbKey]) overlapHours += SLOT_HOURS[slot];
             }
