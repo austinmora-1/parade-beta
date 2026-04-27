@@ -281,7 +281,7 @@ function FriendPill({
   index: number;
   preferredTimes: Set<string>;
 }) {
-  const { friend, freeDays, overlapSlots, city, currentVibe, customVibeTags } = data;
+  const { friend, freeDays, overlapSlots, city, currentVibe, customVibeTags, mutual } = data;
   const { user } = useAuth();
   const vibeConfig = currentVibe ? VIBE_CONFIG[currentVibe as VibeType] : null;
   const isCustom = currentVibe === 'custom';
