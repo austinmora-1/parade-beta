@@ -447,14 +447,9 @@ function FriendPill({
               </span>
             </div>
             <div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
-              {vibeLabel && (
-                <span className="truncate max-w-[6rem]">{vibeLabel}</span>
-              )}
-              {vibeLabel && cityLabel && <span aria-hidden>·</span>}
-              {cityLabel && (
+              {cityLabel ? (
                 <span className="truncate max-w-[6rem]">{cityLabel}</span>
-              )}
-              {!vibeLabel && !cityLabel && (
+              ) : (
                 <span className="text-muted-foreground/70">free this week</span>
               )}
             </div>
