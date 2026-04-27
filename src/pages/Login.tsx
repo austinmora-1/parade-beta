@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function Login() {
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { user, loading: authLoading, signIn, signUp, resetPassword } = useAuth();
   const { scheme } = useColorScheme();
   const gradient =
     scheme === 'coral'
