@@ -63,6 +63,7 @@ const STEPS: TourStep[] = [
     isFixed: true,
     skipScroll: true,
     before: openSheetAndWait('[data-tour="flow-hang"]'),
+    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
     target: '[data-tour="flow-plus-one"]',
@@ -74,6 +75,7 @@ const STEPS: TourStep[] = [
     isFixed: true,
     skipScroll: true,
     before: openSheetAndWait('[data-tour="flow-plus-one"]'),
+    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
     target: '[data-tour="flow-trip"]',
