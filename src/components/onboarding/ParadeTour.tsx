@@ -400,21 +400,7 @@ export function ParadeTour() {
         />
       </svg>
 
-      {/* Static highlight ring around the spotlight */}
-      {spotlight && (
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            top: spotlight.y,
-            left: spotlight.x,
-            width: spotlight.w,
-            height: spotlight.h,
-            borderRadius: radius,
-            zIndex: showPanel ? 9015 : 9005,
-            boxShadow: '0 0 0 2px hsl(var(--primary))',
-          }}
-        />
-      )}
+      {/* Spotlight cutout only — no outline ring */}
 
       {/* Tour-owned planning panel (steps 2-4) */}
       <AnimatePresence>
