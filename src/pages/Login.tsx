@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function Login() {
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { user, loading: authLoading, signIn, signUp, resetPassword } = useAuth();
   const { scheme } = useColorScheme();
   const gradient =
     scheme === 'coral'
@@ -36,6 +36,14 @@ export default function Login() {
   const navigateAfterAuth = () => {
     navigate(redirect || '/', { replace: true });
   };
+
+  // If the user is already signed in (e.g., they clicked an invite link in another tab
+  // or returned to the email after signing in), send them straight to the redirect target.
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(redirect || '/', { replace: true });
+    }
+  }, [authLoading, user, redirect, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +82,10 @@ export default function Login() {
         return;
       }
 
-      const { data, error } = await signUp(email.trim(), password, displayName.trim());
+      const emailRedirectTo = redirect
+        ? `${window.location.origin}${redirect}`
+        : window.location.origin;
+      const { data, error } = await signUp(email.trim(), password, displayName.trim(), emailRedirectTo);
       if (error) {
         const msg = error.message || '';
         if (/already registered|already exists|user.*exists/i.test(msg)) {
