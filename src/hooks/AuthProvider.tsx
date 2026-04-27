@@ -17,11 +17,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(s => s ?? initialSession);
-      setUser(u => u ?? (initialSession?.user ?? null));
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session: initialSession } }) => {
+        setSession(s => s ?? initialSession);
+        setUser(u => u ?? (initialSession?.user ?? null));
+      })
+      .catch((error) => {
+        console.error('Auth session initialization failed:', error);
+        setSession(null);
+        setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, []);
