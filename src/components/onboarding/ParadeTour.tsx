@@ -400,10 +400,9 @@ export function ParadeTour() {
         />
       </svg>
 
-      {/* Pulsing highlight ring around the spotlight */}
+      {/* Static highlight ring around the spotlight */}
       {spotlight && (
-        <motion.div
-          key={`ring-${step.id}`}
+        <div
           className="pointer-events-none absolute"
           style={{
             top: spotlight.y,
@@ -412,16 +411,8 @@ export function ParadeTour() {
             height: spotlight.h,
             borderRadius: radius,
             zIndex: showPanel ? 9015 : 9005,
+            boxShadow: '0 0 0 2px hsl(var(--primary))',
           }}
-          initial={{ boxShadow: '0 0 0 2px hsl(var(--primary)), 0 0 0 0 hsl(var(--primary) / 0.5)' }}
-          animate={{
-            boxShadow: [
-              '0 0 0 2px hsl(var(--primary)), 0 0 0 0 hsl(var(--primary) / 0.55)',
-              '0 0 0 2px hsl(var(--primary)), 0 0 0 12px hsl(var(--primary) / 0)',
-              '0 0 0 2px hsl(var(--primary)), 0 0 0 0 hsl(var(--primary) / 0.55)',
-            ],
-          }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
         />
       )}
 
