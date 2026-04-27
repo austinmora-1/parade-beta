@@ -54,17 +54,31 @@ interface FriendVibeStripProps {
 
 export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
   const { friends, availability, homeAddress } = usePlannerStore();
+  const { user } = useAuth();
   const [around, setAround] = useState<AroundFriend[]>([]);
-  const [planContext, setPlanContext] = useState<{
-    friend: { userId: string; name: string; avatar?: string };
-    date: Date;
-    slot: TimeSlot;
-  } | null>(null);
+  const [preferredTimes, setPreferredTimes] = useState<Set<string>>(new Set());
 
   const connectedFriends = useMemo(
     () => friends.filter(f => f.status === 'connected' && f.friendUserId),
     [friends]
   );
+
+  // Load my preferred social times (e.g. "monday:evening")
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('preferred_social_times')
+        .eq('user_id', user.id)
+        .single();
+      if (cancelled) return;
+      const times = (data as { preferred_social_times: string[] | null } | null)?.preferred_social_times;
+      setPreferredTimes(new Set(times || []));
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // 7-day window starting today
   const weekDates = useMemo(
