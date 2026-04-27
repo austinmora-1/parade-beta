@@ -619,46 +619,167 @@ export default function PlanDetail() {
 
           {/* Details */}
           <div className="space-y-2.5">
+            {/* Date */}
             <div className="flex items-center gap-3 text-sm">
               <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>
-                {format(displayPlan.date, 'EEEE, MMMM d, yyyy')}
-                {displayPlan.endDate && ` – ${format(displayPlan.endDate, 'EEEE, MMMM d, yyyy')}`}
-              </span>
+              {canEdit && !isPast && plan ? (
+                <input
+                  type="date"
+                  value={format(displayPlan.date, 'yyyy-MM-dd')}
+                  onChange={async (e) => {
+                    const v = e.target.value;
+                    if (!v) return;
+                    const [y, m, d] = v.split('-').map(Number);
+                    const newDate = new Date(y, m - 1, d);
+                    await applyScheduleUpdate({ date: newDate });
+                  }}
+                  className="bg-transparent border-none px-1 -mx-1 rounded hover:bg-muted/40 focus:bg-muted/40 outline-none text-sm"
+                />
+              ) : (
+                <span>
+                  {format(displayPlan.date, 'EEEE, MMMM d, yyyy')}
+                  {displayPlan.endDate && ` – ${format(displayPlan.endDate, 'EEEE, MMMM d, yyyy')}`}
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-3 text-sm">
+
+            {/* Time / time slot */}
+            <div className="flex items-center gap-3 text-sm flex-wrap">
               <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>
-                {displayPlan.startTime || displayPlan.endTime ? (
-                  <>
-                    {displayPlan.startTime && formatTime12(displayPlan.startTime)}
-                    {displayPlan.startTime && displayPlan.endTime && ' – '}
-                    {displayPlan.endTime && formatTime12(displayPlan.endTime)}
-                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
-                    {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
-                  </>
-                ) : timeSlotConfig ? (
-                  <>
-                    {timeSlotConfig.label} ({timeSlotConfig.time})
-                    <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
-                  </>
-                ) : null}
-                {displayPlan.duration && !displayPlan.startTime && !displayPlan.endTime && (
-                  <span className="text-muted-foreground">
-                    {' · '}
-                    {displayPlan.duration >= 60
-                      ? `${Math.floor(displayPlan.duration / 60)}h${displayPlan.duration % 60 > 0 ? ` ${displayPlan.duration % 60}m` : ''}`
-                      : `${displayPlan.duration}m`}
-                  </span>
-                )}
-              </span>
+              {canEdit && !isPast && plan ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select
+                    value={displayPlan.timeSlot || ''}
+                    onValueChange={async (val) => {
+                      await applyScheduleUpdate({ timeSlot: val as any });
+                    }}
+                  >
+                    <SelectTrigger className="h-7 w-auto px-2 text-sm border-none bg-muted/40 gap-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TIME_SLOT_LABELS).map(([key, cfg]) => (
+                        <SelectItem key={key} value={key} className="text-sm">
+                          {cfg.label} ({cfg.time})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <input
+                    type="time"
+                    value={displayPlan.startTime || ''}
+                    onChange={async (e) => {
+                      await applyScheduleUpdate({ startTime: e.target.value || undefined });
+                    }}
+                    className="bg-muted/40 border-none rounded px-2 py-1 outline-none text-xs"
+                    title="Start time"
+                  />
+                  <span className="text-muted-foreground text-xs">–</span>
+                  <input
+                    type="time"
+                    value={displayPlan.endTime || ''}
+                    onChange={async (e) => {
+                      await applyScheduleUpdate({ endTime: e.target.value || undefined });
+                    }}
+                    className="bg-muted/40 border-none rounded px-2 py-1 outline-none text-xs"
+                    title="End time"
+                  />
+                  <Select
+                    value={String(displayPlan.duration || 60)}
+                    onValueChange={async (val) => {
+                      await applyScheduleUpdate({ duration: parseInt(val, 10) });
+                    }}
+                  >
+                    <SelectTrigger className="h-7 w-auto px-2 text-xs border-none bg-muted/40 gap-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[30, 60, 90, 120, 150, 180, 240, 300, 360].map(m => (
+                        <SelectItem key={m} value={String(m)} className="text-sm">
+                          {m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}` : `${m}m`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <span>
+                  {displayPlan.startTime || displayPlan.endTime ? (
+                    <>
+                      {displayPlan.startTime && formatTime12(displayPlan.startTime)}
+                      {displayPlan.startTime && displayPlan.endTime && ' – '}
+                      {displayPlan.endTime && formatTime12(displayPlan.endTime)}
+                      <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
+                      {timeSlotConfig && <span className="text-muted-foreground"> · {timeSlotConfig.label}</span>}
+                    </>
+                  ) : timeSlotConfig ? (
+                    <>
+                      {timeSlotConfig.label} ({timeSlotConfig.time})
+                      <span className="text-muted-foreground/60 ml-1">{getTimezoneAbbreviation(userTimezone)}</span>
+                    </>
+                  ) : null}
+                  {displayPlan.duration && !displayPlan.startTime && !displayPlan.endTime && (
+                    <span className="text-muted-foreground">
+                      {' · '}
+                      {displayPlan.duration >= 60
+                        ? `${Math.floor(displayPlan.duration / 60)}h${displayPlan.duration % 60 > 0 ? ` ${displayPlan.duration % 60}m` : ''}`
+                        : `${displayPlan.duration}m`}
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
-            {displayPlan.location && (
-              <div className="flex items-center gap-3 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>{displayPlan.location.name}</span>
-              </div>
+
+            {isSharedPlan && canEdit && !isPast && (
+              <p className="text-[11px] text-muted-foreground pl-7 -mt-1">
+                Date, time, and duration changes are proposed to participants for approval.
+              </p>
             )}
+
+            {/* Location */}
+            <div className="flex items-center gap-3 text-sm">
+              <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+              {canEdit && !isPast && plan ? (
+                editingLocation ? (
+                  <Input
+                    autoFocus
+                    value={locationDraft}
+                    onChange={(e) => setLocationDraft(e.target.value)}
+                    onBlur={async () => {
+                      const next = locationDraft.trim();
+                      setEditingLocation(false);
+                      const current = displayPlan.location?.name || '';
+                      if (next !== current) {
+                        await applyDirectUpdate({
+                          location: next ? { id: '', name: next, address: '' } as any : undefined as any,
+                        });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') setEditingLocation(false);
+                    }}
+                    className="h-8 text-sm"
+                    placeholder="Where?"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationDraft(displayPlan.location?.name || '');
+                      setEditingLocation(true);
+                    }}
+                    className="text-left hover:bg-muted/40 rounded px-1 -mx-1 cursor-text"
+                  >
+                    {displayPlan.location?.name || (
+                      <span className="text-muted-foreground italic">Add location</span>
+                    )}
+                  </button>
+                )
+              ) : (
+                displayPlan.location && <span>{displayPlan.location.name}</span>
+              )}
+            </div>
             {/* Timezone display / edit */}
             {(() => {
               const tz = displayPlan.sourceTimezone;
