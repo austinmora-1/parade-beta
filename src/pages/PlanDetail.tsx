@@ -99,7 +99,7 @@ export default function PlanDetail() {
   const { plans, deletePlan, updatePlan, userId, loadPlans, loadFriends, friends: allFriends, userTimezone } = usePlannerStore();
   const { profile: currentUserProfile } = useCurrentUserProfile();
   
-  const { changeRequests, respondToChange, refetch: refetchChangeRequests } = usePlanChangeRequests();
+  const { changeRequests, respondToChange, refetch: refetchChangeRequests, proposeChange } = usePlanChangeRequests();
   const { pods } = usePods();
 
   const inviteToken = searchParams.get('invite_token');
