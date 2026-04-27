@@ -93,7 +93,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
 
       const result: AroundFriend[] = connectedFriends.flatMap(friend => {
         const profile = profileMap.get(friend.friendUserId!);
-        let freeDays = 0;
+        const freeDates: string[] = [];
         let cityOnAvailableDay: string | null = null;
 
         for (const date of weekDates) {
@@ -114,7 +114,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
 
           const hasAnySlot = SLOT_KEYS.some(k => (avail as any)[k]);
           if (hasAnySlot) {
-            freeDays += 1;
+            freeDates.push(date);
             // Capture the friend's city on the first matching day for display
             if (!cityOnAvailableDay) {
               const friendCity = (avail as any).location_status === 'away' && (avail as any).trip_location
@@ -125,10 +125,11 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
           }
         }
 
-        if (freeDays === 0) return [];
+        if (freeDates.length === 0) return [];
         return [{
           friend,
-          freeDays,
+          freeDays: freeDates.length,
+          freeDates,
           city: cityOnAvailableDay,
           currentVibe: (profile as any)?.current_vibe ?? null,
           customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
