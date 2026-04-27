@@ -451,7 +451,9 @@ function FriendPill({
       >
         <div className="px-3 pt-3 pb-2 border-b border-border">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Mutually free with {friend.name.split(' ')[0]}
+            {mutual
+              ? `Mutually free with ${friend.name.split(' ')[0]}`
+              : `${friend.name.split(' ')[0]}'s free times`}
           </p>
           <p className="text-[11px] text-muted-foreground/80 mt-0.5">
             {selectionCount === 0
