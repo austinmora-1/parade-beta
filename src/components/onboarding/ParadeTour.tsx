@@ -115,6 +115,16 @@ export function ParadeTour() {
   const step = STEPS[stepIndex];
   const showPanel = isPanelStep(stepIndex);
 
+  // ---------- Prefetch lazy route chunks once tour starts so navigation
+  // between steps doesn't trigger the Suspense fallback / loading screen.
+  useEffect(() => {
+    if (!run) return;
+    // Fire-and-forget — chunks get warmed in the background.
+    import('@/pages/Availability').catch(() => {});
+    import('@/pages/Trips').catch(() => {});
+    import('@/pages/Friends').catch(() => {});
+  }, [run]);
+
   // ---------- Boot: replay flag or unfinished walkthrough ----------
   useEffect(() => {
     if (!user) return;
