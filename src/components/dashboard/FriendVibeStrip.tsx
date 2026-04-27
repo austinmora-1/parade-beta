@@ -1,7 +1,7 @@
-import { useMemo, useState, useEffect, lazy, Suspense } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { format, addDays, parseISO, isSameDay } from 'date-fns';
-import { CalendarPlus } from 'lucide-react';
+import { CalendarPlus, Sparkles, Send, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -11,10 +11,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { resolveEffectiveCity, isFriendInMyCity } from '@/lib/effectiveCity';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
-const QuickPlanSheet = lazy(() =>
-  import('@/components/plans/QuickPlanSheet').then(m => ({ default: m.QuickPlanSheet }))
-);
+// Map app TimeSlot -> preferred_social_times bucket id used in profile prefs
+const SLOT_TO_PREF_BUCKET: Record<TimeSlot, string> = {
+  'early-morning': 'morning',
+  'late-morning': 'morning',
+  'early-afternoon': 'afternoon',
+  'late-afternoon': 'afternoon',
+  'evening': 'evening',
+  'late-night': 'late-night',
+};
 
 const SLOT_KEYS: { col: string; slot: TimeSlot }[] = [
   { col: 'early_morning',   slot: 'early-morning'   },
@@ -46,17 +54,31 @@ interface FriendVibeStripProps {
 
 export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
   const { friends, availability, homeAddress } = usePlannerStore();
+  const { user } = useAuth();
   const [around, setAround] = useState<AroundFriend[]>([]);
-  const [planContext, setPlanContext] = useState<{
-    friend: { userId: string; name: string; avatar?: string };
-    date: Date;
-    slot: TimeSlot;
-  } | null>(null);
+  const [preferredTimes, setPreferredTimes] = useState<Set<string>>(new Set());
 
   const connectedFriends = useMemo(
     () => friends.filter(f => f.status === 'connected' && f.friendUserId),
     [friends]
   );
+
+  // Load my preferred social times (e.g. "monday:evening")
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('preferred_social_times')
+        .eq('user_id', user.id)
+        .single();
+      if (cancelled) return;
+      const times = (data as { preferred_social_times: string[] | null } | null)?.preferred_social_times;
+      setPreferredTimes(new Set(times || []));
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // 7-day window starting today
   const weekDates = useMemo(
@@ -199,60 +221,35 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
   }
 
   return (
-    <>
-      <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider px-1 text-primary">
-          Who's around this week
-        </p>
-        <div className="flex flex-wrap gap-2 px-1">
-          {around.map((a, i) => (
-            <FriendPill
-              key={a.friend.id}
-              data={a}
-              index={i}
-              onPickSlot={(slot) => {
-                if (!a.friend.friendUserId) return;
-                setPlanContext({
-                  friend: {
-                    userId: a.friend.friendUserId,
-                    name: a.friend.name,
-                    avatar: a.friend.avatar,
-                  },
-                  date: parseISO(slot.date),
-                  slot: slot.slot,
-                });
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {planContext && (
-        <Suspense fallback={null}>
-          <QuickPlanSheet
-            open={!!planContext}
-            onOpenChange={(v) => { if (!v) setPlanContext(null); }}
-            preSelectedFriend={planContext.friend}
-            preSelectedFriends={[planContext.friend]}
-            preSelectedDate={planContext.date}
-            preSelectedTimeSlot={planContext.slot}
+    <div className="space-y-2">
+      <p className="text-[11px] font-semibold uppercase tracking-wider px-1 text-primary">
+        Who's around this week
+      </p>
+      <div className="flex flex-wrap gap-2 px-1">
+        {around.map((a, i) => (
+          <FriendPill
+            key={a.friend.id}
+            data={a}
+            index={i}
+            preferredTimes={preferredTimes}
           />
-        </Suspense>
-      )}
-    </>
+        ))}
+      </div>
+    </div>
   );
 }
 
 function FriendPill({
   data,
   index,
-  onPickSlot,
+  preferredTimes,
 }: {
   data: AroundFriend;
   index: number;
-  onPickSlot: (slot: OverlapSlot) => void;
+  preferredTimes: Set<string>;
 }) {
   const { friend, freeDays, overlapSlots, city, currentVibe, customVibeTags } = data;
+  const { user } = useAuth();
   const vibeConfig = currentVibe ? VIBE_CONFIG[currentVibe as VibeType] : null;
   const isCustom = currentVibe === 'custom';
   const vibeLabel = isCustom && customVibeTags?.length
@@ -261,6 +258,103 @@ function FriendPill({
   const cityLabel = city ? (formatCityForDisplay(city) || city.split(',')[0]) : null;
 
   const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState(false);
+
+  // Reset selection when popover closes
+  useEffect(() => {
+    if (!open) setSelected(new Set());
+  }, [open]);
+
+  const slotKey = (s: OverlapSlot) => `${s.date}|${s.slot}`;
+
+  const isRecommended = (s: OverlapSlot) => {
+    const day = format(parseISO(s.date), 'EEEE').toLowerCase();
+    const bucket = SLOT_TO_PREF_BUCKET[s.slot];
+    return preferredTimes.has(`${day}:${bucket}`);
+  };
+
+  const toggleSlot = (s: OverlapSlot) => {
+    const k = slotKey(s);
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  };
+
+  const sendHangRequest = async () => {
+    if (!user || !friend.friendUserId || selected.size === 0) return;
+    setSending(true);
+    try {
+      const [{ data: friendProfile }, { data: myProfile }] = await Promise.all([
+        supabase
+          .from('friend_profiles')
+          .select('share_code')
+          .eq('user_id', friend.friendUserId)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single(),
+      ]);
+
+      if (!(friendProfile as any)?.share_code) {
+        toast.error("Could not find friend's profile");
+        setSending(false);
+        return;
+      }
+
+      const requesterName = (myProfile as any)?.display_name || user.email || 'Someone';
+      const slotsToSend = overlapSlots.filter(s => selected.has(slotKey(s)));
+
+      // Send each selected slot as a hang request
+      const results = await Promise.all(
+        slotsToSend.map(s => {
+          const dt = parseISO(s.date);
+          const dayLabel = isSameDay(dt, new Date())
+            ? 'Today'
+            : isSameDay(dt, addDays(new Date(), 1))
+              ? 'Tomorrow'
+              : format(dt, 'EEE, MMM d');
+          return supabase.functions.invoke('send-hang-request', {
+            body: {
+              shareCode: (friendProfile as any).share_code,
+              requesterName,
+              requesterEmail: user.email,
+              requesterUserId: user.id,
+              selectedDay: s.date,
+              selectedDayLabel: dayLabel,
+              selectedSlot: s.slot,
+              selectedSlotLabel: TIME_SLOT_LABELS[s.slot]?.label || s.slot,
+            },
+          });
+        })
+      );
+
+      const failed = results.filter(r => r.error);
+      if (failed.length > 0) throw failed[0].error;
+
+      toast.success(
+        slotsToSend.length === 1
+          ? `Asked ${friend.name.split(' ')[0]} to hang!`
+          : `Sent ${slotsToSend.length} options to ${friend.name.split(' ')[0]}!`
+      );
+      setOpen(false);
+    } catch (err: any) {
+      console.error('Error sending hang request:', err);
+      toast.error(err?.message || 'Failed to send request');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const selectionCount = selected.size;
+  const buttonLabel = selectionCount <= 1
+    ? `Ask ${friend.name.split(' ')[0]} to hang`
+    : `Send ${selectionCount} options to ${friend.name.split(' ')[0]}`;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -327,11 +421,13 @@ function FriendPill({
             Mutually free with {friend.name.split(' ')[0]}
           </p>
           <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-            Tap a slot to start a plan
+            {selectionCount === 0
+              ? 'Tap one or more times to propose'
+              : `${selectionCount} selected — add more or send`}
           </p>
         </div>
 
-        <div className="max-h-72 overflow-y-auto p-2 space-y-1">
+        <div className="max-h-64 overflow-y-auto p-2 space-y-1">
           {overlapSlots.map((s, idx) => {
             const dt = parseISO(s.date);
             const today = isSameDay(dt, new Date());
@@ -342,33 +438,68 @@ function FriendPill({
                 ? 'Tomorrow'
                 : format(dt, 'EEE, MMM d');
             const slotMeta = TIME_SLOT_LABELS[s.slot];
+            const k = slotKey(s);
+            const isSelected = selected.has(k);
+            const recommended = isRecommended(s);
             return (
               <button
                 key={`${s.date}-${s.slot}-${idx}`}
-                onClick={() => {
-                  setOpen(false);
-                  onPickSlot(s);
-                }}
+                onClick={() => toggleSlot(s)}
                 className={cn(
-                  'w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors',
-                  'hover:bg-primary/5 border border-transparent hover:border-primary/30'
+                  'w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors border',
+                  isSelected
+                    ? 'bg-primary/10 border-primary/50'
+                    : 'bg-transparent border-transparent hover:bg-primary/5 hover:border-primary/30'
                 )}
               >
                 <div className="flex flex-col min-w-0">
-                  <span className={cn(
-                    'text-xs font-semibold truncate',
-                    today ? 'text-primary' : 'text-foreground'
-                  )}>
-                    {dayLabel}
-                  </span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className={cn(
+                      'text-xs font-semibold truncate',
+                      today ? 'text-primary' : 'text-foreground'
+                    )}>
+                      {dayLabel}
+                    </span>
+                    {recommended && (
+                      <span
+                        title="Matches your preferred social time"
+                        className="inline-flex items-center gap-0.5 rounded-full bg-secondary/15 text-secondary px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide"
+                      >
+                        <Sparkles className="h-2.5 w-2.5" />
+                        Pick
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[11px] text-muted-foreground truncate">
                     {slotMeta.label} · {slotMeta.time}
                   </span>
                 </div>
-                <CalendarPlus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                {isSelected ? (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
+                    <Check className="h-3 w-3" />
+                  </span>
+                ) : (
+                  <CalendarPlus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                )}
               </button>
             );
           })}
+        </div>
+
+        <div className="border-t border-border p-2">
+          <Button
+            size="sm"
+            className="w-full gap-1.5"
+            disabled={selectionCount === 0 || sending}
+            onClick={sendHangRequest}
+          >
+            {sending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            <span className="truncate">{buttonLabel}</span>
+          </Button>
         </div>
       </PopoverContent>
     </Popover>
