@@ -424,7 +424,7 @@ function FriendPill({
                 {friend.name.split(' ')[0]}
               </span>
               <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5 shrink-0">
-                {freeDays}d
+                {overlapSlots.length} {overlapSlots.length === 1 ? 'slot' : 'slots'}
               </span>
             </div>
             <div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
