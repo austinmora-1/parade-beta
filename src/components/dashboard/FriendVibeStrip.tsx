@@ -19,6 +19,7 @@ const SLOT_KEYS = [
 interface AroundFriend {
   friend: Friend;
   freeDays: number;
+  freeDates: string[]; // yyyy-MM-dd entries the friend is free
   city: string | null;
   currentVibe: string | null;
   customVibeTags: string[] | null;
