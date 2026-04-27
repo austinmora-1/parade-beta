@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Send, Calendar, Clock, Users, Drama } from 'lucide-react';
+import { Loader2, Send, Calendar, Clock, Users, Drama, Pencil, Wine, UtensilsCrossed, Hand, Music, Film, Dumbbell, Trees, type LucideIcon } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
