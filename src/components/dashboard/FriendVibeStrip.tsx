@@ -6,23 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Friend, VIBE_CONFIG, VibeType } from '@/types/planner';
+import { Friend, VIBE_CONFIG, VibeType, TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { resolveEffectiveCity, isFriendInMyCity } from '@/lib/effectiveCity';
 import { formatCityForDisplay } from '@/lib/formatCity';
 
-const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
+const QuickPlanSheet = lazy(() =>
+  import('@/components/plans/QuickPlanSheet').then(m => ({ default: m.QuickPlanSheet }))
+);
 
-const SLOT_KEYS = [
-  'early_morning', 'late_morning', 'early_afternoon',
-  'late_afternoon', 'evening', 'late_night',
-] as const;
+const SLOT_KEYS: { col: string; slot: TimeSlot }[] = [
+  { col: 'early_morning',   slot: 'early-morning'   },
+  { col: 'late_morning',    slot: 'late-morning'    },
+  { col: 'early_afternoon', slot: 'early-afternoon' },
+  { col: 'late_afternoon',  slot: 'late-afternoon'  },
+  { col: 'evening',         slot: 'evening'         },
+  { col: 'late_night',      slot: 'late-night'      },
+];
+
+interface OverlapSlot {
+  date: string;     // yyyy-MM-dd
+  slot: TimeSlot;
+}
 
 interface AroundFriend {
   friend: Friend;
   freeDays: number;
-  freeDates: string[]; // yyyy-MM-dd entries the friend is free
+  overlapSlots: OverlapSlot[]; // mutual free slots in same city
   city: string | null;
   currentVibe: string | null;
   customVibeTags: string[] | null;
@@ -36,7 +47,11 @@ interface FriendVibeStripProps {
 export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
   const { friends, availability, homeAddress } = usePlannerStore();
   const [around, setAround] = useState<AroundFriend[]>([]);
-  const [selectedFriend, setSelectedFriend] = useState<{ userId: string; name: string; avatar?: string } | null>(null);
+  const [planContext, setPlanContext] = useState<{
+    friend: { userId: string; name: string; avatar?: string };
+    date: Date;
+    slot: TimeSlot;
+  } | null>(null);
 
   const connectedFriends = useMemo(
     () => friends.filter(f => f.status === 'connected' && f.friendUserId),
@@ -65,6 +80,17 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
     }
     return map;
   }, [weekDates, availability, homeAddress]);
+
+  // Map of my own slot availability per date for overlap calculation
+  const mySlotsByDate = useMemo(() => {
+    const map: Record<string, Record<TimeSlot, boolean>> = {};
+    for (const a of availability) {
+      const key = format(a.date, 'yyyy-MM-dd');
+      if (!weekDates.includes(key)) continue;
+      map[key] = a.slots;
+    }
+    return map;
+  }, [availability, weekDates]);
 
   useEffect(() => {
     if (connectedFriends.length === 0) {
@@ -96,7 +122,8 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
 
       const result: AroundFriend[] = connectedFriends.flatMap(friend => {
         const profile = profileMap.get(friend.friendUserId!);
-        const freeDates: string[] = [];
+        const overlapSlots: OverlapSlot[] = [];
+        const dayHasOverlap = new Set<string>();
         let cityOnAvailableDay: string | null = null;
 
         for (const date of weekDates) {
@@ -115,10 +142,21 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
           });
           if (!sameCity || !avail) continue;
 
-          const hasAnySlot = SLOT_KEYS.some(k => (avail as any)[k]);
-          if (hasAnySlot) {
-            freeDates.push(date);
-            // Capture the friend's city on the first matching day for display
+          const mySlots = mySlotsByDate[date];
+          let dayHadAnyMutual = false;
+          for (const { col, slot } of SLOT_KEYS) {
+            const friendFree = !!(avail as any)[col];
+            // If user has no row for this date, default-free behavior comes from
+            // mapAvailability defaults (true) — treat missing as free.
+            const meFree = mySlots ? mySlots[slot] : true;
+            if (friendFree && meFree) {
+              overlapSlots.push({ date, slot });
+              dayHadAnyMutual = true;
+            }
+          }
+
+          if (dayHadAnyMutual) {
+            dayHasOverlap.add(date);
             if (!cityOnAvailableDay) {
               const friendCity = (avail as any).location_status === 'away' && (avail as any).trip_location
                 ? (avail as any).trip_location
@@ -128,11 +166,11 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
           }
         }
 
-        if (freeDates.length === 0) return [];
+        if (overlapSlots.length === 0) return [];
         return [{
           friend,
-          freeDays: freeDates.length,
-          freeDates,
+          freeDays: dayHasOverlap.size,
+          overlapSlots,
           city: cityOnAvailableDay,
           currentVibe: (profile as any)?.current_vibe ?? null,
           customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
@@ -145,7 +183,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
     })();
 
     return () => { cancelled = true; };
-  }, [connectedFriends, weekDates, myCityByDate]);
+  }, [connectedFriends, weekDates, myCityByDate, mySlotsByDate]);
 
   if (connectedFriends.length === 0) {
     return (
@@ -172,12 +210,16 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
               key={a.friend.id}
               data={a}
               index={i}
-              onPlan={() => {
+              onPickSlot={(slot) => {
                 if (!a.friend.friendUserId) return;
-                setSelectedFriend({
-                  userId: a.friend.friendUserId,
-                  name: a.friend.name,
-                  avatar: a.friend.avatar,
+                setPlanContext({
+                  friend: {
+                    userId: a.friend.friendUserId,
+                    name: a.friend.name,
+                    avatar: a.friend.avatar,
+                  },
+                  date: parseISO(slot.date),
+                  slot: slot.slot,
                 });
               }}
             />
@@ -185,12 +227,15 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
         </div>
       </div>
 
-      {selectedFriend && (
+      {planContext && (
         <Suspense fallback={null}>
-          <GuidedPlanSheet
-            open={!!selectedFriend}
-            onOpenChange={(v) => { if (!v) setSelectedFriend(null); }}
-            preSelectedFriends={[selectedFriend]}
+          <QuickPlanSheet
+            open={!!planContext}
+            onOpenChange={(v) => { if (!v) setPlanContext(null); }}
+            preSelectedFriend={planContext.friend}
+            preSelectedFriends={[planContext.friend]}
+            preSelectedDate={planContext.date}
+            preSelectedTimeSlot={planContext.slot}
           />
         </Suspense>
       )}
@@ -198,8 +243,16 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
   );
 }
 
-function FriendPill({ data, index, onPlan }: { data: AroundFriend; index: number; onPlan: () => void }) {
-  const { friend, freeDays, freeDates, city, currentVibe, customVibeTags } = data;
+function FriendPill({
+  data,
+  index,
+  onPickSlot,
+}: {
+  data: AroundFriend;
+  index: number;
+  onPickSlot: (slot: OverlapSlot) => void;
+}) {
+  const { friend, freeDays, overlapSlots, city, currentVibe, customVibeTags } = data;
   const vibeConfig = currentVibe ? VIBE_CONFIG[currentVibe as VibeType] : null;
   const isCustom = currentVibe === 'custom';
   const vibeLabel = isCustom && customVibeTags?.length
@@ -207,8 +260,10 @@ function FriendPill({ data, index, onPlan }: { data: AroundFriend; index: number
     : vibeConfig?.label ?? null;
   const cityLabel = city ? (formatCityForDisplay(city) || city.split(',')[0]) : null;
 
+  const [open, setOpen] = useState(false);
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <motion.button
           initial={{ opacity: 0, y: 6 }}
@@ -265,48 +320,55 @@ function FriendPill({ data, index, onPlan }: { data: AroundFriend; index: number
         side="bottom"
         align="start"
         sideOffset={6}
-        className="w-60 p-3 rounded-xl"
+        className="w-72 p-0 rounded-xl overflow-hidden"
       >
-        <div className="space-y-2.5">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Free this week
-            </p>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {freeDates.map(d => {
-                const dt = parseISO(d);
-                const today = isSameDay(dt, new Date());
-                const tomorrow = isSameDay(dt, addDays(new Date(), 1));
-                const label = today ? 'Today' : tomorrow ? 'Tmrw' : format(dt, 'EEE');
-                return (
-                  <span
-                    key={d}
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium',
-                      today
-                        ? 'bg-primary/15 text-primary'
-                        : 'bg-muted text-foreground'
-                    )}
-                    title={format(dt, 'EEEE, MMM d')}
-                  >
-                    {label}
-                    <span className="text-[10px] text-muted-foreground">
-                      {format(dt, 'M/d')}
-                    </span>
-                  </span>
-                );
-              })}
-            </div>
-          </div>
+        <div className="px-3 pt-3 pb-2 border-b border-border">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Mutually free with {friend.name.split(' ')[0]}
+          </p>
+          <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+            Tap a slot to start a plan
+          </p>
+        </div>
 
-          <Button
-            size="sm"
-            className="w-full gap-1.5 h-8 text-xs"
-            onClick={onPlan}
-          >
-            <CalendarPlus className="h-3.5 w-3.5" />
-            Find time with {friend.name.split(' ')[0]}
-          </Button>
+        <div className="max-h-72 overflow-y-auto p-2 space-y-1">
+          {overlapSlots.map((s, idx) => {
+            const dt = parseISO(s.date);
+            const today = isSameDay(dt, new Date());
+            const tomorrow = isSameDay(dt, addDays(new Date(), 1));
+            const dayLabel = today
+              ? 'Today'
+              : tomorrow
+                ? 'Tomorrow'
+                : format(dt, 'EEE, MMM d');
+            const slotMeta = TIME_SLOT_LABELS[s.slot];
+            return (
+              <button
+                key={`${s.date}-${s.slot}-${idx}`}
+                onClick={() => {
+                  setOpen(false);
+                  onPickSlot(s);
+                }}
+                className={cn(
+                  'w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors',
+                  'hover:bg-primary/5 border border-transparent hover:border-primary/30'
+                )}
+              >
+                <div className="flex flex-col min-w-0">
+                  <span className={cn(
+                    'text-xs font-semibold truncate',
+                    today ? 'text-primary' : 'text-foreground'
+                  )}>
+                    {dayLabel}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground truncate">
+                    {slotMeta.label} · {slotMeta.time}
+                  </span>
+                </div>
+                <CalendarPlus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </button>
+            );
+          })}
         </div>
       </PopoverContent>
     </Popover>
