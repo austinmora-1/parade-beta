@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Send, Calendar, Clock, Users, Drama } from 'lucide-react';
+import { Loader2, Send, Calendar, Clock, Users, Drama, Pencil, Wine, UtensilsCrossed, Hand, Music, Film, Dumbbell, Trees, type LucideIcon } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -22,15 +22,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { TIME_SLOT_LABELS, type TimeSlot, type ActivityType } from '@/types/planner';
 import type { OpenWindow } from '@/hooks/useOpenWindows';
 
-const QUICK_ACTIVITIES: { id: ActivityType; emoji: string; label: string }[] = [
-  { id: 'drinks', emoji: '🍹', label: 'Drinks' },
-  { id: 'get-food', emoji: '🍽️', label: 'Food' },
-  { id: 'hanging-out', emoji: '🤙', label: 'Hangout' },
-  { id: 'concert', emoji: '🎵', label: 'Concert' },
-  { id: 'movies', emoji: '🎥', label: 'Movies' },
-  { id: 'gym', emoji: '🏋️', label: 'Gym' },
-  { id: 'video-games', emoji: '🎮', label: 'Games' },
-  { id: 'park', emoji: '🌳', label: 'Park' },
+const QUICK_ACTIVITIES: { id: ActivityType; Icon: LucideIcon; label: string }[] = [
+  { id: 'drinks', Icon: Wine, label: 'Drinks' },
+  { id: 'get-food', Icon: UtensilsCrossed, label: 'Food' },
+  { id: 'hanging-out', Icon: Hand, label: 'Hangout' },
+  { id: 'concert', Icon: Music, label: 'Concert' },
+  { id: 'movies', Icon: Film, label: 'Movies' },
+  { id: 'gym', Icon: Dumbbell, label: 'Gym' },
+  { id: 'video-games', Icon: Drama, label: 'Show' },
+  { id: 'park', Icon: Trees, label: 'Park' },
 ];
 
 
@@ -222,6 +222,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
             <div className="flex flex-wrap gap-1.5">
               {QUICK_ACTIVITIES.map((a) => {
                 const selected = activity === a.id;
+                const ActIcon = a.Icon;
                 return (
                   <button
                     key={a.id}
@@ -234,7 +235,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                         : 'border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground')
                     }
                   >
-                    <span>{a.emoji}</span>
+                    <ActIcon className="h-3.5 w-3.5 text-primary/60" />
                     <span>{a.label}</span>
                   </button>
                 );
@@ -247,7 +248,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                     : 'text-accent bg-primary-foreground border-primary border-solid')
                 }
               >
-                <Drama className="h-3.5 w-3.5" />
+                <Pencil className="h-3.5 w-3.5 text-primary/60" />
                 <input
                   type="text"
                   value={customActivity}
