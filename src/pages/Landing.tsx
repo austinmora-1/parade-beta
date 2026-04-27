@@ -54,8 +54,8 @@ export default function Landing() {
                 aria-hidden
               />
               <span
-                className="text-xs sm:text-sm tracking-[0.28em] uppercase text-secondary"
-                style={{ fontFamily: "'Lexend', system-ui", fontWeight: 500 }}
+                className="text-secondary"
+                style={{ fontFamily: "'Bungee Shade', system-ui", fontWeight: 400, letterSpacing: '0.05em' }}
               >
                 Parade
               </span>

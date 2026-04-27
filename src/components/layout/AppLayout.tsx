@@ -12,7 +12,7 @@ import { useFriendRequestNotifications } from '@/hooks/useFriendRequestNotificat
 import { useVibeRealtime } from '@/hooks/useVibeRealtime';
 import { usePlannerStore } from '@/stores/plannerStore';
 
-export function AppLayout() {
+export function AppLayout({ children }: { children?: React.ReactNode }) {
   useFriendRequestNotifications();
   useVibeRealtime();
   const queryClient = useQueryClient();
@@ -31,7 +31,7 @@ export function AppLayout() {
         <main className="min-h-screen md:ml-56">
           <PullToRefresh onRefresh={handleRefresh}>
             <div className="p-4 pb-24 md:p-8 md:pb-8">
-              <Outlet />
+              {children ?? <Outlet />}
             </div>
           </PullToRefresh>
         </main>

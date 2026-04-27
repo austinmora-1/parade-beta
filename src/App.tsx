@@ -77,6 +77,37 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Root: Landing for unauthenticated visitors, Dashboard (in AppLayout) for authed users.
+function RootRoute() {
+  const { user, loading } = useAuth();
+  const { setUserId, loadAllData, userId } = usePlannerStore();
+
+  useEffect(() => {
+    if (user && user.id !== userId) {
+      setUserId(user.id);
+      loadAllData();
+    } else if (!user && userId) {
+      setUserId(null);
+    }
+  }, [user, userId, setUserId, loadAllData]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <ElephantLoader />
+      </div>
+    );
+  }
+
+  if (!user) return <Landing />;
+
+  return (
+    <AppLayout>
+      <ErrorBoundary scope="Dashboard"><Dashboard /></ErrorBoundary>
+    </AppLayout>
+  );
+}
+
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
@@ -106,6 +137,7 @@ const AppRoutes = () => {
   return (
   <Suspense fallback={<LazyFallback />}>
   <Routes>
+    <Route path="/" element={<RootRoute />} />
     <Route path="/share/:shareCode" element={<Share />} />
     <Route path="/invite" element={<Invite />} />
     <Route path="/plan-invite/:token" element={<PlanInvite />} />
@@ -145,7 +177,7 @@ const AppRoutes = () => {
         </ProtectedRoute>
       }
     >
-      <Route path="/" element={<ErrorBoundary scope="Dashboard"><Dashboard /></ErrorBoundary>} />
+      
       
       <Route path="/availability" element={<ErrorBoundary scope="Availability"><Availability /></ErrorBoundary>} />
       <Route path="/friends" element={<ErrorBoundary scope="Friends"><Friends /></ErrorBoundary>} />
