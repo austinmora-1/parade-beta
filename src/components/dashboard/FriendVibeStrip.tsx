@@ -505,5 +505,3 @@ function FriendPill({
     </Popover>
   );
 }
-
-}
