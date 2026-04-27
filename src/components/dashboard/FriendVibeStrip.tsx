@@ -223,10 +223,12 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
         // friend still surfaces in "Who's around this week" even when our
         // calendars don't currently align.
         if (overlapSlots.length > 0) {
+          const trimmed = pickRecommended(overlapSlots);
+          if (trimmed.length === 0) return [];
           return [{
             friend,
-            freeDays: dayHasOverlap.size,
-            overlapSlots,
+            freeDays: new Set(trimmed.map(s => s.date)).size,
+            overlapSlots: trimmed,
             city: cityOnAvailableDay,
             currentVibe: (profile as any)?.current_vibe ?? null,
             customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
@@ -234,10 +236,12 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
           }];
         }
         if (friendOnlySlots.length > 0) {
+          const trimmed = pickRecommended(friendOnlySlots);
+          if (trimmed.length === 0) return [];
           return [{
             friend,
-            freeDays: dayHasFriendFree.size,
-            overlapSlots: friendOnlySlots,
+            freeDays: new Set(trimmed.map(s => s.date)).size,
+            overlapSlots: trimmed,
             city: cityOnFriendFreeDay,
             currentVibe: (profile as any)?.current_vibe ?? null,
             customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
