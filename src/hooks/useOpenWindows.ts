@@ -279,13 +279,14 @@ export function useOpenWindows() {
     async function load() {
       if (!user?.id || connectedFriends.length === 0 || dateStrs.length === 0) {
         setFriendAvail([]);
+        setFriendPlans([]);
         setFriendHomeAddresses({});
         setLoading(false);
         return;
       }
       setLoading(true);
       const friendIds = connectedFriends.map((f) => f.friendUserId);
-      const [availRes, profilesRes] = await Promise.all([
+      const [availRes, profilesRes, plansRes] = await Promise.all([
         supabase
           .from('availability')
           .select(
@@ -297,6 +298,13 @@ export function useOpenWindows() {
           .from('profiles')
           .select('user_id, home_address')
           .in('user_id', friendIds),
+        supabase
+          .from('plans')
+          .select('user_id, date, time_slot, status')
+          .in('user_id', friendIds)
+          .gte('date', dateStrs[0])
+          .lte('date', dateStrs[dateStrs.length - 1] + 'T23:59:59')
+          .in('status', ['confirmed', 'proposed']),
       ]);
       if (!cancelled) {
         setFriendAvail((availRes.data as FriendAvailRow[]) || []);
@@ -305,6 +313,16 @@ export function useOpenWindows() {
           map[p.user_id] = p.home_address;
         }
         setFriendHomeAddresses(map);
+        // Normalize plan dates to YYYY-MM-DD for matching.
+        const normalized: FriendPlanRow[] = ((plansRes.data as { user_id: string; date: string; time_slot: string; status: string }[]) || []).map(
+          (p) => ({
+            user_id: p.user_id,
+            date: (p.date || '').slice(0, 10),
+            time_slot: p.time_slot as TimeSlot,
+            status: p.status,
+          })
+        );
+        setFriendPlans(normalized);
         setLoading(false);
       }
     }
