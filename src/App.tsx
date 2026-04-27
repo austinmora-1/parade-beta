@@ -176,7 +176,7 @@ const AppRoutes = () => {
         </ProtectedRoute>
       }
     >
-      <Route path="/" element={<ErrorBoundary scope="Dashboard"><Dashboard /></ErrorBoundary>} />
+      
       
       <Route path="/availability" element={<ErrorBoundary scope="Availability"><Availability /></ErrorBoundary>} />
       <Route path="/friends" element={<ErrorBoundary scope="Friends"><Friends /></ErrorBoundary>} />
