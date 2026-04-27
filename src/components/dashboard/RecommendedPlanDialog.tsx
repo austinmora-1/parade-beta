@@ -83,6 +83,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
 
   const slot = w.slots[0] as TimeSlot;
   const hasFriends = w.overlappingFriends.length > 0;
+  const effectiveActivity = customActivity.trim() || activity || 'hanging-out';
 
   const handleSend = async () => {
     if (sending) return;
@@ -93,7 +94,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
         const first = w.overlappingFriends[0];
         await proposePlan({
           recipientFriendId: first.userId,
-          activity: activity ?? 'hanging-out',
+          activity: effectiveActivity,
           date: w.date,
           timeSlot: slot,
           title: title.trim() || undefined,
@@ -136,7 +137,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
       } else {
         await addPlan({
           title: title.trim() || `Open hang — ${w.dayLabel}`,
-          activity: activity ?? 'hanging-out',
+          activity: effectiveActivity,
           date: w.date,
           timeSlot: slot,
           duration: 60,
