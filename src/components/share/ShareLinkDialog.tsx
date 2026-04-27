@@ -204,19 +204,17 @@ export function ShareLinkDialog({
                 <span className="text-[10px] text-muted-foreground leading-tight">{c.label}</span>
               </button>
             ))}
-            {typeof navigator !== 'undefined' && 'share' in navigator && (
-              <button
-                type="button"
-                onClick={handleNativeShare}
-                disabled={!link}
-                className="flex flex-col items-center gap-1.5 disabled:opacity-50 transition-transform active:scale-95"
-              >
-                <div className="h-12 w-12 rounded-full flex items-center justify-center shadow-sm bg-muted text-foreground">
-                  <Share2 className="h-5 w-5" />
-                </div>
-                <span className="text-[10px] text-muted-foreground leading-tight">More</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleCopy}
+              disabled={!link}
+              className="flex flex-col items-center gap-1.5 disabled:opacity-50 transition-transform active:scale-95"
+            >
+              <div className="h-12 w-12 rounded-full flex items-center justify-center shadow-sm bg-muted text-foreground">
+                {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+              </div>
+              <span className="text-[10px] text-muted-foreground leading-tight">{copied ? 'Copied' : 'Copy'}</span>
+            </button>
           </div>
 
           {/* Copy link row */}
