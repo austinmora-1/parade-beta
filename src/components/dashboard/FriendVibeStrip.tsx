@@ -169,7 +169,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
               key={a.friend.id}
               data={a}
               index={i}
-              onClick={() => {
+              onPlan={() => {
                 if (!a.friend.friendUserId) return;
                 setSelectedFriend({
                   userId: a.friend.friendUserId,
