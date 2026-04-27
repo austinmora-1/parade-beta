@@ -22,6 +22,7 @@ export function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, formattedName } = useCurrentUserProfile();
+  const { totalNotifications } = useNotifications();
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
