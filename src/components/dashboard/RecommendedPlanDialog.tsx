@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Send, Calendar, Clock, Users } from 'lucide-react';
+import { Loader2, Send, Calendar, Clock, Users, Drama } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -247,7 +247,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
                     : 'text-accent bg-primary-foreground border-primary border-solid')
                 }
               >
-                <span>✏️</span>
+                <Drama className="h-3.5 w-3.5" />
                 <input
                   type="text"
                   value={customActivity}
