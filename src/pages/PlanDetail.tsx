@@ -118,6 +118,14 @@ export default function PlanDetail() {
   const [mergeOpen, setMergeOpen] = useState(false);
   const [mergeSelectedIds, setMergeSelectedIds] = useState<string[]>([]);
 
+  // Inline edit local state
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [locationDraft, setLocationDraft] = useState('');
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [planId]);
