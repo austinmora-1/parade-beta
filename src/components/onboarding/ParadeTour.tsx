@@ -178,26 +178,64 @@ export function ParadeTour() {
     setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
   }, [step]);
 
-  // Measure on step change + when panel mounts. Poll briefly until target appears
-  // (covers route transitions where the nav item mounts a few frames later).
+  // Measure on step change + when panel mounts. Poll until the target appears
+  // (covers route transitions where the nav item mounts a few frames later
+  // and lazy-loaded routes that take longer to render).
   useLayoutEffect(() => {
     if (!run) return;
-    let frame = 0;
+
+    // Reset rect immediately so we don't flash the previous step's spotlight
+    // in the wrong place during route transitions.
+    setRect(null);
+
     let stopped = false;
     let attempts = 0;
+    const MAX_ATTEMPTS = 180; // ~3 seconds at 60fps
+
     const tick = () => {
       if (stopped) return;
-      measure();
+      const currentStep = STEPS[stepIndex];
+      if (!currentStep) return;
+
+      // Don't measure until we're on the right route — otherwise we'd
+      // briefly query selectors that only exist on the destination page.
+      if (currentStep.route && location.pathname !== currentStep.route) {
+        attempts += 1;
+        if (attempts < MAX_ATTEMPTS) requestAnimationFrame(tick);
+        return;
+      }
+
+      let target: Element | null = null;
+      if (currentStep.panelRow !== undefined) {
+        target = panelRowRefs.current[currentStep.panelRow] ?? null;
+      } else if (currentStep.selector) {
+        target = document.querySelector(currentStep.selector);
+      }
+
+      if (target) {
+        const r = target.getBoundingClientRect();
+        // Wait until the element actually has a non-zero size (route chunks
+        // can mount with 0x0 for a frame).
+        if (r.width > 0 && r.height > 0) {
+          setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+          // Keep re-measuring at a slower cadence to track layout shifts
+          // (e.g. tabs mounting below). Stop after a bit.
+          attempts += 1;
+          if (attempts < MAX_ATTEMPTS) requestAnimationFrame(tick);
+          return;
+        }
+      }
+
       attempts += 1;
-      // keep re-measuring for ~600ms or until we get a rect
-      if (attempts < 36) frame = requestAnimationFrame(tick);
+      if (attempts < MAX_ATTEMPTS) requestAnimationFrame(tick);
     };
-    frame = requestAnimationFrame(tick);
+
+    const frameId = requestAnimationFrame(tick);
     return () => {
       stopped = true;
-      cancelAnimationFrame(frame);
+      cancelAnimationFrame(frameId);
     };
-  }, [run, stepIndex, location.pathname, measure, showPanel]);
+  }, [run, stepIndex, location.pathname, showPanel]);
 
   // Re-measure on resize / scroll
   useEffect(() => {
@@ -385,11 +423,11 @@ export function ParadeTour() {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="pointer-events-auto absolute rounded-2xl border border-border bg-card text-card-foreground shadow-xl"
+        className="pointer-events-auto absolute overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xl"
         style={{ ...tooltipStyle, zIndex: 9020 }}
       >
-        {/* Progress bar */}
-        <div className="h-1 w-full overflow-hidden rounded-t-2xl bg-muted">
+        {/* Progress bar — sits flush inside the rounded/border tooltip */}
+        <div className="h-1 w-full bg-muted">
           <div
             className="h-full bg-primary transition-all duration-300"
             style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
