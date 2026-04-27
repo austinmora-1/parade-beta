@@ -37,7 +37,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
 
   useEffect(() => {
     if (open && w) {
-      const friendNames = w.overlappingFriends.slice(0, 2).map((f) => formatDisplayName(f.name).split(' ')[0]);
+      const friendNames = w.overlappingFriends.slice(0, 2).map((f) => f.name.split(' ')[0]);
       const suffix = w.overlappingFriends.length > 2 ? ` +${w.overlappingFriends.length - 2}` : '';
       const baseTitle = friendNames.length > 0
         ? `Hang with ${friendNames.join(', ')}${suffix}`
@@ -99,7 +99,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
         });
         const names = w.overlappingFriends
           .slice(0, 3)
-          .map((f) => formatDisplayName(f.name).split(' ')[0])
+          .map((f) => f.name.split(' ')[0])
           .join(', ');
         toast.success(`Plan suggestion sent to ${names}! 🎉`);
       } else {
@@ -146,7 +146,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
             <div className="flex items-center gap-2 text-sm">
               <Clock className="h-4 w-4 text-primary shrink-0" />
               <span className="font-medium">{w.startLabel}–{w.endLabel}</span>
-              <span className="text-muted-foreground">· {TIME_SLOT_LABELS[slot]}</span>
+              <span className="text-muted-foreground">· {TIME_SLOT_LABELS[slot]?.label}</span>
             </div>
             {hasFriends && (
               <div className="flex items-center gap-2 text-sm">
