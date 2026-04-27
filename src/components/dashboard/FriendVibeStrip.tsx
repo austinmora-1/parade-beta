@@ -41,10 +41,11 @@ interface OverlapSlot {
 interface AroundFriend {
   friend: Friend;
   freeDays: number;
-  overlapSlots: OverlapSlot[]; // mutual free slots in same city
+  overlapSlots: OverlapSlot[]; // mutual free slots in same city — falls back to friend-only free slots when no mutual overlap
   city: string | null;
   currentVibe: string | null;
   customVibeTags: string[] | null;
+  mutual: boolean; // true if overlapSlots are mutual; false if they're friend-only fallback
 }
 
 interface FriendVibeStripProps {
@@ -142,11 +143,14 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
         availByUserDate.set(`${a.user_id}|${a.date}`, a);
       });
 
-      const result: AroundFriend[] = connectedFriends.flatMap(friend => {
+      const result: AroundFriend[] = connectedFriends.flatMap((friend): AroundFriend[] => {
         const profile = profileMap.get(friend.friendUserId!);
         const overlapSlots: OverlapSlot[] = [];
+        const friendOnlySlots: OverlapSlot[] = [];
         const dayHasOverlap = new Set<string>();
+        const dayHasFriendFree = new Set<string>();
         let cityOnAvailableDay: string | null = null;
+        let cityOnFriendFreeDay: string | null = null;
 
         for (const date of weekDates) {
           const myCity = myCityByDate[date];
@@ -166,11 +170,14 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
 
           const mySlots = mySlotsByDate[date];
           let dayHadAnyMutual = false;
+          let dayHadAnyFriendFree = false;
           for (const { col, slot } of SLOT_KEYS) {
             const friendFree = !!(avail as any)[col];
-            // If user has no row for this date, default-free behavior comes from
-            // mapAvailability defaults (true) — treat missing as free.
             const meFree = mySlots ? mySlots[slot] : true;
+            if (friendFree) {
+              friendOnlySlots.push({ date, slot });
+              dayHadAnyFriendFree = true;
+            }
             if (friendFree && meFree) {
               overlapSlots.push({ date, slot });
               dayHadAnyMutual = true;
@@ -186,17 +193,43 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
               cityOnAvailableDay = friendCity;
             }
           }
+          if (dayHadAnyFriendFree) {
+            dayHasFriendFree.add(date);
+            if (!cityOnFriendFreeDay) {
+              const friendCity = (avail as any).location_status === 'away' && (avail as any).trip_location
+                ? (avail as any).trip_location
+                : ((profile as any)?.home_address ?? myCity);
+              cityOnFriendFreeDay = friendCity;
+            }
+          }
         }
 
-        if (overlapSlots.length === 0) return [];
-        return [{
-          friend,
-          freeDays: dayHasOverlap.size,
-          overlapSlots,
-          city: cityOnAvailableDay,
-          currentVibe: (profile as any)?.current_vibe ?? null,
-          customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
-        }];
+        // Prefer mutual overlap; fall back to friend's own free slots so the
+        // friend still surfaces in "Who's around this week" even when our
+        // calendars don't currently align.
+        if (overlapSlots.length > 0) {
+          return [{
+            friend,
+            freeDays: dayHasOverlap.size,
+            overlapSlots,
+            city: cityOnAvailableDay,
+            currentVibe: (profile as any)?.current_vibe ?? null,
+            customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
+            mutual: true,
+          }];
+        }
+        if (friendOnlySlots.length > 0) {
+          return [{
+            friend,
+            freeDays: dayHasFriendFree.size,
+            overlapSlots: friendOnlySlots,
+            city: cityOnFriendFreeDay,
+            currentVibe: (profile as any)?.current_vibe ?? null,
+            customVibeTags: (profile as any)?.custom_vibe_tags ?? null,
+            mutual: false,
+          }];
+        }
+        return [];
       });
 
       result.sort((a, b) => b.freeDays - a.freeDays || a.friend.name.localeCompare(b.friend.name));
@@ -248,7 +281,7 @@ function FriendPill({
   index: number;
   preferredTimes: Set<string>;
 }) {
-  const { friend, freeDays, overlapSlots, city, currentVibe, customVibeTags } = data;
+  const { friend, freeDays, overlapSlots, city, currentVibe, customVibeTags, mutual } = data;
   const { user } = useAuth();
   const vibeConfig = currentVibe ? VIBE_CONFIG[currentVibe as VibeType] : null;
   const isCustom = currentVibe === 'custom';
@@ -418,7 +451,9 @@ function FriendPill({
       >
         <div className="px-3 pt-3 pb-2 border-b border-border">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Mutually free with {friend.name.split(' ')[0]}
+            {mutual
+              ? `Mutually free with ${friend.name.split(' ')[0]}`
+              : `${friend.name.split(' ')[0]}'s free times`}
           </p>
           <p className="text-[11px] text-muted-foreground/80 mt-0.5">
             {selectionCount === 0
