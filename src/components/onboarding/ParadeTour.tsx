@@ -230,12 +230,15 @@ export function ParadeTour() {
       // to `targetWaitTimeout`. Only advance on explicit user STEP_AFTER.
       if (type === EVENTS.STEP_AFTER) {
         const next = action === ACTIONS.PREV ? index - 1 : index + 1;
-        STEPS[index]?.onLeave?.();
         if (next >= STEPS.length) {
+          STEPS[index]?.onLeave?.();
           finish();
           return;
         }
         if (next < 0) return;
+        if (!isPlanningSheetStep(index) || !isPlanningSheetStep(next)) {
+          STEPS[index]?.onLeave?.();
+        }
         setStepIndex(next);
       }
     },
@@ -245,35 +248,42 @@ export function ParadeTour() {
   if (!run) return null;
 
   return (
-    <Joyride
-      steps={STEPS}
-      stepIndex={stepIndex}
-      run={run}
-      continuous
-      onEvent={handleEvent}
-      locale={{
-        back: 'Back',
-        close: 'Close',
-        last: "Let's go!",
-        next: 'Next',
-        skip: 'Skip tour',
-      }}
-      options={{
-        primaryColor: '#E6533C',
-        backgroundColor: 'hsl(var(--card))',
-        textColor: 'hsl(var(--foreground))',
-        overlayColor: 'rgba(0, 0, 0, 0.55)',
-        showProgress: true,
-        skipBeacon: true,
-        spotlightPadding: 6,
-        spotlightRadius: 14,
-        // Higher than the Drawer (which renders at z-50) so the tooltip,
-        // overlay, and spotlight all sit above the open bottom sheet.
-        zIndex: 100000,
-        targetWaitTimeout: 8000,
-        buttons: ['back', 'skip', 'primary'],
-      }}
-      styles={{
+    <>
+      <div
+        data-tour="planning-tooltip-anchor"
+        aria-hidden="true"
+        className="pointer-events-none fixed left-1/2 h-1 w-1 -translate-x-1/2"
+        style={{ top: '52vh' }}
+      />
+      <Joyride
+        steps={STEPS}
+        stepIndex={stepIndex}
+        run={run}
+        continuous
+        onEvent={handleEvent}
+        locale={{
+          back: 'Back',
+          close: 'Close',
+          last: "Let's go!",
+          next: 'Next',
+          skip: 'Skip tour',
+        }}
+        options={{
+          primaryColor: '#E6533C',
+          backgroundColor: 'hsl(var(--card))',
+          textColor: 'hsl(var(--foreground))',
+          overlayColor: 'rgba(0, 0, 0, 0.55)',
+          showProgress: true,
+          skipBeacon: true,
+          spotlightPadding: { top: 0, right: 6, bottom: 6, left: 6 },
+          spotlightRadius: 14,
+          // Higher than the Drawer (which renders at z-50) so the tooltip,
+          // overlay, and spotlight all sit above the open bottom sheet.
+          zIndex: 100000,
+          targetWaitTimeout: 8000,
+          buttons: ['back', 'skip', 'primary'],
+        }}
+        styles={{
         tooltip: {
           borderRadius: 16,
           padding: 18,
