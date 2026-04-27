@@ -69,6 +69,13 @@ interface FriendAvailRow {
   trip_location: string | null;
 }
 
+interface FriendPlanRow {
+  user_id: string;
+  date: string;
+  time_slot: TimeSlot;
+  status: string;
+}
+
 export interface OpenWindow {
   date: Date;
   dayLabel: string; // "Today", "Tomorrow", "Saturday"
@@ -227,6 +234,7 @@ export function useOpenWindows() {
   const { user } = useAuth();
   const { availabilityMap, friends, plans, homeAddress } = usePlannerStore();
   const [friendAvail, setFriendAvail] = useState<FriendAvailRow[]>([]);
+  const [friendPlans, setFriendPlans] = useState<FriendPlanRow[]>([]);
   const [friendHomeAddresses, setFriendHomeAddresses] = useState<Record<string, string | null>>({});
   const [prefDays, setPrefDays] = useState<string[]>(DEFAULT_SOCIAL_DAYS);
   const [prefTimes, setPrefTimes] = useState<string[]>(DEFAULT_SOCIAL_TIMES);
