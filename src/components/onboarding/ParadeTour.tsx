@@ -379,6 +379,7 @@ export function ParadeTour() {
             width: spotlight.w,
             height: spotlight.h,
             borderRadius: radius,
+            zIndex: showPanel ? 9015 : 9005,
           }}
           initial={{ boxShadow: '0 0 0 2px hsl(var(--primary)), 0 0 0 0 hsl(var(--primary) / 0.5)' }}
           animate={{
@@ -419,7 +420,11 @@ export function ParadeTour() {
                   type="button"
                   // disabled in tour — clicking does nothing, but keeps full-width visual
                   onClick={(e) => e.preventDefault()}
-                  className="w-full flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left"
+                  className={`w-full flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all ${
+                    step.panelRow === i
+                      ? 'border-primary bg-primary/10 shadow-lg shadow-primary/20'
+                      : 'border-border bg-card opacity-65'
+                  }`}
                 >
                   <span className="text-2xl shrink-0" aria-hidden>{row.emoji}</span>
                   <div className="flex-1 min-w-0">
