@@ -45,6 +45,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
   const [title, setTitle] = useState('');
   const [titleEdited, setTitleEdited] = useState(false);
   const [activity, setActivity] = useState<ActivityType | null>(null);
+  const [customActivity, setCustomActivity] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
 
@@ -58,6 +59,7 @@ export function RecommendedPlanDialog({ open, onOpenChange, window: w }: Recomme
       setTitle(baseTitle);
       setTitleEdited(false);
       setActivity(null);
+      setCustomActivity('');
       setNote('');
       setSending(false);
     }
