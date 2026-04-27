@@ -135,6 +135,7 @@ export function ParadeTour() {
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const panelRowRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const scrolledRef = useRef(false);
 
   const step = STEPS[stepIndex];
   const showPanel = isPanelStep(stepIndex);
