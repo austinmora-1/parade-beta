@@ -10,8 +10,38 @@ const TOUR_REPLAY_KEY = 'parade.tour.replay';
 
 type TourStep = Step & {
   route?: string;
-  onEnter?: () => void;
   onLeave?: () => void;
+};
+
+/**
+ * Wait for an element matching `selector` to exist in the DOM, then resolve
+ * after a short settle delay so the spotlight measures a stable rect.
+ */
+function waitForSelector(selector: string, timeoutMs = 3000, settleMs = 220) {
+  return new Promise<void>((resolve) => {
+    const start = Date.now();
+    const check = () => {
+      if (document.querySelector(selector)) {
+        setTimeout(resolve, settleMs);
+        return;
+      }
+      if (Date.now() - start > timeoutMs) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(check);
+    };
+    check();
+  });
+}
+
+/**
+ * Step `before` hook: opens the planning sheet and waits for the
+ * referenced flow button to mount before letting Joyride spotlight it.
+ */
+const openSheetAndWait = (selector: string) => async () => {
+  window.dispatchEvent(new Event('parade:open-planning-sheet'));
+  await waitForSelector(selector);
 };
 
 const STEPS: TourStep[] = [
@@ -30,7 +60,10 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Find time with friends\" to choose who you want to see — we'll surface windows where you're both free.",
     placement: 'top',
-    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
+    isFixed: true,
+    skipScroll: true,
+    before: openSheetAndWait('[data-tour="flow-hang"]'),
+    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
     target: '[data-tour="flow-plus-one"]',
@@ -39,7 +72,10 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Open invite\" when you have a spare ticket or want company for something specific. Friends can claim the spot.",
     placement: 'top',
-    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
+    isFixed: true,
+    skipScroll: true,
+    before: openSheetAndWait('[data-tour="flow-plus-one"]'),
+    onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
     target: '[data-tour="flow-trip"]',
@@ -48,7 +84,9 @@ const STEPS: TourStep[] = [
     content:
       "Pick \"Go somewhere\" to plan a trip or propose dates with a group — Parade auto-updates your location and surfaces nearby friends.",
     placement: 'top',
-    onEnter: () => window.dispatchEvent(new Event('parade:open-planning-sheet')),
+    isFixed: true,
+    skipScroll: true,
+    before: openSheetAndWait('[data-tour="flow-trip"]'),
     onLeave: () => window.dispatchEvent(new Event('parade:close-planning-sheet')),
   },
   {
@@ -117,7 +155,9 @@ export function ParadeTour() {
     };
   }, [user, friendCount, planCount]);
 
-  // Navigate to the right route + fire onEnter when entering a step.
+  // Navigate to the right route when entering a step. The step's `before`
+  // hook (provided by react-joyride v3) handles opening the bottom sheet
+  // and waiting for the target to mount before the spotlight is measured.
   useEffect(() => {
     if (!run) return;
     const step = STEPS[stepIndex];
@@ -130,7 +170,6 @@ export function ParadeTour() {
 
     if (lastEnteredStep.current !== stepIndex) {
       lastEnteredStep.current = stepIndex;
-      setTimeout(() => step.onEnter?.(), 50);
     }
   }, [run, stepIndex, location.pathname, navigate]);
 
@@ -203,7 +242,9 @@ export function ParadeTour() {
         skipBeacon: true,
         spotlightPadding: 6,
         spotlightRadius: 14,
-        zIndex: 10000,
+        // Higher than the Drawer (which renders at z-50) so the tooltip,
+        // overlay, and spotlight all sit above the open bottom sheet.
+        zIndex: 100000,
         targetWaitTimeout: 8000,
         buttons: ['back', 'skip', 'primary'],
       }}
