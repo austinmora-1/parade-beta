@@ -284,39 +284,40 @@ export function ParadeTour() {
           buttons: ['back', 'skip', 'primary'],
         }}
         styles={{
-        tooltip: {
-          borderRadius: 16,
-          padding: 18,
-          fontSize: 14,
-        },
-        tooltipTitle: {
-          fontSize: 16,
-          fontWeight: 700,
-          marginBottom: 6,
-        },
-        tooltipContent: {
-          padding: 0,
-          lineHeight: 1.5,
-          color: 'hsl(var(--muted-foreground))',
-        },
-        buttonPrimary: {
-          backgroundColor: '#E6533C',
-          borderRadius: 8,
-          fontSize: 13,
-          fontWeight: 600,
-          padding: '8px 14px',
-        },
-        buttonBack: {
-          color: 'hsl(var(--muted-foreground))',
-          fontSize: 13,
-          marginRight: 6,
-        },
-        buttonSkip: {
-          color: 'hsl(var(--muted-foreground))',
-          fontSize: 12,
-        },
-      }}
-    />
+          tooltip: {
+            borderRadius: 16,
+            padding: 18,
+            fontSize: 14,
+          },
+          tooltipTitle: {
+            fontSize: 16,
+            fontWeight: 700,
+            marginBottom: 6,
+          },
+          tooltipContent: {
+            padding: 0,
+            lineHeight: 1.5,
+            color: 'hsl(var(--muted-foreground))',
+          },
+          buttonPrimary: {
+            backgroundColor: '#E6533C',
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            padding: '8px 14px',
+          },
+          buttonBack: {
+            color: 'hsl(var(--muted-foreground))',
+            fontSize: 13,
+            marginRight: 6,
+          },
+          buttonSkip: {
+            color: 'hsl(var(--muted-foreground))',
+            fontSize: 12,
+          },
+        }}
+      />
+    </>
   );
 }
 
