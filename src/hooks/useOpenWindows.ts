@@ -150,19 +150,54 @@ function fmtHour(hr: number): string {
  * Score how well a (date, slot) matches the user's stated preferences.
  * Higher = better fit. 0 = no match.
  */
+/**
+ * Build the set of allowed TimeSlots for a given date based on the user's
+ * preferred social times. Day-scoped entries ("day:slot") only apply on
+ * their day; bare time categories ("evening", "afternoon", ...) apply to
+ * every day. Returns null when the user has no time preferences set
+ * (meaning: don't filter by time).
+ */
+function allowedSlotsForDate(
+  date: Date,
+  prefTimes: string[],
+): Set<TimeSlot> | null {
+  if (!prefTimes || prefTimes.length === 0) return null;
+  const dayName = DAY_NAMES_LOWER[date.getDay()];
+  const allowed = new Set<TimeSlot>();
+  for (const t of prefTimes) {
+    if (t.includes(':')) {
+      const [d, s] = t.split(':');
+      if (d === dayName && SLOT_ORDER.includes(s as TimeSlot)) {
+        allowed.add(s as TimeSlot);
+      }
+    } else {
+      const mapped = TIME_TO_SLOTS[t];
+      if (mapped) mapped.forEach((s) => allowed.add(s));
+    }
+  }
+  return allowed;
+}
+
+/**
+ * Score how well a (date, slot) matches the user's stated preferences.
+ * Higher = better fit. 0 = slot does not align with preferred time slots
+ * (and should be excluded from recommendations).
+ */
 function preferenceScore(
   date: Date,
   slot: TimeSlot,
   prefDays: string[],
   prefTimes: string[],
 ): number {
+  // Hard filter: slot must be in the user's preferred time slots for this day.
+  const allowed = allowedSlotsForDate(date, prefTimes);
+  if (allowed && !allowed.has(slot)) return 0;
+
   const dayName = DAY_NAMES_LOWER[date.getDay()];
   let score = 0;
 
-  // Day-specific slot ("day:slot" or any "*:slot") match — strongest signal
-  const daySlotMatch = prefTimes.some(
-    (t) => t === `${dayName}:${slot}` || t.endsWith(`:${slot}`)
-  );
+  // Day-specific slot ("day:slot") match — strongest signal
+  const daySlotMatch = prefTimes.some((t) => t === `${dayName}:${slot}`);
   if (daySlotMatch) score += 3;
 
   // General day preference
@@ -175,6 +210,11 @@ function preferenceScore(
     const mapped = TIME_TO_SLOTS[bt];
     if (mapped?.includes(slot)) { score += 2; break; }
   }
+
+  // If the user has time preferences and the slot is allowed but didn't
+  // accumulate any score above (edge case), give it a baseline so it still
+  // qualifies as a valid anchor.
+  if (allowed && score === 0) score = 1;
 
   return score;
 }
