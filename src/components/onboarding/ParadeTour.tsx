@@ -228,10 +228,20 @@ export function ParadeTour() {
         skipBeacon: true,
         spotlightPadding: 6,
         spotlightRadius: 14,
-        zIndex: 10000,
+        // Higher than the Drawer (which renders at z-50) so the tooltip,
+        // overlay, and spotlight all sit above the open bottom sheet.
+        zIndex: 100000,
         targetWaitTimeout: 8000,
         buttons: ['back', 'skip', 'primary'],
       }}
+      floaterProps={{
+        // Force the tooltip into the document body so it isn't trapped by
+        // the Drawer portal's stacking context, and disable the floater
+        // animation so the position doesn't lag the spotlight.
+        disableAnimation: true,
+        hideArrow: false,
+      }}
+      disableScrollParentFix
       styles={{
         tooltip: {
           borderRadius: 16,
