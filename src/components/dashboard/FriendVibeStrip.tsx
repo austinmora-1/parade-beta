@@ -221,47 +221,21 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
   }
 
   return (
-    <>
-      <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider px-1 text-primary">
-          Who's around this week
-        </p>
-        <div className="flex flex-wrap gap-2 px-1">
-          {around.map((a, i) => (
-            <FriendPill
-              key={a.friend.id}
-              data={a}
-              index={i}
-              onPickSlot={(slot) => {
-                if (!a.friend.friendUserId) return;
-                setPlanContext({
-                  friend: {
-                    userId: a.friend.friendUserId,
-                    name: a.friend.name,
-                    avatar: a.friend.avatar,
-                  },
-                  date: parseISO(slot.date),
-                  slot: slot.slot,
-                });
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {planContext && (
-        <Suspense fallback={null}>
-          <QuickPlanSheet
-            open={!!planContext}
-            onOpenChange={(v) => { if (!v) setPlanContext(null); }}
-            preSelectedFriend={planContext.friend}
-            preSelectedFriends={[planContext.friend]}
-            preSelectedDate={planContext.date}
-            preSelectedTimeSlot={planContext.slot}
+    <div className="space-y-2">
+      <p className="text-[11px] font-semibold uppercase tracking-wider px-1 text-primary">
+        Who's around this week
+      </p>
+      <div className="flex flex-wrap gap-2 px-1">
+        {around.map((a, i) => (
+          <FriendPill
+            key={a.friend.id}
+            data={a}
+            index={i}
+            preferredTimes={preferredTimes}
           />
-        </Suspense>
-      )}
-    </>
+        ))}
+      </div>
+    </div>
   );
 }
 
