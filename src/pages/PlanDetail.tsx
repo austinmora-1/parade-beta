@@ -546,9 +546,63 @@ export default function PlanDetail() {
               >
                 <ActivityIcon config={activityConfig} size={22} />
               </div>
-              <div>
-                <h1 className="font-display text-lg font-bold leading-snug">{displayTitle}</h1>
-                <p className="text-xs text-muted-foreground">{activityConfig.label}</p>
+              <div className="flex-1 min-w-0">
+                {canEdit && !isPast && editingTitle ? (
+                  <Input
+                    autoFocus
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onBlur={async () => {
+                      const next = titleDraft.trim();
+                      setEditingTitle(false);
+                      if (next && next !== displayTitle) {
+                        await applyDirectUpdate({ title: next });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') { setEditingTitle(false); }
+                    }}
+                    className="h-8 font-display text-lg font-bold leading-snug px-2"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!canEdit || isPast) return;
+                      setTitleDraft(displayTitle || '');
+                      setEditingTitle(true);
+                    }}
+                    className={`text-left font-display text-lg font-bold leading-snug ${canEdit && !isPast ? 'hover:bg-muted/40 rounded px-1 -mx-1 cursor-text' : ''}`}
+                  >
+                    {displayTitle}
+                  </button>
+                )}
+                {canEdit && !isPast && plan ? (
+                  <Select
+                    value={plan.activity}
+                    onValueChange={async (val) => {
+                      await applyDirectUpdate({ activity: val as any });
+                    }}
+                  >
+                    <SelectTrigger className="h-6 mt-0.5 w-auto px-1 -mx-1 border-none shadow-none gap-1 text-xs text-muted-foreground hover:bg-muted/40">
+                      <SelectValue>{activityConfig.label}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {(Object.entries(_AC) as [string, any][])
+                        .filter(([k]) => k !== 'custom')
+                        .map(([key, cfg]) => (
+                          <SelectItem key={key} value={key} className="text-sm">
+                            <span className="inline-flex items-center gap-2">
+                              <span>{cfg.icon}</span>{cfg.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{activityConfig.label}</p>
+                )}
                 {displayPlan.status === 'tentative' && (
                   <span className="inline-block mt-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                     Tentative
