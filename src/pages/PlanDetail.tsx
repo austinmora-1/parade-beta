@@ -426,7 +426,52 @@ export default function PlanDetail() {
     }
   };
 
-  return (
+  // Determine if shared (multi-participant) — schedule changes need approval
+  const otherParticipantUserIds = (effectivePlan?.participants || [])
+    .filter((p: any) => p.role !== 'subscriber' && p.friendUserId && p.friendUserId !== userId)
+    .map((p: any) => p.friendUserId);
+  const isSharedPlan = otherParticipantUserIds.length > 0;
+
+  const applyDirectUpdate = async (updates: Partial<Plan>) => {
+    if (!plan) return;
+    try {
+      await updatePlan(plan.id, updates);
+      toast.success('Updated');
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't update — try again?");
+    }
+  };
+
+  const applyScheduleUpdate = async (changes: { date?: Date; timeSlot?: any; duration?: number; startTime?: string; endTime?: string }) => {
+    if (!plan) return;
+    // Owner solo plan, or non-time fields → direct update
+    const needsApproval = isSharedPlan && (changes.date || changes.timeSlot || changes.duration);
+    if (!needsApproval) {
+      await applyDirectUpdate(changes as Partial<Plan>);
+      return;
+    }
+    // Propose change
+    try {
+      const ok = await proposeChange(
+        plan.id,
+        {
+          date: changes.date,
+          timeSlot: changes.timeSlot,
+          duration: changes.duration,
+        },
+        otherParticipantUserIds,
+      );
+      if (ok) {
+        toast.success('Change proposed — waiting on participants');
+        refetchChangeRequests();
+      } else {
+        toast.error("Couldn't propose that change — try again?");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't propose change");
+    }
+  };
+
     <div className="animate-fade-in space-y-6 max-w-2xl mx-auto">
       {/* Back button */}
       <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-2 -ml-2">
