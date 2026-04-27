@@ -470,7 +470,7 @@ export function useOpenWindows() {
       });
 
     return deduped.slice(0, MAX_RESULTS).map(({ _score, ...w }) => w);
-  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail, friendHomeAddresses, homeAddress, prefDays, prefTimes]);
+  }, [user?.id, targetDates, availabilityMap, plans, connectedFriends, friendAvail, friendPlans, friendHomeAddresses, homeAddress, prefDays, prefTimes]);
 
   return { windows, loading };
 }
