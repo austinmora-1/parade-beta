@@ -143,7 +143,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
         availByUserDate.set(`${a.user_id}|${a.date}`, a);
       });
 
-      const result: AroundFriend[] = connectedFriends.flatMap(friend => {
+      const result: AroundFriend[] = connectedFriends.flatMap((friend): AroundFriend[] => {
         const profile = profileMap.get(friend.friendUserId!);
         const overlapSlots: OverlapSlot[] = [];
         const friendOnlySlots: OverlapSlot[] = [];
