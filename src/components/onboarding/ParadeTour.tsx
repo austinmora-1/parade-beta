@@ -159,24 +159,23 @@ export function ParadeTour() {
     }
   }, [run, step, location.pathname, navigate]);
 
-  // ---------- Measure spotlight target ----------
+  // ---------- Measure spotlight target (for resize/scroll listener only) ----------
   const measure = useCallback(() => {
-    if (!step) return;
+    const currentStep = STEPS[stepIndex];
+    if (!currentStep) return;
 
     let target: Element | null = null;
-    if (step.panelRow !== undefined) {
-      target = panelRowRefs.current[step.panelRow] ?? null;
-    } else if (step.selector) {
-      target = document.querySelector(step.selector);
+    if (currentStep.panelRow !== undefined) {
+      target = panelRowRefs.current[currentStep.panelRow] ?? null;
+    } else if (currentStep.selector) {
+      target = document.querySelector(currentStep.selector);
     }
 
-    if (!target) {
-      setRect(null);
-      return;
-    }
+    if (!target) return;
     const r = target.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return;
     setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-  }, [step]);
+  }, [stepIndex]);
 
   // Measure on step change + when panel mounts. Poll until the target appears
   // (covers route transitions where the nav item mounts a few frames later
