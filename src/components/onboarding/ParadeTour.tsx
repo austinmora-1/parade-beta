@@ -153,13 +153,10 @@ export function ParadeTour() {
     };
   }, [user, friendCount, planCount]);
 
-  // Navigate to the right route + fire onEnter when entering a step.
-  // For steps whose target lives inside a portal/drawer, we briefly pause
-  // Joyride, fire onEnter (which opens the sheet), wait for the target
-  // to actually mount + settle, then resume so the spotlight measures the
-  // correct rect.
+  // Navigate to the right route when entering a step. The step's `before`
+  // hook (provided by react-joyride v3) handles opening the bottom sheet
+  // and waiting for the target to mount before the spotlight is measured.
   useEffect(() => {
-    if (!run && lastEnteredStep.current === stepIndex) return;
     if (!run) return;
     const step = STEPS[stepIndex];
     if (!step) return;
@@ -171,27 +168,6 @@ export function ParadeTour() {
 
     if (lastEnteredStep.current !== stepIndex) {
       lastEnteredStep.current = stepIndex;
-
-      if (step.onEnter) {
-        // Pause Joyride so it doesn't try to spotlight a yet-to-mount target.
-        setRun(false);
-        step.onEnter();
-
-        // Wait for the target element to mount, then give the drawer a
-        // moment to finish its open animation before resuming.
-        const targetSel = typeof step.target === 'string' ? step.target : null;
-        const start = Date.now();
-        const waitForTarget = () => {
-          const el = targetSel ? document.querySelector(targetSel) : null;
-          if (el || Date.now() - start > 2000) {
-            // Allow drawer transform to settle
-            setTimeout(() => setRun(true), 220);
-          } else {
-            requestAnimationFrame(waitForTarget);
-          }
-        };
-        requestAnimationFrame(waitForTarget);
-      }
     }
   }, [run, stepIndex, location.pathname, navigate]);
 
