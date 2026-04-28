@@ -240,7 +240,7 @@ export function TripsList({ refreshKey }: TripsListProps) {
     });
 
     setProposals(mapped);
-  }, [user]);
+  }, [user, fetchTrips]);
 
   useEffect(() => {
     void fetchTrips();
