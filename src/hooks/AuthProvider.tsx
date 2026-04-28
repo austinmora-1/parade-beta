@@ -18,12 +18,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
+
+  const retryAuth = useCallback(() => {
+    setAuthError(null);
+    setLoading(true);
+    setRetryTick((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
+        setAuthError(null);
         setLoading(false);
       }
     );
@@ -32,18 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(({ data: { session: initialSession } }) => {
         setSession(s => s ?? initialSession);
         setUser(u => u ?? (initialSession?.user ?? null));
+        setAuthError(null);
       })
       .catch((error) => {
         console.error('Auth session initialization failed:', error);
-        setSession(null);
-        setUser(null);
+        setAuthError(error?.message || 'Sign-in service is taking too long to respond.');
       })
       .finally(() => {
         setLoading(false);
       });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [retryTick]);
 
   const signUp = useCallback(async (email: string, password: string, displayName?: string, emailRedirectTo?: string) => {
     return supabase.auth.signUp({
