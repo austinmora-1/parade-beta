@@ -30,7 +30,7 @@ export default function Landing() {
       </div>
 
       {/* Hero — warm cream with subtle coral wash */}
-      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 sm:px-6">
+      <section className="relative min-h-[100dvh] flex flex-col items-center justify-center px-5 sm:px-6 pt-[max(env(safe-area-inset-top),1.5rem)] sm:pt-0">
         {/* Warm radial gradient background */}
         <div
           className="absolute inset-0 pointer-events-none"
