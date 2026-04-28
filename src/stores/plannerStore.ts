@@ -266,13 +266,14 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         let rpcData: any = null;
         let lastError: any = null;
         for (let attempt = 0; attempt < 3; attempt++) {
-          const { data, error } = await withTimeout(
-            supabase.rpc('get_dashboard_data' as any, {
+          const response = await withTimeout(
+            Promise.resolve(supabase.rpc('get_dashboard_data' as any, {
               p_user_id: userId,
-            }),
+            })),
             8000,
             'Dashboard data request'
           );
+          const { data, error } = response as { data: any; error: any };
           if (!error) {
             rpcData = data;
             break;

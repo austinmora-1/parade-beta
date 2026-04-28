@@ -50,14 +50,15 @@ export default function Dashboard() {
     async function checkOnboarding() {
       if (!session?.user) { setCheckingOnboarding(false); return; }
       try {
-        const { data } = await withTimeout(
-          supabase
+        const response = await withTimeout(
+          Promise.resolve(supabase
             .from('profiles')
             .select('onboarding_completed')
             .eq('user_id', session.user.id)
-            .single(),
+            .single()),
           ONBOARDING_CHECK_TIMEOUT_MS
         );
+        const data = (response as { data: { onboarding_completed?: boolean } | null }).data;
         if (data && !(data as any).onboarding_completed) {
           navigate('/onboarding', { replace: true });
           return;
