@@ -236,7 +236,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         return;
       }
 
-      set({ isLoading: true });
+      set({ isLoading: true, loadError: null });
 
       // Stale-while-revalidate
       try {
@@ -287,6 +287,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
 
         if (!rpcData) {
           console.error('get_dashboard_data failed after retries:', lastError);
+          let fallbackOk = true;
           try {
             await withTimeout(
               Promise.all([
@@ -299,8 +300,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
             );
           } catch (fallbackErr) {
             console.error('Fallback loaders also failed:', fallbackErr);
+            fallbackOk = false;
           }
-          set({ isLoading: false, lastFetchedAt: Date.now() });
+          set({
+            isLoading: false,
+            lastFetchedAt: Date.now(),
+            loadError: fallbackOk ? null : 'We couldn’t load your dashboard. Please try again.',
+          });
           return;
         }
 
