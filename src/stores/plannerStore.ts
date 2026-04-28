@@ -117,6 +117,7 @@ interface PlannerState {
   currentVibe: Vibe | null;
   locationStatus: LocationStatus;
   isLoading: boolean;
+  loadError: string | null;
   userId: string | null;
   lastFetchedAt: number | null;
   defaultSettings: DefaultAvailabilitySettings | null;
