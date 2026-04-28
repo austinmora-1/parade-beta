@@ -41,14 +41,27 @@ const fadeUp = {
 };
 
 export default function Dashboard() {
-  const { isLoading } = usePlannerStore();
-  const { session } = useAuth();
+  const { isLoading, loadError, forceRefresh } = usePlannerStore();
+  const { session, authError, retryAuth } = useAuth();
   const navigate = useNavigate();
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [onboardingError, setOnboardingError] = useState<string | null>(null);
+  const [onboardingTick, setOnboardingTick] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     async function checkOnboarding() {
-      if (!session?.user) { setCheckingOnboarding(false); return; }
+      if (!session?.user) {
+        if (!cancelled) {
+          setOnboardingError(null);
+          setCheckingOnboarding(false);
+        }
+        return;
+      }
+      if (!cancelled) {
+        setCheckingOnboarding(true);
+        setOnboardingError(null);
+      }
       try {
         const response = await withTimeout(
           Promise.resolve(supabase
@@ -58,6 +71,7 @@ export default function Dashboard() {
             .single()),
           ONBOARDING_CHECK_TIMEOUT_MS
         );
+        if (cancelled) return;
         const data = (response as { data: { onboarding_completed?: boolean } | null }).data;
         if (data && !(data as any).onboarding_completed) {
           navigate('/onboarding', { replace: true });
@@ -65,15 +79,45 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.warn('Onboarding check failed:', error);
+        if (!cancelled) {
+          setOnboardingError('We couldn’t verify your account. Please try again.');
+        }
       }
-      setCheckingOnboarding(false);
+      if (!cancelled) setCheckingOnboarding(false);
     }
     checkOnboarding();
-  }, [session?.user, navigate]);
+    return () => { cancelled = true; };
+  }, [session?.user, navigate, onboardingTick]);
 
   const handleAddFriend = useCallback((_friend: StagedFriend) => {
     // No-op: friend staging surface (QuickPlanDrop) was removed from the dashboard.
   }, []);
+
+  const errorMessage = authError || onboardingError || loadError;
+
+  const handleRetry = useCallback(() => {
+    if (authError) retryAuth();
+    if (onboardingError) setOnboardingTick((n) => n + 1);
+    if (loadError) {
+      void forceRefresh();
+    }
+  }, [authError, onboardingError, loadError, retryAuth, forceRefresh]);
+
+  if (errorMessage && !isLoading && !checkingOnboarding) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
+        <h2 className="text-xl font-semibold text-foreground">Something went wrong</h2>
+        <p className="text-sm text-muted-foreground max-w-sm">{errorMessage}</p>
+        <button
+          type="button"
+          onClick={handleRetry}
+          className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading || checkingOnboarding) {
     return (

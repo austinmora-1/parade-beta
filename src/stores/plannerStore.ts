@@ -117,6 +117,7 @@ interface PlannerState {
   currentVibe: Vibe | null;
   locationStatus: LocationStatus;
   isLoading: boolean;
+  loadError: string | null;
   userId: string | null;
   lastFetchedAt: number | null;
   defaultSettings: DefaultAvailabilitySettings | null;
@@ -212,6 +213,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     currentVibe: null,
     locationStatus: 'home',
     isLoading: true,
+    loadError: null,
     userId: null,
     lastFetchedAt: null,
     defaultSettings: null,
@@ -234,7 +236,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         return;
       }
 
-      set({ isLoading: true });
+      set({ isLoading: true, loadError: null });
 
       // Stale-while-revalidate
       try {
@@ -285,6 +287,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
 
         if (!rpcData) {
           console.error('get_dashboard_data failed after retries:', lastError);
+          let fallbackOk = true;
           try {
             await withTimeout(
               Promise.all([
@@ -297,8 +300,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
             );
           } catch (fallbackErr) {
             console.error('Fallback loaders also failed:', fallbackErr);
+            fallbackOk = false;
           }
-          set({ isLoading: false, lastFetchedAt: Date.now() });
+          set({
+            isLoading: false,
+            lastFetchedAt: Date.now(),
+            loadError: fallbackOk ? null : 'We couldn’t load your dashboard. Please try again.',
+          });
           return;
         }
 
@@ -315,12 +323,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         });
         useVibeStore.setState({ userTimezone: transformed.userTimezone });
         useVibeStore.getState().bootstrapVibe(transformed.currentVibe, userId);
-        set({ isLoading: false, lastFetchedAt: Date.now() });
+        set({ isLoading: false, lastFetchedAt: Date.now(), loadError: null });
 
         setCachedDashboard(userId, rpcData).catch(() => {});
       } catch (error) {
         console.error('loadAllData error:', error);
-        set({ isLoading: false });
+        set({
+          isLoading: false,
+          loadError: (error as Error)?.message || 'We couldn’t load your dashboard. Please try again.',
+        });
       }
     },
 
