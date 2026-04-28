@@ -323,12 +323,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         });
         useVibeStore.setState({ userTimezone: transformed.userTimezone });
         useVibeStore.getState().bootstrapVibe(transformed.currentVibe, userId);
-        set({ isLoading: false, lastFetchedAt: Date.now() });
+        set({ isLoading: false, lastFetchedAt: Date.now(), loadError: null });
 
         setCachedDashboard(userId, rpcData).catch(() => {});
       } catch (error) {
         console.error('loadAllData error:', error);
-        set({ isLoading: false });
+        set({
+          isLoading: false,
+          loadError: (error as Error)?.message || 'We couldn’t load your dashboard. Please try again.',
+        });
       }
     },
 
