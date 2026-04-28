@@ -186,6 +186,15 @@ function syncFromDomainStores(set: (partial: Partial<PlannerState>) => void) {
   });
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+    }),
+  ]);
+}
+
 // ── Facade store ─────────────────────────────────────────────────────────────
 export const usePlannerStore = create<PlannerState>((set, get) => {
   // Subscribe to domain store changes and mirror into facade
@@ -257,9 +266,13 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         let rpcData: any = null;
         let lastError: any = null;
         for (let attempt = 0; attempt < 3; attempt++) {
-          const { data, error } = await supabase.rpc('get_dashboard_data' as any, {
-            p_user_id: userId,
-          });
+          const { data, error } = await withTimeout(
+            supabase.rpc('get_dashboard_data' as any, {
+              p_user_id: userId,
+            }),
+            8000,
+            'Dashboard data request'
+          );
           if (!error) {
             rpcData = data;
             break;
@@ -272,11 +285,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         if (!rpcData) {
           console.error('get_dashboard_data failed after retries:', lastError);
           try {
-            await Promise.all([
-              get().loadFriends(),
-              get().loadPlans(),
-              get().loadProfileAndAvailability(),
-            ]);
+            await withTimeout(
+              Promise.all([
+                get().loadFriends(),
+                get().loadPlans(),
+                get().loadProfileAndAvailability(),
+              ]),
+              10000,
+              'Fallback dashboard loaders'
+            );
           } catch (fallbackErr) {
             console.error('Fallback loaders also failed:', fallbackErr);
           }

@@ -3,6 +3,17 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthContextValue, AuthContext } from './AuthContext';
 
+const AUTH_INIT_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error('Auth initialization timed out')), timeoutMs);
+    }),
+  ]);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -17,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession()
+    withTimeout(supabase.auth.getSession(), AUTH_INIT_TIMEOUT_MS)
       .then(({ data: { session: initialSession } }) => {
         setSession(s => s ?? initialSession);
         setUser(u => u ?? (initialSession?.user ?? null));
