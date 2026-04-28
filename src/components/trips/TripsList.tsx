@@ -737,19 +737,29 @@ function ProposalTripCard({
     if (!winningDate || !isCreator) return;
     setFinalizing(true);
     try {
-      // Create a linked trip row for the creator (proposal_id ties shared activities together)
-      const { error: tripErr } = await supabase.from('trips').insert({
-        user_id: currentUserId,
-        location: proposal.destination?.trim() || null,
-        start_date: winningDate.start_date,
-        end_date: winningDate.end_date,
-        available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
-        priority_friend_ids: proposal.participants
-          .filter(p => p.user_id !== currentUserId)
-          .map(p => p.user_id),
-        proposal_id: proposal.id,
-      } as any);
-      if (tripErr) throw tripErr;
+      // Skip insert if a trip already exists for this proposal (idempotent retry)
+      const { data: existingTrip } = await supabase
+        .from('trips')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .eq('proposal_id', proposal.id)
+        .maybeSingle();
+
+      if (!existingTrip) {
+        // Create a linked trip row for the creator (proposal_id ties shared activities together)
+        const { error: tripErr } = await supabase.from('trips').insert({
+          user_id: currentUserId,
+          location: proposal.destination?.trim() || null,
+          start_date: winningDate.start_date,
+          end_date: winningDate.end_date,
+          available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
+          priority_friend_ids: proposal.participants
+            .filter(p => p.user_id !== currentUserId)
+            .map(p => p.user_id),
+          proposal_id: proposal.id,
+        } as any);
+        if (tripErr) throw tripErr;
+      }
 
       // Set availability to away for the winning dates
       const startDate = new Date(winningDate.start_date + 'T00:00:00');
