@@ -16,6 +16,17 @@ import { PolishProfileCard } from '@/components/dashboard/PolishProfileCard';
 import { FreeWindowCard } from '@/components/dashboard/FreeWindowCard';
 import { SmartPrimaryCTA } from '@/components/dashboard/SmartPrimaryCTA';
 
+const ONBOARDING_CHECK_TIMEOUT_MS = 6000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error('Onboarding check timed out')), timeoutMs);
+    }),
+  ]);
+}
+
 const stagger = {
   hidden: { opacity: 0 },
   show: {
@@ -38,14 +49,22 @@ export default function Dashboard() {
   useEffect(() => {
     async function checkOnboarding() {
       if (!session?.user) { setCheckingOnboarding(false); return; }
-      const { data } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('user_id', session.user.id)
-        .single();
-      if (data && !(data as any).onboarding_completed) {
-        navigate('/onboarding', { replace: true });
-        return;
+      try {
+        const response = await withTimeout(
+          Promise.resolve(supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('user_id', session.user.id)
+            .single()),
+          ONBOARDING_CHECK_TIMEOUT_MS
+        );
+        const data = (response as { data: { onboarding_completed?: boolean } | null }).data;
+        if (data && !(data as any).onboarding_completed) {
+          navigate('/onboarding', { replace: true });
+          return;
+        }
+      } catch (error) {
+        console.warn('Onboarding check failed:', error);
       }
       setCheckingOnboarding(false);
     }
