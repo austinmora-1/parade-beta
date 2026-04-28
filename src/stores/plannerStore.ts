@@ -213,6 +213,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     currentVibe: null,
     locationStatus: 'home',
     isLoading: true,
+    loadError: null,
     userId: null,
     lastFetchedAt: null,
     defaultSettings: null,
