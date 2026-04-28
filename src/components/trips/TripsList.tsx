@@ -127,16 +127,54 @@ export function TripsList({ refreshKey }: TripsListProps) {
     const proposalIds = myParticipations.map(p => p.proposal_id);
 
     const [
-      { data: proposalsData },
+      { data: allProposalsData },
       { data: datesData },
       { data: allParticipants },
+      { data: linkedTrips },
     ] = await Promise.all([
-      supabase.from('trip_proposals').select('*').in('id', proposalIds).eq('status', 'pending'),
+      supabase.from('trip_proposals').select('*').in('id', proposalIds).in('status', ['pending', 'finalized']),
       supabase.from('trip_proposal_dates').select('*').in('proposal_id', proposalIds).order('start_date'),
       supabase.from('trip_proposal_participants').select('*').in('proposal_id', proposalIds),
+      supabase.from('trips').select('id, proposal_id').eq('user_id', user.id).in('proposal_id', proposalIds),
     ]);
 
-    if (!proposalsData?.length) {
+    // Self-healing: for any finalized proposal where this user has no linked trip,
+    // backfill a trip row from the winning (most-voted, earliest) date so it appears
+    // in the user's Trips list. Refresh trips after if any were inserted.
+    let backfilled = false;
+    if (allProposalsData?.length) {
+      const linkedProposalIds = new Set((linkedTrips || []).map(t => t.proposal_id).filter(Boolean));
+      const finalizedMissing = allProposalsData.filter(
+        p => p.status === 'finalized' && !linkedProposalIds.has(p.id)
+      );
+      for (const prop of finalizedMissing) {
+        const propDates = (datesData || []).filter(d => d.proposal_id === prop.id);
+        if (!propDates.length) continue;
+        // Pick earliest as a safe default for the backfill
+        const winning = [...propDates].sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+        const priorityIds = (allParticipants || [])
+          .filter(p => p.proposal_id === prop.id && p.user_id !== user.id)
+          .map(p => p.user_id);
+        const { error: insertErr } = await supabase.from('trips').insert({
+          user_id: user.id,
+          location: prop.destination?.trim() || null,
+          start_date: winning.start_date,
+          end_date: winning.end_date,
+          available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
+          priority_friend_ids: priorityIds,
+          proposal_id: prop.id,
+        } as any);
+        if (!insertErr) backfilled = true;
+      }
+      if (backfilled) {
+        await fetchTrips();
+      }
+    }
+
+    // Only show pending proposals in the proposals list (finalized ones are now trips)
+    const proposalsData = (allProposalsData || []).filter(p => p.status === 'pending');
+
+    if (!proposalsData.length) {
       setProposals([]);
       return;
     }
