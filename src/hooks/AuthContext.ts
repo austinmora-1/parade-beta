@@ -5,6 +5,8 @@ export interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  authError: string | null;
+  retryAuth: () => void;
   signUp: (email: string, password: string, displayName?: string, emailRedirectTo?: string) => Promise<{ data: any; error: any }>;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<{ error: any }>;
