@@ -48,21 +48,13 @@ export default function Landing() {
             className="w-full"
           >
             {/* Brand mark */}
-            <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="flex items-center justify-center mb-6">
               <span
-                className="inline-flex h-2.5 w-2.5 rounded-full bg-secondary"
-                aria-hidden
-              />
-              <span
-                className="text-secondary"
+                className="text-primary text-5xl sm:text-6xl md:text-7xl"
                 style={{ fontFamily: "'Bungee Shade', system-ui", fontWeight: 400, letterSpacing: '0.05em' }}
               >
                 Parade
               </span>
-              <span
-                className="inline-flex h-2.5 w-2.5 rounded-full bg-primary"
-                aria-hidden
-              />
             </div>
 
             {/* Display headline — Fraunces 900 */}
