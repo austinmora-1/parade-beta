@@ -5,7 +5,9 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Home, Plane, ChevronDown } from 'lucide-react';
+import { ArrowRight, Home, Plane, ChevronDown, Clock } from 'lucide-react';
+import { useSlotCoverageByDate, getSlotCoverage } from '@/hooks/useSlotCoverage';
+import { formatRange } from '@/lib/planSlotCoverage';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning',
@@ -19,19 +21,21 @@ const TIME_SLOT_ORDER: TimeSlot[] = [
 export function WeekendAvailability() {
   const { plans, availabilityMap, homeAddress } = usePlannerStore();
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const coverageByDate = useSlotCoverageByDate();
 
   const weekendDays = useMemo(() => {
     const start = startOfWeek(new Date(), { weekStartsOn: 1 });
     return [addDays(start, 5), addDays(start, 6)];
   }, []);
 
-  const getSlotStatus = (date: Date, slot: TimeSlot) => {
-    const hasPlan = plans.some(
-      (p) => isSameDay(p.date, date) && p.timeSlot === slot
-    );
-    if (hasPlan) return 'busy';
+  type SlotStatus = 'available' | 'partial' | 'busy' | 'unavailable';
+  const getSlotStatus = (date: Date, slot: TimeSlot): SlotStatus => {
+    const cov = getSlotCoverage(coverageByDate, date, slot);
+    if (cov?.kind === 'busy') return 'busy';
     const dayAvail = availabilityMap[format(date, 'yyyy-MM-dd')];
-    if (dayAvail && !dayAvail.slots[slot]) return 'unavailable';
+    const userMarkedFree = !dayAvail || !!dayAvail.slots[slot];
+    if (cov?.kind === 'partial') return userMarkedFree ? 'partial' : 'unavailable';
+    if (!userMarkedFree) return 'unavailable';
     return 'available';
   };
 
@@ -44,10 +48,12 @@ export function WeekendAvailability() {
   };
 
   const getDaySummary = (date: Date) => {
-    const available = TIME_SLOT_ORDER.filter(s => getSlotStatus(date, s) === 'available').length;
-    const busy = TIME_SLOT_ORDER.filter(s => getSlotStatus(date, s) === 'busy').length;
+    const statuses = TIME_SLOT_ORDER.map((s) => getSlotStatus(date, s));
+    const available = statuses.filter((s) => s === 'available').length;
+    const partial = statuses.filter((s) => s === 'partial').length;
+    const busy = statuses.filter((s) => s === 'busy').length;
     const total = TIME_SLOT_ORDER.length;
-    return { available, busy, total };
+    return { available, partial, busy, total };
   };
 
   const toggleDay = (key: string) => {
