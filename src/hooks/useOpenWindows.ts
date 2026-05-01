@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { TimeSlot, TIME_SLOT_LABELS, Friend } from '@/types/planner';
 import { isFriendInMyCity } from '@/lib/effectiveCity';
+import { getPlanSlotCoverage, mergeCoverages, freeHours, SlotCoverage } from '@/lib/planSlotCoverage';
 
 const SLOT_ORDER: TimeSlot[] = [
   'early-morning',
