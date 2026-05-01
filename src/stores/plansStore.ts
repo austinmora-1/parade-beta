@@ -387,17 +387,8 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
       role: 'participant',
     });
 
-    // Block the slot on the proposer's availability since the time is committed
-    {
-      const slotColumn = proposal.timeSlot.replace('-', '_');
-      await supabase
-        .from('availability')
-        .upsert({
-          user_id: userId,
-          date: dateStr,
-          [slotColumn]: false,
-        }, { onConflict: 'user_id,date' });
-    }
+    // Block the slot(s) on the proposer's availability since the time is committed.
+    await blockSlotsForPlan(userId, dateStr, { timeSlot: proposal.timeSlot });
 
     (async () => {
       try {
