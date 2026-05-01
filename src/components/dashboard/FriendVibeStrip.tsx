@@ -427,9 +427,13 @@ function FriendPill({
   };
 
   const selectionCount = selected.size;
-  const buttonLabel = selectionCount <= 1
-    ? `Ask ${friend.name.split(' ')[0]} to hang`
+  const nextLabel = selectionCount <= 1
+    ? `Send to ${friend.name.split(' ')[0]}`
     : `Send ${selectionCount} options to ${friend.name.split(' ')[0]}`;
+
+  const selectedSlotsPreview = overlapSlots.filter(s => selected.has(slotKey(s)));
+
+  const customInvalid = activity === 'custom' && customActivity.trim().length === 0;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
