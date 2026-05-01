@@ -86,7 +86,7 @@ export function WeekendAvailability() {
           const locationLabel = dayAvail?.tripLocation || homeAddress || undefined;
           const summary = getDaySummary(day);
           const isExpanded = expandedDays.has(key);
-          const score = summary.available / summary.total;
+          const score = (summary.available + summary.partial * 0.5) / summary.total;
 
           return (
             <div key={key} className="space-y-1.5">
@@ -128,6 +128,7 @@ export function WeekendAvailability() {
                         className={cn(
                           "h-1.5 flex-1 rounded-full",
                           status === 'available' && "bg-availability-available/60",
+                          status === 'partial' && "bg-availability-partial-stripes",
                           status === 'busy' && "bg-primary/60",
                           status === 'unavailable' && "bg-muted-foreground/20"
                         )}
@@ -143,6 +144,7 @@ export function WeekendAvailability() {
                     score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                   )}>
                     {summary.available} of {summary.total} free
+                    {summary.partial > 0 && ` · ${summary.partial} partial`}
                     {summary.busy > 0 && ` · ${summary.busy} plan${summary.busy > 1 ? 's' : ''}`}
                   </span>
                 </div>
@@ -167,6 +169,11 @@ export function WeekendAvailability() {
                     const status = getSlotStatus(day, slot);
                     const slotPlans = getPlansForSlot(day, slot);
                     const slotInfo = TIME_SLOT_LABELS[slot];
+                    const cov = getSlotCoverage(coverageByDate, day, slot);
+                    const freeRangeLabel =
+                      status === 'partial' && cov?.freeRanges?.length
+                        ? cov.freeRanges.map(formatRange).join(', ')
+                        : null;
 
                     return (
                       <div
@@ -174,6 +181,7 @@ export function WeekendAvailability() {
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors",
                           status === 'available' && "bg-availability-available/20 text-foreground",
+                          status === 'partial' && "bg-availability-partial-stripes border border-dashed border-availability-partial/40 text-foreground",
                           status === 'busy' && "bg-muted/60 text-foreground",
                           status === 'unavailable' && "bg-muted/30 text-muted-foreground"
                         )}
@@ -181,12 +189,19 @@ export function WeekendAvailability() {
                         <span className={cn(
                           "h-1.5 w-1.5 shrink-0 rounded-full",
                           status === 'available' && "bg-availability-available",
+                          status === 'partial' && "bg-availability-partial",
                           status === 'busy' && "bg-primary",
                           status === 'unavailable' && "bg-muted-foreground/40"
                         )} />
                         <span className="font-medium truncate">
                           {slotInfo.label}
                         </span>
+                        {freeRangeLabel && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-availability-partial shrink-0">
+                            <Clock className="h-3 w-3" />
+                            {freeRangeLabel} free
+                          </span>
+                        )}
                         <span className="text-muted-foreground ml-auto text-[10px] shrink-0">
                           {slotInfo.time}
                         </span>
