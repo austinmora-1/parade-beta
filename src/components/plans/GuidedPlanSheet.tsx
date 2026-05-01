@@ -1086,25 +1086,22 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
                       <button
                         key={f.friendUserId}
                         onClick={() => toggleFriend(f)}
-                        className={cn(
-                          "relative flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-center transition-all",
-                          isChosen
-                            ? "bg-primary/10 border border-primary/30"
-                            : "hover:bg-muted/50 border border-transparent"
-                        )}
+                        className="relative flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-center transition-all hover:bg-muted/30"
                       >
-                        <Avatar className={cn(
-                          "h-14 w-14 transition-all",
-                          isChosen && "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                        )}>
-                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                          <AvatarFallback className="text-sm">{f.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        {isChosen && (
-                          <div className="absolute top-1.5 right-1.5 flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground shadow-sm">
-                            <Check className="h-3 w-3" />
-                          </div>
-                        )}
+                        <div className="relative">
+                          <Avatar className={cn(
+                            "h-14 w-14 transition-all",
+                            isChosen && "ring-[3px] ring-primary ring-offset-2 ring-offset-background"
+                          )}>
+                            <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                            <AvatarFallback className="text-sm">{f.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          {isChosen && (
+                            <div className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground shadow-sm ring-2 ring-background">
+                              <Check className="h-3 w-3" />
+                            </div>
+                          )}
+                        </div>
                         <span className="text-xs font-medium leading-tight truncate w-full">
                           {displayLabel}
                         </span>
