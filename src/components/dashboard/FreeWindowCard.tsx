@@ -17,7 +17,7 @@ function formatDayPhrase(date: Date): string {
   if (days <= 13) return `next ${dayName}`;
   return `${dayName}, ${format(date, 'MMM d')}`;
 }
-import { Sparkles, Send, Share2 } from 'lucide-react';
+import { Sparkles, Send, Share2, Clock } from 'lucide-react';
 import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -204,7 +204,10 @@ function WindowChip({
           onClick();
         }
       }}
-      className="relative snap-start shrink-0 min-w-[220px] max-w-[260px] rounded-2xl border border-border bg-card px-4 py-3.5 text-left shadow-soft hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
+      className={cn(
+        "relative snap-start shrink-0 min-w-[220px] max-w-[260px] rounded-2xl border bg-card px-4 py-3.5 text-left shadow-soft hover:border-primary/40 hover:shadow-md transition-all cursor-pointer",
+        w.isPartial ? "border-dashed border-availability-partial/50" : "border-border"
+      )}
     >
       <button
         type="button"
@@ -223,6 +226,12 @@ function WindowChip({
       <p className="font-display text-lg font-semibold leading-tight mt-1 truncate">
         {w.startLabel}–{w.endLabel}
       </p>
+      {w.isPartial && (
+        <p className="mt-1 inline-flex items-center gap-1 text-[10px] text-availability-partial">
+          <Clock className="h-2.5 w-2.5" />
+          Near another plan
+        </p>
+      )}
       <div className="mt-2.5 flex items-center gap-2 min-h-[24px]">
         {friendCount > 0 ? (
           <>
