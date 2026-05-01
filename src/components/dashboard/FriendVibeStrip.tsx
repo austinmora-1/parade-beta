@@ -374,6 +374,16 @@ function FriendPill({
       const requesterName = (myProfile as any)?.display_name || user.email || 'Someone';
       const slotsToSend = overlapSlots.filter(s => selected.has(slotKey(s)));
 
+      // Build activity suggestion message
+      let activityMessage: string | undefined;
+      if (activity === 'custom') {
+        const trimmed = customActivity.trim();
+        if (trimmed) activityMessage = `Suggested activity: ${trimmed}`;
+      } else if (activity && activity !== 'tbd') {
+        const cfg = ACTIVITY_CONFIG[activity as ActivityType];
+        if (cfg) activityMessage = `Suggested activity: ${cfg.icon} ${cfg.label}`;
+      }
+
       // Send each selected slot as a hang request
       const results = await Promise.all(
         slotsToSend.map(s => {
@@ -393,6 +403,7 @@ function FriendPill({
               selectedDayLabel: dayLabel,
               selectedSlot: s.slot,
               selectedSlotLabel: TIME_SLOT_LABELS[s.slot]?.label || s.slot,
+              message: activityMessage,
             },
           });
         })
