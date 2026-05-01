@@ -1291,15 +1291,82 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-4"
               >
-                {/* Activity badge */}
-                <div className="flex items-center justify-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-medium">
-                    {activityEmoji} {activityLabel}
-                  </span>
+                {/* Editable title + activity category */}
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Title
+                    </label>
+                    <Input
+                      value={customTitle}
+                      onChange={(e) => setCustomTitle(e.target.value)}
+                      placeholder={autoTitle}
+                      className="mt-1 h-9 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Activity
+                    </label>
+                    <Select
+                      value={activity ?? ''}
+                      onValueChange={(v) => setActivity(v)}
+                    >
+                      <SelectTrigger className="mt-1 h-9 text-sm">
+                        <SelectValue placeholder="Pick an activity">
+                          <span className="inline-flex items-center gap-2">
+                            <span>{activityEmoji}</span>
+                            <span>{activityLabel || 'Pick an activity'}</span>
+                          </span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[50vh]">
+                        <SelectGroup>
+                          <SelectItem value={TBD_ACTIVITY_ID}>
+                            <span className="inline-flex items-center gap-2">
+                              <span>{TBD_EMOJI}</span><span>{TBD_LABEL} — decide later</span>
+                            </span>
+                          </SelectItem>
+                        </SelectGroup>
+                        {customActivities.length > 0 && (
+                          <SelectGroup>
+                            <SelectLabel>Your Activities</SelectLabel>
+                            {customActivities.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>
+                                <span className="inline-flex items-center gap-2">
+                                  <span>{a.icon}</span><span>{a.label}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        )}
+                        {getAllVibes().map((vibe) => {
+                          const vibeConfig = VIBE_CONFIG[vibe];
+                          const acts = getActivitiesByVibe(vibe);
+                          if (acts.length === 0) return null;
+                          return (
+                            <SelectGroup key={vibe}>
+                              <SelectLabel>{vibeConfig.label}</SelectLabel>
+                              {acts.map((type) => {
+                                const config = ACTIVITY_CONFIG[type];
+                                return (
+                                  <SelectItem key={type} value={type}>
+                                    <span className="inline-flex items-center gap-2">
+                                      <span>{config.icon}</span><span>{config.label}</span>
+                                    </span>
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectGroup>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   {selectedSlots.length > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold">
-                      {selectedSlots.length} selected
-                    </span>
+                    <p className="text-[11px] text-primary text-center pt-1">
+                      {selectedSlots.length} time{selectedSlots.length === 1 ? '' : 's'} selected
+                    </p>
                   )}
                 </div>
 
