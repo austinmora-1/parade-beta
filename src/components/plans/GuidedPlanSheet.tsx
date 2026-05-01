@@ -223,6 +223,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
       setShowCustomInput(false);
       setCustomLabel('');
       setActivitySearch('');
+      setCustomTitle('');
       setFriendsHaveDifferentHome(false);
     }
   }, [open, needsFriendStep]);
