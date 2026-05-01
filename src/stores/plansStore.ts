@@ -334,15 +334,14 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
     if (planToDelete && userId) {
       const dateStr = format(planToDelete.date, 'yyyy-MM-dd');
       const remainingPlans = currentPlans.filter(
-        p => p.id !== id && format(p.date, 'yyyy-MM-dd') === dateStr && p.timeSlot === planToDelete.timeSlot
+        (p) => p.id !== id && format(p.date, 'yyyy-MM-dd') === dateStr,
       );
-
-      if (remainingPlans.length === 0) {
-        const slotColumn = planToDelete.timeSlot.replace('-', '_');
-        await supabase
-          .from('availability')
-          .upsert({ user_id: userId, date: dateStr, [slotColumn]: true }, { onConflict: 'user_id,date' });
-      }
+      await unblockSlotsForRemovedPlan(
+        userId,
+        dateStr,
+        { timeSlot: planToDelete.timeSlot, startTime: planToDelete.startTime || null, endTime: planToDelete.endTime || null },
+        remainingPlans.map((p) => ({ timeSlot: p.timeSlot, startTime: p.startTime || null, endTime: p.endTime || null, status: p.status })),
+      );
     }
   },
 
