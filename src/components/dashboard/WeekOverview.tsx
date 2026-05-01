@@ -233,6 +233,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                         className={cn(
                           "h-1 flex-1 rounded-full",
                           status === 'available' && "bg-availability-available/60",
+                          status === 'partial' && "bg-availability-partial-stripes",
                           status === 'busy' && "bg-primary/60",
                           status === 'unavailable' && "bg-muted-foreground/20"
                         )}
@@ -247,6 +248,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                     isAway ? "text-availability-away-foreground" : score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                   )}>
                     {summary.available}/{summary.total} free
+                    {summary.partial > 0 && ` · ${summary.partial} partial`}
                     {summary.busy > 0 && ` · ${summary.busy} ${summary.busy === 1 ? 'plan' : 'plans'}`}
                   </span>
                   <div className={cn(
