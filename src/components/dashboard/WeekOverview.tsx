@@ -270,6 +270,11 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                     const status = getSlotStatus(day, slot);
                     const slotPlans = getPlansForSlot(day, slot);
                     const slotInfo = TIME_SLOT_LABELS[slot];
+                    const cov = getSlotCoverage(coverageByDate, day, slot);
+                    const freeRangeLabel =
+                      status === 'partial' && cov?.freeRanges?.length
+                        ? cov.freeRanges.map(formatRange).join(', ')
+                        : null;
 
                     return (
                       <div
@@ -277,6 +282,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                         className={cn(
                           "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors",
                           status === 'available' && "bg-availability-available/20 text-foreground",
+                          status === 'partial' && "bg-availability-partial-stripes border border-dashed border-availability-partial/40 text-foreground",
                           status === 'busy' && "bg-muted/60 text-foreground",
                           status === 'unavailable' && "bg-muted/30 text-muted-foreground"
                         )}
@@ -284,12 +290,19 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                         <span className={cn(
                           "h-1.5 w-1.5 shrink-0 rounded-full",
                           status === 'available' && "bg-availability-available",
+                          status === 'partial' && "bg-availability-partial",
                           status === 'busy' && "bg-primary",
                           status === 'unavailable' && "bg-muted-foreground/40"
                         )} />
                         <span className="font-medium truncate">
                           {slotInfo.label}
                         </span>
+                        {freeRangeLabel && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] text-availability-partial shrink-0">
+                            <Clock className="h-2.5 w-2.5" />
+                            {freeRangeLabel} free
+                          </span>
+                        )}
                         <span className="text-muted-foreground ml-auto text-[9px] shrink-0">
                           {slotInfo.time}
                         </span>
