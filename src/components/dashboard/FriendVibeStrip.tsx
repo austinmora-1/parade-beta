@@ -1,12 +1,14 @@
 import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { format, addDays, parseISO, isSameDay } from 'date-fns';
-import { CalendarPlus, Sparkles, Send, Loader2, Check } from 'lucide-react';
+import { CalendarPlus, Sparkles, Send, Loader2, Check, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { usePlannerStore } from '@/stores/plannerStore';
-import { Friend, VIBE_CONFIG, VibeType, TimeSlot, TIME_SLOT_LABELS } from '@/types/planner';
+import { Friend, VIBE_CONFIG, VibeType, TimeSlot, TIME_SLOT_LABELS, ACTIVITY_CONFIG, ActivityType, getAllVibes, getActivitiesByVibe } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { resolveEffectiveCity, isFriendInMyCity } from '@/lib/effectiveCity';
