@@ -316,10 +316,18 @@ function FriendPill({
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
+  const [step, setStep] = useState<'slots' | 'activity'>('slots');
+  const [activity, setActivity] = useState<string>('tbd'); // ActivityType id, 'tbd', or 'custom'
+  const [customActivity, setCustomActivity] = useState('');
 
   // Reset selection when popover closes
   useEffect(() => {
-    if (!open) setSelected(new Set());
+    if (!open) {
+      setSelected(new Set());
+      setStep('slots');
+      setActivity('tbd');
+      setCustomActivity('');
+    }
   }, [open]);
 
   const slotKey = (s: OverlapSlot) => `${s.date}|${s.slot}`;
