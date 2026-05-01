@@ -1,78 +1,100 @@
-## Problem
+## Goal
 
-The current ParadeTour uses `react-joyride` + Vaul `Drawer` + an async `before` hook + a fake "tooltip anchor" element. Three things fight each other:
+Tighten availability so any plan (confirmed / tentative / proposed) blocks the slots it actually covers, and surface partial-overlap slots as a distinct "partially available" state that shows the free sub-window and is deprioritized in Recommended.
 
-1. **Vaul listens for outside pointer events.** When the user clicks the joyride "Next" button (rendered in a portal on `body`), Vaul treats it as outside-click and tries to close the drawer. `dismissible={false}` blocks the close but still consumes the event and triggers a re-layout — that's why "Next" needs two clicks and the tooltip jumps to the top.
-2. **Async `before` hooks + transient anchor div** mean joyride sometimes measures the anchor before the drawer's slide-in transform finishes, so the highlight lands on the wrong square.
-3. **The "tour cancels after step 2"** is Vaul's drag-to-dismiss reacting to scroll/touch on the joyride overlay, which removes the drawer mid-step and leaves joyride with no target.
+## Slot model recap
 
-## Solution: Replace react-joyride entirely with a purpose-built lightweight tour
+Six fixed slots: early-morning (6–9), late-morning (9–12), early-afternoon (12–15), late-afternoon (15–18), evening (18–22), late-night (22–26).
 
-A custom 7-step tour component that we fully control. No portal/drawer conflicts, deterministic positioning, single-click advance.
+Today a plan stores a single `time_slot` and only blocks that one column in `availability`, so a 5–8pm plan blocks `late-afternoon` only — `evening` looks free even though 6–8pm is taken. We want to model this correctly without losing the truly-free 3–5pm sub-window of `late-afternoon`.
 
-### Architecture
+## New concept: per-slot coverage
+
+For any plan with `start_time`/`end_time`, compute:
+
+- **fully covered slots**: the plan covers the entire slot window → slot is `busy`
+- **partially covered slots**: the plan overlaps part of the slot window → slot is `partial`, and we know the free `[startHr, endHr]` sub-window(s)
+
+Plans without explicit times keep today's behavior: their single `time_slot` is fully covered.
+
+New helper `src/lib/planSlotCoverage.ts`:
 
 ```text
-ParadeTour (single component)
-  ├─ Backdrop (fixed, full screen, z-[9000])
-  ├─ Spotlight cutout (SVG mask over backdrop, recomputed on each step)
-  ├─ Tooltip card (fixed, z-[9020], position chosen per step)
-  └─ Inline planning panel (NOT a Drawer — rendered directly inside the tour for steps 2-4)
+getPlanSlotCoverage(plan)  -> Array<{ slot, kind: 'full'|'partial', freeRanges: [startHr,endHr][] }>
+mergeCoverage(coverages)   -> Map<slot, { kind, freeRanges }>   // combines multiple plans on a day
 ```
 
-Key change: **for steps 2-4 we render the planning options as part of the tour itself**, not via the real `WhatArePlanningSheet` Drawer. The user sees the same three options in the same bottom-sheet visual style, but it's a plain `<div>` we own, so there's no Vaul to fight. Steps 1, 5, 6, 7 spotlight real DOM targets (FAB, nav-plans, nav-trips, invite-friends) like before.
+`freeRanges` is computed by subtracting the plan's hour interval from the slot's hour bounds. For a partial slot we keep the remaining free interval(s); fully covered → empty.
 
-### Step list
+## 1. Persist accurate availability when plans change
 
-| # | Target | Behavior |
-|---|--------|----------|
-| 1 | `[data-tour="fab"]` | Spotlight the + button. Tooltip below. |
-| 2 | Tour-owned "Find time with friends" row | Bottom panel slides up; row 1 highlighted; tooltip above the panel. |
-| 3 | Tour-owned "Open invite" row | Same panel stays open; row 2 highlighted; tooltip above. |
-| 4 | Tour-owned "Go somewhere" row | Same panel stays open; row 3 highlighted; tooltip above. |
-| 5 | `[data-tour="nav-plans"]` | Panel dismounts. Navigate to `/availability`. Spotlight Plans nav. |
-| 6 | `[data-tour="nav-trips"]` | Navigate to `/trips`. Spotlight Trips nav. |
-| 7 | `[data-tour="invite-friends"]` | Navigate to `/friends`. Spotlight invite button. |
+`src/stores/plansStore.ts` — in `addPlan`, `proposePlan`, `updatePlan`, and the delete/decline paths:
 
-### Why this fixes every issue
+- Compute coverage with `getPlanSlotCoverage` for the new and (on update/delete) old plan.
+- For each fully covered slot in `{confirmed, tentative, proposed}`, upsert `availability.<slot> = false`.
+- For partial slots we still write `false` for the slot column (the boolean can't represent "partial"), but we tag the slot as `partial` in-memory via the store (see step 3) so UI can render it differently. The `false` keeps any caller that only reads the boolean safe (it won't be recommended), while the in-memory partial flag lets us show the free sub-window.
+- On delete / status → cancelled: recompute remaining coverage from other plans on that date+slot. If nothing remains, restore the slot to the user's default availability for that weekday (read from `availabilityStore.defaultSettings`).
 
-- **No more "Next" needing two clicks** — buttons live in our own component, not in a portal that Vaul intercepts.
-- **No more wrong-square highlight** — for steps 2-4, the spotlight target is a child of our own tour panel, so we measure it after our own mount/animation completes. No race.
-- **No more tour cancellation** — the drawer is gone for tour steps; nothing can "dismiss" the panel except the tour's own Skip/Close buttons.
-- **No more tooltip overlapping the sheet** — we control both, so the tooltip is positioned exactly above the panel's known top edge (`bottom: panelHeight + 12px`).
+## 2. Backfill historical drift
 
-### Spotlight & positioning rules
+One-time SQL migration that, for every plan with `status in ('confirmed','tentative','proposed')`, walks `start_time`→`end_time` (falling back to `time_slot`) and upserts `availability.<covered_slot> = false`. This fixes already-stored proposed/tentative plans (e.g. the 5/8 dinner) whose availability rows still say `true`.
 
-- Spotlight: SVG `<mask>` cutout with 8px padding, 14px radius. Recomputed via `getBoundingClientRect()` on step change + `ResizeObserver` + `window.resize`.
-- Tooltip placement: declarative per-step (`'top' | 'bottom'`), with viewport clamping (min 12px from edges).
-- Panel for steps 2-4: `position: fixed; bottom: 0; left: 0; right: 0;` with a `framer-motion` slide-in. Mounts on entering step 2, unmounts on leaving step 4.
+## 3. Expose "partial" status to the UI
 
-### Persistence & replay
+Extend `DayAvailability` (in `src/types/planner.ts` / `availabilityStore`) with an optional per-slot overlay:
 
-- Same DB field: `profiles.walkthrough_completed`.
-- Same replay key: `localStorage['parade.tour.replay'] = '1'` + `startParadeTour()` export keeps existing entry points working.
+```text
+slotCoverage?: Partial<Record<TimeSlot, {
+  kind: 'busy' | 'partial';
+  freeRanges: Array<[number, number]>;  // empty for busy
+}>>
+```
 
-### Files
+Computed (not persisted) in `plannerStore` whenever plans/availability load, by running `mergeCoverage` over that day's plans. `slots[slot]` boolean stays as today (false for busy or partial); `slotCoverage` adds the nuance.
 
-**Rewrite**
-- `src/components/onboarding/ParadeTour.tsx` — full rewrite as a self-contained tour. Removes all `react-joyride` usage.
+## 4. Recommended hook deprioritizes partial slots
 
-**Revert / simplify**
-- `src/components/dashboard/WhatArePlanningSheet.tsx` — remove the `tourMode` prop and `dismissible={!tourMode}` (no longer needed).
-- `src/components/dashboard/GreetingHeader.tsx` — remove the `parade:open-planning-sheet` / `parade:close-planning-sheet` event listeners and `planningSheetTourMode` state.
+`src/hooks/useOpenWindows.ts`:
 
-**Untouched**
-- `Dashboard.tsx` — still renders `<ParadeTour />` at the top.
-- All `data-tour` attributes on FAB, nav items, invite button stay as-is.
+- When building the user's `slotMap`, treat partial slots as candidates again — but only for their `freeRanges`. Generate window candidates using those sub-ranges (e.g. late-afternoon partial with free 15–17 → a 2-hour 3pm–5pm candidate).
+- In `preferenceScore`, apply a multiplier (e.g. ×0.5) when the candidate's slot is `partial`, so equally-fitting fully-free slots win.
+- Apply the same coverage expansion to `friendPlans` so friend overlap also respects multi-slot plans.
 
-### Dependency
+## 5. UI: show partial state with an "adjacent plan" indicator
 
-`react-joyride` will no longer be imported. We can leave the package installed (no-op) to avoid touching `package.json`.
+Slot pills in `WeekOverview.tsx`, `WeekendAvailability.tsx`, `FriendVibeStrip.tsx`, and `FreeWindowCard.tsx`:
 
-### Acceptance criteria
+- Add a `partial` visual state: striped/half-tone background using existing `availability-available` + `primary` tokens; reuse a new utility class `bg-availability-partial` (define via CSS gradient in `index.css`, no new color tokens).
+- Render the free sub-window text next to the slot label, e.g. "Late afternoon · 3–5pm free".
+- Add a small `Clock` icon with a muted "Near another plan" tooltip / aria-label when `kind === 'partial'`.
+- In `WeekOverview` / `WeekendAvailability` summary bars, render partial slots as a half-filled bar segment (split the `flex-1` div into two halves colored available + busy).
 
-1. Tour runs all 7 steps end-to-end with single Next clicks.
-2. Steps 2-4: highlight is perfectly aligned to the correct option row; tooltip sits above the panel without overlap.
-3. Tour never auto-closes between steps.
-4. Back button works on all steps including 2→1 and 5→4 (re-mounts the panel).
-5. Skip and final "Let's go!" both mark `walkthrough_completed = true`.
+## 6. Slot pickers in plan/trip flows
+
+`QuickPlanSheet.tsx`, `GuidedPlanSheet.tsx`, `GuidedTripSheet.tsx`, `FriendVibeStrip.tsx` slot grids:
+
+- Keep partial slots selectable but visually demoted (dashed border, "near another plan" hint).
+- Filter overlap queries (already widened to `confirmed/tentative/proposed`) through `getPlanSlotCoverage` so the conflict check matches what's persisted.
+
+## Out of scope
+
+- Wrong "Today" date label on the upcoming May 8 plan in the screenshot — that's a date-formatting bug in `UpcomingPlans`, separate from availability.
+- Changing the `availability` schema to store partial state on the server — handled purely client-side from plan rows for now.
+
+## Files to touch
+
+- new `src/lib/planSlotCoverage.ts`
+- `src/stores/plansStore.ts`
+- `src/stores/plannerStore.ts` and/or `src/stores/availabilityStore.ts` (slotCoverage overlay)
+- `src/types/planner.ts` (DayAvailability type)
+- `src/hooks/useOpenWindows.ts`
+- `src/components/dashboard/WeekOverview.tsx`
+- `src/components/dashboard/WeekendAvailability.tsx`
+- `src/components/dashboard/FreeWindowCard.tsx`
+- `src/components/dashboard/FriendVibeStrip.tsx`
+- `src/components/plans/QuickPlanSheet.tsx`
+- `src/components/plans/GuidedPlanSheet.tsx`
+- `src/components/trips/GuidedTripSheet.tsx`
+- `src/index.css` (new `bg-availability-partial` utility)
+- new SQL migration: backfill `availability` from existing `confirmed/tentative/proposed` plans
+- update memory: `mem://features/availability-plan-synchronization` to reflect partial coverage

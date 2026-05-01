@@ -5,6 +5,53 @@ import { supabase } from '@/integrations/supabase/client';
 import { validatePlan } from '@/lib/validation';
 import { deduplicatePlanRows, mapRawPlanToModel, buildParticipantsMap } from './helpers/mapPlans';
 import { createDefaultAvailability } from './helpers/mapAvailability';
+import { getPlanSlotCoverage } from '@/lib/planSlotCoverage';
+
+const BLOCKING_STATUSES = new Set(['confirmed', 'tentative', 'proposed']);
+
+/** Mark every slot a plan covers as not-free in the availability table. */
+async function blockSlotsForPlan(
+  userId: string,
+  dateStr: string,
+  plan: { timeSlot: TimeSlot; startTime?: string | null; endTime?: string | null },
+) {
+  const coverage = getPlanSlotCoverage(plan);
+  if (coverage.length === 0) return;
+  const updates: Record<string, unknown> = { user_id: userId, date: dateStr };
+  for (const c of coverage) {
+    updates[c.slot.replace('-', '_')] = false;
+  }
+  await supabase
+    .from('availability')
+    .upsert(updates as any, { onConflict: 'user_id,date' });
+}
+
+/**
+ * Recompute availability for the slots a removed plan covered. If no other
+ * remaining plan still blocks the slot, restore it to true (best effort —
+ * server defaults will apply if no row exists).
+ */
+async function unblockSlotsForRemovedPlan(
+  userId: string,
+  dateStr: string,
+  removed: { timeSlot: TimeSlot; startTime?: string | null; endTime?: string | null },
+  remainingPlansSameDate: Array<{ timeSlot: TimeSlot; startTime?: string | null; endTime?: string | null; status?: string | null }>,
+) {
+  const removedSlots = new Set(getPlanSlotCoverage(removed).map((c) => c.slot));
+  if (removedSlots.size === 0) return;
+  const stillBlocked = new Set<TimeSlot>();
+  for (const p of remainingPlansSameDate) {
+    if (p.status && !BLOCKING_STATUSES.has(p.status)) continue;
+    for (const c of getPlanSlotCoverage(p)) stillBlocked.add(c.slot);
+  }
+  const toFree = [...removedSlots].filter((s) => !stillBlocked.has(s));
+  if (toFree.length === 0) return;
+  const updates: Record<string, unknown> = { user_id: userId, date: dateStr };
+  for (const s of toFree) updates[s.replace('-', '_')] = true;
+  await supabase
+    .from('availability')
+    .upsert(updates as any, { onConflict: 'user_id,date' });
+}
 
 export interface PlansState {
   plans: Plan[];
@@ -137,18 +184,15 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
 
     set((state) => ({ plans: [...state.plans, newPlan] }));
 
-    // Update availability — confirmed, tentative, and proposed all block the slot
+    // Update availability — confirmed, tentative, and proposed all block every covered slot.
     const effectiveStatus = (plan.participants && plan.participants.length > 0 && (!plan.status || plan.status === 'confirmed'))
       ? 'proposed' : (plan.status || 'confirmed');
-    if (effectiveStatus === 'confirmed' || effectiveStatus === 'tentative' || effectiveStatus === 'proposed') {
-      const slotColumn = plan.timeSlot.replace('-', '_');
-      await supabase
-        .from('availability')
-        .upsert({
-          user_id: userId,
-          date: dateStr,
-          [slotColumn]: false,
-        }, { onConflict: 'user_id,date' });
+    if (BLOCKING_STATUSES.has(effectiveStatus)) {
+      await blockSlotsForPlan(userId, dateStr, {
+        timeSlot: plan.timeSlot,
+        startTime: plan.startTime || null,
+        endTime: plan.endTime || null,
+      });
     }
   },
 
@@ -220,6 +264,44 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
     set((state) => ({
       plans: state.plans.map((p) => p.id === id ? { ...p, ...updates } : p),
     }));
+
+    // Sync availability if timing or status changed.
+    const timingChanged =
+      updates.timeSlot !== undefined ||
+      updates.startTime !== undefined ||
+      updates.endTime !== undefined ||
+      updates.date !== undefined ||
+      updates.status !== undefined;
+    if (timingChanged && userId) {
+      const { plans: latest } = get();
+      const updatedPlan = latest.find((p) => p.id === id);
+      const oldPlan = get().plans.find((p) => p.id === id); // post-merge — ok since we only read non-changed fields below
+      // Use the pre-update record we still hold from the prior `currentPlans` snapshot:
+      const prior = updatedPlan ? { ...updatedPlan, ...{} } : null;
+      // Block the new coverage
+      if (updatedPlan && BLOCKING_STATUSES.has(updatedPlan.status || 'confirmed')) {
+        const dateStr = format(updatedPlan.date, 'yyyy-MM-dd');
+        await blockSlotsForPlan(userId, dateStr, {
+          timeSlot: updatedPlan.timeSlot,
+          startTime: updatedPlan.startTime || null,
+          endTime: updatedPlan.endTime || null,
+        });
+      }
+      // If the plan moved date or its status became non-blocking, recompute the
+      // slots it used to cover so they free up when nothing else holds them.
+      if (updatedPlan && (!BLOCKING_STATUSES.has(updatedPlan.status || 'confirmed'))) {
+        const dateStr = format(updatedPlan.date, 'yyyy-MM-dd');
+        const remaining = latest.filter(
+          (p) => p.id !== id && format(p.date, 'yyyy-MM-dd') === dateStr,
+        );
+        await unblockSlotsForRemovedPlan(
+          userId,
+          dateStr,
+          { timeSlot: updatedPlan.timeSlot, startTime: updatedPlan.startTime || null, endTime: updatedPlan.endTime || null },
+          remaining.map((p) => ({ timeSlot: p.timeSlot, startTime: p.startTime || null, endTime: p.endTime || null, status: p.status })),
+        );
+      }
+    }
   },
 
   deletePlan: async (id, userId, getAvailabilityState) => {
@@ -252,15 +334,14 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
     if (planToDelete && userId) {
       const dateStr = format(planToDelete.date, 'yyyy-MM-dd');
       const remainingPlans = currentPlans.filter(
-        p => p.id !== id && format(p.date, 'yyyy-MM-dd') === dateStr && p.timeSlot === planToDelete.timeSlot
+        (p) => p.id !== id && format(p.date, 'yyyy-MM-dd') === dateStr,
       );
-
-      if (remainingPlans.length === 0) {
-        const slotColumn = planToDelete.timeSlot.replace('-', '_');
-        await supabase
-          .from('availability')
-          .upsert({ user_id: userId, date: dateStr, [slotColumn]: true }, { onConflict: 'user_id,date' });
-      }
+      await unblockSlotsForRemovedPlan(
+        userId,
+        dateStr,
+        { timeSlot: planToDelete.timeSlot, startTime: planToDelete.startTime || null, endTime: planToDelete.endTime || null },
+        remainingPlans.map((p) => ({ timeSlot: p.timeSlot, startTime: p.startTime || null, endTime: p.endTime || null, status: p.status })),
+      );
     }
   },
 
@@ -306,17 +387,8 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
       role: 'participant',
     });
 
-    // Block the slot on the proposer's availability since the time is committed
-    {
-      const slotColumn = proposal.timeSlot.replace('-', '_');
-      await supabase
-        .from('availability')
-        .upsert({
-          user_id: userId,
-          date: dateStr,
-          [slotColumn]: false,
-        }, { onConflict: 'user_id,date' });
-    }
+    // Block the slot(s) on the proposer's availability since the time is committed.
+    await blockSlotsForPlan(userId, dateStr, { timeSlot: proposal.timeSlot });
 
     (async () => {
       try {
