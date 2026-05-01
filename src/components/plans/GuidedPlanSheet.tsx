@@ -778,6 +778,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
   const autoTitle = activity
     ? ((hasFriends || hasOffParade) ? `${activityLabel} with ${titleAudienceStr}` : activityLabel)
     : ((hasFriends || hasOffParade) ? `Hang with ${titleAudienceStr}` : 'Solo Plan');
+  const finalTitle = customTitle.trim() || autoTitle;
 
   const handleSubmit = async () => {
     if (!activity || selectedSlots.length === 0) return;
