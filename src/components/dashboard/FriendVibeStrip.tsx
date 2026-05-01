@@ -629,10 +629,13 @@ function FriendPill({
                     <SelectItem value="custom">✏️ Custom activity…</SelectItem>
                     {getAllVibes().map((vibe) => {
                       const vibeCfg = VIBE_CONFIG[vibe];
+                      const VibeIcon = vibeCfg.icon;
                       const acts = getActivitiesByVibe(vibe);
                       return (
                         <SelectGroup key={vibe}>
-                          <SelectLabel>{vibeCfg.icon} {vibeCfg.label}</SelectLabel>
+                          <SelectLabel className="flex items-center gap-1.5">
+                            <VibeIcon className="h-3 w-3" /> {vibeCfg.label}
+                          </SelectLabel>
                           {acts.map((act) => {
                             const cfg = ACTIVITY_CONFIG[act];
                             if (!cfg) return null;
