@@ -26,6 +26,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const coverageByDate = useSlotCoverageByDate();
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 });
@@ -41,13 +42,18 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
 
   const isCurrentWeek = isSameWeek(weekDays[0], new Date(), { weekStartsOn: 1 });
 
-  const getSlotStatus = (date: Date, slot: TimeSlot) => {
-    const hasPlan = plans.some(
-      (p) => isSameDay(p.date, date) && p.timeSlot === slot
-    );
-    if (hasPlan) return 'busy';
+  type SlotStatus = 'available' | 'partial' | 'busy' | 'unavailable';
+  const getSlotStatus = (date: Date, slot: TimeSlot): SlotStatus => {
+    const cov = getSlotCoverage(coverageByDate, date, slot);
+    if (cov?.kind === 'busy') return 'busy';
     const dayAvail = availabilityMap[format(date, 'yyyy-MM-dd')];
-    if (dayAvail && !dayAvail.slots[slot]) return 'unavailable';
+    const userMarkedFree = !dayAvail || !!dayAvail.slots[slot];
+    if (cov?.kind === 'partial') {
+      // Slot has a plan that only partly overlaps it. Treat as partial only
+      // when the user otherwise marked it free, so we surface remaining time.
+      return userMarkedFree ? 'partial' : 'unavailable';
+    }
+    if (!userMarkedFree) return 'unavailable';
     return 'available';
   };
 
@@ -60,10 +66,12 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
   };
 
   const getDaySummary = (date: Date) => {
-    const available = TIME_SLOT_ORDER.filter(s => getSlotStatus(date, s) === 'available').length;
-    const busy = TIME_SLOT_ORDER.filter(s => getSlotStatus(date, s) === 'busy').length;
+    const statuses = TIME_SLOT_ORDER.map((s) => getSlotStatus(date, s));
+    const available = statuses.filter((s) => s === 'available').length;
+    const partial = statuses.filter((s) => s === 'partial').length;
+    const busy = statuses.filter((s) => s === 'busy').length;
     const total = TIME_SLOT_ORDER.length;
-    return { available, busy, total };
+    return { available, partial, busy, total };
   };
 
   const getWeekLabel = () => {
@@ -174,7 +182,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
           const isAway = dayAvail?.locationStatus === 'away';
           const summary = getDaySummary(day);
           const isExpanded = expandedDays.has(key);
-          const score = summary.available / summary.total;
+          const score = (summary.available + summary.partial * 0.5) / summary.total;
 
           return (
             <div key={key}>
@@ -225,6 +233,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                         className={cn(
                           "h-1 flex-1 rounded-full",
                           status === 'available' && "bg-availability-available/60",
+                          status === 'partial' && "bg-availability-partial-stripes",
                           status === 'busy' && "bg-primary/60",
                           status === 'unavailable' && "bg-muted-foreground/20"
                         )}
@@ -239,6 +248,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                     isAway ? "text-availability-away-foreground" : score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                   )}>
                     {summary.available}/{summary.total} free
+                    {summary.partial > 0 && ` · ${summary.partial} partial`}
                     {summary.busy > 0 && ` · ${summary.busy} ${summary.busy === 1 ? 'plan' : 'plans'}`}
                   </span>
                   <div className={cn(
@@ -260,6 +270,11 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                     const status = getSlotStatus(day, slot);
                     const slotPlans = getPlansForSlot(day, slot);
                     const slotInfo = TIME_SLOT_LABELS[slot];
+                    const cov = getSlotCoverage(coverageByDate, day, slot);
+                    const freeRangeLabel =
+                      status === 'partial' && cov?.freeRanges?.length
+                        ? cov.freeRanges.map(formatRange).join(', ')
+                        : null;
 
                     return (
                       <div
@@ -267,6 +282,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                         className={cn(
                           "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors",
                           status === 'available' && "bg-availability-available/20 text-foreground",
+                          status === 'partial' && "bg-availability-partial-stripes border border-dashed border-availability-partial/40 text-foreground",
                           status === 'busy' && "bg-muted/60 text-foreground",
                           status === 'unavailable' && "bg-muted/30 text-muted-foreground"
                         )}
@@ -274,12 +290,19 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
                         <span className={cn(
                           "h-1.5 w-1.5 shrink-0 rounded-full",
                           status === 'available' && "bg-availability-available",
+                          status === 'partial' && "bg-availability-partial",
                           status === 'busy' && "bg-primary",
                           status === 'unavailable' && "bg-muted-foreground/40"
                         )} />
                         <span className="font-medium truncate">
                           {slotInfo.label}
                         </span>
+                        {freeRangeLabel && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] text-availability-partial shrink-0">
+                            <Clock className="h-2.5 w-2.5" />
+                            {freeRangeLabel} free
+                          </span>
+                        )}
                         <span className="text-muted-foreground ml-auto text-[9px] shrink-0">
                           {slotInfo.time}
                         </span>

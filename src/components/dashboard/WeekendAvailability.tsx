@@ -5,7 +5,9 @@ import { usePlannerStore } from '@/stores/plannerStore';
 import { TIME_SLOT_LABELS, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Home, Plane, ChevronDown } from 'lucide-react';
+import { ArrowRight, Home, Plane, ChevronDown, Clock } from 'lucide-react';
+import { useSlotCoverageByDate, getSlotCoverage } from '@/hooks/useSlotCoverage';
+import { formatRange } from '@/lib/planSlotCoverage';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning',
@@ -19,19 +21,21 @@ const TIME_SLOT_ORDER: TimeSlot[] = [
 export function WeekendAvailability() {
   const { plans, availabilityMap, homeAddress } = usePlannerStore();
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const coverageByDate = useSlotCoverageByDate();
 
   const weekendDays = useMemo(() => {
     const start = startOfWeek(new Date(), { weekStartsOn: 1 });
     return [addDays(start, 5), addDays(start, 6)];
   }, []);
 
-  const getSlotStatus = (date: Date, slot: TimeSlot) => {
-    const hasPlan = plans.some(
-      (p) => isSameDay(p.date, date) && p.timeSlot === slot
-    );
-    if (hasPlan) return 'busy';
+  type SlotStatus = 'available' | 'partial' | 'busy' | 'unavailable';
+  const getSlotStatus = (date: Date, slot: TimeSlot): SlotStatus => {
+    const cov = getSlotCoverage(coverageByDate, date, slot);
+    if (cov?.kind === 'busy') return 'busy';
     const dayAvail = availabilityMap[format(date, 'yyyy-MM-dd')];
-    if (dayAvail && !dayAvail.slots[slot]) return 'unavailable';
+    const userMarkedFree = !dayAvail || !!dayAvail.slots[slot];
+    if (cov?.kind === 'partial') return userMarkedFree ? 'partial' : 'unavailable';
+    if (!userMarkedFree) return 'unavailable';
     return 'available';
   };
 
@@ -44,10 +48,12 @@ export function WeekendAvailability() {
   };
 
   const getDaySummary = (date: Date) => {
-    const available = TIME_SLOT_ORDER.filter(s => getSlotStatus(date, s) === 'available').length;
-    const busy = TIME_SLOT_ORDER.filter(s => getSlotStatus(date, s) === 'busy').length;
+    const statuses = TIME_SLOT_ORDER.map((s) => getSlotStatus(date, s));
+    const available = statuses.filter((s) => s === 'available').length;
+    const partial = statuses.filter((s) => s === 'partial').length;
+    const busy = statuses.filter((s) => s === 'busy').length;
     const total = TIME_SLOT_ORDER.length;
-    return { available, busy, total };
+    return { available, partial, busy, total };
   };
 
   const toggleDay = (key: string) => {
@@ -80,7 +86,7 @@ export function WeekendAvailability() {
           const locationLabel = dayAvail?.tripLocation || homeAddress || undefined;
           const summary = getDaySummary(day);
           const isExpanded = expandedDays.has(key);
-          const score = summary.available / summary.total;
+          const score = (summary.available + summary.partial * 0.5) / summary.total;
 
           return (
             <div key={key} className="space-y-1.5">
@@ -122,6 +128,7 @@ export function WeekendAvailability() {
                         className={cn(
                           "h-1.5 flex-1 rounded-full",
                           status === 'available' && "bg-availability-available/60",
+                          status === 'partial' && "bg-availability-partial-stripes",
                           status === 'busy' && "bg-primary/60",
                           status === 'unavailable' && "bg-muted-foreground/20"
                         )}
@@ -137,6 +144,7 @@ export function WeekendAvailability() {
                     score >= 0.5 ? "text-availability-available" : "text-muted-foreground"
                   )}>
                     {summary.available} of {summary.total} free
+                    {summary.partial > 0 && ` · ${summary.partial} partial`}
                     {summary.busy > 0 && ` · ${summary.busy} plan${summary.busy > 1 ? 's' : ''}`}
                   </span>
                 </div>
@@ -161,6 +169,11 @@ export function WeekendAvailability() {
                     const status = getSlotStatus(day, slot);
                     const slotPlans = getPlansForSlot(day, slot);
                     const slotInfo = TIME_SLOT_LABELS[slot];
+                    const cov = getSlotCoverage(coverageByDate, day, slot);
+                    const freeRangeLabel =
+                      status === 'partial' && cov?.freeRanges?.length
+                        ? cov.freeRanges.map(formatRange).join(', ')
+                        : null;
 
                     return (
                       <div
@@ -168,6 +181,7 @@ export function WeekendAvailability() {
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors",
                           status === 'available' && "bg-availability-available/20 text-foreground",
+                          status === 'partial' && "bg-availability-partial-stripes border border-dashed border-availability-partial/40 text-foreground",
                           status === 'busy' && "bg-muted/60 text-foreground",
                           status === 'unavailable' && "bg-muted/30 text-muted-foreground"
                         )}
@@ -175,12 +189,19 @@ export function WeekendAvailability() {
                         <span className={cn(
                           "h-1.5 w-1.5 shrink-0 rounded-full",
                           status === 'available' && "bg-availability-available",
+                          status === 'partial' && "bg-availability-partial",
                           status === 'busy' && "bg-primary",
                           status === 'unavailable' && "bg-muted-foreground/40"
                         )} />
                         <span className="font-medium truncate">
                           {slotInfo.label}
                         </span>
+                        {freeRangeLabel && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-availability-partial shrink-0">
+                            <Clock className="h-3 w-3" />
+                            {freeRangeLabel} free
+                          </span>
+                        )}
                         <span className="text-muted-foreground ml-auto text-[10px] shrink-0">
                           {slotInfo.time}
                         </span>

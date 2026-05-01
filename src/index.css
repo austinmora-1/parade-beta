@@ -340,6 +340,18 @@
   .animate-breathe {
     animation: breathe 3s ease-in-out infinite;
   }
+
+  /* Diagonal stripes for "partial availability" — slot is partly covered by another plan. */
+  .bg-availability-partial-stripes {
+    background-color: hsl(var(--partial-light));
+    background-image: repeating-linear-gradient(
+      135deg,
+      hsl(var(--partial) / 0.18) 0,
+      hsl(var(--partial) / 0.18) 4px,
+      transparent 4px,
+      transparent 9px
+    );
+  }
 }
 
 @keyframes float {

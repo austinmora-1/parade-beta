@@ -90,6 +90,8 @@ export interface OpenWindow {
     avatar?: string;
     overlapHours: number;
   }>;
+  /** True when this window sits next to (or partially inside) another plan. */
+  isPartial?: boolean;
 }
 
 interface MinFriend {
@@ -475,6 +477,7 @@ export function useOpenWindows() {
             startLabel: fmtHour(startHr),
             endLabel: fmtHour(endHr),
             overlappingFriends: overlapping.slice(0, 6),
+            isPartial: blockHasPartial,
             _score: score,
           });
         }
