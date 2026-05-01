@@ -1489,7 +1489,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{activityEmoji}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-bold text-foreground">{autoTitle}</p>
+                      <p className="text-base font-bold text-foreground">{finalTitle}</p>
                       <p className="text-xs text-muted-foreground">
                         {hasFriends && hasOffParade ? `Proposed plan with ${friendNamesStr}` : hasFriends ? `Proposed plan with ${friendNamesStr}` : hasOffParade ? `Plan with ${offParadeListStr} (not on Parade — share invite link after creating)` : 'Solo plan — invite friends later'}
                       </p>
