@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { ACTIVITY_CONFIG, VIBE_CONFIG, TimeSlot, ActivityType, VibeType, getActivitiesByVibe, getAllVibes, CustomActivity } from '@/types/planner';
 import { supabase } from '@/integrations/supabase/client';
