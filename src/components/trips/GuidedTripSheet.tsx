@@ -323,7 +323,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
       { data: participatedPlansData },
     ] = await Promise.all([
       supabase.from('availability').select('*').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate),
-      supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+      supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', allUserIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'tentative', 'proposed']),
       supabase.from('friend_profiles').select('user_id, default_work_days, default_work_start_hour, default_work_end_hour, default_availability_status, preferred_social_days, preferred_social_times').in('user_id', allUserIds),
       supabase.from('trips').select('user_id, location, start_date, end_date').in('user_id', allUserIds).gte('end_date', startDate).lte('start_date', endDate),
       supabase.from('plan_participants').select('friend_id, plan_id, status, plans!inner(date, time_slot, status)').in('friend_id', allUserIds).in('status', ['accepted', 'invited']),

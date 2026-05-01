@@ -304,7 +304,7 @@ export function useOpenWindows() {
           .in('user_id', friendIds)
           .gte('date', dateStrs[0])
           .lte('date', dateStrs[dateStrs.length - 1] + 'T23:59:59')
-          .in('status', ['confirmed', 'proposed']),
+          .in('status', ['confirmed', 'tentative', 'proposed']),
       ]);
       if (!cancelled) {
         setFriendAvail((availRes.data as FriendAvailRow[]) || []);

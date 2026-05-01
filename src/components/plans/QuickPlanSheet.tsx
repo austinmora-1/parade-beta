@@ -229,7 +229,7 @@ export function QuickPlanSheet({
 
       const [{ data }, { data: friendPlans }] = await Promise.all([
         supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
-        supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+        supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'tentative', 'proposed']),
       ]);
 
       const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
@@ -365,7 +365,7 @@ export function QuickPlanSheet({
 
       const [{ data: availData }, { data: plansData }] = await Promise.all([
         supabase.from('availability').select('*').in('user_id', userIds).gte('date', startDate).lte('date', endDate),
-        supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'proposed']),
+        supabase.from('plans').select('time_slot, user_id, date, status').in('user_id', userIds).gte('date', startDate).lte('date', endDate).in('status', ['confirmed', 'tentative', 'proposed']),
       ]);
 
       const allSlots: TimeSlot[] = ['late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
