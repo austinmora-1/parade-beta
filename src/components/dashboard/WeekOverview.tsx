@@ -6,9 +6,11 @@ import { TIME_SLOT_LABELS, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { ChevronLeft, ChevronRight, ArrowRight, CalendarIcon, ChevronDown, Home, Plane } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight, CalendarIcon, ChevronDown, Home, Plane, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CollapsibleWidget } from './CollapsibleWidget';
+import { useSlotCoverageByDate, getSlotCoverage } from '@/hooks/useSlotCoverage';
+import { formatRange } from '@/lib/planSlotCoverage';
 
 const TIME_SLOT_ORDER: TimeSlot[] = [
   'early-morning',
