@@ -797,7 +797,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
           activity: activity,
           date: primarySlot.date,
           timeSlot: primarySlot.slot,
-          title: autoTitle,
+          title: finalTitle,
         });
 
         // Get the newly created plan
@@ -845,7 +845,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
 
         const { data: insertedPlan } = await supabase.from('plans').insert({
           user_id: userId,
-          title: autoTitle,
+          title: finalTitle,
           activity: activity,
           date: noonUtcDate,
           time_slot: primarySlot.slot,
