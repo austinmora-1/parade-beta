@@ -278,22 +278,16 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
         Who's around this week
       </p>
       <div
-        className="overflow-x-auto -mx-1 px-1 pb-1 scrollbar-thin"
-        style={{ scrollbarWidth: 'thin' }}
+        className="flex gap-2.5 overflow-x-auto -mx-1 px-1 pb-1 snap-x snap-mandatory scrollbar-none"
       >
-        <div
-          className="grid grid-flow-col auto-cols-max gap-2"
-          style={{ gridTemplateRows: 'repeat(2, minmax(0, auto))' }}
-        >
-          {around.map((a, i) => (
-            <FriendPill
-              key={a.friend.id}
-              data={a}
-              index={i}
-              preferredTimes={preferredTimes}
-            />
-          ))}
-        </div>
+        {around.map((a, i) => (
+          <FriendPill
+            key={a.friend.id}
+            data={a}
+            index={i}
+            preferredTimes={preferredTimes}
+          />
+        ))}
       </div>
     </div>
   );
@@ -424,8 +418,8 @@ function FriendPill({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.03, duration: 0.2 }}
           className={cn(
-            'inline-flex items-center gap-2.5 rounded-2xl border border-border bg-card pl-1.5 pr-3 py-1.5 text-left',
-            'transition-all hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98] shadow-soft'
+            'snap-start shrink-0 min-w-[220px] max-w-[260px] inline-flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 text-left',
+            'transition-all hover:border-primary/40 hover:shadow-md active:scale-[0.99] shadow-soft'
           )}
         >
           <div className="relative shrink-0">
@@ -433,32 +427,31 @@ function FriendPill({
               src={friend.avatar || getElephantAvatar(friend.name)}
               alt=""
               className={cn(
-                'h-9 w-9 rounded-full object-cover',
+                'h-12 w-12 rounded-full object-cover',
                 vibeConfig && 'ring-2 ring-offset-1 ring-offset-card'
               )}
               style={vibeConfig ? { boxShadow: `0 0 0 2px hsl(var(--${vibeConfig.color}))` } : undefined}
             />
             {vibeConfig && (
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-card bg-background shadow-sm">
-                <vibeConfig.icon className="h-2.5 w-2.5 text-foreground" />
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-card bg-background shadow-sm">
+                <vibeConfig.icon className="h-3 w-3 text-foreground" />
               </span>
             )}
           </div>
 
-          <div className="flex flex-col min-w-0 leading-tight">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-sm font-semibold text-foreground truncate max-w-[7.5rem]">
-                {friend.name.split(' ')[0]}
-              </span>
-              <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5 shrink-0">
+          <div className="flex flex-col min-w-0 leading-tight flex-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground truncate">
+              {cityLabel || 'free this week'}
+            </p>
+            <p className="font-display text-lg font-semibold leading-tight mt-0.5 truncate">
+              {friend.name.split(' ')[0]}
+            </p>
+            <div className="mt-1.5 flex items-center gap-1.5 min-h-[20px]">
+              <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
                 {overlapSlots.length} {overlapSlots.length === 1 ? 'slot' : 'slots'}
               </span>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
-              {cityLabel ? (
-                <span className="truncate max-w-[6rem]">{cityLabel}</span>
-              ) : (
-                <span className="text-muted-foreground/70">free this week</span>
+              {vibeLabel && (
+                <span className="text-[11px] text-muted-foreground truncate">{vibeLabel}</span>
               )}
             </div>
           </div>
