@@ -156,6 +156,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
   const [customEmoji, setCustomEmoji] = useState('✨');
   const [activitySearch, setActivitySearch] = useState('');
   const [activitySearchFocused, setActivitySearchFocused] = useState(false);
+  const [customTitle, setCustomTitle] = useState('');
   const [friendsHaveDifferentHome, setFriendsHaveDifferentHome] = useState(false);
   // tripSheetOpen removed — trip sheet is now opened via custom event on dashboard
 
