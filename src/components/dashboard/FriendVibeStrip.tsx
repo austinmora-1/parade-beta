@@ -426,17 +426,8 @@ function FriendPill({
             <img
               src={friend.avatar || getElephantAvatar(friend.name)}
               alt=""
-              className={cn(
-                'h-12 w-12 rounded-full object-cover',
-                vibeConfig && 'ring-2 ring-offset-1 ring-offset-card'
-              )}
-              style={vibeConfig ? { boxShadow: `0 0 0 2px hsl(var(--${vibeConfig.color}))` } : undefined}
+              className="h-12 w-12 rounded-full object-cover"
             />
-            {vibeConfig && (
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-card bg-background shadow-sm">
-                <vibeConfig.icon className="h-3 w-3 text-foreground" />
-              </span>
-            )}
           </div>
 
           <div className="flex flex-col min-w-0 leading-tight flex-1">
