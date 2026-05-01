@@ -184,18 +184,15 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
 
     set((state) => ({ plans: [...state.plans, newPlan] }));
 
-    // Update availability — confirmed, tentative, and proposed all block the slot
+    // Update availability — confirmed, tentative, and proposed all block every covered slot.
     const effectiveStatus = (plan.participants && plan.participants.length > 0 && (!plan.status || plan.status === 'confirmed'))
       ? 'proposed' : (plan.status || 'confirmed');
-    if (effectiveStatus === 'confirmed' || effectiveStatus === 'tentative' || effectiveStatus === 'proposed') {
-      const slotColumn = plan.timeSlot.replace('-', '_');
-      await supabase
-        .from('availability')
-        .upsert({
-          user_id: userId,
-          date: dateStr,
-          [slotColumn]: false,
-        }, { onConflict: 'user_id,date' });
+    if (BLOCKING_STATUSES.has(effectiveStatus)) {
+      await blockSlotsForPlan(userId, dateStr, {
+        timeSlot: plan.timeSlot,
+        startTime: plan.startTime || null,
+        endTime: plan.endTime || null,
+      });
     }
   },
 
