@@ -1075,37 +1075,43 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
                   )}
                 </div>
 
-                <div className="space-y-1 max-h-[280px] overflow-y-auto">
+                <div className="grid grid-cols-3 gap-2 max-h-[340px] overflow-y-auto pb-1">
                   {filteredFriends.length > 0 ? filteredFriends.map(f => {
                     const isChosen = chosenFriends.some(c => c.userId === f.friendUserId);
+                    const parts = f.name.trim().split(/\s+/);
+                    const first = parts[0] || f.name;
+                    const lastInitial = parts.length > 1 ? `${parts[parts.length - 1].charAt(0).toUpperCase()}.` : '';
+                    const displayLabel = lastInitial ? `${first} ${lastInitial}` : first;
                     return (
                       <button
                         key={f.friendUserId}
                         onClick={() => toggleFriend(f)}
                         className={cn(
-                          "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
+                          "relative flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-center transition-all",
                           isChosen
-                            ? "bg-primary/10 border border-primary/20"
+                            ? "bg-primary/10 border border-primary/30"
                             : "hover:bg-muted/50 border border-transparent"
                         )}
                       >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
-                          <AvatarFallback className="text-xs">{f.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium flex-1">{f.name}</span>
-                        <div className={cn(
-                          "flex items-center justify-center h-5 w-5 rounded-full border-2 shrink-0 transition-all",
-                          isChosen
-                            ? "bg-primary border-primary text-primary-foreground"
-                            : "border-muted-foreground/30"
+                        <Avatar className={cn(
+                          "h-14 w-14 transition-all",
+                          isChosen && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                         )}>
-                          {isChosen && <Check className="h-3 w-3" />}
-                        </div>
+                          <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                          <AvatarFallback className="text-sm">{f.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {isChosen && (
+                          <div className="absolute top-1.5 right-1.5 flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground shadow-sm">
+                            <Check className="h-3 w-3" />
+                          </div>
+                        )}
+                        <span className="text-xs font-medium leading-tight truncate w-full">
+                          {displayLabel}
+                        </span>
                       </button>
                     );
                   }) : (
-                    <div className="text-center py-6">
+                    <div className="col-span-3 text-center py-6">
                       <p className="text-xs text-muted-foreground">Nobody by that name</p>
                     </div>
                   )}
