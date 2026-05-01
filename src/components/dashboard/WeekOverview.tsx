@@ -182,7 +182,7 @@ export function WeekOverview({ standalone = false }: { standalone?: boolean } = 
           const isAway = dayAvail?.locationStatus === 'away';
           const summary = getDaySummary(day);
           const isExpanded = expandedDays.has(key);
-          const score = summary.available / summary.total;
+          const score = (summary.available + summary.partial * 0.5) / summary.total;
 
           return (
             <div key={key}>
