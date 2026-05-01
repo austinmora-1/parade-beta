@@ -338,66 +338,90 @@ export function useOpenWindows() {
     type Scored = OpenWindow & { _score: number };
     const candidates: Scored[] = [];
 
+    const BLOCKING = new Set(['confirmed', 'tentative', 'proposed']);
+
     for (const { date, label } of targetDates) {
       const dateKey = format(date, 'yyyy-MM-dd');
       const myAvail = availabilityMap[dateKey];
 
-      // Build my free-slot map (true = free), excluding slots where I have a plan
+      // Compute true coverage from this user's plans (full vs partial).
+      const dayPlans = plans.filter(
+        (p) => isSameDay(p.date, date) && (!p.status || BLOCKING.has(p.status)),
+      );
+      const myCoverage = mergeCoverages(
+        dayPlans.map((p) =>
+          getPlanSlotCoverage({
+            timeSlot: p.timeSlot,
+            startTime: p.startTime || null,
+            endTime: p.endTime || null,
+          }),
+        ),
+      );
+
+      // Build slot map: slot is candidate if user marked free AND not fully busy.
+      // Track which candidate slots are partial so we can deprioritize them.
       const slotMap: Partial<Record<TimeSlot, boolean>> = {};
+      const partialSlots = new Set<TimeSlot>();
       for (const slot of SLOT_ORDER) {
         const free = myAvail ? !!myAvail.slots[slot] : true;
-        const hasPlan = plans.some(
-          (p) => isSameDay(p.date, date) && p.timeSlot === slot
-        );
-        slotMap[slot] = free && !hasPlan;
+        const cov = myCoverage.get(slot);
+        const fullyBusy = cov?.kind === 'busy';
+        slotMap[slot] = free && !fullyBusy;
+        if (cov?.kind === 'partial') partialSlots.add(slot);
       }
 
       const allBlocks = findAllBlocks(slotMap);
       if (allBlocks.length === 0) continue;
 
       for (const fullBlock of allBlocks) {
-        // Walk the contiguous free run and create up to one window per
-        // distinct anchor slot, starting from each slot that scores >0
-        // against the user's preferences. This lets a single long free
-        // stretch surface multiple distinct suggestions (e.g. afternoon +
-        // evening on a Saturday).
         for (let startIdx = 0; startIdx < fullBlock.length; startIdx++) {
           const anchor = fullBlock[startIdx];
           const anchorScore = preferenceScore(date, anchor, prefDays, prefTimes);
           if (anchorScore === 0) continue;
 
-          // Build the block from the anchor forward, capped at MAX_WINDOW_HOURS.
           const block: TimeSlot[] = [];
           let runningHours = 0;
           let totalScore = 0;
+          let blockHasPartial = false;
           for (let j = startIdx; j < fullBlock.length; j++) {
             const slot = fullBlock[j];
-            const next = runningHours + SLOT_HOURS[slot];
+            const slotFreeHrs = partialSlots.has(slot)
+              ? freeHours(myCoverage.get(slot)!.freeRanges)
+              : SLOT_HOURS[slot];
+            const next = runningHours + slotFreeHrs;
             if (next > MAX_WINDOW_HOURS && block.length > 0) break;
             block.push(slot);
             runningHours = next;
+            if (partialSlots.has(slot)) blockHasPartial = true;
             totalScore += preferenceScore(date, slot, prefDays, prefTimes);
             if (runningHours >= MAX_WINDOW_HOURS) break;
           }
-          const hours = Math.min(blockHours(block), MAX_WINDOW_HOURS);
+          const hours = Math.min(runningHours, MAX_WINDOW_HOURS);
           if (hours < 2) continue;
 
-          const { startHr } = slotTimeBounds(block[0]);
-          const rawEndHr = slotTimeBounds(block[block.length - 1]).endHr;
-          const endHr = Math.min(rawEndHr, startHr + hours);
+          // Use the first slot's free sub-range start when partial, otherwise slot start.
+          const firstCov = myCoverage.get(block[0]);
+          const lastCov = myCoverage.get(block[block.length - 1]);
+          const startHr =
+            firstCov?.kind === 'partial' && firstCov.freeRanges.length
+              ? firstCov.freeRanges[0][0]
+              : slotTimeBounds(block[0]).startHr;
+          const lastEndHr =
+            lastCov?.kind === 'partial' && lastCov.freeRanges.length
+              ? lastCov.freeRanges[lastCov.freeRanges.length - 1][1]
+              : slotTimeBounds(block[block.length - 1]).endHr;
+          const endHr = Math.min(lastEndHr, startHr + hours);
 
-          // Build my availability row for this date (for trip_location/location_status)
           const myRowForCity = {
             date: dateKey,
             location_status: myAvail?.locationStatus || 'home',
             trip_location: myAvail?.tripLocation || null,
           };
 
-          // Friend overlap on this block — only co-located friends.
           const overlapping: OpenWindow['overlappingFriends'] = [];
           for (const f of connectedFriends) {
             const row = friendAvail.find(
-              (r) => r.user_id === f.friendUserId && r.date === dateKey
+              (r) => r.user_id === f.friendUserId && r.date === dateKey,
             );
             if (!row) continue;
 
@@ -410,12 +434,10 @@ export function useOpenWindows() {
             });
             if (!sameCity) continue;
 
-            // Slots where this friend has a confirmed or proposed plan are
-            // treated as conflicts and don't count toward overlap.
             const friendBusySlots = new Set(
               friendPlans
                 .filter((p) => p.user_id === f.friendUserId && p.date === dateKey)
-                .map((p) => p.time_slot)
+                .map((p) => p.time_slot),
             );
 
             let overlapHours = 0;
@@ -435,14 +457,15 @@ export function useOpenWindows() {
           }
           overlapping.sort((a, b) => b.overlapHours - a.overlapHours);
 
-          // Composite score: preference fit + friend overlap + soonness.
           const overlapBonus = overlapping.reduce((s, o) => s + o.overlapHours, 0);
           const daysAway = Math.max(
             0,
-            Math.round((date.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000)
+            Math.round((date.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000),
           );
           const soonness = (SCAN_DAYS - daysAway) * 0.25;
-          const score = totalScore * 2 + overlapBonus + soonness;
+          // Partial windows are deprioritized vs equally-fitting fully-free windows.
+          const partialMult = blockHasPartial ? 0.5 : 1;
+          const score = (totalScore * 2 + overlapBonus + soonness) * partialMult;
 
           candidates.push({
             date,
@@ -458,7 +481,6 @@ export function useOpenWindows() {
       }
     }
 
-    // Deduplicate windows that share the same date + starting slot.
     const seen = new Set<string>();
     const deduped: Scored[] = [];
     candidates
