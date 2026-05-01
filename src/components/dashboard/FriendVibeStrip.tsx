@@ -477,93 +477,207 @@ function FriendPill({
         sideOffset={6}
         className="w-72 p-0 rounded-xl overflow-hidden"
       >
-        <div className="px-3 pt-3 pb-2 border-b border-border">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {mutual
-              ? `Mutually free with ${friend.name.split(' ')[0]}`
-              : `${friend.name.split(' ')[0]}'s free times`}
-          </p>
-          <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-            {selectionCount === 0
-              ? 'Tap one or more times to propose'
-              : `${selectionCount} selected — add more or send`}
-          </p>
-        </div>
+        {step === 'slots' ? (
+          <>
+            <div className="px-3 pt-3 pb-2 border-b border-border">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {mutual
+                  ? `Mutually free with ${friend.name.split(' ')[0]}`
+                  : `${friend.name.split(' ')[0]}'s free times`}
+              </p>
+              <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                {selectionCount === 0
+                  ? 'Tap one or more times to propose'
+                  : `${selectionCount} selected — add more or continue`}
+              </p>
+            </div>
 
-        <div className="max-h-64 overflow-y-auto p-2 space-y-1">
-          {overlapSlots.map((s, idx) => {
-            const dt = parseISO(s.date);
-            const today = isSameDay(dt, new Date());
-            const tomorrow = isSameDay(dt, addDays(new Date(), 1));
-            const dayLabel = today
-              ? 'Today'
-              : tomorrow
-                ? 'Tomorrow'
-                : format(dt, 'EEE, MMM d');
-            const slotMeta = TIME_SLOT_LABELS[s.slot];
-            const k = slotKey(s);
-            const isSelected = selected.has(k);
-            const recommended = isRecommended(s);
-            return (
-              <button
-                key={`${s.date}-${s.slot}-${idx}`}
-                onClick={() => toggleSlot(s)}
-                className={cn(
-                  'w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors border',
-                  isSelected
-                    ? 'bg-primary/10 border-primary/50'
-                    : 'bg-transparent border-transparent hover:bg-primary/5 hover:border-primary/30'
-                )}
-              >
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className={cn(
-                      'text-xs font-semibold truncate',
-                      today ? 'text-primary' : 'text-foreground'
-                    )}>
-                      {dayLabel}
-                    </span>
-                    {recommended && (
-                      <span
-                        title="Matches your preferred social time"
-                        className="inline-flex items-center gap-0.5 rounded-full bg-secondary/15 text-secondary px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide"
-                      >
-                        <Sparkles className="h-2.5 w-2.5" />
-                        Pick
-                      </span>
+            <div className="max-h-64 overflow-y-auto p-2 space-y-1">
+              {overlapSlots.map((s, idx) => {
+                const dt = parseISO(s.date);
+                const today = isSameDay(dt, new Date());
+                const tomorrow = isSameDay(dt, addDays(new Date(), 1));
+                const dayLabel = today
+                  ? 'Today'
+                  : tomorrow
+                    ? 'Tomorrow'
+                    : format(dt, 'EEE, MMM d');
+                const slotMeta = TIME_SLOT_LABELS[s.slot];
+                const k = slotKey(s);
+                const isSelected = selected.has(k);
+                const recommended = isRecommended(s);
+                return (
+                  <button
+                    key={`${s.date}-${s.slot}-${idx}`}
+                    onClick={() => toggleSlot(s)}
+                    className={cn(
+                      'w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors border',
+                      isSelected
+                        ? 'bg-primary/10 border-primary/50'
+                        : 'bg-transparent border-transparent hover:bg-primary/5 hover:border-primary/30'
                     )}
-                  </div>
-                  <span className="text-[11px] text-muted-foreground truncate">
-                    {slotMeta.label} · {slotMeta.time}
-                  </span>
-                </div>
-                {isSelected ? (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
-                    <Check className="h-3 w-3" />
-                  </span>
-                ) : (
-                  <CalendarPlus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className={cn(
+                          'text-xs font-semibold truncate',
+                          today ? 'text-primary' : 'text-foreground'
+                        )}>
+                          {dayLabel}
+                        </span>
+                        {recommended && (
+                          <span
+                            title="Matches your preferred social time"
+                            className="inline-flex items-center gap-0.5 rounded-full bg-secondary/15 text-secondary px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide"
+                          >
+                            <Sparkles className="h-2.5 w-2.5" />
+                            Pick
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground truncate">
+                        {slotMeta.label} · {slotMeta.time}
+                      </span>
+                    </div>
+                    {isSelected ? (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
+                        <Check className="h-3 w-3" />
+                      </span>
+                    ) : (
+                      <CalendarPlus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-        <div className="border-t border-border p-2">
-          <Button
-            size="sm"
-            className="w-full gap-1.5"
-            disabled={selectionCount === 0 || sending}
-            onClick={sendHangRequest}
-          >
-            {sending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Send className="h-3.5 w-3.5" />
-            )}
-            <span className="truncate">{buttonLabel}</span>
-          </Button>
-        </div>
+            <div className="border-t border-border p-2">
+              <Button
+                size="sm"
+                className="w-full gap-1.5"
+                disabled={selectionCount === 0}
+                onClick={() => setStep('activity')}
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span className="truncate">{nextLabel}</span>
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="px-3 pt-3 pb-2 border-b border-border flex items-center gap-2">
+              <button
+                onClick={() => setStep('slots')}
+                className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-muted shrink-0"
+                aria-label="Back"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Review & suggest
+                </p>
+                <p className="text-[11px] text-muted-foreground/80 mt-0.5 truncate">
+                  Sending to {friend.name.split(' ')[0]}
+                </p>
+              </div>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto p-3 space-y-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                  Time options ({selectedSlotsPreview.length})
+                </p>
+                <div className="space-y-1">
+                  {selectedSlotsPreview.map((s, idx) => {
+                    const dt = parseISO(s.date);
+                    const today = isSameDay(dt, new Date());
+                    const tomorrow = isSameDay(dt, addDays(new Date(), 1));
+                    const dayLabel = today
+                      ? 'Today'
+                      : tomorrow
+                        ? 'Tomorrow'
+                        : format(dt, 'EEE, MMM d');
+                    const slotMeta = TIME_SLOT_LABELS[s.slot];
+                    return (
+                      <div
+                        key={`preview-${s.date}-${s.slot}-${idx}`}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-2.5 py-1.5"
+                      >
+                        <span className={cn('text-xs font-semibold', today && 'text-primary')}>
+                          {dayLabel}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {slotMeta.label} · {slotMeta.time}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Suggest an activity (optional)
+                </label>
+                <Select value={activity} onValueChange={setActivity}>
+                  <SelectTrigger className="mt-1.5 h-9">
+                    <SelectValue placeholder="Pick an activity" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    <SelectItem value="tbd">🤷 No suggestion (let them choose)</SelectItem>
+                    <SelectItem value="custom">✏️ Custom activity…</SelectItem>
+                    {getAllVibes().map((vibe) => {
+                      const vibeCfg = VIBE_CONFIG[vibe];
+                      const acts = getActivitiesByVibe(vibe);
+                      return (
+                        <SelectGroup key={vibe}>
+                          <SelectLabel>{vibeCfg.icon} {vibeCfg.label}</SelectLabel>
+                          {acts.map((act) => {
+                            const cfg = ACTIVITY_CONFIG[act];
+                            if (!cfg) return null;
+                            return (
+                              <SelectItem key={act} value={act}>
+                                {cfg.icon} {cfg.label}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectGroup>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {activity === 'custom' && (
+                  <Input
+                    autoFocus
+                    value={customActivity}
+                    onChange={(e) => setCustomActivity(e.target.value)}
+                    placeholder="e.g. Pottery class, picnic at the park"
+                    className="mt-2 h-9 text-sm"
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-border p-2">
+              <Button
+                size="sm"
+                className="w-full gap-1.5"
+                disabled={sending || customInvalid}
+                onClick={sendHangRequest}
+              >
+                {sending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                <span className="truncate">
+                  {sending ? 'Sending…' : `Send to ${friend.name.split(' ')[0]}`}
+                </span>
+              </Button>
+            </div>
+          </>
+        )}
       </PopoverContent>
     </Popover>
   );
