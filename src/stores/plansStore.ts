@@ -137,10 +137,10 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
 
     set((state) => ({ plans: [...state.plans, newPlan] }));
 
-    // Update availability if confirmed
+    // Update availability — confirmed, tentative, and proposed all block the slot
     const effectiveStatus = (plan.participants && plan.participants.length > 0 && (!plan.status || plan.status === 'confirmed'))
       ? 'proposed' : (plan.status || 'confirmed');
-    if (effectiveStatus === 'confirmed') {
+    if (effectiveStatus === 'confirmed' || effectiveStatus === 'tentative' || effectiveStatus === 'proposed') {
       const slotColumn = plan.timeSlot.replace('-', '_');
       await supabase
         .from('availability')
