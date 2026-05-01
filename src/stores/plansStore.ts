@@ -5,6 +5,53 @@ import { supabase } from '@/integrations/supabase/client';
 import { validatePlan } from '@/lib/validation';
 import { deduplicatePlanRows, mapRawPlanToModel, buildParticipantsMap } from './helpers/mapPlans';
 import { createDefaultAvailability } from './helpers/mapAvailability';
+import { getPlanSlotCoverage } from '@/lib/planSlotCoverage';
+
+const BLOCKING_STATUSES = new Set(['confirmed', 'tentative', 'proposed']);
+
+/** Mark every slot a plan covers as not-free in the availability table. */
+async function blockSlotsForPlan(
+  userId: string,
+  dateStr: string,
+  plan: { timeSlot: TimeSlot; startTime?: string | null; endTime?: string | null },
+) {
+  const coverage = getPlanSlotCoverage(plan);
+  if (coverage.length === 0) return;
+  const updates: Record<string, unknown> = { user_id: userId, date: dateStr };
+  for (const c of coverage) {
+    updates[c.slot.replace('-', '_')] = false;
+  }
+  await supabase
+    .from('availability')
+    .upsert(updates as any, { onConflict: 'user_id,date' });
+}
+
+/**
+ * Recompute availability for the slots a removed plan covered. If no other
+ * remaining plan still blocks the slot, restore it to true (best effort —
+ * server defaults will apply if no row exists).
+ */
+async function unblockSlotsForRemovedPlan(
+  userId: string,
+  dateStr: string,
+  removed: { timeSlot: TimeSlot; startTime?: string | null; endTime?: string | null },
+  remainingPlansSameDate: Array<{ timeSlot: TimeSlot; startTime?: string | null; endTime?: string | null; status?: string | null }>,
+) {
+  const removedSlots = new Set(getPlanSlotCoverage(removed).map((c) => c.slot));
+  if (removedSlots.size === 0) return;
+  const stillBlocked = new Set<TimeSlot>();
+  for (const p of remainingPlansSameDate) {
+    if (p.status && !BLOCKING_STATUSES.has(p.status)) continue;
+    for (const c of getPlanSlotCoverage(p)) stillBlocked.add(c.slot);
+  }
+  const toFree = [...removedSlots].filter((s) => !stillBlocked.has(s));
+  if (toFree.length === 0) return;
+  const updates: Record<string, unknown> = { user_id: userId, date: dateStr };
+  for (const s of toFree) updates[s.replace('-', '_')] = true;
+  await supabase
+    .from('availability')
+    .upsert(updates as any, { onConflict: 'user_id,date' });
+}
 
 export interface PlansState {
   plans: Plan[];
