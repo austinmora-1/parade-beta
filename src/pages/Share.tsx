@@ -344,11 +344,7 @@ export default function Share() {
   }, [plans]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
-        <ElephantLoader />
-      </div>
-    );
+    return <ElephantLoader />;
   }
 
   if (error || !profile) {

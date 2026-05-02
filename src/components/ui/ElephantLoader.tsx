@@ -54,11 +54,25 @@ function generateParticles(count: number): Particle[] {
 // Compute once at module load — every loader instance shares the same layout.
 const PARTICLES = generateParticles(24);
 
-export function ElephantLoader({ className = '' }: { className?: string }) {
+interface ElephantLoaderProps {
+  /**
+   * When true (default), renders as a fixed full-screen overlay so the
+   * confetti burst always lands at the same viewport coordinates regardless
+   * of which route, layout, or container is mounting it. This is what makes
+   * sequential loaders (auth → data fetch → page mount) feel like a single,
+   * continuous loading state instead of two bursts in different positions.
+   *
+   * Set to false only for intentionally inline loaders inside cards/widgets.
+   */
+  fullscreen?: boolean;
+  className?: string;
+}
+
+export function ElephantLoader({ className = '', fullscreen = true }: ElephantLoaderProps) {
   const particles = PARTICLES;
 
-  return (
-    <div className={`flex flex-col items-center gap-3 ${className}`}>
+  const inner = (
+    <div className={`flex flex-col items-center gap-3 ${fullscreen ? '' : className}`}>
       <div className="relative w-24 h-24">
         <svg className="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 96 96">
           {/* Center burst pulse */}
@@ -144,6 +158,19 @@ export function ElephantLoader({ className = '' }: { className?: string }) {
       >
         Loading…
       </motion.span>
+    </div>
+  );
+
+  if (!fullscreen) return inner;
+
+  return (
+    <div
+      className={`fixed inset-0 z-40 flex items-center justify-center bg-background ${className}`}
+      aria-busy="true"
+      aria-live="polite"
+      role="status"
+    >
+      {inner}
     </div>
   );
 }

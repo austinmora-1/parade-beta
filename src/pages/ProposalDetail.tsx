@@ -98,11 +98,7 @@ export default function ProposalDetail() {
   }, [dates, votes]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <ElephantLoader />
-      </div>
-    );
+    return <ElephantLoader />;
   }
 
   if (!proposal || !user) {

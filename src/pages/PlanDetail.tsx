@@ -269,11 +269,7 @@ export default function PlanDetail() {
   }, [effectivePlan, inviteToken, inviteAccepted]);
 
   if (loadingPreview || loadingShared) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <ElephantLoader />
-      </div>
-    );
+    return <ElephantLoader />;
   }
 
   // Build a display plan from either the store plan, shared plan, or invite preview

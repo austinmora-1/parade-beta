@@ -118,6 +118,7 @@ interface PlannerState {
   locationStatus: LocationStatus;
   isLoading: boolean;
   loadError: string | null;
+  initialLoadDone: boolean;
   userId: string | null;
   lastFetchedAt: number | null;
   defaultSettings: DefaultAvailabilitySettings | null;
@@ -214,6 +215,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     locationStatus: 'home',
     isLoading: true,
     loadError: null,
+    initialLoadDone: false,
     userId: null,
     lastFetchedAt: null,
     defaultSettings: null,
@@ -228,7 +230,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     loadAllData: async (force) => {
       const { userId, lastFetchedAt } = get();
       if (!userId) {
-        set({ isLoading: false });
+        set({ isLoading: false, initialLoadDone: true });
         return;
       }
 
@@ -255,7 +257,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           });
           useVibeStore.setState({ userTimezone: stale.userTimezone });
           useVibeStore.getState().bootstrapVibe(stale.currentVibe, userId);
-          set({ isLoading: false, lastFetchedAt: cached.cachedAt });
+          set({ isLoading: false, lastFetchedAt: cached.cachedAt, initialLoadDone: true });
           if (!force && Date.now() - cached.cachedAt < 120_000) {
             return;
           }
@@ -306,6 +308,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
             isLoading: false,
             lastFetchedAt: Date.now(),
             loadError: fallbackOk ? null : 'We couldn’t load your dashboard. Please try again.',
+            initialLoadDone: true,
           });
           return;
         }
@@ -323,7 +326,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         });
         useVibeStore.setState({ userTimezone: transformed.userTimezone });
         useVibeStore.getState().bootstrapVibe(transformed.currentVibe, userId);
-        set({ isLoading: false, lastFetchedAt: Date.now(), loadError: null });
+        set({ isLoading: false, lastFetchedAt: Date.now(), loadError: null, initialLoadDone: true });
 
         setCachedDashboard(userId, rpcData).catch(() => {});
       } catch (error) {
@@ -331,6 +334,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
         set({
           isLoading: false,
           loadError: (error as Error)?.message || 'We couldn’t load your dashboard. Please try again.',
+          initialLoadDone: true,
         });
       }
     },

@@ -91,7 +91,7 @@ export default function ResetPassword() {
   if (isVerifying) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-primary/10 flex items-center justify-center p-4">
-        <ElephantLoader />
+        <ElephantLoader fullscreen={false} />
       </div>
     );
   }

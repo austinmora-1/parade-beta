@@ -138,11 +138,7 @@ export default function PlanInvite() {
   };
 
   if (loading || authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <ElephantLoader />
-      </div>
-    );
+    return <ElephantLoader />;
   }
 
   if (error || !invite) {
