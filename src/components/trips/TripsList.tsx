@@ -150,11 +150,33 @@ export function TripsList({ refreshKey }: TripsListProps) {
       for (const prop of finalizedMissing) {
         const propDates = (datesData || []).filter(d => d.proposal_id === prop.id);
         if (!propDates.length) continue;
-        // Pick earliest as a safe default for the backfill
-        const winning = [...propDates].sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
         const priorityIds = (allParticipants || [])
           .filter(p => p.proposal_id === prop.id && p.user_id !== user.id)
           .map(p => p.user_id);
+
+        const dateStarts = propDates.map(d => d.start_date);
+        const { data: existingTrips } = await supabase
+          .from('trips')
+          .select('id, start_date, end_date')
+          .eq('user_id', user.id)
+          .eq('location', prop.destination?.trim() || '')
+          .in('start_date', dateStarts)
+          .is('proposal_id', null);
+        const existingMatch = (existingTrips || []).find(t =>
+          propDates.some(d => d.start_date === t.start_date && d.end_date === t.end_date)
+        );
+
+        if (existingMatch) {
+          const { error: linkErr } = await supabase
+            .from('trips')
+            .update({ proposal_id: prop.id, priority_friend_ids: priorityIds, updated_at: new Date().toISOString() } as any)
+            .eq('id', existingMatch.id);
+          if (!linkErr) backfilled = true;
+          continue;
+        }
+
+        // Pick earliest as a safe default for the backfill when no matching trip exists.
+        const winning = [...propDates].sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
         const { error: insertErr } = await supabase.from('trips').insert({
           user_id: user.id,
           location: prop.destination?.trim() || null,
