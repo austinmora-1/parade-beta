@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Copy, Check, Loader2, MessageSquare, Mail, Send, Share2 } from 'lucide-react';
+import { Copy, Check, Loader2, MessageSquare, Mail, Send } from 'lucide-react';
 
 interface ShareChannel {
   key: string;

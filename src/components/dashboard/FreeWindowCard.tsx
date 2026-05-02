@@ -17,7 +17,7 @@ function formatDayPhrase(date: Date): string {
   if (days <= 13) return `next ${dayName}`;
   return `${dayName}, ${format(date, 'MMM d')}`;
 }
-import { Sparkles, Send, Share2, Clock } from 'lucide-react';
+import { Sparkles, Send, Clock } from 'lucide-react';
 import { useOpenWindows, type OpenWindow } from '@/hooks/useOpenWindows';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -218,7 +218,7 @@ function WindowChip({
         }}
         className="absolute top-2 right-2 h-7 w-7 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
       >
-        <Share2 className="h-3.5 w-3.5" />
+        <Send className="h-3.5 w-3.5" />
       </button>
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground pr-8">
         {w.dayLabel}

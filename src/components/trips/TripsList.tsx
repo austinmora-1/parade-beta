@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus, Vote, Share2, Lock } from 'lucide-react';
+import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus, Vote, Send, Lock } from 'lucide-react';
 import { InviteToTripDialog } from './InviteToTripDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -1230,7 +1230,7 @@ function ProposalTripCard({
                     onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
                     title="Share invite link"
                   >
-                    <Share2 className="h-3 w-3" />
+                    <Send className="h-3 w-3" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -1256,7 +1256,7 @@ function ProposalTripCard({
                     onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
                     title="Share invite link"
                   >
-                    <Share2 className="h-3 w-3" />
+                    <Send className="h-3 w-3" />
                   </Button>
                 </div>
               )}

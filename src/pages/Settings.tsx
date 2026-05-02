@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/accordion';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { ElephantLoader } from '@/components/ui/ElephantLoader';
-import { User, Bell, MapPin, Share2, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette, Globe, Check, Heart, Sparkles, Users, Search, X } from 'lucide-react';
+import { User, Bell, MapPin, Send, LogOut, Loader2, Calendar, Save, Clock, Gamepad2, Sun, Moon, Palette, Globe, Check, Heart, Sparkles, Users, Search, X } from 'lucide-react';
 import { ACTIVITY_CONFIG } from '@/types/planner';
 import { useAuth } from '@/hooks/useAuth';
 import { useFeedback } from '@/components/feedback/FeedbackContext';
@@ -1020,7 +1020,7 @@ export default function Settings() {
         <AccordionItem value="privacy" className="rounded-xl border border-border bg-card shadow-soft overflow-hidden">
           <AccordionTrigger className="px-4 py-2.5 hover:no-underline hover:bg-muted/50">
             <div className="flex items-center gap-2">
-              <Share2 className="h-4 w-4 text-primary" />
+              <Send className="h-4 w-4 text-primary" />
               <span className="font-display text-sm font-semibold">Sharing & Privacy</span>
             </div>
           </AccordionTrigger>

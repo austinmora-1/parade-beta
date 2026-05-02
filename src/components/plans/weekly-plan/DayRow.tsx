@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format, isSameDay } from 'date-fns';
-import { ChevronDown, Pencil, Merge, Share2, Trash2, X, MapPin, Plane } from 'lucide-react';
+import { ChevronDown, Pencil, Merge, Send, Trash2, X, MapPin, Plane } from 'lucide-react';
 import { Plan, DayAvailability } from '@/types/planner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -92,7 +92,7 @@ export function DayRow({ day, dayPlans, isToday, isPast, selectMode, selectedIds
                 )}
                 {selectionActions.onShare && (
                   <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={selectionActions.onShare}>
-                    <Share2 className="h-3 w-3" />
+                    <Send className="h-3 w-3" />
                   </Button>
                 )}
                 {selectionActions.onDelete && (

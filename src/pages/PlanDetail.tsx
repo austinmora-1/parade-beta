@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Share2, Merge, Globe2, X, Pencil } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Clock, Trash2, Eye, Calendar, UserPlus, Check, Loader2, Globe, Lock, HelpCircle, CheckCircle2, XCircle, Plus, Search, Send, Merge, Globe2, X, Pencil } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { ACTIVITY_CONFIG as _AC } from '@/types/planner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -1048,7 +1048,7 @@ export default function PlanDetail() {
 
             {!isPast && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setInviteDialogOpen(true)}>
-                <Share2 className="h-4 w-4" /> Share
+                <Send className="h-4 w-4" /> Share
               </Button>
             )}
 

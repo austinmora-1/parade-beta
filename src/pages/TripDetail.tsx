@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, differenceInDays } from 'date-fns';
-import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2, Share2, ArrowLeftRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2, Send, ArrowLeftRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -284,7 +284,7 @@ export default function TripDetail() {
         <div className="flex items-center gap-1.5">
           {trip.proposal_id && (
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShareOpen(true)}>
-              <Share2 className="h-3.5 w-3.5" /> Share
+              <Send className="h-3.5 w-3.5" /> Share
             </Button>
           )}
           <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditOpen(true)}>
