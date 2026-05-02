@@ -32,6 +32,7 @@ export type Database = {
           slot_location_late_afternoon: string | null
           slot_location_late_morning: string | null
           slot_location_late_night: string | null
+          trip_id: string | null
           trip_location: string | null
           updated_at: string
           user_id: string
@@ -54,6 +55,7 @@ export type Database = {
           slot_location_late_afternoon?: string | null
           slot_location_late_morning?: string | null
           slot_location_late_night?: string | null
+          trip_id?: string | null
           trip_location?: string | null
           updated_at?: string
           user_id: string
@@ -76,12 +78,21 @@ export type Database = {
           slot_location_late_afternoon?: string | null
           slot_location_late_morning?: string | null
           slot_location_late_night?: string | null
+          trip_id?: string | null
           trip_location?: string | null
           updated_at?: string
           user_id?: string
           vibe?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "availability_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       calendar_connections: {
         Row: {
