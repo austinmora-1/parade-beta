@@ -26,6 +26,7 @@ import { formatCityForDisplay } from '@/lib/formatCity';
 
 interface Trip {
   id: string;
+  name: string | null;
   location: string | null;
   start_date: string;
   end_date: string;
