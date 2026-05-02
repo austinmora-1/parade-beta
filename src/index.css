@@ -255,7 +255,7 @@
   select,
   textarea {
     @apply bg-background text-foreground antialiased;
-    font-family: 'TikTok Sans', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
     font-weight: 400;
   }
 
