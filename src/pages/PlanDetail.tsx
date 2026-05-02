@@ -1048,7 +1048,7 @@ export default function PlanDetail() {
 
             {!isPast && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setInviteDialogOpen(true)}>
-                <Share2 className="h-4 w-4" /> Share
+                <Send className="h-4 w-4" /> Share
               </Button>
             )}
 

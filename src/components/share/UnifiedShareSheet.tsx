@@ -26,7 +26,6 @@ import {
   MessageSquare,
   Mail,
   Send,
-  Share2,
 } from 'lucide-react';
 
 const PRIMARY_DOMAIN = 'https://helloparade.app';
