@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Lexend', 'sans-serif'],
+        sans: ['"Atkinson Hyperlegible"', 'sans-serif'],
         display: ['Fraunces', 'serif'],
       },
       colors: {
