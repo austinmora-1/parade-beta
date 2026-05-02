@@ -215,6 +215,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     locationStatus: 'home',
     isLoading: true,
     loadError: null,
+    initialLoadDone: false,
     userId: null,
     lastFetchedAt: null,
     defaultSettings: null,
