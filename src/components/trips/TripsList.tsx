@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { format, differenceInDays, isAfter, startOfDay, addDays } from 'date-fns';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { GripVertical, Plane, MapPin, Calendar, ChevronRight, ChevronDown, Clock, Check, Loader2, Users, Home, Edit2, Trash2, Plus, X, Trophy, Sparkles, PartyPopper, ArrowLeftRight, UserPlus, Vote, Share2, Lock } from 'lucide-react';
@@ -485,11 +485,20 @@ function TripCard({
   const [friendProfiles, setFriendProfiles] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(trip.name || '');
+  // Optimistic display value: when set, takes precedence over trip.name until
+  // the server write is confirmed (or rolled back on permanent failure).
+  const [optimisticName, setOptimisticName] = useState<string | null | undefined>(undefined);
   const [savingTitle, setSavingTitle] = useState(false);
+  // Token to invalidate older in-flight saves when a newer one starts.
+  const saveTokenRef = useRef(0);
 
   useEffect(() => {
-    setTitleDraft(trip.name || '');
-  }, [trip.name]);
+    // Only resync the draft from the server value when we're not actively
+    // editing or mid-save — otherwise we'd clobber what the user is typing.
+    if (!editingTitle && optimisticName === undefined) {
+      setTitleDraft(trip.name || '');
+    }
+  }, [trip.name, editingTitle, optimisticName]);
 
   useEffect(() => {
     if (trip.priority_friend_ids.length === 0) return;
@@ -498,26 +507,79 @@ function TripCard({
       .then(({ data }) => { if (data) setFriendProfiles(data); });
   }, [trip.priority_friend_ids]);
 
-  const saveTitle = async () => {
+  const persistTitle = useCallback(
+    async (nextValue: string | null, token: number, attempt = 0): Promise<void> => {
+      const MAX_ATTEMPTS = 4; // ~0s, 0.5s, 1s, 2s
+      const { error } = await supabase
+        .from('trips')
+        .update({ name: nextValue })
+        .eq('id', trip.id);
+
+      // A newer save superseded this one — silently abandon.
+      if (token !== saveTokenRef.current) return;
+
+      if (!error) {
+        setSavingTitle(false);
+        setOptimisticName(undefined);
+        toast.success('Trip title updated');
+        try { await onTripUpdated(); } catch { /* non-fatal */ }
+        return;
+      }
+
+      if (attempt + 1 < MAX_ATTEMPTS) {
+        const delay = 500 * Math.pow(2, attempt); // 500ms, 1s, 2s
+        await new Promise<void>((resolve) => setTimeout(resolve, delay));
+        if (token !== saveTokenRef.current) return;
+        return persistTitle(nextValue, token, attempt + 1);
+      }
+
+      // All retries exhausted — keep the optimistic value visible and offer
+      // a manual retry so the user's edit is never silently lost.
+      setSavingTitle(false);
+      toast.error("Couldn't save trip title", {
+        description: 'Tap retry — your edit is preserved.',
+        duration: 10000,
+        action: {
+          label: 'Retry',
+          onClick: () => {
+            const newToken = ++saveTokenRef.current;
+            setSavingTitle(true);
+            void persistTitle(nextValue, newToken, 0);
+          },
+        },
+      });
+    },
+    [trip.id, onTripUpdated],
+  );
+
+  const saveTitle = () => {
     const next = titleDraft.trim();
-    if ((next || null) === (trip.name || null)) {
-      setEditingTitle(false);
-      return;
-    }
-    setSavingTitle(true);
-    const { error } = await supabase
-      .from('trips')
-      .update({ name: next || null })
-      .eq('id', trip.id);
-    setSavingTitle(false);
-    if (error) {
-      toast.error("Couldn't update title");
-      return;
-    }
+    const nextValue = next || null;
+    const currentValue = trip.name || null;
+
+    // Close the editor immediately for an optimistic feel.
     setEditingTitle(false);
-    toast.success('Trip title updated');
-    await onTripUpdated();
+
+    if (nextValue === currentValue) {
+      setOptimisticName(undefined);
+      return;
+    }
+
+    // Show the new value right away.
+    setOptimisticName(nextValue);
+    setSavingTitle(true);
+
+    const token = ++saveTokenRef.current;
+    void persistTitle(nextValue, token, 0);
   };
+
+  const cancelEdit = () => {
+    setTitleDraft((optimisticName !== undefined ? optimisticName : trip.name) || '');
+    setEditingTitle(false);
+  };
+
+  // Effective title shown on the card — optimistic value wins while pending.
+  const effectiveName = optimisticName !== undefined ? optimisticName : trip.name;
 
   const destinationLabel = trip.location
     ? (formatCityForDisplay(trip.location) || trip.location)
@@ -550,11 +612,10 @@ function TripCard({
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   e.stopPropagation();
-                  if (e.key === 'Enter') void saveTitle();
-                  if (e.key === 'Escape') { setTitleDraft(trip.name || ''); setEditingTitle(false); }
+                  if (e.key === 'Enter') saveTitle();
+                  if (e.key === 'Escape') cancelEdit();
                 }}
-                onBlur={() => void saveTitle()}
-                disabled={savingTitle}
+                onBlur={() => saveTitle()}
                 placeholder="Trip title"
                 className="h-7 text-sm px-2 py-0"
               />
@@ -564,12 +625,16 @@ function TripCard({
                 onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
                 className={cn(
                   "font-medium text-sm truncate text-left hover:underline decoration-dotted underline-offset-2",
-                  !trip.name && "text-muted-foreground italic"
+                  !effectiveName && "text-muted-foreground italic",
+                  savingTitle && "opacity-70"
                 )}
-                title="Edit title"
+                title={savingTitle ? 'Saving…' : 'Edit title'}
               >
-                {trip.name || '[no title]'}
+                {effectiveName || '[no title]'}
               </button>
+            )}
+            {savingTitle && (
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />
             )}
             {isOngoing && (
               <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full shrink-0">
