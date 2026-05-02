@@ -1,90 +1,99 @@
-## Goal
+## The problem
 
-Make the trip a single, atomically editable entity. Editing a trip's date/location/participants must update one logical record — never spawn a duplicate `trips` row, never leave the linked `trip_proposal_dates` out of sync.
+Even though `ElephantLoader` already uses a seeded PRNG so every instance renders the **same particle layout**, users still see the burst happen in **two different positions on the screen** during a normal sign-in → dashboard load. The "two confetti positions" the user is seeing are not two different particle layouts — they are the **same loader rendered in two different containers**, one centered in the viewport and the next anchored inside the page content area.
 
-## Root causes being fixed
+### What's actually happening on a fresh load
 
-1. `availability` rows are not linked to `trips.id`. The `auto_create_trip_from_availability` trigger guesses ownership by fuzzy-matching `trip_location` city strings, so any date shift can spawn an empty duplicate trip.
-2. When a trip originated from a finalized `trip_proposal`, edits to `trips` don't propagate to `trip_proposal_dates`. The proposal's "winning date" drifts.
-3. The edit flow in `AddTripDialog.handleSave` writes availability **before** updating the trip, so the trigger sees stale dates and decides to insert.
+For an authenticated user landing on `/`:
 
-## Approach
+1. **Loader A — fullscreen, viewport-centered.** While `useAuth()` is resolving, `RootRoute` (and `ProtectedRoute` / `LazyFallback`) render:
+   ```text
+   <div className="min-h-screen flex items-center justify-center bg-background">
+     <ElephantLoader />
+   </div>
+   ```
+   The burst sits at the exact center of the screen.
 
-Make `availability` carry a real foreign key to `trips.id`, rewrite the trigger to resolve the trip by id (not by string), and update the edit handler to do everything in the right order plus sync the proposal.
+2. **Loader B — inside `AppLayout`, offset by header + nav.** Once auth resolves, `<AppLayout><Dashboard /></AppLayout>` mounts. `Dashboard` then shows its own loader while `isLoading || checkingOnboarding` is true:
+   ```text
+   <div className="flex h-64 items-center justify-center">
+     <ElephantLoader />
+   </div>
+   ```
+   This sits inside `<main>` (which has top padding for the mobile header and bottom padding for the nav), and it's only `h-64` tall — so the burst lands noticeably higher and shifted relative to Loader A.
 
-### 1. Schema migration
+The result: the elephant/confetti appears, vanishes, and reappears a few hundred pixels away — reading as "two different loading states" even though it's the same component.
 
-- Add `availability.trip_id uuid NULL REFERENCES public.trips(id) ON DELETE SET NULL`.
-- Add index `idx_availability_trip_id`.
-- Backfill: for each `availability` row where `location_status='away'` and `trip_location` is set, find the user's trip whose `[start_date, end_date]` covers `availability.date` and whose `normalize_trip_city(location)` matches `normalize_trip_city(trip_location)`. Set `trip_id` to that match (skip if ambiguous).
+### Where else the same offset mismatch occurs
 
-### 2. Trigger rewrite (`auto_create_trip_from_availability`)
+Every place that wraps `ElephantLoader` in its own ad-hoc container reproduces the issue:
 
-Replace the existing function with id-aware logic:
+| File | Container | Position |
+|---|---|---|
+| `src/App.tsx` ×4 (`ProtectedRoute`, `RootRoute`, `PublicRoute`, `LazyFallback`) | `min-h-screen flex items-center justify-center` | Viewport center |
+| `src/pages/Dashboard.tsx` | `flex h-64 items-center justify-center` | Inside AppLayout, ~top |
+| `src/pages/PlanDetail.tsx`, `ProposalDetail.tsx`, `Profile.tsx`, `Settings.tsx`, `Share.tsx`, `PlanInvite.tsx`, `TripInvite.tsx`, `Invite.tsx`, `GoogleCallback.tsx`, `ResetPassword.tsx` | mixed: `min-h-screen`, `flex items-center justify-center py-20`, etc. | Varies |
 
-- **If `NEW.trip_id IS NOT NULL`** (the client knows which trip this row belongs to):
-  - Skip create/extend/delete entirely. The client owns the trip lifecycle. Just return `NEW`.
-- **Else, legacy/calendar-sync path** (no `trip_id` provided, e.g. iCal-derived availability):
-  - Keep current "extend or create" behavior, but tighten the pre-insert dedupe so it skips when **any** trip exists for `(user_id, normalized location)` that overlaps the consecutive run by ±1 day. This eliminates the race when a user is mid-edit.
-- **Cleanup path** (`location_status='home'` or `trip_location IS NULL`):
-  - If the cleared row had a `trip_id` (use `OLD.trip_id`), shrink/delete only that trip; do not iterate by location string.
-  - Otherwise fall back to current location-based shrink/delete logic for legacy rows.
+Across navigations the burst origin keeps moving.
 
-### 3. `AddTripDialog.handleSave` rewrite (edit path)
+## The fix
 
-When `editingTrip?.id` is set, do this in order inside one logical operation:
+Make the loader **own its own positioning** so the confetti origin is always the same point on the screen, regardless of which route or layout is showing it. Then collapse the auth + initial-data loading into a single phase so only one loader is ever visible at a time on the first paint.
 
-1. **Update the trip row first** (`trips`) with new `start_date`, `end_date`, `location`, `available_slots`, `priority_friend_ids`. This way the trigger sees the new range immediately — but with the next change it won't matter anyway because we'll pass `trip_id` on every availability row.
-2. **Reset old availability days** that fall outside the new range — set `location_status='home'`, `trip_location=null`, **`trip_id=null`**.
-3. **Upsert new availability days** for the new range with `location_status='away'`, `trip_location=<city>`, **`trip_id=editingTrip.id`**, plus the per-slot booleans.
-4. **Sync `trip_participants`**: delete + reinsert (current behavior).
-5. **If `editingTrip.proposalId`** is set: locate the `trip_proposal_dates` row that previously matched the old trip dates for that proposal (`proposal_id=… AND start_date=oldStart AND end_date=oldEnd`) and update it to the new start/end. If no row matches (should be rare), skip silently. Do not touch `trip_proposal_participants`.
-6. **Local dedupe sweep**: delete any other `trips` row owned by the same `user_id` with the same `start_date`, `end_date`, normalized `location`, **no `proposal_id`**, **no `trip_participants`**, and `id != editingTrip.id`. Targets only orphan rows the old trigger may have created in the past for this user; safe and scoped.
+### 1. Add a `fullscreen` mode to `ElephantLoader`
 
-For the create path (no `editingTrip`), pass `trip_id` on the availability upserts after the trip row is inserted (insert trip first, then insert availability with the new id). This eliminates the duplicate-trip risk for new trips too.
-
-### 4. Type / prop updates
-
-- `TripData` (in `AddTripDialog`) gains optional `proposalId?: string`.
-- `TripDetail.tsx` populates `editTripData.proposalId = trip.proposal_id ?? undefined`.
-- No UI changes anywhere.
-
-### 5. Backfill data integrity (one-off, in migration)
-
-After the trigger rewrite, run a one-time cleanup:
+Update `src/components/ui/ElephantLoader.tsx` to accept a `fullscreen` prop (default `true`). When `fullscreen` is true the component renders its own fixed-position overlay so the burst is always at the same viewport coordinates:
 
 ```text
-DELETE FROM trips t
-WHERE proposal_id IS NULL
-  AND priority_friend_ids = '{}'
-  AND NOT EXISTS (SELECT 1 FROM trip_participants tp WHERE tp.trip_id = t.id)
-  AND EXISTS (
-    SELECT 1 FROM trips t2
-    WHERE t2.user_id = t.user_id
-      AND t2.id <> t.id
-      AND normalize_trip_city(t2.location) = normalize_trip_city(t.location)
-      AND t2.start_date <= t.end_date
-      AND t2.end_date   >= t.start_date
-  );
+<div class="fixed inset-0 z-40 flex items-center justify-center
+            bg-background pointer-events-none">
+  …existing 24×24 SVG burst + "Loading…" label…
+</div>
 ```
 
-This removes the existing "ghost" duplicate trips like the second "New York" card from the screenshot. It only deletes rows with no companions, no proposal link, and another overlapping trip for the same user+city.
+- `fixed inset-0` → identical center every time, immune to header/nav padding and parent height.
+- `bg-background` → covers any partially-rendered content underneath so transitions between Loader A and Loader B feel like one continuous loader.
+- `z-40` → sits above page content but below toasts/dialogs (`z-50`).
+- A non-fullscreen variant (`fullscreen={false}`) is preserved for the few places where an inline loader inside a card/section is intentional (e.g. small widgets), but they will not be used for whole-page loading.
 
-## Files touched
+### 2. Replace ad-hoc loader wrappers with the new component
 
-- `supabase/migrations/<new>.sql` — add `availability.trip_id` + index, backfill, replace `auto_create_trip_from_availability`, ghost-trip cleanup.
-- `src/components/profile/AddTripDialog.tsx` — reorder edit flow, write `trip_id` on availability upserts, sync `trip_proposal_dates`, local dedupe.
-- `src/pages/TripDetail.tsx` — pass `proposalId` on `editTripData`.
+Remove the `min-h-screen flex …` / `flex h-64 …` wrappers and just render `<ElephantLoader />` directly in:
 
-No visual / UI changes. No changes to `trips` schema. No changes to RLS (the new FK column is covered by existing `availability` policies).
+- `src/App.tsx` — `ProtectedRoute`, `RootRoute`, `PublicRoute`, `LazyFallback` (all 4 sites).
+- `src/pages/Dashboard.tsx` — the `isLoading || checkingOnboarding` branch.
+- `src/pages/PlanDetail.tsx`, `ProposalDetail.tsx`, `Profile.tsx`, `Settings.tsx`, `Share.tsx`, `PlanInvite.tsx`, `TripInvite.tsx`, `Invite.tsx`, `GoogleCallback.tsx`, `ResetPassword.tsx` — page-level loading branches.
+
+Every full-page loader will now mount with the same fixed overlay, so when `RootRoute` hands off to `Dashboard` the loader appears to **stay in the same place** instead of jumping.
+
+### 3. Collapse the auth → dashboard handoff into one loader phase
+
+Even with consistent positioning, today there are still two distinct loader mounts on first paint (RootRoute → Dashboard). Make `RootRoute` keep showing the loader until the planner store has finished its initial load:
+
+```text
+const initialLoadDone = usePlannerStore(s => s.initialLoadDone);
+
+if (loading || (user && !initialLoadDone)) {
+  return <ElephantLoader />;
+}
+```
+
+`initialLoadDone` is set to `true` at the end of `loadAllData()` in `plannerStore`. Dashboard then no longer needs its own page-level loader for the initial load — it can render immediately because the data is guaranteed to be present. (The `checkingOnboarding` check stays, but the rare case where it's still pending also reuses the same fullscreen loader.)
+
+Net effect: one loader mounts, stays in place across the auth → data-load → dashboard handoff, and unmounts exactly once when the dashboard is ready to render.
+
+### 4. Keep the seeded particle layout (already correct)
+
+The existing `seededRandom(1337)` + module-level `PARTICLES` constant already guarantees identical particle geometry across instances, so no change is needed there. The only reason it *looked* different was the container offset — fixed by step 1.
+
+## Files to change
+
+- `src/components/ui/ElephantLoader.tsx` — add `fullscreen` prop and fixed overlay wrapper.
+- `src/App.tsx` — simplify the 4 loader sites.
+- `src/pages/Dashboard.tsx` — drop the local loader wrapper; gate on `initialLoadDone` upstream.
+- `src/stores/plannerStore.ts` — add `initialLoadDone` flag set after `loadAllData()` completes.
+- `src/pages/PlanDetail.tsx`, `ProposalDetail.tsx`, `Profile.tsx`, `Settings.tsx`, `Share.tsx`, `PlanInvite.tsx`, `TripInvite.tsx`, `Invite.tsx`, `GoogleCallback.tsx`, `ResetPassword.tsx` — use `<ElephantLoader />` directly.
 
 ## Out of scope
 
-- Splitting/merging trips manually.
-- Reworking `trip_proposals` so a single proposal yields a single shared trip row (currently each participant gets their own `trips` row). That's a larger refactor; today we just keep them in sync on edit.
-- Changing `availability` schema beyond adding `trip_id`.
-
-## Risk notes
-
-- The trigger rewrite changes behavior for non-app writers (e.g. calendar sync that writes availability without setting `trip_id`). They keep the legacy path with the tightened dedupe, so behavior should be equivalent or stricter, never looser.
-- Backfill matches by overlap + normalized city. Edge case: if a user has two overlapping trips to the same city, backfill will skip those rows (leaves `trip_id` null). That's correct — those rows continue to use the legacy path.
+- The toast-success confetti bursts (`canvas-confetti`) fired on plan/trip creation in `GuidedPlanSheet`, `GuidedTripSheet`, `QuickPlanSheet`, `RecommendedPlanDialog`, `TripsList`, `Notifications`, `CalendarIntegration` — these are intentional celebration effects, not loading states, and are not part of this fix.
