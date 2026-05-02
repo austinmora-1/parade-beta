@@ -46,6 +46,8 @@ export interface TripData {
   availableSlots?: string[];
   priorityFriendIds?: string[];
   travelCompanionIds?: string[];
+  /** Linked trip_proposals.id when this trip originated from a finalized proposal. */
+  proposalId?: string;
 }
 
 interface FriendOption {
