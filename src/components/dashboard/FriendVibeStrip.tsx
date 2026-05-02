@@ -517,7 +517,14 @@ function FriendPill({
             </div>
 
             <div className="max-h-64 overflow-y-auto p-2 space-y-1">
-              {overlapSlots.map((s, idx) => {
+              {[...overlapSlots]
+                .sort((a, b) => {
+                  const ap = isTopPick(a) ? 0 : 1;
+                  const bp = isTopPick(b) ? 0 : 1;
+                  if (ap !== bp) return ap - bp;
+                  return a.date.localeCompare(b.date);
+                })
+                .map((s, idx) => {
                 const dt = parseISO(s.date);
                 const today = isSameDay(dt, new Date());
                 const tomorrow = isSameDay(dt, addDays(new Date(), 1));
