@@ -89,10 +89,10 @@ const STEPS: TourStep[] = [
   },
   {
     id: 'nav-trips',
-    route: '/trips',
-    selector: '[data-tour="nav-trips"]',
+    route: '/availability?view=trips',
+    selector: '[data-tour="nav-plans"]',
     title: '✈️ Trips',
-    body: "Add upcoming travel here so friends know when you're around — and see friends visiting your city.",
+    body: "Trips live alongside your plans. Use the Trips filter to add travel so friends know when you're around — and see friends visiting your city.",
     placement: 'top',
   },
   {
