@@ -580,7 +580,10 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
       const startDate = format(firstWeekend.fridayDate, 'yyyy-MM-dd');
       const endDate = format(lastWeekend.sundayDate, 'yyyy-MM-dd');
 
-      const { error } = await supabase.from('trips').insert({
+      // Insert the trip row first so we can link availability rows to it via trip_id.
+      // This makes the auto_create_trip_from_availability trigger take its fast path
+      // and prevents it from deleting the trip when destination is empty.
+      const { data: newTrip, error } = await supabase.from('trips').insert({
         user_id: userId,
         name: tripName.trim() || null,
         location: destination.trim() || null,
@@ -588,10 +591,11 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         end_date: endDate,
         available_slots: ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'],
         priority_friend_ids: [],
-      } as any);
+      } as any).select('id').single();
       if (error) throw error;
+      const newTripId = newTrip?.id ?? null;
 
-      // Also set availability to away for those dates
+      // Also set availability to away for those dates, linked to the trip
       const { eachDayOfInterval: eachDay } = await import('date-fns');
       const days = eachDay({ start: firstWeekend.fridayDate, end: lastWeekend.sundayDate });
       const availRows = days.map(d => ({
@@ -599,6 +603,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
         date: format(d, 'yyyy-MM-dd'),
         location_status: 'away',
         trip_location: destination.trim() || null,
+        trip_id: newTripId,
         early_morning: true, late_morning: true, early_afternoon: true,
         late_afternoon: true, evening: true, late_night: true,
       }));
