@@ -355,11 +355,7 @@ export default function Settings() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <ElephantLoader />
-      </div>
-    );
+    return <ElephantLoader />;
   }
 
   return (
