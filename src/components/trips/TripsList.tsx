@@ -440,7 +440,6 @@ export function TripsList({ refreshKey }: TripsListProps) {
         const trip = item.data as Trip;
         const startDate = new Date(trip.start_date + 'T00:00:00');
         const endDate = new Date(trip.end_date + 'T00:00:00');
-        const duration = differenceInDays(endDate, startDate) + 1;
         const isOngoing = !isAfter(startOfDay(startDate), startOfDay(new Date()));
 
         return (
@@ -449,11 +448,11 @@ export function TripsList({ refreshKey }: TripsListProps) {
             trip={trip}
             startDate={startDate}
             endDate={endDate}
-            duration={duration}
             isOngoing={isOngoing}
             currentUserId={user!.id}
             onNavigate={() => navigate(`/trip/${trip.id}`)}
             onConverted={async () => { await fetchTrips(); await fetchProposals(); }}
+            onTripUpdated={fetchTrips}
           />
         );
       })}
