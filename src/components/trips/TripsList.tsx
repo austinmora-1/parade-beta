@@ -485,11 +485,20 @@ function TripCard({
   const [friendProfiles, setFriendProfiles] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(trip.name || '');
+  // Optimistic display value: when set, takes precedence over trip.name until
+  // the server write is confirmed (or rolled back on permanent failure).
+  const [optimisticName, setOptimisticName] = useState<string | null | undefined>(undefined);
   const [savingTitle, setSavingTitle] = useState(false);
+  // Token to invalidate older in-flight saves when a newer one starts.
+  const saveTokenRef = useRef(0);
 
   useEffect(() => {
-    setTitleDraft(trip.name || '');
-  }, [trip.name]);
+    // Only resync the draft from the server value when we're not actively
+    // editing or mid-save — otherwise we'd clobber what the user is typing.
+    if (!editingTitle && optimisticName === undefined) {
+      setTitleDraft(trip.name || '');
+    }
+  }, [trip.name, editingTitle, optimisticName]);
 
   useEffect(() => {
     if (trip.priority_friend_ids.length === 0) return;
@@ -498,26 +507,79 @@ function TripCard({
       .then(({ data }) => { if (data) setFriendProfiles(data); });
   }, [trip.priority_friend_ids]);
 
-  const saveTitle = async () => {
+  const persistTitle = useCallback(
+    async (nextValue: string | null, token: number, attempt = 0): Promise<void> => {
+      const MAX_ATTEMPTS = 4; // ~0s, 0.5s, 1s, 2s
+      const { error } = await supabase
+        .from('trips')
+        .update({ name: nextValue })
+        .eq('id', trip.id);
+
+      // A newer save superseded this one — silently abandon.
+      if (token !== saveTokenRef.current) return;
+
+      if (!error) {
+        setSavingTitle(false);
+        setOptimisticName(undefined);
+        toast.success('Trip title updated');
+        try { await onTripUpdated(); } catch { /* non-fatal */ }
+        return;
+      }
+
+      if (attempt + 1 < MAX_ATTEMPTS) {
+        const delay = 500 * Math.pow(2, attempt); // 500ms, 1s, 2s
+        await new Promise<void>((resolve) => setTimeout(resolve, delay));
+        if (token !== saveTokenRef.current) return;
+        return persistTitle(nextValue, token, attempt + 1);
+      }
+
+      // All retries exhausted — keep the optimistic value visible and offer
+      // a manual retry so the user's edit is never silently lost.
+      setSavingTitle(false);
+      toast.error("Couldn't save trip title", {
+        description: 'Tap retry — your edit is preserved.',
+        duration: 10000,
+        action: {
+          label: 'Retry',
+          onClick: () => {
+            const newToken = ++saveTokenRef.current;
+            setSavingTitle(true);
+            void persistTitle(nextValue, newToken, 0);
+          },
+        },
+      });
+    },
+    [trip.id, onTripUpdated],
+  );
+
+  const saveTitle = () => {
     const next = titleDraft.trim();
-    if ((next || null) === (trip.name || null)) {
-      setEditingTitle(false);
-      return;
-    }
-    setSavingTitle(true);
-    const { error } = await supabase
-      .from('trips')
-      .update({ name: next || null })
-      .eq('id', trip.id);
-    setSavingTitle(false);
-    if (error) {
-      toast.error("Couldn't update title");
-      return;
-    }
+    const nextValue = next || null;
+    const currentValue = trip.name || null;
+
+    // Close the editor immediately for an optimistic feel.
     setEditingTitle(false);
-    toast.success('Trip title updated');
-    await onTripUpdated();
+
+    if (nextValue === currentValue) {
+      setOptimisticName(undefined);
+      return;
+    }
+
+    // Show the new value right away.
+    setOptimisticName(nextValue);
+    setSavingTitle(true);
+
+    const token = ++saveTokenRef.current;
+    void persistTitle(nextValue, token, 0);
   };
+
+  const cancelEdit = () => {
+    setTitleDraft((optimisticName !== undefined ? optimisticName : trip.name) || '');
+    setEditingTitle(false);
+  };
+
+  // Effective title shown on the card — optimistic value wins while pending.
+  const effectiveName = optimisticName !== undefined ? optimisticName : trip.name;
 
   const destinationLabel = trip.location
     ? (formatCityForDisplay(trip.location) || trip.location)
