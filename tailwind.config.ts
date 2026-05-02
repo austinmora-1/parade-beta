@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Afacad Flux"', 'sans-serif'],
+        sans: ['"TikTok Sans"', 'sans-serif'],
         display: ['Fraunces', 'serif'],
       },
       colors: {
