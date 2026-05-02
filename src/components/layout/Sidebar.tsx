@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Users,
   Settings,
-  PlaneTakeoff,
   Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,10 +14,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OpenInviteSheet } from '@/components/plans/OpenInviteSheet';
 
 const navItems = [
-  { path: '/',             icon: LayoutDashboard, label: 'Home'         },
-  { path: '/availability', icon: CalendarDays,    label: 'Plans'        },
-  { path: '/trips',        icon: PlaneTakeoff,    label: 'Trips'        },
-  { path: '/friends',      icon: Users,           label: 'Friends'      },
+  { path: '/',             icon: LayoutDashboard, label: 'Home'    },
+  { path: '/availability', icon: CalendarDays,    label: 'Plans'   },
+  { path: '/friends',      icon: Users,           label: 'Friends' },
 ];
 
 export function Sidebar() {
@@ -40,8 +38,12 @@ export function Sidebar() {
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
-    if (path === '/availability') return location.pathname.startsWith('/availability') || location.pathname.startsWith('/plans');
-    if (path === '/trips') return location.pathname.startsWith('/trips') || location.pathname.startsWith('/trip/');
+    if (path === '/availability') {
+      return location.pathname.startsWith('/availability')
+        || location.pathname.startsWith('/plans')
+        || location.pathname.startsWith('/trips')
+        || location.pathname.startsWith('/trip/');
+    }
     return location.pathname.startsWith(path);
   };
 

@@ -3,7 +3,6 @@ import {
   House,
   CalendarDays,
   Users,
-  PlaneTakeoff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, LayoutGroup } from 'framer-motion';
@@ -14,7 +13,6 @@ import { useNotifications } from '@/hooks/useNotifications';
 const navItems = [
   { path: '/',             icon: House,         label: 'Home'    },
   { path: '/availability', icon: CalendarDays,  label: 'Plans'   },
-  { path: '/trips',        icon: PlaneTakeoff,  label: 'Trips'   },
   { path: '/friends',      icon: Users,         label: 'Friends' },
 ];
 
@@ -26,8 +24,12 @@ export function MobileNav() {
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
-    if (path === '/availability') return location.pathname.startsWith('/availability') || location.pathname.startsWith('/plans');
-    if (path === '/trips') return location.pathname.startsWith('/trips') || location.pathname.startsWith('/trip/');
+    if (path === '/availability') {
+      return location.pathname.startsWith('/availability')
+        || location.pathname.startsWith('/plans')
+        || location.pathname.startsWith('/trips')
+        || location.pathname.startsWith('/trip/');
+    }
     return location.pathname.startsWith(path);
   };
 
