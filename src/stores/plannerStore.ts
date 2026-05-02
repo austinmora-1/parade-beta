@@ -257,7 +257,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
           });
           useVibeStore.setState({ userTimezone: stale.userTimezone });
           useVibeStore.getState().bootstrapVibe(stale.currentVibe, userId);
-          set({ isLoading: false, lastFetchedAt: cached.cachedAt });
+          set({ isLoading: false, lastFetchedAt: cached.cachedAt, initialLoadDone: true });
           if (!force && Date.now() - cached.cachedAt < 120_000) {
             return;
           }
