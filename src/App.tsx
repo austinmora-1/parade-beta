@@ -52,6 +52,7 @@ const queryClient = new QueryClient({
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const { setUserId, loadAllData, userId } = usePlannerStore();
+  const initialLoadDone = usePlannerStore((s) => s.initialLoadDone);
 
   useEffect(() => {
     if (user && user.id !== userId) {
@@ -62,12 +63,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, userId, setUserId, loadAllData]);
 
-  if (loading && user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <ElephantLoader />
-      </div>
-    );
+  // Show one continuous loader for both auth check and the first data load,
+  // so the burst doesn't visibly jump from viewport-center to inside-AppLayout.
+  if (loading || (user && !initialLoadDone)) {
+    return <ElephantLoader />;
   }
 
   if (!user) {
@@ -81,6 +80,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function RootRoute() {
   const { user, loading } = useAuth();
   const { setUserId, loadAllData, userId } = usePlannerStore();
+  const initialLoadDone = usePlannerStore((s) => s.initialLoadDone);
 
   useEffect(() => {
     if (user && user.id !== userId) {
@@ -91,12 +91,10 @@ function RootRoute() {
     }
   }, [user, userId, setUserId, loadAllData]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <ElephantLoader />
-      </div>
-    );
+  // Hold the single fullscreen loader until both auth and the planner store's
+  // first load have resolved — Dashboard then renders without its own loader.
+  if (loading || (user && !initialLoadDone)) {
+    return <ElephantLoader />;
   }
 
   if (!user) return <Landing />;
@@ -112,11 +110,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <ElephantLoader />
-      </div>
-    );
+    return <ElephantLoader />;
   }
 
   if (user) {
@@ -126,11 +120,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const LazyFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <ElephantLoader />
-  </div>
-);
+const LazyFallback = () => <ElephantLoader />;
 
 const AppRoutes = () => {
   usePostHogPageView();
