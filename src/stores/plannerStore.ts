@@ -118,6 +118,7 @@ interface PlannerState {
   locationStatus: LocationStatus;
   isLoading: boolean;
   loadError: string | null;
+  initialLoadDone: boolean;
   userId: string | null;
   lastFetchedAt: number | null;
   defaultSettings: DefaultAvailabilitySettings | null;
