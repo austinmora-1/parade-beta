@@ -26,6 +26,7 @@ import { formatCityForDisplay } from '@/lib/formatCity';
 
 interface Trip {
   id: string;
+  name: string | null;
   location: string | null;
   start_date: string;
   end_date: string;
@@ -439,7 +440,6 @@ export function TripsList({ refreshKey }: TripsListProps) {
         const trip = item.data as Trip;
         const startDate = new Date(trip.start_date + 'T00:00:00');
         const endDate = new Date(trip.end_date + 'T00:00:00');
-        const duration = differenceInDays(endDate, startDate) + 1;
         const isOngoing = !isAfter(startOfDay(startDate), startOfDay(new Date()));
 
         return (
@@ -448,11 +448,11 @@ export function TripsList({ refreshKey }: TripsListProps) {
             trip={trip}
             startDate={startDate}
             endDate={endDate}
-            duration={duration}
             isOngoing={isOngoing}
             currentUserId={user!.id}
             onNavigate={() => navigate(`/trip/${trip.id}`)}
             onConverted={async () => { await fetchTrips(); await fetchProposals(); }}
+            onTripUpdated={fetchTrips}
           />
         );
       })}
@@ -466,23 +466,30 @@ function TripCard({
   trip,
   startDate,
   endDate,
-  duration,
   isOngoing,
   currentUserId,
   onNavigate,
   onConverted,
+  onTripUpdated,
 }: {
   trip: Trip;
   startDate: Date;
   endDate: Date;
-  duration: number;
   isOngoing: boolean;
   currentUserId: string;
   onNavigate: () => void;
   onConverted: () => Promise<void>;
+  onTripUpdated: () => Promise<void>;
 }) {
   const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [friendProfiles, setFriendProfiles] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(trip.name || '');
+  const [savingTitle, setSavingTitle] = useState(false);
+
+  useEffect(() => {
+    setTitleDraft(trip.name || '');
+  }, [trip.name]);
 
   useEffect(() => {
     if (trip.priority_friend_ids.length === 0) return;
@@ -490,6 +497,31 @@ function TripCard({
       .rpc('get_display_names_for_users', { p_user_ids: trip.priority_friend_ids })
       .then(({ data }) => { if (data) setFriendProfiles(data); });
   }, [trip.priority_friend_ids]);
+
+  const saveTitle = async () => {
+    const next = titleDraft.trim();
+    if ((next || null) === (trip.name || null)) {
+      setEditingTitle(false);
+      return;
+    }
+    setSavingTitle(true);
+    const { error } = await supabase
+      .from('trips')
+      .update({ name: next || null })
+      .eq('id', trip.id);
+    setSavingTitle(false);
+    if (error) {
+      toast.error("Couldn't update title");
+      return;
+    }
+    setEditingTitle(false);
+    toast.success('Trip title updated');
+    await onTripUpdated();
+  };
+
+  const destinationLabel = trip.location
+    ? (formatCityForDisplay(trip.location) || trip.location)
+    : 'TBC';
 
   return (
     <div
@@ -508,23 +540,54 @@ function TripCard({
         </div>
 
         <div className="min-w-0 flex-1">
+          {/* Row 1: Title (editable) */}
           <div className="flex items-center gap-1.5">
-            <span className="font-medium text-sm truncate">
-              {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'TBC'}
-            </span>
+            {editingTitle ? (
+              <Input
+                autoFocus
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') void saveTitle();
+                  if (e.key === 'Escape') { setTitleDraft(trip.name || ''); setEditingTitle(false); }
+                }}
+                onBlur={() => void saveTitle()}
+                disabled={savingTitle}
+                placeholder="Trip title"
+                className="h-7 text-sm px-2 py-0"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
+                className={cn(
+                  "font-medium text-sm truncate text-left hover:underline decoration-dotted underline-offset-2",
+                  !trip.name && "text-muted-foreground italic"
+                )}
+                title="Edit title"
+              >
+                {trip.name || '[no title]'}
+              </button>
+            )}
             {isOngoing && (
               <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full shrink-0">
                 NOW
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-            <span className="flex items-center gap-1">
+          {/* Row 2: Destination · dates */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 min-w-0">
+            <span className="flex items-center gap-1 truncate">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{destinationLabel}</span>
+            </span>
+            <span>·</span>
+            <span className="flex items-center gap-1 shrink-0">
               <Calendar className="h-3 w-3" />
               {format(startDate, 'MMM d')} – {format(endDate, 'MMM d')}
             </span>
-            <span>·</span>
-            <span>{duration} {duration === 1 ? 'day' : 'days'}</span>
           </div>
         </div>
 
