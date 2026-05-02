@@ -230,7 +230,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
     loadAllData: async (force) => {
       const { userId, lastFetchedAt } = get();
       if (!userId) {
-        set({ isLoading: false });
+        set({ isLoading: false, initialLoadDone: true });
         return;
       }
 
