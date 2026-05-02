@@ -105,7 +105,7 @@ const Invite = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, #0F1A14 0%, #24382D 100%)' }}>
-        <ElephantLoader />
+        <ElephantLoader fullscreen={false} />
       </div>
     );
   }
