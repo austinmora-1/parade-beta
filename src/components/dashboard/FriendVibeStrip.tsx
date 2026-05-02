@@ -335,11 +335,32 @@ function FriendPill({
 
   const slotKey = (s: OverlapSlot) => `${s.date}|${s.slot}`;
 
-  const isRecommended = (s: OverlapSlot) => {
+  const isPreferred = (s: OverlapSlot) => {
     const day = format(parseISO(s.date), 'EEEE').toLowerCase();
     const bucket = SLOT_TO_PREF_BUCKET[s.slot];
     return preferredTimes.has(`${day}:${bucket}`);
   };
+
+  // Top picks: up to 3 slots from distinct days. Prefer slots matching the
+  // user's preferred social times; fall back to first-available slots when
+  // there aren't enough preferred ones to fill 3 distinct days.
+  const topPickKeys = useMemo(() => {
+    const picks: OverlapSlot[] = [];
+    const usedDays = new Set<string>();
+    const take = (pool: OverlapSlot[]) => {
+      for (const s of pool) {
+        if (picks.length >= 3) break;
+        if (usedDays.has(s.date)) continue;
+        picks.push(s);
+        usedDays.add(s.date);
+      }
+    };
+    take(overlapSlots.filter(isPreferred));
+    if (picks.length < 3) take(overlapSlots.filter(s => !isPreferred(s)));
+    return new Set(picks.map(slotKey));
+  }, [overlapSlots, preferredTimes]);
+
+  const isTopPick = (s: OverlapSlot) => topPickKeys.has(slotKey(s));
 
   const toggleSlot = (s: OverlapSlot) => {
     const k = slotKey(s);
