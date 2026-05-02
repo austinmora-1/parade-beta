@@ -1,99 +1,105 @@
-## The problem
+## Goal
 
-Even though `ElephantLoader` already uses a seeded PRNG so every instance renders the **same particle layout**, users still see the burst happen in **two different positions on the screen** during a normal sign-in → dashboard load. The "two confetti positions" the user is seeing are not two different particle layouts — they are the **same loader rendered in two different containers**, one centered in the viewport and the next anchored inside the page content area.
+Combine the **Plans** and **Trips** tabs into a single unified view at `/availability`, so users see hangouts and trips overlapping in one weekly timeline without clutter. Replace the current `All / Parade / Calendar` filter with `All / Plans / Trips`.
 
-### What's actually happening on a fresh load
+## UX Overview
 
-For an authenticated user landing on `/`:
+- The **Plans** tab becomes the home for both hangouts and trips.
+- Default view (`All`) shows a chronological week with hangout cards inline on their day, and a **slim multi-day trip banner** spanning the days a trip covers (rendered above that week's day rows, not as a per-slot card — this is the key anti-clutter move).
+- `Plans` filter hides trip banners; `Trips` filter hides hangout cards and shows trip banners + an expanded trip list below the week.
+- The bottom nav **Trips** item is removed (4 items total: Home, Plans, Friends, Profile). Existing routes (`/trips`, `/trip/:id`) continue to work but `/trips` redirects to `/availability?view=trips`.
 
-1. **Loader A — fullscreen, viewport-centered.** While `useAuth()` is resolving, `RootRoute` (and `ProtectedRoute` / `LazyFallback`) render:
-   ```text
-   <div className="min-h-screen flex items-center justify-center bg-background">
-     <ElephantLoader />
-   </div>
-   ```
-   The burst sits at the exact center of the screen.
-
-2. **Loader B — inside `AppLayout`, offset by header + nav.** Once auth resolves, `<AppLayout><Dashboard /></AppLayout>` mounts. `Dashboard` then shows its own loader while `isLoading || checkingOnboarding` is true:
-   ```text
-   <div className="flex h-64 items-center justify-center">
-     <ElephantLoader />
-   </div>
-   ```
-   This sits inside `<main>` (which has top padding for the mobile header and bottom padding for the nav), and it's only `h-64` tall — so the burst lands noticeably higher and shifted relative to Loader A.
-
-The result: the elephant/confetti appears, vanishes, and reappears a few hundred pixels away — reading as "two different loading states" even though it's the same component.
-
-### Where else the same offset mismatch occurs
-
-Every place that wraps `ElephantLoader` in its own ad-hoc container reproduces the issue:
-
-| File | Container | Position |
-|---|---|---|
-| `src/App.tsx` ×4 (`ProtectedRoute`, `RootRoute`, `PublicRoute`, `LazyFallback`) | `min-h-screen flex items-center justify-center` | Viewport center |
-| `src/pages/Dashboard.tsx` | `flex h-64 items-center justify-center` | Inside AppLayout, ~top |
-| `src/pages/PlanDetail.tsx`, `ProposalDetail.tsx`, `Profile.tsx`, `Settings.tsx`, `Share.tsx`, `PlanInvite.tsx`, `TripInvite.tsx`, `Invite.tsx`, `GoogleCallback.tsx`, `ResetPassword.tsx` | mixed: `min-h-screen`, `flex items-center justify-center py-20`, etc. | Varies |
-
-Across navigations the burst origin keeps moving.
-
-## The fix
-
-Make the loader **own its own positioning** so the confetti origin is always the same point on the screen, regardless of which route or layout is showing it. Then collapse the auth + initial-data loading into a single phase so only one loader is ever visible at a time on the first paint.
-
-### 1. Add a `fullscreen` mode to `ElephantLoader`
-
-Update `src/components/ui/ElephantLoader.tsx` to accept a `fullscreen` prop (default `true`). When `fullscreen` is true the component renders its own fixed-position overlay so the burst is always at the same viewport coordinates:
+## Visual Layout (week with overlap)
 
 ```text
-<div class="fixed inset-0 z-40 flex items-center justify-center
-            bg-background pointer-events-none">
-  …existing 24×24 SVG burst + "Loading…" label…
-</div>
+┌─ Mon Mar 3 ─────── Sun Mar 9 ────────────────┐
+│ ▓▓▓ Trip · Tokyo · Mar 5 – Mar 12 →           │  ← slim trip banner (spans days)
+│                                                │
+│ Mon · 0 plans                                  │
+│ Tue · 0 plans                                  │
+│ Wed ┃ 7pm  Dinner w/ Alex                      │  ← hangout card (day inside trip)
+│ Thu ┃ 6pm  Run                                 │
+│ Fri · 0 plans                                  │
+│ Sat ┃ 11am Brunch                              │
+│ Sun · 0 plans                                  │
+└────────────────────────────────────────────────┘
 ```
 
-- `fixed inset-0` → identical center every time, immune to header/nav padding and parent height.
-- `bg-background` → covers any partially-rendered content underneath so transitions between Loader A and Loader B feel like one continuous loader.
-- `z-40` → sits above page content but below toasts/dialogs (`z-50`).
-- A non-fullscreen variant (`fullscreen={false}`) is preserved for the few places where an inline loader inside a card/section is intentional (e.g. small widgets), but they will not be used for whole-page loading.
+- Trip banner: 1 line, low-contrast tinted strip (reuses parade-green at low alpha), with plane icon + name + date range. Tapping opens `/trip/:id`.
+- If a trip spans multiple weeks, a small `→` / `←` chevron indicates continuation; banner re-appears on each affected week.
+- Multiple overlapping trips stack vertically (rare, but supported — capped at 2 visible with "+N more").
 
-### 2. Replace ad-hoc loader wrappers with the new component
+## Filter Behavior
 
-Remove the `min-h-screen flex …` / `flex h-64 …` wrappers and just render `<ElephantLoader />` directly in:
+Replace the existing `ToggleGroup` in `src/pages/Availability.tsx`:
 
-- `src/App.tsx` — `ProtectedRoute`, `RootRoute`, `PublicRoute`, `LazyFallback` (all 4 sites).
-- `src/pages/Dashboard.tsx` — the `isLoading || checkingOnboarding` branch.
-- `src/pages/PlanDetail.tsx`, `ProposalDetail.tsx`, `Profile.tsx`, `Settings.tsx`, `Share.tsx`, `PlanInvite.tsx`, `TripInvite.tsx`, `Invite.tsx`, `GoogleCallback.tsx`, `ResetPassword.tsx` — page-level loading branches.
+| Filter | Hangout cards | Trip banners | Trip proposals |
+|---|---|---|---|
+| All (default) | ✓ | ✓ | ✓ (compact) |
+| Plans | ✓ | hidden | hidden |
+| Trips | hidden | ✓ | ✓ (expanded list under week) |
 
-Every full-page loader will now mount with the same fixed overlay, so when `RootRoute` hands off to `Dashboard` the loader appears to **stay in the same place** instead of jumping.
+The old `parade` vs `calendar` source filter is removed entirely (low usage, and the calendar-vs-parade distinction is already shown via card styling). The filter state is URL-synced via `?view=all|plans|trips` so `/trips` redirect lands on the right tab.
 
-### 3. Collapse the auth → dashboard handoff into one loader phase
+## Implementation Plan
 
-Even with consistent positioning, today there are still two distinct loader mounts on first paint (RootRoute → Dashboard). Make `RootRoute` keep showing the loader until the planner store has finished its initial load:
+### 1. Routing & nav
+- `src/components/layout/MobileNav.tsx`: remove the `Trips` nav item; keep 4 items (Home, Plans, Friends) + Profile avatar.
+- `src/components/layout/Sidebar.tsx`: same removal (desktop nav).
+- `src/App.tsx`: keep `/trips` route but redirect to `/availability?view=trips`. Keep `/trip/:id` untouched.
 
-```text
-const initialLoadDone = usePlannerStore(s => s.initialLoadDone);
+### 2. Availability page (`src/pages/Availability.tsx`)
+- Replace `sourceFilter` state (`all | parade | calendar`) with `viewFilter` (`all | plans | trips`), URL-synced via `useSearchParams`.
+- Update header: `<h1>Plans & Trips</h1>` (still keep `font-display`).
+- Replace `Add Plan` single button with a small split: `Add Plan` and `Add Trip` (the latter opens the existing `GuidedTripSheet` lazily). Keep Share button as-is.
+- Always render the toggle group (no longer gated on `hasAnyCalendar`).
+- Drop the `isCalendarSourced` import and related filtering.
 
-if (loading || (user && !initialLoadDone)) {
-  return <ElephantLoader />;
-}
-```
+### 3. Fetch trips alongside plans
+- New hook `src/hooks/useUserTrips.ts`: returns `{ trips, loading, refresh }`. Fetches `trips` table for the current user where `end_date >= today` (mirrors `TripsList.fetchTrips`). Subscribes to the existing `trips:updated` window event for refresh.
+- Availability page calls `useUserTrips()` and passes `trips` into `WeeklyPlanSwiper`.
 
-`initialLoadDone` is set to `true` at the end of `loadAllData()` in `plannerStore`. Dashboard then no longer needs its own page-level loader for the initial load — it can render immediately because the data is guaranteed to be present. (The `checkingOnboarding` check stays, but the rare case where it's still pending also reuses the same fullscreen loader.)
+### 4. Weekly swiper trip banners (`src/components/plans/WeeklyPlanSwiper.tsx`)
+- Add prop: `trips?: Trip[]` and `viewFilter: 'all' | 'plans' | 'trips'`.
+- New `tripsForWeek` memo: filter trips that overlap `[weekStart, weekStart+6]`.
+- Render a `<TripWeekBanner>` (new component in `src/components/plans/weekly-plan/TripWeekBanner.tsx`) above `PastDaysCollapsible` when `viewFilter !== 'plans'`.
+- When `viewFilter === 'trips'`, pass an empty plans array down so day rows render only date headers (still useful as scaffolding) plus the banners.
 
-Net effect: one loader mounts, stays in place across the auth → data-load → dashboard handoff, and unmounts exactly once when the dashboard is ready to render.
+### 5. Trips filter detail panel
+- When `viewFilter === 'trips'`, render `<TripsList />` (the existing component) below the weekly swiper for the full management UI (proposals, RSVP, etc.). This avoids rebuilding trip management — we just embed it.
 
-### 4. Keep the seeded particle layout (already correct)
+### 6. Trips page
+- `src/pages/Trips.tsx`: replace its body with `<Navigate to="/availability?view=trips" replace />` so deep links and old bookmarks still work. Delete nothing else (the page file remains as the redirect host).
 
-The existing `seededRandom(1337)` + module-level `PARTICLES` constant already guarantees identical particle geometry across instances, so no change is needed there. The only reason it *looked* different was the container offset — fixed by step 1.
+### 7. Memory update
+- Update `mem://features/dashboard-week-overview` (or add a new `mem://features/plans-trips-merged-view`) noting:
+  - Plans tab now hosts both hangouts and trips.
+  - Source filter (parade/calendar) removed; replaced with All/Plans/Trips.
+  - Bottom nav has 4 items + profile; Trips standalone tab removed.
+  - `/trips` redirects to `/availability?view=trips`.
 
-## Files to change
+## Files Touched
 
-- `src/components/ui/ElephantLoader.tsx` — add `fullscreen` prop and fixed overlay wrapper.
-- `src/App.tsx` — simplify the 4 loader sites.
-- `src/pages/Dashboard.tsx` — drop the local loader wrapper; gate on `initialLoadDone` upstream.
-- `src/stores/plannerStore.ts` — add `initialLoadDone` flag set after `loadAllData()` completes.
-- `src/pages/PlanDetail.tsx`, `ProposalDetail.tsx`, `Profile.tsx`, `Settings.tsx`, `Share.tsx`, `PlanInvite.tsx`, `TripInvite.tsx`, `Invite.tsx`, `GoogleCallback.tsx`, `ResetPassword.tsx` — use `<ElephantLoader />` directly.
+Edited:
+- `src/pages/Availability.tsx` — filter swap, trip fetching, banner integration
+- `src/pages/Trips.tsx` — redirect-only
+- `src/components/plans/WeeklyPlanSwiper.tsx` — trip banner rendering, viewFilter prop
+- `src/components/layout/MobileNav.tsx` — remove Trips item
+- `src/components/layout/Sidebar.tsx` — remove Trips item
+- `src/App.tsx` — `/trips` redirect
+- `mem://index.md` + new memory file
 
-## Out of scope
+Created:
+- `src/hooks/useUserTrips.ts`
+- `src/components/plans/weekly-plan/TripWeekBanner.tsx`
 
-- The toast-success confetti bursts (`canvas-confetti`) fired on plan/trip creation in `GuidedPlanSheet`, `GuidedTripSheet`, `QuickPlanSheet`, `RecommendedPlanDialog`, `TripsList`, `Notifications`, `CalendarIntegration` — these are intentional celebration effects, not loading states, and are not part of this fix.
+## Out of Scope
+
+- No data model changes; trips and plans remain separate tables.
+- No changes to `/trip/:id` detail pages or trip creation flow.
+- The dashboard `UpcomingTripsAndVisits` widget is untouched.
+- Calendar-sourced plans still render as before — just no longer filterable separately on this page.
+
+## Open Question
+
+Should the **Add Trip** button live on the Plans page header (alongside Add Plan), or only show when `viewFilter === 'trips'` to keep the default header lean? Default plan: always show both, since the merged tab is meant to be a one-stop shop.

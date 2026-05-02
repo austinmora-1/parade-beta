@@ -8,6 +8,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { PastDaysCollapsible } from './weekly-plan/DayRow';
+import { TripWeekBanner } from './weekly-plan/TripWeekBanner';
+import type { UserTrip } from '@/hooks/useUserTrips';
 
 interface WeeklyPlanSwiperProps {
   plans: Plan[];
@@ -17,9 +19,11 @@ interface WeeklyPlanSwiperProps {
   onDeletePlan?: (id: string) => void;
   onMergeSelected?: (planIds: string[]) => void;
   onSharePlan?: (plan: Plan) => void;
+  trips?: UserTrip[];
+  showTripBanners?: boolean;
 }
 
-export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan }: WeeklyPlanSwiperProps) {
+export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan, trips = [], showTripBanners = false }: WeeklyPlanSwiperProps) {
   const availabilityMap = usePlannerStore((s) => s.availabilityMap);
   const homeAddress = usePlannerStore((s) => s.homeAddress);
   const touchStartX = useRef(0);
@@ -201,6 +205,15 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Trip banners (multi-day, shown above day rows to avoid clutter) */}
+      {showTripBanners && trips.length > 0 && (
+        <TripWeekBanner
+          trips={trips}
+          weekStart={weekStart}
+          weekEnd={addDays(weekStart, 6)}
+        />
+      )}
 
       {/* Days with plan cards */}
       <PastDaysCollapsible
