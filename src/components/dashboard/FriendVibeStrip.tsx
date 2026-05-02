@@ -529,7 +529,7 @@ function FriendPill({
                 const slotMeta = TIME_SLOT_LABELS[s.slot];
                 const k = slotKey(s);
                 const isSelected = selected.has(k);
-                const recommended = isRecommended(s);
+                const recommended = isTopPick(s);
                 return (
                   <button
                     key={`${s.date}-${s.slot}-${idx}`}
@@ -538,20 +538,22 @@ function FriendPill({
                       'w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors border',
                       isSelected
                         ? 'bg-primary/10 border-primary/50'
-                        : 'bg-transparent border-transparent hover:bg-primary/5 hover:border-primary/30'
+                        : recommended
+                          ? 'bg-secondary/10 border-secondary/30 hover:bg-secondary/15'
+                          : 'bg-transparent border-transparent hover:bg-primary/5 hover:border-primary/30'
                     )}
                   >
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={cn(
                           'text-xs font-semibold truncate',
-                          today ? 'text-primary' : 'text-foreground'
+                          recommended ? 'text-secondary' : today ? 'text-primary' : 'text-foreground'
                         )}>
                           {dayLabel}
                         </span>
                         {recommended && (
                           <span
-                            title="Matches your preferred social time"
+                            title="Top pick — matches your preferred social time"
                             className="inline-flex items-center gap-0.5 rounded-full bg-secondary/15 text-secondary px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide"
                           >
                             <Sparkles className="h-2.5 w-2.5" />
