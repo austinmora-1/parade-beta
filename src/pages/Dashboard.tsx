@@ -120,11 +120,7 @@ export default function Dashboard() {
   }
 
   if (isLoading || checkingOnboarding) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <ElephantLoader />
-      </div>
-    );
+    return <ElephantLoader />;
   }
 
   return (
