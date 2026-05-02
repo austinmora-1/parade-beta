@@ -19,28 +19,43 @@ interface Particle {
   spin: number;
 }
 
+// Seeded PRNG so every ElephantLoader instance renders an identical
+// particle layout — avoids users seeing different confetti positions
+// when multiple loading states appear in sequence.
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
 function generateParticles(count: number): Particle[] {
+  const rand = seededRandom(1337);
   const particles: Particle[] = [];
   for (let i = 0; i < count; i++) {
     // Full 360° explosion
-    const angle = (360 / count) * i + (Math.random() * 20 - 10);
+    const angle = (360 / count) * i + (rand() * 20 - 10);
     particles.push({
       id: i,
       angle,
-      distance: 32 + Math.random() * 24,
-      size: 4 + Math.random() * 5,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      duration: 0.9 + Math.random() * 0.5,
-      delay: Math.random() * 0.15,
-      shape: Math.random() > 0.5 ? 'circle' : 'rect',
-      spin: (Math.random() * 720) - 360,
+      distance: 32 + rand() * 24,
+      size: 4 + rand() * 5,
+      color: CONFETTI_COLORS[Math.floor(rand() * CONFETTI_COLORS.length)],
+      duration: 0.9 + rand() * 0.5,
+      delay: rand() * 0.15,
+      shape: rand() > 0.5 ? 'circle' : 'rect',
+      spin: (rand() * 720) - 360,
     });
   }
   return particles;
 }
 
+// Compute once at module load — every loader instance shares the same layout.
+const PARTICLES = generateParticles(24);
+
 export function ElephantLoader({ className = '' }: { className?: string }) {
-  const particles = useMemo(() => generateParticles(24), []);
+  const particles = PARTICLES;
 
   return (
     <div className={`flex flex-col items-center gap-3 ${className}`}>
