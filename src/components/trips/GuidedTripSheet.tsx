@@ -610,7 +610,7 @@ export function GuidedTripSheet({ open, onOpenChange, preSelectedFriends, preSel
       await supabase.from('availability').upsert(availRows, { onConflict: 'user_id,date', ignoreDuplicates: false });
 
       confetti({ particleCount: 60, spread: 50, origin: { y: 0.75 }, colors: ['#3D8C6C', '#FF6B6B', '#F59E0B'], scalar: 0.9 });
-      toast.success(destination ? `Trip to ${destination} created! ✈️` : 'Trip created! ✈️');
+      toast.success(destination ? `Trip to ${destination} created! ✈️` : 'Trip created (destination TBC) ✈️');
       onOpenChange(false);
     } catch (err) {
       console.error('Failed to create solo trip:', err);

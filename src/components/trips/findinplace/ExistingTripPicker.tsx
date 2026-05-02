@@ -56,7 +56,7 @@ export function ExistingTripPicker({ onSelect }: ExistingTripPickerProps) {
   return (
     <div className="space-y-1.5 max-h-[320px] overflow-y-auto">
       {trips.map(t => {
-        const city = t.location ? formatCityForDisplay(t.location) || t.location : 'Trip';
+        const city = t.location ? formatCityForDisplay(t.location) || t.location : 'TBC';
         return (
           <button
             key={t.id}

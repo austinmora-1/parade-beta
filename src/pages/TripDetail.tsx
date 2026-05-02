@@ -315,7 +315,7 @@ export default function TripDetail() {
           </div>
           <div>
             <h1 className="font-display text-lg font-bold">
-              {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'Trip'}
+              {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'TBC'}
             </h1>
             <p className="text-sm text-muted-foreground">
               {duration} {duration === 1 ? 'day' : 'days'}
@@ -328,12 +328,10 @@ export default function TripDetail() {
             <Calendar className="h-4 w-4" />
             {format(startDate, 'MMM d, yyyy')} – {format(endDate, 'MMM d, yyyy')}
           </span>
-          {trip.location && (
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
-              {formatCityForDisplay(trip.location) || trip.location}
-            </span>
-          )}
+          <span className="flex items-center gap-1.5">
+            <MapPin className="h-4 w-4" />
+            {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'TBC'}
+          </span>
         </div>
       </div>
 
@@ -520,7 +518,7 @@ export default function TripDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Trip</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete your trip to {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'this destination'}. This action cannot be undone.
+              This will permanently delete your trip to {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'TBC'}. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
