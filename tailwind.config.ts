@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Atkinson Hyperlegible"', 'sans-serif'],
+        sans: ['"Afacad Flux"', 'sans-serif'],
         display: ['Fraunces', 'serif'],
       },
       colors: {

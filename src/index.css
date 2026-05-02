@@ -255,7 +255,7 @@
   select,
   textarea {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Atkinson Hyperlegible', sans-serif;
+    font-family: 'Afacad Flux', sans-serif;
     font-weight: 400;
   }
 
