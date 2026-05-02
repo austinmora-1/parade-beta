@@ -206,6 +206,15 @@ export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, 
         </Button>
       </div>
 
+      {/* Trip banners (multi-day, shown above day rows to avoid clutter) */}
+      {showTripBanners && trips.length > 0 && (
+        <TripWeekBanner
+          trips={trips}
+          weekStart={weekStart}
+          weekEnd={addDays(weekStart, 6)}
+        />
+      )}
+
       {/* Days with plan cards */}
       <PastDaysCollapsible
         weekDays={weekDays}
