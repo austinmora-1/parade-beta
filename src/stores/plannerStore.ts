@@ -308,6 +308,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => {
             isLoading: false,
             lastFetchedAt: Date.now(),
             loadError: fallbackOk ? null : 'We couldn’t load your dashboard. Please try again.',
+            initialLoadDone: true,
           });
           return;
         }
