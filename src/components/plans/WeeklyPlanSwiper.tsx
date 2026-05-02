@@ -8,6 +8,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { PastDaysCollapsible } from './weekly-plan/DayRow';
+import { TripWeekBanner } from './weekly-plan/TripWeekBanner';
+import type { UserTrip } from '@/hooks/useUserTrips';
 
 interface WeeklyPlanSwiperProps {
   plans: Plan[];
@@ -17,9 +19,11 @@ interface WeeklyPlanSwiperProps {
   onDeletePlan?: (id: string) => void;
   onMergeSelected?: (planIds: string[]) => void;
   onSharePlan?: (plan: Plan) => void;
+  trips?: UserTrip[];
+  showTripBanners?: boolean;
 }
 
-export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan }: WeeklyPlanSwiperProps) {
+export function WeeklyPlanSwiper({ plans, weekOffset, onWeekChange, onEditPlan, onDeletePlan, onMergeSelected, onSharePlan, trips = [], showTripBanners = false }: WeeklyPlanSwiperProps) {
   const availabilityMap = usePlannerStore((s) => s.availabilityMap);
   const homeAddress = usePlannerStore((s) => s.homeAddress);
   const touchStartX = useRef(0);
