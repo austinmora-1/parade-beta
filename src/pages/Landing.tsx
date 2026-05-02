@@ -22,7 +22,7 @@ export default function Landing() {
   return (
     <div
       className="relative min-h-screen bg-background text-foreground overflow-hidden"
-      style={{ fontFamily: "'Lexend', system-ui, sans-serif", fontWeight: 300 }}
+      style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif", fontWeight: 400 }}
     >
       {/* Soft confetti backdrop on cream */}
       <div className="fixed inset-0 z-[1] pointer-events-none opacity-60">
@@ -119,7 +119,7 @@ export default function Landing() {
                 </span>
                 <span
                   className="text-sm text-foreground/80 text-left"
-                  style={{ fontFamily: "'Lexend', system-ui", fontWeight: 400 }}
+                  style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif", fontWeight: 500 }}
                 >
                   {label}
                 </span>
