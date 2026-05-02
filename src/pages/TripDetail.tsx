@@ -271,6 +271,7 @@ export default function TripDetail() {
     availableSlots: trip.available_slots,
     priorityFriendIds: trip.priority_friend_ids,
     travelCompanionIds: editTravelCompanionIds,
+    proposalId: trip.proposal_id ?? undefined,
   };
 
   return (
