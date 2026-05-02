@@ -374,32 +374,89 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
     setIsLoading(true);
 
     try {
-      // If editing, first clear the old trip dates that are no longer in the new range
+      const days = eachDayOfInterval({ start: startDate, end: endDate });
+      const newStartStr = format(startDate, 'yyyy-MM-dd');
+      const newEndStr = format(endDate, 'yyyy-MM-dd');
+      const trimmedLocation = location.trim() || null;
+
+      // Collect the union of all selected slots for the trips table summary
+      const allSelectedSlots = new Set<string>();
+      for (const [, set] of daySlots) {
+        for (const s of set) allSelectedSlots.add(s);
+      }
+
+      const tripPayload = {
+        user_id: session.user.id,
+        location: trimmedLocation,
+        start_date: newStartStr,
+        end_date: newEndStr,
+        available_slots: Array.from(allSelectedSlots),
+        priority_friend_ids: priorityFriendIds,
+      };
+
+      // Resolve the trip row id we'll be writing to BEFORE we touch availability,
+      // so the new availability rows can carry trip_id and the auto-trip trigger
+      // takes its fast-path (no duplicate trip created).
+      let resolvedTripId: string | null = editingTrip?.id ?? null;
+      const oldStartStr = editingTrip ? format(editingTrip.startDate, 'yyyy-MM-dd') : null;
+      const oldEndStr = editingTrip ? format(editingTrip.endDate, 'yyyy-MM-dd') : null;
+
+      if (editingTrip?.id) {
+        // 1) Update the trip row first.
+        const { error: tripError } = await supabase
+          .from('trips')
+          .update(tripPayload)
+          .eq('id', editingTrip.id);
+        if (tripError) throw tripError;
+      } else {
+        // Look for an existing same-dates trip to avoid duplicates, else insert.
+        const { data: existingTrip } = await supabase
+          .from('trips')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .eq('start_date', newStartStr)
+          .eq('end_date', newEndStr)
+          .maybeSingle();
+
+        if (existingTrip) {
+          const { error: tripError } = await supabase
+            .from('trips')
+            .update(tripPayload)
+            .eq('id', existingTrip.id);
+          if (tripError) throw tripError;
+          resolvedTripId = existingTrip.id;
+        } else {
+          const { data: newTrip, error: tripError } = await supabase
+            .from('trips')
+            .insert(tripPayload)
+            .select('id')
+            .single();
+          if (tripError) throw tripError;
+          resolvedTripId = newTrip?.id ?? null;
+        }
+      }
+
+      // 2) Reset old availability days that fall outside the new range.
       if (editingTrip) {
         const oldDays = eachDayOfInterval({ start: editingTrip.startDate, end: editingTrip.endDate });
-        const newDays = eachDayOfInterval({ start: startDate, end: endDate });
-        const newDayStrings = new Set(newDays.map(d => format(d, 'yyyy-MM-dd')));
-        
+        const newDayStrings = new Set(days.map(d => format(d, 'yyyy-MM-dd')));
         const daysToReset = oldDays.filter(d => !newDayStrings.has(format(d, 'yyyy-MM-dd')));
-        
+
         if (daysToReset.length > 0) {
           const resetData = daysToReset.map(day => ({
             user_id: session.user.id,
             date: format(day, 'yyyy-MM-dd'),
             location_status: 'home',
             trip_location: null,
+            trip_id: null,
           }));
-
           await supabase
             .from('availability')
             .upsert(resetData, { onConflict: 'user_id,date', ignoreDuplicates: false });
         }
       }
 
-      // Get all days in the new range
-      const days = eachDayOfInterval({ start: startDate, end: endDate });
-
-      // Build availability rows with per-day slot-level control
+      // 3) Upsert availability for the new range, tagged with the trip_id.
       const upsertData = days.map(day => {
         const dateKey = format(day, 'yyyy-MM-dd');
         const slots = daySlots.get(dateKey) ?? new Set(ALL_SLOTS);
@@ -407,7 +464,8 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
           user_id: session.user.id,
           date: dateKey,
           location_status: 'away',
-          trip_location: location.trim() || null,
+          trip_location: trimmedLocation,
+          trip_id: resolvedTripId,
           early_morning: slots.has('early-morning'),
           late_morning: slots.has('late-morning'),
           early_afternoon: slots.has('early-afternoon'),
@@ -420,94 +478,73 @@ export function AddTripDialog({ open, onOpenChange, onTripAdded, editingTrip }: 
       const { error: availError } = await supabase
         .from('availability')
         .upsert(upsertData, { onConflict: 'user_id,date', ignoreDuplicates: false });
-
       if (availError) throw availError;
 
-      // Collect the union of all selected slots for the trips table summary
-      const allSelectedSlots = new Set<string>();
-      for (const [, set] of daySlots) {
-        for (const s of set) allSelectedSlots.add(s);
-      }
-
-      // Upsert trip record
-      const tripPayload = {
-        user_id: session.user.id,
-        location: location.trim() || null,
-        start_date: format(startDate, 'yyyy-MM-dd'),
-        end_date: format(endDate, 'yyyy-MM-dd'),
-        available_slots: Array.from(allSelectedSlots),
-        priority_friend_ids: priorityFriendIds,
-      };
-
-      if (editingTrip?.id) {
-        const { error: tripError } = await supabase
-          .from('trips')
-          .update(tripPayload)
-          .eq('id', editingTrip.id);
-        if (tripError) throw tripError;
-
-        // Sync travel companions
-        await supabase.from('trip_participants').delete().eq('trip_id', editingTrip.id);
+      // 4) Sync travel companions on the resolved trip id.
+      if (resolvedTripId) {
+        await supabase.from('trip_participants').delete().eq('trip_id', resolvedTripId);
         if (travelCompanionIds.length > 0) {
           await supabase.from('trip_participants').insert(
-            travelCompanionIds.map(fid => ({ trip_id: editingTrip.id!, friend_user_id: fid }))
+            travelCompanionIds.map(fid => ({ trip_id: resolvedTripId!, friend_user_id: fid }))
           );
         }
-      } else {
-        // Check for existing trip with same dates to avoid duplicates
-        const { data: existingTrip } = await supabase
+      }
+
+      // 5) If editing a proposal-derived trip, sync the matching trip_proposal_dates row.
+      if (editingTrip?.id && editingTrip.proposalId && oldStartStr && oldEndStr &&
+          (oldStartStr !== newStartStr || oldEndStr !== newEndStr)) {
+        await supabase
+          .from('trip_proposal_dates')
+          .update({ start_date: newStartStr, end_date: newEndStr })
+          .eq('proposal_id', editingTrip.proposalId)
+          .eq('start_date', oldStartStr)
+          .eq('end_date', oldEndStr);
+      }
+
+      // 6) Local dedupe sweep — remove any orphan ghost trip rows the legacy
+      // trigger may have created for this user at these exact dates/location.
+      if (resolvedTripId && trimmedLocation) {
+        const { data: dupes } = await supabase
           .from('trips')
-          .select('id')
+          .select('id, proposal_id, priority_friend_ids')
           .eq('user_id', session.user.id)
-          .eq('start_date', format(startDate, 'yyyy-MM-dd'))
-          .eq('end_date', format(endDate, 'yyyy-MM-dd'))
-          .maybeSingle();
+          .eq('start_date', newStartStr)
+          .eq('end_date', newEndStr)
+          .neq('id', resolvedTripId);
 
-        if (existingTrip) {
-          const { error: tripError } = await supabase
-            .from('trips')
-            .update(tripPayload)
-            .eq('id', existingTrip.id);
-          if (tripError) throw tripError;
-
-          await supabase.from('trip_participants').delete().eq('trip_id', existingTrip.id);
-          if (travelCompanionIds.length > 0) {
-            await supabase.from('trip_participants').insert(
-              travelCompanionIds.map(fid => ({ trip_id: existingTrip.id, friend_user_id: fid }))
-            );
-          }
-        } else {
-          const { data: newTrip, error: tripError } = await supabase
-            .from('trips')
-            .insert(tripPayload)
-            .select('id')
-            .single();
-          if (tripError) throw tripError;
-
-          if (newTrip && travelCompanionIds.length > 0) {
-            await supabase.from('trip_participants').insert(
-              travelCompanionIds.map(fid => ({ trip_id: newTrip.id, friend_user_id: fid }))
-            );
-
-            // Notify trip participants via push + email
-            supabase.auth.getSession().then(({ data: sessionData }) => {
-              const token = sessionData?.session?.access_token;
-              if (!token) return;
-              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-              fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  type: 'trip',
-                  creator_id: session.user.id,
-                  participant_ids: travelCompanionIds,
-                  trip_location: location.trim() || null,
-                  trip_dates: `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`,
-                }),
-              }).catch(() => {});
-            }).catch(() => {});
-          }
+        const orphanIds: string[] = [];
+        for (const dupe of dupes || []) {
+          if (dupe.proposal_id) continue;
+          if ((dupe.priority_friend_ids || []).length > 0) continue;
+          const { count } = await supabase
+            .from('trip_participants')
+            .select('id', { count: 'exact', head: true })
+            .eq('trip_id', dupe.id);
+          if ((count || 0) === 0) orphanIds.push(dupe.id);
         }
+        if (orphanIds.length > 0) {
+          await supabase.from('trips').delete().in('id', orphanIds);
+        }
+      }
+
+      // 7) For brand-new trips with companions, fire the participant notification.
+      if (!editingTrip && resolvedTripId && travelCompanionIds.length > 0) {
+        supabase.auth.getSession().then(({ data: sessionData }) => {
+          const token = sessionData?.session?.access_token;
+          if (!token) return;
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          fetch(`https://${projectId}.supabase.co/functions/v1/on-plan-created`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'trip',
+              creator_id: session.user.id,
+              participant_ids: travelCompanionIds,
+              trip_location: trimmedLocation,
+              trip_dates: `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`,
+            }),
+          }).catch(() => {});
+        }).catch(() => {});
       }
 
       const locationText = location.trim() ? ` to ${location.trim()}` : '';
