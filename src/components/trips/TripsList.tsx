@@ -612,11 +612,10 @@ function TripCard({
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   e.stopPropagation();
-                  if (e.key === 'Enter') void saveTitle();
-                  if (e.key === 'Escape') { setTitleDraft(trip.name || ''); setEditingTitle(false); }
+                  if (e.key === 'Enter') saveTitle();
+                  if (e.key === 'Escape') cancelEdit();
                 }}
-                onBlur={() => void saveTitle()}
-                disabled={savingTitle}
+                onBlur={() => saveTitle()}
                 placeholder="Trip title"
                 className="h-7 text-sm px-2 py-0"
               />
@@ -626,12 +625,16 @@ function TripCard({
                 onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
                 className={cn(
                   "font-medium text-sm truncate text-left hover:underline decoration-dotted underline-offset-2",
-                  !trip.name && "text-muted-foreground italic"
+                  !effectiveName && "text-muted-foreground italic",
+                  savingTitle && "opacity-70"
                 )}
-                title="Edit title"
+                title={savingTitle ? 'Saving…' : 'Edit title'}
               >
-                {trip.name || '[no title]'}
+                {effectiveName || '[no title]'}
               </button>
+            )}
+            {savingTitle && (
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />
             )}
             {isOngoing && (
               <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full shrink-0">
