@@ -518,7 +518,7 @@ export default function TripDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Trip</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete your trip to {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'this destination'}. This action cannot be undone.
+              This will permanently delete your trip to {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'TBC'}. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
