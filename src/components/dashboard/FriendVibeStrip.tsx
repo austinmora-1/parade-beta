@@ -335,11 +335,32 @@ function FriendPill({
 
   const slotKey = (s: OverlapSlot) => `${s.date}|${s.slot}`;
 
-  const isRecommended = (s: OverlapSlot) => {
+  const isPreferred = (s: OverlapSlot) => {
     const day = format(parseISO(s.date), 'EEEE').toLowerCase();
     const bucket = SLOT_TO_PREF_BUCKET[s.slot];
     return preferredTimes.has(`${day}:${bucket}`);
   };
+
+  // Top picks: up to 3 slots from distinct days. Prefer slots matching the
+  // user's preferred social times; fall back to first-available slots when
+  // there aren't enough preferred ones to fill 3 distinct days.
+  const topPickKeys = useMemo(() => {
+    const picks: OverlapSlot[] = [];
+    const usedDays = new Set<string>();
+    const take = (pool: OverlapSlot[]) => {
+      for (const s of pool) {
+        if (picks.length >= 3) break;
+        if (usedDays.has(s.date)) continue;
+        picks.push(s);
+        usedDays.add(s.date);
+      }
+    };
+    take(overlapSlots.filter(isPreferred));
+    if (picks.length < 3) take(overlapSlots.filter(s => !isPreferred(s)));
+    return new Set(picks.map(slotKey));
+  }, [overlapSlots, preferredTimes]);
+
+  const isTopPick = (s: OverlapSlot) => topPickKeys.has(slotKey(s));
 
   const toggleSlot = (s: OverlapSlot) => {
     const k = slotKey(s);
@@ -496,7 +517,14 @@ function FriendPill({
             </div>
 
             <div className="max-h-64 overflow-y-auto p-2 space-y-1">
-              {overlapSlots.map((s, idx) => {
+              {[...overlapSlots]
+                .sort((a, b) => {
+                  const ap = isTopPick(a) ? 0 : 1;
+                  const bp = isTopPick(b) ? 0 : 1;
+                  if (ap !== bp) return ap - bp;
+                  return a.date.localeCompare(b.date);
+                })
+                .map((s, idx) => {
                 const dt = parseISO(s.date);
                 const today = isSameDay(dt, new Date());
                 const tomorrow = isSameDay(dt, addDays(new Date(), 1));
@@ -508,7 +536,7 @@ function FriendPill({
                 const slotMeta = TIME_SLOT_LABELS[s.slot];
                 const k = slotKey(s);
                 const isSelected = selected.has(k);
-                const recommended = isRecommended(s);
+                const recommended = isTopPick(s);
                 return (
                   <button
                     key={`${s.date}-${s.slot}-${idx}`}
@@ -517,20 +545,22 @@ function FriendPill({
                       'w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors border',
                       isSelected
                         ? 'bg-primary/10 border-primary/50'
-                        : 'bg-transparent border-transparent hover:bg-primary/5 hover:border-primary/30'
+                        : recommended
+                          ? 'bg-secondary/10 border-secondary/30 hover:bg-secondary/15'
+                          : 'bg-transparent border-transparent hover:bg-primary/5 hover:border-primary/30'
                     )}
                   >
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={cn(
                           'text-xs font-semibold truncate',
-                          today ? 'text-primary' : 'text-foreground'
+                          recommended ? 'text-secondary' : today ? 'text-primary' : 'text-foreground'
                         )}>
                           {dayLabel}
                         </span>
                         {recommended && (
                           <span
-                            title="Matches your preferred social time"
+                            title="Top pick — matches your preferred social time"
                             className="inline-flex items-center gap-0.5 rounded-full bg-secondary/15 text-secondary px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide"
                           >
                             <Sparkles className="h-2.5 w-2.5" />
