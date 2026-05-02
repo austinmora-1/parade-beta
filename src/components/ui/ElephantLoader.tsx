@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useMemo } from 'react';
+
 
 const CONFETTI_COLORS = [
   'hsl(var(--primary))',
