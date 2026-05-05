@@ -150,7 +150,7 @@ export default function Availability() {
     <div className="animate-fade-in space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
-        <h1 className="font-display text-3xl font-black leading-tight tracking-tight md:text-4xl">
+        <h1 className="font-display font-black leading-tight tracking-tight md:text-4xl text-2xl">
           Plans &amp; Trips
         </h1>
         {isConnected && (
