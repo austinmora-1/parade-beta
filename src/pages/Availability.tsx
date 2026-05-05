@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { format, startOfWeek, addDays, addWeeks, isSameDay, differenceInWeeks } from 'date-fns';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 
