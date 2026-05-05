@@ -95,8 +95,7 @@ export default function Availability() {
     return filteredPlans.filter((p) => format(p.date, 'yyyy-MM-dd') === key);
   }, [filteredPlans]);
 
-  const openNewPlan = (date?: Date) => {
-    setPlanDefaultDate(date);
+  const openNewPlan = (_date?: Date) => {
     setGuidedPlanOpen(true);
   };
   const openNewTrip = () => setGuidedTripOpen(true);
