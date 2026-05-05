@@ -252,15 +252,6 @@ export default function Availability() {
         </div>
       )}
 
-      {/* Multi-day trip banner (shown above content for non-Plans filters) */}
-      {showTripBanners && trips.length > 0 && (
-        <TripWeekBanner
-          trips={trips}
-          weekStart={weekStart}
-          weekEnd={addDays(weekStart, 6)}
-        />
-      )}
-
       {/* Weekend hero */}
       {showWeekend && (
         <WeekendHeroCard
