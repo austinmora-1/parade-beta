@@ -263,7 +263,7 @@ export function GreetingHeader() {
               ) : (
                 <div className="flex items-center gap-1 text-muted-foreground -mt-0.5">
                   <MapPin className="h-3 w-3 text-primary" />
-                  <span className="text-xs">{currentCity}</span>
+                  <span className="text-sm">{currentCity}</span>
                 </div>
               )}
             </div>
