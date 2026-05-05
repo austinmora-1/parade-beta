@@ -43,14 +43,8 @@ export default function Availability() {
 
   const [guidedPlanOpen, setGuidedPlanOpen] = useState(false);
   const [guidedTripOpen, setGuidedTripOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
-  const [editPlan, setEditPlan] = useState<any>(undefined);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [mergeOpen, setMergeOpen] = useState(false);
-  const [mergePreselected, setMergePreselected] = useState<string[] | undefined>(undefined);
-  const [sharePlanId, setSharePlanId] = useState<string | null>(null);
-  const [sharePlanTitle, setSharePlanTitle] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   // URL-synced view filter (?view=all|plans|trips)
