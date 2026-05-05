@@ -23,7 +23,7 @@ import { useSlotCoverageByDate } from '@/hooks/useSlotCoverage';
 import { TripsList } from '@/components/trips/TripsList';
 import { WeekendHeroCard } from '@/components/plans/weekly-plan/WeekendHeroCard';
 import { WeekdayRow } from '@/components/plans/weekly-plan/WeekdayRow';
-import { TripWeekBanner } from '@/components/plans/weekly-plan/TripWeekBanner';
+
 
 type ViewFilter = 'all' | 'plans' | 'trips';
 const VALID_VIEWS: ViewFilter[] = ['all', 'plans', 'trips'];
