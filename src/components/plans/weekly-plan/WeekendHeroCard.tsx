@@ -177,7 +177,7 @@ function DayMini({
       <div className="mt-2 space-y-1">
         {plans.length === 0 && !weekendTrip && (
           <button
-            onClick={() => onAddPlan(date)}
+            onClick={(e) => { e.stopPropagation(); onAddPlan(date); }}
             className="flex w-full items-center gap-1 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <Plus className="h-3 w-3" />
@@ -193,7 +193,7 @@ function DayMini({
           return (
             <button
               key={p.id}
-              onClick={() => onPlanTap(p)}
+              onClick={(e) => { e.stopPropagation(); onPlanTap(p); }}
               className="flex w-full items-center gap-1.5 rounded-md text-left text-[12px] font-medium text-foreground hover:text-primary transition-colors"
             >
               <span className="shrink-0 text-xs leading-none">{icon}</span>
