@@ -208,7 +208,7 @@ export function GreetingHeader() {
 
           <div className="relative px-4 py-2 flex items-center justify-between">
             <div>
-              <h2 className="font-display text-foreground text-xl">
+              <h2 className="font-display text-foreground text-2xl">
                 {config.greeting}
               </h2>
               {needsLocation ? (
