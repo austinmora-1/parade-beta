@@ -219,7 +219,7 @@ export function GreetingHeader() {
                       className="flex items-center gap-1 -mt-0.5 rounded-md px-1 py-0.5 -mx-1 text-primary hover:bg-primary/10 transition-colors"
                     >
                       <MapPin className="h-3 w-3" />
-                      <span className="text-xs font-medium underline-offset-2 underline decoration-dotted">Set location</span>
+                      <span className="text-sm font-medium underline-offset-2 underline decoration-dotted">Set location</span>
                     </button>
                   </PopoverTrigger>
                   <PopoverContent align="start" className="w-[280px] p-3 z-50" onOpenAutoFocus={(e) => e.preventDefault()}>
