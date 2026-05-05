@@ -39,8 +39,7 @@ export function WeekdayRow({
   const extraCount = Math.max(0, plans.length - 1);
 
   const handleClick = () => {
-    if (primary) navigate(`/plan/${primary.id}`);
-    else onAddPlan(date);
+    navigate(`/day/${format(date, 'yyyy-MM-dd')}`);
   };
 
   return (
