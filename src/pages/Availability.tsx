@@ -23,7 +23,7 @@ import { useSlotCoverageByDate } from '@/hooks/useSlotCoverage';
 import { TripsList } from '@/components/trips/TripsList';
 import { WeekendHeroCard } from '@/components/plans/weekly-plan/WeekendHeroCard';
 import { WeekdayRow } from '@/components/plans/weekly-plan/WeekdayRow';
-import { TripWeekBanner } from '@/components/plans/weekly-plan/TripWeekBanner';
+
 
 type ViewFilter = 'all' | 'plans' | 'trips';
 const VALID_VIEWS: ViewFilter[] = ['all', 'plans', 'trips'];
@@ -86,7 +86,7 @@ export default function Availability() {
 
   const showWeekend = viewFilter !== 'trips';
   const showWeekdays = viewFilter !== 'trips';
-  const showTripBanners = viewFilter !== 'plans';
+  
 
   const weekdayDays = useMemo(() => weekDays.slice(0, 5), [weekDays]); // Mon–Fri
 
@@ -250,15 +250,6 @@ export default function Availability() {
             Back to this week
           </button>
         </div>
-      )}
-
-      {/* Multi-day trip banner (shown above content for non-Plans filters) */}
-      {showTripBanners && trips.length > 0 && (
-        <TripWeekBanner
-          trips={trips}
-          weekStart={weekStart}
-          weekEnd={addDays(weekStart, 6)}
-        />
       )}
 
       {/* Weekend hero */}
