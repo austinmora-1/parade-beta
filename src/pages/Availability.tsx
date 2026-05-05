@@ -3,11 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format, startOfWeek, addDays, addWeeks, isSameDay, differenceInWeeks } from 'date-fns';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 
-const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
-const MergePlansDialog = lazy(() => import('@/components/plans/MergePlansDialog'));
-const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDialog'));
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { Calendar } from '@/components/ui/calendar';
