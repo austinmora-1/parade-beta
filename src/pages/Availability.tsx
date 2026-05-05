@@ -29,7 +29,7 @@ type ViewFilter = 'all' | 'plans' | 'trips';
 const VALID_VIEWS: ViewFilter[] = ['all', 'plans', 'trips'];
 
 export default function Availability() {
-  const navigate = useNavigate();
+  
   const [searchParams, setSearchParams] = useSearchParams();
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
