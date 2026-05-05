@@ -149,11 +149,20 @@ function DayMini({
   onPlanTap: (plan: Plan) => void;
   weekendTrip?: UserTrip;
 }) {
+  const navigate = useNavigate();
   const dayName = format(date, 'EEE');
   const dayNum = format(date, 'd');
 
   return (
-    <div className="rounded-xl border border-border/60 bg-background/40 p-2.5">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => navigate(`/day/${format(date, 'yyyy-MM-dd')}`)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') navigate(`/day/${format(date, 'yyyy-MM-dd')}`);
+      }}
+      className="rounded-xl border border-border/60 bg-background/40 p-2.5 text-left cursor-pointer transition-colors hover:bg-background/70"
+    >
       <div className="flex items-baseline gap-1.5">
         <span className="font-display text-2xl font-black leading-none">{dayNum}</span>
         <span className="text-sm font-semibold text-muted-foreground">{dayName}</span>
@@ -168,7 +177,7 @@ function DayMini({
       <div className="mt-2 space-y-1">
         {plans.length === 0 && !weekendTrip && (
           <button
-            onClick={() => onAddPlan(date)}
+            onClick={(e) => { e.stopPropagation(); onAddPlan(date); }}
             className="flex w-full items-center gap-1 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <Plus className="h-3 w-3" />
@@ -184,7 +193,7 @@ function DayMini({
           return (
             <button
               key={p.id}
-              onClick={() => onPlanTap(p)}
+              onClick={(e) => { e.stopPropagation(); onPlanTap(p); }}
               className="flex w-full items-center gap-1.5 rounded-md text-left text-[12px] font-medium text-foreground hover:text-primary transition-colors"
             >
               <span className="shrink-0 text-xs leading-none">{icon}</span>
