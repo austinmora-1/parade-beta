@@ -33,6 +33,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const PlanDetail = lazy(() => import("./pages/PlanDetail"));
+const DayDetail = lazy(() => import("./pages/DayDetail"));
 const TripDetail = lazy(() => import("./pages/TripDetail"));
 const ProposalDetail = lazy(() => import("./pages/ProposalDetail"));
 const Trips = lazy(() => import("./pages/Trips"));
@@ -175,6 +176,7 @@ const AppRoutes = () => {
       <Route path="/profile" element={<ErrorBoundary scope="Profile"><Profile /></ErrorBoundary>} />
       <Route path="/friend/:userId" element={<ErrorBoundary scope="FriendProfile"><FriendProfile /></ErrorBoundary>} />
       <Route path="/plan/:planId" element={<ErrorBoundary scope="PlanDetail"><PlanDetail /></ErrorBoundary>} />
+      <Route path="/day/:date" element={<ErrorBoundary scope="DayDetail"><DayDetail /></ErrorBoundary>} />
       <Route path="/trips" element={<ErrorBoundary scope="Trips"><Trips /></ErrorBoundary>} />
       <Route path="/trip/:tripId" element={<ErrorBoundary scope="TripDetail"><TripDetail /></ErrorBoundary>} />
       <Route path="/proposal/:id" element={<ErrorBoundary scope="ProposalDetail"><ProposalDetail /></ErrorBoundary>} />
