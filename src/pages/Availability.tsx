@@ -40,7 +40,6 @@ export default function Availability() {
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const rawPlans = usePlannerStore((s) => s.plans);
   const { displayPlans: plans } = useDisplayPlans(rawPlans);
-  const deletePlan = usePlannerStore((s) => s.deletePlan);
   const availabilityMap = usePlannerStore((s) => s.availabilityMap);
   const coverageByDate = useSlotCoverageByDate();
   const { trips } = useUserTrips();
