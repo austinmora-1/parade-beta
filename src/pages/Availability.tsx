@@ -1,31 +1,35 @@
-import { useState, useCallback, useMemo, lazy, Suspense, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { format, startOfWeek, addDays, addWeeks, isSameDay, differenceInWeeks } from 'date-fns';
 import { ShareDialog } from '@/components/dashboard/ShareDialog';
 
-const CreatePlanDialog = lazy(() => import('@/components/plans/CreatePlanDialog'));
 const GuidedPlanSheet = lazy(() => import('@/components/plans/GuidedPlanSheet'));
 const GuidedTripSheet = lazy(() => import('@/components/trips/GuidedTripSheet'));
-const MergePlansDialog = lazy(() => import('@/components/plans/MergePlansDialog'));
-const InviteToPlanDialog = lazy(() => import('@/components/plans/InviteToPlanDialog'));
 import { Button } from '@/components/ui/button';
 import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
-import { RefreshCw, Loader2, Plus, Plane } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  RefreshCw, Loader2, Plus, Plane, ChevronLeft, ChevronRight, CalendarDays,
+} from 'lucide-react';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { toast } from 'sonner';
-import { WeeklyPlanSwiper } from '@/components/plans/WeeklyPlanSwiper';
+import { cn } from '@/lib/utils';
 import { useDisplayPlans } from '@/hooks/useDisplayPlans';
 import { useUserTrips } from '@/hooks/useUserTrips';
+import { useSlotCoverageByDate } from '@/hooks/useSlotCoverage';
 import { TripsList } from '@/components/trips/TripsList';
+import { WeekendHeroCard } from '@/components/plans/weekly-plan/WeekendHeroCard';
+import { WeekdayRow } from '@/components/plans/weekly-plan/WeekdayRow';
+import { TripWeekBanner } from '@/components/plans/weekly-plan/TripWeekBanner';
 
 type ViewFilter = 'all' | 'plans' | 'trips';
-
 const VALID_VIEWS: ViewFilter[] = ['all', 'plans', 'trips'];
 
 export default function Availability() {
-  const navigate = useNavigate();
+  
   const [searchParams, setSearchParams] = useSearchParams();
   const { isConnected: isGcalConnected, isSyncing: isGcalSyncing, syncCalendar: syncGcal } = useGoogleCalendar();
   const { isConnected: isIcalConnected, isSyncing: isIcalSyncing, syncCalendar: syncIcal } = useAppleCalendar();
@@ -33,19 +37,15 @@ export default function Availability() {
   const loadPlans = usePlannerStore((s) => s.loadPlans);
   const rawPlans = usePlannerStore((s) => s.plans);
   const { displayPlans: plans } = useDisplayPlans(rawPlans);
-  const deletePlan = usePlannerStore((s) => s.deletePlan);
+  const availabilityMap = usePlannerStore((s) => s.availabilityMap);
+  const coverageByDate = useSlotCoverageByDate();
   const { trips } = useUserTrips();
 
   const [guidedPlanOpen, setGuidedPlanOpen] = useState(false);
   const [guidedTripOpen, setGuidedTripOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [planDefaultDate, setPlanDefaultDate] = useState<Date | undefined>(undefined);
-  const [editPlan, setEditPlan] = useState<any>(undefined);
+  
   const [weekOffset, setWeekOffset] = useState(0);
-  const [mergeOpen, setMergeOpen] = useState(false);
-  const [mergePreselected, setMergePreselected] = useState<string[] | undefined>(undefined);
-  const [sharePlanId, setSharePlanId] = useState<string | null>(null);
-  const [sharePlanTitle, setSharePlanTitle] = useState('');
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // URL-synced view filter (?view=all|plans|trips)
   const viewParam = searchParams.get('view');
@@ -60,15 +60,44 @@ export default function Availability() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  // When viewing only trips, hide hangout cards by passing an empty array.
+  // Week math
+  const weekStart = useMemo(
+    () => startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 }),
+    [weekOffset],
+  );
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
+  );
+  const weekLabel = useMemo(() => {
+    const end = addDays(weekStart, 6);
+    const sameMonth = weekStart.getMonth() === end.getMonth();
+    return sameMonth
+      ? `${format(weekStart, 'MMM d')} – ${format(end, 'd')}`
+      : `${format(weekStart, 'MMM d')} – ${format(end, 'MMM d')}`;
+  }, [weekStart]);
+
+  const today = new Date();
+
   const filteredPlans = useMemo(() => {
     if (viewFilter === 'trips') return [];
     return plans;
   }, [plans, viewFilter]);
 
+  const showWeekend = viewFilter !== 'trips';
+  const showWeekdays = viewFilter !== 'trips';
   const showTripBanners = viewFilter !== 'plans';
 
-  const openNewPlan = () => setGuidedPlanOpen(true);
+  const weekdayDays = useMemo(() => weekDays.slice(0, 5), [weekDays]); // Mon–Fri
+
+  const plansForDay = useCallback((d: Date) => {
+    const key = format(d, 'yyyy-MM-dd');
+    return filteredPlans.filter((p) => format(p.date, 'yyyy-MM-dd') === key);
+  }, [filteredPlans]);
+
+  const openNewPlan = (_date?: Date) => {
+    setGuidedPlanOpen(true);
+  };
   const openNewTrip = () => setGuidedTripOpen(true);
 
   const isConnected = isGcalConnected || isIcalConnected;
@@ -77,7 +106,6 @@ export default function Availability() {
   const handleSync = async () => {
     const results: string[] = [];
     let anySynced = false;
-
     if (isGcalConnected) {
       const result = await syncGcal();
       if (result.synced) { anySynced = true; results.push('Google Calendar'); }
@@ -86,7 +114,6 @@ export default function Availability() {
       const result = await syncIcal();
       if (result.synced) { anySynced = true; results.push('Apple Calendar'); }
     }
-
     if (anySynced) {
       toast.success(`Synced ${results.join(' & ')} successfully`);
       await Promise.all([loadProfileAndAvailability(), loadPlans()]);
@@ -95,106 +122,182 @@ export default function Availability() {
     }
   };
 
-  const handleEditPlan = useCallback((plan: any) => {
-    navigate(`/plan/${plan.id}?edit=1`);
-  }, [navigate]);
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    const todayWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const selectedWeekStart = startOfWeek(date, { weekStartsOn: 1 });
+    setWeekOffset(differenceInWeeks(selectedWeekStart, todayWeekStart));
+    setCalendarOpen(false);
+  };
 
-  const handleDeletePlan = useCallback((id: string) => {
-    deletePlan(id);
-    toast.success('Plan deleted');
-  }, [deletePlan]);
-
-  const handleSharePlan = useCallback((plan: any) => {
-    setSharePlanId(plan.id);
-    setSharePlanTitle(plan.title || plan.activity);
-  }, []);
-
-  const handleMergeSelected = useCallback((planIds: string[]) => {
-    setMergePreselected(planIds);
-    setMergeOpen(true);
-  }, []);
+  // Round circular icon button helper
+  const CircleBtn = ({
+    onClick, children, label, active = false,
+  }: { onClick: () => void; children: React.ReactNode; label: string; active?: boolean }) => (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className={cn(
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-soft transition-colors hover:bg-muted',
+        active && 'border-primary bg-primary/10 text-primary',
+      )}
+    >
+      {children}
+    </button>
+  );
 
   return (
-    <div className="animate-fade-in space-y-4 md:space-y-6">
+    <div className="animate-fade-in space-y-4">
       {/* Header */}
-      <div>
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <h1 className="font-display text-lg font-bold md:text-2xl">Plans &amp; Trips</h1>
-            <p className="hidden text-muted-foreground md:block">
-              Your hangouts and travel at a glance
-            </p>
-          </div>
-          {isConnected && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-2"
-              onClick={handleSync}
-              disabled={isSyncing}
+      <div className="flex items-start justify-between gap-2">
+        <h1 className="font-display text-3xl font-black leading-tight tracking-tight md:text-4xl">
+          Plans &amp; Trips
+        </h1>
+        {isConnected && (
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            aria-label="Sync calendar"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-soft hover:bg-muted disabled:opacity-50"
+          >
+            {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
+
+      {/* Action row + filter pills */}
+      <div className="flex items-center gap-2">
+        <CircleBtn onClick={() => openNewPlan()} label="Add plan">
+          <Plus className="h-4 w-4" />
+        </CircleBtn>
+        <CircleBtn onClick={openNewTrip} label="Add trip">
+          <Plane className="h-4 w-4" />
+        </CircleBtn>
+        <ShareDialog
+          trigger={
+            <button
+              aria-label="Share availability"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-soft hover:bg-muted"
             >
-              {isSyncing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">{isSyncing ? 'Syncing...' : 'Sync'}</span>
-            </Button>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0 gap-2"
-            onClick={openNewPlan}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Plan</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0 gap-2"
-            onClick={openNewTrip}
-          >
-            <Plane className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Trip</span>
-          </Button>
-          <ShareDialog
-            trigger={
-              <Button size="sm" variant="outline" className="shrink-0 gap-2">
-                <CalendarShareIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">Share</span>
-              </Button>
-            }
-          />
-          <ToggleGroup
-            type="single"
-            size="sm"
-            value={viewFilter}
-            onValueChange={(v) => v && setViewFilter(v as ViewFilter)}
-            className="ml-auto"
-          >
-            <ToggleGroupItem value="all" className="text-xs h-8 px-2.5">All</ToggleGroupItem>
-            <ToggleGroupItem value="plans" className="text-xs h-8 px-2.5">Plans</ToggleGroupItem>
-            <ToggleGroupItem value="trips" className="text-xs h-8 px-2.5">Trips</ToggleGroupItem>
-          </ToggleGroup>
+              <CalendarShareIcon className="h-4 w-4" />
+            </button>
+          }
+        />
+
+        <div className="ml-auto flex items-center gap-1 rounded-full bg-muted/40 p-0.5">
+          {(['all', 'plans', 'trips'] as ViewFilter[]).map((v) => {
+            const active = viewFilter === v;
+            return (
+              <button
+                key={v}
+                onClick={() => setViewFilter(v)}
+                className={cn(
+                  'rounded-full px-3 py-1.5 text-sm font-bold transition-colors',
+                  active
+                    ? 'bg-secondary/15 text-secondary'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {v === 'all' ? 'All' : v === 'plans' ? 'Plans' : 'Trips'}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Weekly card swiper (with optional trip banners) */}
-      <WeeklyPlanSwiper
-        plans={filteredPlans}
-        weekOffset={weekOffset}
-        onWeekChange={setWeekOffset}
-        onEditPlan={handleEditPlan}
-        onDeletePlan={handleDeletePlan}
-        onMergeSelected={handleMergeSelected}
-        onSharePlan={handleSharePlan}
-        trips={trips}
-        showTripBanners={showTripBanners}
-      />
+      {/* Week navigator */}
+      <div className="flex items-center justify-between px-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setWeekOffset((o) => o - 1)}
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger asChild>
+            <button className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-accent transition-colors">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <span className="font-display text-base font-bold">{weekLabel}</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              mode="single"
+              selected={weekStart}
+              onSelect={handleDateSelect}
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setWeekOffset((o) => o + 1)}
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {weekOffset !== 0 && (
+        <div className="flex justify-center -mt-2">
+          <button
+            onClick={() => setWeekOffset(0)}
+            className="text-xs font-bold text-primary hover:text-primary/80"
+          >
+            Back to this week
+          </button>
+        </div>
+      )}
+
+      {/* Multi-day trip banner (shown above content for non-Plans filters) */}
+      {showTripBanners && trips.length > 0 && (
+        <TripWeekBanner
+          trips={trips}
+          weekStart={weekStart}
+          weekEnd={addDays(weekStart, 6)}
+        />
+      )}
+
+      {/* Weekend hero */}
+      {showWeekend && (
+        <WeekendHeroCard
+          weekStart={weekStart}
+          plans={filteredPlans}
+          trips={trips}
+          availabilityMap={availabilityMap}
+          coverageByDate={coverageByDate}
+          onAddPlan={openNewPlan}
+        />
+      )}
+
+      {/* Weekdays */}
+      {showWeekdays && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
+              <span className="text-secondary">Weekdays</span>
+            </div>
+            <span className="text-[11px] font-medium text-muted-foreground">Mon – Fri</span>
+          </div>
+          <div className="space-y-2">
+            {weekdayDays.map((d) => (
+              <WeekdayRow
+                key={d.toISOString()}
+                date={d}
+                plans={plansForDay(d)}
+                isToday={isSameDay(d, today)}
+                availabilityMap={availabilityMap}
+                coverageByDate={coverageByDate}
+                onAddPlan={openNewPlan}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Full trips management surface when filter == trips */}
       {viewFilter === 'trips' && (
@@ -219,45 +322,12 @@ export default function Availability() {
             open={guidedTripOpen}
             onOpenChange={(open) => {
               setGuidedTripOpen(open);
-              if (!open) {
-                loadProfileAndAvailability();
-              }
+              if (!open) loadProfileAndAvailability();
             }}
           />
         </Suspense>
       )}
 
-      {editDialogOpen && (
-        <Suspense fallback={null}>
-          <CreatePlanDialog
-            open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
-            defaultDate={planDefaultDate}
-            editPlan={editPlan}
-          />
-        </Suspense>
-      )}
-
-      {mergeOpen && (
-        <Suspense fallback={null}>
-          <MergePlansDialog
-            open={mergeOpen}
-            onOpenChange={setMergeOpen}
-            preselectedPlanIds={mergePreselected}
-          />
-        </Suspense>
-      )}
-
-      {sharePlanId && (
-        <Suspense fallback={null}>
-          <InviteToPlanDialog
-            open={!!sharePlanId}
-            onOpenChange={(open) => { if (!open) setSharePlanId(null); }}
-            planId={sharePlanId}
-            planTitle={sharePlanTitle}
-          />
-        </Suspense>
-      )}
     </div>
   );
 }
