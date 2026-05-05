@@ -86,7 +86,7 @@ export default function Availability() {
 
   const showWeekend = viewFilter !== 'trips';
   const showWeekdays = viewFilter !== 'trips';
-  const showTripBanners = viewFilter !== 'plans';
+  
 
   const weekdayDays = useMemo(() => weekDays.slice(0, 5), [weekDays]); // Mon–Fri
 
