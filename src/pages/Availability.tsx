@@ -338,37 +338,6 @@ export default function Availability() {
         </Suspense>
       )}
 
-      {editDialogOpen && (
-        <Suspense fallback={null}>
-          <CreatePlanDialog
-            open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
-            defaultDate={planDefaultDate}
-            editPlan={editPlan}
-          />
-        </Suspense>
-      )}
-
-      {mergeOpen && (
-        <Suspense fallback={null}>
-          <MergePlansDialog
-            open={mergeOpen}
-            onOpenChange={setMergeOpen}
-            preselectedPlanIds={mergePreselected}
-          />
-        </Suspense>
-      )}
-
-      {sharePlanId && (
-        <Suspense fallback={null}>
-          <InviteToPlanDialog
-            open={!!sharePlanId}
-            onOpenChange={(open) => { if (!open) setSharePlanId(null); }}
-            planId={sharePlanId}
-            planTitle={sharePlanTitle}
-          />
-        </Suspense>
-      )}
     </div>
   );
 }
