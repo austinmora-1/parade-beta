@@ -149,6 +149,7 @@ function DayMini({
   onPlanTap: (plan: Plan) => void;
   weekendTrip?: UserTrip;
 }) {
+  const navigate = useNavigate();
   const dayName = format(date, 'EEE');
   const dayNum = format(date, 'd');
 
