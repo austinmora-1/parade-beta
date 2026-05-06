@@ -141,9 +141,6 @@ export function WeekdayRow({
                   <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">
                     {getCompactPlanTitle(p, 14)}
                   </span>
-                  <span className="ml-auto shrink-0 text-right text-[11px] font-medium text-muted-foreground tabular-nums">
-                    {planTimeLabel(p)}
-                  </span>
                 </li>
               );
             })}
@@ -156,6 +153,20 @@ export function WeekdayRow({
           </span>
         )}
       </button>
+
+      {/* Right column: stacked times aligned to FAB */}
+      {visiblePlans.length > 0 && (
+        <div className="flex shrink-0 flex-col items-end justify-center gap-0.5 self-stretch pt-[26px]">
+          {visiblePlans.map((p) => (
+            <span
+              key={p.id}
+              className="text-right text-[11px] font-medium leading-[18px] text-muted-foreground tabular-nums"
+            >
+              {planTimeLabel(p)}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Add FAB */}
       <button
