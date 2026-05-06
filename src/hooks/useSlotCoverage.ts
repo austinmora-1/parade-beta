@@ -17,6 +17,7 @@ export function useSlotCoverageByDate(): Map<string, Map<TimeSlot, SlotCoverage>
     const byDate: Record<string, Plan[]> = {};
     for (const p of plans) {
       if (p.status && !BLOCKING_STATUSES.has(p.status)) continue;
+      if (p.blocksAvailability === false) continue;
       const k = format(p.date, 'yyyy-MM-dd');
       (byDate[k] ||= []).push(p);
     }
