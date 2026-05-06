@@ -350,7 +350,7 @@ export function useOpenWindows() {
 
       // Compute true coverage from this user's plans (full vs partial).
       const dayPlans = plans.filter(
-        (p) => isSameDay(p.date, date) && (!p.status || BLOCKING.has(p.status)),
+        (p) => isSameDay(p.date, date) && (!p.status || BLOCKING.has(p.status)) && p.blocksAvailability !== false,
       );
       const myCoverage = mergeCoverages(
         dayPlans.map((p) =>
