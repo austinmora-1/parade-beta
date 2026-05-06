@@ -32,6 +32,7 @@ interface Trip {
   end_date: string;
   priority_friend_ids: string[];
   available_slots: string[];
+  proposal_type?: string;
 }
 
 interface ProposalDate {
