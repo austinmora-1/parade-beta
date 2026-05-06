@@ -47,6 +47,7 @@ interface TripRow {
   priority_friend_ids: string[];
   available_slots: string[];
   proposal_id: string | null;
+  proposal_type?: string | null;
 }
 
 interface FriendProfile {
