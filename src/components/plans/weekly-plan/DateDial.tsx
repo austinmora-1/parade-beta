@@ -26,9 +26,9 @@ export function DateDial({ dayName, dayNum, status, fill, isToday, size = 56 }: 
 
   const colorVar =
     status === 'open'
-      ? 'hsl(var(--availability-available))'
+      ? 'hsl(var(--available))'
       : status === 'some'
-      ? 'hsl(var(--availability-partial))'
+      ? 'hsl(var(--partial))'
       : status === 'busy'
       ? 'hsl(var(--secondary))'
       : 'hsl(var(--muted-foreground) / 0.35)';
