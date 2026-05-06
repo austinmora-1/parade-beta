@@ -184,6 +184,7 @@ export default function PlanDetail() {
           notes: planData.notes || undefined,
           status: planData.status,
           feedVisibility: planData.feed_visibility || 'private',
+          blocksAvailability: (planData as any).blocks_availability !== false,
           sourceTimezone: planData.source_timezone || undefined,
           source: planData.source || undefined,
           participants: [
