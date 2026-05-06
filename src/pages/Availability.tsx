@@ -251,8 +251,8 @@ export default function Availability() {
             onClick={() => setWeekOffset(0)}
             className="text-xs font-bold text-primary hover:text-primary/80 inline-flex items-center gap-1"
           >
-            Back to this week
             <ArrowLeft className="h-3.5 w-3.5" />
+            Back to this week
           </button>
         </div>
       )}
