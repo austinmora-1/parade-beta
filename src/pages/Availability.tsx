@@ -23,6 +23,9 @@ import { useSlotCoverageByDate } from '@/hooks/useSlotCoverage';
 import { TripsList } from '@/components/trips/TripsList';
 import { WeekendHeroCard } from '@/components/plans/weekly-plan/WeekendHeroCard';
 import { WeekdayRow } from '@/components/plans/weekly-plan/WeekdayRow';
+import { NextTripCTA } from '@/components/trips/NextTripCTA';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { List } from 'lucide-react';
 
 
 type ViewFilter = 'all' | 'plans' | 'trips';
@@ -43,7 +46,8 @@ export default function Availability() {
 
   const [guidedPlanOpen, setGuidedPlanOpen] = useState(false);
   const [guidedTripOpen, setGuidedTripOpen] = useState(false);
-  
+  const [tripsListOpen, setTripsListOpen] = useState(false);
+
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -290,12 +294,37 @@ export default function Availability() {
         </div>
       )}
 
-      {/* Full trips management surface when filter == trips */}
+      {/* Trips view: next trip CTA + entry to full list */}
       {viewFilter === 'trips' && (
-        <div className="pt-2">
-          <TripsList />
+        <div className="pt-2 space-y-3">
+          <NextTripCTA
+            onJumpToWeek={(offset) => {
+              setWeekOffset(offset);
+              setViewFilter('all');
+            }}
+          />
+          <Button
+            variant="outline"
+            className="w-full justify-between h-12"
+            onClick={() => setTripsListOpen(true)}
+          >
+            <span className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              View all trips
+            </span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       )}
+
+      <Sheet open={tripsListOpen} onOpenChange={setTripsListOpen}>
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto rounded-t-2xl">
+          <SheetHeader className="text-left mb-4">
+            <SheetTitle className="font-display text-2xl">Your trips</SheetTitle>
+          </SheetHeader>
+          <TripsList />
+        </SheetContent>
+      </Sheet>
 
       {guidedPlanOpen && (
         <Suspense fallback={null}>
