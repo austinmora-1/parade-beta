@@ -2,13 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Plan, DayAvailability, TimeSlot, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { Plan, DayAvailability, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
 import { SlotCoverage } from '@/lib/planSlotCoverage';
 import { getDayStatus } from './dayStatus';
 import { DateDial } from './DateDial';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { getCompactPlanTitle } from '@/lib/planTitle';
-import { formatTime12 } from './planCardHelpers';
+import { formatTime12, TIME_SLOT_HOURS } from './planCardHelpers';
 
 interface Props {
   date: Date;
@@ -27,8 +27,9 @@ const SLOTS: TimeSlot[] = [
 
 function planTimeLabel(p: Plan): string {
   if (p.startTime) return formatTime12(p.startTime);
-  const slot = TIME_SLOT_LABELS[p.timeSlot];
-  return typeof slot === 'string' ? slot : slot?.time ?? '';
+  const hour = TIME_SLOT_HOURS[p.timeSlot]?.start;
+  if (hour == null) return '';
+  return formatTime12(`${String(hour % 24).padStart(2, '0')}:00`);
 }
 
 export function WeekdayRow({
@@ -140,9 +141,6 @@ export function WeekdayRow({
                   <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">
                     {getCompactPlanTitle(p, 14)}
                   </span>
-                  <span className="ml-auto shrink-0 text-right text-[11px] font-medium text-muted-foreground tabular-nums">
-                    {planTimeLabel(p)}
-                  </span>
                 </li>
               );
             })}
@@ -155,6 +153,20 @@ export function WeekdayRow({
           </span>
         )}
       </button>
+
+      {/* Right column: stacked times aligned to FAB */}
+      {visiblePlans.length > 0 && (
+        <div className="flex shrink-0 flex-col items-end justify-center gap-0.5 self-stretch pt-[26px]">
+          {visiblePlans.map((p) => (
+            <span
+              key={p.id}
+              className="text-right text-[11px] font-medium leading-[18px] text-muted-foreground tabular-nums"
+            >
+              {planTimeLabel(p)}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Add FAB */}
       <button
