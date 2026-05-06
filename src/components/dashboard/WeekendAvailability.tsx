@@ -68,7 +68,7 @@ export function WeekendAvailability() {
   return (
     <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-soft">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display text-base font-semibold">Weekend</h3>
+        <h3 className="font-display tracking-tight font-semibold text-xl">Weekend</h3>
         <Link to="/availability">
           <Button variant="ghost" size="sm" className="gap-1 text-xs h-7 px-2">
             Edit
