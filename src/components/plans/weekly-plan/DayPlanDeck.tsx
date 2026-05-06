@@ -72,12 +72,8 @@ export function DayPlanDeck({ plans }: Props) {
         const plan = plans[planIdx];
         if (!plan || stackPos > 2) return null;
         const isTop = stackPos === 0;
-        const cfg = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG] ?? {
-          label: 'Activity',
-          icon: '✨',
-          color: 'activity-misc',
-          category: 'staying-in' as const,
-        };
+        const cfg = ACTIVITY_CONFIG[plan.activity as keyof typeof ACTIVITY_CONFIG];
+        if (!cfg) return null;
         const slotCfg = TIME_SLOT_LABELS[plan.timeSlot];
         const timeLabel = plan.startTime
           ? formatTime12(plan.startTime)
