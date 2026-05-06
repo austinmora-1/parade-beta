@@ -14,12 +14,15 @@ function formatTime12(time?: string) {
   return m === 0 ? `${hour12}${ampm}` : `${hour12}:${mStr}${ampm}`;
 }
 
-// Common quick-pick times (24h)
-const QUICK_TIMES = [
-  '07:00', '08:00', '09:00', '10:00', '11:00',
-  '12:00', '13:00', '14:00', '15:00', '16:00',
-  '17:00', '18:00', '19:00', '20:00', '21:00', '22:00',
-];
+// Common quick-pick times (24h) — every 30 minutes from 7am to 10:30pm
+const QUICK_TIMES = (() => {
+  const out: string[] = [];
+  for (let h = 7; h <= 22; h++) {
+    out.push(`${String(h).padStart(2, '0')}:00`);
+    out.push(`${String(h).padStart(2, '0')}:30`);
+  }
+  return out;
+})();
 
 interface TimePickerButtonProps {
   label: string;
@@ -52,9 +55,9 @@ export function TimePickerButton({ label, value, onChange, placeholder = 'Pick t
           {value ? formatTime12(value) : placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-3">
+      <PopoverContent align="start" className="w-72 p-3">
         <div className="text-xs font-semibold text-muted-foreground mb-2">{label}</div>
-        <div className="grid grid-cols-4 gap-1.5 mb-3">
+        <div className="grid grid-cols-4 gap-1.5 mb-3 max-h-64 overflow-y-auto pr-1">
           {QUICK_TIMES.map((t) => (
             <button
               key={t}

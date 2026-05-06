@@ -439,6 +439,16 @@ export default function PlanDetail() {
     }
   };
 
+  const computeDurationMinutes = (start?: string, end?: string): number | null => {
+    if (!start || !end) return null;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return null;
+    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff <= 0) diff += 24 * 60;
+    return diff;
+  };
+
   const applyScheduleUpdate = async (changes: { date?: Date; timeSlot?: any; duration?: number; startTime?: string; endTime?: string }) => {
     if (!plan) return;
     // Owner solo plan, or non-time fields → direct update
@@ -653,10 +663,10 @@ export default function PlanDetail() {
               )}
             </div>
 
-            {/* Time / time slot */}
-            <div className="flex items-center gap-3 text-sm flex-wrap">
-              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-              {canEdit && !isPast && plan ? (
+            {/* Start / End times (row 2) */}
+            {canEdit && !isPast && plan ? (
+              <div className="flex items-center gap-3 text-sm flex-wrap">
+                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="flex items-center gap-2 flex-wrap">
                   <TimePickerButton
                     label="Start time"
@@ -665,6 +675,10 @@ export default function PlanDetail() {
                     onChange={async (val) => {
                       const updates: any = { startTime: val };
                       if (val) updates.timeSlot = getTimeSlotForTime(val);
+                      if (val && displayPlan.endTime) {
+                        const dur = computeDurationMinutes(val, displayPlan.endTime);
+                        if (dur != null) updates.duration = dur;
+                      }
                       await applyScheduleUpdate(updates);
                     }}
                   />
@@ -674,9 +688,23 @@ export default function PlanDetail() {
                     value={displayPlan.endTime || ''}
                     placeholder="End"
                     onChange={async (val) => {
-                      await applyScheduleUpdate({ endTime: val });
+                      const updates: any = { endTime: val };
+                      if (val && displayPlan.startTime) {
+                        const dur = computeDurationMinutes(displayPlan.startTime, val);
+                        if (dur != null) updates.duration = dur;
+                      }
+                      await applyScheduleUpdate(updates);
                     }}
                   />
+                </div>
+              </div>
+            ) : null}
+
+            {/* Time slot + duration (row 3) */}
+            <div className="flex items-center gap-3 text-sm flex-wrap">
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0 opacity-0" />
+              {canEdit && !isPast && plan ? (
+                <div className="flex items-center gap-2 flex-wrap">
                   <div
                     className="h-9 inline-flex items-center px-3 rounded-full bg-muted/40 text-xs text-muted-foreground"
                     title="Time slot is set automatically from start time"
@@ -687,23 +715,16 @@ export default function PlanDetail() {
                       return cfg ? cfg.label : '—';
                     })()}
                   </div>
-                  <Select
-                    value={String(displayPlan.duration || 60)}
-                    onValueChange={async (val) => {
-                      await applyScheduleUpdate({ duration: parseInt(val, 10) });
-                    }}
+                  <div
+                    className="h-9 inline-flex items-center px-3 rounded-full bg-muted/40 text-xs text-muted-foreground"
+                    title="Duration is set automatically from start and end time"
                   >
-                    <SelectTrigger className="h-9 w-auto px-3 text-xs border-none bg-muted/40 gap-1 rounded-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[30, 60, 90, 120, 150, 180, 240, 300, 360].map(m => (
-                        <SelectItem key={m} value={String(m)} className="text-sm">
-                          {m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}` : `${m}m`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {(() => {
+                      const m = displayPlan.duration || 0;
+                      if (!m) return '—';
+                      return m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}m` : ''}` : `${m}m`;
+                    })()}
+                  </div>
                 </div>
               ) : (
                 <span>
