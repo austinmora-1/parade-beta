@@ -148,6 +148,7 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
       notes: data.notes || undefined,
       status: (data as any).status as PlanStatus || 'confirmed',
       feedVisibility: (data as any).feed_visibility || 'private',
+      blocksAvailability: (data as any).blocks_availability !== false,
       participants: plan.participants || [],
       createdAt: new Date(data.created_at),
     };
