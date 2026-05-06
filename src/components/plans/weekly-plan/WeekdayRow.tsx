@@ -60,10 +60,12 @@ export function WeekdayRow({
   const summaryLabel =
     status.status === 'busy' ? 'Booked' :
     status.status === 'some' ? 'Some time' :
+    status.status === 'mostly-open' ? 'Mostly Open' :
     status.status === 'open' ? 'Open' : 'Unavailable';
   const summaryPillClass =
     status.status === 'busy' ? 'bg-secondary/15 text-secondary' :
     status.status === 'some' ? 'bg-amber-200/60 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300' :
+    status.status === 'mostly-open' ? 'bg-availability-available/10 text-availability-available' :
     status.status === 'open' ? 'bg-availability-available/15 text-availability-available' :
     'bg-muted text-muted-foreground';
 
