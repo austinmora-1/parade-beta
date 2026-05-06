@@ -269,21 +269,22 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
       plans: state.plans.map((p) => p.id === id ? { ...p, ...updates } : p),
     }));
 
-    // Sync availability if timing or status changed.
+    // Sync availability if timing, status, or blocking flag changed.
     const timingChanged =
       updates.timeSlot !== undefined ||
       updates.startTime !== undefined ||
       updates.endTime !== undefined ||
       updates.date !== undefined ||
-      updates.status !== undefined;
+      updates.status !== undefined ||
+      updates.blocksAvailability !== undefined;
     if (timingChanged && userId) {
       const { plans: latest } = get();
       const updatedPlan = latest.find((p) => p.id === id);
-      const oldPlan = get().plans.find((p) => p.id === id); // post-merge — ok since we only read non-changed fields below
-      // Use the pre-update record we still hold from the prior `currentPlans` snapshot:
-      const prior = updatedPlan ? { ...updatedPlan, ...{} } : null;
+      const isBlocking = !!updatedPlan
+        && BLOCKING_STATUSES.has(updatedPlan.status || 'confirmed')
+        && updatedPlan.blocksAvailability !== false;
       // Block the new coverage
-      if (updatedPlan && BLOCKING_STATUSES.has(updatedPlan.status || 'confirmed')) {
+      if (updatedPlan && isBlocking) {
         const dateStr = format(updatedPlan.date, 'yyyy-MM-dd');
         await blockSlotsForPlan(userId, dateStr, {
           timeSlot: updatedPlan.timeSlot,
@@ -293,7 +294,7 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
       }
       // If the plan moved date or its status became non-blocking, recompute the
       // slots it used to cover so they free up when nothing else holds them.
-      if (updatedPlan && (!BLOCKING_STATUSES.has(updatedPlan.status || 'confirmed'))) {
+      if (updatedPlan && !isBlocking) {
         const dateStr = format(updatedPlan.date, 'yyyy-MM-dd');
         const remaining = latest.filter(
           (p) => p.id !== id && format(p.date, 'yyyy-MM-dd') === dateStr,
@@ -302,7 +303,9 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
           userId,
           dateStr,
           { timeSlot: updatedPlan.timeSlot, startTime: updatedPlan.startTime || null, endTime: updatedPlan.endTime || null },
-          remaining.map((p) => ({ timeSlot: p.timeSlot, startTime: p.startTime || null, endTime: p.endTime || null, status: p.status })),
+          remaining
+            .filter((p) => p.blocksAvailability !== false)
+            .map((p) => ({ timeSlot: p.timeSlot, startTime: p.startTime || null, endTime: p.endTime || null, status: p.status })),
         );
       }
     }
