@@ -223,7 +223,11 @@ export default function ProposalDetail() {
 
       <div className="rounded-xl border border-border bg-card p-4 shadow-soft space-y-3">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/15 text-primary shrink-0">
+          <div className={
+            isVisit
+              ? "flex items-center justify-center h-10 w-10 rounded-lg bg-availability-available/15 text-availability-available shrink-0"
+              : "flex items-center justify-center h-10 w-10 rounded-lg bg-[hsl(var(--coral))]/15 text-[hsl(var(--coral))] shrink-0"
+          }>
             <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
