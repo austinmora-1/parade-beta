@@ -23,6 +23,9 @@ import { useSlotCoverageByDate } from '@/hooks/useSlotCoverage';
 import { TripsList } from '@/components/trips/TripsList';
 import { WeekendHeroCard } from '@/components/plans/weekly-plan/WeekendHeroCard';
 import { WeekdayRow } from '@/components/plans/weekly-plan/WeekdayRow';
+import { NextTripCTA } from '@/components/trips/NextTripCTA';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { List } from 'lucide-react';
 
 
 type ViewFilter = 'all' | 'plans' | 'trips';
