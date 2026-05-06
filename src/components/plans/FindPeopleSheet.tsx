@@ -716,7 +716,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
                   <CheckCircle2 className="h-8 w-8 text-availability-available" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-base font-semibold text-foreground">Your open invite is live.</p>
+                  <p className="tracking-tight font-semibold text-xl text-foreground">Your open invite is live.</p>
                   <p className="text-xs text-muted-foreground max-w-[260px] mx-auto">
                     We'll ping you the moment someone bites.
                   </p>

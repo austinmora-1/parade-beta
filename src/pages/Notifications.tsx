@@ -1140,7 +1140,7 @@ export default function Notifications() {
       {isEmpty && !planInvitesLoading && !changesLoading && !photosLoading && !participantReqLoading && incomingRequests.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-6 text-center shadow-soft md:rounded-2xl md:p-8">
           <div className="mx-auto mb-3 text-4xl md:mb-4 md:text-5xl">🔔</div>
-          <h3 className="font-display text-base font-semibold md:text-lg">All caught up</h3>
+          <h3 className="font-display tracking-tight font-semibold text-xl">All caught up</h3>
           <p className="mt-2 text-sm text-muted-foreground">
             Quiet for now. When your crew reaches out, you'll see it here.
           </p>

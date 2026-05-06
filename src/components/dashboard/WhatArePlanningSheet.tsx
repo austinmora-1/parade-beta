@@ -26,9 +26,9 @@ export function WhatArePlanningSheet({ open, onOpenChange, onSelect }: WhatArePl
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent data-tour="planning-sheet" className="max-h-[85vh]">
         <DrawerHeader className="text-left pb-2">
-          <DrawerTitle className="text-base font-semibold">What are you planning?</DrawerTitle>
+          <DrawerTitle className="tracking-tight font-semibold text-xl">What are you planning?</DrawerTitle>
           <DrawerDescription className="text-xs">
-            Pick whatever comes to mind first — we'll fill in the rest.
+            Tell us what you need help with — we'll fill in the rest.
           </DrawerDescription>
         </DrawerHeader>
 

@@ -39,7 +39,7 @@ export function CollapsibleWidget({
       >
         <div className="flex items-center gap-2 min-w-0">
           {icon}
-          <h3 className={cn("font-display font-semibold", compact ? "text-sm" : "text-base")}>{title}</h3>
+          <h3 className={cn("font-display font-semibold tracking-tight", compact ? "text-sm" : "text-xl")}>{title}</h3>
           {badge}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">

@@ -535,7 +535,7 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
           onClick={() => setAvailabilityOpen(prev => !prev)}
           className="flex w-full items-center justify-between p-4 md:p-6 text-left"
         >
-          <h2 className="font-display text-base font-semibold md:text-lg">
+          <h2 className="font-display tracking-tight font-semibold text-xl">
             This Week's Availability
           </h2>
           <ChevronDown className={cn(
