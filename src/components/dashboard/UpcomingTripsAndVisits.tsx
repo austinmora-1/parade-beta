@@ -10,7 +10,7 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { formatDisplayName } from '@/lib/formatName';
 import { formatCityForDisplay } from '@/lib/formatCity';
-import { citiesMatch, normalizeCity } from '@/lib/locationMatch';
+
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { getTravelKind, VISIT_ACCENT, TRIP_ACCENT } from '@/lib/visitVsTrip';
 
