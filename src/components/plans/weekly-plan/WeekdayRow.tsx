@@ -44,6 +44,8 @@ export function WeekdayRow({
   const navigate = useNavigate();
   const dayName = format(date, 'EEE').toUpperCase();
   const dayNum = format(date, 'd');
+  const dow = date.getDay();
+  const isWeekend = dow === 0 || dow === 6;
 
   const status = getDayStatus(date, coverageByDate, availabilityMap);
   // Dial represents % of day that is unbooked (free slots / total slots)
