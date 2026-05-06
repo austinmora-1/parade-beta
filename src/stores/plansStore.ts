@@ -120,6 +120,7 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
           : (plan.status || 'confirmed'),
         source_timezone: userTimezone,
         feed_visibility: plan.feedVisibility || 'private',
+        blocks_availability: plan.blocksAvailability !== false,
       } as any)
       .select()
       .single();
