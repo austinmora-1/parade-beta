@@ -15,6 +15,7 @@ import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -183,6 +184,7 @@ export default function PlanDetail() {
           notes: planData.notes || undefined,
           status: planData.status,
           feedVisibility: planData.feed_visibility || 'private',
+          blocksAvailability: (planData as any).blocks_availability !== false,
           sourceTimezone: planData.source_timezone || undefined,
           source: planData.source || undefined,
           participants: [
@@ -1029,6 +1031,25 @@ export default function PlanDetail() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {/* Block availability toggle - owners only */}
+          {plan && isOwner && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Blocks availability</div>
+                <div className="text-xs text-muted-foreground/80 mt-0.5">
+                  Off = stays on your calendar but doesn't mark you busy (e.g. holiday reminders)
+                </div>
+              </div>
+              <Switch
+                checked={plan.blocksAvailability !== false}
+                onCheckedChange={async (checked) => {
+                  await updatePlan(plan.id, { blocksAvailability: checked });
+                  toast.success(checked ? 'Will block availability' : 'Will not block availability');
+                }}
+              />
             </div>
           )}
 

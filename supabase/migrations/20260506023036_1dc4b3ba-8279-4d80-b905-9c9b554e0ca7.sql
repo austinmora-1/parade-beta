@@ -1,0 +1,1 @@
+ALTER TABLE public.plans ADD COLUMN blocks_availability boolean NOT NULL DEFAULT true;

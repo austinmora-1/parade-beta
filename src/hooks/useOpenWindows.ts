@@ -303,7 +303,7 @@ export function useOpenWindows() {
           .in('user_id', friendIds),
         supabase
           .from('plans')
-          .select('user_id, date, time_slot, status')
+          .select('user_id, date, time_slot, status, blocks_availability')
           .in('user_id', friendIds)
           .gte('date', dateStrs[0])
           .lte('date', dateStrs[dateStrs.length - 1] + 'T23:59:59')
@@ -317,14 +317,16 @@ export function useOpenWindows() {
         }
         setFriendHomeAddresses(map);
         // Normalize plan dates to YYYY-MM-DD for matching.
-        const normalized: FriendPlanRow[] = ((plansRes.data as { user_id: string; date: string; time_slot: string; status: string }[]) || []).map(
-          (p) => ({
-            user_id: p.user_id,
-            date: (p.date || '').slice(0, 10),
-            time_slot: p.time_slot as TimeSlot,
-            status: p.status,
-          })
-        );
+        const normalized: FriendPlanRow[] = ((plansRes.data as { user_id: string; date: string; time_slot: string; status: string; blocks_availability?: boolean }[]) || [])
+          .filter((p) => p.blocks_availability !== false)
+          .map(
+            (p) => ({
+              user_id: p.user_id,
+              date: (p.date || '').slice(0, 10),
+              time_slot: p.time_slot as TimeSlot,
+              status: p.status,
+            })
+          );
         setFriendPlans(normalized);
         setLoading(false);
       }
@@ -348,7 +350,7 @@ export function useOpenWindows() {
 
       // Compute true coverage from this user's plans (full vs partial).
       const dayPlans = plans.filter(
-        (p) => isSameDay(p.date, date) && (!p.status || BLOCKING.has(p.status)),
+        (p) => isSameDay(p.date, date) && (!p.status || BLOCKING.has(p.status)) && p.blocksAvailability !== false,
       );
       const myCoverage = mergeCoverages(
         dayPlans.map((p) =>

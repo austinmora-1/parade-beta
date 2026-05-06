@@ -938,6 +938,7 @@ export type Database = {
       plans: {
         Row: {
           activity: string
+          blocks_availability: boolean
           created_at: string
           date: string
           duration: number
@@ -964,6 +965,7 @@ export type Database = {
         }
         Insert: {
           activity: string
+          blocks_availability?: boolean
           created_at?: string
           date: string
           duration?: number
@@ -990,6 +992,7 @@ export type Database = {
         }
         Update: {
           activity?: string
+          blocks_availability?: boolean
           created_at?: string
           date?: string
           duration?: number
