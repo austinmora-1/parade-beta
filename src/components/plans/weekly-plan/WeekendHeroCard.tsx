@@ -80,19 +80,26 @@ export function WeekendHeroCard({
   return (
     <section
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-soft',
-        weekendTrip && 'bg-gradient-to-br from-primary/5 via-card to-card border-primary/20',
+        'relative overflow-hidden rounded-2xl border border-secondary/30 p-4 shadow-soft',
+        'bg-gradient-to-br from-secondary/15 via-card to-primary/10',
+        weekendTrip && 'from-primary/15 via-card to-secondary/10 border-primary/30',
       )}
     >
-      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-        <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
+      {/* Decorative orbs */}
+      <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-secondary/25 blur-3xl" />
+      <span aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-primary/20 blur-3xl" />
+      <span aria-hidden className="pointer-events-none absolute right-3 top-2 text-base">✦</span>
+      <span aria-hidden className="pointer-events-none absolute right-8 top-6 text-[10px] text-secondary/60">✺</span>
+
+      <div className="relative flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" />
         <span className="text-secondary">This Weekend</span>
         <span className="font-medium normal-case tracking-normal text-muted-foreground">{dateLabel}</span>
       </div>
 
-      <h2 className="mt-2 font-display text-2xl font-black leading-tight tracking-tight">
+      <h2 className="relative mt-2 font-display text-2xl font-black leading-tight tracking-tight">
         {weekendTrip && <Plane className="mr-1 inline-block h-5 w-5 align-[-2px] text-primary" />}
-        {headline}{weekendTrip ? '.' : ''}
+        <span className="bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">{headline}</span>{weekendTrip ? '.' : ''}
       </h2>
       {subhead && <p className="mt-1 text-sm text-muted-foreground">{subhead}</p>}
 
