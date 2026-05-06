@@ -88,7 +88,7 @@ export function PolishProfileCard() {
           <Sparkles className="h-5 w-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-display text-base font-semibold">
+          <h3 className="font-display tracking-tight font-semibold text-xl">
             Polish your profile
           </h3>
           <p className="mt-0.5 text-sm text-muted-foreground">
