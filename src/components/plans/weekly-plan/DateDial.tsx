@@ -81,7 +81,7 @@ export function DateDial({ dayName, dayNum, status, fill, isToday, size = 56 }: 
           className={cn(
             'font-display text-xl font-black leading-none mt-0.5',
             status === 'busy' && 'text-secondary',
-            status === 'some' && 'text-availability-partial',
+            status === 'some' && 'text-availability-partial text-slate-950',
             status === 'open' && 'text-foreground',
             status === 'unavailable' && 'text-muted-foreground',
           )}
