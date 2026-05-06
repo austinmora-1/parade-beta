@@ -86,6 +86,8 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
   const { displayPlans: plans } = useDisplayPlans(rawPlans);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { profile } = useCurrentUserProfile();
+  const homeCandidates = [profile?.home_address, (profile as any)?.neighborhood];
   const [friendUpcomingPlans, setFriendUpcomingPlans] = useState<any[]>([]);
   const [tripProposals, setTripProposals] = useState<any[]>([]);
 
