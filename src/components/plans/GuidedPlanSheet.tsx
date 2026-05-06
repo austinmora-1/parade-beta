@@ -25,6 +25,7 @@ import { SlotCalendarPicker, SelectedSlotEntry } from '@/components/plans/SlotCa
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { usePods } from '@/hooks/usePods';
 
 interface GuidedPlanSheetProps {
   open: boolean;
