@@ -439,6 +439,16 @@ export default function PlanDetail() {
     }
   };
 
+  const computeDurationMinutes = (start?: string, end?: string): number | null => {
+    if (!start || !end) return null;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    if ([sh, sm, eh, em].some(n => Number.isNaN(n))) return null;
+    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff <= 0) diff += 24 * 60;
+    return diff;
+  };
+
   const applyScheduleUpdate = async (changes: { date?: Date; timeSlot?: any; duration?: number; startTime?: string; endTime?: string }) => {
     if (!plan) return;
     // Owner solo plan, or non-time fields → direct update
