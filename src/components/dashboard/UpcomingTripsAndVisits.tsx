@@ -39,18 +39,18 @@ export function UpcomingTripsAndVisits() {
     return homeCities.some((home) => citiesMatch(home, normalized));
   };
 
-  // Fetch confirmed trips (next 3 months)
+  // Fetch confirmed trips (next 2 months)
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
       const now = new Date();
-      const threeMonths = addMonths(now, 3);
+      const twoMonths = addMonths(now, 2);
       const { data } = await supabase
         .from('trips')
         .select('*')
         .eq('user_id', user.id)
         .gte('end_date', format(now, 'yyyy-MM-dd'))
-        .lte('start_date', format(threeMonths, 'yyyy-MM-dd'))
+        .lte('start_date', format(twoMonths, 'yyyy-MM-dd'))
         .order('start_date', { ascending: true });
 
       if (!data?.length) { setConfirmedTrips([]); return; }
