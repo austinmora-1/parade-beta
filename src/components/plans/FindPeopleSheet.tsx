@@ -329,7 +329,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
               <ArrowLeft className="h-5 w-5" />
             </button>
           )}
-          <DrawerTitle className="tracking-tight text-center font-semibold px-8 text-lg">
+          <DrawerTitle className="tracking-tight text-center font-semibold px-8 text-xl">
             {stepTitle}
           </DrawerTitle>
         </DrawerHeader>
