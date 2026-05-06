@@ -338,7 +338,7 @@ export default function ProposalDetail() {
               ) : (
                 <ArrowLeftRight className="h-4 w-4" />
               )}
-              {isVisit ? 'Convert to trip' : 'Convert to visit'}
+              {proposal.proposal_type === 'visit' ? 'Convert to trip' : 'Convert to visit'}
             </Button>
 
             <Button
