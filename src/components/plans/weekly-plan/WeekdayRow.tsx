@@ -48,13 +48,11 @@ export function WeekdayRow({
   const dayNum = format(date, 'd');
 
   const status = getDayStatus(date, coverageByDate, availabilityMap);
-  const fill = status.status === 'open'
-    ? 1
-    : status.status === 'some'
-    ? Math.max(0.25, status.freeCount / SLOTS.length)
-    : status.status === 'busy'
-    ? Math.max(0.15, status.busyCount / SLOTS.length)
-    : 0;
+  // Dial represents % of day that is unbooked (free slots / total slots)
+  const totalSlots = status.freeCount + status.busyCount || SLOTS.length;
+  const fill = status.status === 'unavailable'
+    ? 0
+    : status.freeCount / totalSlots;
 
   const visiblePlans = plans.slice(0, 2);
   const extraCount = Math.max(0, plans.length - visiblePlans.length);
