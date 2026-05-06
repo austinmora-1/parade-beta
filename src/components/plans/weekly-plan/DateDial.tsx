@@ -79,7 +79,7 @@ export function DateDial({ dayName, dayNum, status, fill, isToday, size = 56 }: 
         </span>
         <span
           className={cn(
-            'font-display text-xl font-black leading-none mt-0.5',
+            'font-display text-xl font-black leading-none mt-0.5 text-inherit',
             status === 'busy' && 'text-secondary',
             status === 'some' && 'text-availability-partial text-slate-950',
             (status === 'open' || status === 'mostly-open') && 'text-foreground',
