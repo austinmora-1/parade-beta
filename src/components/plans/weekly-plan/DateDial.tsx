@@ -25,7 +25,7 @@ export function DateDial({ dayName, dayNum, status, fill, isToday, size = 56 }: 
   const dash = Math.max(0, Math.min(1, fill)) * c;
 
   const colorVar =
-    status === 'open'
+    status === 'open' || status === 'mostly-open'
       ? 'hsl(var(--available))'
       : status === 'some'
       ? 'hsl(var(--partial))'
