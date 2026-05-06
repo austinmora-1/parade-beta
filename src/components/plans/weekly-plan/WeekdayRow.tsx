@@ -73,8 +73,8 @@ export function WeekdayRow({
   const summaryPillClass =
     status.status === 'busy' ? 'bg-secondary/15 text-secondary' :
     status.status === 'some' ? 'bg-amber-200/60 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300' :
-    status.status === 'mostly-open' ? 'bg-availability-available/10 text-availability-available' :
-    status.status === 'open' ? 'bg-availability-available/15 text-availability-available' :
+    status.status === 'mostly-open' ? 'bg-availability-available/15 text-[hsl(152_45%_28%)] dark:text-availability-available' :
+    status.status === 'open' ? 'bg-availability-available/20 text-[hsl(152_45%_28%)] dark:text-availability-available' :
     'bg-muted text-muted-foreground';
 
   const planCountLabel = `${plans.length} plan${plans.length === 1 ? '' : 's'}`;
