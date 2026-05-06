@@ -1222,7 +1222,9 @@ function ProposalTripCard({
             onClick={() => navigate(`/proposal/${proposal.id}`)}
             className={cn(
               "flex items-center justify-center h-10 w-10 rounded-lg shrink-0 transition-opacity hover:opacity-80",
-              allVoted ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
+              isVisit
+                ? "bg-availability-available/15 text-availability-available"
+                : "bg-[hsl(var(--coral))]/15 text-[hsl(var(--coral))]"
             )}
             title="Open proposal details"
           >
