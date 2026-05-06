@@ -51,8 +51,18 @@ export function WeekdayRow({
     ? 0
     : status.freeCount / totalSlots;
 
-  const visiblePlans = plans.slice(0, 2);
-  const extraCount = Math.max(0, plans.length - visiblePlans.length);
+  const slotOrder: Record<TimeSlot, number> = {
+    'early-morning': 0, 'late-morning': 1, 'early-afternoon': 2,
+    'late-afternoon': 3, 'evening': 4, 'late-night': 5,
+  };
+  const sortedPlans = [...plans].sort((a, b) => {
+    if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+    if (a.startTime) return -1;
+    if (b.startTime) return 1;
+    return slotOrder[a.timeSlot] - slotOrder[b.timeSlot];
+  });
+  const visiblePlans = sortedPlans.slice(0, 2);
+  const extraCount = Math.max(0, sortedPlans.length - visiblePlans.length);
 
   const summaryLabel =
     status.status === 'busy' ? 'Booked' :
