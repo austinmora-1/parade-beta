@@ -115,7 +115,8 @@ export default function ProposalDetail() {
   }
 
   const isCreator = proposal.created_by === user.id;
-  const isVisit = proposal.proposal_type === 'visit';
+  const { profile } = useCurrentUserProfile();
+  const isVisit = getTravelKind(proposal.destination, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
   const isConfirmed = proposal.status === 'confirmed';
   const Icon = isVisit ? HomeIcon : Plane;
   const destinationLabel = proposal.destination
