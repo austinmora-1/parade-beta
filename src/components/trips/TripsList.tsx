@@ -107,7 +107,16 @@ export function TripsList({ refreshKey }: TripsListProps) {
       .order('start_date', { ascending: true });
 
     if (!error && data) {
-      setTrips(data);
+      const proposalIds = [...new Set((data as any[]).map(t => t.proposal_id).filter(Boolean))] as string[];
+      const typeById = new Map<string, string>();
+      if (proposalIds.length > 0) {
+        const { data: props } = await supabase
+          .from('trip_proposals')
+          .select('id, proposal_type')
+          .in('id', proposalIds);
+        for (const p of (props || [])) typeById.set(p.id, (p as any).proposal_type);
+      }
+      setTrips((data as any[]).map(t => ({ ...t, proposal_type: t.proposal_id ? typeById.get(t.proposal_id) : undefined })));
     }
 
     setLoading(false);
