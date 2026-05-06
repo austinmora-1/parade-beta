@@ -15,6 +15,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDisplayName } from '@/lib/formatName';
 
 import { CollapsibleWidget } from './CollapsibleWidget';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind, VISIT_ACCENT, TRIP_ACCENT } from '@/lib/visitVsTrip';
 import { getCurrentTimeInTimezone, getTimezoneAbbreviation } from '@/lib/timezone';
 import { PlanRsvpButtons } from '@/components/plans/PlanRsvpButtons';
 
