@@ -67,6 +67,7 @@ export default function TripDetail() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useCurrentUserProfile();
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
   const [trip, setTrip] = useState<TripRow | null>(null);
