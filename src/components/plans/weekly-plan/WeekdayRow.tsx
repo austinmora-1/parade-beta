@@ -2,13 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Plan, DayAvailability, TimeSlot, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
+import { Plan, DayAvailability, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
 import { SlotCoverage } from '@/lib/planSlotCoverage';
 import { getDayStatus } from './dayStatus';
 import { DateDial } from './DateDial';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { getCompactPlanTitle } from '@/lib/planTitle';
-import { formatTime12 } from './planCardHelpers';
+import { formatTime12, TIME_SLOT_HOURS } from './planCardHelpers';
 
 interface Props {
   date: Date;
