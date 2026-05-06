@@ -46,7 +46,8 @@ export default function Availability() {
 
   const [guidedPlanOpen, setGuidedPlanOpen] = useState(false);
   const [guidedTripOpen, setGuidedTripOpen] = useState(false);
-  
+  const [tripsListOpen, setTripsListOpen] = useState(false);
+
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
