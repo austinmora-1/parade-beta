@@ -202,19 +202,27 @@ export function UpcomingTripsAndVisits() {
     >
       <div className="space-y-1.5">
         {visibleTrips.map(trip => {
+          const isVisit = trip.proposalType === 'visit';
+          const accent = isVisit ? 'hsl(var(--primary))' : 'hsl(var(--coral))';
           const tripTitle = trip.name
-            || (trip.location ? `Trip to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}` : 'Trip');
+            || (trip.location
+              ? `${isVisit ? 'Visit' : 'Trip'} to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}`
+              : (isVisit ? 'Visit' : 'Trip'));
           return (
             <div
               key={trip.id}
               onClick={() => navigate('/trips')}
               className="rounded-xl border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
-              style={{ borderLeftColor: 'hsl(var(--primary))' }}
+              style={{ borderLeftColor: accent }}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+                    {isVisit ? (
+                      <Home className="h-[18px] w-[18px] shrink-0" style={{ color: accent }} />
+                    ) : (
+                      <Plane className="h-[18px] w-[18px] shrink-0" style={{ color: accent }} />
+                    )}
                     <span className="text-sm font-medium truncate">
                       {tripTitle}
                     </span>
@@ -264,15 +272,15 @@ export function UpcomingTripsAndVisits() {
               key={proposal.id}
               onClick={() => navigate('/trips')}
               className="rounded-xl border-l-[3px] border-dashed border border-muted-foreground/30 opacity-70 px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
-              style={{ borderLeftColor: isVisit ? 'hsl(var(--coral))' : 'hsl(var(--primary))' }}
+              style={{ borderLeftColor: isVisit ? 'hsl(var(--primary))' : 'hsl(var(--coral))' }}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     {isVisit ? (
-                      <Home className="h-[18px] w-[18px] text-[hsl(var(--coral))] shrink-0" />
+                      <Home className="h-[18px] w-[18px] text-primary shrink-0" />
                     ) : (
-                      <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+                      <Plane className="h-[18px] w-[18px] text-[hsl(var(--coral))] shrink-0" />
                     )}
                     <span className="text-sm font-medium truncate text-muted-foreground">
                       {proposal.destination
