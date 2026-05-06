@@ -199,6 +199,7 @@ async function handleEventsSync(params: {
     let startTimeStr: string | null;
     let endTimeStr: string | null;
     let durationMinutes = 60;
+    let isAllDay = false;
 
     // Prefer the event's own timezone (Google returns it per event) over the viewer's tz
     const eventTimezone = event.start.timeZone || timezone;
@@ -216,6 +217,7 @@ async function handleEventsSync(params: {
       hour = 12;
       startTimeStr = null;
       endTimeStr = null;
+      isAllDay = true;
     } else {
       continue;
     }
@@ -236,6 +238,7 @@ async function handleEventsSync(params: {
       start_time: startTimeStr,
       end_time: endTimeStr,
       source_timezone: eventTimezone || null,
+      blocks_availability: !isAllDay,
     });
   }
 
