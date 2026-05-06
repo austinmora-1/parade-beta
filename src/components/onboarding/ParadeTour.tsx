@@ -416,9 +416,9 @@ export function ParadeTour() {
           >
             <div className="mx-auto mt-3 h-1.5 w-[80px] rounded-full bg-muted" />
             <div className="px-4 pt-3 pb-2 text-left">
-              <p className="text-base font-semibold text-foreground">What are you planning?</p>
+              <p className="tracking-tight font-semibold text-xl text-foreground">What are you planning?</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Pick whatever comes to mind first — we'll fill in the rest.
+                Tell us what you need help with — we'll fill in the rest.
               </p>
             </div>
             <div className="px-4 pb-5 space-y-2">
