@@ -55,6 +55,19 @@ export function UpcomingTripsAndVisits() {
 
       if (!data?.length) { setConfirmedTrips([]); return; }
 
+      // Fetch parent proposal types so finalized "visit" proposals stay
+      // visible even when the trip location matches the user's home metro
+      // (mirrors the pending-proposal filter below).
+      const proposalIds = [...new Set(data.map((t: any) => t.proposal_id).filter(Boolean))] as string[];
+      const proposalTypeById = new Map<string, string>();
+      if (proposalIds.length > 0) {
+        const { data: props } = await supabase
+          .from('trip_proposals')
+          .select('id, proposal_type')
+          .in('id', proposalIds);
+        for (const p of (props || [])) proposalTypeById.set(p.id, p.proposal_type);
+      }
+
       // Fetch participant profiles
       const tripIds = data.map(t => t.id);
       const { data: participants } = await supabase
@@ -79,6 +92,7 @@ export function UpcomingTripsAndVisits() {
 
       setConfirmedTrips(data.map(t => ({
         ...t,
+        proposalType: t.proposal_id ? proposalTypeById.get(t.proposal_id) || null : null,
         friendProfiles: (t.priority_friend_ids || [])
           .map((id: string) => profileMap.get(id))
           .filter(Boolean),
