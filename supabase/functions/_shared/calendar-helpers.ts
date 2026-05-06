@@ -1422,6 +1422,9 @@ export async function reconcilePlans(params: {
         ...(planRow.source_timezone !== undefined
           ? { source_timezone: planRow.source_timezone }
           : {}),
+        ...(planRow.blocks_availability !== undefined
+          ? { blocks_availability: planRow.blocks_availability }
+          : {}),
       }).eq("id", existing.id);
     } else {
       // Content-based dedup
