@@ -203,7 +203,7 @@ export function UpcomingTripsAndVisits() {
       <div className="space-y-1.5">
         {visibleTrips.map(trip => {
           const isVisit = trip.proposalType === 'visit';
-          const accent = isVisit ? 'hsl(var(--primary))' : 'hsl(var(--coral))';
+          const accent = isVisit ? 'hsl(var(--available))' : 'hsl(var(--coral))';
           const tripTitle = trip.name
             || (trip.location
               ? `${isVisit ? 'Visit' : 'Trip'} to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}`
