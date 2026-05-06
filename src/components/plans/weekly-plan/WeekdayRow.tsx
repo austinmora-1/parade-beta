@@ -87,7 +87,7 @@ export function WeekdayRow({
     <div
       className={cn(
         'group relative flex w-full items-center gap-3 rounded-2xl bg-card px-3 py-3 text-left shadow-soft transition-colors hover:bg-card/80',
-        isToday && 'border-primary/30 ring-1 ring-primary/15 border-2 border-orange-500',
+        isToday && 'ring-1 ring-secondary/20 border-2 border-secondary',
       )}
     >
       {/* Date dial */}
