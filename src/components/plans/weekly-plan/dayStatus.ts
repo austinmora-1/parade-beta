@@ -11,7 +11,7 @@ const SLOTS: TimeSlot[] = [
   'late-night',
 ];
 
-export type DayStatus = 'open' | 'some' | 'busy' | 'unavailable';
+export type DayStatus = 'open' | 'mostly-open' | 'some' | 'busy' | 'unavailable';
 
 export interface DayStatusInfo {
   status: DayStatus;
