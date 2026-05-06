@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, eachDayOfInterval, differenceInDays } from 'date-fns';
-import { ArrowLeft, Plane, MapPin, Calendar, Clock, Users, Trash2, Edit2, Send, ArrowLeftRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plane, Home, MapPin, Calendar, Clock, Users, Trash2, Edit2, Send, ArrowLeftRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,6 +47,7 @@ interface TripRow {
   priority_friend_ids: string[];
   available_slots: string[];
   proposal_id: string | null;
+  proposal_type?: string | null;
 }
 
 interface FriendProfile {
@@ -168,13 +169,21 @@ export default function TripDetail() {
         setCompanionProfiles([]);
       }
 
-      // If linked to a shared proposal, fetch participant count for activity-vote context
+      // If linked to a shared proposal, fetch participant count and proposal type
       if ((data as any).proposal_id) {
-        const { count } = await supabase
-          .from('trip_proposal_participants')
-          .select('*', { count: 'exact', head: true })
-          .eq('proposal_id', (data as any).proposal_id);
+        const [{ count }, { data: prop }] = await Promise.all([
+          supabase
+            .from('trip_proposal_participants')
+            .select('*', { count: 'exact', head: true })
+            .eq('proposal_id', (data as any).proposal_id),
+          supabase
+            .from('trip_proposals')
+            .select('proposal_type')
+            .eq('id', (data as any).proposal_id)
+            .maybeSingle(),
+        ]);
         setProposalParticipantCount(count || 0);
+        setTrip((prev) => prev ? { ...prev, proposal_type: (prop as any)?.proposal_type ?? null } : prev);
       } else {
         setProposalParticipantCount(0);
       }
@@ -310,9 +319,20 @@ export default function TripDetail() {
       {/* Trip Hero */}
       <div className="rounded-xl border border-border bg-card p-4 shadow-soft space-y-3">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-availability-away/15 text-availability-away">
-            <Plane className="h-6 w-6" />
-          </div>
+          {(() => {
+            const isVisit = trip.proposal_type === 'visit';
+            const HeroIcon = isVisit ? Home : Plane;
+            return (
+              <div className={cn(
+                "flex items-center justify-center h-12 w-12 rounded-xl",
+                isVisit
+                  ? "bg-availability-available/15 text-availability-available"
+                  : "bg-[hsl(var(--coral))]/15 text-[hsl(var(--coral))]"
+              )}>
+                <HeroIcon className="h-6 w-6" />
+              </div>
+            );
+          })()}
           <div>
             <h1 className="font-display text-lg font-bold">
               {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'TBC'}

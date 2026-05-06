@@ -7,7 +7,7 @@ import { useNotifications, dismissNotification } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, MapPin, CalendarPlus, Plane } from 'lucide-react';
+import { Bell, Check, X, UserPlus, Users, Inbox, Calendar, Clock, MessageSquare, Mail, Loader2, CalendarCheck, AlertTriangle, Camera, MapPin, CalendarPlus, Plane, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { toast as sonnerToast } from 'sonner';
@@ -86,6 +86,7 @@ interface TripProposalNotification {
   creator_name: string;
   creator_avatar: string | null;
   destination: string | null;
+  proposal_type: string;
   dates: { id: string; start_date: string; end_date: string; votes: number }[];
   created_at: string;
 }
@@ -221,7 +222,7 @@ export default function Notifications() {
     const proposalIds = [...new Set(participations.map(p => p.proposal_id))];
     const { data: proposals } = await supabase
       .from('trip_proposals')
-      .select('id, created_by, destination, status, created_at')
+      .select('id, created_by, destination, status, created_at, proposal_type')
       .in('id', proposalIds)
       .eq('status', 'pending');
 
@@ -252,6 +253,7 @@ export default function Notifications() {
         creator_name: creator?.display_name || 'Someone',
         creator_avatar: creator?.avatar_url || null,
         destination: proposal.destination,
+        proposal_type: (proposal as any).proposal_type || 'trip',
         dates: proposalDates,
         created_at: proposal.created_at,
       };
@@ -718,8 +720,8 @@ export default function Notifications() {
       {(visibleTripProposals.length > 0 || tripProposalsLoading) && (
         <div>
           <h2 className="mb-3 flex items-center gap-2 font-display font-semibold text-xl md:mb-4 md:text-2xl">
-            <Plane className="h-4 w-4 text-primary md:h-5 md:w-5" />
-            Trip Proposals
+            <Plane className="h-4 w-4 text-[hsl(var(--coral))] md:h-5 md:w-5" />
+            Trip & Visit Proposals
             {visibleTripProposals.length > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground md:h-6 md:w-6 md:text-xs">
                 {visibleTripProposals.length}
@@ -733,18 +735,30 @@ export default function Notifications() {
             </div>
           ) : (
             <AnimatePresence>
-              {visibleTripProposals.map((trip) => (
+              {visibleTripProposals.map((trip) => {
+                const isVisit = trip.proposal_type === 'visit';
+                const TripIcon = isVisit ? Home : Plane;
+                const accentClass = isVisit
+                  ? 'text-availability-available'
+                  : 'text-[hsl(var(--coral))]';
+                const accentBgClass = isVisit
+                  ? 'bg-availability-available/10'
+                  : 'bg-[hsl(var(--coral))]/10';
+                const borderClass = isVisit
+                  ? 'border-availability-available/20 bg-availability-available/5'
+                  : 'border-[hsl(var(--coral))]/20 bg-[hsl(var(--coral))]/5';
+                return (
                 <SwipeableDismiss key={trip.id} onDismiss={() => dismiss(`trip-proposal-${trip.id}`)}>
-                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 shadow-soft">
+                  <div className={`rounded-2xl border ${borderClass} p-4 space-y-3 shadow-soft`}>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                          <Plane className="h-5 w-5 text-primary" />
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${accentBgClass} shrink-0`}>
+                          <TripIcon className={`h-5 w-5 ${accentClass}`} />
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold">{trip.creator_name}</p>
                           <p className="text-xs text-muted-foreground">
-                            shared trip options{trip.destination ? ` to ${trip.destination}` : ''}
+                            shared {isVisit ? 'visit' : 'trip'} options{trip.destination ? ` to ${trip.destination}` : ''}
                           </p>
                         </div>
                       </div>
@@ -770,12 +784,13 @@ export default function Notifications() {
                       className="w-full gap-1.5"
                       onClick={() => navigate('/trips')}
                     >
-                      <Plane className="h-4 w-4" />
+                      <TripIcon className="h-4 w-4" />
                       View & Vote
                     </Button>
                   </div>
                 </SwipeableDismiss>
-              ))}
+                );
+              })}
             </AnimatePresence>
           )}
         </div>
