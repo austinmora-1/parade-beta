@@ -106,7 +106,7 @@ export function WeekdayRow({
         className="flex min-w-0 flex-1 flex-col justify-center gap-1 text-left"
       >
         <div className="flex items-baseline gap-1.5">
-          <span className={cn('text-sm font-bold', summaryColor)}>
+          <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold', summaryPillClass)}>
             {summaryLabel}
           </span>
           <span className="text-xs text-muted-foreground">· {planCountLabel}</span>
