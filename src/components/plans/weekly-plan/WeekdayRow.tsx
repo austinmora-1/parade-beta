@@ -2,9 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Plan, DayAvailability, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
+import { Plan, DayAvailability, TimeSlot } from '@/types/planner';
 import { SlotCoverage } from '@/lib/planSlotCoverage';
 import { getDayStatus } from './dayStatus';
+import { DayPlanDeck } from './DayPlanDeck';
 
 interface Props {
   date: Date;
@@ -35,8 +36,7 @@ export function WeekdayRow({
   const dayName = format(date, 'EEE').toUpperCase();
   const dayNum = format(date, 'd');
 
-  const visiblePlans = plans.slice(0, 3);
-  const extraCount = Math.max(0, plans.length - visiblePlans.length);
+  const extraCount = Math.max(0, plans.length - 3);
   const status = getDayStatus(date, coverageByDate, availabilityMap);
 
   const handleClick = () => {
@@ -79,52 +79,30 @@ export function WeekdayRow({
         )}
       </div>
 
-      {/* Middle column: status + stacked plan cards */}
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-3">
-        {visiblePlans.length > 0 ? (
-          <>
-            <div className="flex flex-col gap-1">
-              {visiblePlans.map((p, i) => {
-                const cfg = ACTIVITY_CONFIG[p.activity as keyof typeof ACTIVITY_CONFIG];
-                const accent = cfg?.color ? `hsl(var(--${cfg.color}))` : 'hsl(var(--primary))';
-                return (
-                  <div
-                    key={p.id}
-                    className="flex min-w-0 items-center rounded-md border border-border/60 bg-muted/40 px-2 py-1"
-                    style={{
-                      marginLeft: `${i * 4}px`,
-                      borderLeft: `3px solid ${accent}`,
-                    }}
-                  >
-                    <span className="truncate text-[13px] font-medium text-foreground">
-                      {p.title || 'Plan'}
-                    </span>
-                  </div>
-                );
-              })}
-              {extraCount > 0 && (
-                <span className="pl-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  +{extraCount} more
-                </span>
-              )}
-            </div>
-            <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-              <span className={cn('h-1.5 w-1.5 rounded-full', status.dotClass)} />
-              {status.label}
-            </span>
-          </>
-        ) : (
-          <span
-            className={cn(
-              'inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold',
-              status.chipClass,
-            )}
-          >
-            <span className={cn('h-1.5 w-1.5 rounded-full', status.dotClass)} />
-            {status.label}
+      {/* Middle column: status pill */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-3">
+        <span
+          className={cn(
+            'inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold',
+            status.chipClass,
+          )}
+        >
+          <span className={cn('h-1.5 w-1.5 rounded-full', status.dotClass)} />
+          {status.label}
+        </span>
+        {extraCount > 0 && (
+          <span className="pl-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            +{extraCount} more
           </span>
         )}
       </div>
+
+      {/* Right column: stacked plan deck */}
+      {plans.length > 0 && (
+        <div className="flex items-center py-2">
+          <DayPlanDeck plans={plans} />
+        </div>
+      )}
 
       <ChevronRight className="my-auto h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
     </button>
