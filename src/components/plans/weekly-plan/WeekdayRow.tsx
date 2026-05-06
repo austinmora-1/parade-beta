@@ -27,8 +27,9 @@ const SLOTS: TimeSlot[] = [
 
 function planTimeLabel(p: Plan): string {
   if (p.startTime) return formatTime12(p.startTime);
-  const slot = TIME_SLOT_LABELS[p.timeSlot];
-  return typeof slot === 'string' ? slot : slot?.time ?? '';
+  const hour = TIME_SLOT_HOURS[p.timeSlot]?.start;
+  if (hour == null) return '';
+  return formatTime12(`${String(hour % 24).padStart(2, '0')}:00`);
 }
 
 export function WeekdayRow({
