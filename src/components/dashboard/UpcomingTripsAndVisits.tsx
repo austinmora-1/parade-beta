@@ -219,7 +219,7 @@ export function UpcomingTripsAndVisits() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     {isVisit ? (
-                      <Home className="h-[18px] w-[18px] shrink-0 text-secondary" style={{ color: accent }} />
+                      <Home className="h-[18px] w-[18px] shrink-0" style={{ color: accent }} />
                     ) : (
                       <Plane className="h-[18px] w-[18px] shrink-0" style={{ color: accent }} />
                     )}
@@ -278,7 +278,7 @@ export function UpcomingTripsAndVisits() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     {isVisit ? (
-                      <Home className="h-[18px] w-[18px] text-secondary shrink-0" />
+                      <Home className="h-[18px] w-[18px] text-primary shrink-0" />
                     ) : (
                       <Plane className="h-[18px] w-[18px] text-[hsl(var(--coral))] shrink-0" />
                     )}
