@@ -1034,6 +1034,25 @@ export default function PlanDetail() {
             </div>
           )}
 
+          {/* Block availability toggle - owners only */}
+          {plan && isOwner && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Blocks availability</div>
+                <div className="text-xs text-muted-foreground/80 mt-0.5">
+                  Off = stays on your calendar but doesn't mark you busy (e.g. holiday reminders)
+                </div>
+              </div>
+              <Switch
+                checked={plan.blocksAvailability !== false}
+                onCheckedChange={async (checked) => {
+                  await updatePlan(plan.id, { blocksAvailability: checked });
+                  toast.success(checked ? 'Will block availability' : 'Will not block availability');
+                }}
+              />
+            </div>
+          )}
+
           {/* RSVP buttons for non-owner participants */}
           {plan && isParticipant && !isOwner && !isPast && userId && (
             <div className="space-y-2">
