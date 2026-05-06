@@ -498,6 +498,7 @@ function TripCard({
   onConverted: () => Promise<void>;
   onTripUpdated: () => Promise<void>;
 }) {
+  const { profile } = useCurrentUserProfile();
   const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [friendProfiles, setFriendProfiles] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
   const [editingTitle, setEditingTitle] = useState(false);
