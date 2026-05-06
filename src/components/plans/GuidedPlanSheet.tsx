@@ -192,6 +192,32 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
     });
   };
 
+  // Pods (groups of friends) — surfaced in the friend selection step.
+  const { pods } = usePods();
+  const connectedFriendsByUserId = useMemo(() => {
+    const m = new Map<string, typeof connectedFriends[0]>();
+    for (const f of connectedFriends) if (f.friendUserId) m.set(f.friendUserId, f);
+    return m;
+  }, [connectedFriends]);
+
+  const togglePod = (podMemberIds: string[]) => {
+    const eligible = podMemberIds.filter(id => connectedFriendsByUserId.has(id));
+    if (eligible.length === 0) return;
+    setChosenFriends(prev => {
+      const allSelected = eligible.every(id => prev.some(p => p.userId === id));
+      if (allSelected) {
+        return prev.filter(p => !eligible.includes(p.userId));
+      }
+      const next = [...prev];
+      for (const id of eligible) {
+        if (next.some(p => p.userId === id)) continue;
+        const f = connectedFriendsByUserId.get(id)!;
+        next.push({ userId: id, name: f.name, avatar: f.avatar });
+      }
+      return next;
+    });
+  };
+
   // Load custom activities from profile
   useEffect(() => {
     if (!session?.user) return;
