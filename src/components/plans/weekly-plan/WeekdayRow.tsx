@@ -2,9 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Plan, DayAvailability, TimeSlot, ACTIVITY_CONFIG } from '@/types/planner';
+import { Plan, DayAvailability, TimeSlot } from '@/types/planner';
 import { SlotCoverage } from '@/lib/planSlotCoverage';
 import { getDayStatus } from './dayStatus';
+import { DayPlanDeck } from './DayPlanDeck';
 
 interface Props {
   date: Date;
