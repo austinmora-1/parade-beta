@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, addMonths, isWithinInterval, startOfDay } from 'date-fns';
 import { Plane, Clock, Home } from 'lucide-react';
@@ -10,8 +10,9 @@ import { getElephantAvatar } from '@/lib/elephantAvatars';
 import { CollapsibleWidget } from './CollapsibleWidget';
 import { formatDisplayName } from '@/lib/formatName';
 import { formatCityForDisplay } from '@/lib/formatCity';
-import { citiesMatch, normalizeCity } from '@/lib/locationMatch';
+
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind, VISIT_ACCENT, TRIP_ACCENT } from '@/lib/visitVsTrip';
 
 export function UpcomingTripsAndVisits() {
   const { user } = useAuth();
@@ -20,24 +21,11 @@ export function UpcomingTripsAndVisits() {
   const [tripProposals, setTripProposals] = useState<any[]>([]);
   const [confirmedTrips, setConfirmedTrips] = useState<any[]>([]);
 
-  // Resolve the user's home city. Treat both `home_address` and
-  // `neighborhood` as signals of where they live, so a "trip" to their
-  // own metro never gets surfaced as travel. Mirrors the co-location
-  // rules used elsewhere on the dashboard.
-  const homeCities = useMemo(() => {
-    const candidates: string[] = [];
-    if (profile?.home_address) candidates.push(profile.home_address);
-    const neighborhood = (profile as any)?.neighborhood as string | null | undefined;
-    if (neighborhood) candidates.push(neighborhood);
-    return candidates.map(normalizeCity).filter(Boolean);
-  }, [profile?.home_address, (profile as any)?.neighborhood]);
+  // Resolve the user's home city candidates (home_address + neighborhood).
+  // The visit-vs-trip helper uses these to classify each item as a "visit"
+  // (in your home city) or a "trip" (anywhere else), regardless of how the
+  // proposal was originally tagged.
 
-  const isHomeCity = (loc: string | null | undefined) => {
-    if (!loc) return false;
-    const normalized = normalizeCity(loc);
-    if (!normalized) return false;
-    return homeCities.some((home) => citiesMatch(home, normalized));
-  };
 
   // Fetch confirmed trips (next 2 months)
   useEffect(() => {
@@ -170,19 +158,11 @@ export function UpcomingTripsAndVisits() {
     })();
   }, [user?.id]);
 
-  // Filter out trips/proposals to the user's own home metro — these
-  // shouldn't surface as "upcoming trips" since the user is already
-  // there. Visits (where the user is hosting from home) are kept.
-  const visibleTrips = useMemo(
-    () => confirmedTrips.filter((t) => t.proposalType === 'visit' || !isHomeCity(t.location)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [confirmedTrips, homeCities],
-  );
-  const visibleProposals = useMemo(
-    () => tripProposals.filter((p) => p.proposalType === 'visit' || !isHomeCity(p.destination)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tripProposals, homeCities],
-  );
+  // Under the new visit-vs-trip rule, anything in the user's home city is
+  // a "visit" (green/Home) and everything else is a "trip" (coral/Plane).
+  // We surface both, so no location-based filtering is needed here.
+  const visibleTrips = confirmedTrips;
+  const visibleProposals = tripProposals;
 
   const totalCount = visibleTrips.length + visibleProposals.length;
 
@@ -202,8 +182,8 @@ export function UpcomingTripsAndVisits() {
     >
       <div className="space-y-1.5">
         {visibleTrips.map(trip => {
-          const isVisit = trip.proposalType === 'visit';
-          const accent = isVisit ? 'hsl(var(--available))' : 'hsl(var(--coral))';
+          const isVisit = getTravelKind(trip.location, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
+          const accent = isVisit ? VISIT_ACCENT : TRIP_ACCENT;
           const tripTitle = trip.name
             || (trip.location
               ? `${isVisit ? 'Visit' : 'Trip'} to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}`
@@ -265,14 +245,15 @@ export function UpcomingTripsAndVisits() {
         {visibleProposals.map(proposal => {
           const earliestDate = proposal.dates[0];
           const latestDate = proposal.dates[proposal.dates.length - 1];
-          const isVisit = proposal.proposalType === 'visit';
+          const isVisit = getTravelKind(proposal.destination, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
+          const accent = isVisit ? VISIT_ACCENT : TRIP_ACCENT;
 
           return (
             <div
               key={proposal.id}
               onClick={() => navigate('/trips')}
               className="rounded-xl border-l-[3px] border-dashed border border-muted-foreground/30 opacity-70 px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
-              style={{ borderLeftColor: isVisit ? 'hsl(var(--available))' : 'hsl(var(--coral))' }}
+              style={{ borderLeftColor: accent }}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">

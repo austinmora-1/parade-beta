@@ -12,6 +12,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind } from '@/lib/visitVsTrip';
 
 interface ProposalRow {
   id: string;
@@ -113,7 +115,8 @@ export default function ProposalDetail() {
   }
 
   const isCreator = proposal.created_by === user.id;
-  const isVisit = proposal.proposal_type === 'visit';
+  const { profile } = useCurrentUserProfile();
+  const isVisit = getTravelKind(proposal.destination, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
   const isConfirmed = proposal.status === 'confirmed';
   const Icon = isVisit ? HomeIcon : Plane;
   const destinationLabel = proposal.destination
@@ -126,7 +129,7 @@ export default function ProposalDetail() {
     if (!isCreator) return;
     setConverting(true);
     try {
-      const newType = isVisit ? 'trip' : 'visit';
+      const newType = proposal.proposal_type === 'visit' ? 'trip' : 'visit';
       const updates: any = { proposal_type: newType, updated_at: new Date().toISOString() };
       if (newType === 'visit') {
         const otherId = participants.find(p => p.user_id !== user.id)?.user_id || null;
@@ -335,7 +338,7 @@ export default function ProposalDetail() {
               ) : (
                 <ArrowLeftRight className="h-4 w-4" />
               )}
-              {isVisit ? 'Convert to trip' : 'Convert to visit'}
+              {proposal.proposal_type === 'visit' ? 'Convert to trip' : 'Convert to visit'}
             </Button>
 
             <Button

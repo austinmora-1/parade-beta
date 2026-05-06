@@ -27,6 +27,8 @@ import { cn } from '@/lib/utils';
 import { formatCityForDisplay } from '@/lib/formatCity';
 import { TripActivities } from '@/components/trips/TripActivities';
 import { Megaphone } from 'lucide-react';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind } from '@/lib/visitVsTrip';
 
 interface TripOpenInvite {
   id: string;
@@ -65,6 +67,7 @@ export default function TripDetail() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useCurrentUserProfile();
   const loadProfileAndAvailability = usePlannerStore((s) => s.loadProfileAndAvailability);
 
   const [trip, setTrip] = useState<TripRow | null>(null);
@@ -320,7 +323,7 @@ export default function TripDetail() {
       <div className="rounded-xl border border-border bg-card p-4 shadow-soft space-y-3">
         <div className="flex items-center gap-3">
           {(() => {
-            const isVisit = trip.proposal_type === 'visit';
+            const isVisit = getTravelKind(trip.location, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
             const HeroIcon = isVisit ? Home : Plane;
             return (
               <div className={cn(

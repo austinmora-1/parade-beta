@@ -11,6 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { formatDisplayName } from '@/lib/formatName';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind } from '@/lib/visitVsTrip';
 
 interface TripDateOption {
   id: string;
@@ -42,6 +44,7 @@ export default function TripInvite() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { profile } = useCurrentUserProfile();
   const [invite, setInvite] = useState<TripInviteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
@@ -119,7 +122,7 @@ export default function TripInvite() {
     );
   }
 
-  const isVisit = invite.proposal_type === 'visit';
+  const isVisit = getTravelKind(invite.destination, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
   const Icon = isVisit ? Home : Plane;
   const hostName = formatDisplayName({
     first_name: invite.host?.first_name,

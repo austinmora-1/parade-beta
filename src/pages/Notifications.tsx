@@ -17,6 +17,8 @@ import { AnimatePresence } from 'framer-motion';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 import confetti from 'canvas-confetti';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind } from '@/lib/visitVsTrip';
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
@@ -94,6 +96,8 @@ interface TripProposalNotification {
 export default function Notifications() {
   const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans, respondToProposal } = usePlannerStore();
   const { user } = useAuth();
+  const { profile } = useCurrentUserProfile();
+  const homeCandidates = [profile?.home_address, (profile as any)?.neighborhood];
   const { toast } = useToast();
   const navigate = useNavigate();
   const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchTripProposals, dismissedIds, dismissNotification: dismiss } = useNotifications();
@@ -736,7 +740,7 @@ export default function Notifications() {
           ) : (
             <AnimatePresence>
               {visibleTripProposals.map((trip) => {
-                const isVisit = trip.proposal_type === 'visit';
+                const isVisit = getTravelKind(trip.destination, homeCandidates) === 'visit';
                 const TripIcon = isVisit ? Home : Plane;
                 const accentClass = isVisit
                   ? 'text-availability-available'

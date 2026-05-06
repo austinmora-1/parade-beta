@@ -23,6 +23,8 @@ import {
 import { AddParticipantDialog } from './AddParticipantDialog';
 import { formatDisplayName } from '@/lib/formatName';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind } from '@/lib/visitVsTrip';
 
 interface Trip {
   id: string;
@@ -491,6 +493,7 @@ function TripCard({
   onConverted: () => Promise<void>;
   onTripUpdated: () => Promise<void>;
 }) {
+  const { profile } = useCurrentUserProfile();
   const [addParticipantOpen, setAddParticipantOpen] = useState(false);
   const [friendProfiles, setFriendProfiles] = useState<{ user_id: string; display_name: string; avatar_url: string | null }[]>([]);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -605,7 +608,7 @@ function TripCard({
     >
       <div className="flex items-center gap-3">
         {(() => {
-          const isVisit = trip.proposal_type === 'visit';
+          const isVisit = getTravelKind(trip.location, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
           const TripIcon = isVisit ? Home : Plane;
           return (
             <div className={cn(
@@ -785,7 +788,8 @@ function ProposalTripCard({
     : votedCount;
   const allVoted = respondedCount === totalVoters && totalVoters > 0;
   const hasVoted = voterIds.has(currentUserId);
-  const isVisit = proposal.proposal_type === 'visit';
+  const { profile } = useCurrentUserProfile();
+  const isVisit = getTravelKind(proposal.destination, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
 
   // Ordered list of date IDs for drag ranking (top = #1)
