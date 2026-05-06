@@ -44,6 +44,7 @@ export default function TripInvite() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { profile } = useCurrentUserProfile();
   const [invite, setInvite] = useState<TripInviteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
