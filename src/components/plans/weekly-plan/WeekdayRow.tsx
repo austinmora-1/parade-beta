@@ -61,11 +61,11 @@ export function WeekdayRow({
     status.status === 'busy' ? 'Booked' :
     status.status === 'some' ? 'Some time' :
     status.status === 'open' ? 'Open' : 'Unavailable';
-  const summaryColor =
-    status.status === 'busy' ? 'text-secondary' :
-    status.status === 'some' ? 'text-availability-partial' :
-    status.status === 'open' ? 'text-availability-available' :
-    'text-muted-foreground';
+  const summaryPillClass =
+    status.status === 'busy' ? 'bg-secondary/15 text-secondary' :
+    status.status === 'some' ? 'bg-availability-partial/15 text-availability-partial' :
+    status.status === 'open' ? 'bg-availability-available/15 text-availability-available' :
+    'bg-muted text-muted-foreground';
 
   const planCountLabel = `${plans.length} plan${plans.length === 1 ? '' : 's'}`;
 
@@ -106,7 +106,7 @@ export function WeekdayRow({
         className="flex min-w-0 flex-1 flex-col justify-center gap-1 text-left"
       >
         <div className="flex items-baseline gap-1.5">
-          <span className={cn('text-sm font-bold', summaryColor)}>
+          <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold', summaryPillClass)}>
             {summaryLabel}
           </span>
           <span className="text-xs text-muted-foreground">· {planCountLabel}</span>
