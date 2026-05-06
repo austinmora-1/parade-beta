@@ -130,8 +130,8 @@ export function WeekdayRow({
                       <ActivityIcon config={cfg} size={10} />
                     </span>
                   )}
-                  <span className="truncate text-[13px] font-semibold text-foreground">
-                    {getCompactPlanTitle(p, 22)}
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">
+                    {getCompactPlanTitle(p, 14)}
                   </span>
                   <span className="ml-auto shrink-0 text-[11px] font-medium text-muted-foreground">
                     {planTimeLabel(p)}
