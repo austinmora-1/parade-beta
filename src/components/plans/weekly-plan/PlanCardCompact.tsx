@@ -24,6 +24,22 @@ interface PlanCardCompactProps {
 
 export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPast = false, isLive = false }: PlanCardCompactProps) {
   const userTimezone = usePlannerStore((s) => s.userTimezone);
+  const currentUserId = usePlannerStore((s) => s.userId);
+  const updatePlan = usePlannerStore((s) => s.updatePlan);
+  const isOwner = !!currentUserId && plan.userId === currentUserId;
+  const blocksAvailability = plan.blocksAvailability !== false;
+
+  const handleToggleBlocking = async (e: React.MouseEvent | React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const next = !blocksAvailability;
+    try {
+      await updatePlan(plan.id, { blocksAvailability: next });
+      toast.success(next ? 'Now blocking availability' : 'No longer blocking availability');
+    } catch (err) {
+      toast.error('Could not update');
+    }
+  };
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
   const displayTitle = getCompactPlanTitle(plan);
