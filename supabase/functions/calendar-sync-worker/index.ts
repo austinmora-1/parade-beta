@@ -56,18 +56,12 @@ function collectGoogleFlightsAndHotels(
           endDate.setDate(endDate.getDate() - 1);
           const endDateStr = endDate.toISOString().split("T")[0];
           const dates = getAllDayDateRange(startParsed.dateString, endDateStr);
+          // All-day events do NOT block availability slots; ensure the date
+          // exists in the map so the sync range covers it, but add no busies.
           for (const date of dates) {
             if (!busySlotsByDate.has(date)) {
               busySlotsByDate.set(date, new Set());
             }
-            [
-              "early_morning",
-              "late_morning",
-              "early_afternoon",
-              "late_afternoon",
-              "evening",
-              "late_night",
-            ].forEach((s) => busySlotsByDate.get(date)!.add(s));
           }
           if (isHotelEvent(event.summary, event.location)) {
             const hotelCity = resolveToCity(
@@ -151,16 +145,9 @@ function collectICalFlightsAndHotels(
         endExcl.setDate(endExcl.getDate() - 1);
         const endDateStr = endExcl.toISOString().split("T")[0];
         const dates = getAllDayDateRange(startDateStr, endDateStr);
+        // All-day events do NOT block availability slots.
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set());
-          [
-            "early_morning",
-            "late_morning",
-            "early_afternoon",
-            "late_afternoon",
-            "evening",
-            "late_night",
-          ].forEach((s) => busySlotsByDate.get(date)!.add(s));
         }
         if (isHotelEvent(event.summary, event.location)) {
           const hotelCity = resolveToCity(
@@ -360,6 +347,7 @@ async function syncGoogleCalendar(
     let startTimeStr: string | null;
     let endTimeStr: string | null;
     let durationMinutes = 60;
+    let isAllDay = false;
 
     // Prefer the event's own timezone (Google returns it per event) over the viewer's tz
     const eventTimezone = event.start.timeZone || timezone;
@@ -377,6 +365,7 @@ async function syncGoogleCalendar(
       hour = 12;
       startTimeStr = null;
       endTimeStr = null;
+      isAllDay = true;
     } else {
       continue;
     }
@@ -396,6 +385,7 @@ async function syncGoogleCalendar(
       start_time: startTimeStr,
       end_time: endTimeStr,
       source_timezone: eventTimezone || null,
+      blocks_availability: !isAllDay,
     });
   }
 
@@ -571,6 +561,7 @@ async function syncICalCalendar(
       source_timezone: eventTimezone || null,
       start_time: icalStartTime,
       end_time: icalEndTime,
+      blocks_availability: !event.isAllDay,
     });
   }
 

@@ -1,34 +1,73 @@
-## Add Pods to the friend selection step
+## Goal
+Ensure all-day calendar-imported events (Google, iCal, future Nylas) never block availability slots — they appear on the calendar/day view but show the day as free.
 
-In `src/components/plans/GuidedPlanSheet.tsx`, the "Who are we planning with?" step (`step === 'friends'`) currently shows a search input, selected chips, an off-Parade invite block, and a 3-column grid of friend avatars. Pods are not surfaced anywhere, so users have to re-select the same group every time.
+## What's already correct
+- `supabase/functions/ical-sync/index.ts` — already skips slot busies for all-day events and sets `blocks_availability: !event.isAllDay` on the plan row.
+- `supabase/functions/google-calendar-sync/index.ts` — same: skips slot busies and sets `blocks_availability: !isAllDay`.
 
-### What to add
+## What's broken (the cron worker)
+`supabase/functions/calendar-sync-worker/index.ts` is the function pg_cron runs every 2 hours. It still:
+1. Marks all 6 time slots as busy for every all-day event (Google: lines ~63–70; iCal: lines ~156–163).
+2. Never writes `blocks_availability` on the plan rows it upserts (Google branch ~387–399; iCal branch ~560–574), so all-day events default to `blocks_availability = true`.
 
-A new "Pods" section rendered just above the friend avatar grid (after the off-Parade invite block, before the `grid grid-cols-3` of friends), only shown when the user has at least one pod.
+This means every cron tick re-blocks holidays/birthdays even after manual fixes.
 
-Each pod is rendered as a tile in a horizontally scrollable row (or 2-column grid on narrow widths) with:
-- A small overlapping avatar stack (up to 3 member avatars + "+N" overflow), built using the same `Avatar` + `getElephantAvatar` pattern already used in the friend grid and in the post-step strip (lines 953–960).
-- The pod emoji and name (matching `PodPanel.tsx` styling: `text-lg` emoji, `text-sm font-semibold`).
-- A member count (`text-xs text-muted-foreground`) like `(4)`.
-- A selected state ring matching the friend tile (`ring-[3px] ring-primary ring-offset-2 ring-offset-background`) and a `Check` badge in the corner when all members are currently chosen.
+## Changes
 
-### Selection behavior
+### 1. `supabase/functions/calendar-sync-worker/index.ts`
+- In `collectGoogleFlightsAndHotels` (all-day branch): remove the `[early_morning…late_night].forEach(...)` block that adds 6 slot busies. Keep the `busySlotsByDate.set(date, new Set())` so the date is part of the sync range.
+- In `collectICalFlightsAndHotels` (all-day branch): same removal.
+- In the Google plan-row upsert: add `blocks_availability: !isAllDay` (track `isAllDay` like `google-calendar-sync` already does — set true when taking the `event.start.date` branch).
+- In the iCal plan-row upsert: add `blocks_availability: !event.isAllDay`.
 
-Tapping a pod toggles its members in `chosenFriends` via the existing `toggleFriend` helper:
-- If every connected pod member is already chosen → remove all of them.
-- Otherwise → add any pod members that are connected friends and not yet chosen.
-- Pod members who are not in the user's friends list (or not `connected`) are skipped silently.
+Flight/hotel detection inside all-day events stays untouched, so trip auto-creation continues to work.
 
-The pod's "selected" visual state is derived as: `pod.memberUserIds.filter(id is connected friend).every(id => chosenFriends has id)`.
+### 2. New migration `supabase/migrations/<ts>_unblock_all_day_calendar_events.sql`
+Two operations, both scoped to existing calendar-imported all-day plans:
 
-### Data wiring
+```sql
+-- A. Mark all existing imported all-day events as non-blocking
+UPDATE plans
+SET blocks_availability = false
+WHERE source IN ('gcal', 'ical', 'google', 'apple', 'nylas', 'outlook')
+  AND start_time IS NULL
+  AND blocks_availability = true;
 
-- Import and call `usePods()` from `@/hooks/usePods` at the top of the component.
-- Build a memoized `connectedFriendsByUserId` map from the existing `friends` prop for O(1) lookups when resolving pod members to avatars/names and when toggling.
-- Hide the section entirely if `pods.length === 0` so users without pods see the existing UI unchanged.
+-- B. Restore availability slots that were ONLY blocked by those all-day events.
+-- For each (user_id, date) that has at least one all-day calendar plan and no
+-- other plan with blocks_availability=true on that local date, reset all 6
+-- slots to true.
+WITH affected AS (
+  SELECT DISTINCT p.user_id, (p.date AT TIME ZONE 'UTC')::date AS d
+  FROM plans p
+  WHERE p.source IN ('gcal','ical','google','apple','nylas','outlook')
+    AND p.start_time IS NULL
+), still_blocked AS (
+  SELECT a.user_id, a.d
+  FROM affected a
+  WHERE EXISTS (
+    SELECT 1 FROM plans p2
+    WHERE p2.user_id = a.user_id
+      AND (p2.date AT TIME ZONE 'UTC')::date = a.d
+      AND p2.blocks_availability = true
+      AND p2.start_time IS NOT NULL
+  )
+)
+UPDATE availability av
+SET early_morning = true, late_morning = true, early_afternoon = true,
+    late_afternoon = true, evening = true, late_night = true,
+    updated_at = now()
+FROM affected a
+WHERE av.user_id = a.user_id
+  AND av.date = a.d
+  AND NOT EXISTS (SELECT 1 FROM still_blocked sb WHERE sb.user_id = a.user_id AND sb.d = a.d);
+```
 
-### Files touched
+This will not touch any day where a real timed plan still blocks availability, so manual edits and legitimate busy days are preserved.
 
-- `src/components/plans/GuidedPlanSheet.tsx` — only file changed. Add the import, the pods row JSX, and the toggle handler.
+### 3. Deploy
+Redeploy `calendar-sync-worker`, `google-calendar-sync`, `ical-sync` so the next sync (manual or cron) keeps the fix in place.
 
-No new components, no schema changes, no new routes.
+## Out of scope
+- `nylas-sync` — verify in a follow-up; the user has not enabled Nylas yet.
+- Native (parade) all-day plans continue to default to `blocks_availability = true`; only calendar-sourced imports change.
