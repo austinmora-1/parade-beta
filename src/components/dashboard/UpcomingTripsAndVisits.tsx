@@ -212,7 +212,7 @@ export function UpcomingTripsAndVisits() {
             <div
               key={trip.id}
               onClick={() => navigate('/trips')}
-              className="rounded-xl border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
+              className="rounded-xl border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50 border-availability-available"
               style={{ borderLeftColor: accent }}
             >
               <div className="flex items-start justify-between gap-2">
