@@ -612,7 +612,7 @@ function TripCard({
     >
       <div className="flex items-center gap-3">
         {(() => {
-          const isVisit = getTravelKind(trip.location, homeCandidates) === 'visit';
+          const isVisit = getTravelKind(trip.location, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
           const TripIcon = isVisit ? Home : Plane;
           return (
             <div className={cn(
