@@ -186,10 +186,11 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
 
     set((state) => ({ plans: [...state.plans, newPlan] }));
 
-    // Update availability — confirmed, tentative, and proposed all block every covered slot.
+    // Update availability — confirmed, tentative, and proposed all block every covered slot,
+    // unless the plan opts out via blocksAvailability=false.
     const effectiveStatus = (plan.participants && plan.participants.length > 0 && (!plan.status || plan.status === 'confirmed'))
       ? 'proposed' : (plan.status || 'confirmed');
-    if (BLOCKING_STATUSES.has(effectiveStatus)) {
+    if (BLOCKING_STATUSES.has(effectiveStatus) && plan.blocksAvailability !== false) {
       await blockSlotsForPlan(userId, dateStr, {
         timeSlot: plan.timeSlot,
         startTime: plan.startTime || null,
