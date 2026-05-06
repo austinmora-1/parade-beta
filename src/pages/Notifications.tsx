@@ -222,7 +222,7 @@ export default function Notifications() {
     const proposalIds = [...new Set(participations.map(p => p.proposal_id))];
     const { data: proposals } = await supabase
       .from('trip_proposals')
-      .select('id, created_by, destination, status, created_at')
+      .select('id, created_by, destination, status, created_at, proposal_type')
       .in('id', proposalIds)
       .eq('status', 'pending');
 
@@ -253,6 +253,7 @@ export default function Notifications() {
         creator_name: creator?.display_name || 'Someone',
         creator_avatar: creator?.avatar_url || null,
         destination: proposal.destination,
+        proposal_type: (proposal as any).proposal_type || 'trip',
         dates: proposalDates,
         created_at: proposal.created_at,
       };
