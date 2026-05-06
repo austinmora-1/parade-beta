@@ -96,6 +96,8 @@ interface TripProposalNotification {
 export default function Notifications() {
   const { friends, acceptFriendRequest, removeFriend, loadFriends, loadPlans, respondToProposal } = usePlannerStore();
   const { user } = useAuth();
+  const { profile } = useCurrentUserProfile();
+  const homeCandidates = [profile?.home_address, (profile as any)?.neighborhood];
   const { toast } = useToast();
   const navigate = useNavigate();
   const { refetchPlanInvites, refetchChangeRequests, refetchPlanPhotos, refetchParticipantRequests, refetchTripProposals, dismissedIds, dismissNotification: dismiss } = useNotifications();
