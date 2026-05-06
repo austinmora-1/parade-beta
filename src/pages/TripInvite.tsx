@@ -122,7 +122,7 @@ export default function TripInvite() {
     );
   }
 
-  const isVisit = invite.proposal_type === 'visit';
+  const isVisit = getTravelKind(invite.destination, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
   const Icon = isVisit ? Home : Plane;
   const hostName = formatDisplayName({
     first_name: invite.host?.first_name,
