@@ -6,7 +6,7 @@ import { Plan, DayAvailability, TimeSlot } from '@/types/planner';
 import { SlotCoverage } from '@/lib/planSlotCoverage';
 import type { UserTrip } from '@/hooks/useUserTrips';
 import { cn } from '@/lib/utils';
-import { SlotCoverageBar } from './SlotCoverageBar';
+import { getDayStatus } from './dayStatus';
 import { ACTIVITY_CONFIG } from '@/types/planner';
 
 interface Props {
@@ -153,6 +153,7 @@ function DayMini({
   const dayName = format(date, 'EEE');
   const dayNum = format(date, 'd');
 
+  const status = getDayStatus(date, coverageByDate, availabilityMap);
   return (
     <div
       role="button"
@@ -161,49 +162,49 @@ function DayMini({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') navigate(`/day/${format(date, 'yyyy-MM-dd')}`);
       }}
-      className="rounded-xl border border-border/60 bg-background/40 p-2.5 text-left cursor-pointer transition-colors hover:bg-background/70"
+      className="relative overflow-hidden rounded-xl border border-border/60 bg-background/40 p-2.5 text-left cursor-pointer transition-colors hover:bg-background/70"
     >
-      <div className="flex items-baseline gap-1.5">
-        <span className="font-display text-2xl font-black leading-none">{dayNum}</span>
-        <span className="text-sm font-semibold text-muted-foreground">{dayName}</span>
-      </div>
-      <div className="mt-2">
-        <SlotCoverageBar
-          date={date}
-          coverageByDate={coverageByDate}
-          availabilityMap={availabilityMap}
-        />
-      </div>
-      <div className="mt-2 space-y-1">
-        {plans.length === 0 && !weekendTrip && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onAddPlan(date); }}
-            className="flex w-full items-center gap-1 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Plus className="h-3 w-3" />
-            Add plan
-          </button>
-        )}
-        {plans.length === 0 && weekendTrip && (
-          <p className="text-[11px] font-medium text-muted-foreground">No plans yet</p>
-        )}
-        {plans.slice(0, 2).map((p) => {
-          const cfg = ACTIVITY_CONFIG[p.activity as keyof typeof ACTIVITY_CONFIG];
-          const icon = cfg?.icon || '📅';
-          return (
+      <span className={cn('absolute inset-y-0 left-0 w-1', status.accentClass)} aria-hidden />
+      <div className="pl-1.5">
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-display text-2xl font-black leading-none">{dayNum}</span>
+          <span className="text-sm font-semibold text-muted-foreground">{dayName}</span>
+        </div>
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <span className={cn('h-1.5 w-1.5 rounded-full', status.dotClass)} />
+          {status.label}
+        </div>
+        <div className="mt-2 space-y-1">
+          {plans.length === 0 && !weekendTrip && (
             <button
-              key={p.id}
-              onClick={(e) => { e.stopPropagation(); onPlanTap(p); }}
-              className="flex w-full items-center gap-1.5 rounded-md text-left text-[12px] font-medium text-foreground hover:text-primary transition-colors"
+              onClick={(e) => { e.stopPropagation(); onAddPlan(date); }}
+              className="flex w-full items-center gap-1 text-left text-[11px] font-medium text-foreground/70 hover:text-foreground transition-colors"
             >
-              <span className="shrink-0 text-xs leading-none">{icon}</span>
-              <span className="truncate">{p.title || cfg?.label || 'Plan'}</span>
+              <Plus className="h-3 w-3" />
+              Add plan
             </button>
-          );
-        })}
-        {plans.length > 2 && (
-          <p className="text-[10px] font-medium text-muted-foreground">+{plans.length - 2} more</p>
-        )}
+          )}
+          {plans.length === 0 && weekendTrip && (
+            <p className="text-[11px] font-medium text-muted-foreground">No plans yet</p>
+          )}
+          {plans.slice(0, 2).map((p) => {
+            const cfg = ACTIVITY_CONFIG[p.activity as keyof typeof ACTIVITY_CONFIG];
+            const icon = cfg?.icon || '📅';
+            return (
+              <button
+                key={p.id}
+                onClick={(e) => { e.stopPropagation(); onPlanTap(p); }}
+                className="flex w-full items-center gap-1.5 rounded-md text-left text-[12px] font-medium text-foreground hover:text-primary transition-colors"
+              >
+                <span className="shrink-0 text-xs leading-none">{icon}</span>
+                <span className="truncate">{p.title || cfg?.label || 'Plan'}</span>
+              </button>
+            );
+          })}
+          {plans.length > 2 && (
+            <p className="text-[10px] font-medium text-muted-foreground">+{plans.length - 2} more</p>
+          )}
+        </div>
       </div>
     </div>
   );
