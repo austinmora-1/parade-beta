@@ -317,14 +317,16 @@ export function useOpenWindows() {
         }
         setFriendHomeAddresses(map);
         // Normalize plan dates to YYYY-MM-DD for matching.
-        const normalized: FriendPlanRow[] = ((plansRes.data as { user_id: string; date: string; time_slot: string; status: string }[]) || []).map(
-          (p) => ({
-            user_id: p.user_id,
-            date: (p.date || '').slice(0, 10),
-            time_slot: p.time_slot as TimeSlot,
-            status: p.status,
-          })
-        );
+        const normalized: FriendPlanRow[] = ((plansRes.data as { user_id: string; date: string; time_slot: string; status: string; blocks_availability?: boolean }[]) || [])
+          .filter((p) => p.blocks_availability !== false)
+          .map(
+            (p) => ({
+              user_id: p.user_id,
+              date: (p.date || '').slice(0, 10),
+              time_slot: p.time_slot as TimeSlot,
+              status: p.status,
+            })
+          );
         setFriendPlans(normalized);
         setLoading(false);
       }
