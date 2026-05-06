@@ -66,19 +66,12 @@ async function handleEventsSync(params: {
         const endDate = new Date(event.end.date + "T12:00:00Z");
         endDate.setDate(endDate.getDate() - 1);
         const endDateStr = endDate.toISOString().split("T")[0];
+        // All-day events (e.g. holidays, birthdays) are added to the calendar
+        // but do NOT block availability slots. Ensure the dates exist in the
+        // map so the sync range covers them, but don't add any slot busies.
         const dates = getAllDayDateRange(startParsed.dateString, endDateStr);
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set());
-          [
-            "early_morning",
-            "late_morning",
-            "early_afternoon",
-            "late_afternoon",
-            "evening",
-            "late_night",
-          ].forEach(
-            (slot) => busySlotsByDate.get(date)!.add(slot),
-          );
         }
         if (isHotelEvent(event.summary, event.location)) {
           const hotelCity = resolveToCity(
@@ -206,6 +199,7 @@ async function handleEventsSync(params: {
     let startTimeStr: string | null;
     let endTimeStr: string | null;
     let durationMinutes = 60;
+    let isAllDay = false;
 
     // Prefer the event's own timezone (Google returns it per event) over the viewer's tz
     const eventTimezone = event.start.timeZone || timezone;
@@ -223,6 +217,7 @@ async function handleEventsSync(params: {
       hour = 12;
       startTimeStr = null;
       endTimeStr = null;
+      isAllDay = true;
     } else {
       continue;
     }
@@ -243,6 +238,7 @@ async function handleEventsSync(params: {
       start_time: startTimeStr,
       end_time: endTimeStr,
       source_timezone: eventTimezone || null,
+      blocks_availability: !isAllDay,
     });
   }
 
