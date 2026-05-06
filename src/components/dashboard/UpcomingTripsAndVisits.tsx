@@ -142,7 +142,17 @@ export function UpcomingTripsAndVisits() {
         const bDate = b.dates[0]?.start_date || '';
         return aDate.localeCompare(bDate);
       });
-      setTripProposals(mapped);
+      // Limit proposals to those starting within the next 2 months
+      const now = new Date();
+      const twoMonthsKey = format(addMonths(now, 2), 'yyyy-MM-dd');
+      const todayKey = format(now, 'yyyy-MM-dd');
+      const windowed = mapped.filter(p => {
+        const earliest = p.dates[0]?.start_date;
+        const latest = p.dates[p.dates.length - 1]?.end_date;
+        if (!earliest) return true;
+        return earliest <= twoMonthsKey && (latest || earliest) >= todayKey;
+      });
+      setTripProposals(windowed);
     })();
   }, [user?.id]);
 
