@@ -79,18 +79,32 @@ export function WeekdayRow({
         )}
       </div>
 
-      {/* Middle column: status + plan */}
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-3">
-        {primary ? (
+      {/* Middle column: status + stacked plan cards */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-3">
+        {visiblePlans.length > 0 ? (
           <>
-            <div className="flex min-w-0 items-center gap-1.5">
-              {primaryIcon && <span className="shrink-0 text-sm leading-none">{primaryIcon}</span>}
-              <span className="truncate text-base font-semibold text-foreground">
-                {primary.title || 'Plan'}
-              </span>
+            <div className="flex flex-col gap-1">
+              {visiblePlans.map((p, i) => {
+                const cfg = ACTIVITY_CONFIG[p.activity as keyof typeof ACTIVITY_CONFIG];
+                const accent = cfg?.color ? `hsl(var(--${cfg.color}))` : 'hsl(var(--primary))';
+                return (
+                  <div
+                    key={p.id}
+                    className="flex min-w-0 items-center rounded-md border border-border/60 bg-muted/40 px-2 py-1"
+                    style={{
+                      marginLeft: `${i * 4}px`,
+                      borderLeft: `3px solid ${accent}`,
+                    }}
+                  >
+                    <span className="truncate text-[13px] font-medium text-foreground">
+                      {p.title || 'Plan'}
+                    </span>
+                  </div>
+                );
+              })}
               {extraCount > 0 && (
-                <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-                  +{extraCount}
+                <span className="pl-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  +{extraCount} more
                 </span>
               )}
             </div>
