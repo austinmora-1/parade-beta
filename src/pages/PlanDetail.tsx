@@ -50,7 +50,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { getTimezoneAbbreviation, getTimeSlotForTime } from '@/lib/timezone';
-import { TimePickerButton } from '@/components/plans/TimeRangeQuickPicker';
+import { TimePickerButton, TimeRangePicker } from '@/components/plans/TimeRangeQuickPicker';
 
 const COMMON_TIMEZONES = [
   'America/New_York',
