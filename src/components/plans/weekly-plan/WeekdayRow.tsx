@@ -90,8 +90,27 @@ export function WeekdayRow({
       className={cn(
         'group relative flex w-full items-center gap-3 rounded-2xl bg-card px-3 py-3 text-left shadow-soft transition-colors hover:bg-card/80',
         isToday && 'ring-1 ring-primary/20 border-2 border-primary',
+        isWeekend && !isToday && 'border border-secondary/30 bg-gradient-to-br from-secondary/10 via-card to-primary/5 overflow-hidden',
       )}
     >
+      {isWeekend && (
+        <>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-secondary/20 blur-2xl"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -bottom-8 -left-4 h-16 w-16 rounded-full bg-primary/15 blur-2xl"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute right-2 top-1.5 text-[9px] font-black uppercase tracking-[0.15em] text-secondary/70"
+          >
+            ✦ {dow === 6 ? 'Sat' : 'Sun'}
+          </span>
+        </>
+      )}
       {/* Date dial */}
       <button
         onClick={handleClick}
