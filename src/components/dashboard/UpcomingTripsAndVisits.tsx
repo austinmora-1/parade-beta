@@ -21,24 +21,11 @@ export function UpcomingTripsAndVisits() {
   const [tripProposals, setTripProposals] = useState<any[]>([]);
   const [confirmedTrips, setConfirmedTrips] = useState<any[]>([]);
 
-  // Resolve the user's home city. Treat both `home_address` and
-  // `neighborhood` as signals of where they live, so a "trip" to their
-  // own metro never gets surfaced as travel. Mirrors the co-location
-  // rules used elsewhere on the dashboard.
-  const homeCities = useMemo(() => {
-    const candidates: string[] = [];
-    if (profile?.home_address) candidates.push(profile.home_address);
-    const neighborhood = (profile as any)?.neighborhood as string | null | undefined;
-    if (neighborhood) candidates.push(neighborhood);
-    return candidates.map(normalizeCity).filter(Boolean);
-  }, [profile?.home_address, (profile as any)?.neighborhood]);
+  // Resolve the user's home city candidates (home_address + neighborhood).
+  // The visit-vs-trip helper uses these to classify each item as a "visit"
+  // (in your home city) or a "trip" (anywhere else), regardless of how the
+  // proposal was originally tagged.
 
-  const isHomeCity = (loc: string | null | undefined) => {
-    if (!loc) return false;
-    const normalized = normalizeCity(loc);
-    if (!normalized) return false;
-    return homeCities.some((home) => citiesMatch(home, normalized));
-  };
 
   // Fetch confirmed trips (next 2 months)
   useEffect(() => {
