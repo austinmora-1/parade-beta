@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ACTIVITY_CONFIG, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { getCompactPlanTitle, getPlanDisplayTitle } from '@/lib/planTitle';
 import { cn } from '@/lib/utils';
-import { MapPin, Users, Clock, CalendarCheck, Plane } from 'lucide-react';
+import { MapPin, Users, Clock, CalendarCheck, Plane, Home } from 'lucide-react';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { getElephantAvatar } from '@/lib/elephantAvatars';
