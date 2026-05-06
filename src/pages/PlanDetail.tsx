@@ -15,6 +15,7 @@ import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { ElephantLoader } from '@/components/ui/ElephantLoader';
 import { FriendLink } from '@/components/ui/FriendLink';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
