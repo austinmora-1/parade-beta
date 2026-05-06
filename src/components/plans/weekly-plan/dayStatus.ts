@@ -11,7 +11,7 @@ const SLOTS: TimeSlot[] = [
   'late-night',
 ];
 
-export type DayStatus = 'open' | 'some' | 'busy' | 'unavailable';
+export type DayStatus = 'open' | 'mostly-open' | 'some' | 'busy' | 'unavailable';
 
 export interface DayStatusInfo {
   status: DayStatus;
@@ -49,11 +49,18 @@ export function getDayStatus(
   if (free === 0) status = 'unavailable';
   else if (busy === 0) status = 'open';
   else if (busy >= 4) status = 'busy';
+  else if (busy <= 1) status = 'mostly-open';
   else status = 'some';
 
   const map: Record<DayStatus, Omit<DayStatusInfo, 'freeCount' | 'busyCount' | 'status'>> = {
     open: {
       label: 'Open',
+      dotClass: 'bg-availability-available',
+      chipClass: 'bg-availability-available/15 text-availability-available',
+      accentClass: 'bg-availability-available',
+    },
+    'mostly-open': {
+      label: 'Mostly Open',
       dotClass: 'bg-availability-available',
       chipClass: 'bg-availability-available/15 text-availability-available',
       accentClass: 'bg-availability-available',
