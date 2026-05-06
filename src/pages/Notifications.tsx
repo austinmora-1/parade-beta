@@ -17,6 +17,8 @@ import { AnimatePresence } from 'framer-motion';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { QuickPlanSheet } from '@/components/plans/QuickPlanSheet';
 import confetti from 'canvas-confetti';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind } from '@/lib/visitVsTrip';
 
 const HANG_SLOT_LABELS: Record<string, string> = {
   early_morning: 'Early Morning (6-9am)',
