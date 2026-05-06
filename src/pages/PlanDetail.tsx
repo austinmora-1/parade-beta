@@ -50,7 +50,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { getTimezoneAbbreviation, getTimeSlotForTime } from '@/lib/timezone';
-import { TimePickerButton } from '@/components/plans/TimeRangeQuickPicker';
+import { TimePickerButton, TimeRangePicker } from '@/components/plans/TimeRangeQuickPicker';
 
 const COMMON_TIMEZONES = [
   'America/New_York',
@@ -668,29 +668,14 @@ export default function PlanDetail() {
               <div className="flex items-center gap-3 text-sm flex-wrap">
                 <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
                 <div className="flex items-center gap-2 flex-wrap">
-                  <TimePickerButton
-                    label="Start time"
-                    value={displayPlan.startTime || ''}
-                    placeholder="Start"
-                    onChange={async (val) => {
-                      const updates: any = { startTime: val };
-                      if (val) updates.timeSlot = getTimeSlotForTime(val);
-                      if (val && displayPlan.endTime) {
-                        const dur = computeDurationMinutes(val, displayPlan.endTime);
-                        if (dur != null) updates.duration = dur;
-                      }
-                      await applyScheduleUpdate(updates);
-                    }}
-                  />
-                  <span className="text-muted-foreground text-xs">–</span>
-                  <TimePickerButton
-                    label="End time"
-                    value={displayPlan.endTime || ''}
-                    placeholder="End"
-                    onChange={async (val) => {
-                      const updates: any = { endTime: val };
-                      if (val && displayPlan.startTime) {
-                        const dur = computeDurationMinutes(displayPlan.startTime, val);
+                  <TimeRangePicker
+                    startValue={displayPlan.startTime || undefined}
+                    endValue={displayPlan.endTime || undefined}
+                    onChange={async ({ start, end }) => {
+                      const updates: any = { startTime: start, endTime: end };
+                      if (start) updates.timeSlot = getTimeSlotForTime(start);
+                      if (start && end) {
+                        const dur = computeDurationMinutes(start, end);
                         if (dur != null) updates.duration = dur;
                       }
                       await applyScheduleUpdate(updates);
