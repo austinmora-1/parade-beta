@@ -3,13 +3,14 @@ import { Plan, ACTIVITY_CONFIG, TIME_SLOT_LABELS } from '@/types/planner';
 import { getCompactPlanTitle } from '@/lib/planTitle';
 import { getTimezoneAbbreviation } from '@/lib/timezone';
 import { cn } from '@/lib/utils';
-import { MapPin, Clock, CalendarDays } from 'lucide-react';
+import { MapPin, Clock, CalendarDays, CalendarCheck, CalendarOff } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ActivityIcon } from '@/components/ui/ActivityIcon';
 import { usePlannerStore } from '@/stores/plannerStore';
 import { formatTime12 } from './planCardHelpers';
 import { ParticipantAvatarStack } from './ParticipantAvatarStack';
 import { isCalendarSourced, getCalendarSourceLabel } from '@/lib/planSource';
+import { toast } from 'sonner';
 
 interface PlanCardCompactProps {
   plan: Plan;
@@ -23,6 +24,22 @@ interface PlanCardCompactProps {
 
 export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress, isPast = false, isLive = false }: PlanCardCompactProps) {
   const userTimezone = usePlannerStore((s) => s.userTimezone);
+  const currentUserId = usePlannerStore((s) => s.userId);
+  const updatePlan = usePlannerStore((s) => s.updatePlan);
+  const isOwner = !!currentUserId && plan.userId === currentUserId;
+  const blocksAvailability = plan.blocksAvailability !== false;
+
+  const handleToggleBlocking = async (e: React.MouseEvent | React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const next = !blocksAvailability;
+    try {
+      await updatePlan(plan.id, { blocksAvailability: next });
+      toast.success(next ? 'Now blocking availability' : 'No longer blocking availability');
+    } catch (err) {
+      toast.error('Could not update');
+    }
+  };
   const activityConfig = ACTIVITY_CONFIG[plan.activity] || { label: 'Activity', icon: '✨', color: 'activity-misc', category: 'staying-in' as const };
   const timeSlotConfig = TIME_SLOT_LABELS[plan.timeSlot];
   const displayTitle = getCompactPlanTitle(plan);
@@ -78,7 +95,28 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
         >
           <ActivityIcon config={activityConfig} size={16} />
         </div>
-        <div className="flex-1 min-w-0">
+      {isOwner && (
+        <div
+          role="button"
+          tabIndex={0}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={handleToggleBlocking}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') handleToggleBlocking(e as any);
+          }}
+          aria-label={blocksAvailability ? 'Stop blocking availability' : 'Block availability'}
+          title={blocksAvailability ? 'Blocking availability — tap to unblock' : 'Not blocking — tap to block'}
+          className={cn(
+            'absolute bottom-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border transition-colors cursor-pointer',
+            blocksAvailability
+              ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+              : 'border-border bg-muted text-muted-foreground hover:bg-muted/70'
+          )}
+        >
+          {blocksAvailability ? <CalendarCheck className="h-3.5 w-3.5" /> : <CalendarOff className="h-3.5 w-3.5" />}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
             <div className="min-w-0 flex-1 overflow-hidden">
               <span className={cn("block truncate text-sm font-semibold leading-tight", showTentativeStyle && "text-muted-foreground")}>
