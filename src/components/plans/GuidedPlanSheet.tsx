@@ -25,6 +25,7 @@ import { SlotCalendarPicker, SelectedSlotEntry } from '@/components/plans/SlotCa
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { usePods } from '@/hooks/usePods';
 
 interface GuidedPlanSheetProps {
   open: boolean;
@@ -188,6 +189,32 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
       const exists = prev.some(p => p.userId === f.friendUserId);
       if (exists) return prev.filter(p => p.userId !== f.friendUserId);
       return [...prev, { userId: f.friendUserId!, name: f.name, avatar: f.avatar }];
+    });
+  };
+
+  // Pods (groups of friends) — surfaced in the friend selection step.
+  const { pods } = usePods();
+  const connectedFriendsByUserId = useMemo(() => {
+    const m = new Map<string, typeof connectedFriends[0]>();
+    for (const f of connectedFriends) if (f.friendUserId) m.set(f.friendUserId, f);
+    return m;
+  }, [connectedFriends]);
+
+  const togglePod = (podMemberIds: string[]) => {
+    const eligible = podMemberIds.filter(id => connectedFriendsByUserId.has(id));
+    if (eligible.length === 0) return;
+    setChosenFriends(prev => {
+      const allSelected = eligible.every(id => prev.some(p => p.userId === id));
+      if (allSelected) {
+        return prev.filter(p => !eligible.includes(p.userId));
+      }
+      const next = [...prev];
+      for (const id of eligible) {
+        if (next.some(p => p.userId === id)) continue;
+        const f = connectedFriendsByUserId.get(id)!;
+        next.push({ userId: id, name: f.name, avatar: f.avatar });
+      }
+      return next;
     });
   };
 
@@ -1078,6 +1105,60 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
                     </div>
                   )}
                 </div>
+
+                {pods.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-0.5">Your Pods</p>
+                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                      {pods.map(pod => {
+                        const eligibleIds = pod.memberUserIds.filter(id => connectedFriendsByUserId.has(id));
+                        const memberAvatars = eligibleIds
+                          .map(id => connectedFriendsByUserId.get(id)!)
+                          .slice(0, 3);
+                        const overflow = eligibleIds.length - memberAvatars.length;
+                        const allSelected = eligibleIds.length > 0 && eligibleIds.every(id => chosenFriends.some(c => c.userId === id));
+                        return (
+                          <button
+                            key={pod.id}
+                            onClick={() => togglePod(pod.memberUserIds)}
+                            disabled={eligibleIds.length === 0}
+                            className={cn(
+                              "relative shrink-0 flex items-center gap-2 rounded-2xl border px-3 py-2 transition-all",
+                              allSelected
+                                ? "border-primary bg-primary/10"
+                                : "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
+                              eligibleIds.length === 0 && "opacity-50 cursor-not-allowed"
+                            )}
+                          >
+                            <span className="text-base shrink-0" aria-hidden>{pod.emoji}</span>
+                            <div className="flex -space-x-1.5">
+                              {memberAvatars.map(f => (
+                                <Avatar key={f.friendUserId} className="h-6 w-6 border-2 border-background">
+                                  <AvatarImage src={f.avatar || getElephantAvatar(f.name)} />
+                                  <AvatarFallback className="text-[8px]">{f.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                              ))}
+                              {overflow > 0 && (
+                                <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] font-semibold text-muted-foreground">
+                                  +{overflow}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-start leading-tight">
+                              <span className="text-sm font-semibold">{pod.name}</span>
+                              <span className="text-[10px] text-muted-foreground">{eligibleIds.length} {eligibleIds.length === 1 ? 'friend' : 'friends'}</span>
+                            </div>
+                            {allSelected && (
+                              <div className="absolute -top-1 -right-1 flex items-center justify-center h-4 w-4 rounded-full bg-primary text-primary-foreground shadow-sm ring-2 ring-background">
+                                <Check className="h-2.5 w-2.5" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-3 gap-2 max-h-[340px] overflow-y-auto pb-1">
                   {filteredFriends.length > 0 ? filteredFriends.map(f => {
