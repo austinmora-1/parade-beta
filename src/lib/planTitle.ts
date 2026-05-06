@@ -45,13 +45,13 @@ export function getCompactPlanTitle(
   const fullTitle = getPlanDisplayTitle(plan).trim();
 
   const separatorIndex = fullTitle.lastIndexOf(' - ');
-  if (separatorIndex > 0) {
-    return `${fullTitle.slice(0, separatorIndex).trim()}…`;
+  const trimmed = separatorIndex > 0
+    ? fullTitle.slice(0, separatorIndex).trim()
+    : fullTitle;
+
+  if (trimmed.length <= maxLength) {
+    return separatorIndex > 0 ? `${trimmed}…` : trimmed;
   }
 
-  if (fullTitle.length <= maxLength) {
-    return fullTitle;
-  }
-
-  return `${fullTitle.slice(0, Math.max(1, maxLength - 1)).trimEnd()}…`;
+  return `${trimmed.slice(0, Math.max(1, maxLength - 1)).trimEnd()}…`;
 }
