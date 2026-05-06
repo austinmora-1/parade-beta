@@ -10,7 +10,7 @@ import { CalendarShareIcon } from '@/components/ui/CalendarShareIcon';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  RefreshCw, Loader2, Plus, Plane, ChevronLeft, ChevronRight, CalendarDays,
+  RefreshCw, Loader2, Plus, Plane, ChevronLeft, ChevronRight, CalendarDays, ArrowLeft,
 } from 'lucide-react';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useAppleCalendar } from '@/hooks/useAppleCalendar';
@@ -249,9 +249,10 @@ export default function Availability() {
         <div className="flex justify-center -mt-2">
           <button
             onClick={() => setWeekOffset(0)}
-            className="text-xs font-bold text-primary hover:text-primary/80"
+            className="text-xs font-bold text-primary hover:text-primary/80 inline-flex items-center gap-1"
           >
             Back to this week
+            <ArrowLeft className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
