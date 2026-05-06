@@ -129,7 +129,7 @@ export default function ProposalDetail() {
     if (!isCreator) return;
     setConverting(true);
     try {
-      const newType = isVisit ? 'trip' : 'visit';
+      const newType = proposal.proposal_type === 'visit' ? 'trip' : 'visit';
       const updates: any = { proposal_type: newType, updated_at: new Date().toISOString() };
       if (newType === 'visit') {
         const otherId = participants.find(p => p.user_id !== user.id)?.user_id || null;
