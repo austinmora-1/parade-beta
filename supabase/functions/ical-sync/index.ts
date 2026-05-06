@@ -347,6 +347,7 @@ Deno.serve(async (req) => {
         start_time: startTimeStr,
         end_time: endTimeStr,
         source_timezone: eventTimezone || null,
+        blocks_availability: !event.isAllDay,
       });
     }
 
