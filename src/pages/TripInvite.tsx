@@ -153,7 +153,11 @@ export default function TripInvite() {
         {/* Trip details */}
         <div className="space-y-4">
           <div className="flex gap-4 items-start">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/15 text-primary shrink-0">
+            <div className={
+              isVisit
+                ? "flex h-14 w-14 items-center justify-center rounded-xl bg-availability-available/15 text-availability-available shrink-0"
+                : "flex h-14 w-14 items-center justify-center rounded-xl bg-[hsl(var(--coral))]/15 text-[hsl(var(--coral))] shrink-0"
+            }>
               <Icon className="h-7 w-7" />
             </div>
             <div>
