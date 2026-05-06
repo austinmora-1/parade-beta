@@ -303,7 +303,7 @@ export function useOpenWindows() {
           .in('user_id', friendIds),
         supabase
           .from('plans')
-          .select('user_id, date, time_slot, status')
+          .select('user_id, date, time_slot, status, blocks_availability')
           .in('user_id', friendIds)
           .gte('date', dateStrs[0])
           .lte('date', dateStrs[dateStrs.length - 1] + 'T23:59:59')
