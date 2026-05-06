@@ -731,7 +731,7 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
           className="flex w-full items-center justify-between p-4 md:p-6 text-left"
         >
           <div className="flex items-center gap-2">
-            <h2 className="font-display text-base font-semibold md:text-lg">Upcoming Plans</h2>
+            <h2 className="font-display font-semibold text-xl md:text-2xl">Upcoming Plans</h2>
             {upcoming.length > 0 && (
               <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
                 {upcoming.length}
@@ -761,7 +761,7 @@ export function FriendProfileContent({ userId, showBackButton = true }: FriendPr
           className="flex w-full items-center justify-between p-4 md:p-6 text-left"
         >
           <div className="flex items-center gap-2">
-            <h2 className="font-display text-base font-semibold md:text-lg">Previous Plans</h2>
+            <h2 className="font-display font-semibold text-xl md:text-2xl">Previous Plans</h2>
             {previous.length > 0 && (
               <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                 {previous.length}
