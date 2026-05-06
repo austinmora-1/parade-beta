@@ -629,7 +629,7 @@ export default function Notifications() {
       {/* Plan Suggestions (proposed plans) */}
       {(visibleProposedPlans.length > 0 || proposedLoading) && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+          <h2 className="mb-3 flex items-center gap-2 font-display font-semibold text-xl md:mb-4 md:text-2xl">
             <CalendarPlus className="h-4 w-4 text-primary md:h-5 md:w-5" />
             Plan Suggestions
             {visibleProposedPlans.length > 0 && (
@@ -717,7 +717,7 @@ export default function Notifications() {
       {/* Trip Proposals Section */}
       {(visibleTripProposals.length > 0 || tripProposalsLoading) && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+          <h2 className="mb-3 flex items-center gap-2 font-display font-semibold text-xl md:mb-4 md:text-2xl">
             <Plane className="h-4 w-4 text-primary md:h-5 md:w-5" />
             Trip Proposals
             {visibleTripProposals.length > 0 && (
@@ -784,7 +784,7 @@ export default function Notifications() {
       {/* Participant Requests Section (organizer approval) */}
       {(visibleParticipantRequests.length > 0 || participantReqLoading) && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+          <h2 className="mb-3 flex items-center gap-2 font-display font-semibold text-xl md:mb-4 md:text-2xl">
             <UserPlus className="h-4 w-4 text-primary md:h-5 md:w-5" />
             Participant Suggestions
             {visibleParticipantRequests.length > 0 && (
@@ -849,7 +849,7 @@ export default function Notifications() {
 
       {(visiblePlanInvitations.length > 0 || planInvitesLoading) && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+          <h2 className="mb-3 flex items-center gap-2 font-display font-semibold text-xl md:mb-4 md:text-2xl">
             <CalendarCheck className="h-4 w-4 text-primary md:h-5 md:w-5" />
             Plan Invitations
             {visiblePlanInvitations.length > 0 && (
@@ -931,7 +931,7 @@ export default function Notifications() {
       {/* Plan Change Requests Section */}
       {(visiblePendingChanges.length > 0 || changesLoading) && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+          <h2 className="mb-3 flex items-center gap-2 font-display font-semibold text-xl md:mb-4 md:text-2xl">
             <AlertTriangle className="h-4 w-4 text-amber-500 md:h-5 md:w-5" />
             Plan Changes
             {visiblePendingChanges.length > 0 && (
@@ -1019,7 +1019,7 @@ export default function Notifications() {
       {/* New Plan Photos Section */}
       {(visibleRecentPhotos.length > 0 || photosLoading) && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+          <h2 className="mb-3 flex items-center gap-2 font-display font-semibold text-xl md:mb-4 md:text-2xl">
             <Camera className="h-4 w-4 text-primary md:h-5 md:w-5" />
             New Photos
             {visibleRecentPhotos.length > 0 && (
@@ -1068,7 +1068,7 @@ export default function Notifications() {
       {/* Friend Requests Section */}
       {(visibleIncomingRequests.length > 0 || dismissedFriendRequestCount > 0) && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 font-display text-base font-semibold md:mb-4 md:text-lg">
+          <h2 className="mb-3 flex items-center gap-2 font-display font-semibold text-xl md:mb-4 md:text-2xl">
             <UserPlus className="h-4 w-4 text-primary md:h-5 md:w-5" />
             Friend Requests
             {incomingRequests.length > 0 && (
