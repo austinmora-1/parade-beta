@@ -48,7 +48,16 @@ export default function Availability() {
   const [guidedTripOpen, setGuidedTripOpen] = useState(false);
   const [tripsListOpen, setTripsListOpen] = useState(false);
 
-  const [weekOffset, setWeekOffset] = useState(0);
+  const weekParam = searchParams.get('week');
+  const initialWeekOffset = useMemo(() => {
+    if (!weekParam) return 0;
+    const target = new Date(weekParam);
+    if (isNaN(target.getTime())) return 0;
+    const targetStart = startOfWeek(target, { weekStartsOn: 1 });
+    const currentStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    return differenceInWeeks(targetStart, currentStart);
+  }, [weekParam]);
+  const [weekOffset, setWeekOffset] = useState(initialWeekOffset);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   // URL-synced view filter (?view=all|plans|trips)

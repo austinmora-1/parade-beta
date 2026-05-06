@@ -471,7 +471,20 @@ export default function PlanDetail() {
   return (
     <div className="animate-fade-in space-y-6 max-w-2xl mx-auto">
       {/* Back button */}
-      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-2 -ml-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          if (plan?.date) {
+            const d = new Date(plan.date);
+            const iso = format(d, 'yyyy-MM-dd');
+            navigate(`/availability?week=${iso}`);
+          } else {
+            navigate(-1);
+          }
+        }}
+        className="gap-2 -ml-2"
+      >
         <ArrowLeft className="h-4 w-4" /> Back
       </Button>
 
