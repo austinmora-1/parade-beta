@@ -345,6 +345,7 @@ export interface Plan {
   notes?: string;
   status: PlanStatus;
   feedVisibility?: FeedVisibility;
+  blocksAvailability?: boolean;
   createdAt: Date;
   myRole?: ParticipantRole;
   myRsvpStatus?: string;
