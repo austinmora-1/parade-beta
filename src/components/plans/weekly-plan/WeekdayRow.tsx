@@ -61,11 +61,11 @@ export function WeekdayRow({
     status.status === 'busy' ? 'Booked' :
     status.status === 'some' ? 'Some time' :
     status.status === 'open' ? 'Open' : 'Unavailable';
-  const summaryColor =
-    status.status === 'busy' ? 'text-secondary' :
-    status.status === 'some' ? 'text-availability-partial' :
-    status.status === 'open' ? 'text-availability-available' :
-    'text-muted-foreground';
+  const summaryPillClass =
+    status.status === 'busy' ? 'bg-secondary/15 text-secondary' :
+    status.status === 'some' ? 'bg-availability-partial/15 text-availability-partial' :
+    status.status === 'open' ? 'bg-availability-available/15 text-availability-available' :
+    'bg-muted text-muted-foreground';
 
   const planCountLabel = `${plans.length} plan${plans.length === 1 ? '' : 's'}`;
 
