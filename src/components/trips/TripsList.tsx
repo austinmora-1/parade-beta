@@ -23,6 +23,8 @@ import {
 import { AddParticipantDialog } from './AddParticipantDialog';
 import { formatDisplayName } from '@/lib/formatName';
 import { formatCityForDisplay } from '@/lib/formatCity';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind } from '@/lib/visitVsTrip';
 
 interface Trip {
   id: string;
