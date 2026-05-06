@@ -35,12 +35,9 @@ export function WeekdayRow({
   const dayName = format(date, 'EEE').toUpperCase();
   const dayNum = format(date, 'd');
 
-  const primary = plans[0];
-  const extraCount = Math.max(0, plans.length - 1);
+  const visiblePlans = plans.slice(0, 3);
+  const extraCount = Math.max(0, plans.length - visiblePlans.length);
   const status = getDayStatus(date, coverageByDate, availabilityMap);
-  const primaryIcon = primary
-    ? ACTIVITY_CONFIG[primary.activity as keyof typeof ACTIVITY_CONFIG]?.icon
-    : null;
 
   const handleClick = () => {
     navigate(`/day/${format(date, 'yyyy-MM-dd')}`);
