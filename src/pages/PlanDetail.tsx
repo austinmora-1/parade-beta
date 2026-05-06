@@ -49,7 +49,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { getTimezoneAbbreviation } from '@/lib/timezone';
+import { getTimezoneAbbreviation, getTimeSlotForTime } from '@/lib/timezone';
+import { TimePickerButton } from '@/components/plans/TimeRangeQuickPicker';
 
 const COMMON_TIMEZONES = [
   'America/New_York',
@@ -657,49 +658,42 @@ export default function PlanDetail() {
               <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
               {canEdit && !isPast && plan ? (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Select
-                    value={displayPlan.timeSlot || ''}
-                    onValueChange={async (val) => {
-                      await applyScheduleUpdate({ timeSlot: val as any });
-                    }}
-                  >
-                    <SelectTrigger className="h-7 w-auto px-2 text-sm border-none bg-muted/40 gap-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(TIME_SLOT_LABELS).map(([key, cfg]) => (
-                        <SelectItem key={key} value={key} className="text-sm">
-                          {cfg.label} ({cfg.time})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <input
-                    type="time"
+                  <TimePickerButton
+                    label="Start time"
                     value={displayPlan.startTime || ''}
-                    onChange={async (e) => {
-                      await applyScheduleUpdate({ startTime: e.target.value || undefined });
+                    placeholder="Start"
+                    onChange={async (val) => {
+                      const updates: any = { startTime: val };
+                      if (val) updates.timeSlot = getTimeSlotForTime(val);
+                      await applyScheduleUpdate(updates);
                     }}
-                    className="bg-muted/40 border-none rounded px-2 py-1 outline-none text-xs"
-                    title="Start time"
                   />
                   <span className="text-muted-foreground text-xs">–</span>
-                  <input
-                    type="time"
+                  <TimePickerButton
+                    label="End time"
                     value={displayPlan.endTime || ''}
-                    onChange={async (e) => {
-                      await applyScheduleUpdate({ endTime: e.target.value || undefined });
+                    placeholder="End"
+                    onChange={async (val) => {
+                      await applyScheduleUpdate({ endTime: val });
                     }}
-                    className="bg-muted/40 border-none rounded px-2 py-1 outline-none text-xs"
-                    title="End time"
                   />
+                  <div
+                    className="h-9 inline-flex items-center px-3 rounded-full bg-muted/40 text-xs text-muted-foreground"
+                    title="Time slot is set automatically from start time"
+                  >
+                    {(() => {
+                      const slot = displayPlan.timeSlot as keyof typeof TIME_SLOT_LABELS | undefined;
+                      const cfg = slot ? TIME_SLOT_LABELS[slot] : null;
+                      return cfg ? cfg.label : '—';
+                    })()}
+                  </div>
                   <Select
                     value={String(displayPlan.duration || 60)}
                     onValueChange={async (val) => {
                       await applyScheduleUpdate({ duration: parseInt(val, 10) });
                     }}
                   >
-                    <SelectTrigger className="h-7 w-auto px-2 text-xs border-none bg-muted/40 gap-1">
+                    <SelectTrigger className="h-9 w-auto px-3 text-xs border-none bg-muted/40 gap-1 rounded-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
