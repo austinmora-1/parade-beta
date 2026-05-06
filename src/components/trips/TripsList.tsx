@@ -793,7 +793,8 @@ function ProposalTripCard({
     : votedCount;
   const allVoted = respondedCount === totalVoters && totalVoters > 0;
   const hasVoted = voterIds.has(currentUserId);
-  const isVisit = proposal.proposal_type === 'visit';
+  const { profile } = useCurrentUserProfile();
+  const isVisit = getTravelKind(proposal.destination, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
   const isHost = proposal.host_user_id === currentUserId;
 
   // Ordered list of date IDs for drag ranking (top = #1)
