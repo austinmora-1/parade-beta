@@ -190,19 +190,12 @@ Deno.serve(async (req) => {
         const endExcl = new Date(event.dtend);
         endExcl.setDate(endExcl.getDate() - 1);
         const endDateStr = endExcl.toISOString().split("T")[0];
+        // All-day events (e.g. holidays, birthdays) are added to the calendar
+        // but do NOT block availability slots. Ensure the dates exist in the
+        // map so the sync range covers them, but don't add any slot busies.
         const dates = getAllDayDateRange(startDateStr, endDateStr);
         for (const date of dates) {
           if (!busySlotsByDate.has(date)) busySlotsByDate.set(date, new Set());
-          [
-            "early_morning",
-            "late_morning",
-            "early_afternoon",
-            "late_afternoon",
-            "evening",
-            "late_night",
-          ].forEach(
-            (slot) => busySlotsByDate.get(date)!.add(slot),
-          );
         }
         if (isHotelEvent(event.summary, event.location)) {
           const hotelCity = resolveToCity(
