@@ -266,14 +266,15 @@ export function UpcomingTripsAndVisits() {
         {visibleProposals.map(proposal => {
           const earliestDate = proposal.dates[0];
           const latestDate = proposal.dates[proposal.dates.length - 1];
-          const isVisit = proposal.proposalType === 'visit';
+          const isVisit = getTravelKind(proposal.destination, [profile?.home_address, (profile as any)?.neighborhood]) === 'visit';
+          const accent = isVisit ? VISIT_ACCENT : TRIP_ACCENT;
 
           return (
             <div
               key={proposal.id}
               onClick={() => navigate('/trips')}
               className="rounded-xl border-l-[3px] border-dashed border border-muted-foreground/30 opacity-70 px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
-              style={{ borderLeftColor: isVisit ? 'hsl(var(--available))' : 'hsl(var(--coral))' }}
+              style={{ borderLeftColor: accent }}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
