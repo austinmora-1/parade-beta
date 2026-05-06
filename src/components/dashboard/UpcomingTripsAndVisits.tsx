@@ -174,7 +174,7 @@ export function UpcomingTripsAndVisits() {
   // shouldn't surface as "upcoming trips" since the user is already
   // there. Visits (where the user is hosting from home) are kept.
   const visibleTrips = useMemo(
-    () => confirmedTrips.filter((t) => !isHomeCity(t.location)),
+    () => confirmedTrips.filter((t) => t.proposalType === 'visit' || !isHomeCity(t.location)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [confirmedTrips, homeCities],
   );
