@@ -27,6 +27,8 @@ import { cn } from '@/lib/utils';
 import { formatCityForDisplay } from '@/lib/formatCity';
 import { TripActivities } from '@/components/trips/TripActivities';
 import { Megaphone } from 'lucide-react';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { getTravelKind } from '@/lib/visitVsTrip';
 
 interface TripOpenInvite {
   id: string;
