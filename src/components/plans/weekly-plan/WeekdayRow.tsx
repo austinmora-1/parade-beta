@@ -63,7 +63,7 @@ export function WeekdayRow({
     status.status === 'open' ? 'Open' : 'Unavailable';
   const summaryPillClass =
     status.status === 'busy' ? 'bg-secondary/15 text-secondary' :
-    status.status === 'some' ? 'bg-availability-partial/15 text-availability-partial' :
+    status.status === 'some' ? 'bg-amber-200/60 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300' :
     status.status === 'open' ? 'bg-availability-available/15 text-availability-available' :
     'bg-muted text-muted-foreground';
 
