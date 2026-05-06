@@ -112,6 +112,7 @@ export const mapRawPlanToModel = (
     notes: p.notes || undefined,
     status: p.status as PlanStatus || 'confirmed',
     feedVisibility: p.feed_visibility || 'private',
+    blocksAvailability: (p as any).blocks_availability !== false,
     participants: pps.map(pp => ({
       id: pp.friend_id,
       name: profilesMap[pp.friend_id] || 'Friend',
