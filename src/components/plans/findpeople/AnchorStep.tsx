@@ -36,8 +36,8 @@ export function AnchorStep({ onSelectPlan, onSelectNew }: AnchorStepProps) {
       exit={{ opacity: 0, x: -20 }}
       className="space-y-3"
     >
-      <p className="text-xs text-muted-foreground text-center">
-        What are you trying to fill?
+      <p className="text-muted-foreground text-center text-sm">
+        What's on deck?
       </p>
 
       <button
