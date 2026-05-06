@@ -96,21 +96,25 @@ export function PlanCardCompact({ plan, onTap, selectMode, selected, onLongPress
           <ActivityIcon config={activityConfig} size={16} />
         </div>
       {isOwner && (
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleToggleBlocking}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') handleToggleBlocking(e as any);
+          }}
           aria-label={blocksAvailability ? 'Stop blocking availability' : 'Block availability'}
           title={blocksAvailability ? 'Blocking availability — tap to unblock' : 'Not blocking — tap to block'}
           className={cn(
-            'absolute bottom-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border transition-colors',
+            'absolute bottom-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border transition-colors cursor-pointer',
             blocksAvailability
               ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
               : 'border-border bg-muted text-muted-foreground hover:bg-muted/70'
           )}
         >
           {blocksAvailability ? <CalendarCheck className="h-3.5 w-3.5" /> : <CalendarOff className="h-3.5 w-3.5" />}
-        </button>
+        </div>
       )}
       <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 min-w-0">
