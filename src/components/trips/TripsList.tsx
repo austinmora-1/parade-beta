@@ -86,11 +86,6 @@ const TRIPS_UPDATED_EVENT = 'trips:updated';
 
 export function TripsList({ refreshKey }: TripsListProps) {
   const { user } = useAuth();
-  const { profile } = useCurrentUserProfile();
-  const homeCandidates = useMemo(
-    () => [profile?.home_address, (profile as any)?.neighborhood],
-    [profile?.home_address, (profile as any)?.neighborhood],
-  );
   const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [proposals, setProposals] = useState<TripProposal[]>([]);
