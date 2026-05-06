@@ -604,12 +604,20 @@ function TripCard({
       )}
     >
       <div className="flex items-center gap-3">
-        <div className={cn(
-          "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
-          isOngoing ? "bg-primary/15 text-primary" : "bg-availability-away/15 text-availability-away"
-        )}>
-          <Plane className="h-5 w-5" />
-        </div>
+        {(() => {
+          const isVisit = trip.proposal_type === 'visit';
+          const TripIcon = isVisit ? Home : Plane;
+          return (
+            <div className={cn(
+              "flex items-center justify-center h-10 w-10 rounded-lg shrink-0",
+              isVisit
+                ? "bg-availability-available/15 text-availability-available"
+                : "bg-[hsl(var(--coral))]/15 text-[hsl(var(--coral))]"
+            )}>
+              <TripIcon className="h-5 w-5" />
+            </div>
+          );
+        })()}
 
         <div className="min-w-0 flex-1">
           {/* Row 1: Title (editable) */}
