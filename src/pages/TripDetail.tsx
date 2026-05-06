@@ -318,10 +318,19 @@ export default function TripDetail() {
 
       {/* Trip Hero */}
       <div className="rounded-xl border border-border bg-card p-4 shadow-soft space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-availability-away/15 text-availability-away">
-            <Plane className="h-6 w-6" />
-          </div>
+        {(() => {
+          const isVisit = trip.proposal_type === 'visit';
+          const HeroIcon = isVisit ? Home : Plane;
+          return (
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "flex items-center justify-center h-12 w-12 rounded-xl",
+                isVisit
+                  ? "bg-availability-available/15 text-availability-available"
+                  : "bg-[hsl(var(--coral))]/15 text-[hsl(var(--coral))]"
+              )}>
+                <HeroIcon className="h-6 w-6" />
+              </div>
           <div>
             <h1 className="font-display text-lg font-bold">
               {trip.location ? (formatCityForDisplay(trip.location) || trip.location) : 'TBC'}
