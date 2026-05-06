@@ -86,6 +86,7 @@ interface TripProposalNotification {
   creator_name: string;
   creator_avatar: string | null;
   destination: string | null;
+  proposal_type: string;
   dates: { id: string; start_date: string; end_date: string; votes: number }[];
   created_at: string;
 }
