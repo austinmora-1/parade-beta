@@ -218,6 +218,7 @@ export const usePlansStore = create<PlansState & PlansActions>((set, get) => ({
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
     if (updates.status) dbUpdates.status = updates.status;
     if (updates.feedVisibility !== undefined) dbUpdates.feed_visibility = updates.feedVisibility;
+    if (updates.blocksAvailability !== undefined) dbUpdates.blocks_availability = updates.blocksAvailability;
 
     const { data: planRow } = await supabase.from('plans').select('source').eq('id', id).single();
     if (planRow?.source && (planRow.source === 'gcal' || planRow.source === 'ical')) {
