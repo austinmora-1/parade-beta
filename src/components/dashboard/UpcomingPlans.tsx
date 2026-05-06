@@ -127,6 +127,7 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
           id: `proposal-${prop.id}`,
           proposalId: prop.id,
           destination: prop.destination,
+          proposalType: (prop as any).proposal_type || 'trip',
           isCreator: prop.created_by === user.id,
           creatorName: creator?.name || 'Someone',
           dates: propDates,
