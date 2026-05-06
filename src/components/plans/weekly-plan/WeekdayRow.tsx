@@ -26,9 +26,6 @@ const SLOTS: TimeSlot[] = [
 ];
 
 function planTimeLabel(p: Plan): string {
-  if (p.startTime && p.endTime) {
-    return `${formatTime12(p.startTime)}–${formatTime12(p.endTime)}`.replace(/(am|pm)–/, '–');
-  }
   if (p.startTime) return formatTime12(p.startTime);
   const slot = TIME_SLOT_LABELS[p.timeSlot];
   return typeof slot === 'string' ? slot : slot?.time ?? '';
