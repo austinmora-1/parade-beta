@@ -740,7 +740,7 @@ export default function Notifications() {
           ) : (
             <AnimatePresence>
               {visibleTripProposals.map((trip) => {
-                const isVisit = trip.proposal_type === 'visit';
+                const isVisit = getTravelKind(trip.destination, homeCandidates) === 'visit';
                 const TripIcon = isVisit ? Home : Plane;
                 const accentClass = isVisit
                   ? 'text-availability-available'
