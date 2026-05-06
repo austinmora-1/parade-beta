@@ -169,13 +169,21 @@ export default function TripDetail() {
         setCompanionProfiles([]);
       }
 
-      // If linked to a shared proposal, fetch participant count for activity-vote context
+      // If linked to a shared proposal, fetch participant count and proposal type
       if ((data as any).proposal_id) {
-        const { count } = await supabase
-          .from('trip_proposal_participants')
-          .select('*', { count: 'exact', head: true })
-          .eq('proposal_id', (data as any).proposal_id);
+        const [{ count }, { data: prop }] = await Promise.all([
+          supabase
+            .from('trip_proposal_participants')
+            .select('*', { count: 'exact', head: true })
+            .eq('proposal_id', (data as any).proposal_id),
+          supabase
+            .from('trip_proposals')
+            .select('proposal_type')
+            .eq('id', (data as any).proposal_id)
+            .maybeSingle(),
+        ]);
         setProposalParticipantCount(count || 0);
+        setTrip((prev) => prev ? { ...prev, proposal_type: (prop as any)?.proposal_type ?? null } : prev);
       } else {
         setProposalParticipantCount(0);
       }
