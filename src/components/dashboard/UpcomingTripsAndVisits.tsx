@@ -39,18 +39,18 @@ export function UpcomingTripsAndVisits() {
     return homeCities.some((home) => citiesMatch(home, normalized));
   };
 
-  // Fetch confirmed trips (next 3 months)
+  // Fetch confirmed trips (next 2 months)
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
       const now = new Date();
-      const threeMonths = addMonths(now, 3);
+      const twoMonths = addMonths(now, 2);
       const { data } = await supabase
         .from('trips')
         .select('*')
         .eq('user_id', user.id)
         .gte('end_date', format(now, 'yyyy-MM-dd'))
-        .lte('start_date', format(threeMonths, 'yyyy-MM-dd'))
+        .lte('start_date', format(twoMonths, 'yyyy-MM-dd'))
         .order('start_date', { ascending: true });
 
       if (!data?.length) { setConfirmedTrips([]); return; }
@@ -142,7 +142,17 @@ export function UpcomingTripsAndVisits() {
         const bDate = b.dates[0]?.start_date || '';
         return aDate.localeCompare(bDate);
       });
-      setTripProposals(mapped);
+      // Limit proposals to those starting within the next 2 months
+      const now = new Date();
+      const twoMonthsKey = format(addMonths(now, 2), 'yyyy-MM-dd');
+      const todayKey = format(now, 'yyyy-MM-dd');
+      const windowed = mapped.filter(p => {
+        const earliest = p.dates[0]?.start_date;
+        const latest = p.dates[p.dates.length - 1]?.end_date;
+        if (!earliest) return true;
+        return earliest <= twoMonthsKey && (latest || earliest) >= todayKey;
+      });
+      setTripProposals(windowed);
     })();
   }, [user?.id]);
 
@@ -177,54 +187,58 @@ export function UpcomingTripsAndVisits() {
       }
     >
       <div className="space-y-1.5">
-        {visibleTrips.map(trip => (
-          <div
-            key={trip.id}
-            onClick={() => navigate('/trips')}
-            className="rounded-xl border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
-            style={{ borderLeftColor: 'hsl(var(--primary))' }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
-                  <span className="text-sm font-medium truncate">
-                    {trip.location ? `Trip to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}` : 'Trip'}
-                  </span>
-                  {isWithinInterval(startOfDay(new Date()), {
-                    start: startOfDay(new Date(trip.start_date + 'T00:00:00')),
-                    end: startOfDay(new Date(trip.end_date + 'T00:00:00')),
-                  }) && (
-                    <Badge variant="default" className="text-[9px] px-1.5 py-0 shrink-0">In Progress</Badge>
-                  )}
-                </div>
-                <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
-                  <span className="flex items-center gap-0.5">
-                    <Clock className="h-3 w-3" />
-                    {format(new Date(trip.start_date + 'T00:00:00'), 'MMM d')} – {format(new Date(trip.end_date + 'T00:00:00'), 'MMM d')}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                {trip.friendProfiles?.length > 0 && (
-                  <div className="flex items-center -space-x-1.5">
-                    {trip.friendProfiles.slice(0, 4).map((p: any, i: number, arr: any[]) => (
-                      <Avatar key={i} className="h-5 w-5 border-[1.5px] border-card" style={{ zIndex: arr.length - i }}>
-                        <AvatarImage src={p.avatar || getElephantAvatar(p.name)} className="object-cover" />
-                        <AvatarFallback className="text-[8px] bg-muted">{p.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                    ))}
-                    {trip.friendProfiles.length > 4 && (
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-[1.5px] border-card text-[8px] font-medium text-muted-foreground">
-                        +{trip.friendProfiles.length - 4}
-                      </span>
+        {visibleTrips.map(trip => {
+          const tripTitle = trip.name
+            || (trip.location ? `Trip to ${formatCityForDisplay(trip.location) || trip.location.split(',')[0]}` : 'Trip');
+          return (
+            <div
+              key={trip.id}
+              onClick={() => navigate('/trips')}
+              className="rounded-xl border-l-[3px] px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
+              style={{ borderLeftColor: 'hsl(var(--primary))' }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
+                    <span className="text-sm font-medium truncate">
+                      {tripTitle}
+                    </span>
+                    {isWithinInterval(startOfDay(new Date()), {
+                      start: startOfDay(new Date(trip.start_date + 'T00:00:00')),
+                      end: startOfDay(new Date(trip.end_date + 'T00:00:00')),
+                    }) && (
+                      <Badge variant="default" className="text-[9px] px-1.5 py-0 shrink-0">In Progress</Badge>
                     )}
                   </div>
-                )}
+                  <div className="flex items-center text-xs text-muted-foreground mt-0.5 ml-[26px]">
+                    <span className="flex items-center gap-0.5">
+                      <Clock className="h-3 w-3" />
+                      {format(new Date(trip.start_date + 'T00:00:00'), 'MMM d')} – {format(new Date(trip.end_date + 'T00:00:00'), 'MMM d')}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  {trip.friendProfiles?.length > 0 && (
+                    <div className="flex items-center -space-x-1.5">
+                      {trip.friendProfiles.slice(0, 4).map((p: any, i: number, arr: any[]) => (
+                        <Avatar key={i} className="h-5 w-5 border-[1.5px] border-card" style={{ zIndex: arr.length - i }}>
+                          <AvatarImage src={p.avatar || getElephantAvatar(p.name)} className="object-cover" />
+                          <AvatarFallback className="text-[8px] bg-muted">{p.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {trip.friendProfiles.length > 4 && (
+                        <span className="flex items-center justify-center h-5 w-5 rounded-full bg-muted border-[1.5px] border-card text-[8px] font-medium text-muted-foreground">
+                          +{trip.friendProfiles.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {visibleProposals.map(proposal => {
           const earliestDate = proposal.dates[0];
@@ -236,13 +250,13 @@ export function UpcomingTripsAndVisits() {
               key={proposal.id}
               onClick={() => navigate('/trips')}
               className="rounded-xl border-l-[3px] border-dashed border border-muted-foreground/30 opacity-70 px-3 py-3 transition-all duration-200 cursor-pointer group bg-muted/30 hover:bg-muted/50"
-              style={{ borderLeftColor: 'hsl(var(--primary))' }}
+              style={{ borderLeftColor: isVisit ? 'hsl(var(--coral))' : 'hsl(var(--primary))' }}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     {isVisit ? (
-                      <Home className="h-[18px] w-[18px] text-primary shrink-0" />
+                      <Home className="h-[18px] w-[18px] text-[hsl(var(--coral))] shrink-0" />
                     ) : (
                       <Plane className="h-[18px] w-[18px] text-primary shrink-0" />
                     )}
