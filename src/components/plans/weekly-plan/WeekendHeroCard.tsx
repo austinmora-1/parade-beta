@@ -135,7 +135,7 @@ export function WeekendHeroCard({
       {weekendTrip && (
         <button
           onClick={() => navigate(`/trip/${weekendTrip.id}`)}
-          className="mt-3 flex w-full items-center gap-2 rounded-xl bg-[hsl(28_35%_72%)] dark:bg-[hsl(28_25%_38%)] px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-[hsl(28_35%_67%)] dark:hover:bg-[hsl(28_25%_43%)] transition-colors"
+          className="mt-3 flex w-full items-center gap-2 rounded-xl bg-[hsl(28_45%_85%)] dark:bg-[hsl(28_30%_55%)] px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-[hsl(28_45%_80%)] dark:hover:bg-[hsl(28_30%_60%)] transition-colors"
         >
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           <span className="truncate">
