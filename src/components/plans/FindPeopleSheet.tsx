@@ -14,6 +14,7 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Plan, ACTIVITY_CONFIG, ActivityType, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { useOpenInvites, type OpenInviteAudienceType } from '@/hooks/useOpenInvites';
