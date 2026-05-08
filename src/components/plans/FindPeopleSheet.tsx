@@ -48,14 +48,12 @@ type Step = 'anchor' | 'describe' | 'audience' | 'preview' | 'success';
 
 const TIME_SLOTS: TimeSlot[] = ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
 
-const QUICK_ACTIVITIES: { id: ActivityType; label: string; icon: string }[] = [
-  { id: 'coffee', label: 'Coffee', icon: '☕' },
-  { id: 'drinks', label: 'Drinks', icon: '🍹' },
-  { id: 'dinner', label: 'Dinner', icon: '🍝' },
-  { id: 'lunch', label: 'Lunch', icon: '🥗' },
-  { id: 'walk', label: 'Walk', icon: '🚶' } as any,
-  { id: 'gym', label: 'Workout', icon: '💪' } as any,
-];
+const ALL_ACTIVITIES: { id: ActivityType; label: string; icon: string }[] = (
+  Object.entries(ACTIVITY_CONFIG) as [ActivityType, typeof ACTIVITY_CONFIG[ActivityType]][]
+)
+  .filter(([id]) => id !== 'custom')
+  .map(([id, cfg]) => ({ id, label: cfg.label, icon: cfg.icon }))
+  .sort((a, b) => a.label.localeCompare(b.label));
 
 export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, initialSlot, onBack }: FindPeopleSheetProps) {
   const { create } = useOpenInvites();
