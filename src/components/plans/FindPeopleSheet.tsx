@@ -838,6 +838,11 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
           )}
         </DrawerFooter>
       </DrawerContent>
+      <CustomActivityDialog
+        open={customDialogOpen}
+        onOpenChange={setCustomDialogOpen}
+        onCreated={(a) => setActivity(a.id)}
+      />
     </Drawer>
   );
 }
