@@ -1471,6 +1471,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
       onOpenChange={(open) => { if (!open) setCreatedPlanSummary(null); }}
       plan={createdPlanSummary}
     />
+
+    <CustomActivityDialog
+      open={customDialogOpen}
+      onOpenChange={setCustomDialogOpen}
+      onCreated={(a) => { setCustomActivities(prev => [...prev, a]); setActivity(a.id); }}
+    />
     </>
   );
 }
