@@ -1655,6 +1655,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
           </DrawerFooter>
         )}
       </DrawerContent>
+      <CustomActivityDialog
+        open={customDialogOpen}
+        onOpenChange={setCustomDialogOpen}
+        onCreated={handleCustomActivityCreated}
+      />
     </Drawer>
   );
 }
