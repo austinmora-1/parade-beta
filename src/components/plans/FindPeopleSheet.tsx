@@ -379,24 +379,62 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Activity</label>
-                  <div className="mt-1 grid grid-cols-3 gap-1.5">
-                    {QUICK_ACTIVITIES.map(a => (
-                      <button
-                        key={a.id}
-                        onClick={() => setActivity(a.id)}
-                        className={cn(
-                          'rounded-lg border px-2 py-1.5 text-xs transition-all flex items-center gap-1 justify-center',
-                          activity === a.id
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border hover:border-primary/30'
-                        )}
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Activity <span className="text-muted-foreground/60 normal-case font-normal">(optional)</span>
+                  </label>
+                  <Popover open={activityOpen} onOpenChange={setActivityOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={activityOpen}
+                        className="mt-1 w-full h-9 justify-between text-xs font-normal"
                       >
-                        <span>{a.icon}</span>
-                        <span className="truncate">{a.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                        {activity ? (
+                          <span className="flex items-center gap-1.5 truncate">
+                            <span>{ACTIVITY_CONFIG[activity as ActivityType]?.icon ?? '✨'}</span>
+                            <span className="truncate">{ACTIVITY_CONFIG[activity as ActivityType]?.label ?? activity}</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Search className="h-3.5 w-3.5" />
+                            Search activities…
+                          </span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search activities…" className="h-9 text-xs" />
+                        <CommandList className="max-h-64">
+                          <CommandEmpty>No activities found.</CommandEmpty>
+                          <CommandGroup>
+                            {activity && (
+                              <CommandItem
+                                value="__clear__"
+                                onSelect={() => { setActivity(''); setActivityOpen(false); }}
+                                className="text-xs text-muted-foreground"
+                              >
+                                Clear selection
+                              </CommandItem>
+                            )}
+                            {ALL_ACTIVITIES.map(a => (
+                              <CommandItem
+                                key={a.id}
+                                value={`${a.label} ${a.id}`}
+                                onSelect={() => { setActivity(a.id); setActivityOpen(false); }}
+                                className="text-xs gap-2"
+                              >
+                                <span>{a.icon}</span>
+                                <span className="flex-1 truncate">{a.label}</span>
+                                {activity === a.id && <Check className="h-3.5 w-3.5" />}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
