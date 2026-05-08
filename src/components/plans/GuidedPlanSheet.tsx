@@ -245,8 +245,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
       setOffParadeNames([]);
       setAddingOffParade(false);
       setOffParadeDraft('');
-      setShowCustomInput(false);
-      setCustomLabel('');
+      setCustomDialogOpen(false);
       setActivitySearch('');
       setCustomTitle('');
       setFriendsHaveDifferentHome(false);
