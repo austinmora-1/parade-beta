@@ -158,6 +158,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isProposing, setIsProposing] = useState(false);
   const [customActivities, setCustomActivities] = useState<CustomActivity[]>([]);
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
 
   // Load custom activities from profile
   useEffect(() => {
