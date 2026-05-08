@@ -26,6 +26,7 @@ import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { usePods } from '@/hooks/usePods';
+import { CustomActivityDialog } from './CustomActivityDialog';
 
 interface GuidedPlanSheetProps {
   open: boolean;
