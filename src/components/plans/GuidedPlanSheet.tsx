@@ -1316,36 +1316,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
                 </motion.button>
 
                 {/* Custom activity creation */}
-                {!showCustomInput ? (
-                  <button
-                    onClick={() => setShowCustomInput(true)}
-                    className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Create custom activity
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
-                    <input
-                      type="text"
-                      maxLength={2}
-                      value={customEmoji}
-                      onChange={(e) => setCustomEmoji(e.target.value || '✨')}
-                      className="w-8 h-8 text-center text-lg bg-transparent border border-border rounded-lg outline-none focus:border-primary"
-                    />
-                    <Input
-                      placeholder="Activity name"
-                      value={customLabel}
-                      onChange={(e) => setCustomLabel(e.target.value)}
-                      className="h-8 text-sm flex-1"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveCustomActivity()}
-                      autoFocus
-                    />
-                    <Button size="sm" className="h-8 text-xs" onClick={handleSaveCustomActivity} disabled={!customLabel.trim()}>
-                      Add
-                    </Button>
-                  </div>
-                )}
+                <button
+                  onClick={() => setCustomDialogOpen(true)}
+                  className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Create custom activity
+                </button>
               </motion.div>
             )}
 
