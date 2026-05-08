@@ -69,7 +69,8 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
 
   // Describe-step fields
   const [title, setTitle] = useState('');
-  const [activity, setActivity] = useState<string>('coffee');
+  const [activity, setActivity] = useState<string>('');
+  const [activityOpen, setActivityOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('evening');
   const [location, setLocation] = useState('');
