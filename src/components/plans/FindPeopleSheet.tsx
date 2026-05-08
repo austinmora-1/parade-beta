@@ -265,7 +265,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
     try {
       const payload = {
         title: title.trim() || (ACTIVITY_CONFIG[activity as ActivityType]?.label ?? 'Hangout'),
-        activity,
+        activity: activity || 'custom',
         date: date.toISOString(),
         time_slot: timeSlot,
         location: location.trim() || (tripContext?.location ?? null),
