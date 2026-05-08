@@ -28,11 +28,11 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: claims, error: authError } = await userClient.auth.getClaims(token);
-    if (authError || !claims?.claims) {
+    const { data: userData, error: authError } = await userClient.auth.getUser(token);
+    if (authError || !userData?.user) {
       return json({ error: 'Unauthorized' }, 401);
     }
-    const userId = claims.claims.sub as string;
+    const userId = userData.user.id;
 
     const body = (await req.json()) as RequestBody;
     if (!body.open_invite_id || typeof body.open_invite_id !== 'string') {
