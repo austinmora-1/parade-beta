@@ -146,7 +146,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
     setStep('describe');
   };
 
-  const canSubmitDescribe = title.trim().length > 0 && !!activity && !!timeSlot;
+  const canSubmitDescribe = title.trim().length > 0 && !!timeSlot;
 
   const connectedFriends = useMemo(
     () => friends.filter(f => f.status === 'connected' && f.friendUserId),
