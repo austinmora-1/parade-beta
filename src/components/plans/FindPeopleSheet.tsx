@@ -14,6 +14,7 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Plan, ACTIVITY_CONFIG, ActivityType, TIME_SLOT_LABELS, TimeSlot } from '@/types/planner';
 import { useOpenInvites, type OpenInviteAudienceType } from '@/hooks/useOpenInvites';
@@ -47,14 +48,12 @@ type Step = 'anchor' | 'describe' | 'audience' | 'preview' | 'success';
 
 const TIME_SLOTS: TimeSlot[] = ['early-morning', 'late-morning', 'early-afternoon', 'late-afternoon', 'evening', 'late-night'];
 
-const QUICK_ACTIVITIES: { id: ActivityType; label: string; icon: string }[] = [
-  { id: 'coffee', label: 'Coffee', icon: '☕' },
-  { id: 'drinks', label: 'Drinks', icon: '🍹' },
-  { id: 'dinner', label: 'Dinner', icon: '🍝' },
-  { id: 'lunch', label: 'Lunch', icon: '🥗' },
-  { id: 'walk', label: 'Walk', icon: '🚶' } as any,
-  { id: 'gym', label: 'Workout', icon: '💪' } as any,
-];
+const ALL_ACTIVITIES: { id: ActivityType; label: string; icon: string }[] = (
+  Object.entries(ACTIVITY_CONFIG) as [ActivityType, typeof ACTIVITY_CONFIG[ActivityType]][]
+)
+  .filter(([id]) => id !== 'custom')
+  .map(([id, cfg]) => ({ id, label: cfg.label, icon: cfg.icon }))
+  .sort((a, b) => a.label.localeCompare(b.label));
 
 export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, initialSlot, onBack }: FindPeopleSheetProps) {
   const { create } = useOpenInvites();
@@ -70,7 +69,8 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
 
   // Describe-step fields
   const [title, setTitle] = useState('');
-  const [activity, setActivity] = useState<string>('coffee');
+  const [activity, setActivity] = useState<string>('');
+  const [activityOpen, setActivityOpen] = useState(false);
   const [date, setDate] = useState<Date>(new Date());
   const [timeSlot, setTimeSlot] = useState<TimeSlot>('evening');
   const [location, setLocation] = useState('');
@@ -109,13 +109,13 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
       setLocation(tripContext.location || '');
       setDate(new Date(tripContext.startDate + 'T00:00:00'));
       setTimeSlot('evening');
-      setActivity('coffee');
+      setActivity('');
       setTitle(`Anyone free in ${tripContext.location || 'town'}?`);
       setStep('audience');
     } else if (initialDate || initialSlot) {
       // Prefill from "Find other times" — skip anchor, jump to describe with date/slot ready
       setTitle('');
-      setActivity('coffee');
+      setActivity('');
       setDate(initialDate || new Date());
       setTimeSlot(initialSlot || 'evening');
       setLocation('');
@@ -123,7 +123,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
     } else {
       setStep('anchor');
       setTitle('');
-      setActivity('coffee');
+      setActivity('');
       setDate(new Date());
       setTimeSlot('evening');
       setLocation('');
@@ -146,7 +146,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
     setStep('describe');
   };
 
-  const canSubmitDescribe = title.trim().length > 0 && !!activity && !!timeSlot;
+  const canSubmitDescribe = title.trim().length > 0 && !!timeSlot;
 
   const connectedFriends = useMemo(
     () => friends.filter(f => f.status === 'connected' && f.friendUserId),
@@ -265,7 +265,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
     try {
       const payload = {
         title: title.trim() || (ACTIVITY_CONFIG[activity as ActivityType]?.label ?? 'Hangout'),
-        activity,
+        activity: activity || 'custom',
         date: date.toISOString(),
         time_slot: timeSlot,
         location: location.trim() || (tripContext?.location ?? null),
@@ -379,24 +379,62 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Activity</label>
-                  <div className="mt-1 grid grid-cols-3 gap-1.5">
-                    {QUICK_ACTIVITIES.map(a => (
-                      <button
-                        key={a.id}
-                        onClick={() => setActivity(a.id)}
-                        className={cn(
-                          'rounded-lg border px-2 py-1.5 text-xs transition-all flex items-center gap-1 justify-center',
-                          activity === a.id
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border hover:border-primary/30'
-                        )}
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Activity <span className="text-muted-foreground/60 normal-case font-normal">(optional)</span>
+                  </label>
+                  <Popover open={activityOpen} onOpenChange={setActivityOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={activityOpen}
+                        className="mt-1 w-full h-9 justify-between text-xs font-normal"
                       >
-                        <span>{a.icon}</span>
-                        <span className="truncate">{a.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                        {activity ? (
+                          <span className="flex items-center gap-1.5 truncate">
+                            <span>{ACTIVITY_CONFIG[activity as ActivityType]?.icon ?? '✨'}</span>
+                            <span className="truncate">{ACTIVITY_CONFIG[activity as ActivityType]?.label ?? activity}</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Search className="h-3.5 w-3.5" />
+                            Search activities…
+                          </span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search activities…" className="h-9 text-xs" />
+                        <CommandList className="max-h-64">
+                          <CommandEmpty>No activities found.</CommandEmpty>
+                          <CommandGroup>
+                            {activity && (
+                              <CommandItem
+                                value="__clear__"
+                                onSelect={() => { setActivity(''); setActivityOpen(false); }}
+                                className="text-xs text-muted-foreground"
+                              >
+                                Clear selection
+                              </CommandItem>
+                            )}
+                            {ALL_ACTIVITIES.map(a => (
+                              <CommandItem
+                                key={a.id}
+                                value={`${a.label} ${a.id}`}
+                                onSelect={() => { setActivity(a.id); setActivityOpen(false); }}
+                                className="text-xs gap-2"
+                              >
+                                <span>{a.icon}</span>
+                                <span className="flex-1 truncate">{a.label}</span>
+                                {activity === a.id && <Check className="h-3.5 w-3.5" />}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
