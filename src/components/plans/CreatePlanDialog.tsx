@@ -653,6 +653,15 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
                 </SelectItem>
 
                 {/* Custom activities */}
+                {/* Create custom trigger */}
+                <SelectItem
+                  value="__create_custom__"
+                  className="text-sm text-primary font-medium"
+                  onPointerDown={(e) => { e.preventDefault(); setCustomDialogOpen(true); }}
+                >
+                  + Create custom activity
+                </SelectItem>
+
                 {customActivities.length > 0 && (
                   <div>
                     <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
