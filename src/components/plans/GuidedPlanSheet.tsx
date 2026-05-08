@@ -732,20 +732,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
     setStep('confirm');
   };
 
-  const handleSaveCustomActivity = async () => {
-    if (!customLabel.trim() || !session?.user) return;
-    const newActivity: CustomActivity = {
-      id: `custom-${Date.now()}`,
-      label: customLabel.trim(),
-      icon: customEmoji,
-      vibeType: 'social',
-    };
-    const updated = [...customActivities, newActivity];
-    setCustomActivities(updated);
-    await supabase.from('profiles').update({ custom_activities: updated as any }).eq('user_id', session.user.id);
-    setShowCustomInput(false);
-    setCustomLabel('');
-    setCustomEmoji('✨');
+  const handleCustomActivityCreated = (newActivity: CustomActivity) => {
+    setCustomActivities(prev => [...prev, newActivity]);
     handleSelectActivity(newActivity.id);
   };
 
