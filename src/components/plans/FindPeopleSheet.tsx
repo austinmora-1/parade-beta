@@ -108,13 +108,13 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
       setLocation(tripContext.location || '');
       setDate(new Date(tripContext.startDate + 'T00:00:00'));
       setTimeSlot('evening');
-      setActivity('coffee');
+      setActivity('');
       setTitle(`Anyone free in ${tripContext.location || 'town'}?`);
       setStep('audience');
     } else if (initialDate || initialSlot) {
       // Prefill from "Find other times" — skip anchor, jump to describe with date/slot ready
       setTitle('');
-      setActivity('coffee');
+      setActivity('');
       setDate(initialDate || new Date());
       setTimeSlot(initialSlot || 'evening');
       setLocation('');
@@ -122,7 +122,7 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
     } else {
       setStep('anchor');
       setTitle('');
-      setActivity('coffee');
+      setActivity('');
       setDate(new Date());
       setTimeSlot('evening');
       setLocation('');
