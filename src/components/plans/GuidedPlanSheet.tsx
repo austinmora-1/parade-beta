@@ -26,6 +26,7 @@ import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { usePods } from '@/hooks/usePods';
+import { CustomActivityDialog } from './CustomActivityDialog';
 
 interface GuidedPlanSheetProps {
   open: boolean;
@@ -152,9 +153,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
   const [selectedSharedCity, setSelectedSharedCity] = useState<string>('');
   const [customActivities, setCustomActivities] = useState<CustomActivity[]>([]);
-  const [showCustomInput, setShowCustomInput] = useState(false);
-  const [customLabel, setCustomLabel] = useState('');
-  const [customEmoji, setCustomEmoji] = useState('✨');
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const [activitySearch, setActivitySearch] = useState('');
   const [activitySearchFocused, setActivitySearchFocused] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
@@ -247,8 +246,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
       setOffParadeNames([]);
       setAddingOffParade(false);
       setOffParadeDraft('');
-      setShowCustomInput(false);
-      setCustomLabel('');
+      setCustomDialogOpen(false);
       setActivitySearch('');
       setCustomTitle('');
       setFriendsHaveDifferentHome(false);
@@ -735,20 +733,8 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
     setStep('confirm');
   };
 
-  const handleSaveCustomActivity = async () => {
-    if (!customLabel.trim() || !session?.user) return;
-    const newActivity: CustomActivity = {
-      id: `custom-${Date.now()}`,
-      label: customLabel.trim(),
-      icon: customEmoji,
-      vibeType: 'social',
-    };
-    const updated = [...customActivities, newActivity];
-    setCustomActivities(updated);
-    await supabase.from('profiles').update({ custom_activities: updated as any }).eq('user_id', session.user.id);
-    setShowCustomInput(false);
-    setCustomLabel('');
-    setCustomEmoji('✨');
+  const handleCustomActivityCreated = (newActivity: CustomActivity) => {
+    setCustomActivities(prev => [...prev, newActivity]);
     handleSelectActivity(newActivity.id);
   };
 
@@ -1331,36 +1317,13 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
                 </motion.button>
 
                 {/* Custom activity creation */}
-                {!showCustomInput ? (
-                  <button
-                    onClick={() => setShowCustomInput(true)}
-                    className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Create custom activity
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
-                    <input
-                      type="text"
-                      maxLength={2}
-                      value={customEmoji}
-                      onChange={(e) => setCustomEmoji(e.target.value || '✨')}
-                      className="w-8 h-8 text-center text-lg bg-transparent border border-border rounded-lg outline-none focus:border-primary"
-                    />
-                    <Input
-                      placeholder="Activity name"
-                      value={customLabel}
-                      onChange={(e) => setCustomLabel(e.target.value)}
-                      className="h-8 text-sm flex-1"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveCustomActivity()}
-                      autoFocus
-                    />
-                    <Button size="sm" className="h-8 text-xs" onClick={handleSaveCustomActivity} disabled={!customLabel.trim()}>
-                      Add
-                    </Button>
-                  </div>
-                )}
+                <button
+                  onClick={() => setCustomDialogOpen(true)}
+                  className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Create custom activity
+                </button>
               </motion.div>
             )}
 
@@ -1692,6 +1655,11 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
           </DrawerFooter>
         )}
       </DrawerContent>
+      <CustomActivityDialog
+        open={customDialogOpen}
+        onOpenChange={setCustomDialogOpen}
+        onCreated={handleCustomActivityCreated}
+      />
     </Drawer>
   );
 }

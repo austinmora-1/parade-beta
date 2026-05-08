@@ -53,6 +53,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
+import { CustomActivityDialog } from './CustomActivityDialog';
 import { usePods } from '@/hooks/usePods';
 import { useRecurringPlans } from '@/hooks/useRecurringPlans';
 import { toast } from 'sonner';
@@ -157,6 +158,7 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isProposing, setIsProposing] = useState(false);
   const [customActivities, setCustomActivities] = useState<CustomActivity[]>([]);
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
 
   // Load custom activities from profile
   useEffect(() => {
@@ -651,6 +653,15 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
                 </SelectItem>
 
                 {/* Custom activities */}
+                {/* Create custom trigger */}
+                <SelectItem
+                  value="__create_custom__"
+                  className="text-sm text-primary font-medium"
+                  onPointerDown={(e) => { e.preventDefault(); setCustomDialogOpen(true); }}
+                >
+                  + Create custom activity
+                </SelectItem>
+
                 {customActivities.length > 0 && (
                   <div>
                     <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1459,6 +1470,12 @@ export function CreatePlanDialog({ open, onOpenChange, editPlan, defaultDate, de
       open={!!createdPlanSummary}
       onOpenChange={(open) => { if (!open) setCreatedPlanSummary(null); }}
       plan={createdPlanSummary}
+    />
+
+    <CustomActivityDialog
+      open={customDialogOpen}
+      onOpenChange={setCustomDialogOpen}
+      onCreated={(a) => { setCustomActivities(prev => [...prev, a]); setActivity(a.id); }}
     />
     </>
   );
