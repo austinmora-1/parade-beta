@@ -152,9 +152,7 @@ export function GuidedPlanSheet({ open, onOpenChange, preSelectedFriends, onBack
   const [friendMultiDayAvail, setFriendMultiDayAvail] = useState<Record<string, Record<TimeSlot, { free: number; total: number }>>>({});
   const [selectedSharedCity, setSelectedSharedCity] = useState<string>('');
   const [customActivities, setCustomActivities] = useState<CustomActivity[]>([]);
-  const [showCustomInput, setShowCustomInput] = useState(false);
-  const [customLabel, setCustomLabel] = useState('');
-  const [customEmoji, setCustomEmoji] = useState('✨');
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const [activitySearch, setActivitySearch] = useState('');
   const [activitySearchFocused, setActivitySearchFocused] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
