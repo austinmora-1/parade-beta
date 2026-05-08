@@ -53,6 +53,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanChangeRequests } from '@/hooks/usePlanChangeRequests';
+import { CustomActivityDialog } from './CustomActivityDialog';
 import { usePods } from '@/hooks/usePods';
 import { useRecurringPlans } from '@/hooks/useRecurringPlans';
 import { toast } from 'sonner';
