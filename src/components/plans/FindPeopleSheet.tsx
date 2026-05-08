@@ -24,6 +24,8 @@ import { toast } from 'sonner';
 import { AnchorStep } from './findpeople/AnchorStep';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useCustomActivities } from '@/hooks/useCustomActivities';
+import { CustomActivityDialog } from './CustomActivityDialog';
 
 export interface TripContext {
   tripId: string;
