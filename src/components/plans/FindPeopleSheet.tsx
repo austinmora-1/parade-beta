@@ -64,6 +64,8 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
   const viewport = useVisualViewport();
   const { profile } = useCurrentUserProfile();
   const { user } = useAuth();
+  const { customActivities } = useCustomActivities();
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const senderFirstName = profile?.first_name || profile?.display_name?.split(' ')[0] || 'A friend';
 
   const [step, setStep] = useState<Step>('anchor');
