@@ -394,12 +394,18 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
                         aria-expanded={activityOpen}
                         className="mt-1 w-full h-9 justify-between text-xs font-normal"
                       >
-                        {activity ? (
-                          <span className="flex items-center gap-1.5 truncate">
-                            <span>{ACTIVITY_CONFIG[activity as ActivityType]?.icon ?? '✨'}</span>
-                            <span className="truncate">{ACTIVITY_CONFIG[activity as ActivityType]?.label ?? activity}</span>
-                          </span>
-                        ) : (
+                        {activity ? (() => {
+                          const custom = customActivities.find(c => c.id === activity);
+                          const cfg = ACTIVITY_CONFIG[activity as ActivityType];
+                          const icon = cfg?.icon ?? custom?.icon ?? '✨';
+                          const label = cfg?.label ?? custom?.label ?? activity;
+                          return (
+                            <span className="flex items-center gap-1.5 truncate">
+                              <span>{icon}</span>
+                              <span className="truncate">{label}</span>
+                            </span>
+                          );
+                        })() : (
                           <span className="flex items-center gap-1.5 text-muted-foreground">
                             <Search className="h-3.5 w-3.5" />
                             Search activities…
@@ -411,7 +417,16 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
                       <Command>
                         <CommandInput placeholder="Search activities…" className="h-9 text-xs" />
                         <CommandList className="max-h-64">
-                          <CommandEmpty>No activities found.</CommandEmpty>
+                          <CommandEmpty>
+                            <button
+                              type="button"
+                              onClick={() => { setActivityOpen(false); setCustomDialogOpen(true); }}
+                              className="w-full px-3 py-2 text-xs text-primary font-medium flex items-center justify-center gap-1.5"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Create custom activity
+                            </button>
+                          </CommandEmpty>
                           <CommandGroup>
                             {activity && (
                               <CommandItem
@@ -422,6 +437,27 @@ export function FindPeopleSheet({ open, onOpenChange, tripContext, initialDate, 
                                 Clear selection
                               </CommandItem>
                             )}
+                            <CommandItem
+                              value="__create_custom__"
+                              onSelect={() => { setActivityOpen(false); setCustomDialogOpen(true); }}
+                              className="text-xs text-primary font-medium gap-2"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Create custom activity
+                            </CommandItem>
+                            {customActivities.length > 0 && customActivities.map(c => (
+                              <CommandItem
+                                key={c.id}
+                                value={`${c.label} ${c.id}`}
+                                onSelect={() => { setActivity(c.id); setActivityOpen(false); }}
+                                className="text-xs gap-2"
+                              >
+                                <span>{c.icon}</span>
+                                <span className="flex-1 truncate">{c.label}</span>
+                                <span className="text-[9px] uppercase tracking-wider text-muted-foreground">Yours</span>
+                                {activity === c.id && <Check className="h-3.5 w-3.5" />}
+                              </CommandItem>
+                            ))}
                             {ALL_ACTIVITIES.map(a => (
                               <CommandItem
                                 key={a.id}
