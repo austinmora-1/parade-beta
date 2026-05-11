@@ -2179,16 +2179,6 @@ export type Database = {
       }
     }
     Functions: {
-      _tmp_export_auth_users: {
-        Args: never
-        Returns: unknown[]
-        SetofOptions: {
-          from: "*"
-          to: "users"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
       accept_friend_request: {
         Args: { p_friendship_id: string; p_requester_user_id: string }
         Returns: undefined
