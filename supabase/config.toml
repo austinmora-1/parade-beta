@@ -3,5 +3,3 @@ project_id = "womtzaraskisayzskafe"
 [functions.auth-email-hook]
 verify_jwt = false
 
-[functions.export-auth-users]
-verify_jwt = false
