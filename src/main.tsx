@@ -20,6 +20,26 @@ try {
   /* no-op — localStorage may be unavailable */
 }
 
+// Auto-recover from stale lazy-chunk references after a redeploy.
+// When the bundle hash changes, old <App /> references chunks that 404 →
+// "Importing a module script failed". Reload once to pick up the new index.
+const CHUNK_RELOAD_KEY = 'parade-chunk-reload-at';
+function isChunkLoadError(msg: unknown): boolean {
+  const s = String(msg ?? '');
+  return /Importing a module script failed|Failed to fetch dynamically imported module|ChunkLoadError|Loading chunk \d+ failed/i.test(s);
+}
+function maybeReloadForStaleChunk(reason: unknown) {
+  if (!isChunkLoadError(reason)) return;
+  try {
+    const last = parseInt(sessionStorage.getItem(CHUNK_RELOAD_KEY) || '0', 10);
+    if (Date.now() - last < 10_000) return; // avoid reload loops
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+  } catch { /* no-op */ }
+  window.location.reload();
+}
+window.addEventListener('error', (e) => maybeReloadForStaleChunk(e?.message));
+window.addEventListener('unhandledrejection', (e) => maybeReloadForStaleChunk((e as PromiseRejectionEvent)?.reason?.message));
+
 createRoot(document.getElementById("root")!).render(<App />);
 
 setTimeout(() => {
