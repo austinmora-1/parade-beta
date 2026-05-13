@@ -16,7 +16,7 @@ export function ParadeWordmark({ className, size = 'xl' }: ParadeWordmarkProps) 
   return (
     <span
       className={cn(
-        'parade-wordmark tracking-wide text-primary leading-none',
+        'parade-wordmark tracking-wide leading-none',
         sizeClasses[size],
         className
       )}
