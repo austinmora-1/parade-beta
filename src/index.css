@@ -96,36 +96,38 @@
     --vibe-athletic: 152 56% 78%;
     --vibe-productive: 49 100% 67%;
 
-    /* Gradients — coral-led primary, green secondary (V2) */
-    --gradient-primary: linear-gradient(135deg, hsl(5 100% 68%), hsl(9 100% 81%));
-    --gradient-secondary: linear-gradient(135deg, hsl(152 39% 39%), hsl(152 39% 61%));
-    --gradient-card: linear-gradient(145deg, hsl(30 50% 99%), hsl(30 40% 97%));
-    --gradient-hero: linear-gradient(160deg, hsl(5 100% 68%), hsl(9 100% 81%), hsl(152 39% 39%));
+    /* Gradients — Parade Green primary, Ember secondary */
+    --gradient-primary: linear-gradient(135deg, hsl(152 54% 30%), hsl(150 33% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(11 60% 56%), hsl(43 84% 72%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(40 67% 96%));
+    --gradient-hero: linear-gradient(160deg, hsl(152 54% 30%), hsl(150 33% 55%), hsl(214 41% 60%));
+    --gradient-pearl: linear-gradient(135deg, hsl(0 0% 100%), hsl(240 5% 91%));
     --gradient-wordmark: linear-gradient(
       135deg,
-      hsl(5 100% 68%) 0%,
-      hsl(9 100% 81%) 20%,
-      hsl(49 100% 67%) 40%,
-      hsl(152 56% 78%) 60%,
-      hsl(203 75% 78%) 80%,
-      hsl(152 39% 39%) 100%
+      hsl(152 54% 30%) 0%,
+      hsl(150 33% 55%) 18%,
+      hsl(43 84% 72%) 36%,
+      hsl(42 71% 55%) 54%,
+      hsl(11 60% 56%) 72%,
+      hsl(214 41% 60%) 88%,
+      hsl(214 55% 35%) 100%
     );
 
-    /* Shadows — warm coral tint */
-    --shadow-sm: 0 2px 8px -2px hsl(20 30% 20% / 0.07);
-    --shadow-md: 0 8px 24px -8px hsl(20 30% 20% / 0.10);
-    --shadow-lg: 0 16px 48px -12px hsl(20 30% 20% / 0.13);
-    --shadow-glow: 0 0 40px hsl(5 100% 68% / 0.20);
+    /* Shadows — cool neutral tint */
+    --shadow-sm: 0 2px 8px -2px hsl(231 50% 10% / 0.07);
+    --shadow-md: 0 8px 24px -8px hsl(231 50% 10% / 0.10);
+    --shadow-lg: 0 16px 48px -12px hsl(231 50% 10% / 0.13);
+    --shadow-glow: 0 0 40px hsl(152 54% 30% / 0.20);
 
-    /* Warm cream sidebar */
-    --sidebar-background: 30 50% 97%;
-    --sidebar-foreground: 20 15% 20%;
-    --sidebar-primary: 5 100% 68%;
+    /* Custard sidebar */
+    --sidebar-background: 40 60% 95%;
+    --sidebar-foreground: 231 88% 6%;
+    --sidebar-primary: 152 54% 30%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 9 100% 95%;
-    --sidebar-accent-foreground: 5 80% 45%;
-    --sidebar-border: 30 30% 88%;
-    --sidebar-ring: 5 100% 68%;
+    --sidebar-accent: 40 60% 92%;
+    --sidebar-accent-foreground: 150 22% 24%;
+    --sidebar-border: 40 30% 84%;
+    --sidebar-ring: 152 54% 30%;
   }
 
   /* ==========================================================
