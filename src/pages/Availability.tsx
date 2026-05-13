@@ -197,7 +197,7 @@ export default function Availability() {
           }
         />
 
-        <div className="ml-auto flex items-center gap-1 rounded-full bg-muted/40 p-0.5">
+        <div className="ml-auto flex items-center gap-1 rounded-full border border-border bg-muted/40 dark:bg-card/80 dark:border-border/60 p-0.5">
           {(['all', 'plans', 'trips'] as ViewFilter[]).map((v) => {
             const active = viewFilter === v;
             return (
@@ -207,7 +207,7 @@ export default function Availability() {
                 className={cn(
                   'rounded-full px-3 py-1.5 text-sm font-bold transition-colors',
                   active
-                    ? 'bg-secondary/15 text-secondary'
+                    ? 'bg-secondary/15 text-secondary dark:bg-secondary/25 dark:text-[hsl(11_70%_75%)]'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
@@ -283,10 +283,10 @@ export default function Availability() {
         <div className="space-y-2">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-              <span className="text-secondary">Weekdays</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary dark:bg-[hsl(11_70%_70%)]" />
+              <span className="text-secondary dark:text-[hsl(11_70%_75%)]">Weekdays</span>
             </div>
-            <span className="text-[11px] font-medium text-muted-foreground">Mon – Fri</span>
+            <span className="text-[11px] font-medium text-stone-400">Mon – Fri</span>
           </div>
           <div className="space-y-2">
             {weekdayDays.map((d) => (
