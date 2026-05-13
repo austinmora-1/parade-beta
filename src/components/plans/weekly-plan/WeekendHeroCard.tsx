@@ -82,7 +82,7 @@ export function WeekendHeroCard({
       className={cn(
         'relative overflow-hidden rounded-2xl border p-4 shadow-soft',
         weekendTrip
-          ? 'border-primary/30 bg-gradient-to-br from-primary/15 via-card to-secondary/10 dark:border-primary/40 dark:from-primary/20 dark:via-card dark:to-secondary/15'
+          ? 'border-primary/30 bg-gradient-to-br from-primary/15 via-card to-[hsl(var(--sunshine)/0.18)] dark:border-primary/40 dark:from-primary/25 dark:via-card dark:to-[hsl(var(--sunshine)/0.22)]'
           : 'border-border bg-card dark:bg-gradient-to-br dark:from-card dark:via-card dark:to-primary/5',
       )}
     >
@@ -104,7 +104,7 @@ export function WeekendHeroCard({
       <h2 className="relative mt-2 font-display text-2xl font-black leading-tight tracking-tight">
         {weekendTrip && <Plane className="mr-1 inline-block h-5 w-5 align-[-2px] text-primary" />}
         {weekendTrip ? (
-          <span className="bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent dark:from-[hsl(11_70%_72%)] dark:to-[hsl(150_55%_72%)]">{headline}</span>
+          <span className="bg-gradient-to-r from-primary to-[hsl(var(--sunshine))] bg-clip-text text-transparent dark:from-[hsl(150_55%_72%)] dark:to-[hsl(var(--sunshine))]">{headline}</span>
         ) : (
           headline
         )}{weekendTrip ? '.' : ''}
