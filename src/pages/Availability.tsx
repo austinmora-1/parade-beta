@@ -283,10 +283,10 @@ export default function Availability() {
         <div className="space-y-2">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-              <span className="text-secondary">Weekdays</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary dark:bg-[hsl(11_70%_70%)]" />
+              <span className="text-secondary dark:text-[hsl(11_70%_75%)]">Weekdays</span>
             </div>
-            <span className="text-[11px] font-medium text-muted-foreground">Mon – Fri</span>
+            <span className="text-[11px] font-medium text-stone-400">Mon – Fri</span>
           </div>
           <div className="space-y-2">
             {weekdayDays.map((d) => (
