@@ -279,7 +279,7 @@ export function FriendVibeStrip(_props: FriendVibeStripProps = {}) {
 
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-semibold uppercase tracking-wider px-1 text-primary text-stone-500">
+      <p className="text-[11px] font-semibold uppercase tracking-wider px-1 text-stone-400">
         Who's around this week
       </p>
       <div
@@ -504,7 +504,7 @@ function FriendPill({
         {step === 'slots' ? (
           <>
             <div className="px-3 pt-3 pb-2 border-b border-border">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">
                 {mutual
                   ? `Mutually free with ${friend.name.split(' ')[0]}`
                   : `${friend.name.split(' ')[0]}'s free times`}
