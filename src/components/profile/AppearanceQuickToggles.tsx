@@ -9,8 +9,8 @@ export function AppearanceQuickToggles() {
   const isDark = theme === 'dark';
 
   const schemes: { id: ColorScheme; color: string }[] = [
-    { id: 'coral', color: 'hsl(5 100% 68%)' },
-    { id: 'green', color: 'hsl(152 39% 39%)' },
+    { id: 'green', color: 'hsl(152 54% 30%)' },
+    { id: 'coral', color: 'hsl(11 60% 56%)' },
   ];
 
   return (

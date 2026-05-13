@@ -6,52 +6,61 @@
 
 @layer base {
   :root {
-    /* Warm Cream background #FFF8F2 */
-    --background: 30 100% 97%;
-    /* Dark warm neutral foreground */
-    --foreground: 20 15% 20%;
+    /* Custard background #F8F0E0 */
+    --background: 40 67% 93%;
+    /* Sea Floor foreground #020620 */
+    --foreground: 231 88% 6%;
 
-    /* Slightly warm white card */
-    --card: 30 50% 99%;
-    --card-foreground: 20 15% 20%;
+    /* Pearl-white card */
+    --card: 0 0% 100%;
+    --card-foreground: 231 88% 6%;
 
-    --popover: 30 100% 97%;
-    --popover-foreground: 20 15% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 231 88% 6%;
 
-    /* Parade Coral #FF6B5B — Primary (V2) */
-    --primary: 5 100% 68%;
+    /* Parade Green #23744D — Primary */
+    --primary: 152 54% 30%;
     --primary-foreground: 0 0% 100%;
-    /* Sunset Peach #FFAD9E */
-    --primary-glow: 9 100% 81%;
+    /* Faded Mint #67B28E */
+    --primary-glow: 150 33% 55%;
 
-    /* Parade Green #3D8C6C — Secondary (V2) */
-    --secondary: 152 39% 39%;
+    /* Ember #D46549 — Secondary */
+    --secondary: 11 60% 56%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Warm cream variant */
-    --muted: 30 40% 95%;
-    --muted-foreground: 20 10% 45%;
+    /* Warm muted */
+    --muted: 40 50% 89%;
+    --muted-foreground: 225 4% 60%;
 
-    /* Light coral tint accent */
-    --accent: 9 100% 95%;
-    --accent-foreground: 5 80% 45%;
+    /* Custard tint accent */
+    --accent: 40 60% 92%;
+    --accent-foreground: 150 22% 24%;
 
-    --destructive: 0 72% 60%;
+    --destructive: 11 65% 35%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 30% 90%;
-    --input: 30 30% 90%;
-    --ring: 5 100% 68%;
+    --border: 40 30% 84%;
+    --input: 40 30% 84%;
+    --ring: 152 54% 30%;
 
     --radius: 1rem;
 
-    /* Brand accent tokens */
-    --coral: 5 100% 68%;
-    --sunset-peach: 9 100% 81%;
-    --open-sky: 203 75% 78%;
-    --go-mint: 152 56% 78%;
-    --sunshine: 49 100% 67%;
-    --meadow-green: 152 39% 61%;
+    /* Brand accent tokens (names retained for compatibility) */
+    --coral: 11 60% 56%;            /* Ember */
+    --sunset-peach: 43 84% 72%;     /* Butter */
+    --open-sky: 214 41% 60%;        /* Denim */
+    --go-mint: 150 33% 55%;         /* Faded Mint */
+    --sunshine: 42 71% 55%;         /* Marigold */
+    --meadow-green: 152 39% 50%;    /* Parade Green light */
+
+    /* New named brand tokens */
+    --parade-green: 152 54% 30%;
+    --dark-forest: 150 22% 24%;
+    --dark-ember: 11 68% 32%;
+    --sea-floor: 231 88% 6%;
+    --custard: 40 67% 93%;
+    --elephant-gray: 225 4% 60%;
+    --deep-sea: 214 55% 35%;
 
     /* Custom colors for activities — mapped to brand palette */
     --activity-food: 9 100% 81%;
@@ -87,133 +96,187 @@
     --vibe-athletic: 152 56% 78%;
     --vibe-productive: 49 100% 67%;
 
-    /* Gradients — coral-led primary, green secondary (V2) */
-    --gradient-primary: linear-gradient(135deg, hsl(5 100% 68%), hsl(9 100% 81%));
-    --gradient-secondary: linear-gradient(135deg, hsl(152 39% 39%), hsl(152 39% 61%));
-    --gradient-card: linear-gradient(145deg, hsl(30 50% 99%), hsl(30 40% 97%));
-    --gradient-hero: linear-gradient(160deg, hsl(5 100% 68%), hsl(9 100% 81%), hsl(152 39% 39%));
+    /* Gradients — Parade Green primary, Ember secondary */
+    --gradient-primary: linear-gradient(135deg, hsl(152 54% 30%), hsl(150 33% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(11 60% 56%), hsl(43 84% 72%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(40 67% 96%));
+    --gradient-hero: linear-gradient(160deg, hsl(152 54% 30%), hsl(150 33% 55%), hsl(214 41% 60%));
+    --gradient-pearl: linear-gradient(135deg, hsl(0 0% 100%), hsl(240 5% 91%));
     --gradient-wordmark: linear-gradient(
       135deg,
-      hsl(5 100% 68%) 0%,
-      hsl(9 100% 81%) 20%,
-      hsl(49 100% 67%) 40%,
-      hsl(152 56% 78%) 60%,
-      hsl(203 75% 78%) 80%,
-      hsl(152 39% 39%) 100%
+      hsl(152 54% 30%) 0%,
+      hsl(150 33% 55%) 18%,
+      hsl(43 84% 72%) 36%,
+      hsl(42 71% 55%) 54%,
+      hsl(11 60% 56%) 72%,
+      hsl(214 41% 60%) 88%,
+      hsl(214 55% 35%) 100%
     );
 
-    /* Shadows — warm coral tint */
-    --shadow-sm: 0 2px 8px -2px hsl(20 30% 20% / 0.07);
-    --shadow-md: 0 8px 24px -8px hsl(20 30% 20% / 0.10);
-    --shadow-lg: 0 16px 48px -12px hsl(20 30% 20% / 0.13);
-    --shadow-glow: 0 0 40px hsl(5 100% 68% / 0.20);
+    /* Shadows — cool neutral tint */
+    --shadow-sm: 0 2px 8px -2px hsl(231 50% 10% / 0.07);
+    --shadow-md: 0 8px 24px -8px hsl(231 50% 10% / 0.10);
+    --shadow-lg: 0 16px 48px -12px hsl(231 50% 10% / 0.13);
+    --shadow-glow: 0 0 40px hsl(152 54% 30% / 0.20);
 
-    /* Warm cream sidebar */
-    --sidebar-background: 30 50% 97%;
-    --sidebar-foreground: 20 15% 20%;
-    --sidebar-primary: 5 100% 68%;
+    /* Custard sidebar */
+    --sidebar-background: 40 60% 95%;
+    --sidebar-foreground: 231 88% 6%;
+    --sidebar-primary: 152 54% 30%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 9 100% 95%;
-    --sidebar-accent-foreground: 5 80% 45%;
-    --sidebar-border: 30 30% 88%;
-    --sidebar-ring: 5 100% 68%;
+    --sidebar-accent: 40 60% 92%;
+    --sidebar-accent-foreground: 150 22% 24%;
+    --sidebar-border: 40 30% 84%;
+    --sidebar-ring: 152 54% 30%;
   }
 
   /* ==========================================================
-     Color Scheme B — Parade Green primary, Coral accents
-     Applied via .theme-green on <html>. Overrides primary/accent
-     tokens while keeping the rest of the warm cream system intact.
+     Color Scheme Toggle
+     - Base (no class): Parade Green primary (default)
+     - .theme-green: alias of base (kept for storage compat)
+     - .theme-warm or legacy "coral" scheme: Ember-led warm preset
+     Applied via class on <html>. Overrides primary/accent tokens
+     while keeping the rest of the system intact.
      ========================================================== */
   :root.theme-green {
-    /* Parade Green #3D8C6C — Primary */
-    --primary: 152 39% 39%;
+    /* Identical to base — explicit so toggle has a deterministic state */
+    --primary: 152 54% 30%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 152 39% 61%;
+    --primary-glow: 150 33% 55%;
 
-    /* Parade Coral — Secondary */
-    --secondary: 5 100% 68%;
+    --secondary: 11 60% 56%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Light green tint accent */
-    --accent: 152 40% 92%;
-    --accent-foreground: 152 50% 25%;
+    --accent: 40 60% 92%;
+    --accent-foreground: 150 22% 24%;
 
-    --ring: 152 39% 39%;
+    --ring: 152 54% 30%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(152 39% 39%), hsl(152 39% 61%));
-    --gradient-secondary: linear-gradient(135deg, hsl(5 100% 68%), hsl(9 100% 81%));
-    --gradient-hero: linear-gradient(160deg, hsl(152 39% 39%), hsl(152 56% 78%), hsl(5 100% 68%));
+    --gradient-primary: linear-gradient(135deg, hsl(152 54% 30%), hsl(150 33% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(11 60% 56%), hsl(43 84% 72%));
+    --gradient-hero: linear-gradient(160deg, hsl(152 54% 30%), hsl(150 33% 55%), hsl(214 41% 60%));
 
-    --shadow-glow: 0 0 40px hsl(152 39% 39% / 0.20);
+    --shadow-glow: 0 0 40px hsl(152 54% 30% / 0.20);
 
-    --sidebar-primary: 152 39% 39%;
-    --sidebar-accent: 152 40% 92%;
-    --sidebar-accent-foreground: 152 50% 25%;
-    --sidebar-ring: 152 39% 39%;
+    --sidebar-primary: 152 54% 30%;
+    --sidebar-accent: 40 60% 92%;
+    --sidebar-accent-foreground: 150 22% 24%;
+    --sidebar-ring: 152 54% 30%;
+  }
+
+  /* Legacy "coral" scheme — now the warm Ember-led preset */
+  :root.theme-coral {
+    --primary: 11 60% 56%;            /* Ember */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 43 84% 72%;       /* Butter */
+
+    --secondary: 152 54% 30%;         /* Parade Green */
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 40 60% 92%;
+    --accent-foreground: 11 68% 32%;
+
+    --ring: 11 60% 56%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(11 60% 56%), hsl(43 84% 72%));
+    --gradient-secondary: linear-gradient(135deg, hsl(152 54% 30%), hsl(150 33% 55%));
+    --gradient-hero: linear-gradient(160deg, hsl(11 60% 56%), hsl(43 84% 72%), hsl(152 54% 30%));
+
+    --shadow-glow: 0 0 40px hsl(11 60% 56% / 0.20);
+
+    --sidebar-primary: 11 60% 56%;
+    --sidebar-accent: 40 60% 92%;
+    --sidebar-accent-foreground: 11 68% 32%;
+    --sidebar-ring: 11 60% 56%;
   }
 
   .dark.theme-green {
-    --primary: 152 50% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 152 50% 65%;
+    --primary: 150 45% 55%;
+    --primary-foreground: 231 88% 6%;
+    --primary-glow: 150 50% 70%;
 
-    --secondary: 5 85% 62%;
+    --secondary: 11 65% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    --accent: 152 35% 18%;
-    --accent-foreground: 152 50% 75%;
+    --accent: 150 22% 18%;
+    --accent-foreground: 150 45% 75%;
 
-    --ring: 152 50% 50%;
+    --ring: 150 45% 55%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(152 50% 45%), hsl(152 50% 60%));
-    --gradient-secondary: linear-gradient(135deg, hsl(5 85% 55%), hsl(9 80% 65%));
-    --gradient-hero: linear-gradient(160deg, hsl(152 50% 45%), hsl(152 50% 60%), hsl(5 85% 55%));
+    --gradient-primary: linear-gradient(135deg, hsl(152 50% 40%), hsl(150 45% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(11 65% 55%), hsl(43 75% 65%));
+    --gradient-hero: linear-gradient(160deg, hsl(152 50% 40%), hsl(150 45% 55%), hsl(214 45% 55%));
 
-    --shadow-glow: 0 0 40px hsl(152 50% 50% / 0.18);
+    --shadow-glow: 0 0 40px hsl(150 45% 55% / 0.18);
 
-    --sidebar-primary: 152 50% 50%;
-    --sidebar-accent: 152 35% 18%;
-    --sidebar-accent-foreground: 152 50% 75%;
-    --sidebar-ring: 152 50% 50%;
+    --sidebar-primary: 150 45% 55%;
+    --sidebar-accent: 150 22% 18%;
+    --sidebar-accent-foreground: 150 45% 75%;
+    --sidebar-ring: 150 45% 55%;
+  }
+
+  .dark.theme-coral {
+    --primary: 11 65% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 43 80% 70%;
+
+    --secondary: 150 45% 55%;
+    --secondary-foreground: 231 88% 6%;
+
+    --accent: 11 35% 18%;
+    --accent-foreground: 43 80% 75%;
+
+    --ring: 11 65% 60%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(11 65% 55%), hsl(43 75% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(152 50% 40%), hsl(150 45% 55%));
+    --gradient-hero: linear-gradient(160deg, hsl(11 65% 55%), hsl(43 75% 65%), hsl(152 50% 40%));
+
+    --shadow-glow: 0 0 40px hsl(11 65% 60% / 0.18);
+
+    --sidebar-primary: 11 65% 60%;
+    --sidebar-accent: 11 35% 18%;
+    --sidebar-accent-foreground: 43 80% 75%;
+    --sidebar-ring: 11 65% 60%;
   }
 
   .dark {
-    /* Deep warm dark background */
-    --background: 20 15% 10%;
-    --foreground: 30 20% 90%;
+    /* Sea Floor background */
+    --background: 231 88% 6%;
+    --foreground: 40 67% 93%;
 
-    --card: 20 12% 12%;
-    --card-foreground: 30 20% 90%;
+    --card: 231 50% 10%;
+    --card-foreground: 40 67% 93%;
 
-    --popover: 20 12% 14%;
-    --popover-foreground: 30 20% 90%;
+    --popover: 231 55% 8%;
+    --popover-foreground: 40 67% 93%;
 
-    /* Parade Coral — Primary (V2), tuned for dark */
-    --primary: 5 85% 62%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 9 80% 72%;
+    /* Faded Mint primary for contrast on Sea Floor */
+    --primary: 150 45% 55%;
+    --primary-foreground: 231 88% 6%;
+    --primary-glow: 150 50% 70%;
 
-    /* Parade Green — Secondary (V2), brighter for dark */
-    --secondary: 152 39% 45%;
+    /* Ember secondary */
+    --secondary: 11 65% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 20 12% 18%;
-    --muted-foreground: 30 15% 55%;
+    --muted: 231 30% 16%;
+    --muted-foreground: 225 8% 65%;
 
-    --accent: 5 40% 20%;
-    --accent-foreground: 9 80% 80%;
+    --accent: 150 22% 18%;
+    --accent-foreground: 150 45% 75%;
 
-    --destructive: 0 65% 50%;
+    --destructive: 11 60% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 20 10% 18%;
-    --input: 20 10% 20%;
-    --ring: 5 85% 62%;
+    --border: 231 30% 18%;
+    --input: 231 30% 18%;
+    --ring: 150 45% 55%;
 
     /* Dark mode availability colors */
     --available-light: 152 35% 18%;
     --partial-light: 49 40% 18%;
-    --busy-light: 5 40% 18%;
+    --busy-light: 11 40% 18%;
     --away-light: 9 40% 18%;
     --away-foreground: 9 70% 60%;
 
@@ -221,21 +284,22 @@
     --shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
     --shadow-md: 0 8px 24px -8px hsl(0 0% 0% / 0.4);
     --shadow-lg: 0 16px 48px -12px hsl(0 0% 0% / 0.5);
-    --shadow-glow: 0 0 40px hsl(5 85% 62% / 0.15);
+    --shadow-glow: 0 0 40px hsl(150 45% 55% / 0.18);
 
-    --gradient-primary: linear-gradient(135deg, hsl(5 85% 55%), hsl(9 80% 65%));
-    --gradient-secondary: linear-gradient(135deg, hsl(152 39% 40%), hsl(152 39% 50%));
-    --gradient-card: linear-gradient(145deg, hsl(20 12% 14%), hsl(20 10% 10%));
-    --gradient-hero: linear-gradient(160deg, hsl(5 85% 55%), hsl(9 80% 65%), hsl(152 39% 40%));
+    --gradient-primary: linear-gradient(135deg, hsl(152 50% 40%), hsl(150 45% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(11 65% 55%), hsl(43 75% 65%));
+    --gradient-card: linear-gradient(145deg, hsl(231 50% 10%), hsl(231 55% 7%));
+    --gradient-hero: linear-gradient(160deg, hsl(152 50% 40%), hsl(150 45% 55%), hsl(214 45% 55%));
+    --gradient-pearl: linear-gradient(135deg, hsl(231 50% 12%), hsl(231 55% 8%));
 
-    --sidebar-background: 20 15% 8%;
-    --sidebar-foreground: 30 20% 90%;
-    --sidebar-primary: 5 85% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 5 40% 18%;
-    --sidebar-accent-foreground: 9 80% 80%;
-    --sidebar-border: 20 10% 16%;
-    --sidebar-ring: 5 85% 62%;
+    --sidebar-background: 231 70% 5%;
+    --sidebar-foreground: 40 67% 93%;
+    --sidebar-primary: 150 45% 55%;
+    --sidebar-primary-foreground: 231 88% 6%;
+    --sidebar-accent: 150 22% 18%;
+    --sidebar-accent-foreground: 150 45% 75%;
+    --sidebar-border: 231 30% 14%;
+    --sidebar-ring: 150 45% 55%;
   }
 
 }
@@ -297,11 +361,11 @@
   .parade-wordmark {
     font-family: 'Bungee Shade', sans-serif;
     font-weight: 400;
-    color: hsl(5 100% 68%);
+    color: hsl(152 54% 30%);
   }
 
   :root:not(.dark) .parade-wordmark {
-    color: hsl(5 100% 68%);
+    color: hsl(152 54% 30%);
   }
 
   .shadow-soft {
