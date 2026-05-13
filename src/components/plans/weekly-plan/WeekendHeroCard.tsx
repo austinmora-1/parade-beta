@@ -88,16 +88,16 @@ export function WeekendHeroCard({
     >
       {weekendTrip && (
         <>
-          <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-secondary/25 dark:bg-secondary/30 blur-3xl" />
-          <span aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-primary/20 dark:bg-primary/25 blur-3xl" />
-          <span aria-hidden className="pointer-events-none absolute right-3 top-2 text-base text-secondary/60 dark:text-secondary/80">✦</span>
-          <span aria-hidden className="pointer-events-none absolute right-8 top-6 text-[10px] text-secondary/60 dark:text-secondary/70">✺</span>
+          <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[hsl(var(--sunshine)/0.3)] dark:bg-[hsl(var(--sunshine)/0.35)] blur-3xl" />
+          <span aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-primary/25 dark:bg-primary/30 blur-3xl" />
+          <span aria-hidden className="pointer-events-none absolute right-3 top-2 text-base bg-gradient-to-r from-primary to-[hsl(var(--sunshine))] bg-clip-text text-transparent">✦</span>
+          <span aria-hidden className="pointer-events-none absolute right-8 top-6 text-[10px] bg-gradient-to-r from-primary to-[hsl(var(--sunshine))] bg-clip-text text-transparent">✺</span>
         </>
       )}
 
       <div className="relative flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-        <span className={cn('h-1.5 w-1.5 rounded-full bg-secondary', weekendTrip && 'animate-pulse')} />
-        <span className="text-secondary dark:text-[hsl(11_70%_72%)]">This Weekend</span>
+        <span className={cn('h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary to-[hsl(var(--sunshine))]', weekendTrip && 'animate-pulse')} />
+        <span className="bg-gradient-to-r from-primary to-[hsl(var(--sunshine))] bg-clip-text text-transparent dark:from-[hsl(150_55%_72%)] dark:to-[hsl(var(--sunshine))]">This Weekend</span>
         <span className="font-medium normal-case tracking-normal text-stone-400">{dateLabel}</span>
       </div>
 
@@ -135,9 +135,9 @@ export function WeekendHeroCard({
       {weekendTrip && (
         <button
           onClick={() => navigate(`/trip/${weekendTrip.id}`)}
-          className="mt-3 flex w-full items-center gap-2 rounded-xl bg-secondary/15 hover:bg-secondary/25 dark:bg-secondary/20 dark:hover:bg-secondary/30 px-3 py-2 text-left text-xs font-medium text-foreground transition-colors"
+          className="group relative mt-3 flex w-full items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-primary/15 to-[hsl(var(--sunshine)/0.2)] hover:from-primary/25 hover:to-[hsl(var(--sunshine)/0.3)] dark:from-primary/25 dark:to-[hsl(var(--sunshine)/0.25)] dark:hover:from-primary/35 dark:hover:to-[hsl(var(--sunshine)/0.35)] px-3 py-2 text-left text-xs font-medium text-foreground transition-colors"
         >
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <Sparkles className="h-3.5 w-3.5 text-primary dark:text-[hsl(var(--sunshine))]" />
           <span className="truncate">
             {weekendTrip.location ? `Trip to ${weekendTrip.location}` : 'View trip details'}
           </span>
