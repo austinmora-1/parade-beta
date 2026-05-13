@@ -6,52 +6,61 @@
 
 @layer base {
   :root {
-    /* Warm Cream background #FFF8F2 */
-    --background: 30 100% 97%;
-    /* Dark warm neutral foreground */
-    --foreground: 20 15% 20%;
+    /* Custard background #F8F0E0 */
+    --background: 40 67% 93%;
+    /* Sea Floor foreground #020620 */
+    --foreground: 231 88% 6%;
 
-    /* Slightly warm white card */
-    --card: 30 50% 99%;
-    --card-foreground: 20 15% 20%;
+    /* Pearl-white card */
+    --card: 0 0% 100%;
+    --card-foreground: 231 88% 6%;
 
-    --popover: 30 100% 97%;
-    --popover-foreground: 20 15% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 231 88% 6%;
 
-    /* Parade Coral #FF6B5B — Primary (V2) */
-    --primary: 5 100% 68%;
+    /* Parade Green #23744D — Primary */
+    --primary: 152 54% 30%;
     --primary-foreground: 0 0% 100%;
-    /* Sunset Peach #FFAD9E */
-    --primary-glow: 9 100% 81%;
+    /* Faded Mint #67B28E */
+    --primary-glow: 150 33% 55%;
 
-    /* Parade Green #3D8C6C — Secondary (V2) */
-    --secondary: 152 39% 39%;
+    /* Ember #D46549 — Secondary */
+    --secondary: 11 60% 56%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Warm cream variant */
-    --muted: 30 40% 95%;
-    --muted-foreground: 20 10% 45%;
+    /* Warm muted */
+    --muted: 40 50% 89%;
+    --muted-foreground: 225 4% 60%;
 
-    /* Light coral tint accent */
-    --accent: 9 100% 95%;
-    --accent-foreground: 5 80% 45%;
+    /* Custard tint accent */
+    --accent: 40 60% 92%;
+    --accent-foreground: 150 22% 24%;
 
-    --destructive: 0 72% 60%;
+    --destructive: 11 65% 35%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 30% 90%;
-    --input: 30 30% 90%;
-    --ring: 5 100% 68%;
+    --border: 40 30% 84%;
+    --input: 40 30% 84%;
+    --ring: 152 54% 30%;
 
     --radius: 1rem;
 
-    /* Brand accent tokens */
-    --coral: 5 100% 68%;
-    --sunset-peach: 9 100% 81%;
-    --open-sky: 203 75% 78%;
-    --go-mint: 152 56% 78%;
-    --sunshine: 49 100% 67%;
-    --meadow-green: 152 39% 61%;
+    /* Brand accent tokens (names retained for compatibility) */
+    --coral: 11 60% 56%;            /* Ember */
+    --sunset-peach: 43 84% 72%;     /* Butter */
+    --open-sky: 214 41% 60%;        /* Denim */
+    --go-mint: 150 33% 55%;         /* Faded Mint */
+    --sunshine: 42 71% 55%;         /* Marigold */
+    --meadow-green: 152 39% 50%;    /* Parade Green light */
+
+    /* New named brand tokens */
+    --parade-green: 152 54% 30%;
+    --dark-forest: 150 22% 24%;
+    --dark-ember: 11 68% 32%;
+    --sea-floor: 231 88% 6%;
+    --custard: 40 67% 93%;
+    --elephant-gray: 225 4% 60%;
+    --deep-sea: 214 55% 35%;
 
     /* Custom colors for activities — mapped to brand palette */
     --activity-food: 9 100% 81%;
