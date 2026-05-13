@@ -504,7 +504,7 @@ function FriendPill({
         {step === 'slots' ? (
           <>
             <div className="px-3 pt-3 pb-2 border-b border-border">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">
                 {mutual
                   ? `Mutually free with ${friend.name.split(' ')[0]}`
                   : `${friend.name.split(' ')[0]}'s free times`}
