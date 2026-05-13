@@ -361,11 +361,11 @@
   .parade-wordmark {
     font-family: 'Bungee Shade', sans-serif;
     font-weight: 400;
-    color: hsl(5 100% 68%);
+    color: hsl(152 54% 30%);
   }
 
   :root:not(.dark) .parade-wordmark {
-    color: hsl(5 100% 68%);
+    color: hsl(152 54% 30%);
   }
 
   .shadow-soft {
