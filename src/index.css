@@ -241,45 +241,43 @@
   }
 
   .dark {
-    /* Deep dark green background — flipped: page is now darker than surfaces */
-    --background: 150 25% 10%;
+    /* Warm dark background — low-sat warm brown/charcoal */
+    --background: 25 14% 9%;
     --foreground: 40 67% 93%;
 
-    /* Cards/surfaces are lighter green than the background */
-    --card: 150 22% 24%;
+    --card: 25 12% 14%;
     --card-foreground: 40 67% 93%;
 
-    --popover: 150 22% 26%;
+    --popover: 25 12% 14%;
     --popover-foreground: 40 67% 93%;
 
     /* Faded Mint primary for contrast */
     --primary: 150 45% 60%;
-    --primary-foreground: 150 30% 12%;
+    --primary-foreground: 25 30% 10%;
     --primary-glow: 150 50% 72%;
 
     /* Ember secondary */
     --secondary: 11 65% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 150 22% 22%;
-    --muted-foreground: 150 10% 72%;
+    --muted: 25 10% 16%;
+    --muted-foreground: 30 8% 70%;
 
-    /* Lighter green accent for pills/section tabs */
-    --accent: 150 25% 30%;
-    --accent-foreground: 150 45% 85%;
+    --accent: 25 14% 20%;
+    --accent-foreground: 40 60% 90%;
 
     --destructive: 11 60% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 150 18% 32%;
-    --input: 150 18% 32%;
+    --border: 25 10% 22%;
+    --input: 25 10% 22%;
     --ring: 150 45% 60%;
 
     /* Dark mode availability colors */
-    --available-light: 152 35% 28%;
-    --partial-light: 49 40% 28%;
-    --busy-light: 11 40% 28%;
-    --away-light: 9 40% 28%;
+    --available-light: 152 35% 22%;
+    --partial-light: 49 40% 22%;
+    --busy-light: 11 40% 22%;
+    --away-light: 9 40% 22%;
     --away-foreground: 9 70% 70%;
 
     /* Dark mode shadows */
@@ -290,17 +288,17 @@
 
     --gradient-primary: linear-gradient(135deg, hsl(152 50% 42%), hsl(150 45% 60%));
     --gradient-secondary: linear-gradient(135deg, hsl(11 65% 55%), hsl(43 75% 65%));
-    --gradient-card: linear-gradient(145deg, hsl(150 22% 26%), hsl(150 22% 22%));
+    --gradient-card: linear-gradient(145deg, hsl(25 12% 14%), hsl(25 12% 11%));
     --gradient-hero: linear-gradient(160deg, hsl(152 50% 35%), hsl(150 45% 55%), hsl(214 45% 55%));
-    --gradient-pearl: linear-gradient(135deg, hsl(150 22% 26%), hsl(150 22% 22%));
+    --gradient-pearl: linear-gradient(135deg, hsl(25 12% 16%), hsl(25 12% 12%));
 
-    --sidebar-background: 150 25% 8%;
+    --sidebar-background: 25 14% 7%;
     --sidebar-foreground: 40 67% 93%;
     --sidebar-primary: 150 45% 60%;
-    --sidebar-primary-foreground: 150 30% 12%;
-    --sidebar-accent: 150 25% 30%;
-    --sidebar-accent-foreground: 150 45% 85%;
-    --sidebar-border: 150 18% 32%;
+    --sidebar-primary-foreground: 25 30% 10%;
+    --sidebar-accent: 25 14% 18%;
+    --sidebar-accent-foreground: 40 60% 90%;
+    --sidebar-border: 25 10% 22%;
     --sidebar-ring: 150 45% 60%;
   }
 
