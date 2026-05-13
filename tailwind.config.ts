@@ -103,6 +103,20 @@ export default {
           sunshine: "hsl(var(--sunshine))",
           "meadow-green": "hsl(var(--meadow-green))",
         },
+        parade: {
+          green: "hsl(var(--parade-green))",       // #23744D Parade Green
+          mint: "hsl(var(--go-mint))",              // #67B28E Faded Mint
+          "dark-forest": "hsl(var(--dark-forest))", // #2F4A3E
+          ember: "hsl(var(--coral))",               // #D46549 Ember
+          "dark-ember": "hsl(var(--dark-ember))",   // deep ember
+          butter: "hsl(var(--sunset-peach))",       // Butter
+          marigold: "hsl(var(--sunshine))",         // Marigold
+          denim: "hsl(var(--open-sky))",            // Denim
+          "deep-sea": "hsl(var(--deep-sea))",       // Deep Sea
+          "sea-floor": "hsl(var(--sea-floor))",     // #020620
+          custard: "hsl(var(--custard))",           // #F8F0E0
+          elephant: "hsl(var(--elephant-gray))",    // #95979D
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
