@@ -140,7 +140,7 @@ export function FreeWindowCard() {
         <div className="flex items-center px-0.5">
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary text-stone-400">
               Recommended
             </p>
           </div>
