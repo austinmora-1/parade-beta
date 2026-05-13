@@ -484,26 +484,11 @@ export function UpcomingPlans({ standalone = false }: { standalone?: boolean } =
     <div className="space-y-4">
       {tripProposals.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
-            <Plane className="h-3 w-3" />
-            Trip Proposals
-          </h4>
-          <div className="space-y-1.5">
-            {tripProposals.map(renderTripProposalCard)}
-          </div>
-        </div>
-      )}
-      {myPlans.length > 0 && (
-        <div>
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Your Plans</h4>
-          <div className="space-y-1.5">
-            {myPlans.map(renderPlanCard)}
-          </div>
-        </div>
-      )}
-      {friendPlans.length > 0 && (
-        <div>
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+...
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1.5">Your Plans</h4>
+...
+          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <Users className="h-3 w-3" />
             Friends' Plans
           </h4>
