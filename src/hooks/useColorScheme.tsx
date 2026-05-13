@@ -13,18 +13,23 @@ const ColorSchemeContext = createContext<ColorSchemeContextValue | undefined>(un
 
 function applySchemeToDocument(scheme: ColorScheme) {
   const root = document.documentElement;
-  if (scheme === 'green') {
-    root.classList.add('theme-green');
+  // Base tokens are Parade Green by default. The warm Ember-led preset is
+  // applied via .theme-coral. We retain the storage key 'green'/'coral' for
+  // backward compatibility.
+  if (scheme === 'coral') {
+    root.classList.add('theme-coral');
+    root.classList.remove('theme-green');
   } else {
+    root.classList.remove('theme-coral');
     root.classList.remove('theme-green');
   }
 }
 
 export function ColorSchemeProvider({ children }: { children: ReactNode }) {
   const [scheme, setSchemeState] = useState<ColorScheme>(() => {
-    if (typeof window === 'undefined') return 'coral';
+    if (typeof window === 'undefined') return 'green';
     const stored = window.localStorage.getItem(STORAGE_KEY) as ColorScheme | null;
-    return stored === 'green' || stored === 'coral' ? stored : 'coral';
+    return stored === 'green' || stored === 'coral' ? stored : 'green';
   });
 
   useEffect(() => {
