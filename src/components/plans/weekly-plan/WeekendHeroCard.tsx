@@ -177,7 +177,7 @@ function DayMini({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') navigate(`/day/${format(date, 'yyyy-MM-dd')}`);
       }}
-      className="relative overflow-hidden rounded-xl border border-border/60 bg-background/40 p-2.5 text-left cursor-pointer transition-colors hover:bg-background/70"
+      className="relative overflow-hidden rounded-xl border border-border/60 bg-background/40 dark:bg-background/50 dark:border-border/40 p-2.5 text-left cursor-pointer transition-colors hover:bg-background/70 dark:hover:bg-background/70"
     >
       <span className={cn('absolute inset-y-0 left-0 w-1', status.accentClass)} aria-hidden />
       <div className="pl-1.5">
