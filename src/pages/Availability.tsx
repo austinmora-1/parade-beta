@@ -197,7 +197,7 @@ export default function Availability() {
           }
         />
 
-        <div className="ml-auto flex items-center gap-1 rounded-full bg-muted/40 p-0.5">
+        <div className="ml-auto flex items-center gap-1 rounded-full border border-border bg-muted/40 dark:bg-card/80 dark:border-border/60 p-0.5">
           {(['all', 'plans', 'trips'] as ViewFilter[]).map((v) => {
             const active = viewFilter === v;
             return (
@@ -207,7 +207,7 @@ export default function Availability() {
                 className={cn(
                   'rounded-full px-3 py-1.5 text-sm font-bold transition-colors',
                   active
-                    ? 'bg-secondary/15 text-secondary'
+                    ? 'bg-secondary/15 text-secondary dark:bg-secondary/25 dark:text-[hsl(11_70%_75%)]'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
