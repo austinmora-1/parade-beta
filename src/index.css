@@ -298,9 +298,9 @@
     --sidebar-foreground: 40 67% 93%;
     --sidebar-primary: 150 45% 60%;
     --sidebar-primary-foreground: 150 30% 12%;
-    --sidebar-accent: 150 25% 18%;
-    --sidebar-accent-foreground: 150 45% 78%;
-    --sidebar-border: 150 18% 22%;
+    --sidebar-accent: 150 25% 30%;
+    --sidebar-accent-foreground: 150 45% 85%;
+    --sidebar-border: 150 18% 32%;
     --sidebar-ring: 150 45% 60%;
   }
 
