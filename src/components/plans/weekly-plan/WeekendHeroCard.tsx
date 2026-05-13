@@ -82,29 +82,29 @@ export function WeekendHeroCard({
       className={cn(
         'relative overflow-hidden rounded-2xl border p-4 shadow-soft',
         weekendTrip
-          ? 'border-primary/30 bg-gradient-to-br from-primary/15 via-card to-secondary/10'
-          : 'border-border bg-card',
+          ? 'border-primary/30 bg-gradient-to-br from-primary/15 via-card to-secondary/10 dark:border-primary/40 dark:from-primary/20 dark:via-card dark:to-secondary/15'
+          : 'border-border bg-card dark:bg-gradient-to-br dark:from-card dark:via-card dark:to-primary/5',
       )}
     >
       {weekendTrip && (
         <>
-          <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-secondary/25 blur-3xl" />
-          <span aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-primary/20 blur-3xl" />
-          <span aria-hidden className="pointer-events-none absolute right-3 top-2 text-base">✦</span>
-          <span aria-hidden className="pointer-events-none absolute right-8 top-6 text-[10px] text-secondary/60">✺</span>
+          <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-secondary/25 dark:bg-secondary/30 blur-3xl" />
+          <span aria-hidden className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-primary/20 dark:bg-primary/25 blur-3xl" />
+          <span aria-hidden className="pointer-events-none absolute right-3 top-2 text-base text-secondary/60 dark:text-secondary/80">✦</span>
+          <span aria-hidden className="pointer-events-none absolute right-8 top-6 text-[10px] text-secondary/60 dark:text-secondary/70">✺</span>
         </>
       )}
 
       <div className="relative flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
         <span className={cn('h-1.5 w-1.5 rounded-full bg-secondary', weekendTrip && 'animate-pulse')} />
-        <span className="text-secondary">This Weekend</span>
-        <span className="font-medium normal-case tracking-normal text-muted-foreground">{dateLabel}</span>
+        <span className="text-secondary dark:text-[hsl(11_70%_72%)]">This Weekend</span>
+        <span className="font-medium normal-case tracking-normal text-stone-400">{dateLabel}</span>
       </div>
 
       <h2 className="relative mt-2 font-display text-2xl font-black leading-tight tracking-tight">
         {weekendTrip && <Plane className="mr-1 inline-block h-5 w-5 align-[-2px] text-primary" />}
         {weekendTrip ? (
-          <span className="bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">{headline}</span>
+          <span className="bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent dark:from-[hsl(11_70%_72%)] dark:to-[hsl(150_55%_72%)]">{headline}</span>
         ) : (
           headline
         )}{weekendTrip ? '.' : ''}
@@ -135,7 +135,7 @@ export function WeekendHeroCard({
       {weekendTrip && (
         <button
           onClick={() => navigate(`/trip/${weekendTrip.id}`)}
-          className="mt-3 flex w-full items-center gap-2 rounded-xl bg-[hsl(28_45%_85%)] dark:bg-[hsl(28_30%_55%)] px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-[hsl(28_45%_80%)] dark:hover:bg-[hsl(28_30%_60%)] transition-colors"
+          className="mt-3 flex w-full items-center gap-2 rounded-xl bg-secondary/15 hover:bg-secondary/25 dark:bg-secondary/20 dark:hover:bg-secondary/30 px-3 py-2 text-left text-xs font-medium text-foreground transition-colors"
         >
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           <span className="truncate">
