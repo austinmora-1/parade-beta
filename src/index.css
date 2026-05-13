@@ -241,17 +241,18 @@
   }
 
   .dark {
-    /* Dark Forest background #2F4A3E */
-    --background: 150 22% 24%;
+    /* Deep dark green background — flipped: page is now darker than surfaces */
+    --background: 150 25% 10%;
     --foreground: 40 67% 93%;
 
-    --card: 150 22% 18%;
+    /* Cards/surfaces are lighter green than the background */
+    --card: 150 22% 24%;
     --card-foreground: 40 67% 93%;
 
-    --popover: 150 22% 16%;
+    --popover: 150 22% 26%;
     --popover-foreground: 40 67% 93%;
 
-    /* Faded Mint primary for contrast on Dark Forest */
+    /* Faded Mint primary for contrast */
     --primary: 150 45% 60%;
     --primary-foreground: 150 30% 12%;
     --primary-glow: 150 50% 72%;
@@ -260,11 +261,12 @@
     --secondary: 11 65% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 150 18% 20%;
-    --muted-foreground: 150 10% 70%;
+    --muted: 150 22% 22%;
+    --muted-foreground: 150 10% 72%;
 
-    --accent: 150 25% 15%;
-    --accent-foreground: 150 45% 78%;
+    /* Lighter green accent for pills/section tabs */
+    --accent: 150 25% 30%;
+    --accent-foreground: 150 45% 85%;
 
     --destructive: 11 60% 45%;
     --destructive-foreground: 0 0% 100%;
