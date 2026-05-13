@@ -59,7 +59,7 @@ export function EventSuggestions() {
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="text-xl">{s.emoji}</span>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                <span className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
                   {s.day} · {s.time_slot}
                 </span>
               </div>
