@@ -241,37 +241,37 @@
   }
 
   .dark {
-    /* Sea Floor background */
-    --background: 231 88% 6%;
+    /* Dark Forest background #2F4A3E */
+    --background: 150 22% 24%;
     --foreground: 40 67% 93%;
 
-    --card: 231 50% 10%;
+    --card: 150 22% 18%;
     --card-foreground: 40 67% 93%;
 
-    --popover: 231 55% 8%;
+    --popover: 150 22% 16%;
     --popover-foreground: 40 67% 93%;
 
-    /* Faded Mint primary for contrast on Sea Floor */
-    --primary: 150 45% 55%;
-    --primary-foreground: 231 88% 6%;
-    --primary-glow: 150 50% 70%;
+    /* Faded Mint primary for contrast on Dark Forest */
+    --primary: 150 45% 60%;
+    --primary-foreground: 150 30% 12%;
+    --primary-glow: 150 50% 72%;
 
     /* Ember secondary */
     --secondary: 11 65% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 231 30% 16%;
-    --muted-foreground: 225 8% 65%;
+    --muted: 150 18% 20%;
+    --muted-foreground: 150 10% 70%;
 
-    --accent: 150 22% 18%;
-    --accent-foreground: 150 45% 75%;
+    --accent: 150 25% 15%;
+    --accent-foreground: 150 45% 78%;
 
     --destructive: 11 60% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 231 30% 18%;
-    --input: 231 30% 18%;
-    --ring: 150 45% 55%;
+    --border: 150 15% 30%;
+    --input: 150 15% 30%;
+    --ring: 150 45% 60%;
 
     /* Dark mode availability colors */
     --available-light: 152 35% 18%;
@@ -284,22 +284,22 @@
     --shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
     --shadow-md: 0 8px 24px -8px hsl(0 0% 0% / 0.4);
     --shadow-lg: 0 16px 48px -12px hsl(0 0% 0% / 0.5);
-    --shadow-glow: 0 0 40px hsl(150 45% 55% / 0.18);
+    --shadow-glow: 0 0 40px hsl(150 45% 60% / 0.20);
 
-    --gradient-primary: linear-gradient(135deg, hsl(152 50% 40%), hsl(150 45% 55%));
+    --gradient-primary: linear-gradient(135deg, hsl(152 50% 42%), hsl(150 45% 60%));
     --gradient-secondary: linear-gradient(135deg, hsl(11 65% 55%), hsl(43 75% 65%));
-    --gradient-card: linear-gradient(145deg, hsl(231 50% 10%), hsl(231 55% 7%));
-    --gradient-hero: linear-gradient(160deg, hsl(152 50% 40%), hsl(150 45% 55%), hsl(214 45% 55%));
-    --gradient-pearl: linear-gradient(135deg, hsl(231 50% 12%), hsl(231 55% 8%));
+    --gradient-card: linear-gradient(145deg, hsl(150 22% 18%), hsl(150 25% 14%));
+    --gradient-hero: linear-gradient(160deg, hsl(152 50% 35%), hsl(150 45% 55%), hsl(214 45% 55%));
+    --gradient-pearl: linear-gradient(135deg, hsl(150 22% 20%), hsl(150 25% 15%));
 
-    --sidebar-background: 231 70% 5%;
+    --sidebar-background: 150 25% 14%;
     --sidebar-foreground: 40 67% 93%;
-    --sidebar-primary: 150 45% 55%;
-    --sidebar-primary-foreground: 231 88% 6%;
-    --sidebar-accent: 150 22% 18%;
-    --sidebar-accent-foreground: 150 45% 75%;
-    --sidebar-border: 231 30% 14%;
-    --sidebar-ring: 150 45% 55%;
+    --sidebar-primary: 150 45% 60%;
+    --sidebar-primary-foreground: 150 30% 12%;
+    --sidebar-accent: 150 25% 18%;
+    --sidebar-accent-foreground: 150 45% 78%;
+    --sidebar-border: 150 18% 22%;
+    --sidebar-ring: 150 45% 60%;
   }
 
 }
