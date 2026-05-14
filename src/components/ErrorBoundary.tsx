@@ -36,6 +36,29 @@ export class ErrorBoundary extends Component<Props, State> {
     const scope = this.props.scope ?? 'App';
     console.error(`[ErrorBoundary:${scope}]`, error, errorInfo);
     this.setState({ errorInfo });
+
+    // Stale chunk after a new deploy: hashed JS file no longer exists.
+    // Force a one-time hard reload to pick up fresh assets.
+    const msg = `${error?.name || ''} ${error?.message || ''}`.toLowerCase();
+    const isChunkLoadError =
+      msg.includes('importing a module script failed') ||
+      msg.includes('failed to fetch dynamically imported module') ||
+      msg.includes('error loading dynamically imported module') ||
+      msg.includes("'text/html' is not a valid javascript mime type") ||
+      error?.name === 'ChunkLoadError';
+
+    if (isChunkLoadError && typeof window !== 'undefined') {
+      try {
+        const key = '__parade_chunk_reload_at';
+        const last = Number(sessionStorage.getItem(key) || '0');
+        if (Date.now() - last > 10_000) {
+          sessionStorage.setItem(key, String(Date.now()));
+          window.location.reload();
+        }
+      } catch {
+        window.location.reload();
+      }
+    }
   }
 
   reset = () => {
